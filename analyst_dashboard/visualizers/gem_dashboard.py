@@ -906,9 +906,9 @@ class GemDashboard:
             logger.error(f"Error in detailed analysis for {ticker}: {e}")
     
     @st.cache_data(ttl=300)  # Cache for 5 minutes
-    def _run_sample_screening(_self, screener=None):
+    def _run_sample_screening(_self, _screener=None):
         """Run screening with current settings - LIVE DATA ONLY"""
-        if screener is None:
+        if _screener is None:
             # Update screener criteria based on sidebar settings
             criteria = GemCriteria(
                 min_market_cap=getattr(_self, 'min_market_cap', 50e6),
@@ -917,7 +917,7 @@ class GemDashboard:
                 min_gross_margin=getattr(_self, 'min_gross_margin', 0.30),
                 max_analyst_coverage=getattr(_self, 'max_analyst_coverage', 10)
             )
-            screener = HiddenGemScreener(criteria)
+            _screener = HiddenGemScreener(criteria)
         
         # Build universe based on selected asset types
         universe = []
@@ -946,7 +946,7 @@ class GemDashboard:
                 universe = [t for t in universe if t in clean_tickers]
         
         # Run live screening
-        results = screener.screen_universe(universe[:15])  # Limit for demo performance
+        results = _screener.screen_universe(universe[:15])  # Limit for demo performance
         return results if results else []
     
     def _get_sector_from_ticker(self, ticker: str) -> str:
