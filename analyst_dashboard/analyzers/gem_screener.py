@@ -73,6 +73,16 @@ class HiddenGemScreener:
             self.sustainability_analyzer = None
             self.use_sustainability = False
         
+        # Initialize data pipeline
+        try:
+            from analyst_dashboard.data.gem_fetchers import MultiAssetDataPipeline
+            self.data_pipeline = MultiAssetDataPipeline()
+            self.use_real_data = True
+        except ImportError:
+            logger.warning("Data pipeline not available - using sample data")
+            self.data_pipeline = None
+            self.use_real_data = False
+        
         # Emerging sectors to monitor
         self.emerging_sectors = {
             'blockchain_infrastructure': ['Bitcoin Mining', 'Blockchain Infrastructure', 'Crypto Services'],
@@ -765,7 +775,7 @@ class HiddenGemScreener:
                 gem_score = self.calculate_composite_score(ticker, all_data)
                 
                 # Only include if meets minimum criteria
-                if gem_score.composite_score >= 50:  # Minimum threshold
+                if gem_score.composite_score >= 30:  # Lower threshold to 30 for more results
                     results.append(gem_score)
                     
             except Exception as e:
@@ -779,28 +789,32 @@ class HiddenGemScreener:
     def _fetch_comprehensive_data(self, ticker: str) -> Dict[str, Any]:
         """
         Fetch comprehensive data for a ticker from multiple sources.
-        This is a placeholder that would integrate with real data sources.
         """
         try:
-            # In a real implementation, this would fetch from:
-            # - yfinance for basic data
-            # - Alpha Vantage for fundamentals
-            # - Custom APIs for institutional data
-            # - News APIs for sentiment
-            # - SEC filings for insider activity
+            # Use real data pipeline if available
+            if self.use_real_data and self.data_pipeline:
+                # Determine asset type
+                asset_type = 'crypto' if ticker.endswith('-USD') else 'stock'
+                data = self.data_pipeline.get_comprehensive_data(ticker, asset_type)
+                if 'error' not in data:
+                    return data
+                # If error, fall through to fallback
             
-            # For now, return sample data structure
+            # Fallback: Fetch basic data with yfinance
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 
                 try:
-                    info = yf.Ticker(ticker)
-                    hist = info.history(period="1y")
-                    ticker_info = info.info
-                except:
-                    # Fallback sample data
-                    hist = pd.DataFrame()
-                    ticker_info = {}
+                    stock = yf.Ticker(ticker)
+                    hist = stock.history(period="1y")
+                    ticker_info = stock.info
+                    
+                    if not ticker_info or len(hist) == 0:
+                        return {'error': 'No data available'}
+                    
+                except Exception as e:
+                    logger.error(f"yfinance error for {ticker}: {e}")
+                    return {'error': str(e)}
             
             return {
                 'sector_data': {
