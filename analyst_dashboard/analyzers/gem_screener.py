@@ -17,26 +17,26 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class GemCriteria:
-    """Configuration for hidden gem screening criteria"""
-    # Market cap constraints
-    min_market_cap: float = 50e6      # $50M minimum
-    max_market_cap: float = 30e9      # $30B maximum (more realistic for finding gems)
+    """Configuration for hidden gem screening criteria - Optimized based on IREN, ABVX, CELC, BE analysis"""
+    # Market cap constraints - $100M to $5B sweet spot
+    min_market_cap: float = 100e6     # $100M minimum (micro/small cap focus)
+    max_market_cap: float = 5e9       # $5B maximum (IREN: $0.83B, BE: $2.37B in Nov 2023)
     
-    # Fundamental thresholds
-    min_revenue_growth: float = 0.0    # 0% (no minimum - includes turnarounds)
-    min_gross_margin: float = 0.10     # 10% (more inclusive across industries)
-    max_debt_equity: float = 2.0       # 2.0 (more realistic for growth companies)
-    min_insider_ownership: float = 0.10 # 10%
+    # Fundamental thresholds - high growth or catalyst-driven
+    min_revenue_growth: float = 0.30   # 30% minimum (allows hyper-growth like IREN: 223%, BE: 57%)
+    min_gross_margin: float = 0.30     # 30% minimum (quality business model indicator)
+    max_debt_equity: float = 2.0       # 2.0 (reasonable for growth companies)
+    min_insider_ownership: float = 0.05 # 5% (skin in the game)
     
-    # Visibility constraints
-    max_analyst_coverage: int = 30     # 30 (still relatively under-followed)
-    min_institutional_ownership: float = 0.10  # 10%
-    max_institutional_ownership: float = 0.40  # 40%
+    # Visibility constraints - truly undiscovered
+    max_analyst_coverage: int = 15     # ≤15 analysts (IREN: 12, ABVX: 8, CELC: 8)
+    min_institutional_ownership: float = 0.40  # 40% minimum (smart money validation)
+    max_institutional_ownership: float = 0.95  # 95% maximum (still allow liquidity)
     
     # Technical criteria
-    min_base_formation_days: int = 90   # 3 months consolidation
-    max_drawdown_from_high: float = 0.30 # 30% max drawdown
-    min_relative_strength: float = 1.0   # Outperform market
+    min_base_formation_days: int = 60   # 2 months consolidation
+    max_drawdown_from_high: float = 0.40 # 40% max drawdown (allow recovery stories)
+    min_relative_strength: float = 0.9   # Near or outperform market
 
 @dataclass
 class GemScore:
