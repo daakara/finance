@@ -238,16 +238,8 @@ class MarketDataFetchers:
                 import ssl
                 import requests
                 
-                # Configure SSL context for better compatibility
-                ssl_context = ssl.create_default_context()
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
-                
-                # Use requests session with SSL config
-                session = requests.Session()
-                session.verify = False
-                
-                tnx = yf.Ticker("^TNX", session=session)
+                # Let yfinance handle SSL internally
+                tnx = yf.Ticker("^TNX")
                 treasury_data = tnx.history(period="5d")
                 if not treasury_data.empty:
                     indicators['treasury_10y'] = treasury_data['Close'].iloc[-1]
@@ -259,10 +251,7 @@ class MarketDataFetchers:
             
             # DXY (Dollar Index)
             try:
-                session = requests.Session()
-                session.verify = False
-                
-                dxy = yf.Ticker("DX-Y.NYB", session=session)
+                dxy = yf.Ticker("DX-Y.NYB")
                 dxy_data = dxy.history(period="5d")
                 if not dxy_data.empty:
                     indicators['dxy'] = dxy_data['Close'].iloc[-1]
@@ -274,10 +263,7 @@ class MarketDataFetchers:
             
             # VIX
             try:
-                session = requests.Session()
-                session.verify = False
-                
-                vix = yf.Ticker("^VIX", session=session)
+                vix = yf.Ticker("^VIX")
                 vix_data = vix.history(period="5d")
                 if not vix_data.empty:
                     indicators['vix'] = vix_data['Close'].iloc[-1]

@@ -55,7 +55,7 @@ class SidebarManager:
         default_tickers = {
             "Stock": "AAPL",
             "ETF": "SPY", 
-            "Cryptocurrency": "BTC"
+            "Cryptocurrency": "BTC/USDT"
         }
         
         ticker = st.sidebar.text_input(
@@ -274,7 +274,7 @@ class ChartManager:
                 if hasattr(fig, 'update_layout'):
                     fig.update_layout(showlegend=show_legend)
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
         except Exception as e:
             logger.error(f"Error displaying chart {title}: {e}")

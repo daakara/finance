@@ -194,10 +194,10 @@ class GemDashboard:
         st.sidebar.subheader("💰 Market Cap Range")
         self.min_market_cap = st.sidebar.number_input(
             "Minimum Market Cap ($M):",
-            min_value=10,
-            max_value=10000,
-            value=50,
-            step=10
+            min_value=10.0,
+            max_value=10000.0,
+            value=50.0,
+            step=10.0
         ) * 1e6
         
         self.max_market_cap = st.sidebar.number_input(
@@ -461,7 +461,7 @@ class GemDashboard:
             'displaylogo': False,
             'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
         }
-        st.plotly_chart(fig, use_container_width=True, config=plotly_config)
+        st.plotly_chart(fig, width='stretch', config=plotly_config)
         
         # Sector details table
         st.subheader("📊 Sector Analysis Details")
@@ -547,7 +547,7 @@ class GemDashboard:
                 'displaylogo': False,
                 'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
             }
-            st.plotly_chart(fig, use_container_width=True, config=plotly_config)
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
             
             # Detailed results table
             st.subheader("📋 Detailed Screening Results")
@@ -601,17 +601,17 @@ class GemDashboard:
             
             with col1:
                 st.markdown("**Financial Criteria**")
-                custom_min_revenue_growth = st.number_input("Min Revenue Growth (%):", value=25.0) / 100
-                custom_min_gross_margin = st.number_input("Min Gross Margin (%):", value=30.0) / 100
-                custom_max_pe = st.number_input("Max P/E Ratio:", value=50.0)
-                custom_min_cash_runway = st.number_input("Min Cash Runway (years):", value=2.0)
+                custom_min_revenue_growth = st.number_input("Min Revenue Growth (%):", min_value=0.0, max_value=500.0, value=25.0, step=1.0) / 100
+                custom_min_gross_margin = st.number_input("Min Gross Margin (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0) / 100
+                custom_max_pe = st.number_input("Max P/E Ratio:", min_value=1.0, max_value=500.0, value=50.0, step=1.0)
+                custom_min_cash_runway = st.number_input("Min Cash Runway (years):", min_value=0.0, max_value=10.0, value=2.0, step=0.1)
             
             with col2:
                 st.markdown("**Market Criteria**")
-                custom_min_mcap = st.number_input("Min Market Cap ($M):", value=50.0) * 1e6
-                custom_max_mcap = st.number_input("Max Market Cap ($B):", value=2.0) * 1e9
-                custom_max_analysts = st.number_input("Max Analyst Coverage:", value=10)
-                custom_min_institutional = st.number_input("Min Institutional Ownership (%):", value=10.0) / 100
+                custom_min_mcap = st.number_input("Min Market Cap ($M):", min_value=1.0, max_value=50000.0, value=50.0, step=1.0) * 1e6
+                custom_max_mcap = st.number_input("Max Market Cap ($B):", min_value=0.1, max_value=100.0, value=2.0, step=0.1) * 1e9
+                custom_max_analysts = st.number_input("Max Analyst Coverage:", min_value=1, max_value=100, value=10, step=1)
+                custom_min_institutional = st.number_input("Min Institutional Ownership (%):", min_value=0.0, max_value=100.0, value=10.0, step=1.0) / 100
             
             # Sector preferences
             st.markdown("**Sector Preferences**")
@@ -633,8 +633,8 @@ class GemDashboard:
                 require_insider_buying = st.checkbox("Require Recent Insider Buying", value=False)
             
             with col4:
-                min_relative_strength = st.number_input("Min Relative Strength:", value=1.0)
-                max_drawdown = st.number_input("Max Drawdown from High (%):", value=30.0) / 100
+                min_relative_strength = st.number_input("Min Relative Strength:", min_value=0.0, max_value=5.0, value=1.0, step=0.1)
+                max_drawdown = st.number_input("Max Drawdown from High (%):", min_value=0.0, max_value=100.0, value=30.0, step=1.0) / 100
             
             # Submit button
             submitted = st.form_submit_button("🚀 Run Custom Screening")
@@ -708,7 +708,7 @@ class GemDashboard:
                 'displaylogo': False,
                 'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d']
             }
-            st.plotly_chart(fig, use_container_width=True, config=plotly_config)
+            st.plotly_chart(fig, width='stretch', config=plotly_config)
         
         with col2:
             # Key metrics
@@ -836,7 +836,7 @@ class GemDashboard:
                         'scale': 1
                     }
                 }
-                st.plotly_chart(fig, use_container_width=True, config=plotly_config)
+                st.plotly_chart(fig, width='stretch', config=plotly_config)
             
         except Exception as e:
             st.error(f"Error analyzing {ticker}: {str(e)}")

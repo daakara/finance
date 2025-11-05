@@ -133,7 +133,7 @@ class FundamentalRenderer:
         
         if holdings_data and 'top_holdings' in holdings_data:
             holdings_df = pd.DataFrame(holdings_data['top_holdings'])
-            st.dataframe(holdings_df, use_container_width=True)
+            st.dataframe(holdings_df, width='stretch')
             
             col1, col2 = st.columns(2)
             with col1:
@@ -318,7 +318,7 @@ class PortfolioRenderer:
                 
                 st.dataframe(
                     stress_df[['scenario_return', 'probability', 'recovery_time_estimate']], 
-                    use_container_width=True
+                    width='stretch'
                 )
                 
                 # Highlight worst case
@@ -385,7 +385,7 @@ class ForecastingRenderer:
         
         if model_comparison:
             model_df = pd.DataFrame(model_comparison)
-            st.dataframe(model_df, use_container_width=True)
+            st.dataframe(model_df, width='stretch')
     
     @staticmethod
     def render_volatility_forecasting(vol_forecast: Dict[str, Any]):

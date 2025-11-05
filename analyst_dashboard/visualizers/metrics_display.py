@@ -235,7 +235,7 @@ class MetricsDisplayManager:
             numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
             df[numeric_columns] = df[numeric_columns].round(4)
             
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, width='stretch')
             
         except Exception as e:
             logger.error(f"Error displaying comparison table: {str(e)}")

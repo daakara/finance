@@ -79,7 +79,7 @@ class ETFAnalyzer:
         worst_day = daily_returns.min() * 100
         
         # Rolling performance
-        monthly_returns = close_prices.resample('M').last().pct_change().dropna()
+        monthly_returns = close_prices.resample('ME').last().pct_change().dropna()
         best_month = monthly_returns.max() * 100 if not monthly_returns.empty else 0
         worst_month = monthly_returns.min() * 100 if not monthly_returns.empty else 0
         

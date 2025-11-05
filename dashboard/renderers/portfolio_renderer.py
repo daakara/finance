@@ -99,7 +99,7 @@ class PortfolioRenderer:
         stress_df['probability'] = stress_df['probability'].apply(lambda x: f"{x:.1%}")
         
         st.dataframe(stress_df[['scenario_return', 'probability', 'recovery_time_estimate']], 
-                   use_container_width=True)
+                   width='stretch')
         
         worst_case = portfolio_analysis['stress_testing']['worst_case_scenario']
         st.warning(f"**Worst Case Scenario:** {worst_case}")
@@ -122,7 +122,7 @@ class PortfolioRenderer:
         scenario_df['expected_return'] = scenario_df['expected_return'].apply(lambda x: f"{x:.1%}")
         
         st.dataframe(scenario_df[['probability', 'expected_return', 'duration_months']], 
-                   use_container_width=True)
+                   width='stretch')
 
 
 # Redefine ForecastingRenderer properly now that dependencies are resolved
@@ -193,7 +193,7 @@ class ForecastingRenderer:
             
             if model_comparison:
                 model_df = pd.DataFrame(model_comparison)
-                st.dataframe(model_df, use_container_width=True)
+                st.dataframe(model_df, width='stretch')
     
     def _render_volatility_forecasting(self, forecast_analysis: Dict[str, Any]):
         """Render volatility forecasting section."""

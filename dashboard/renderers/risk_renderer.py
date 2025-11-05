@@ -97,7 +97,7 @@ class RiskRenderer:
                 returns,
                 title="Rolling Volatility Analysis"
             )
-            st.plotly_chart(vol_chart, use_container_width=True)
+            st.plotly_chart(vol_chart, width='stretch')
         
         with col2:
             st.markdown("**Drawdown Analysis**")
@@ -105,4 +105,4 @@ class RiskRenderer:
                 price_data['Close'],
                 title="Drawdown Analysis"
             )
-            st.plotly_chart(dd_chart, use_container_width=True)
+            st.plotly_chart(dd_chart, width='stretch')

@@ -355,7 +355,7 @@ class ComparativeAnalysisWorkflow:
             
             # Performance metrics chart
             perf_chart = self.chart_visualizer.create_performance_metrics_chart(performance_data)
-            st.plotly_chart(perf_chart, use_container_width=True)
+            st.plotly_chart(perf_chart, width='stretch')
             
         except Exception as e:
             logger.error(f"Error displaying detailed performance: {str(e)}")
@@ -368,7 +368,7 @@ class ComparativeAnalysisWorkflow:
                 correlation_heatmap = self.chart_visualizer.create_correlation_heatmap(
                     correlation_data['returns_correlation']
                 )
-                st.plotly_chart(correlation_heatmap, use_container_width=True)
+                st.plotly_chart(correlation_heatmap, width='stretch')
                 
                 # Display correlation insights
                 corr_matrix = correlation_data['returns_correlation']
@@ -414,7 +414,7 @@ class ComparativeAnalysisWorkflow:
                 fig.update_traces(textposition="top center")
                 fig.update_layout(height=500)
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
         except Exception as e:
             logger.error(f"Error displaying risk-return analysis: {str(e)}")
@@ -451,7 +451,7 @@ class ComparativeAnalysisWorkflow:
                     return ''
             
             styled_df = comparison_df.style.applymap(highlight_signals)
-            st.dataframe(styled_df, use_container_width=True)
+            st.dataframe(styled_df, width='stretch')
             
         except Exception as e:
             logger.error(f"Error displaying technical comparison: {str(e)}")
@@ -461,7 +461,7 @@ class ComparativeAnalysisWorkflow:
         try:
             # Comparison chart
             comparison_chart = self.chart_visualizer.create_comparison_chart(price_data)
-            st.plotly_chart(comparison_chart, use_container_width=True)
+            st.plotly_chart(comparison_chart, width='stretch')
             
         except Exception as e:
             logger.error(f"Error displaying comparative charts: {str(e)}")

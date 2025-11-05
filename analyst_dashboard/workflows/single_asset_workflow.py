@@ -347,7 +347,7 @@ class SingleAssetWorkflow:
                 
                 if tf_data:
                     df = pd.DataFrame(tf_data)
-                    st.dataframe(df, hide_index=True, use_container_width=True)
+                    st.dataframe(df, hide_index=True, width='stretch')
                     
         except Exception as e:
             logger.error(f"Error displaying multi-timeframe analysis: {str(e)}")
@@ -471,7 +471,7 @@ class SingleAssetWorkflow:
                     
                     if regime_data:
                         regime_df = pd.DataFrame(regime_data)
-                        st.dataframe(regime_df, hide_index=True, use_container_width=True)
+                        st.dataframe(regime_df, hide_index=True, width='stretch')
             
             # PRIORITY 2: Tail Risk Analysis
             if 'tail_risk' in risk_results:
@@ -620,13 +620,13 @@ class SingleAssetWorkflow:
                     enhanced_chart = self.advanced_chart_visualizer.create_enhanced_technical_chart(
                         price_data, tech_data, signals
                     )
-                    st.plotly_chart(enhanced_chart, use_container_width=True)
+                    st.plotly_chart(enhanced_chart, width='stretch')
                 else:
                     # Fallback to basic chart
                     basic_chart = self.chart_visualizer.create_candlestick_chart(
                         price_data, symbol, tech_data
                     )
-                    st.plotly_chart(basic_chart, use_container_width=True)
+                    st.plotly_chart(basic_chart, width='stretch')
             
             with confluence_tab:
                 # Signal confluence meter
@@ -634,7 +634,7 @@ class SingleAssetWorkflow:
                     confluence_meter = self.advanced_chart_visualizer.create_confluence_meter(
                         results['technical_analysis']
                     )
-                    st.plotly_chart(confluence_meter, use_container_width=True)
+                    st.plotly_chart(confluence_meter, width='stretch')
                 else:
                     st.info("Technical analysis required for confluence visualization")
             
@@ -647,7 +647,7 @@ class SingleAssetWorkflow:
                     multi_tf_chart = self.advanced_chart_visualizer.create_multi_timeframe_chart(
                         multi_tf_data, multi_tf_analysis
                     )
-                    st.plotly_chart(multi_tf_chart, use_container_width=True)
+                    st.plotly_chart(multi_tf_chart, width='stretch')
                 else:
                     st.info("Multi-timeframe data not available")
             
@@ -658,7 +658,7 @@ class SingleAssetWorkflow:
                     risk_dashboard = self.risk_visualizer.create_risk_metrics_dashboard(
                         results['advanced_risk_analysis']
                     )
-                    st.plotly_chart(risk_dashboard, use_container_width=True)
+                    st.plotly_chart(risk_dashboard, width='stretch')
                 else:
                     st.info("Advanced risk analysis required for risk dashboard")
             
@@ -668,14 +668,14 @@ class SingleAssetWorkflow:
                     var_chart = self.risk_visualizer.create_var_analysis_chart(
                         price_data, results['advanced_risk_analysis']
                     )
-                    st.plotly_chart(var_chart, use_container_width=True)
+                    st.plotly_chart(var_chart, width='stretch')
                 else:
                     st.info("Advanced risk analysis required for VaR visualization")
             
             with drawdown_tab:
                 # Drawdown analysis
                 drawdown_chart = self.risk_visualizer.create_drawdown_analysis_chart(price_data)
-                st.plotly_chart(drawdown_chart, use_container_width=True)
+                st.plotly_chart(drawdown_chart, width='stretch')
             
             with regime_tab:
                 # Market regime detection
@@ -683,7 +683,7 @@ class SingleAssetWorkflow:
                     regime_chart = self.risk_visualizer.create_regime_detection_chart(
                         price_data, results['advanced_risk_analysis']['regime_analysis']
                     )
-                    st.plotly_chart(regime_chart, use_container_width=True)
+                    st.plotly_chart(regime_chart, width='stretch')
                 else:
                     st.info("Regime analysis data required for regime visualization")
             
@@ -693,7 +693,7 @@ class SingleAssetWorkflow:
                     tail_risk_chart = self.risk_visualizer.create_tail_risk_analysis_chart(
                         price_data, results['advanced_risk_analysis']['tail_risk']
                     )
-                    st.plotly_chart(tail_risk_chart, use_container_width=True)
+                    st.plotly_chart(tail_risk_chart, width='stretch')
                 else:
                     st.info("Tail risk analysis required for tail risk visualization")
             
@@ -704,7 +704,7 @@ class SingleAssetWorkflow:
                     candlestick_chart = self.pattern_visualizer.create_candlestick_pattern_chart(
                         price_data, results['candlestick_patterns']
                     )
-                    st.plotly_chart(candlestick_chart, use_container_width=True)
+                    st.plotly_chart(candlestick_chart, width='stretch')
                 else:
                     st.info("Candlestick pattern analysis required for pattern visualization")
             
@@ -714,7 +714,7 @@ class SingleAssetWorkflow:
                     chart_pattern_viz = self.pattern_visualizer.create_chart_pattern_visualization(
                         price_data, results['chart_patterns']
                     )
-                    st.plotly_chart(chart_pattern_viz, use_container_width=True)
+                    st.plotly_chart(chart_pattern_viz, width='stretch')
                 else:
                     st.info("Chart pattern analysis required for pattern visualization")
             
@@ -724,7 +724,7 @@ class SingleAssetWorkflow:
                     volatility_chart = self.pattern_visualizer.create_volatility_forecast_chart(
                         price_data, results['volatility_forecast']
                     )
-                    st.plotly_chart(volatility_chart, use_container_width=True)
+                    st.plotly_chart(volatility_chart, width='stretch')
                 else:
                     st.info("Volatility forecast analysis required for forecast visualization")
             
@@ -741,7 +741,7 @@ class SingleAssetWorkflow:
                     pattern_dashboard = self.pattern_visualizer.create_pattern_summary_dashboard(
                         candlestick_data, chart_pattern_data, volatility_data
                     )
-                    st.plotly_chart(pattern_dashboard, use_container_width=True)
+                    st.plotly_chart(pattern_dashboard, width='stretch')
                 else:
                     st.info("Complete pattern analysis required for pattern dashboard")
             
@@ -816,13 +816,13 @@ class SingleAssetWorkflow:
                 candlestick_chart = self.chart_visualizer.create_candlestick_chart(
                     price_data, symbol, tech_data
                 )
-                st.plotly_chart(candlestick_chart, use_container_width=True)
+                st.plotly_chart(candlestick_chart, width='stretch')
             
             with volume_tab:
                 volume_chart = self.chart_visualizer.create_volume_analysis_chart(
                     price_data, symbol
                 )
-                st.plotly_chart(volume_chart, use_container_width=True)
+                st.plotly_chart(volume_chart, width='stretch')
                 
         except Exception as e:
             logger.error(f"Error displaying charts: {str(e)}")
@@ -969,7 +969,7 @@ class SingleAssetWorkflow:
                     
                     if level_data:
                         df = pd.DataFrame(level_data)
-                        st.dataframe(df, hide_index=True, use_container_width=True)
+                        st.dataframe(df, hide_index=True, width='stretch')
             
             # Pattern insights
             if 'summary' in pattern_results and 'pattern_insights' in pattern_results['summary']:
@@ -1109,7 +1109,7 @@ class SingleAssetWorkflow:
                     
                     if freq_data:
                         df = pd.DataFrame(freq_data)
-                        st.dataframe(df, hide_index=True, use_container_width=True)
+                        st.dataframe(df, hide_index=True, width='stretch')
             
             # Model availability
             if 'model_availability' in forecast_results:
@@ -1373,7 +1373,7 @@ class SingleAssetWorkflow:
                 showlegend=False
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
             # Investment thesis and analysis
             col1, col2 = st.columns([2, 1])
@@ -1417,7 +1417,7 @@ class SingleAssetWorkflow:
                             
                             st.write("**Similar Historical Patterns:**")
                             df = pd.DataFrame(pattern_data)
-                            st.dataframe(df, hide_index=True, use_container_width=True)
+                            st.dataframe(df, hide_index=True, width='stretch')
             
             with col2:
                 st.subheader("⚡ Multi-Bagger Assessment")

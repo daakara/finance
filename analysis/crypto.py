@@ -36,12 +36,18 @@ class CryptoAnalyzer:
         results = {}
         
         try:
+            # Convert single symbol to trading pair if needed
+            trading_symbol = CryptoAnalyzer._convert_to_trading_pair(symbol)
+            
+            # Convert period to timeframe and limit
+            timeframe, limit = CryptoAnalyzer._convert_period_to_timeframe(period)
+            
             # Get price data
-            price_data = crypto_fetcher.get_crypto_data(symbol, period)
+            price_data = crypto_fetcher.get_crypto_data(trading_symbol, timeframe, limit)
             results['price_data'] = price_data
             
             # Get crypto info
-            crypto_info = crypto_fetcher.get_crypto_info(symbol)
+            crypto_info = crypto_fetcher.get_crypto_info(trading_symbol)
             results['crypto_info'] = crypto_info
             
             if not price_data.empty:
@@ -238,6 +244,37 @@ class CryptoAnalyzer:
                 current_count = 0
         
         return max_count
+    
+    @staticmethod
+    def _convert_period_to_timeframe(period: str) -> tuple:
+        """Convert yfinance-style period to crypto exchange timeframe and limit."""
+        period_mapping = {
+            '1d': ('1h', 24),      # 1 day = 24 hours
+            '5d': ('1h', 120),     # 5 days = 120 hours  
+            '1mo': ('1d', 30),     # 1 month = 30 days
+            '3mo': ('1d', 90),     # 3 months = 90 days
+            '6mo': ('1d', 180),    # 6 months = 180 days
+            '1y': ('1d', 365),     # 1 year = 365 days
+            '2y': ('1d', 730),     # 2 years = 730 days
+            '5y': ('1d', 1825),    # 5 years = 1825 days
+            'ytd': ('1d', 365),    # Year to date ~365 days
+            'max': ('1d', 2000)    # Max available ~5+ years
+        }
+        return period_mapping.get(period, ('1d', 365))  # Default to 1 year
+    
+    @staticmethod
+    def _convert_to_trading_pair(symbol: str) -> str:
+        """Convert single crypto symbol to trading pair format for exchanges."""
+        # If already a trading pair, return as is
+        if '/' in symbol:
+            return symbol
+        
+        # Convert single symbol to USDT pair (most liquid on most exchanges)
+        # Special cases for stablecoins
+        if symbol in ['USDT', 'USDC', 'BUSD', 'DAI', 'UST', 'FRAX', 'TUSD', 'USDP']:
+            return f"{symbol}/USD"  # Stablecoins against USD
+        else:
+            return f"{symbol}/USDT"  # All others against USDT
     
     @staticmethod
     def get_top_cryptocurrencies() -> Dict[str, Dict[str, str]]:

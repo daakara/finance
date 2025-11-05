@@ -60,7 +60,7 @@ class TechnicalRenderer:
             title=f"{ticker} Technical Analysis",
             height=800
         )
-        st.plotly_chart(chart, use_container_width=True)
+        st.plotly_chart(chart, width='stretch')
     
     def _render_technical_signals(self, tech_analysis: Dict[str, Any]):
         """Render technical signals summary."""

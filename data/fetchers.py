@@ -27,18 +27,13 @@ try:
     cert_path = certifi.where()
     if os.path.exists(cert_path):
         os.environ['SSL_CERT_FILE'] = cert_path
-        session = requests.Session()
-        session.verify = cert_path
+        os.environ['REQUESTS_CA_BUNDLE'] = cert_path
     else:
         # Fallback: disable SSL verification with warnings suppressed
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        session = requests.Session()
-        session.verify = False
 except Exception:
     # Fallback: disable SSL verification with warnings suppressed
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    session = requests.Session()
-    session.verify = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -147,8 +142,8 @@ class StockDataFetcher:
         
         for attempt in range(retry_count):
             try:
-                # Configure yfinance session with SSL handling
-                ticker = yf.Ticker(symbol, session=session)
+                # Let yfinance handle session management internally
+                ticker = yf.Ticker(symbol)
                 
                 # Try different approaches for SSL issues
                 if attempt == 0:
@@ -260,7 +255,7 @@ class StockDataFetcher:
             Dict: Stock information including fundamentals
         """
         try:
-            ticker = yf.Ticker(symbol, session=session)
+            ticker = yf.Ticker(symbol)
             info = ticker.info
             
             # Extract key metrics

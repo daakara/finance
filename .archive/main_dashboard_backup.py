@@ -352,7 +352,7 @@ class FinancialAnalystDashboard:
             title=f"{self.ticker} Technical Analysis",
             height=800
         )
-        st.plotly_chart(chart, use_container_width=True)
+        st.plotly_chart(chart, width='stretch')
         
         # Technical signals summary
         st.markdown("**Technical Signals Summary**")
@@ -473,7 +473,7 @@ class FinancialAnalystDashboard:
                 returns,
                 title="Rolling Volatility Analysis"
             )
-            st.plotly_chart(vol_chart, use_container_width=True)
+            st.plotly_chart(vol_chart, width='stretch')
         
         with col2:
             st.markdown("**Drawdown Analysis**")
@@ -481,7 +481,7 @@ class FinancialAnalystDashboard:
                 price_data['Close'],
                 title="Drawdown Analysis"
             )
-            st.plotly_chart(dd_chart, use_container_width=True)
+            st.plotly_chart(dd_chart, width='stretch')
     
     def render_macroeconomic_analysis(self, asset_data: Dict[str, Any]):
         """Render macroeconomic context using modular renderer."""
@@ -663,7 +663,7 @@ class FinancialAnalystDashboard:
                 stress_df['probability'] = stress_df['probability'].apply(lambda x: f"{x:.1%}")
                 
                 st.dataframe(stress_df[['scenario_return', 'probability', 'recovery_time_estimate']], 
-                           use_container_width=True)
+                           width='stretch')
                 
                 worst_case = portfolio_analysis['stress_testing']['worst_case_scenario']
                 st.warning(f"**Worst Case Scenario:** {worst_case}")
@@ -683,7 +683,7 @@ class FinancialAnalystDashboard:
                 scenario_df['expected_return'] = scenario_df['expected_return'].apply(lambda x: f"{x:.1%}")
                 
                 st.dataframe(scenario_df[['probability', 'expected_return', 'duration_months']], 
-                           use_container_width=True)
+                           width='stretch')
             
         except Exception as e:
             st.error(f"Error rendering portfolio strategy analysis: {str(e)}")
@@ -741,7 +741,7 @@ class FinancialAnalystDashboard:
                     
                     if model_comparison:
                         model_df = pd.DataFrame(model_comparison)
-                        st.dataframe(model_df, use_container_width=True)
+                        st.dataframe(model_df, width='stretch')
             
             # Volatility forecasting
             if 'volatility_forecasting' in forecast_analysis:

@@ -151,32 +151,122 @@ class FinancialApp:
             help="Select time period for analysis"
         )
         
-        # Symbol input
-        st.sidebar.subheader("Symbols")
-        symbol_input = st.sidebar.text_input(
-            "Stock Symbol",
-            value="AAPL",
-            help="Enter stock symbol (e.g., AAPL, MSFT)"
+        # Multi-Asset Symbol Management
+        st.sidebar.subheader("Asset Symbols")
+        
+        # Initialize session state for different asset types
+        if 'selected_etfs' not in st.session_state:
+            st.session_state.selected_etfs = ['SPY', 'QQQ', 'VTI']
+        if 'selected_cryptos' not in st.session_state:
+            st.session_state.selected_cryptos = ['BTC', 'ETH', 'ADA']
+        
+        # Asset type tabs in sidebar
+        asset_tab = st.sidebar.selectbox(
+            "Manage Symbols For:",
+            ["Stocks", "ETFs", "Cryptocurrencies"],
+            help="Choose which type of assets to manage"
         )
         
-        if st.sidebar.button("Add Symbol"):
-            if symbol_input:
-                cleaned_symbol = data_helpers.clean_symbol(symbol_input)
-                if cleaned_symbol and cleaned_symbol not in st.session_state.selected_symbols:
-                    st.session_state.selected_symbols.append(cleaned_symbol)
-                    st.rerun()
-        
-        # Display selected symbols
-        if st.session_state.selected_symbols:
-            st.sidebar.subheader("Selected Symbols")
-            for i, symbol in enumerate(st.session_state.selected_symbols):
-                col1, col2 = st.sidebar.columns([3, 1])
-                with col1:
-                    st.write(symbol)
-                with col2:
-                    if st.button("❌", key=f"remove_{i}"):
-                        st.session_state.selected_symbols.remove(symbol)
+        if asset_tab == "Stocks":
+            symbol_input = st.sidebar.text_input(
+                "Stock Symbol",
+                value="AAPL",
+                help="Enter stock symbol (e.g., AAPL, MSFT)"
+            )
+            
+            if st.sidebar.button("Add Stock"):
+                if symbol_input:
+                    cleaned_symbol = data_helpers.clean_symbol(symbol_input)
+                    if cleaned_symbol and cleaned_symbol not in st.session_state.selected_symbols:
+                        st.session_state.selected_symbols.append(cleaned_symbol)
                         st.rerun()
+            
+            # Display selected stocks
+            if st.session_state.selected_symbols:
+                st.sidebar.write("**Selected Stocks:**")
+                for i, symbol in enumerate(st.session_state.selected_symbols):
+                    col1, col2 = st.sidebar.columns([3, 1])
+                    with col1:
+                        st.write(symbol)
+                    with col2:
+                        if st.button("❌", key=f"remove_stock_{i}"):
+                            st.session_state.selected_symbols.remove(symbol)
+                            st.rerun()
+        
+        elif asset_tab == "ETFs":
+            etf_input = st.sidebar.text_input(
+                "ETF Symbol",
+                value="SPY",
+                help="Enter ETF symbol (e.g., SPY, QQQ, VTI, ARKK)"
+            )
+            
+            if st.sidebar.button("Add ETF"):
+                if etf_input:
+                    cleaned_etf = data_helpers.clean_symbol(etf_input)
+                    if cleaned_etf and cleaned_etf not in st.session_state.selected_etfs:
+                        st.session_state.selected_etfs.append(cleaned_etf)
+                        st.rerun()
+            
+            # Display selected ETFs
+            if st.session_state.selected_etfs:
+                st.sidebar.write("**Selected ETFs:**")
+                for i, symbol in enumerate(st.session_state.selected_etfs):
+                    col1, col2 = st.sidebar.columns([3, 1])
+                    with col1:
+                        st.write(symbol)
+                    with col2:
+                        if st.button("❌", key=f"remove_etf_{i}"):
+                            st.session_state.selected_etfs.remove(symbol)
+                            st.rerun()
+        
+        else:  # Cryptocurrencies
+            crypto_input = st.sidebar.text_input(
+                "Crypto Symbol",
+                value="BTC",
+                help="Enter crypto symbol (e.g., BTC, ETH, ADA, SOL)"
+            )
+            
+            if st.sidebar.button("Add Crypto"):
+                if crypto_input:
+                    cleaned_crypto = data_helpers.clean_symbol(crypto_input)
+                    if cleaned_crypto and cleaned_crypto not in st.session_state.selected_cryptos:
+                        st.session_state.selected_cryptos.append(cleaned_crypto)
+                        st.rerun()
+            
+            # Display selected cryptos
+            if st.session_state.selected_cryptos:
+                st.sidebar.write("**Selected Cryptos:**")
+                for i, symbol in enumerate(st.session_state.selected_cryptos):
+                    col1, col2 = st.sidebar.columns([3, 1])
+                    with col1:
+                        st.write(symbol)
+                    with col2:
+                        if st.button("❌", key=f"remove_crypto_{i}"):
+                            st.session_state.selected_cryptos.remove(symbol)
+                            st.rerun()
+        
+        # Portfolio Overview
+        st.sidebar.subheader("📊 Portfolio Summary")
+        total_assets = (
+            len(st.session_state.selected_symbols) +
+            len(getattr(st.session_state, 'selected_etfs', [])) +
+            len(getattr(st.session_state, 'selected_cryptos', []))
+        )
+        
+        if total_assets > 0:
+            st.sidebar.metric("Total Managed Assets", total_assets)
+            col1, col2, col3 = st.sidebar.columns(3)
+            with col1:
+                st.metric("Stocks", len(st.session_state.selected_symbols))
+            with col2:
+                st.metric("ETFs", len(getattr(st.session_state, 'selected_etfs', [])))
+            with col3:
+                st.metric("Cryptos", len(getattr(st.session_state, 'selected_cryptos', [])))
+            
+            if st.sidebar.button("🚀 Analyze All Assets", help="Perform comprehensive analysis across your entire managed portfolio"):
+                st.session_state.analyze_all_assets = True
+        else:
+            st.sidebar.info("Add assets to build your portfolio")
         
         # Cache controls
         st.sidebar.subheader("Cache Management")
@@ -332,7 +422,7 @@ class FinancialApp:
                         title=f"{selected_symbol} - {stock_info.get('company_name', 'N/A')}",
                         show_volume=True
                     )
-                    st.plotly_chart(price_chart, use_container_width=True)
+                    st.plotly_chart(price_chart, width='stretch')
                 
                 with col2:
                     # Stock metrics
@@ -452,7 +542,7 @@ class FinancialApp:
                     tech_results,
                     title=f"{selected_symbol} Technical Analysis"
                 )
-                st.plotly_chart(tech_chart, use_container_width=True)
+                st.plotly_chart(tech_chart, width='stretch')
                 
                 # Generate trading signals
                 signals = technical_analysis.generate_signals(tech_results)
@@ -494,7 +584,7 @@ class FinancialApp:
                             sr_data.get('resistance', []),
                             title=f"{selected_symbol} Support & Resistance"
                         )
-                        st.plotly_chart(sr_chart, use_container_width=True)
+                        st.plotly_chart(sr_chart, width='stretch')
                 
                 # Technical metrics summary
                 with st.expander("Technical Metrics Details"):
@@ -528,30 +618,94 @@ class FinancialApp:
     def portfolio_analysis_page(self):
         """Portfolio analysis and optimization page."""
         st.header("💼 Portfolio Analysis")
+        st.markdown("**Comprehensive portfolio analysis across all your managed assets**")
         
-        if len(st.session_state.selected_symbols) < 2:
-            st.warning("Please add at least 2 symbols for portfolio analysis.")
+        # Gather all managed assets
+        all_symbols = []
+        asset_types = {}
+        
+        # Stocks
+        if st.session_state.selected_symbols:
+            all_symbols.extend(st.session_state.selected_symbols)
+            for symbol in st.session_state.selected_symbols:
+                asset_types[symbol] = 'Stock'
+        
+        # ETFs
+        if hasattr(st.session_state, 'selected_etfs') and st.session_state.selected_etfs:
+            all_symbols.extend(st.session_state.selected_etfs)
+            for symbol in st.session_state.selected_etfs:
+                asset_types[symbol] = 'ETF'
+        
+        # Cryptos (note: these will need special handling)
+        crypto_symbols = []
+        if hasattr(st.session_state, 'selected_cryptos') and st.session_state.selected_cryptos:
+            crypto_symbols = st.session_state.selected_cryptos
+            for symbol in crypto_symbols:
+                asset_types[symbol] = 'Crypto'
+        
+        if len(all_symbols) + len(crypto_symbols) < 2:
+            st.warning("Please add at least 2 assets total (stocks, ETFs, or cryptos) for portfolio analysis.")
+            st.info("Use the sidebar to add symbols to your watchlists.")
+            return
+        
+        # Portfolio selection mode
+        st.subheader("🎯 Portfolio Selection")
+        portfolio_mode = st.radio(
+            "Select portfolio composition:",
+            ["All Managed Assets", "Stocks & ETFs Only", "Custom Selection"],
+            help="Choose which assets to include in your portfolio analysis"
+        )
+        
+        # Determine final symbol list based on mode
+        if portfolio_mode == "All Managed Assets":
+            portfolio_symbols = all_symbols.copy()
+            st.info(f"Analyzing portfolio with {len(all_symbols)} traditional assets. Crypto analysis is separate due to different data sources.")
+        elif portfolio_mode == "Stocks & ETFs Only":
+            portfolio_symbols = all_symbols.copy()
+        else:  # Custom Selection
+            available_symbols = all_symbols + crypto_symbols
+            portfolio_symbols = st.multiselect(
+                "Select assets for portfolio analysis:",
+                available_symbols,
+                default=all_symbols[:min(5, len(all_symbols))],
+                format_func=lambda x: f"{x} ({asset_types.get(x, 'Unknown')})"
+            )
+            # Separate cryptos for now
+            portfolio_symbols = [s for s in portfolio_symbols if s in all_symbols]
+        
+        if len(portfolio_symbols) < 2:
+            st.warning("Please select at least 2 traditional assets (stocks/ETFs) for portfolio analysis.")
             return
         
         # Portfolio weight input
-        st.subheader("Portfolio Composition")
+        st.subheader("📊 Portfolio Composition")
         
-        # Initialize portfolio weights if not set
-        if not st.session_state.portfolio_weights:
-            equal_weight = 1.0 / len(st.session_state.selected_symbols)
+        # Initialize portfolio weights for current symbols
+        if not st.session_state.portfolio_weights or set(portfolio_symbols) != set(st.session_state.portfolio_weights.keys()):
+            equal_weight = 1.0 / len(portfolio_symbols)
             st.session_state.portfolio_weights = {
-                symbol: equal_weight for symbol in st.session_state.selected_symbols
+                symbol: equal_weight for symbol in portfolio_symbols
             }
         
+        # Display asset types in portfolio
+        asset_type_summary = {}
+        for symbol in portfolio_symbols:
+            asset_type = asset_types.get(symbol, 'Unknown')
+            asset_type_summary[asset_type] = asset_type_summary.get(asset_type, 0) + 1
+        
+        summary_text = ", ".join([f"{count} {type}{'s' if count > 1 else ''}" for type, count in asset_type_summary.items()])
+        st.info(f"Portfolio contains: {summary_text}")
+        
         # Weight input controls
-        st.write("Adjust portfolio weights:")
+        st.write("**Adjust portfolio weights:**")
         
-        weight_cols = st.columns(min(len(st.session_state.selected_symbols), 4))
+        weight_cols = st.columns(min(len(portfolio_symbols), 4))
         
-        for i, symbol in enumerate(st.session_state.selected_symbols):
+        for i, symbol in enumerate(portfolio_symbols):
             with weight_cols[i % 4]:
+                asset_type = asset_types.get(symbol, 'Unknown')
                 new_weight = st.number_input(
-                    f"{symbol} (%)",
+                    f"{symbol} ({asset_type}) %",
                     min_value=0.0,
                     max_value=100.0,
                     value=st.session_state.portfolio_weights.get(symbol, 0) * 100,
@@ -578,14 +732,14 @@ class FinancialApp:
                 st.session_state.portfolio_weights,
                 title="Portfolio Composition"
             )
-            st.plotly_chart(composition_chart, use_container_width=True)
+            st.plotly_chart(composition_chart, width='stretch')
         
         # Portfolio analysis
         with st.spinner("Analyzing portfolio..."):
             try:
-                # Fetch data for all symbols
+                # Fetch data for all portfolio symbols
                 price_data = {}
-                for symbol in st.session_state.selected_symbols:
+                for symbol in portfolio_symbols:
                     data = stock_fetcher.get_stock_data(
                         symbol,
                         period=st.session_state.selected_period
@@ -642,7 +796,7 @@ class FinancialApp:
                         title="Portfolio Cumulative Returns",
                         height=400
                     )
-                    st.plotly_chart(performance_chart, use_container_width=True)
+                    st.plotly_chart(performance_chart, width='stretch')
                 
                 # Correlation matrix
                 if 'correlation_matrix' in portfolio_results:
@@ -652,7 +806,7 @@ class FinancialApp:
                         portfolio_results['correlation_matrix'],
                         title="Asset Correlation Matrix"
                     )
-                    st.plotly_chart(correlation_chart, use_container_width=True)
+                    st.plotly_chart(correlation_chart, width='stretch')
                 
                 # Drawdown analysis
                 if 'portfolio_returns' in portfolio_results:
@@ -662,7 +816,7 @@ class FinancialApp:
                         portfolio_results['portfolio_returns'],
                         title="Portfolio Drawdown"
                     )
-                    st.plotly_chart(drawdown_chart, use_container_width=True)
+                    st.plotly_chart(drawdown_chart, width='stretch')
                 
                 # Risk metrics details
                 with st.expander("Detailed Risk Metrics"):
@@ -730,7 +884,7 @@ class FinancialApp:
                     title="Market Indices Comparison (Normalized)",
                     normalize=True
                 )
-                st.plotly_chart(comparison_chart, use_container_width=True)
+                st.plotly_chart(comparison_chart, width='stretch')
                 
                 # Performance metrics
                 st.subheader("Performance Metrics")
@@ -756,7 +910,7 @@ class FinancialApp:
                 
                 if performance_data:
                     performance_df = pd.DataFrame(performance_data)
-                    st.dataframe(performance_df, hide_index=True, use_container_width=True)
+                    st.dataframe(performance_df, hide_index=True, width='stretch')
                 
                 # Correlation analysis
                 if len(indices_data) > 1:
@@ -770,7 +924,7 @@ class FinancialApp:
                         correlation_matrix,
                         title="Index Correlation Matrix"
                     )
-                    st.plotly_chart(correlation_chart, use_container_width=True)
+                    st.plotly_chart(correlation_chart, width='stretch')
                 
             except Exception as e:
                 st.error(f"Error analyzing market indices: {str(e)}")
@@ -781,27 +935,68 @@ class FinancialApp:
         st.title("📊 ETF Analysis")
         st.markdown("**Comprehensive ETF analysis and comparison tools**")
         
-        # ETF selection
+        # ETF selection - Enhanced with search functionality
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            etf_categories = etf_analyzer.get_popular_etfs()
-            
-            # Category selection
-            selected_category = st.selectbox(
-                "Select ETF Category:",
-                list(etf_categories.keys()),
-                help="Choose an ETF category to explore"
+            # Input method selection
+            input_method = st.radio(
+                "How would you like to select ETFs?",
+                ["Browse Popular ETFs", "Search Custom ETF", "Use Managed List"],
+                horizontal=True,
+                help="Choose between popular ETF categories, enter a specific ETF ticker, or use your managed list"
             )
             
-            # ETF selection within category
-            if selected_category:
-                category_etfs = etf_categories[selected_category]
-                selected_etf = st.selectbox(
-                    "Select ETF:",
-                    list(category_etfs.keys()),
-                    format_func=lambda x: f"{x} - {category_etfs[x]}"
+            if input_method == "Browse Popular ETFs":
+                etf_categories = etf_analyzer.get_popular_etfs()
+                
+                # Category selection
+                selected_category = st.selectbox(
+                    "Select ETF Category:",
+                    list(etf_categories.keys()),
+                    help="Choose an ETF category to explore"
                 )
+                
+                # ETF selection within category
+                if selected_category:
+                    category_etfs = etf_categories[selected_category]
+                    selected_etf = st.selectbox(
+                        "Select ETF:",
+                        list(category_etfs.keys()),
+                        format_func=lambda x: f"{x} - {category_etfs[x]}"
+                    )
+            elif input_method == "Search Custom ETF":
+                # Custom ETF ticker input
+                col_search, col_add = st.columns([3, 1])
+                with col_search:
+                    custom_etf = st.text_input(
+                        "Enter ETF Ticker:",
+                        placeholder="e.g., SPY, QQQ, VTI, ARKK",
+                        help="Enter any ETF ticker symbol for analysis"
+                    ).upper()
+                
+                with col_add:
+                    st.write("")  # Spacing
+                    if st.button("Analyze ETF", key="analyze_custom_etf"):
+                        if custom_etf:
+                            selected_etf = custom_etf
+                        else:
+                            st.warning("Please enter an ETF ticker symbol")
+                            selected_etf = None
+                
+                if 'selected_etf' not in locals() and custom_etf:
+                    selected_etf = custom_etf
+            
+            else:  # Use Managed List
+                if hasattr(st.session_state, 'selected_etfs') and st.session_state.selected_etfs:
+                    selected_etf = st.selectbox(
+                        "Select from your ETF watchlist:",
+                        options=st.session_state.selected_etfs,
+                        help="Choose from your managed ETF list (add more in sidebar)"
+                    )
+                else:
+                    st.warning("No ETFs in your managed list. Add some using the sidebar 'ETFs' tab!")
+                    selected_etf = None
         
         with col2:
             # Analysis period
@@ -854,7 +1049,7 @@ class FinancialApp:
                             title="ETF Price Performance (Normalized)",
                             y_title="Normalized Price"
                         )
-                        st.plotly_chart(price_chart, use_container_width=True)
+                        st.plotly_chart(price_chart, width='stretch')
                     
                     # Performance comparison table
                     if 'performance_comparison' in comparison_data:
@@ -866,7 +1061,7 @@ class FinancialApp:
                             if col != 'Symbol' and perf_df[col].dtype in ['float64', 'int64']:
                                 perf_df[col] = perf_df[col].apply(lambda x: f"{x:.2f}%")
                         
-                        st.dataframe(perf_df, hide_index=True, use_container_width=True)
+                        st.dataframe(perf_df, hide_index=True, width='stretch')
                     
                     # Risk comparison table
                     if 'risk_comparison' in comparison_data:
@@ -881,7 +1076,7 @@ class FinancialApp:
                                 else:
                                     risk_df[col] = risk_df[col].apply(lambda x: f"{x:.2f}%")
                         
-                        st.dataframe(risk_df, hide_index=True, use_container_width=True)
+                        st.dataframe(risk_df, hide_index=True, width='stretch')
                 
                 except Exception as e:
                     st.error(f"Error comparing ETFs: {str(e)}")
@@ -942,7 +1137,7 @@ class FinancialApp:
                                 title=f"{selected_etf} Price Chart",
                                 show_volume=True
                             )
-                            st.plotly_chart(price_chart, use_container_width=True)
+                            st.plotly_chart(price_chart, width='stretch')
                         
                         # Expense analysis
                         if 'etf_info' in etf_data:
@@ -1012,23 +1207,65 @@ class FinancialApp:
         col1, col2 = st.columns([2, 1])
         
         with col1:
-            crypto_categories = crypto_analyzer.get_top_cryptocurrencies()
-            
-            # Category selection
-            selected_category = st.selectbox(
-                "Select Crypto Category:",
-                list(crypto_categories.keys()),
-                help="Choose a cryptocurrency category to explore"
+            # Input method selection
+            crypto_input_method = st.radio(
+                "How would you like to select cryptocurrencies?",
+                ["Browse Popular Cryptos", "Search Custom Crypto", "Use Managed List"],
+                horizontal=True,
+                help="Choose between popular crypto categories, enter a specific crypto symbol, or use your managed list",
+                key="crypto_input_method"
             )
             
-            # Crypto selection within category
-            if selected_category:
-                category_cryptos = crypto_categories[selected_category]
-                selected_crypto = st.selectbox(
-                    "Select Cryptocurrency:",
-                    list(category_cryptos.keys()),
-                    format_func=lambda x: f"{x} - {category_cryptos[x]}"
+            if crypto_input_method == "Browse Popular Cryptos":
+                crypto_categories = crypto_analyzer.get_top_cryptocurrencies()
+                
+                # Category selection
+                selected_category = st.selectbox(
+                    "Select Crypto Category:",
+                    list(crypto_categories.keys()),
+                    help="Choose a cryptocurrency category to explore"
                 )
+                
+                # Crypto selection within category
+                if selected_category:
+                    category_cryptos = crypto_categories[selected_category]
+                    selected_crypto = st.selectbox(
+                        "Select Cryptocurrency:",
+                        list(category_cryptos.keys()),
+                        format_func=lambda x: f"{x} - {category_cryptos[x]}"
+                    )
+            elif crypto_input_method == "Search Custom Crypto":
+                # Custom crypto ticker input
+                col_search, col_add = st.columns([3, 1])
+                with col_search:
+                    custom_crypto = st.text_input(
+                        "Enter Crypto Symbol:",
+                        placeholder="e.g., BTC, ETH, ADA, SOL, MATIC",
+                        help="Enter any cryptocurrency symbol for analysis (will be converted to trading pair automatically)"
+                    ).upper()
+                
+                with col_add:
+                    st.write("")  # Spacing
+                    if st.button("Analyze Crypto", key="analyze_custom_crypto"):
+                        if custom_crypto:
+                            selected_crypto = custom_crypto
+                        else:
+                            st.warning("Please enter a cryptocurrency symbol")
+                            selected_crypto = None
+                
+                if 'selected_crypto' not in locals() and custom_crypto:
+                    selected_crypto = custom_crypto
+            
+            else:  # Use Managed List
+                if hasattr(st.session_state, 'selected_cryptos') and st.session_state.selected_cryptos:
+                    selected_crypto = st.selectbox(
+                        "Select from your crypto watchlist:",
+                        options=st.session_state.selected_cryptos,
+                        help="Choose from your managed crypto list (add more in sidebar)"
+                    )
+                else:
+                    st.warning("No cryptocurrencies in your managed list. Add some using the sidebar 'Cryptocurrencies' tab!")
+                    selected_crypto = None
         
         with col2:
             # Analysis period
@@ -1121,7 +1358,7 @@ class FinancialApp:
                             title="Cryptocurrency Price Performance (Normalized)",
                             y_title="Normalized Price"
                         )
-                        st.plotly_chart(price_chart, use_container_width=True)
+                        st.plotly_chart(price_chart, width='stretch')
                     
                     # Performance comparison
                     if 'performance_comparison' in comparison_data:
@@ -1133,7 +1370,7 @@ class FinancialApp:
                             if col != 'Symbol' and perf_df[col].dtype in ['float64', 'int64']:
                                 perf_df[col] = perf_df[col].apply(lambda x: f"{x:.2f}%")
                         
-                        st.dataframe(perf_df, hide_index=True, use_container_width=True)
+                        st.dataframe(perf_df, hide_index=True, width='stretch')
                     
                     # Volatility comparison
                     if 'volatility_comparison' in comparison_data:
@@ -1145,7 +1382,7 @@ class FinancialApp:
                             if col != 'Symbol' and vol_df[col].dtype in ['float64', 'int64']:
                                 vol_df[col] = vol_df[col].apply(lambda x: f"{x:.2f}%")
                         
-                        st.dataframe(vol_df, hide_index=True, use_container_width=True)
+                        st.dataframe(vol_df, hide_index=True, width='stretch')
                     
                     # Risk comparison
                     if 'risk_comparison' in comparison_data:
@@ -1160,7 +1397,7 @@ class FinancialApp:
                                 else:
                                     risk_df[col] = risk_df[col].apply(lambda x: f"{x:.2f}%")
                         
-                        st.dataframe(risk_df, hide_index=True, use_container_width=True)
+                        st.dataframe(risk_df, hide_index=True, width='stretch')
                 
                 except Exception as e:
                     st.error(f"Error comparing cryptocurrencies: {str(e)}")
@@ -1221,7 +1458,7 @@ class FinancialApp:
                                 title=f"{selected_crypto} Price Chart",
                                 show_volume=True
                             )
-                            st.plotly_chart(price_chart, use_container_width=True)
+                            st.plotly_chart(price_chart, width='stretch')
                         
                         # Volatility analysis
                         if 'volatility_metrics' in crypto_data:

@@ -50,7 +50,7 @@ class AnalystDashboardManager:
         default_tickers = {
             "Stock": "AAPL",
             "ETF": "SPY",
-            "Cryptocurrency": "BTC"
+            "Cryptocurrency": "BTC/USDT"
         }
         
         self.ticker = st.sidebar.text_input(

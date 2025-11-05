@@ -693,7 +693,7 @@ class PortfolioCharts:
             mode='lines',
             name='Drawdown',
             line=dict(color=config.COLORS['bearish']),
-            fillcolor=f"rgba({config.COLORS['bearish'][1:]}, 0.3)"
+            fillcolor='rgba(255, 68, 68, 0.3)'  # Red with transparency
         ))
         
         # Add zero line
