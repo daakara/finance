@@ -905,48 +905,47 @@ class GemDashboard:
             st.error(f"Error analyzing {ticker}: {str(e)}")
             logger.error(f"Error in detailed analysis for {ticker}: {e}")
     
-    @st.cache_data(ttl=300)  # Cache for 5 minutes
-    def _run_sample_screening(_self, _screener=None):
+    def _run_sample_screening(self, screener=None):
         """Run screening with current settings - LIVE DATA ONLY"""
-        if _screener is None:
+        if screener is None:
             # Update screener criteria based on sidebar settings
             criteria = GemCriteria(
-                min_market_cap=getattr(_self, 'min_market_cap', 50e6),
-                max_market_cap=getattr(_self, 'max_market_cap', 2e9),
-                min_revenue_growth=getattr(_self, 'min_revenue_growth', 0.25),
-                min_gross_margin=getattr(_self, 'min_gross_margin', 0.30),
-                max_analyst_coverage=getattr(_self, 'max_analyst_coverage', 10)
+                min_market_cap=getattr(self, 'min_market_cap', 50e6),
+                max_market_cap=getattr(self, 'max_market_cap', 2e9),
+                min_revenue_growth=getattr(self, 'min_revenue_growth', 0.25),
+                min_gross_margin=getattr(self, 'min_gross_margin', 0.30),
+                max_analyst_coverage=getattr(self, 'max_analyst_coverage', 10)
             )
-            _screener = HiddenGemScreener(criteria)
+            screener = HiddenGemScreener(criteria)
         
         # Build universe based on selected asset types
         universe = []
-        asset_types = getattr(_self, 'asset_types', ["Stocks"])
+        asset_types = getattr(self, 'asset_types', ["Stocks"])
         
         if "Stocks" in asset_types:
-            universe.extend(_self.stock_universe[:20])  # Limit for demo
+            universe.extend(self.stock_universe[:20])  # Limit for demo
         if "ETFs" in asset_types:
-            universe.extend(_self.etf_universe[:10])
+            universe.extend(self.etf_universe[:10])
         if "Crypto" in asset_types:
-            universe.extend([f"{crypto}-USD" for crypto in _self.crypto_universe[:10]])
+            universe.extend([f"{crypto}-USD" for crypto in self.crypto_universe[:10]])
         
         # Quick scan logic
-        if hasattr(_self, 'quick_scan_type') and _self.quick_scan_type:
-            if _self.quick_scan_type == "blockchain":
+        if hasattr(self, 'quick_scan_type') and self.quick_scan_type:
+            if self.quick_scan_type == "blockchain":
                 # Filter for blockchain-related tickers
                 blockchain_tickers = ['IREN', 'MSTR', 'COIN', 'HOOD', 'SQ']
                 universe = [t for t in universe if t in blockchain_tickers]
-            elif _self.quick_scan_type == "ai_ml":
+            elif self.quick_scan_type == "ai_ml":
                 # Filter for AI/ML-related tickers
                 ai_tickers = ['PLTR', 'NVDA', 'GOOGL', 'MSFT', 'META']
                 universe = [t for t in universe if t in ai_tickers]
-            elif _self.quick_scan_type == "clean_energy":
+            elif self.quick_scan_type == "clean_energy":
                 # Filter for clean energy tickers
                 clean_tickers = ['ENPH', 'SEDG', 'RUN', 'FSLR', 'NOVA', 'ICLN', 'PBW']
                 universe = [t for t in universe if t in clean_tickers]
         
         # Run live screening
-        results = _screener.screen_universe(universe[:15])  # Limit for demo performance
+        results = screener.screen_universe(universe[:15])  # Limit for demo performance
         return results if results else []
     
     def _get_sector_from_ticker(self, ticker: str) -> str:
