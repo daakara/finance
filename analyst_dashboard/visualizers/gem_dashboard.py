@@ -248,6 +248,37 @@ class GemDashboard:
             help="Focus screening on specific emerging sectors"
         )
         
+        # Sustainability filters
+        st.sidebar.subheader("🌱 Sustainability Filters")
+        self.enable_sustainability = st.sidebar.checkbox(
+            "Enable ESG/Impact Scoring",
+            value=True,
+            help="Include sustainability and impact metrics in analysis"
+        )
+        
+        if self.enable_sustainability:
+            self.min_sustainability_score = st.sidebar.slider(
+                "Min Sustainability Score:",
+                min_value=0,
+                max_value=100,
+                value=50,
+                step=10,
+                help="Minimum overall ESG/sustainability score (0-100)"
+            )
+            
+            self.impact_focus = st.sidebar.multiselect(
+                "Impact Focus Areas:",
+                [
+                    "Renewable Energy", "Clean Tech", "Healthcare Innovation",
+                    "Financial Inclusion", "Education Tech", "Circular Economy",
+                    "Water Tech", "Sustainable Agriculture"
+                ],
+                help="Filter for specific impact categories"
+            )
+        else:
+            self.min_sustainability_score = 0
+            self.impact_focus = []
+        
         # Screening action
         st.sidebar.markdown("---")
         self.run_screening = st.sidebar.button(
@@ -680,20 +711,21 @@ class GemDashboard:
             # Score breakdown
             st.markdown("**Score Breakdown:**")
             score_data = {
-                'Category': ['Sector', 'Fundamental', 'Technical', 'Visibility', 'Catalyst', 'Smart Money'],
+                'Category': ['Sector', 'Fundamental', 'Technical', 'Visibility', 'Catalyst', 'Smart Money', 'Sustainability'],
                 'Score': [
                     opportunity.sector_score,
                     opportunity.fundamental_score,
                     opportunity.technical_score,
                     100 - opportunity.visibility_score,  # Invert visibility (lower is better)
                     opportunity.catalyst_score,
-                    opportunity.smart_money_score
+                    opportunity.smart_money_score,
+                    opportunity.sustainability_score
                 ]
             }
             
             fig = go.Figure(data=[
                 go.Bar(x=score_data['Category'], y=score_data['Score'], 
-                      marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'])
+                      marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#17becf'])
             ])
             fig.update_layout(
                 title=f"{opportunity.ticker} - Score Breakdown",
@@ -709,6 +741,37 @@ class GemDashboard:
                 'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d']
             }
             st.plotly_chart(fig, width='stretch', config=plotly_config)
+            
+            # Sustainability details if available
+            if hasattr(opportunity, 'sustainability_data') and opportunity.sustainability_data:
+                st.markdown("---")
+                st.markdown("**🌱 Sustainability & Impact:**")
+                
+                sust = opportunity.sustainability_data
+                
+                # ESG Breakdown
+                esg_col1, esg_col2, esg_col3 = st.columns(3)
+                with esg_col1:
+                    st.metric("Environmental", f"{sust.environmental_score:.0f}/100")
+                with esg_col2:
+                    st.metric("Social", f"{sust.social_score:.0f}/100")
+                with esg_col3:
+                    st.metric("Governance", f"{sust.governance_score:.0f}/100")
+                
+                # Impact categories
+                if sust.impact_categories:
+                    st.write(f"**Impact Areas:** {', '.join(sust.impact_categories)}")
+                
+                # SDG alignment
+                if sust.sdg_alignment:
+                    from analyst_dashboard.analyzers.sustainability_analyzer import SustainabilityAnalyzer
+                    analyzer = SustainabilityAnalyzer()
+                    sdg_names = [f"SDG {sdg}" for sdg in sust.sdg_alignment[:3]]
+                    st.write(f"**UN SDGs:** {', '.join(sdg_names)}")
+                
+                # Impact thesis
+                if sust.impact_thesis:
+                    st.write(f"*{sust.impact_thesis}*")
         
         with col2:
             # Key metrics

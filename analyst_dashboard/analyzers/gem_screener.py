@@ -49,10 +49,12 @@ class GemScore:
     visibility_score: float
     catalyst_score: float
     smart_money_score: float
+    sustainability_score: float  # NEW: ESG/Impact score
     risk_rating: str
     investment_thesis: str
     primary_catalyst: str
     action_plan: Dict[str, Any]
+    sustainability_data: Optional[Any] = None  # NEW: Detailed sustainability metrics
 
 class HiddenGemScreener:
     """Multi-factor screening system for identifying hidden gem opportunities"""
@@ -60,6 +62,16 @@ class HiddenGemScreener:
     def __init__(self, criteria: Optional[GemCriteria] = None):
         """Initialize with screening criteria"""
         self.criteria = criteria or GemCriteria()
+        
+        # Import sustainability analyzer
+        try:
+            from analyst_dashboard.analyzers.sustainability_analyzer import SustainabilityAnalyzer
+            self.sustainability_analyzer = SustainabilityAnalyzer()
+            self.use_sustainability = True
+        except ImportError:
+            logger.warning("Sustainability analyzer not available")
+            self.sustainability_analyzer = None
+            self.use_sustainability = False
         
         # Emerging sectors to monitor
         self.emerging_sectors = {
@@ -555,13 +567,26 @@ class HiddenGemScreener:
             smart_money_score = self.track_smart_money_flows(ticker, institutional_data)
             
             # Weighted composite scoring
+            # Calculate sustainability score if available
+            sustainability_score = 50.0  # Default neutral score
+            sustainability_data = None
+            if self.use_sustainability and self.sustainability_analyzer:
+                try:
+                    sustainability_data = self.sustainability_analyzer.analyze_sustainability(
+                        ticker, company_info
+                    )
+                    sustainability_score = sustainability_data.overall_score
+                except Exception as e:
+                    logger.warning(f"Could not calculate sustainability score for {ticker}: {e}")
+            
             weights = {
-                'sector': 0.25,        # 25% - Sector tailwinds
-                'fundamental': 0.20,   # 20% - Fundamental strength  
-                'technical': 0.20,     # 20% - Technical setup
-                'visibility': 0.15,    # 15% - Under-radar (inverted: lower is better)
-                'catalyst': 0.15,      # 15% - Catalyst potential
-                'smart_money': 0.05    # 5% - Smart money flow
+                'sector': 0.22,        # 22% - Sector tailwinds (reduced)
+                'fundamental': 0.18,   # 18% - Fundamental strength (reduced)
+                'technical': 0.18,     # 18% - Technical setup (reduced)
+                'visibility': 0.14,    # 14% - Under-radar (reduced)
+                'catalyst': 0.14,      # 14% - Catalyst potential (reduced)
+                'smart_money': 0.05,   # 5% - Smart money flow
+                'sustainability': 0.09 # 9% - ESG/Impact score (NEW)
             }
             
             # Invert visibility score (lower visibility is better for hidden gems)
@@ -573,7 +598,8 @@ class HiddenGemScreener:
                 technical_score * weights['technical'] +
                 adjusted_visibility_score * weights['visibility'] +
                 catalyst_score * weights['catalyst'] +
-                smart_money_score * weights['smart_money']
+                smart_money_score * weights['smart_money'] +
+                sustainability_score * weights['sustainability']
             )
             
             # Risk rating
@@ -612,10 +638,12 @@ class HiddenGemScreener:
                 visibility_score=visibility_score,
                 catalyst_score=catalyst_score,
                 smart_money_score=smart_money_score,
+                sustainability_score=sustainability_score,
                 risk_rating=risk_rating,
                 investment_thesis=investment_thesis,
                 primary_catalyst=primary_catalyst,
-                action_plan=action_plan
+                action_plan=action_plan,
+                sustainability_data=sustainability_data
             )
             
         except Exception as e:
@@ -629,6 +657,7 @@ class HiddenGemScreener:
                 visibility_score=100.0,  # High visibility (not hidden)
                 catalyst_score=0.0,
                 smart_money_score=0.0,
+                sustainability_score=50.0,  # Neutral
                 risk_rating="High Risk",
                 investment_thesis="Analysis failed",
                 primary_catalyst="None identified",
