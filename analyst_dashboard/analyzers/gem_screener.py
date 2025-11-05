@@ -572,6 +572,8 @@ class HiddenGemScreener:
             sustainability_data = None
             if self.use_sustainability and self.sustainability_analyzer:
                 try:
+                    # Get company info from all_data
+                    company_info = all_data.get('info', {})
                     sustainability_data = self.sustainability_analyzer.analyze_sustainability(
                         ticker, company_info
                     )
