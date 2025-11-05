@@ -20,16 +20,16 @@ class GemCriteria:
     """Configuration for hidden gem screening criteria"""
     # Market cap constraints
     min_market_cap: float = 50e6      # $50M minimum
-    max_market_cap: float = 2e9       # $2B maximum
+    max_market_cap: float = 15e9      # $15B maximum (increased for better results)
     
     # Fundamental thresholds
-    min_revenue_growth: float = 0.25   # 25% YoY
-    min_gross_margin: float = 0.30     # 30%
+    min_revenue_growth: float = 0.15   # 15% YoY (decreased for better results)
+    min_gross_margin: float = 0.20     # 20% (decreased for better results)
     max_debt_equity: float = 0.5       # Debt/Equity < 0.5
     min_insider_ownership: float = 0.10 # 10%
     
     # Visibility constraints
-    max_analyst_coverage: int = 10
+    max_analyst_coverage: int = 20     # Increased to 20
     min_institutional_ownership: float = 0.10  # 10%
     max_institutional_ownership: float = 0.40  # 40%
     

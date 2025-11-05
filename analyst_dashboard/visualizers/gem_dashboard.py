@@ -161,9 +161,9 @@ class GemDashboard:
             st.session_state.gem_scanner_prefs = {
                 'asset_types': ["Stocks"],
                 'min_market_cap': 50,
-                'max_market_cap': 2.0,
-                'min_revenue_growth': 25,
-                'min_gross_margin': 30
+                'max_market_cap': 15.0,  # Increased to $15B
+                'min_revenue_growth': 15,  # Decreased to 15%
+                'min_gross_margin': 20  # Decreased to 20%
             }
         
         # Validate preferences
@@ -176,9 +176,9 @@ class GemDashboard:
             st.session_state.gem_scanner_prefs = {
                 'asset_types': ["Stocks"],
                 'min_market_cap': 50,
-                'max_market_cap': 2.0,
-                'min_revenue_growth': 25,
-                'min_gross_margin': 30
+                'max_market_cap': 15.0,  # Increased to $15B
+                'min_revenue_growth': 15,  # Decreased to 15%
+                'min_gross_margin': 20  # Decreased to 20%
             }
         
         # Asset type selection
@@ -204,8 +204,8 @@ class GemDashboard:
             "Maximum Market Cap ($B):",
             min_value=0.1,
             max_value=50.0,
-            value=2.0,
-            step=0.1
+            value=15.0,  # Increased default to $15B
+            step=0.5
         ) * 1e9
         
         # Screening criteria
@@ -214,7 +214,7 @@ class GemDashboard:
             "Min Revenue Growth (%):",
             min_value=0,
             max_value=100,
-            value=25,
+            value=15,  # Decreased default to 15%
             step=5
         ) / 100
         
@@ -222,7 +222,7 @@ class GemDashboard:
             "Min Gross Margin (%):",
             min_value=0,
             max_value=80,
-            value=30,
+            value=20,  # Decreased default to 20%
             step=5
         ) / 100
         
@@ -231,8 +231,8 @@ class GemDashboard:
         self.max_analyst_coverage = st.sidebar.slider(
             "Max Analyst Coverage:",
             min_value=1,
-            max_value=20,
-            value=10,
+            max_value=50,
+            value=20,  # Increased default to 20
             step=1
         )
         
