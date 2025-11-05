@@ -161,9 +161,9 @@ class GemDashboard:
             st.session_state.gem_scanner_prefs = {
                 'asset_types': ["Stocks"],
                 'min_market_cap': 50,
-                'max_market_cap': 15.0,  # Increased to $15B
-                'min_revenue_growth': 15,  # Decreased to 15%
-                'min_gross_margin': 20  # Decreased to 20%
+                'max_market_cap': 30.0,  # Increased to $30B for better results
+                'min_revenue_growth': 0,  # No minimum - includes turnarounds
+                'min_gross_margin': 10  # More inclusive at 10%
             }
         
         # Validate preferences
@@ -176,9 +176,9 @@ class GemDashboard:
             st.session_state.gem_scanner_prefs = {
                 'asset_types': ["Stocks"],
                 'min_market_cap': 50,
-                'max_market_cap': 15.0,  # Increased to $15B
-                'min_revenue_growth': 15,  # Decreased to 15%
-                'min_gross_margin': 20  # Decreased to 20%
+                'max_market_cap': 30.0,  # Increased to $30B for better results
+                'min_revenue_growth': 0,  # No minimum - includes turnarounds
+                'min_gross_margin': 10  # More inclusive at 10%
             }
         
         # Asset type selection
@@ -203,27 +203,29 @@ class GemDashboard:
         self.max_market_cap = st.sidebar.number_input(
             "Maximum Market Cap ($B):",
             min_value=0.1,
-            max_value=50.0,
-            value=15.0,  # Increased default to $15B
-            step=0.5
+            max_value=100.0,
+            value=30.0,  # Increased default to $30B for better results
+            step=1.0
         ) * 1e9
         
         # Screening criteria
         st.sidebar.subheader("📈 Fundamental Criteria")
         self.min_revenue_growth = st.sidebar.slider(
             "Min Revenue Growth (%):",
-            min_value=0,
+            min_value=-50,  # Allow negative growth
             max_value=100,
-            value=15,  # Decreased default to 15%
-            step=5
+            value=0,  # No minimum - includes turnarounds and recovery stories
+            step=5,
+            help="Set to 0 to include recovery/turnaround stories"
         ) / 100
         
         self.min_gross_margin = st.sidebar.slider(
             "Min Gross Margin (%):",
             min_value=0,
             max_value=80,
-            value=20,  # Decreased default to 20%
-            step=5
+            value=10,  # More inclusive at 10%
+            step=5,
+            help="Lower threshold includes more industries"
         ) / 100
         
         # Visibility filters
@@ -232,8 +234,9 @@ class GemDashboard:
             "Max Analyst Coverage:",
             min_value=1,
             max_value=50,
-            value=20,  # Increased default to 20
-            step=1
+            value=30,  # Increased to 30 for more results
+            step=1,
+            help="Higher number includes more well-known companies"
         )
         
         # Sector focus
