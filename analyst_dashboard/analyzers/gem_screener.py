@@ -591,14 +591,15 @@ class HiddenGemScreener:
                 except Exception as e:
                     logger.warning(f"Could not calculate sustainability score for {ticker}: {e}")
             
+            # Orthogonally calibrated weights to eliminate collinearity between technical momentum and sector scores
             weights = {
-                'sector': 0.22,        # 22% - Sector tailwinds (reduced)
-                'fundamental': 0.18,   # 18% - Fundamental strength (reduced)
-                'technical': 0.18,     # 18% - Technical setup (reduced)
-                'visibility': 0.14,    # 14% - Under-radar (reduced)
-                'catalyst': 0.14,      # 14% - Catalyst potential (reduced)
-                'smart_money': 0.05,   # 5% - Smart money flow
-                'sustainability': 0.09 # 9% - ESG/Impact score (NEW)
+                'sector': 0.18,        # 18% - Pure macro/sector exposure
+                'fundamental': 0.22,   # 22% - Uncorrelated financial health
+                'technical': 0.15,     # 15% - Price momentum & pattern setup
+                'visibility': 0.15,    # 15% - Low analyst coverage bonus
+                'catalyst': 0.15,      # 15% - Event-driven catalysts
+                'smart_money': 0.06,   # 6%  - Institutional accumulation
+                'sustainability': 0.09 # 9%  - ESG/Sustainability alignment
             }
             
             # Invert visibility score (lower visibility is better for hidden gems)
