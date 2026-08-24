@@ -101,6 +101,9 @@ class VolatilityForecaster:
                 ensemble_forecast, regime_analysis, clustering_analysis, current_metrics
             )
             
+            # ARIMA trend price forecast (Category C Addition)
+            price_forecast = self._generate_arima_price_forecast(price_data['Close'], forecast_horizon)
+
             # Out-of-Sample forecast evaluation (RMSE & QLIKE loss metrics)
             oos_evaluation = self._calculate_out_of_sample_metrics(returns, forecast_horizon, ensemble_forecast)
             
@@ -108,6 +111,7 @@ class VolatilityForecaster:
                 'current_metrics': current_metrics,
                 'individual_forecasts': forecasts,
                 'ensemble_forecast': ensemble_forecast,
+                'price_forecast': price_forecast,
                 'regime_analysis': regime_analysis,
                 'clustering_analysis': clustering_analysis,
                 'forecast_insights': forecast_insights,
@@ -711,4 +715,42 @@ class VolatilityForecaster:
         except Exception as e:
             logger.error(f"Error calculating out-of-sample metrics: {str(e)}")
             return {'rmse': 0.0, 'qlike_loss': 0.0, 'mae': 0.0, 'status': f'error: {str(e)}'}
+
+    def _generate_arima_price_forecast(self, prices: pd.Series, horizon: int) -> Dict[str, Any]:
+        """Generate ARIMA/Exponential trend price forecast (Category C Implementation)"""
+        try:
+            from statsmodels.tsa.arima.model import ARIMA
+            model = ARIMA(prices, order=(1, 1, 1))
+            fitted = model.fit()
+            forecast_res = fitted.forecast(steps=horizon)
+            
+            last_price = float(prices.iloc[-1])
+            predicted_prices = [float(p) for p in forecast_res]
+            expected_change_pct = float((predicted_prices[-1] - last_price) / last_price * 100)
+            
+            return {
+                'last_price': round(last_price, 2),
+                'predicted_prices': [round(p, 2) for p in predicted_prices],
+                'expected_change_pct': round(expected_change_pct, 2),
+                'model_type': 'ARIMA(1,1,1)',
+                'status': 'success'
+            }
+        except Exception as e:
+            # Fallback to Holt/EMA trend projection if statsmodels ARIMA raises
+            try:
+                last_price = float(prices.iloc[-1])
+                trend = float(prices.pct_change().rolling(10).mean().iloc[-1])
+                predicted_prices = [last_price * ((1 + trend) ** i) for i in range(1, horizon + 1)]
+                expected_change_pct = float((predicted_prices[-1] - last_price) / last_price * 100)
+                
+                return {
+                    'last_price': round(last_price, 2),
+                    'predicted_prices': [round(p, 2) for p in predicted_prices],
+                    'expected_change_pct': round(expected_change_pct, 2),
+                    'model_type': 'EMA Trend Projection (Fallback)',
+                    'status': 'fallback'
+                }
+            except Exception as ex:
+                return {'error': str(ex), 'status': 'failed'}
+
 

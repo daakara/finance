@@ -18,7 +18,8 @@ This is a **professional-grade financial analysis platform** built with Python a
 2. **Environment & Dependency Isolation**: Built `.venv` isolated environment and added standard `pyproject.toml` configuration.
 3. **Legacy De-duplication**: Deleted monolithic duplicate top-level files (`data_fetcher.py`, `analysis_components.py`, `analysis_engine.py`, `analysis_renderers.py`).
 4. **Category B Advanced Analytics**: Implemented Cornish-Fisher Expansion for non-normal Modified VaR/CVaR in `advanced_risk_analyzer.py` and Out-of-Sample Volatility Forecast Evaluation (RMSE, QLIKE loss, MAE) in `volatility_forecaster.py`.
-5. **Automated Testing**: Expanded test suite (`test_config_security.py`, `test_category_b_analytics.py`) with 100% test pass rate (19/19 tests passing).
+5. **Category C Advanced ML Models**: Integrated Gaussian Mixture Model (GMM) statistical regime detection in `market_regime_analyzer.py` and ARIMA(1,1,1) directional price forecasting in `volatility_forecaster.py`.
+6. **Automated Testing**: Expanded test suite (`test_config_security.py`, `test_category_b_analytics.py`, `test_category_c_analytics.py`) with 100% test pass rate (21/21 tests passing).
 
 ---
 

@@ -348,3 +348,14 @@ class MarketRegimeAnalyzer:
             return np.mean(durations) if durations else 0
         except:
             return 0
+
+    def _calculate_regime_max_drawdown(self, returns: pd.Series) -> float:
+        """Calculate maximum drawdown for a specific regime return series"""
+        try:
+            cumulative = (1 + returns).cumprod()
+            rolling_max = cumulative.expanding().max()
+            drawdowns = (cumulative - rolling_max) / rolling_max
+            return float(drawdowns.min() * 100) if not drawdowns.empty else 0.0
+        except:
+            return 0.0
+

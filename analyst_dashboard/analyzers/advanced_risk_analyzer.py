@@ -22,7 +22,8 @@ class AdvancedRiskAnalyzer:
             
             risk_analysis = {
                 'advanced_metrics': self._calculate_advanced_risk_metrics(returns),
-                'drawdown_analysis': self._analyze_drawdowns(price_data['Close'])
+                'drawdown_analysis': self._analyze_drawdowns(price_data['Close']),
+                'regime_analysis': self._detect_market_regimes(returns)
             }
             
             if benchmark_data is not None:
@@ -188,13 +189,22 @@ class AdvancedRiskAnalyzer:
     def _detect_market_regimes(self, returns: pd.Series) -> Dict[str, Any]:
         """Detect different market regimes (Bull, Bear, High Vol, Low Vol)"""
         try:
-            # Rolling volatility
-            rolling_vol = returns.rolling(30).std() * np.sqrt(252)
-            
-            # Rolling returns
-            rolling_returns = returns.rolling(30).mean() * 252
-            
-            # Define regime thresholds
+            from analyst_dashboard.analyzers.market_regime_analyzer import MarketRegimeAnalyzer
+            regime_analyzer = MarketRegimeAnalyzer()
+            stat_regimes = regime_analyzer._detect_statistical_regimes(returns)
+            if 'error' not in stat_regimes:
+                return {
+                    'current_regime': stat_regimes.get('current_regime', 'Unknown'),
+                    'regime_probabilities': stat_regimes.get('regime_probabilities', []),
+                    'regime_statistics': stat_regimes.get('regimes', {}),
+                    'model_score': stat_regimes.get('model_score', 0.0)
+                }
+        except Exception as e:
+            logger.warning(f"GMM regime detection fallback to threshold rules: {e}")
+
+        try:
+            rolling_vol = returns.rolling(20).std() * np.sqrt(252) * 100
+            rolling_returns = returns.rolling(20).mean() * 252 * 100
             vol_threshold = rolling_vol.median()
             return_threshold = 0
             
