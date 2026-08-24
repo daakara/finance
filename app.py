@@ -3,14 +3,14 @@ Financial Market Analysis Platform - Main Streamlit Application
 Professional-grade financial analysis tool with comprehensive market insights.
 """
 
-# SSL Certificate Fix - Must be at the very top before any imports
+# SSL Certificate Configuration
 import ssl
 import os
 try:
     import certifi
     os.environ['SSL_CERT_FILE'] = certifi.where()
     os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
-    ssl._create_default_https_context = ssl._create_unverified_context
+    ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 except Exception as e:
     print(f"Warning: Could not configure SSL certificates: {e}")
 

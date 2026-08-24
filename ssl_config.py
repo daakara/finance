@@ -28,25 +28,17 @@ def configure_ssl_environment():
     except AttributeError:
         pass  # Some versions may not have these warnings
     
-    # Set environment variables for curl_cffi
-    os.environ['CURL_DISABLE_SSL_VERIFY'] = '1'
-    os.environ['PYTHONHTTPSVERIFY'] = '0'
-    
-    # Suppress all SSL-related warnings
-    warnings.filterwarnings('ignore', message='.*SSL.*')
-    warnings.filterwarnings('ignore', message='.*certificate.*')
-    warnings.filterwarnings('ignore', message='.*curl_cffi.*')
-    warnings.filterwarnings('ignore', category=urllib3.exceptions.InsecureRequestWarning)
+    # Disable SSL verification environment overrides
+    os.environ.pop('CURL_DISABLE_SSL_VERIFY', None)
+    os.environ.pop('PYTHONHTTPSVERIFY', None)
 
 def create_ssl_context():
-    """Create a permissive SSL context for corporate environments."""
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
+    """Create a secure default SSL context."""
+    context = ssl.create_default_context(cafile=certifi.where())
     return context
 
 def create_session_with_retries():
-    """Create a requests session with retry strategy and SSL configuration."""
+    """Create a requests session with retry strategy and secure SSL verification."""
     session = requests.Session()
     
     # Retry strategy
@@ -60,8 +52,8 @@ def create_session_with_retries():
     session.mount("http://", adapter)
     session.mount("https://", adapter)
     
-    # Disable SSL verification
-    session.verify = False
+    # Secure SSL verification using certifi CA bundle
+    session.verify = certifi.where()
     
     return session
 
