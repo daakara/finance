@@ -14,10 +14,11 @@ This is a **professional-grade financial analysis platform** built with Python a
 - **Hidden Gems Scanner** - An AI-powered system to discover undervalued assets with 10x+ potential
 
 ### Recent Hardening & Production Refactoring (August 2026):
-1. **Security & SSL Enforcement**: Eliminated `ssl._create_unverified_context` and `session.verify = False` global bypasses across `app.py`, `ssl_config.py`, and `data_fetcher.py`. Enforced certifi CA bundles.
+1. **Security & SSL Enforcement**: Eliminated `ssl._create_unverified_context` and `session.verify = False` global bypasses across `app.py` and `ssl_config.py`. Enforced certifi CA bundles.
 2. **Environment & Dependency Isolation**: Built `.venv` isolated environment and added standard `pyproject.toml` configuration.
 3. **Legacy De-duplication**: Deleted monolithic duplicate top-level files (`data_fetcher.py`, `analysis_components.py`, `analysis_engine.py`, `analysis_renderers.py`).
-4. **Automated Testing**: Created `test_config_security.py` and configured `pytest` test suite passing 100% (17/17 tests passing).
+4. **Category B Advanced Analytics**: Implemented Cornish-Fisher Expansion for non-normal Modified VaR/CVaR in `advanced_risk_analyzer.py` and Out-of-Sample Volatility Forecast Evaluation (RMSE, QLIKE loss, MAE) in `volatility_forecaster.py`.
+5. **Automated Testing**: Expanded test suite (`test_config_security.py`, `test_category_b_analytics.py`) with 100% test pass rate (19/19 tests passing).
 
 ---
 

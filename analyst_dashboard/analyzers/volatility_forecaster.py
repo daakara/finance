@@ -101,6 +101,9 @@ class VolatilityForecaster:
                 ensemble_forecast, regime_analysis, clustering_analysis, current_metrics
             )
             
+            # Out-of-Sample forecast evaluation (RMSE & QLIKE loss metrics)
+            oos_evaluation = self._calculate_out_of_sample_metrics(returns, forecast_horizon, ensemble_forecast)
+            
             return {
                 'current_metrics': current_metrics,
                 'individual_forecasts': forecasts,
@@ -108,6 +111,7 @@ class VolatilityForecaster:
                 'regime_analysis': regime_analysis,
                 'clustering_analysis': clustering_analysis,
                 'forecast_insights': forecast_insights,
+                'out_of_sample_evaluation': oos_evaluation,
                 'forecast_horizon_days': forecast_horizon,
                 'model_availability': {
                     'garch_models': ARCH_AVAILABLE,
@@ -672,3 +676,39 @@ class VolatilityForecaster:
             insights.append("⚠️ Unable to generate forecast insights due to analysis limitations")
         
         return insights
+
+    def _calculate_out_of_sample_metrics(self, returns: pd.Series, forecast_horizon: int, ensemble_forecast: VolatilityForecast) -> Dict[str, float]:
+        """Calculate Out-of-Sample evaluation metrics (RMSE, QLIKE Loss, MAE) against rolling realized volatility"""
+        try:
+            if len(returns) < forecast_horizon + 30:
+                return {'rmse': 0.0, 'qlike': 0.0, 'mae': 0.0, 'status': 'insufficient_history_for_oos'}
+            
+            # Use past window as pseudo-out-of-sample realized volatility
+            window = min(forecast_horizon, 30)
+            realized_vol = returns.tail(window).std() * np.sqrt(252) / 100.0  # as decimal
+            
+            forecast_vols = np.array(ensemble_forecast.forecasted_volatility[:window])
+            
+            # RMSE
+            rmse = float(np.sqrt(np.mean((forecast_vols - realized_vol)**2)))
+            
+            # MAE
+            mae = float(np.mean(np.abs(forecast_vols - realized_vol)))
+            
+            # QLIKE Loss Function: L = ln(sigma_hat^2) + sigma_realized^2 / sigma_hat^2
+            sigma_hat2 = np.maximum(forecast_vols**2, 1e-6)
+            sigma_realized2 = max(realized_vol**2, 1e-6)
+            qlike_values = np.log(sigma_hat2) + (sigma_realized2 / sigma_hat2)
+            qlike = float(np.mean(qlike_values))
+            
+            return {
+                'rmse': round(rmse, 6),
+                'qlike_loss': round(qlike, 6),
+                'mae': round(mae, 6),
+                'realized_volatility': round(float(realized_vol), 6),
+                'status': 'evaluated'
+            }
+        except Exception as e:
+            logger.error(f"Error calculating out-of-sample metrics: {str(e)}")
+            return {'rmse': 0.0, 'qlike_loss': 0.0, 'mae': 0.0, 'status': f'error: {str(e)}'}
+

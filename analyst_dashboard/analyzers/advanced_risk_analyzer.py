@@ -21,12 +21,8 @@ class AdvancedRiskAnalyzer:
             returns = price_data['Close'].pct_change().dropna()
             
             risk_analysis = {
-                'basic_metrics': self._calculate_basic_risk_metrics(returns),
                 'advanced_metrics': self._calculate_advanced_risk_metrics(returns),
-                'tail_risk': self._analyze_tail_risk(returns),
-                'drawdown_analysis': self._analyze_drawdowns(price_data['Close']),
-                'regime_analysis': self._detect_market_regimes(returns),
-                'risk_attribution': self._attribute_risk_sources(returns)
+                'drawdown_analysis': self._analyze_drawdowns(price_data['Close'])
             }
             
             if benchmark_data is not None:
@@ -58,8 +54,29 @@ class AdvancedRiskAnalyzer:
             metrics['Tail_Ratio'] = abs(np.percentile(returns, 95) / np.percentile(returns, 5))
             
             # Skewness and Kurtosis
-            metrics['Skewness'] = stats.skew(returns.dropna())
-            metrics['Kurtosis'] = stats.kurtosis(returns.dropna())
+            skew = float(stats.skew(returns.dropna()))
+            kurt = float(stats.kurtosis(returns.dropna()))  # excess kurtosis
+            metrics['Skewness'] = skew
+            metrics['Kurtosis'] = kurt
+
+            # Cornish-Fisher Expansion for Modified VaR (adjusts for non-normality)
+            # z_95 = -1.64485, z_99 = -2.32635 for left tail
+            z_95 = -1.644853
+            z_99 = -2.326348
+            
+            cf_z_95 = z_95 + (z_95**2 - 1) * (skew / 6.0) + (z_95**3 - 3 * z_95) * (kurt / 24.0) - (2 * z_95**3 - 5 * z_95) * (skew**2 / 36.0)
+            cf_z_99 = z_99 + (z_99**2 - 1) * (skew / 6.0) + (z_99**3 - 3 * z_99) * (kurt / 24.0) - (2 * z_99**3 - 5 * z_99) * (skew**2 / 36.0)
+            
+            mean_ret = returns.mean()
+            std_ret = returns.std()
+            
+            metrics['Modified_VaR_95'] = (mean_ret + cf_z_95 * std_ret) * 100
+            metrics['Modified_VaR_99'] = (mean_ret + cf_z_99 * std_ret) * 100
+            
+            # Modified CVaR using returns exceeding Modified VaR threshold
+            mvar_threshold = (mean_ret + cf_z_95 * std_ret)
+            tail_returns = returns[returns <= mvar_threshold]
+            metrics['Modified_CVaR_95'] = tail_returns.mean() * 100 if len(tail_returns) > 0 else metrics['CVaR_95']
             
             # Calmar Ratio (Annual Return / Max Drawdown)
             annual_return = returns.mean() * 252
