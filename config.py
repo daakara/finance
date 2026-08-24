@@ -10,26 +10,42 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+class AppSettings:
+    """Validated environment settings container."""
+    def __init__(self):
+        self.alpha_vantage_api_key: str = os.getenv('ALPHA_VANTAGE_API_KEY', '')
+        self.news_api_key: str = os.getenv('NEWS_API_KEY', '')
+        self.twitter_bearer_token: str = os.getenv('TWITTER_BEARER_TOKEN', '')
+        self.cache_ttl_seconds: int = int(os.getenv('CACHE_TTL_SECONDS', '300'))
+        self.max_cache_size: int = int(os.getenv('MAX_CACHE_SIZE', '1000'))
+        self.default_period: str = os.getenv('DEFAULT_PERIOD', '1y')
+        self.default_interval: str = os.getenv('DEFAULT_INTERVAL', '1d')
+        self.max_symbols_per_request: int = int(os.getenv('MAX_SYMBOLS_PER_REQUEST', '10'))
+        self.disable_ssl_verify: bool = os.getenv('DISABLE_SSL_VERIFY', 'false').lower() == 'true'
+        self.use_sample_data: bool = os.getenv('USE_SAMPLE_DATA', 'false').lower() == 'true'
+
+_settings = AppSettings()
+
 class Config:
     """Main configuration class for the application."""
     
     # API Configuration
-    ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY', '')
-    NEWS_API_KEY = os.getenv('NEWS_API_KEY', '')
-    TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN', '')
+    ALPHA_VANTAGE_API_KEY = _settings.alpha_vantage_api_key
+    NEWS_API_KEY = _settings.news_api_key
+    TWITTER_BEARER_TOKEN = _settings.twitter_bearer_token
     
     # Cache Configuration
-    CACHE_TTL_SECONDS = 300  # 5 minutes
-    MAX_CACHE_SIZE = 1000
+    CACHE_TTL_SECONDS = _settings.cache_ttl_seconds
+    MAX_CACHE_SIZE = _settings.max_cache_size
     
     # Data Configuration
-    DEFAULT_PERIOD = '1y'
-    DEFAULT_INTERVAL = '1d'
-    MAX_SYMBOLS_PER_REQUEST = 10
+    DEFAULT_PERIOD = _settings.default_period
+    DEFAULT_INTERVAL = _settings.default_interval
+    MAX_SYMBOLS_PER_REQUEST = _settings.max_symbols_per_request
     
     # Network Configuration
-    DISABLE_SSL_VERIFY = os.getenv('DISABLE_SSL_VERIFY', 'false').lower() == 'true'
-    USE_SAMPLE_DATA = os.getenv('USE_SAMPLE_DATA', 'false').lower() == 'true'
+    DISABLE_SSL_VERIFY = _settings.disable_ssl_verify
+    USE_SAMPLE_DATA = _settings.use_sample_data
     
     # Chart Configuration
     CHART_HEIGHT = 600
