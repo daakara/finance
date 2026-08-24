@@ -54,18 +54,30 @@ class MultiAssetDataPipeline:
         self.session.headers.update({
             'User-Agent': 'HiddenGemsScanner/1.0 (Educational/Research)'
         })
+        
+        # DiskCache for persistent multi-process shared caching
+        try:
+            import diskcache
+            import tempfile
+            cache_dir = os.path.join(tempfile.gettempdir(), 'finance_pipeline_cache')
+            self.disk_cache = diskcache.Cache(cache_dir)
+        except Exception as e:
+            logger.warning(f"DiskCache initialization failed, falling back to in-memory: {e}")
+            self.disk_cache = {}
     
     def fetch_stock_data(self, ticker: str, period: str = "1y") -> Dict[str, Any]:
         """
-        Fetch comprehensive stock data including price, fundamentals, and metadata.
-        
-        Args:
-            ticker: Stock ticker symbol
-            period: Data period (1y, 2y, 5y, etc.)
-            
-        Returns:
-            Dictionary with comprehensive stock data
+        Fetch comprehensive stock data with persistent multi-user disk caching.
         """
+        cache_key = f"stock_{ticker}_{period}"
+        if hasattr(self, 'disk_cache') and self.disk_cache is not None:
+            try:
+                cached_data = self.disk_cache.get(cache_key)
+                if cached_data is not None:
+                    return cached_data
+            except Exception as e:
+                logger.warning(f"Cache read error: {e}")
+
         try:
             data = {
                 'ticker': ticker,
@@ -97,6 +109,13 @@ class MultiAssetDataPipeline:
             # Fetch sentiment data
             sentiment_data = self._fetch_sentiment_data(ticker)
             data['sentiment_data'] = sentiment_data
+            
+            # Cache valid result (TTL 5 minutes = 300 seconds)
+            if hasattr(self, 'disk_cache') and self.disk_cache is not None and not data.get('error'):
+                try:
+                    self.disk_cache.set(cache_key, data, expire=300)
+                except Exception as e:
+                    logger.warning(f"Cache write error: {e}")
             
             return data
             
