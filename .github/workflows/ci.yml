@@ -128,12 +128,20 @@ jobs:
     - name: Verify import structure
       run: |
         python -c "import app; print('Main app imports OK')"
+        python -c "from api.main import app; print('FastAPI API imports OK')"
         python -c "from analyst_dashboard.visualizers import gem_dashboard; print('Gem dashboard imports OK')"
     
     - name: Check for syntax errors
       run: |
         python -m py_compile app.py
+        python -m py_compile api/main.py
         python -m py_compile analyst_dashboard/visualizers/gem_dashboard.py
+
+    - name: Frontend Build Verification
+      run: |
+        cd frontend
+        npm install --legacy-peer-deps
+        npm run build
     
     - name: Verify data integrity policy
       run: |
