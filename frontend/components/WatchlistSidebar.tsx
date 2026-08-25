@@ -8,14 +8,16 @@ interface WatchlistSidebarProps {
 }
 
 const WATCHLIST_ITEMS = [
-  { symbol: "BTC-USD", name: "Bitcoin", price: "$64,250", change: "+4.50%", isUp: true, type: "Crypto" },
-  { symbol: "ETH-USD", name: "Ethereum", price: "$3,420", change: "+3.20%", isUp: true, type: "Crypto" },
-  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$128.40", change: "+3.14%", isUp: true, type: "Stock" },
-  { symbol: "AAPL", name: "Apple Inc.", price: "$226.50", change: "+1.25%", isUp: true, type: "Stock" },
-  { symbol: "MSFT", name: "Microsoft", price: "$448.90", change: "-0.45%", isUp: false, type: "Stock" },
-  { symbol: "SPY", name: "S&P 500 ETF", price: "$560.80", change: "+0.65%", isUp: true, type: "ETF" },
-  { symbol: "QQQ", name: "Invesco QQQ", price: "$485.30", change: "+1.10%", isUp: true, type: "ETF" },
-  { symbol: "SOL-USD", name: "Solana", price: "$145.80", change: "+6.80%", isUp: true, type: "Crypto" },
+  { symbol: "BTC-USD", name: "Bitcoin", price: "$78,213", change: "+2.80%", isUp: true, type: "Crypto" },
+  { symbol: "ETH-USD", name: "Ethereum", price: "$2,438", change: "+1.65%", isUp: true, type: "Crypto" },
+  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
+  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
+  { symbol: "MSFT", name: "Microsoft", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
+  { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
+  { symbol: "TSLA", name: "Tesla Inc.", price: "$350.25", change: "+2.15%", isUp: true, type: "Stock" },
+  { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },
+  { symbol: "QQQ", name: "Invesco QQQ", price: "$710.72", change: "+1.10%", isUp: true, type: "ETF" },
+  { symbol: "SOL-USD", name: "Solana", price: "$96.73", change: "+0.24%", isUp: true, type: "Crypto" },
 ];
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
