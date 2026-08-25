@@ -9,4 +9,6 @@ services:
         value: 3.11.0
       - key: DISABLE_SSL_VERIFY
         value: "false"
+      - key: FRED_API_KEY
+        value: 70089dccee2c5a687260428851534996
 

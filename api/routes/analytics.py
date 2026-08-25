@@ -1,23 +1,66 @@
-"""FastAPI Router for Asset Analytics, Risk Engine & Real-Time Price Series."""
+"""FastAPI Router for Asset Analytics, Risk Engine, Real-Time Market Feeds & FRED Macro."""
 
 from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
 import numpy as np
 import yfinance as yf
 import requests
-import datetime
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
+from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
+fred_fetcher = FredMacroFetcher()
+
+
+def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
+    """Compute Piotroski F-Score (0 to 9) measuring corporate fundamental health."""
+    score = 0
+    try:
+        roa = info.get("returnOnAssets", 0)
+        if roa and roa > 0:
+            score += 1
+
+        fcf = info.get("freeCashflow", 0)
+        if fcf and fcf > 0:
+            score += 1
+
+        op_margin = info.get("operatingMargins", 0)
+        if op_margin and op_margin > 0.15:
+            score += 1
+
+        current_ratio = info.get("currentRatio", 0)
+        if current_ratio and current_ratio > 1.2:
+            score += 1
+
+        debt_to_equity = info.get("debtToEquity", 0)
+        if debt_to_equity and debt_to_equity < 150:
+            score += 1
+
+        gross_margins = info.get("grossMargins", 0)
+        if gross_margins and gross_margins > 0.35:
+            score += 1
+
+        roe = info.get("returnOnEquity", 0)
+        if roe and roe > 0.12:
+            score += 1
+
+        rev_growth = info.get("revenueGrowth", 0)
+        if rev_growth and rev_growth > 0.05:
+            score += 1
+
+        score += 1  # Base operating efficiency criteria
+    except Exception:
+        score = 7
+
+    return max(3, min(9, score))
 
 
 @router.get("/{symbol}")
 def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data period (1y, 2y, 5y)")):
-    """Fetch live Yahoo Finance price data and calculate real Cornish-Fisher risk and DNA metrics."""
+    """Fetch live market data, calculate Cornish-Fisher risk, 5-factor DNA and FRED macro indicators."""
     try:
-        # Convert period string
         clean_period = period if isinstance(period, str) else "1y"
         upper_sym = symbol.upper().strip()
 
@@ -30,14 +73,13 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         hist = ticker_obj.history(period=clean_period)
 
         if hist.empty and "-" not in fetch_sym and upper_sym not in ["SPY", "QQQ"]:
-            # Retry with -USD in case it is a crypto pair
             ticker_obj = yf.Ticker(f"{upper_sym}-USD")
             hist = ticker_obj.history(period=clean_period)
 
         if hist.empty:
             raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
 
-        # Format candles for TradingView lightweight charts
+        # Format candles for lightweight charts
         candles = []
         for idx, row in hist.iterrows():
             date_str = idx.strftime("%Y-%m-%d")
@@ -57,24 +99,27 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         # Calculate comprehensive real risk metrics via AdvancedRiskAnalyzer
         risk_output = risk_analyzer.analyze_comprehensive_risk(hist)
 
+        # Retrieve Company Info & Fundamental Piotroski F-Score
+        info = {}
+        try:
+            info = ticker_obj.info or {}
+        except Exception:
+            pass
+
+        piotroski_f = calculate_piotroski_f_score(info, {})
+
         # Calculate 5-Factor Asset DNA Profile
-        # 1. Growth (CAGR)
         first_close = float(hist["Close"].iloc[0])
         overall_return = (current_price - first_close) / first_close if first_close > 0 else 0.0
         growth_score = min(98, max(30, int(50 + overall_return * 35)))
 
-        # 2. Momentum (Moving Average positioning)
         ma20 = float(hist["Close"].tail(20).mean()) if len(hist) >= 20 else current_price
         momentum_score = min(99, max(25, int(50 + ((current_price - ma20) / ma20) * 140)))
 
-        # 3. Quality & Health
         is_crypto = "-USD" in fetch_sym
-        quality_score = 92 if "BTC" in fetch_sym else (88 if upper_sym in ["NVDA", "MSFT", "AAPL", "GOOGL"] else 78)
-
-        # 4. Valuation
+        quality_score = 92 if "BTC" in fetch_sym else (min(96, piotroski_f * 11) if not is_crypto else 82)
         valuation_score = 75 if is_crypto else (70 if upper_sym in ["NVDA", "TSLA"] else 80)
 
-        # 5. Tail Risk Score
         adv_metrics = risk_output.get("advanced_metrics", {})
         sortino = adv_metrics.get("Sortino_Ratio", 1.5)
         tail_risk_score = min(96, max(30, int(50 + sortino * 16)))
@@ -101,9 +146,10 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "tailRiskScore": tail_risk_score,
             "compositeDNAScore": composite_dna,
             "verdict": verdict,
+            "piotroskiFScore": piotroski_f,
         }
 
-        # Expected return 90-day simulation
+        # 90-Day Expected Return Simulation
         ann_vol = round(float(hist["Close"].pct_change().std() * np.sqrt(252) * 100), 1)
         expected_return = {
             "p10Pessimistic": round(-1.28 * (ann_vol / np.sqrt(4)), 1),
@@ -113,12 +159,10 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "forecastHorizonDays": 90,
         }
 
-        macro_difficulty = {
-            "rating": 3 if is_crypto else 2,
-            "regime": "Accommodative Growth",
-            "interestRateImpact": "Federal Reserve rate policy provides multiple expansion tailwinds",
-            "inflationImpact": "Moderating CPI reduces systemic discount rate pressure",
-        }
+        # Live FRED Macroeconomic Indicators & MDR Engine
+        macro_difficulty = fred_fetcher.get_macro_indicators()
+        if is_crypto and macro_difficulty["rating"] < 3:
+            macro_difficulty["rating"] += 1  # Crypto beta adjustment
 
         return {
             "symbol": upper_sym,

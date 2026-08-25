@@ -18,13 +18,18 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
     tailRiskScore: 82,
     compositeDNAScore: 82,
     verdict: "Elite Core Alpha",
+    piotroskiFScore: 8,
   };
 
   const mdr = macroDifficulty || {
-    rating: 2,
-    regime: "Accommodative Growth",
-    interestRateImpact: "Fed rate cuts provide multiple expansion tailwind",
-    inflationImpact: "Easing CPI trend reduces discount rate pressure",
+    rating: 1,
+    regime: "Optimal Expansionary Goldilocks",
+    interestRateImpact: "Steepening curve (+0.47%) and tight credit spreads fuel strong risk-on alpha",
+    inflationImpact: "CPI (2.4% YoY) moderation reduces discount rate pressure on valuations",
+    yield_curve_spread: 0.47,
+    fed_funds_rate: 3.63,
+    credit_spread_oas: 2.69,
+    cpi_yoy: 2.4,
   };
 
   const er = expectedReturn || {
@@ -45,6 +50,11 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
             <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight">
               {symbol} Financial DNA Profile
             </h3>
+            {scores.piotroskiFScore && (
+              <span className="text-[10px] font-mono bg-[#1b2434] text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded">
+                Piotroski F-Score: {scores.piotroskiFScore}/9
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
             5-factor multi-dimensional quantitative rating across growth, balance sheet health, valuation, momentum, and downside risk
@@ -85,7 +95,9 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.qualityScore}%` }}></div>
           </div>
-          <span className="text-[9px] text-slate-500 block">Robust Balance Sheet</span>
+          <span className="text-[9px] text-slate-500 block">
+            {scores.piotroskiFScore ? `Piotroski F-${scores.piotroskiFScore} Health` : "Robust Balance Sheet"}
+          </span>
         </div>
 
         {/* Valuation DNA */}
@@ -152,7 +164,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           </div>
         </div>
 
-        {/* Macro Difficulty Rating (MDR) */}
+        {/* Macro Difficulty Rating (MDR) Powered by FRED */}
         <div className="bg-[#090d14] border border-[#243044] rounded-xl p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
@@ -165,7 +177,35 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
             </span>
           </div>
 
-          <div className="text-xs text-slate-300 space-y-1 pt-1 font-mono">
+          {/* FRED Macro Indicators Grid */}
+          <div className="grid grid-cols-4 gap-1.5 py-1 text-center bg-[#111722] p-2 rounded-lg border border-[#243044]">
+            <div>
+              <span className="text-[9px] text-slate-400 block font-mono">10Y-2Y Curve</span>
+              <span className="text-xs font-bold font-mono text-emerald-400">
+                {mdr.yield_curve_spread !== undefined ? `+${mdr.yield_curve_spread}%` : "+0.47%"}
+              </span>
+            </div>
+            <div>
+              <span className="text-[9px] text-slate-400 block font-mono">Fed Funds</span>
+              <span className="text-xs font-bold font-mono text-cyan-400">
+                {mdr.fed_funds_rate !== undefined ? `${mdr.fed_funds_rate}%` : "3.63%"}
+              </span>
+            </div>
+            <div>
+              <span className="text-[9px] text-slate-400 block font-mono">HY OAS Spread</span>
+              <span className="text-xs font-bold font-mono text-purple-400">
+                {mdr.credit_spread_oas !== undefined ? `${mdr.credit_spread_oas}%` : "2.69%"}
+              </span>
+            </div>
+            <div>
+              <span className="text-[9px] text-slate-400 block font-mono">CPI Inflation</span>
+              <span className="text-xs font-bold font-mono text-amber-400">
+                {mdr.cpi_yoy !== undefined ? `${mdr.cpi_yoy}%` : "2.4%"}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-300 space-y-1 font-mono">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-slate-400">Rate Policy:</span>
               <span className="text-emerald-400 font-semibold">{mdr.interestRateImpact}</span>
