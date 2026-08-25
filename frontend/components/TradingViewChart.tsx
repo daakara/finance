@@ -16,23 +16,23 @@ export default function TradingViewChart({ symbol, data }: TradingViewChartProps
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#161b22" },
-        textColor: "#c9d1d9",
+        background: { type: ColorType.Solid, color: "#111722" },
+        textColor: "#94a3b8",
       },
       grid: {
-        vertLines: { color: "#21262d" },
-        horzLines: { color: "#21262d" },
+        vertLines: { color: "#1b2434" },
+        horzLines: { color: "#1b2434" },
       },
       width: chartContainerRef.current.clientWidth,
-      height: 400,
+      height: 420,
     });
 
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: "#00c851",
-      downColor: "#ff4444",
+      upColor: "#10b981",
+      downColor: "#f43f5e",
       borderVisible: false,
-      wickUpColor: "#00c851",
-      wickDownColor: "#ff4444",
+      wickUpColor: "#10b981",
+      wickDownColor: "#f43f5e",
     });
 
     if (data && data.length > 0) {
@@ -42,6 +42,8 @@ export default function TradingViewChart({ symbol, data }: TradingViewChartProps
         { time: "2024-01-01", open: 150, high: 155, low: 148, close: 153 },
         { time: "2024-01-02", open: 153, high: 158, low: 151, close: 156 },
         { time: "2024-01-03", open: 156, high: 160, low: 154, close: 158 },
+        { time: "2024-01-04", open: 158, high: 162, low: 156, close: 161 },
+        { time: "2024-01-05", open: 161, high: 165, low: 159, close: 163 },
       ];
       candlestickSeries.setData(dummyData);
     }
@@ -61,14 +63,24 @@ export default function TradingViewChart({ symbol, data }: TradingViewChartProps
   }, [symbol, data]);
 
   return (
-    <div className="w-full bg-[#161b22] border border-[#30363d] rounded-lg p-4 shadow-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">60fps TradingView Chart - {symbol}</h3>
-        <span className="text-xs bg-[#21262d] text-sky-400 px-3 py-1 rounded-full font-mono">
-          Canvas Renderer
-        </span>
+    <div className="w-full bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center space-x-3">
+          <span className="text-xl font-bold text-slate-100 font-mono">{symbol}</span>
+          <span className="text-xs bg-[#1b2434] text-slate-300 border border-[#364866] px-2.5 py-0.5 rounded font-mono">
+            1D Candle
+          </span>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Canvas Renderer 60FPS
+          </span>
+        </div>
       </div>
-      <div ref={chartContainerRef} className="w-full h-[400px]" />
+
+      <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden border border-[#1b2434]" />
     </div>
   );
 }
