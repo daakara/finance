@@ -1,4 +1,4 @@
-"""Elite Trader Archetype Models & Smart-Money Quantitative Analysis Engine."""
+"""Elite Trader Strategy Models & Smart-Money Quantitative Analysis Engine."""
 
 from typing import Dict, Any, List
 import pandas as pd
@@ -9,17 +9,17 @@ class TraderArchetypeAnalyzer:
     """Analyzes any asset against proven institutional and iconic trader mental models."""
 
     CONGRESSIONAL_POLICY_TICKERS = {
-        "NVDA": "CHIPS and Science Act semiconductor subsidies & hyperscale AI procurement",
-        "AAPL": "Consumer digital ecosystem & hardware platform antitrust resilience",
-        "MSFT": "DoD JEDI cloud infrastructure contracts & enterprise AI software rollout",
-        "GOOGL": "Defense intelligence sovereign cloud partnerships & TPUs",
-        "TSLA": "Inflation Reduction Act EV clean energy & battery storage tax credits",
-        "PLTR": "Department of Defense (DoD) Maven & TITAN battlefield intelligence contracts",
-        "CRWD": "CISA & federal cybersecurity mandates for endpoint protection",
-        "ENPH": "Solar investment tax credit (ITC) & microinverter subsidies",
-        "BTC-USD": "Strategic National Bitcoin Reserve legislative proposals & CFTC clarity",
-        "ETH-USD": "SEC Spot ETF regulatory approval & tokenized real-world assets (RWA)",
-        "SOL-USD": "High-throughput blockchain institutional settlement adoption",
+        "NVDA": "Direct beneficiary of federal CHIPS Act subsidies and hyperscale AI computing demand.",
+        "AAPL": "High consumer hardware loyalty and strong enterprise services ecosystem.",
+        "MSFT": "Key provider of US defense cloud infrastructure and corporate AI software.",
+        "GOOGL": "Major defense and government cloud computing partner.",
+        "TSLA": "Supported by Inflation Reduction Act clean energy and battery tax credits.",
+        "PLTR": "Primary contractor for US Department of Defense data and battlefield AI systems.",
+        "CRWD": "Essential beneficiary of federal cybersecurity mandates for government and enterprise.",
+        "ENPH": "Boosted by federal solar investment tax credits and clean power incentives.",
+        "BTC-USD": "Supported by legislative discussions on national digital asset reserves.",
+        "ETH-USD": "Approved for US spot exchange-traded funds (ETFs) and institutional settlement.",
+        "SOL-USD": "High-speed blockchain adoption for global financial payment networks.",
     }
 
     def analyze_asset(
@@ -38,26 +38,26 @@ class TraderArchetypeAnalyzer:
         # 1. The Oracle (Warren Buffett / Berkshire Hathaway)
         buffett = self._evaluate_buffett_moat(sym_clean, is_crypto, info, factor_scores)
 
-        # 2. The Capitol Whale (Nancy Pelosi / Congressional STOCK Act)
+        # 2. The Capitol Whale (Nancy Pelosi / Congressional Policy Flows)
         pelosi = self._evaluate_congressional_whale(symbol.upper(), factor_scores, is_crypto)
 
-        # 3. The Macro Sorcerer (Stanley Druckenmiller / George Soros)
+        # 3. The Macro Sorcerer (Stanley Druckenmiller / Macro Trends)
         druckenmiller = self._evaluate_druckenmiller_macro(macro_indicators, factor_scores, price_df)
 
-        # 4. The Medallion Quant (Jim Simons / Renaissance Technologies)
+        # 4. The Medallion Quant (Jim Simons / Quantitative Risk)
         simons = self._evaluate_simons_quant(risk_metrics, price_df, factor_scores)
 
         archetypes = [buffett, pelosi, druckenmiller, simons]
         consensus_score = round(sum(a["alignmentScore"] for a in archetypes) / len(archetypes))
 
         if consensus_score >= 85:
-            verdict = "Strong Smart-Money Accumulation"
+            verdict = "Strong Buy / Core Accumulation"
         elif consensus_score >= 75:
-            verdict = "Favorable Multi-Strategy Alignment"
+            verdict = "Favorable Multi-Strategy Buy"
         elif consensus_score >= 65:
-            verdict = "Selective Strategic Positioning"
+            verdict = "Moderate Growth Hold"
         else:
-            verdict = "Low Institutional Consensus"
+            verdict = "High Volatility Speculative"
 
         return {
             "consensusScore": consensus_score,
@@ -71,12 +71,12 @@ class TraderArchetypeAnalyzer:
         """Warren Buffett Value, Quality, Moat & Free Cash Flow model."""
         if is_crypto:
             return {
-                "name": "Warren Buffett (The Oracle)",
-                "archetype": "Defensive Quality & Wide Moats",
-                "alignmentScore": 32,
-                "status": "Incompatible (Non-Productive Asset)",
-                "thesis": "Buffett avoids non-cashflow-producing digital currencies, favoring productive capital with pricing power.",
-                "catalyst": "Focus on high Return on Invested Capital (ROIC) and free cash flow generation.",
+                "name": "Warren Buffett (Value & Moat)",
+                "archetype": "High Cash Flow & Wide Moats",
+                "alignmentScore": 30,
+                "status": "Not Buffett Style",
+                "thesis": "Buffett avoids cryptocurrencies because they do not produce cash flows or physical goods.",
+                "catalyst": "Prefers companies with strong pricing power and predictable cash dividends.",
             }
 
         quality = factor_scores.get("qualityScore", 80)
@@ -88,18 +88,18 @@ class TraderArchetypeAnalyzer:
             score = max(score, 92)
 
         return {
-            "name": "Warren Buffett (The Oracle)",
-            "archetype": "Defensive Quality & Wide Moats",
+            "name": "Warren Buffett (Value & Moat)",
+            "archetype": "High Cash Flow & Wide Moats",
             "alignmentScore": score,
             "status": "High Moat Alignment" if score >= 80 else "Moderate Moat",
-            "thesis": f"Strong balance sheet health (Piotroski F-{piotroski}/9) with durable pricing power, consistent share repurchases, and dependable free cash flows.",
-            "catalyst": "Durable competitive advantage and resilient operating margins across business cycles.",
+            "thesis": "High cash generation with strong pricing power, low corporate debt, and consistent share buybacks.",
+            "catalyst": "Durable competitive advantage and steady profit margins across economic cycles.",
         }
 
     def _evaluate_congressional_whale(
         self, symbol: str, factor_scores: Dict[str, Any], is_crypto: bool
     ) -> Dict[str, Any]:
-        """Nancy Pelosi / Congressional STOCK Act Policy Catalyst model."""
+        """Nancy Pelosi / Congressional Policy Catalyst model."""
         policy_catalyst = self.CONGRESSIONAL_POLICY_TICKERS.get(
             symbol,
             self.CONGRESSIONAL_POLICY_TICKERS.get(symbol.replace("-USD", ""), None),
@@ -111,28 +111,28 @@ class TraderArchetypeAnalyzer:
         if policy_catalyst:
             score = min(98, max(75, int(82 + (momentum * 0.1) + (growth * 0.08))))
             return {
-                "name": "Nancy Pelosi (The Capitol Whale)",
-                "archetype": "Legislative Catalysts & High-Conviction Tech",
+                "name": "Nancy Pelosi (Policy & Government Catalysts)",
+                "archetype": "Government Spending & High-Conviction Tech",
                 "alignmentScore": score,
-                "status": "Active Policy Tailwinds",
-                "thesis": f"High legislative synergy: {policy_catalyst}. Matches historical congressional high-delta LEAPS option accumulation profiles.",
-                "catalyst": policy_catalyst,
+                "status": "Strong Policy Support",
+                "thesis": policy_catalyst,
+                "catalyst": "Beneficiary of federal industrial policy, technology subsidies, and government contracts.",
             }
 
         score = min(82, max(45, int((growth * 0.6) + (momentum * 0.4))))
         return {
-            "name": "Nancy Pelosi (The Capitol Whale)",
-            "archetype": "Legislative Catalysts & High-Conviction Tech",
+            "name": "Nancy Pelosi (Policy & Government Catalysts)",
+            "archetype": "Government Spending & High-Conviction Tech",
             "alignmentScore": score,
             "status": "Neutral Policy Exposure",
-            "thesis": "Moderate policy tailwinds. No immediate cluster buying detected on congressional disclosures.",
-            "catalyst": "Broader federal digital transformation and industrial technology incentives.",
+            "thesis": "Moderate policy alignment without major direct federal government spending programs.",
+            "catalyst": "General growth in business technology adoption.",
         }
 
     def _evaluate_druckenmiller_macro(
         self, macro_indicators: Dict[str, Any], factor_scores: Dict[str, Any], price_df: pd.DataFrame
     ) -> Dict[str, Any]:
-        """Stanley Druckenmiller / George Soros Macroeconomic Reflexivity model."""
+        """Stanley Druckenmiller / Macro Trends & Reflexivity model."""
         yield_curve = macro_indicators.get("yield_curve_spread", 0.47)
         credit_spread = macro_indicators.get("credit_spread_oas", 2.69)
         momentum = factor_scores.get("momentumScore", 75)
@@ -140,40 +140,39 @@ class TraderArchetypeAnalyzer:
 
         base = 70
         if yield_curve > 0.20:
-            base += 12  # Steepening curve benefits risk assets
+            base += 12
         if credit_spread < 3.2:
-            base += 8   # Tight credit spreads provide liquidity
+            base += 8
 
         score = min(97, max(45, int(base * 0.5 + momentum * 0.3 + growth * 0.2)))
 
         return {
-            "name": "Stanley Druckenmiller (The Macro Sorcerer)",
-            "archetype": "Macro Liquidity & Trend Reflexivity",
+            "name": "Stanley Druckenmiller (Macro Trends)",
+            "archetype": "Interest Rate Trends & Market Momentum",
             "alignmentScore": score,
-            "status": "Strong Macro Inflection" if score >= 80 else "Neutral Macro",
-            "thesis": f"Favorable liquidity backdrop: Yield curve ({yield_curve:+0.2f}%) and credit spread OAS ({credit_spread:.2f}%) support aggressive growth accumulation with strict trend stops.",
-            "catalyst": "Central bank easing cycle and accelerating top-line revenue momentum.",
+            "status": "Positive Macro Trend" if score >= 80 else "Neutral Macro",
+            "thesis": "The lower interest rate environment and upward price momentum favor holding this asset.",
+            "catalyst": "Central bank rate cuts and strong institutional buying momentum.",
         }
 
     def _evaluate_simons_quant(
         self, risk_metrics: Dict[str, Any], price_df: pd.DataFrame, factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Jim Simons / Renaissance Technologies Statistical Arbitrage model."""
+        """Jim Simons / Renaissance Quantitative Risk model."""
         sortino = risk_metrics.get("Sortino_Ratio", 1.84)
         skew = risk_metrics.get("Skewness", -0.15)
         tail_risk = factor_scores.get("tailRiskScore", 80)
         momentum = factor_scores.get("momentumScore", 75)
 
-        # Quantitative formula penalizing negative skew and downside volatility
         skew_bonus = 10 if skew > -0.3 else -5
         score = min(96, max(40, int(tail_risk * 0.45 + momentum * 0.35 + sortino * 8 + skew_bonus)))
 
         return {
-            "name": "Jim Simons (The Medallion Quant)",
-            "archetype": "Statistical Arbitrage & Volatility Mean Reversion",
+            "name": "Jim Simons (Quantitative Risk)",
+            "archetype": "Statistical Stability & Crash Protection",
             "alignmentScore": score,
-            "status": "Statistically Favorable" if score >= 80 else "Normal Distribution",
-            "thesis": f"Strong risk-adjusted return profile (Sortino: {sortino:.2f}) with bounded non-normal tail risk under Cornish-Fisher expansion models.",
-            "catalyst": "Volatility compression and mathematical momentum persistence.",
+            "status": "Low Downside Risk" if score >= 80 else "Normal Volatility",
+            "thesis": "Solid risk-adjusted returns with limited crash risk in down markets.",
+            "catalyst": "Low downside volatility and steady historical recovery during market pullbacks.",
         }
 

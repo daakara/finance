@@ -17,7 +17,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
     momentumScore: 78,
     tailRiskScore: 82,
     compositeFactorScore: 82,
-    verdict: "Elite Core Alpha",
+    verdict: "Strong Buy / Core Hold",
     piotroskiFScore: 8,
   };
 
@@ -42,28 +42,28 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-5">
-      {/* Header with Composite Factor Health Pill */}
+      {/* Header with Financial Health Score */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
             <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight">
-              {symbol} 5-Factor Quantitative Profile
+              {symbol} Fundamental & Factor Profile
             </h3>
             {scores.piotroskiFScore && (
               <span className="text-[10px] font-mono bg-[#1b2434] text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded">
-                Piotroski F-Score: {scores.piotroskiFScore}/9
+                Piotroski Health: {scores.piotroskiFScore}/9
               </span>
             )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            5-factor multi-dimensional quantitative rating across growth, balance sheet quality, valuation, momentum, and downside risk
+            5-factor fundamental rating across growth, balance sheet quality, valuation, price momentum, and downside risk
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
           <div className="bg-cyan-950/80 border border-cyan-700/80 px-3 py-1 rounded-lg text-right font-mono">
-            <span className="text-[10px] text-cyan-300 block uppercase leading-none font-bold">Factor Score</span>
+            <span className="text-[10px] text-cyan-300 block uppercase leading-none font-bold">Health Score</span>
             <span className="text-base font-bold text-cyan-400">{scores.compositeFactorScore} / 100</span>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-mono">
@@ -83,7 +83,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
             <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${scores.growthScore}%` }}></div>
           </div>
-          <span className="text-[9px] text-slate-500 block">Top Quintile CAGR</span>
+          <span className="text-[9px] text-slate-500 block">Revenue & User Expansion</span>
         </div>
 
         {/* Quality / Health Factor */}
@@ -96,7 +96,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${scores.qualityScore}%` }}></div>
           </div>
           <span className="text-[9px] text-slate-500 block">
-            {scores.piotroskiFScore ? `Piotroski F-${scores.piotroskiFScore} Health` : "Robust Balance Sheet"}
+            {scores.piotroskiFScore ? `Piotroski ${scores.piotroskiFScore}/9 Health` : "Strong Balance Sheet"}
           </span>
         </div>
 
@@ -109,7 +109,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
             <div className="bg-amber-500 h-full rounded-full" style={{ width: `${scores.valuationScore}%` }}></div>
           </div>
-          <span className="text-[9px] text-slate-500 block">Fair vs Peer Median</span>
+          <span className="text-[9px] text-slate-500 block">Price Multiples vs Peers</span>
         </div>
 
         {/* Momentum Factor */}
@@ -121,19 +121,19 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
             <div className="bg-purple-500 h-full rounded-full" style={{ width: `${scores.momentumScore}%` }}></div>
           </div>
-          <span className="text-[9px] text-slate-500 block">Breakout Above 50DMA</span>
+          <span className="text-[9px] text-slate-500 block">Trend Above 50-Day Avg</span>
         </div>
 
         {/* Tail-Risk Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-slate-400">Tail Risk</span>
+            <span className="text-slate-400">Crash Protection</span>
             <span className="text-rose-400 font-bold">{scores.tailRiskScore}/100</span>
           </div>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
             <div className="bg-rose-500 h-full rounded-full" style={{ width: `${scores.tailRiskScore}%` }}></div>
           </div>
-          <span className="text-[9px] text-slate-500 block">Controlled Drawdown</span>
+          <span className="text-[9px] text-slate-500 block">Controlled Drawdown Risk</span>
         </div>
       </div>
 
@@ -150,15 +150,15 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
 
           <div className="grid grid-cols-3 gap-2 text-center pt-1">
             <div className="bg-[#111722] p-2 rounded-lg border border-[#243044]">
-              <span className="text-[10px] text-slate-400 font-mono block">P10 Pessimistic</span>
+              <span className="text-[10px] text-slate-400 font-mono block">P10 (Pessimistic)</span>
               <span className="text-sm font-bold font-mono text-rose-400">{er.p10Pessimistic}%</span>
             </div>
             <div className="bg-[#1b2434] p-2 rounded-lg border border-cyan-500/50 shadow-inner">
-              <span className="text-[10px] text-cyan-300 font-mono block font-bold">P50 Expected</span>
+              <span className="text-[10px] text-cyan-300 font-mono block font-bold">P50 (Median)</span>
               <span className="text-base font-bold font-mono text-cyan-400">+{er.p50Expected}%</span>
             </div>
             <div className="bg-[#111722] p-2 rounded-lg border border-[#243044]">
-              <span className="text-[10px] text-slate-400 font-mono block">P90 Optimistic</span>
+              <span className="text-[10px] text-slate-400 font-mono block">P90 (Optimistic)</span>
               <span className="text-sm font-bold font-mono text-emerald-400">+{er.p90Optimistic}%</span>
             </div>
           </div>

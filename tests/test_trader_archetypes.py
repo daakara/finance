@@ -41,5 +41,5 @@ def test_trader_archetype_analyzer_crypto():
 
     buffett_archetype = next(a for a in res["archetypes"] if "Warren Buffett" in a["name"])
     assert buffett_archetype["alignmentScore"] < 50
-    assert "Non-Productive" in buffett_archetype["status"]
+    assert "Not Buffett" in buffett_archetype["status"]
 
