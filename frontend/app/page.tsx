@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
@@ -8,6 +8,8 @@ import RiskMetricsCard from "../components/RiskMetricsCard";
 import AssetFactorRadar from "../components/AssetFactorRadar";
 import TraderArchetypesCard from "../components/TraderArchetypesCard";
 import DayTraderPositionSizer from "../components/DayTraderPositionSizer";
+import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
+import MarketGraphCard from "../components/MarketGraphCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
 export default function TerminalPage() {
@@ -86,10 +88,16 @@ export default function TerminalPage() {
                 <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
               )}
 
-              {/* Day Trader Secondary: Tail-Risk & Benchmark Ratios */}
+              {/* Day Trader Secondary: Self-Healing Accuracy & Walk-Forward Audit */}
+              <SelfHealingAccuracyCard
+                symbol={selectedSymbol}
+                auditData={data?.selfHealingAudit}
+              />
+
+              {/* Day Trader Tertiary: Tail-Risk & Benchmark Ratios */}
               <RiskMetricsCard analyticsData={data || undefined} />
 
-              {/* Day Trader Tertiary: Institutional Alignment Snapshot */}
+              {/* Day Trader Quaternary: Institutional Strategy Snapshot */}
               <TraderArchetypesCard
                 symbol={selectedSymbol}
                 traderArchetypes={data?.traderArchetypes}
@@ -105,13 +113,25 @@ export default function TerminalPage() {
                 expectedReturn={data?.expectedReturn}
               />
 
-              {/* Long-Term Secondary: Institutional Multi-Strategy Consensus */}
+              {/* Long-Term Secondary: Market Graph & Contagion Engine */}
+              <MarketGraphCard
+                symbol={selectedSymbol}
+                marketGraph={data?.marketGraph}
+              />
+
+              {/* Long-Term Tertiary: Institutional Multi-Strategy Consensus */}
               <TraderArchetypesCard
                 symbol={selectedSymbol}
                 traderArchetypes={data?.traderArchetypes}
               />
 
-              {/* Long-Term Tertiary: Risk & Distribution Analytics */}
+              {/* Long-Term Quaternary: Self-Healing Forecast Auditor */}
+              <SelfHealingAccuracyCard
+                symbol={selectedSymbol}
+                auditData={data?.selfHealingAudit}
+              />
+
+              {/* Long-Term Quinary: Risk & Distribution Analytics */}
               <RiskMetricsCard analyticsData={data || undefined} />
             </>
           )}

@@ -1,4 +1,4 @@
-"""FastAPI Router for Asset Analytics, Intraday Technicals, Risk Engine & Trader Archetypes."""
+﻿"""FastAPI Router for Asset Analytics, Intraday Technicals, Self-Healing Engine & Market Graph."""
 
 import math
 from datetime import datetime
@@ -9,12 +9,16 @@ import yfinance as yf
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
 from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
+from analyst_dashboard.analyzers.self_healing_engine import SelfHealingForecastAuditor
+from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
 fred_fetcher = FredMacroFetcher()
 trader_analyzer = TraderArchetypeAnalyzer()
+self_healing_auditor = SelfHealingForecastAuditor()
+market_graph_engine = MarketGraphEngine()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 
@@ -111,7 +115,7 @@ def get_asset_analytics(
     period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
     interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
 ):
-    """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, 5-Factor scores & Trader Archetypes."""
+    """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
     try:
         clean_period = period if isinstance(period, str) else "1y"
         clean_interval = interval if isinstance(interval, str) else "1d"
@@ -140,7 +144,7 @@ def get_asset_analytics(
         if hist.empty:
             raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
 
-        # Format candles for lightweight charts (support ISO strings with time for intraday)
+        # Format candles for lightweight charts (support Unix timestamps for intraday)
         candles = []
         for idx, row in hist.iterrows():
             if clean_interval in ["1m", "5m", "15m", "1h"]:
@@ -264,6 +268,17 @@ def get_asset_analytics(
             factor_scores=factor_scores,
         )
 
+        # Self-Healing Walk-Forward Forecast Audit
+        self_healing_audit = self_healing_auditor.audit_and_calibrate(
+            symbol=fetch_sym,
+            price_df=hist,
+            current_risk_metrics=adv_metrics,
+            expected_return_data=expected_return,
+        )
+
+        # Market Relationship & Contagion Graph
+        market_graph = market_graph_engine.get_relationship_graph(symbol=fetch_sym)
+
         return {
             "symbol": upper_sym,
             "period": clean_period,
@@ -277,6 +292,8 @@ def get_asset_analytics(
             "macroDifficulty": macro_difficulty,
             "expectedReturn": expected_return,
             "traderArchetypes": trader_archetypes,
+            "selfHealingAudit": self_healing_audit,
+            "marketGraph": market_graph,
             "analytics": risk_output,
         }
 
