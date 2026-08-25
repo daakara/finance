@@ -1,4 +1,4 @@
-import { AnalyticsResponse } from "../lib/api";
+import { AnalyticsResponse } from "@/lib/api";
 
 interface RiskMetricsCardProps {
   analyticsData?: AnalyticsResponse;

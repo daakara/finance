@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GemCandidate, runHiddenGemsScreener } from "../../lib/api";
+import { GemCandidate, runHiddenGemsScreener } from "@/lib/api";
 
 export default function ScreenerPage() {
   const [loading, setLoading] = useState(false);
