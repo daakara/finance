@@ -1,4 +1,4 @@
-"""Elite Trader Strategy Models & Smart-Money Quantitative Analysis Engine."""
+﻿"""Elite Trader Strategy Models & Smart-Money Quantitative Analysis Engine."""
 
 from typing import Dict, Any, List
 import pandas as pd
@@ -6,7 +6,13 @@ import numpy as np
 
 
 class TraderArchetypeAnalyzer:
-    """Analyzes any asset against proven institutional and iconic trader mental models."""
+    """Analyzes any asset against proven institutional and iconic trader mental models:
+    1. Warren Buffett (Value, Moat, Quality & FCF Yield)
+    2. Nancy Pelosi (Congressional Policy Catalysts & Subsidies)
+    3. Stanley Druckenmiller (Macro Trends, Interest Rates & Momentum)
+    4. Jim Simons (Quantitative Tail-Risk & Statistical Stability)
+    5. David Gardner / The Motley Fool (Rule Breaker Hyper-Growth & Secular Disruptors)
+    """
 
     CONGRESSIONAL_POLICY_TICKERS = {
         "NVDA": "Direct beneficiary of federal CHIPS Act subsidies and hyperscale AI computing demand.",
@@ -29,6 +35,15 @@ class TraderArchetypeAnalyzer:
         "BNB": {"score": 70, "thesis": "Continuous quarterly token burns financed by global exchange trading revenues.", "catalyst": "Ecosystem utility demand and automated supply deflation."},
     }
 
+    MOTLEY_FOOL_DISRUPTORS = {
+        "NVDA": {"score": 96, "thesis": "Top-dog GPU computing architecture with 75% gross margins and unmatched developer lock-in.", "catalyst": "Massive secular migration from CPU to accelerated AI datacenter compute."},
+        "PLTR": {"score": 94, "thesis": "Founder-led enterprise AI operating system with 81% gross margins and accelerating commercial revenue.", "catalyst": "AIP platform viral adoption and defense data ontology network effects."},
+        "CRWD": {"score": 90, "thesis": "First-mover cloud security platform with 76% subscription margins and strong net revenue retention.", "catalyst": "Single-agent Falcon platform module expansion and mandatory cybersecurity insurance."},
+        "TSLA": {"score": 88, "thesis": "Visionary founder-led clean transport and humanoid robotics pioneer with vertical manufacturing moats.", "catalyst": "Full Self-Driving (FSD) commercial robotaxi scaling and Megapack energy storage growth."},
+        "BTC-USD": {"score": 86, "thesis": "First-mover digital monetary network with unassailable brand dominance and institutional adoption.", "catalyst": "Global fiat debasement hedge and institutional custodial inflows."},
+        "SOL-USD": {"score": 88, "thesis": "High-throughput consumer blockchain capturing market share in decentralized trading and payments.", "catalyst": "Sub-second transaction finality and emerging retail application ecosystem."},
+    }
+
     def analyze_asset(
         self,
         symbol: str,
@@ -38,7 +53,7 @@ class TraderArchetypeAnalyzer:
         macro_indicators: Dict[str, Any],
         factor_scores: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Run all 4 iconic trader archetype models against the asset."""
+        """Run all 5 iconic trader archetype models against the asset."""
         sym_clean = symbol.upper().replace("-USD", "")
         is_crypto = "-USD" in symbol.upper() or sym_clean in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"]
 
@@ -54,7 +69,10 @@ class TraderArchetypeAnalyzer:
         # 4. The Medallion Quant (Jim Simons / Quantitative Risk)
         simons = self._evaluate_simons_quant(risk_metrics, price_df, factor_scores)
 
-        archetypes = [buffett, pelosi, druckenmiller, simons]
+        # 5. The Growth Disruptor (David Gardner / Motley Fool Rule Breakers)
+        gardner = self._evaluate_motley_fool_growth(symbol.upper(), sym_clean, is_crypto, factor_scores, info)
+
+        archetypes = [buffett, pelosi, druckenmiller, simons, gardner]
         consensus_score = round(sum(a["alignmentScore"] for a in archetypes) / len(archetypes))
 
         if consensus_score >= 85:
@@ -192,5 +210,33 @@ class TraderArchetypeAnalyzer:
             "status": "Low Downside Risk" if score >= 80 else "Normal Volatility",
             "thesis": "Solid risk-adjusted returns with limited crash risk in down markets.",
             "catalyst": "Low downside volatility and steady historical recovery during market pullbacks.",
+        }
+
+    def _evaluate_motley_fool_growth(
+        self, symbol: str, sym_clean: str, is_crypto: bool, factor_scores: Dict[str, Any], info: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """David Gardner / Motley Fool Rule Breakers (Hyper-Growth & Secular Disruptors)."""
+        disruptor = self.MOTLEY_FOOL_DISRUPTORS.get(symbol) or self.MOTLEY_FOOL_DISRUPTORS.get(sym_clean)
+        if disruptor:
+            return {
+                "name": "David Gardner (Motley Fool Rule Breakers)",
+                "archetype": "First-Mover Disruptors & Hyper-Growth",
+                "alignmentScore": disruptor["score"],
+                "status": "High-Conviction Rule Breaker",
+                "thesis": disruptor["thesis"],
+                "catalyst": disruptor["catalyst"],
+            }
+
+        growth = factor_scores.get("growthScore", 75)
+        momentum = factor_scores.get("momentumScore", 70)
+        score = min(95, max(40, int(growth * 0.65 + momentum * 0.35)))
+
+        return {
+            "name": "David Gardner (Motley Fool Rule Breakers)",
+            "archetype": "First-Mover Disruptors & Hyper-Growth",
+            "alignmentScore": score,
+            "status": "Growth Compounder" if score >= 80 else "Moderate Growth",
+            "thesis": "High gross margin secular growth candidate with expanding industry market share.",
+            "catalyst": "Emerging product adoption and industry transition toward digital/cloud architecture.",
         }
 
