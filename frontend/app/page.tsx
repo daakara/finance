@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TradingViewChart from "../components/TradingViewChart";
 import RiskMetricsCard from "../components/RiskMetricsCard";
+import WatchlistSidebar from "../components/WatchlistSidebar";
 
 const POPULAR_TICKERS = ["AAPL", "MSFT", "GOOGL", "NVDA", "TSLA", "BTC-USD", "ETH-USD"];
 
@@ -10,6 +11,16 @@ export default function DashboardPage() {
   const [symbol, setSymbol] = useState("AAPL");
   const [searchInput, setSearchInput] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const symParam = params.get("symbol");
+      if (symParam) {
+        setSymbol(symParam.toUpperCase());
+      }
+    }
+  }, []);
 
   const filteredTickers = POPULAR_TICKERS.filter((t) =>
     t.toLowerCase().includes(searchInput.toLowerCase())
@@ -87,27 +98,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick Select Pill Buttons */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider pr-2">Favorites:</span>
-        {POPULAR_TICKERS.map((sym) => (
-          <button
-            key={sym}
-            onClick={() => handleSelectSymbol(sym)}
-            className={`px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors focus-ring ${
-              symbol === sym
-                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/50"
-                : "bg-[#111722] text-slate-400 border border-[#243044] hover:bg-[#162030] hover:text-slate-200"
-            }`}
-          >
-            {sym}
-          </button>
-        ))}
-      </div>
+      {/* Responsive 3-Pane Terminal Grid Workspace */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        {/* Left Watchlist Sidebar (1 Col) */}
+        <div className="lg:col-span-1">
+          <WatchlistSidebar activeSymbol={symbol} onSelectSymbol={handleSelectSymbol} />
+        </div>
 
-      {/* Main Chart & Risk Analytics Grid */}
-      <TradingViewChart symbol={symbol} />
-      <RiskMetricsCard />
+        {/* Center Main Interactive Chart & Bottom Risk Grid (3 Cols) */}
+        <div className="lg:col-span-3 space-y-6">
+          <TradingViewChart symbol={symbol} />
+          <RiskMetricsCard />
+        </div>
+      </div>
     </div>
   );
 }
