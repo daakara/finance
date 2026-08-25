@@ -1,6 +1,7 @@
-"""FastAPI Router for Asset Analytics, Risk Engine, FRED Macro & Trader Archetypes."""
+"""FastAPI Router for Asset Analytics, Intraday Technicals, Risk Engine & Trader Archetypes."""
 
 import math
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
 import numpy as np
@@ -54,18 +55,66 @@ def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
         if rev_growth and rev_growth > 0.05:
             score += 1
 
-        score += 1  # Base operating efficiency
+        score += 1
     except Exception:
         score = 7
 
     return max(3, min(9, score))
 
 
+def compute_intraday_technicals(df: pd.DataFrame) -> dict:
+    """Compute VWAP, RSI-14, 20 EMA, and ATR for active day trading."""
+    if len(df) < 5:
+        return {"vwap": None, "rsi_14": 50.0, "ema_20": None, "atr_14": None}
+
+    # VWAP (Cumulative Price*Volume / Cumulative Volume)
+    typical_price = (df["High"] + df["Low"] + df["Close"]) / 3.0
+    vol = df["Volume"].replace(0, 1)
+    cum_vol = vol.cumsum()
+    cum_vp = (typical_price * vol).cumsum()
+    vwap = cum_vp / cum_vol
+    latest_vwap = round(float(vwap.iloc[-1]), 2) if not cum_vol.empty else None
+
+    # EMA 20
+    ema_20_series = df["Close"].ewm(span=min(20, len(df)), adjust=False).mean()
+    latest_ema20 = round(float(ema_20_series.iloc[-1]), 2)
+
+    # RSI 14
+    delta = df["Close"].diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.rolling(window=min(14, len(df)), min_periods=1).mean()
+    avg_loss = loss.rolling(window=min(14, len(df)), min_periods=1).mean()
+    rs = avg_gain / (avg_loss.replace(0, 0.0001))
+    rsi = 100 - (100 / (1 + rs))
+    latest_rsi = round(float(rsi.iloc[-1]), 1) if not rsi.empty else 50.0
+
+    # ATR 14
+    tr1 = df["High"] - df["Low"]
+    tr2 = (df["High"] - df["Close"].shift(1)).abs()
+    tr3 = (df["Low"] - df["Close"].shift(1)).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    atr = tr.rolling(window=min(14, len(df)), min_periods=1).mean()
+    latest_atr = round(float(atr.iloc[-1]), 2) if not atr.empty else 1.5
+
+    return {
+        "vwap": latest_vwap,
+        "rsi_14": latest_rsi,
+        "ema_20": latest_ema20,
+        "atr_14": latest_atr,
+    }
+
+
 @router.get("/{symbol}")
-def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data period (1y, 2y, 5y)")):
-    """Fetch live market data, calculate Cornish-Fisher risk, 5-Factor scores, FRED macro & Trader Archetypes."""
+def get_asset_analytics(
+    symbol: str,
+    period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
+    interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
+):
+    """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, 5-Factor scores & Trader Archetypes."""
     try:
         clean_period = period if isinstance(period, str) else "1y"
+        clean_interval = interval if isinstance(interval, str) else "1d"
         upper_sym = symbol.upper().strip()
 
         # Handle crypto ticker format
@@ -73,22 +122,34 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         if upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"]:
             fetch_sym = f"{upper_sym}-USD"
 
+        # If intraday interval selected, ensure period matches Yahoo Finance constraints
+        if clean_interval in ["1m"]:
+            clean_period = "1d"
+        elif clean_interval in ["5m", "15m"]:
+            clean_period = "5d" if clean_period not in ["1d", "5d"] else clean_period
+        elif clean_interval in ["1h"]:
+            clean_period = "1mo" if clean_period not in ["1d", "5d", "1mo"] else clean_period
+
         ticker_obj = yf.Ticker(fetch_sym)
-        hist = ticker_obj.history(period=clean_period)
+        hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
         if hist.empty and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
             ticker_obj = yf.Ticker(f"{upper_sym}-USD")
-            hist = ticker_obj.history(period=clean_period)
+            hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
         if hist.empty:
             raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
 
-        # Format candles for lightweight charts
+        # Format candles for lightweight charts (support ISO strings with time for intraday)
         candles = []
         for idx, row in hist.iterrows():
-            date_str = idx.strftime("%Y-%m-%d")
+            if clean_interval in ["1m", "5m", "15m", "1h"]:
+                time_val = int(idx.timestamp()) if hasattr(idx, "timestamp") else idx.strftime("%Y-%m-%d %H:%M")
+            else:
+                time_val = idx.strftime("%Y-%m-%d")
+
             candles.append({
-                "time": date_str,
+                "time": time_val,
                 "open": round(float(row["Open"]), 2),
                 "high": round(float(row["High"]), 2),
                 "low": round(float(row["Low"]), 2),
@@ -100,6 +161,9 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         prev_price = round(float(hist["Close"].iloc[-2]), 2) if len(hist) > 1 else current_price
         price_change_pct = round(((current_price - prev_price) / prev_price) * 100, 2) if prev_price > 0 else 0.0
 
+        # Compute intraday indicators (VWAP, RSI, EMA, ATR)
+        technicals = compute_intraday_technicals(hist)
+
         # Calculate comprehensive real risk metrics via AdvancedRiskAnalyzer
         risk_output = risk_analyzer.analyze_comprehensive_risk(hist)
         adv_metrics = risk_output.get("advanced_metrics", {})
@@ -108,7 +172,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         is_crypto = "-USD" in fetch_sym
         is_etf = upper_sym in KNOWN_ETFS
 
-        # Retrieve Company Info & Fundamental Piotroski F-Score (for individual equities)
+        # Retrieve Company Info & Fundamental Piotroski F-Score
         info = {}
         if not is_crypto and not is_etf:
             try:
@@ -130,7 +194,6 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
 
         # 3. Quality & Health Score (Calibrated for Equities, ETFs, and Crypto)
         if is_etf:
-            # ETFs have structural diversification & liquidity benefits (evaluated on Sortino + expense efficiency)
             quality_score = min(95, max(60, int(75 + sortino * 6.5)))
             valuation_score = 80 if upper_sym in ["SPY", "QQQ", "XLK", "SMH"] else 75
         elif is_crypto:
@@ -170,11 +233,8 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
 
         # 90-Day Expected Return Simulation with Asymptotic Mean-Reversion Damper
         ann_vol = round(float(hist["Close"].pct_change().std() * np.sqrt(252) * 100), 1)
-        
-        # Damping function: prevents extreme runaway drift on parabolic multi-bagger surges (e.g. INTC +259%)
         raw_median = (overall_return * 0.35) * 100
         if raw_median > 25.0:
-            # Smooth logarithmic compression above 25%
             damped_median = 25.0 + math.log(1.0 + (raw_median - 25.0)) * 6.0
         elif raw_median < -25.0:
             damped_median = -25.0 - math.log(1.0 + abs(raw_median + 25.0)) * 6.0
@@ -207,9 +267,11 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         return {
             "symbol": upper_sym,
             "period": clean_period,
+            "interval": clean_interval,
             "currentPrice": current_price,
             "priceChangePct24h": price_change_pct,
             "candles": candles,
+            "technicals": technicals,
             "factorScores": factor_scores,
             "dnaScores": factor_scores,
             "macroDifficulty": macro_difficulty,

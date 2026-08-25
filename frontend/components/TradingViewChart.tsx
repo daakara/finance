@@ -1,109 +1,97 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createChart, ColorType } from "lightweight-charts";
+import React, { useEffect, useRef, useState } from "react";
+import { createChart, ColorType, IChartApi, Time, CandlestickData } from "lightweight-charts";
 import { CandleData } from "../lib/api";
 
 interface TradingViewChartProps {
-  symbol: string;
-  data?: CandleData[];
-  onTimeframeChange?: (timeframe: string) => void;
+  data: CandleData[];
+  symbol?: string;
 }
 
 const TIMEFRAME_OPTIONS = [
-  { label: "1D", days: 1 },
   { label: "1W", days: 7 },
   { label: "1M", days: 30 },
   { label: "3M", days: 90 },
   { label: "1Y", days: 365 },
-  { label: "ALL", days: 1095 },
+  { label: "ALL", days: 9999 },
 ];
 
-export default function TradingViewChart({ symbol, data, onTimeframeChange }: TradingViewChartProps) {
+export default function TradingViewChart({ data, symbol = "AAPL" }: TradingViewChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState("1Y");
+  const chartRef = useRef<IChartApi | null>(null);
+  const [activeTimeframe, setActiveTimeframe] = useState("1M");
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#111722" },
-        textColor: "#94a3b8",
+        background: { type: ColorType.Solid, color: "#0B0E14" },
+        textColor: "#64748B",
       },
       grid: {
-        vertLines: { color: "#1b2434" },
-        horzLines: { color: "#1b2434" },
+        vertLines: { color: "#1E293B" },
+        horzLines: { color: "#1E293B" },
       },
-      width: chartContainerRef.current.clientWidth,
-      height: 420,
+      crosshair: {
+        vertLine: { color: "#38BDF8", width: 1, style: 3 },
+        horzLine: { color: "#38BDF8", width: 1, style: 3 },
+      },
+      timeScale: {
+        borderColor: "#1E293B",
+      },
+      rightPriceScale: {
+        borderColor: "#1E293B",
+      },
+      autoSize: true,
     });
 
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: "#10b981",
-      downColor: "#f43f5e",
+      upColor: "#10B981",
+      downColor: "#EF4444",
       borderVisible: false,
-      wickUpColor: "#10b981",
-      wickDownColor: "#f43f5e",
+      wickUpColor: "#10B981",
+      wickDownColor: "#EF4444",
     });
 
     if (data && data.length > 0) {
-      const targetOption = TIMEFRAME_OPTIONS.find((t) => t.label === selectedTimeframe) || TIMEFRAME_OPTIONS[4];
+      const targetOption = TIMEFRAME_OPTIONS.find((o) => o.label === activeTimeframe) || TIMEFRAME_OPTIONS[1];
       const sliceCount = Math.min(data.length, targetOption.days);
-      const filteredData = data.slice(-sliceCount);
+      const filteredData: CandlestickData<Time>[] = data.slice(-sliceCount).map((c) => ({
+        time: c.time as any,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }));
       candlestickSeries.setData(filteredData);
     }
 
     chart.timeScale().fitContent();
-
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
+    chartRef.current = chart;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [symbol, data, selectedTimeframe]);
-
-  const handleTfClick = (tfLabel: string) => {
-    setSelectedTimeframe(tfLabel);
-    if (onTimeframeChange) {
-      onTimeframeChange(tfLabel);
-    }
-  };
-
-  const latestCandle = data && data.length > 0 ? data[data.length - 1] : null;
+  }, [data, activeTimeframe]);
 
   return (
-    <div className="w-full bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold text-slate-100 font-mono">{symbol}</span>
-          {latestCandle && (
-            <span className="text-sm font-mono font-bold text-cyan-400">
-              ${latestCandle.close.toFixed(2)}
-            </span>
-          )}
-          <span className="text-xs bg-[#1b2434] text-slate-300 border border-[#364866] px-2.5 py-0.5 rounded font-mono">
-            Candlestick Chart
-          </span>
+    <div className="flex flex-col h-full w-full bg-[#0B0E14] rounded-xl border border-slate-800 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-200">{symbol} Multi-Timeframe Analysis</h2>
+          <p className="text-xs text-slate-500">Live candlestick price series & indicators</p>
         </div>
-
-        {/* Timeframe Selector Pills */}
-        <div className="flex items-center space-x-1.5 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+        <div className="flex gap-1 bg-[#161B22] p-1 rounded-lg border border-slate-800">
           {TIMEFRAME_OPTIONS.map((tf) => (
             <button
               key={tf.label}
-              onClick={() => handleTfClick(tf.label)}
-              className={`px-3 py-1 rounded text-xs font-mono font-medium transition-colors ${
-                selectedTimeframe === tf.label
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-md"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+              onClick={() => setActiveTimeframe(tf.label)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                activeTimeframe === tf.label
+                  ? "bg-[#38BDF8] text-slate-950 font-bold"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
               {tf.label}
@@ -111,8 +99,7 @@ export default function TradingViewChart({ symbol, data, onTimeframeChange }: Tr
           ))}
         </div>
       </div>
-
-      <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden border border-[#1b2434]" />
+      <div ref={chartContainerRef} className="flex-1 w-full min-h-[300px]" />
     </div>
   );
 }
