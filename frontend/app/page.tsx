@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import TradingViewChart from "../components/TradingViewChart";
 import RiskMetricsCard from "../components/RiskMetricsCard";
 import WatchlistSidebar from "../components/WatchlistSidebar";
+import AssetDNARadar from "../components/AssetDNARadar";
+import { AnalyticsResponse, fetchAssetAnalytics } from "../lib/api";
 
-const POPULAR_TICKERS = ["AAPL", "MSFT", "GOOGL", "NVDA", "TSLA", "BTC-USD", "ETH-USD"];
+const POPULAR_TICKERS = ["AAPL", "NVDA", "MSFT", "GOOGL", "TSLA", "BTC-USD", "ETH-USD", "SOL-USD", "SPY", "QQQ"];
 
 export default function DashboardPage() {
   const [symbol, setSymbol] = useState("AAPL");
   const [searchInput, setSearchInput] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsResponse | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -21,6 +25,27 @@ export default function DashboardPage() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      try {
+        const data = await fetchAssetAnalytics(symbol);
+        if (isMounted) {
+          setAnalyticsData(data);
+        }
+      } catch (err) {
+        console.error("Error loading asset analytics:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [symbol]);
 
   const filteredTickers = POPULAR_TICKERS.filter((t) =>
     t.toLowerCase().includes(searchInput.toLowerCase())
@@ -44,11 +69,14 @@ export default function DashboardPage() {
       {/* Top Banner Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-[#111722] border border-[#243044] rounded-xl p-6 shadow-xl">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-            Quantitative Market Terminal
-          </h1>
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+              Quantitative Market & Asset DNA Terminal
+            </h1>
+          </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Real-time multi-asset technical indicators, GARCH volatility forecasting & Cornish-Fisher VaR metrics
+            Real-world market data, 5-factor Asset DNA profiling, GARCH volatility forecasting & Cornish-Fisher tail risk models
           </p>
         </div>
 
@@ -63,11 +91,11 @@ export default function DashboardPage() {
                 setIsSearching(true);
               }}
               onFocus={() => setIsSearching(true)}
-              placeholder="Search ticker (e.g. NVDA)..."
+              placeholder="Search ticker (e.g. BTC, NVDA)..."
               className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-500 text-slate-100 text-sm rounded-lg px-3.5 py-2 pr-8 font-mono focus-ring placeholder-slate-500"
             />
             <button type="submit" className="absolute right-2.5 top-2.5 text-slate-400 hover:text-cyan-400 text-xs">
-              ?
+              ??
             </button>
           </form>
 
@@ -105,10 +133,29 @@ export default function DashboardPage() {
           <WatchlistSidebar activeSymbol={symbol} onSelectSymbol={handleSelectSymbol} />
         </div>
 
-        {/* Center Main Interactive Chart & Bottom Risk Grid (3 Cols) */}
+        {/* Center Main Interactive Chart, Asset DNA Profile & Bottom Risk Grid (3 Cols) */}
         <div className="lg:col-span-3 space-y-6">
-          <TradingViewChart symbol={symbol} />
-          <RiskMetricsCard />
+          {/* Main Chart */}
+          <TradingViewChart symbol={symbol} data={analyticsData?.candles} />
+
+          {/* FPL-DNA Style Financial Asset DNA Profile */}
+          <AssetDNARadar
+            symbol={symbol}
+            dnaScores={analyticsData?.dnaScores}
+            macroDifficulty={analyticsData?.macroDifficulty}
+            expectedReturn={analyticsData?.expectedReturn}
+          />
+
+          {/* Risk Metrics */}
+          <RiskMetricsCard analyticsData={analyticsData || undefined} />
+
+          {/* Legal Compliance & Financial Disclaimer */}
+          <div className="bg-[#090d14] border border-[#243044] rounded-lg p-4 text-[11px] text-slate-500 font-mono leading-relaxed">
+            <span className="text-slate-400 font-bold block mb-1">?? REGULATORY & COMPLIANCE DISCLAIMER:</span>
+            Antigravity Quantitative Market Terminal is strictly an educational and quantitative research software tool. 
+            All metrics, Asset DNA ratings, expected return estimates, and volatility forecasts represent algorithmic statistical models and do not constitute financial, investment, tax, or legal advice. 
+            Past statistical performance does not guarantee future results.
+          </div>
         </div>
       </div>
     </div>

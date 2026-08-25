@@ -1,3 +1,5 @@
+"use client";
+
 import { AnalyticsResponse } from "../lib/api";
 
 interface RiskMetricsCardProps {
@@ -6,6 +8,11 @@ interface RiskMetricsCardProps {
 
 export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps) {
   const metrics = analyticsData?.analytics?.advanced_metrics;
+
+  const var95 = metrics?.Modified_VaR_95 ?? -3.42;
+  const var99 = metrics?.Modified_VaR_99 ?? -5.18;
+  const sortino = metrics?.Sortino_Ratio ?? 1.84;
+  const calmar = metrics?.Calmar_Ratio ?? 2.15;
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-6 shadow-xl space-y-4">
@@ -27,10 +34,10 @@ export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps)
             <span className="text-xs text-slate-500 cursor-help" title="Cornish-Fisher expansion accounting for skewness and kurtosis at 95% confidence level">?</span>
           </div>
           <span className="text-2xl font-bold font-mono text-rose-400 block">
-            {metrics?.Modified_VaR_95 !== undefined ? `${metrics.Modified_VaR_95.toFixed(2)}%` : "-3.42%"}
+            {var95.toFixed(2)}%
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-rose-500 h-full w-[65%] rounded-full"></div>
+            <div className="bg-rose-500 h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(var95) * 15)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 block">Low Tail Risk vs S&P Benchmark</span>
         </div>
@@ -42,10 +49,10 @@ export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps)
             <span className="text-xs text-slate-500 cursor-help" title="Extreme tail loss at 99% confidence level">?</span>
           </div>
           <span className="text-2xl font-bold font-mono text-rose-500 block">
-            {metrics?.Modified_VaR_99 !== undefined ? `${metrics.Modified_VaR_99.toFixed(2)}%` : "-5.18%"}
+            {var99.toFixed(2)}%
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-rose-600 h-full w-[80%] rounded-full"></div>
+            <div className="bg-rose-600 h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(var99) * 12)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 block">1-in-100 Day Tail Threshold</span>
         </div>
@@ -57,12 +64,12 @@ export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps)
             <span className="text-xs text-slate-500 cursor-help" title="Risk-adjusted return penalizing downside volatility only">?</span>
           </div>
           <span className="text-2xl font-bold font-mono text-emerald-400 block">
-            {metrics?.Sortino_Ratio !== undefined ? metrics.Sortino_Ratio.toFixed(2) : "1.84"}
+            {sortino.toFixed(2)}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-emerald-400 h-full w-[78%] rounded-full"></div>
+            <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${Math.min(100, Math.max(10, sortino * 35))}%` }}></div>
           </div>
-          <span className="text-[10px] text-emerald-400 block font-semibold">Top 15% Peer Percentile</span>
+          <span className="text-[10px] text-emerald-400 block font-semibold">Top Peer Percentile</span>
         </div>
 
         {/* Calmar Ratio Card */}
@@ -72,12 +79,12 @@ export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps)
             <span className="text-xs text-slate-500 cursor-help" title="Annualized return relative to maximum drawdown">?</span>
           </div>
           <span className="text-2xl font-bold font-mono text-cyan-400 block">
-            {metrics?.Calmar_Ratio !== undefined ? metrics.Calmar_Ratio.toFixed(2) : "2.15"}
+            {calmar.toFixed(2)}
           </span>
           <div className="w-full bg-[#1b2434] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-cyan-400 h-full w-[85%] rounded-full"></div>
+            <div className="bg-cyan-400 h-full rounded-full" style={{ width: `${Math.min(100, Math.max(10, calmar * 30))}%` }}></div>
           </div>
-          <span className="text-[10px] text-cyan-400 block font-semibold">Excellent Drawdown Recovery</span>
+          <span className="text-[10px] text-cyan-400 block font-semibold">Drawdown Recovery</span>
         </div>
       </div>
     </div>
