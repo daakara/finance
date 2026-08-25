@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import TradingViewChart from "@/components/TradingViewChart";
-import RiskMetricsCard from "@/components/RiskMetricsCard";
+import TradingViewChart from "../components/TradingViewChart";
+import RiskMetricsCard from "../components/RiskMetricsCard";
 
 export default function DashboardPage() {
   const [symbol, setSymbol] = useState("AAPL");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { GemCandidate, runHiddenGemsScreener } from "@/lib/api";
+import { GemCandidate, runHiddenGemsScreener } from "../../lib/api";
 
 export default function ScreenerPage() {
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function ScreenerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">?? Hidden Gems Screener</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Hidden Gems Screener</h1>
           <p className="text-sm text-gray-400">
             Multi-factor screening system identifying high-upside under-the-radar assets
           </p>

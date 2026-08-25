@@ -1,4 +1,4 @@
-import { AnalyticsResponse } from "@/lib/api";
+import { AnalyticsResponse } from "../lib/api";
 
 interface RiskMetricsCardProps {
   analyticsData?: AnalyticsResponse;
@@ -9,7 +9,7 @@ export default function RiskMetricsCard({ analyticsData }: RiskMetricsCardProps)
 
   return (
     <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6 shadow-lg">
-      <h3 className="text-lg font-semibold text-white mb-4">??? Advanced Risk Analytics</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">Advanced Risk Analytics</h3>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-[#0d1117] p-4 rounded-lg border border-[#21262d]">

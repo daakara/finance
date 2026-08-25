@@ -38,7 +38,6 @@ export default function TradingViewChart({ symbol, data }: TradingViewChartProps
     if (data && data.length > 0) {
       candlestickSeries.setData(data);
     } else {
-      // Mock historical data for canvas verification
       const dummyData = [
         { time: "2024-01-01", open: 150, high: 155, low: 148, close: 153 },
         { time: "2024-01-02", open: 153, high: 158, low: 151, close: 156 },
@@ -64,7 +63,7 @@ export default function TradingViewChart({ symbol, data }: TradingViewChartProps
   return (
     <div className="w-full bg-[#161b22] border border-[#30363d] rounded-lg p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">60fps TradingView Chart — {symbol}</h3>
+        <h3 className="text-lg font-semibold text-white">60fps TradingView Chart - {symbol}</h3>
         <span className="text-xs bg-[#21262d] text-sky-400 px-3 py-1 rounded-full font-mono">
           Canvas Renderer
         </span>
