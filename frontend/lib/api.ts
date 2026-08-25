@@ -42,6 +42,21 @@ export interface ExpectedReturnForecast {
   forecastHorizonDays: number;
 }
 
+export interface TraderArchetype {
+  name: string;
+  archetype: string;
+  alignmentScore: number;
+  status: string;
+  thesis: string;
+  catalyst: string;
+}
+
+export interface TraderArchetypeConsensus {
+  consensusScore: number;
+  verdict: string;
+  archetypes: TraderArchetype[];
+}
+
 export interface AnalyticsResponse {
   symbol: string;
   period: string;
@@ -51,6 +66,7 @@ export interface AnalyticsResponse {
   dnaScores: AssetDNAScores;
   macroDifficulty: MacroDifficultyRating;
   expectedReturn: ExpectedReturnForecast;
+  traderArchetypes?: TraderArchetypeConsensus;
   analytics: {
     advanced_metrics?: {
       VaR_95?: number;
@@ -100,6 +116,7 @@ export interface GemCandidate {
   primary_catalyst: string;
   asset_type?: string;
   dna_verdict?: string;
+  archetype_alignment?: string;
 }
 
 export interface ScreenerResponse {
@@ -209,7 +226,7 @@ export function calculateAssetDNA(symbol: string, candles: CandleData[], riskMet
     momentum = Math.min(99, Math.max(25, Math.round(50 + ((latest - ma20) / ma20) * 140)));
   }
 
-  // Quality & Health Score (incorporates Piotroski fundamental baseline)
+  // Quality & Health Score
   const piotroskiFScore = isCrypto ? undefined : (isTech ? 8 : 7);
   const quality = isCrypto ? (symbol.includes("BTC") ? 92 : 84) : isTech ? 90 : 78;
 
@@ -364,6 +381,46 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
   const riskMetrics = calculateRealRiskMetrics(candles);
   const dnaScores = calculateAssetDNA(symbol, candles, riskMetrics);
 
+  // Fallback Trader Archetypes
+  const traderArchetypes: TraderArchetypeConsensus = {
+    consensusScore: 82,
+    verdict: "Strong Smart-Money Accumulation",
+    archetypes: [
+      {
+        name: "Warren Buffett (The Oracle)",
+        archetype: "Defensive Quality & Wide Moats",
+        alignmentScore: 88,
+        status: "High Moat Alignment",
+        thesis: "High free cash flow yield with durable competitive moat and disciplined capital allocation.",
+        catalyst: "Resilient operating margins and consistent share repurchases across market cycles.",
+      },
+      {
+        name: "Nancy Pelosi (The Capitol Whale)",
+        archetype: "Legislative Catalysts & High-Conviction Tech",
+        alignmentScore: 94,
+        status: "Active Policy Tailwinds",
+        thesis: "Strategic semiconductor, defense, and federal infrastructure policy subsidy beneficiary.",
+        catalyst: "Federal digital transformation mandates and long-duration LEAPS call option flow.",
+      },
+      {
+        name: "Stanley Druckenmiller (The Macro Sorcerer)",
+        archetype: "Macro Liquidity & Trend Reflexivity",
+        alignmentScore: 82,
+        status: "Strong Macro Inflection",
+        thesis: "Positive monetary easing backdrop with strong trend momentum above key moving averages.",
+        catalyst: "Yield curve steepening and accelerating institutional accumulation.",
+      },
+      {
+        name: "Jim Simons (The Medallion Quant)",
+        archetype: "Statistical Arbitrage & Volatility Mean Reversion",
+        alignmentScore: 76,
+        status: "Statistically Favorable",
+        thesis: "Superior Sortino ratio with bounded tail loss probability under non-normal distribution models.",
+        catalyst: "Mathematical volatility compression and persistent factor momentum.",
+      },
+    ],
+  };
+
   return {
     symbol: symbol.toUpperCase(),
     period,
@@ -388,6 +445,7 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
       annualizedVolatility: 22.4,
       forecastHorizonDays: 90,
     },
+    traderArchetypes,
     analytics: {
       advanced_metrics: riskMetrics,
       drawdown_analysis: { max_drawdown: riskMetrics.Max_Drawdown },
@@ -452,6 +510,7 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
       investment_thesis: `High Composite DNA score (${score.toFixed(1)}/100). Favorable risk-adjusted Sortino ratio with strong momentum breakout above 50-day moving average.`,
       primary_catalyst: "Upcoming product cycle expansion, institutional accumulation & multiple re-rating.",
       dna_verdict: score > 85 ? "Elite Core Pick" : "Strong Differential",
+      archetype_alignment: isHighGrowth ? "Pelosi / Druckenmiller High Synergy" : "Buffett Value Alignment",
     };
   });
 

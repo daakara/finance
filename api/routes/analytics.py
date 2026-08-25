@@ -1,4 +1,4 @@
-"""FastAPI Router for Asset Analytics, Risk Engine, Real-Time Market Feeds & FRED Macro."""
+"""FastAPI Router for Asset Analytics, Risk Engine, FRED Macro & Trader Archetypes."""
 
 from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
@@ -7,11 +7,13 @@ import yfinance as yf
 import requests
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
+from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
 fred_fetcher = FredMacroFetcher()
+trader_analyzer = TraderArchetypeAnalyzer()
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
@@ -50,7 +52,7 @@ def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
         if rev_growth and rev_growth > 0.05:
             score += 1
 
-        score += 1  # Base operating efficiency criteria
+        score += 1  # Base operating efficiency
     except Exception:
         score = 7
 
@@ -59,7 +61,7 @@ def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
 
 @router.get("/{symbol}")
 def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data period (1y, 2y, 5y)")):
-    """Fetch live market data, calculate Cornish-Fisher risk, 5-factor DNA and FRED macro indicators."""
+    """Fetch live market data, calculate Cornish-Fisher risk, DNA scores, FRED macro & Trader Archetypes."""
     try:
         clean_period = period if isinstance(period, str) else "1y"
         upper_sym = symbol.upper().strip()
@@ -162,7 +164,17 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         # Live FRED Macroeconomic Indicators & MDR Engine
         macro_difficulty = fred_fetcher.get_macro_indicators()
         if is_crypto and macro_difficulty["rating"] < 3:
-            macro_difficulty["rating"] += 1  # Crypto beta adjustment
+            macro_difficulty["rating"] += 1
+
+        # Elite Trader Archetype Models Analysis
+        trader_archetypes = trader_analyzer.analyze_asset(
+            symbol=fetch_sym,
+            info=info,
+            price_df=hist,
+            risk_metrics=adv_metrics,
+            macro_indicators=macro_difficulty,
+            dna_scores=dna_scores,
+        )
 
         return {
             "symbol": upper_sym,
@@ -173,6 +185,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "dnaScores": dna_scores,
             "macroDifficulty": macro_difficulty,
             "expectedReturn": expected_return,
+            "traderArchetypes": trader_archetypes,
             "analytics": risk_output,
         }
 
