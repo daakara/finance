@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -32,7 +32,6 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     setActiveCategory(cat);
     setIsMobileExpanded(true);
 
-    // Auto-select the top asset in this category if current asset is not in it
     if (cat !== "All") {
       const topItem = WATCHLIST_ITEMS.find((item) => item.type === cat);
       if (topItem && activeSymbol !== topItem.symbol) {
@@ -57,9 +56,10 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         {/* Accordion toggle button visible on mobile (< 1024px) */}
         <button
           onClick={() => setIsMobileExpanded((prev) => !prev)}
-          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1 rounded font-mono flex items-center gap-1"
+          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1 rounded font-mono flex items-center gap-1.5 hover:bg-[#162030] transition-colors"
         >
-          <span>{isMobileExpanded ? "Collapse ?" : "Expand ?"}</span>
+          <span>{isMobileExpanded ? "Hide List" : "Show List"}</span>
+          <span className="text-[10px]">{isMobileExpanded ? "▲" : "▼"}</span>
         </button>
       </div>
 
@@ -89,31 +89,30 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         {filteredItems.map((item) => (
           <button
             key={item.symbol}
-            onClick={() => {
-              onSelectSymbol(item.symbol);
-              setIsMobileExpanded(false);
-            }}
-            className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center justify-between border min-h-[44px] ${
+            onClick={() => onSelectSymbol(item.symbol)}
+            className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left font-mono ${
               activeSymbol === item.symbol
-                ? "bg-[#1b2434] border-cyan-500/60 text-slate-100 shadow-md"
-                : "bg-[#090d14] border-[#243044] text-slate-300 hover:border-[#364866]"
+                ? "bg-[#1b2434] border-cyan-500 shadow-md"
+                : "bg-[#090d14] border-[#1b2434] hover:border-[#364866]"
             }`}
           >
             <div>
-              <div className="flex items-center space-x-1.5">
-                <span className="font-bold font-mono text-sm block leading-tight text-slate-100">
-                  {item.symbol}
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded font-mono bg-[#1b2434] text-slate-400 border border-[#364866]">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-slate-100">{item.symbol}</span>
+                <span className="text-[9px] text-slate-400 px-1 py-0.2 rounded bg-[#162030]">
                   {item.type}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">{item.name}</span>
+              <span className="text-[10px] text-slate-400 block truncate max-w-[120px]">{item.name}</span>
             </div>
 
-            <div className="text-right font-mono">
-              <span className="text-xs font-semibold block text-slate-200">{item.price}</span>
-              <span className={`text-[10px] font-bold ${item.isUp ? "text-emerald-400" : "text-rose-400"}`}>
+            <div className="text-right">
+              <span className="text-xs font-bold text-slate-200 block">{item.price}</span>
+              <span
+                className={`text-[10px] font-semibold ${
+                  item.isUp ? "text-emerald-400" : "text-rose-400"
+                }`}
+              >
                 {item.change}
               </span>
             </div>

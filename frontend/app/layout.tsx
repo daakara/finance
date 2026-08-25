@@ -1,5 +1,4 @@
-import "./globals.css";
-import Navbar from "../components/Navbar";
+﻿import "./globals.css";
 
 export const metadata = {
   title: "Financial Market Analysis Platform",
@@ -9,9 +8,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#0d1117] text-[#c9d1d9]">
-        <Navbar />
-        <main className="max-w-7xl mx-auto p-6">{children}</main>
+      <body className="min-h-screen bg-[#070a10] text-[#c9d1d9] antialiased">
+        {children}
       </body>
     </html>
   );
