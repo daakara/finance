@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
@@ -15,23 +17,44 @@ const WATCHLIST_ITEMS = [
 ];
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
+
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 shadow-xl space-y-3 h-full">
+      {/* Header with Mobile Accordion Toggle */}
       <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
-        <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
-          Watchlist & Signals
-        </span>
-        <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded font-mono">
-          Live Stream
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+            Watchlist & Signals
+          </span>
+          <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded font-mono">
+            Live Stream
+          </span>
+        </div>
+
+        {/* Accordion toggle button visible on mobile (< 1024px) */}
+        <button
+          onClick={() => setIsMobileExpanded((prev) => !prev)}
+          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1 rounded font-mono flex items-center gap-1"
+        >
+          <span>{isMobileExpanded ? "Collapse ?" : "Expand ?"}</span>
+        </button>
       </div>
 
-      <div className="space-y-1.5 overflow-y-auto max-h-[420px]">
+      {/* Watchlist Stream Items */}
+      <div
+        className={`space-y-1.5 overflow-y-auto max-h-[420px] transition-all duration-200 ${
+          isMobileExpanded ? "block" : "hidden lg:block"
+        }`}
+      >
         {WATCHLIST_ITEMS.map((item) => (
           <button
             key={item.symbol}
-            onClick={() => onSelectSymbol(item.symbol)}
-            className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center justify-between border ${
+            onClick={() => {
+              onSelectSymbol(item.symbol);
+              setIsMobileExpanded(false);
+            }}
+            className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center justify-between border min-h-[44px] ${
               activeSymbol === item.symbol
                 ? "bg-[#1b2434] border-cyan-500/60 text-slate-100 shadow-md"
                 : "bg-[#090d14] border-[#243044] text-slate-300 hover:border-[#364866]"
