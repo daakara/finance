@@ -19,11 +19,10 @@ export interface AssetFactorScores {
   momentumScore: number;        // 0-100 (RSI, Moving Avg Trend)
   tailRiskScore: number;        // 0-100 (Downside protection)
   compositeFactorScore: number; // Overall Quantitative Rating (0-100)
-  verdict: string;              // "Elite Core Alpha", "Strong Differential", "Moderate Growth Hold", "High Risk"
+  verdict: string;              // "Strong Buy / Core Accumulation", "Favorable Multi-Strategy Buy", "Moderate Growth Hold", "High Volatility Speculative"
   piotroskiFScore?: number;     // 0-9 Fundamental Health Score
 }
 
-// Backwards compatibility alias
 export type AssetDNAScores = AssetFactorScores;
 
 export interface MacroDifficultyRating {
@@ -67,7 +66,7 @@ export interface AnalyticsResponse {
   priceChangePct24h: number;
   candles: CandleData[];
   factorScores: AssetFactorScores;
-  dnaScores?: AssetFactorScores; // Alias for backward compatibility
+  dnaScores?: AssetFactorScores;
   macroDifficulty: MacroDifficultyRating;
   expectedReturn: ExpectedReturnForecast;
   traderArchetypes?: TraderArchetypeConsensus;
@@ -209,9 +208,10 @@ export function calculateRealRiskMetrics(candles: CandleData[]) {
   };
 }
 
-// Helper: Calculate 5-Factor Asset Profile
+// Helper: Calculate 5-Factor Asset Profile (Calibrated for Stocks, ETFs, Crypto)
 export function calculateAssetFactorScores(symbol: string, candles: CandleData[], riskMetrics: ReturnType<typeof calculateRealRiskMetrics>): AssetFactorScores {
   const isCrypto = symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("SOL") || symbol.includes("-USD");
+  const isETF = ["SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG"].includes(symbol.toUpperCase());
   const isTech = ["NVDA", "AAPL", "MSFT", "GOOGL", "TSLA", "PLTR"].includes(symbol.toUpperCase());
 
   // Growth Score
@@ -223,7 +223,7 @@ export function calculateAssetFactorScores(symbol: string, candles: CandleData[]
     growth = Math.min(98, Math.max(30, Math.round(50 + overallReturn * 35)));
   }
 
-  // Momentum Score based on short vs long Moving Average
+  // Momentum Score
   let momentum = 70;
   if (candles.length >= 20) {
     const ma20 = candles.slice(-20).reduce((a, b) => a + b.close, 0) / 20;
@@ -232,11 +232,20 @@ export function calculateAssetFactorScores(symbol: string, candles: CandleData[]
   }
 
   // Quality & Health Score
-  const piotroskiFScore = isCrypto ? undefined : (isTech ? 8 : 7);
-  const quality = isCrypto ? (symbol.includes("BTC") ? 92 : 84) : isTech ? 90 : 78;
+  let quality = 80;
+  let piotroskiFScore: number | undefined = undefined;
+  if (isETF) {
+    const sortino = riskMetrics.Sortino_Ratio || 1.5;
+    quality = Math.min(95, Math.max(60, Math.round(75 + sortino * 6.5)));
+  } else if (isCrypto) {
+    quality = symbol.includes("BTC") ? 92 : (symbol.includes("ETH") ? 88 : 78);
+  } else {
+    piotroskiFScore = isTech ? 8 : 7;
+    quality = isTech ? 90 : 78;
+  }
 
   // Valuation Score
-  const valuation = isCrypto ? 76 : isTech ? 70 : 80;
+  const valuation = isETF ? (["SPY", "QQQ", "SMH"].includes(symbol.toUpperCase()) ? 80 : 75) : (isCrypto ? 75 : (isTech ? 70 : 80));
 
   // Tail Risk Score
   const sortino = riskMetrics.Sortino_Ratio || 1.5;
@@ -244,11 +253,10 @@ export function calculateAssetFactorScores(symbol: string, candles: CandleData[]
 
   const composite = Math.round((growth * 0.25) + (quality * 0.25) + (valuation * 0.15) + (momentum * 0.20) + (tailRisk * 0.15));
 
-  let verdict = "Elite Core Asset";
-  if (composite >= 85) verdict = "Elite Core Alpha";
-  else if (composite >= 75) verdict = "Strong Differential Pick";
-  else if (composite >= 65) verdict = "Moderate Growth Hold";
-  else verdict = "High Volatility Speculative";
+  let verdict = "Moderate Growth Hold";
+  if (composite >= 80) verdict = "Strong Buy / Core Accumulation";
+  else if (composite >= 72) verdict = "Favorable Multi-Strategy Buy";
+  else if (composite < 60) verdict = "High Volatility Speculative";
 
   return {
     growthScore: growth,
@@ -262,7 +270,6 @@ export function calculateAssetFactorScores(symbol: string, candles: CandleData[]
   };
 }
 
-// Backward compatibility alias
 export const calculateAssetDNA = calculateAssetFactorScores;
 
 // Live Direct Data Fetcher for Crypto via Public CoinGecko API
@@ -299,7 +306,7 @@ async function fetchDirectCryptoData(coinId: string, days: number = 365): Promis
 export async function fetchAssetAnalytics(symbol: string, period: string = "1y"): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
   
-  // 1. Try Backend API first (streams live real-time Yahoo Finance / FRED / CCXT data from Render)
+  // 1. Try Backend API first
   try {
     const res = await fetch(`${API_BASE_URL}/analytics/${encodeURIComponent(symbol)}?period=${period}`, {
       signal: AbortSignal.timeout(4500),
@@ -362,7 +369,7 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
     const refPrice = basePrices[upper] || 250.0;
     currentPrice = refPrice;
 
-    // Build real trailing history for the past 365 days anchored to actual real quote
+    // Build real trailing history
     const today = new Date();
     let price = refPrice * 0.78;
     for (let i = 365; i >= 0; i--) {
@@ -392,42 +399,41 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
   const riskMetrics = calculateRealRiskMetrics(candles);
   const factorScores = calculateAssetFactorScores(symbol, candles, riskMetrics);
 
-  // Fallback Trader Archetypes
   const traderArchetypes: TraderArchetypeConsensus = {
     consensusScore: 82,
-    verdict: "Strong Smart-Money Accumulation",
+    verdict: "Strong Buy / Core Accumulation",
     archetypes: [
       {
-        name: "Warren Buffett (The Oracle)",
-        archetype: "Defensive Quality & Wide Moats",
+        name: "Warren Buffett (Value & Moat)",
+        archetype: "High Cash Flow & Wide Moats",
         alignmentScore: 88,
         status: "High Moat Alignment",
-        thesis: "High free cash flow yield with durable competitive moat and disciplined capital allocation.",
-        catalyst: "Resilient operating margins and consistent share repurchases across market cycles.",
+        thesis: "High cash generation with strong pricing power, low corporate debt, and consistent share buybacks.",
+        catalyst: "Durable competitive advantage and steady profit margins across economic cycles.",
       },
       {
-        name: "Nancy Pelosi (The Capitol Whale)",
-        archetype: "Legislative Catalysts & High-Conviction Tech",
+        name: "Nancy Pelosi (Policy & Government Catalysts)",
+        archetype: "Government Spending & High-Conviction Tech",
         alignmentScore: 94,
-        status: "Active Policy Tailwinds",
-        thesis: "Strategic semiconductor, defense, and federal infrastructure policy subsidy beneficiary.",
-        catalyst: "Federal digital transformation mandates and long-duration LEAPS call option flow.",
+        status: "Strong Policy Support",
+        thesis: "Direct beneficiary of federal technology subsidies, infrastructure spending, and government contracts.",
+        catalyst: "Federal digital modernization mandates and legislative funding programs.",
       },
       {
-        name: "Stanley Druckenmiller (The Macro Sorcerer)",
-        archetype: "Macro Liquidity & Trend Reflexivity",
+        name: "Stanley Druckenmiller (Macro Trends)",
+        archetype: "Interest Rate Trends & Market Momentum",
         alignmentScore: 82,
-        status: "Strong Macro Inflection",
-        thesis: "Positive monetary easing backdrop with strong trend momentum above key moving averages.",
-        catalyst: "Yield curve steepening and accelerating institutional accumulation.",
+        status: "Positive Macro Trend",
+        thesis: "The lower interest rate environment and upward price momentum favor holding this asset.",
+        catalyst: "Central bank rate cuts and strong institutional buying momentum.",
       },
       {
-        name: "Jim Simons (The Medallion Quant)",
-        archetype: "Statistical Arbitrage & Volatility Mean Reversion",
+        name: "Jim Simons (Quantitative Risk)",
+        archetype: "Statistical Stability & Crash Protection",
         alignmentScore: 76,
-        status: "Statistically Favorable",
-        thesis: "Superior Sortino ratio with bounded tail loss probability under non-normal distribution models.",
-        catalyst: "Mathematical volatility compression and persistent factor momentum.",
+        status: "Low Downside Risk",
+        thesis: "Solid risk-adjusted returns with limited crash risk in down markets.",
+        catalyst: "Low downside volatility and steady historical recovery during market pullbacks.",
       },
     ],
   };
@@ -521,8 +527,8 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
       risk_rating: score > 80 ? "Low-to-Medium Risk" : "Moderate Risk",
       investment_thesis: `High Multi-Factor score (${score.toFixed(1)}/100). Favorable risk-adjusted Sortino ratio with strong momentum breakout above 50-day moving average.`,
       primary_catalyst: "Upcoming product cycle expansion, institutional accumulation & multiple re-rating.",
-      factor_verdict: score > 85 ? "Elite Core Pick" : "Strong Differential",
-      dna_verdict: score > 85 ? "Elite Core Pick" : "Strong Differential",
+      factor_verdict: score > 80 ? "Strong Buy / Core Accumulation" : "Moderate Growth Hold",
+      dna_verdict: score > 80 ? "Strong Buy / Core Accumulation" : "Moderate Growth Hold",
       archetype_alignment: isHighGrowth ? "Pelosi / Druckenmiller High Synergy" : "Buffett Value Alignment",
     };
   });

@@ -22,6 +22,13 @@ class TraderArchetypeAnalyzer:
         "SOL-USD": "High-speed blockchain adoption for global financial payment networks.",
     }
 
+    CRYPTO_MOATS = {
+        "BTC": {"score": 78, "thesis": "Digital gold monetary premium and spot ETF institutional custody baseline.", "catalyst": "Fixed 21M supply cap and dominant store-of-value network effects."},
+        "ETH": {"score": 75, "thesis": "Yield-generating base protocol ($3B+ annual fee burn & 3.2% validator staking yield).", "catalyst": "Layer-2 settlement growth and institutional tokenized real-world assets."},
+        "SOL": {"score": 72, "thesis": "High-velocity decentralized exchange volume and ultra-low cost transaction moat.", "catalyst": "Global consumer payments integration and developer ecosystem expansion."},
+        "BNB": {"score": 70, "thesis": "Continuous quarterly token burns financed by global exchange trading revenues.", "catalyst": "Ecosystem utility demand and automated supply deflation."},
+    }
+
     def analyze_asset(
         self,
         symbol: str,
@@ -33,9 +40,9 @@ class TraderArchetypeAnalyzer:
     ) -> Dict[str, Any]:
         """Run all 4 iconic trader archetype models against the asset."""
         sym_clean = symbol.upper().replace("-USD", "")
-        is_crypto = "-USD" in symbol.upper() or sym_clean in ["BTC", "ETH", "SOL"]
+        is_crypto = "-USD" in symbol.upper() or sym_clean in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"]
 
-        # 1. The Oracle (Warren Buffett / Berkshire Hathaway)
+        # 1. The Oracle (Warren Buffett / Berkshire Hathaway Value & Cash Flow)
         buffett = self._evaluate_buffett_moat(sym_clean, is_crypto, info, factor_scores)
 
         # 2. The Capitol Whale (Nancy Pelosi / Congressional Policy Flows)
@@ -68,24 +75,35 @@ class TraderArchetypeAnalyzer:
     def _evaluate_buffett_moat(
         self, sym: str, is_crypto: bool, info: Dict[str, Any], factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Warren Buffett Value, Quality, Moat & Free Cash Flow model."""
+        """Warren Buffett Value, Quality, Moat & Free Cash Flow model (with Crypto Protocol Fee Proxy)."""
         if is_crypto:
+            crypto_data = self.CRYPTO_MOATS.get(sym, None)
+            if crypto_data:
+                return {
+                    "name": "Warren Buffett (Value & Moat)",
+                    "archetype": "Network Moat & Protocol Cash Flows",
+                    "alignmentScore": crypto_data["score"],
+                    "status": "Tier-1 Network Moat",
+                    "thesis": crypto_data["thesis"],
+                    "catalyst": crypto_data["catalyst"],
+                }
             return {
                 "name": "Warren Buffett (Value & Moat)",
                 "archetype": "High Cash Flow & Wide Moats",
-                "alignmentScore": 30,
-                "status": "Not Buffett Style",
-                "thesis": "Buffett avoids cryptocurrencies because they do not produce cash flows or physical goods.",
-                "catalyst": "Prefers companies with strong pricing power and predictable cash dividends.",
+                "alignmentScore": 38,
+                "status": "Speculative Altcoin",
+                "thesis": "Lacks consistent protocol fee generation or store-of-value monetary premium.",
+                "catalyst": "Prefers assets with sustainable economic utility and clear cash dividends.",
             }
 
         quality = factor_scores.get("qualityScore", 80)
         valuation = factor_scores.get("valuationScore", 75)
-        piotroski = factor_scores.get("piotroskiFScore", 8)
+        raw_piotroski = factor_scores.get("piotroskiFScore")
+        piotroski = raw_piotroski if raw_piotroski is not None else 8
 
         score = min(96, max(40, int(quality * 0.45 + valuation * 0.35 + (piotroski * 10) * 0.20)))
-        if sym in ["AAPL", "BAC", "KO", "AXP", "OXY"]:
-            score = max(score, 92)
+        if sym in ["AAPL", "BAC", "KO", "AXP", "OXY", "SPY", "QQQ"]:
+            score = max(score, 90)
 
         return {
             "name": "Warren Buffett (Value & Moat)",

@@ -1,5 +1,6 @@
 """FastAPI Router for Asset Analytics, Risk Engine, FRED Macro & Trader Archetypes."""
 
+import math
 from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
 import numpy as np
@@ -13,6 +14,8 @@ router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
 fred_fetcher = FredMacroFetcher()
 trader_analyzer = TraderArchetypeAnalyzer()
+
+KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
@@ -67,13 +70,13 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
 
         # Handle crypto ticker format
         fetch_sym = upper_sym
-        if upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]:
+        if upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"]:
             fetch_sym = f"{upper_sym}-USD"
 
         ticker_obj = yf.Ticker(fetch_sym)
         hist = ticker_obj.history(period=clean_period)
 
-        if hist.empty and "-" not in fetch_sym and upper_sym not in ["SPY", "QQQ"]:
+        if hist.empty and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
             ticker_obj = yf.Ticker(f"{upper_sym}-USD")
             hist = ticker_obj.history(period=clean_period)
 
@@ -99,30 +102,45 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
 
         # Calculate comprehensive real risk metrics via AdvancedRiskAnalyzer
         risk_output = risk_analyzer.analyze_comprehensive_risk(hist)
+        adv_metrics = risk_output.get("advanced_metrics", {})
+        sortino = adv_metrics.get("Sortino_Ratio", 1.5)
 
-        # Retrieve Company Info & Fundamental Piotroski F-Score
+        is_crypto = "-USD" in fetch_sym
+        is_etf = upper_sym in KNOWN_ETFS
+
+        # Retrieve Company Info & Fundamental Piotroski F-Score (for individual equities)
         info = {}
-        try:
-            info = ticker_obj.info or {}
-        except Exception:
-            pass
+        if not is_crypto and not is_etf:
+            try:
+                info = ticker_obj.info or {}
+            except Exception:
+                pass
+            piotroski_f = calculate_piotroski_f_score(info, {})
+        else:
+            piotroski_f = None
 
-        piotroski_f = calculate_piotroski_f_score(info, {})
-
-        # Calculate 5-Factor Quantitative Asset Profile
+        # 1. Growth Score
         first_close = float(hist["Close"].iloc[0])
         overall_return = (current_price - first_close) / first_close if first_close > 0 else 0.0
         growth_score = min(98, max(30, int(50 + overall_return * 35)))
 
+        # 2. Momentum Score
         ma20 = float(hist["Close"].tail(20).mean()) if len(hist) >= 20 else current_price
         momentum_score = min(99, max(25, int(50 + ((current_price - ma20) / ma20) * 140)))
 
-        is_crypto = "-USD" in fetch_sym
-        quality_score = 92 if "BTC" in fetch_sym else (min(96, piotroski_f * 11) if not is_crypto else 82)
-        valuation_score = 75 if is_crypto else (70 if upper_sym in ["NVDA", "TSLA"] else 80)
+        # 3. Quality & Health Score (Calibrated for Equities, ETFs, and Crypto)
+        if is_etf:
+            # ETFs have structural diversification & liquidity benefits (evaluated on Sortino + expense efficiency)
+            quality_score = min(95, max(60, int(75 + sortino * 6.5)))
+            valuation_score = 80 if upper_sym in ["SPY", "QQQ", "XLK", "SMH"] else 75
+        elif is_crypto:
+            quality_score = 92 if "BTC" in fetch_sym else (88 if "ETH" in fetch_sym else 78)
+            valuation_score = 75
+        else:
+            quality_score = min(96, (piotroski_f or 7) * 11)
+            valuation_score = 70 if upper_sym in ["NVDA", "TSLA"] else 80
 
-        adv_metrics = risk_output.get("advanced_metrics", {})
-        sortino = adv_metrics.get("Sortino_Ratio", 1.5)
+        # 4. Tail Risk Score
         tail_risk_score = min(96, max(30, int(50 + sortino * 16)))
 
         composite_score = round(
@@ -133,9 +151,9 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             (tail_risk_score * 0.15)
         )
 
-        verdict = "Elite Core Alpha" if composite_score >= 85 else (
-            "Strong Differential Pick" if composite_score >= 75 else (
-                "Moderate Growth Hold" if composite_score >= 65 else "High Volatility Speculative"
+        verdict = "Strong Buy / Core Accumulation" if composite_score >= 80 else (
+            "Favorable Multi-Strategy Buy" if composite_score >= 72 else (
+                "Moderate Growth Hold" if composite_score >= 60 else "High Volatility Speculative"
             )
         )
 
@@ -150,11 +168,22 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "piotroskiFScore": piotroski_f,
         }
 
-        # 90-Day Expected Return Simulation
+        # 90-Day Expected Return Simulation with Asymptotic Mean-Reversion Damper
         ann_vol = round(float(hist["Close"].pct_change().std() * np.sqrt(252) * 100), 1)
+        
+        # Damping function: prevents extreme runaway drift on parabolic multi-bagger surges (e.g. INTC +259%)
+        raw_median = (overall_return * 0.35) * 100
+        if raw_median > 25.0:
+            # Smooth logarithmic compression above 25%
+            damped_median = 25.0 + math.log(1.0 + (raw_median - 25.0)) * 6.0
+        elif raw_median < -25.0:
+            damped_median = -25.0 - math.log(1.0 + abs(raw_median + 25.0)) * 6.0
+        else:
+            damped_median = max(5.0, raw_median)
+
         expected_return = {
             "p10Pessimistic": round(-1.28 * (ann_vol / np.sqrt(4)), 1),
-            "p50Expected": round(max(5.0, (overall_return * 0.4) * 100), 1),
+            "p50Expected": round(damped_median, 1),
             "p90Optimistic": round(1.28 * (ann_vol / np.sqrt(4)) + 12.0, 1),
             "annualizedVolatility": ann_vol if not np.isnan(ann_vol) else 22.0,
             "forecastHorizonDays": 90,
@@ -165,7 +194,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         if is_crypto and macro_difficulty["rating"] < 3:
             macro_difficulty["rating"] += 1
 
-        # Elite Trader Archetype Models Analysis
+        # Elite Trader Strategy Models Analysis
         trader_archetypes = trader_analyzer.analyze_asset(
             symbol=fetch_sym,
             info=info,
@@ -182,7 +211,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "priceChangePct24h": price_change_pct,
             "candles": candles,
             "factorScores": factor_scores,
-            "dnaScores": factor_scores,  # Backward compatibility
+            "dnaScores": factor_scores,
             "macroDifficulty": macro_difficulty,
             "expectedReturn": expected_return,
             "traderArchetypes": trader_archetypes,

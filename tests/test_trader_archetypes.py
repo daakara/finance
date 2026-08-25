@@ -30,7 +30,9 @@ def test_trader_archetype_analyzer_equity():
 
 def test_trader_archetype_analyzer_crypto():
     analyzer = TraderArchetypeAnalyzer()
-    res = analyzer.analyze_asset(
+    
+    # Tier-1 network moat (BTC)
+    res_btc = analyzer.analyze_asset(
         symbol="BTC-USD",
         info={},
         price_df=pd.DataFrame({"Close": [60000, 62000, 64000]}),
@@ -38,8 +40,20 @@ def test_trader_archetype_analyzer_crypto():
         macro_indicators={"yield_curve_spread": 0.47, "credit_spread_oas": 2.69},
         factor_scores={"qualityScore": 92, "valuationScore": 70, "momentumScore": 85, "growthScore": 90, "tailRiskScore": 75},
     )
+    buffett_btc = next(a for a in res_btc["archetypes"] if "Warren Buffett" in a["name"])
+    assert buffett_btc["alignmentScore"] >= 70
+    assert "Tier-1 Network Moat" in buffett_btc["status"]
 
-    buffett_archetype = next(a for a in res["archetypes"] if "Warren Buffett" in a["name"])
-    assert buffett_archetype["alignmentScore"] < 50
-    assert "Not Buffett" in buffett_archetype["status"]
+    # Speculative altcoin (DOGE)
+    res_alt = analyzer.analyze_asset(
+        symbol="DOGE-USD",
+        info={},
+        price_df=pd.DataFrame({"Close": [0.10, 0.09, 0.08]}),
+        risk_metrics={"Sortino_Ratio": -0.5, "Skewness": -0.4},
+        macro_indicators={"yield_curve_spread": 0.47, "credit_spread_oas": 2.69},
+        factor_scores={"qualityScore": 50, "valuationScore": 50, "momentumScore": 40, "growthScore": 40, "tailRiskScore": 40},
+    )
+    buffett_alt = next(a for a in res_alt["archetypes"] if "Warren Buffett" in a["name"])
+    assert buffett_alt["alignmentScore"] < 50
+    assert "Speculative Altcoin" in buffett_alt["status"]
 
