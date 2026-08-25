@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { AnalyticsResponse } from "../lib/api";
@@ -49,18 +49,24 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-5">
+    <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight flex items-center gap-2">
-              <span>?</span>
+            <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="22" y1="12" x2="18" y2="12" />
+                <line x1="6" y1="12" x2="2" y2="12" />
+                <line x1="12" y1="6" x2="12" y2="2" />
+                <line x1="12" y1="22" x2="12" y2="18" />
+              </svg>
               <span>{symbol} Day Trader Risk & Position Sizer</span>
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             Statistical stop-loss sizing powered by Cornish-Fisher fat-tail risk (Modified VaR) and ATR(14)
           </p>
         </div>
@@ -69,16 +75,20 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         <div className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
           <button
             onClick={() => setTradeDirection("LONG")}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded-md transition-all ${
-              tradeDirection === "LONG" ? "bg-emerald-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+            className={`px-3 py-1 text-xs font-bold rounded transition-all ${
+              tradeDirection === "LONG"
+                ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             BUY / LONG
           </button>
           <button
             onClick={() => setTradeDirection("SHORT")}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded-md transition-all ${
-              tradeDirection === "SHORT" ? "bg-rose-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+            className={`px-3 py-1 text-xs font-bold rounded transition-all ${
+              tradeDirection === "SHORT"
+                ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             SELL / SHORT
@@ -86,106 +96,111 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         </div>
       </div>
 
-      {/* Intraday Technical Dashboard Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#090d14] p-3 rounded-lg border border-[#243044] text-center font-mono">
-        <div>
-          <span className="text-[10px] text-slate-400 block">Current Price</span>
-          <span className="text-sm font-bold text-slate-100">${currentPrice}</span>
+      {/* Interactive Controls & Live Quant Badges */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Capital Slider */}
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-300">Portfolio Capital</span>
+            <span className="text-amber-400 font-bold text-sm">${accountSize.toLocaleString()}</span>
+          </div>
+          <input
+            type="range"
+            min={1000}
+            max={250000}
+            step={1000}
+            value={accountSize}
+            onChange={(e) => setAccountSize(Number(e.target.value))}
+            className="w-full accent-amber-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg"
+          />
+          <div className="flex justify-between text-[10px] text-slate-500">
+            <span>$1k</span>
+            <span>$50k</span>
+            <span>$100k</span>
+            <span>$250k</span>
+          </div>
         </div>
-        <div>
-          <span className="text-[10px] text-slate-400 block">VWAP</span>
-          <span className={`text-sm font-bold ${technicals.vwap && currentPrice >= technicals.vwap ? "text-emerald-400" : "text-rose-400"}`}>
-            ${technicals.vwap || currentPrice}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] text-slate-400 block">RSI (14)</span>
-          <span className={`text-sm font-bold ${rsi > 70 ? "text-rose-400" : rsi < 30 ? "text-emerald-400" : "text-cyan-400"}`}>
-            {rsi}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] text-slate-400 block">ATR Volatility</span>
-          <span className="text-sm font-bold text-purple-400">
-            ${technicals.atr_14 || (currentPrice * 0.015).toFixed(2)}
-          </span>
+
+        {/* Risk Budget Slider */}
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-300">Risk Budget Per Trade</span>
+            <span className="text-rose-400 font-bold text-sm">{riskPct.toFixed(2)}% (${dollarRisk.toFixed(0)})</span>
+          </div>
+          <input
+            type="range"
+            min={0.25}
+            max={3.0}
+            step={0.25}
+            value={riskPct}
+            onChange={(e) => setRiskPct(Number(e.target.value))}
+            className="w-full accent-rose-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg"
+          />
+          <div className="flex justify-between text-[10px] text-slate-500">
+            <span>0.25% (Conservative)</span>
+            <span>1.0% (Standard)</span>
+            <span>3.0% (Aggressive)</span>
+          </div>
         </div>
       </div>
 
-      {/* Interactive Controls & Sizing Outputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Controls */}
-        <div className="space-y-4 bg-[#090d14] p-4 rounded-lg border border-[#243044]">
-          <div>
-            <div className="flex justify-between text-xs font-mono mb-1.5">
-              <span className="text-slate-400">Account Capital</span>
-              <span className="text-cyan-400 font-bold">${accountSize.toLocaleString()}</span>
-            </div>
-            <input
-              type="range"
-              min="1000"
-              max="250000"
-              step="1000"
-              value={accountSize}
-              onChange={(e) => setAccountSize(Number(e.target.value))}
-              className="w-full h-1.5 bg-[#1b2434] rounded-lg appearance-none cursor-pointer accent-cyan-500"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between text-xs font-mono mb-1.5">
-              <span className="text-slate-400">Max Risk Budget per Trade</span>
-              <span className="text-amber-400 font-bold">{riskPct.toFixed(1)}% (${dollarRisk.toFixed(0)})</span>
-            </div>
-            <input
-              type="range"
-              min="0.25"
-              max="3.0"
-              step="0.25"
-              value={riskPct}
-              onChange={(e) => setRiskPct(Number(e.target.value))}
-              className="w-full h-1.5 bg-[#1b2434] rounded-lg appearance-none cursor-pointer accent-amber-500"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-[#1b2434] flex justify-between items-center text-xs font-mono">
-            <span className="text-slate-400">Statistical Stop Distance:</span>
-            <span className="text-rose-400 font-bold">{stopDistancePct.toFixed(2)}% (${stopDistanceDollar.toFixed(2)})</span>
-          </div>
+      {/* Sizing Outputs: Units, Position Value, Leverage */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
+          <span className="text-[10px] text-slate-400 block">Recommended Size</span>
+          <span className="text-base sm:text-lg font-bold text-cyan-400">{positionUnits} Units</span>
+          <span className="text-[9px] text-slate-500 block mt-0.5">Shares / Tokens</span>
         </div>
 
-        {/* Sizing & Execution Parameters */}
-        <div className="bg-[#090d14] p-4 rounded-lg border border-[#243044] space-y-3 font-mono">
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="bg-[#111722] p-2.5 rounded border border-cyan-500/40">
-              <span className="text-[10px] text-cyan-300 block font-bold">Recommended Quantity</span>
-              <span className="text-lg font-bold text-cyan-400">{positionUnits.toLocaleString()} units</span>
-            </div>
-            <div className="bg-[#111722] p-2.5 rounded border border-[#243044]">
-              <span className="text-[10px] text-slate-400 block">Total Position Value</span>
-              <span className="text-lg font-bold text-slate-100">${totalPositionValue.toLocaleString()} ({leverageRatio}x)</span>
-            </div>
-          </div>
+        <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
+          <span className="text-[10px] text-slate-400 block">Total Exposure</span>
+          <span className="text-base sm:text-lg font-bold text-slate-200">${totalPositionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+          <span className="text-[9px] text-slate-500 block mt-0.5">{leverageRatio}x Capital Ratio</span>
+        </div>
 
-          {/* Profit Target Matrix */}
-          <div className="space-y-1.5 text-xs pt-1">
-            <div className="flex justify-between items-center bg-[#111722] px-2.5 py-1.5 rounded border border-rose-900/60">
-              <span className="text-rose-400 font-bold">Stop-Loss (1.0R):</span>
-              <span className="text-rose-300">${stopPrice.toFixed(2)} (-${dollarRisk.toFixed(0)})</span>
-            </div>
-            <div className="flex justify-between items-center bg-[#111722] px-2.5 py-1.5 rounded border border-[#243044]">
-              <span className="text-emerald-400 font-semibold">Target 1 (1.5R Take-Profit):</span>
-              <span className="text-emerald-300">${target15.toFixed(2)} (+${(dollarRisk * 1.5).toFixed(0)})</span>
-            </div>
-            <div className="flex justify-between items-center bg-[#111722] px-2.5 py-1.5 rounded border border-emerald-900/60">
-              <span className="text-emerald-400 font-bold">Target 2 (2.0R Optimal):</span>
-              <span className="text-emerald-300 font-bold">${target20.toFixed(2)} (+${(dollarRisk * 2.0).toFixed(0)})</span>
-            </div>
-            <div className="flex justify-between items-center bg-[#111722] px-2.5 py-1.5 rounded border border-cyan-900/60">
-              <span className="text-cyan-400 font-bold">Target 3 (3.0R Runner):</span>
-              <span className="text-cyan-300 font-bold">${target30.toFixed(2)} (+${(dollarRisk * 3.0).toFixed(0)})</span>
-            </div>
-          </div>
+        <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
+          <span className="text-[10px] text-slate-400 block">Statistical Stop Dist</span>
+          <span className="text-base sm:text-lg font-bold text-purple-400">${stopDistanceDollar.toFixed(2)}</span>
+          <span className="text-[9px] text-slate-500 block mt-0.5">{stopDistancePct.toFixed(2)}% mVaR Vol</span>
+        </div>
+
+        <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
+          <span className="text-[10px] text-slate-400 block">Intraday RSI (14)</span>
+          <span className={`text-base sm:text-lg font-bold ${rsi > 70 ? "text-rose-400" : rsi < 30 ? "text-emerald-400" : "text-amber-400"}`}>
+            {rsi.toFixed(1)}
+          </span>
+          <span className="text-[9px] text-slate-500 block mt-0.5">{rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral"}</span>
+        </div>
+      </div>
+
+      {/* Execution Targets (2x2 Grid on Mobile, 4-Col on Desktop) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-center">
+        {/* 1.0R Stop-Loss */}
+        <div className="bg-rose-950/40 border border-rose-800/80 p-3 rounded-lg">
+          <span className="text-[10px] text-rose-300 uppercase font-bold block">1.0R Stop-Loss</span>
+          <span className="text-sm sm:text-base font-bold text-rose-400 block">${stopPrice.toFixed(2)}</span>
+          <span className="text-[9px] text-rose-300/80 block mt-0.5">-${dollarRisk.toFixed(0)} Max Risk</span>
+        </div>
+
+        {/* 1.5R Scalp Target */}
+        <div className="bg-cyan-950/40 border border-cyan-800/80 p-3 rounded-lg">
+          <span className="text-[10px] text-cyan-300 uppercase font-bold block">1.5R Scalp</span>
+          <span className="text-sm sm:text-base font-bold text-cyan-400 block">${target15.toFixed(2)}</span>
+          <span className="text-[9px] text-cyan-300/80 block mt-0.5">+${(dollarRisk * 1.5).toFixed(0)} Profit</span>
+        </div>
+
+        {/* 2.0R Optimal Target */}
+        <div className="bg-emerald-950/40 border border-emerald-800/80 p-3 rounded-lg">
+          <span className="text-[10px] text-emerald-300 uppercase font-bold block">2.0R Optimal</span>
+          <span className="text-sm sm:text-base font-bold text-emerald-400 block">${target20.toFixed(2)}</span>
+          <span className="text-[9px] text-emerald-300/80 block mt-0.5">+${(dollarRisk * 2.0).toFixed(0)} Profit</span>
+        </div>
+
+        {/* 3.0R Momentum Runner */}
+        <div className="bg-purple-950/40 border border-purple-800/80 p-3 rounded-lg">
+          <span className="text-[10px] text-purple-300 uppercase font-bold block">3.0R Runner</span>
+          <span className="text-sm sm:text-base font-bold text-purple-400 block">${target30.toFixed(2)}</span>
+          <span className="text-[9px] text-purple-300/80 block mt-0.5">+${(dollarRisk * 3.0).toFixed(0)} Profit</span>
         </div>
       </div>
     </div>
