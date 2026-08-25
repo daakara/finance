@@ -1,50 +1,31 @@
-"""FastAPI Router for Hidden Gems Multi-Factor Screening."""
+"""FastAPI Router for Hidden Gems Screener with Peter Lynch, Joel Greenblatt & Disruptive Innovation Models."""
 
-from fastapi import APIRouter, HTTPException, Body
-from typing import List, Optional
+from fastapi import APIRouter
 from pydantic import BaseModel
-
-from analyst_dashboard.analyzers.gem_screener import HiddenGemScreener, GemCriteria
+from typing import List, Optional
+from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 
 router = APIRouter()
+screener = HiddenGemsScreener()
+
+DEFAULT_CANDIDATES = [
+    "PLTR", "CRWD", "ENPH", "NVDA", "SMH", "BTC-USD", "ETH-USD", "SOL-USD", "AAPL", "MSFT"
+]
 
 
-class ScreenRequest(BaseModel):
-    tickers: List[str]
-    min_market_cap: Optional[float] = 100e6
-    max_market_cap: Optional[float] = 5e9
-    min_revenue_growth: Optional[float] = 0.30
-    min_gross_margin: Optional[float] = 0.30
+class ScreenerRequest(BaseModel):
+    tickers: Optional[List[str]] = None
 
 
 @router.post("/run")
-def run_screening(payload: ScreenRequest = Body(...)):
-    """Run multi-factor Hidden Gem screening across candidate tickers."""
-    try:
-        criteria = GemCriteria(
-            min_market_cap=payload.min_market_cap,
-            max_market_cap=payload.max_market_cap,
-            min_revenue_growth=payload.min_revenue_growth,
-            min_gross_margin=payload.min_gross_margin,
-        )
-        screener = HiddenGemScreener(criteria=criteria)
-        results = screener.screen_universe(payload.tickers)
+def run_screener(request: ScreenerRequest = None):
+    """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
+    tickers = (request.tickers if request and request.tickers else DEFAULT_CANDIDATES)
+    results = screener.evaluate_candidates(tickers)
 
-        formatted_results = []
-        for gem in results:
-            formatted_results.append({
-                "ticker": gem.ticker,
-                "composite_score": gem.composite_score,
-                "risk_rating": gem.risk_rating,
-                "investment_thesis": gem.investment_thesis,
-                "primary_catalyst": gem.primary_catalyst,
-            })
-
-        return {
-            "total_candidates": len(payload.tickers),
-            "gems_found": len(formatted_results),
-            "results": formatted_results,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "total_candidates": len(tickers),
+        "gems_found": len(results),
+        "results": results,
+    }
 
