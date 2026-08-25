@@ -29,23 +29,23 @@ class TraderArchetypeAnalyzer:
         price_df: pd.DataFrame,
         risk_metrics: Dict[str, Any],
         macro_indicators: Dict[str, Any],
-        dna_scores: Dict[str, Any],
+        factor_scores: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Run all 4 iconic trader archetype models against the asset."""
         sym_clean = symbol.upper().replace("-USD", "")
         is_crypto = "-USD" in symbol.upper() or sym_clean in ["BTC", "ETH", "SOL"]
 
         # 1. The Oracle (Warren Buffett / Berkshire Hathaway)
-        buffett = self._evaluate_buffett_moat(sym_clean, is_crypto, info, dna_scores)
+        buffett = self._evaluate_buffett_moat(sym_clean, is_crypto, info, factor_scores)
 
         # 2. The Capitol Whale (Nancy Pelosi / Congressional STOCK Act)
-        pelosi = self._evaluate_congressional_whale(symbol.upper(), dna_scores, is_crypto)
+        pelosi = self._evaluate_congressional_whale(symbol.upper(), factor_scores, is_crypto)
 
         # 3. The Macro Sorcerer (Stanley Druckenmiller / George Soros)
-        druckenmiller = self._evaluate_druckenmiller_macro(macro_indicators, dna_scores, price_df)
+        druckenmiller = self._evaluate_druckenmiller_macro(macro_indicators, factor_scores, price_df)
 
         # 4. The Medallion Quant (Jim Simons / Renaissance Technologies)
-        simons = self._evaluate_simons_quant(risk_metrics, price_df, dna_scores)
+        simons = self._evaluate_simons_quant(risk_metrics, price_df, factor_scores)
 
         archetypes = [buffett, pelosi, druckenmiller, simons]
         consensus_score = round(sum(a["alignmentScore"] for a in archetypes) / len(archetypes))
@@ -66,7 +66,7 @@ class TraderArchetypeAnalyzer:
         }
 
     def _evaluate_buffett_moat(
-        self, sym: str, is_crypto: bool, info: Dict[str, Any], dna_scores: Dict[str, Any]
+        self, sym: str, is_crypto: bool, info: Dict[str, Any], factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Warren Buffett Value, Quality, Moat & Free Cash Flow model."""
         if is_crypto:
@@ -79,9 +79,9 @@ class TraderArchetypeAnalyzer:
                 "catalyst": "Focus on high Return on Invested Capital (ROIC) and free cash flow generation.",
             }
 
-        quality = dna_scores.get("qualityScore", 80)
-        valuation = dna_scores.get("valuationScore", 75)
-        piotroski = dna_scores.get("piotroskiFScore", 8)
+        quality = factor_scores.get("qualityScore", 80)
+        valuation = factor_scores.get("valuationScore", 75)
+        piotroski = factor_scores.get("piotroskiFScore", 8)
 
         score = min(96, max(40, int(quality * 0.45 + valuation * 0.35 + (piotroski * 10) * 0.20)))
         if sym in ["AAPL", "BAC", "KO", "AXP", "OXY"]:
@@ -97,7 +97,7 @@ class TraderArchetypeAnalyzer:
         }
 
     def _evaluate_congressional_whale(
-        self, symbol: str, dna_scores: Dict[str, Any], is_crypto: bool
+        self, symbol: str, factor_scores: Dict[str, Any], is_crypto: bool
     ) -> Dict[str, Any]:
         """Nancy Pelosi / Congressional STOCK Act Policy Catalyst model."""
         policy_catalyst = self.CONGRESSIONAL_POLICY_TICKERS.get(
@@ -105,8 +105,8 @@ class TraderArchetypeAnalyzer:
             self.CONGRESSIONAL_POLICY_TICKERS.get(symbol.replace("-USD", ""), None),
         )
 
-        momentum = dna_scores.get("momentumScore", 70)
-        growth = dna_scores.get("growthScore", 75)
+        momentum = factor_scores.get("momentumScore", 70)
+        growth = factor_scores.get("growthScore", 75)
 
         if policy_catalyst:
             score = min(98, max(75, int(82 + (momentum * 0.1) + (growth * 0.08))))
@@ -130,13 +130,13 @@ class TraderArchetypeAnalyzer:
         }
 
     def _evaluate_druckenmiller_macro(
-        self, macro_indicators: Dict[str, Any], dna_scores: Dict[str, Any], price_df: pd.DataFrame
+        self, macro_indicators: Dict[str, Any], factor_scores: Dict[str, Any], price_df: pd.DataFrame
     ) -> Dict[str, Any]:
         """Stanley Druckenmiller / George Soros Macroeconomic Reflexivity model."""
         yield_curve = macro_indicators.get("yield_curve_spread", 0.47)
         credit_spread = macro_indicators.get("credit_spread_oas", 2.69)
-        momentum = dna_scores.get("momentumScore", 75)
-        growth = dna_scores.get("growthScore", 75)
+        momentum = factor_scores.get("momentumScore", 75)
+        growth = factor_scores.get("growthScore", 75)
 
         base = 70
         if yield_curve > 0.20:
@@ -156,13 +156,13 @@ class TraderArchetypeAnalyzer:
         }
 
     def _evaluate_simons_quant(
-        self, risk_metrics: Dict[str, Any], price_df: pd.DataFrame, dna_scores: Dict[str, Any]
+        self, risk_metrics: Dict[str, Any], price_df: pd.DataFrame, factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Jim Simons / Renaissance Technologies Statistical Arbitrage model."""
         sortino = risk_metrics.get("Sortino_Ratio", 1.84)
         skew = risk_metrics.get("Skewness", -0.15)
-        tail_risk = dna_scores.get("tailRiskScore", 80)
-        momentum = dna_scores.get("momentumScore", 75)
+        tail_risk = factor_scores.get("tailRiskScore", 80)
+        momentum = factor_scores.get("momentumScore", 75)
 
         # Quantitative formula penalizing negative skew and downside volatility
         skew_bonus = 10 if skew > -0.3 else -5

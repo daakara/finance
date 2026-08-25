@@ -12,32 +12,35 @@ export interface CandleData {
   volume?: number;
 }
 
-export interface AssetDNAScores {
-  growthScore: number;       // 0-100 (Revenue / TVL CAGR)
-  qualityScore: number;      // 0-100 (Balance Sheet, FCF / Tokenomics)
-  valuationScore: number;    // 0-100 (Relative Value / NVT)
-  momentumScore: number;     // 0-100 (RSI, Moving Avg Trend)
-  tailRiskScore: number;     // 0-100 (Downside protection)
-  compositeDNAScore: number; // Overall DNA Rating
-  verdict: string;           // "Elite Core", "Strong Differential", "Speculative Growth", "High Risk"
-  piotroskiFScore?: number;  // 0-9 Fundamental Health
+export interface AssetFactorScores {
+  growthScore: number;          // 0-100 (Revenue / TVL CAGR)
+  qualityScore: number;         // 0-100 (Balance Sheet, FCF / Tokenomics)
+  valuationScore: number;       // 0-100 (Relative Value / Multiples)
+  momentumScore: number;        // 0-100 (RSI, Moving Avg Trend)
+  tailRiskScore: number;        // 0-100 (Downside protection)
+  compositeFactorScore: number; // Overall Quantitative Rating (0-100)
+  verdict: string;              // "Elite Core Alpha", "Strong Differential", "Moderate Growth Hold", "High Risk"
+  piotroskiFScore?: number;     // 0-9 Fundamental Health Score
 }
 
+// Backwards compatibility alias
+export type AssetDNAScores = AssetFactorScores;
+
 export interface MacroDifficultyRating {
-  rating: number;            // 1 (Favorable/Easy) to 5 (Hostile/Difficult)
-  regime: string;            // e.g. "Optimal Expansionary Goldilocks", "Accommodative Growth"
+  rating: number;               // 1 (Favorable/Easy) to 5 (Hostile/Difficult)
+  regime: string;               // e.g. "Optimal Expansionary Goldilocks", "Accommodative Growth"
   interestRateImpact: string;
   inflationImpact: string;
-  yield_curve_spread?: number; // 10Y - 2Y Spread (%)
-  fed_funds_rate?: number;     // Effective Fed Funds (%)
-  credit_spread_oas?: number;  // US High Yield Option-Adjusted Spread (%)
-  cpi_yoy?: number;            // YoY Inflation (%)
+  yield_curve_spread?: number;  // 10Y - 2Y Spread (%)
+  fed_funds_rate?: number;      // Effective Fed Funds (%)
+  credit_spread_oas?: number;   // US High Yield Option-Adjusted Spread (%)
+  cpi_yoy?: number;             // YoY Inflation (%)
 }
 
 export interface ExpectedReturnForecast {
-  p10Pessimistic: number;    // 10th percentile outcome (%)
-  p50Expected: number;       // Median forecast (%)
-  p90Optimistic: number;     // 90th percentile outcome (%)
+  p10Pessimistic: number;       // 10th percentile outcome (%)
+  p50Expected: number;          // Median forecast (%)
+  p90Optimistic: number;        // 90th percentile outcome (%)
   annualizedVolatility: number;
   forecastHorizonDays: number;
 }
@@ -63,7 +66,8 @@ export interface AnalyticsResponse {
   currentPrice: number;
   priceChangePct24h: number;
   candles: CandleData[];
-  dnaScores: AssetDNAScores;
+  factorScores: AssetFactorScores;
+  dnaScores?: AssetFactorScores; // Alias for backward compatibility
   macroDifficulty: MacroDifficultyRating;
   expectedReturn: ExpectedReturnForecast;
   traderArchetypes?: TraderArchetypeConsensus;
@@ -115,6 +119,7 @@ export interface GemCandidate {
   investment_thesis: string;
   primary_catalyst: string;
   asset_type?: string;
+  factor_verdict?: string;
   dna_verdict?: string;
   archetype_alignment?: string;
 }
@@ -204,8 +209,8 @@ export function calculateRealRiskMetrics(candles: CandleData[]) {
   };
 }
 
-// Helper: Calculate 5-Factor Asset DNA Profile
-export function calculateAssetDNA(symbol: string, candles: CandleData[], riskMetrics: ReturnType<typeof calculateRealRiskMetrics>): AssetDNAScores {
+// Helper: Calculate 5-Factor Asset Profile
+export function calculateAssetFactorScores(symbol: string, candles: CandleData[], riskMetrics: ReturnType<typeof calculateRealRiskMetrics>): AssetFactorScores {
   const isCrypto = symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("SOL") || symbol.includes("-USD");
   const isTech = ["NVDA", "AAPL", "MSFT", "GOOGL", "TSLA", "PLTR"].includes(symbol.toUpperCase());
 
@@ -251,11 +256,14 @@ export function calculateAssetDNA(symbol: string, candles: CandleData[], riskMet
     valuationScore: valuation,
     momentumScore: momentum,
     tailRiskScore: tailRisk,
-    compositeDNAScore: composite,
+    compositeFactorScore: composite,
     verdict,
     piotroskiFScore,
   };
 }
+
+// Backward compatibility alias
+export const calculateAssetDNA = calculateAssetFactorScores;
 
 // Live Direct Data Fetcher for Crypto via Public CoinGecko API
 async function fetchDirectCryptoData(coinId: string, days: number = 365): Promise<CandleData[]> {
@@ -299,7 +307,10 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
     if (res.ok) {
       const data = await res.json();
       if (data && data.candles && data.candles.length > 0) {
-        return data;
+        return {
+          ...data,
+          factorScores: data.factorScores || data.dnaScores,
+        };
       }
     }
   } catch {
@@ -379,7 +390,7 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
   }
 
   const riskMetrics = calculateRealRiskMetrics(candles);
-  const dnaScores = calculateAssetDNA(symbol, candles, riskMetrics);
+  const factorScores = calculateAssetFactorScores(symbol, candles, riskMetrics);
 
   // Fallback Trader Archetypes
   const traderArchetypes: TraderArchetypeConsensus = {
@@ -427,7 +438,8 @@ export async function fetchAssetAnalytics(symbol: string, period: string = "1y")
     currentPrice,
     priceChangePct24h,
     candles,
-    dnaScores,
+    factorScores,
+    dnaScores: factorScores,
     macroDifficulty: {
       rating: 1,
       regime: "Optimal Expansionary Goldilocks",
@@ -507,8 +519,9 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
       ticker: sym,
       composite_score: Number(score.toFixed(1)),
       risk_rating: score > 80 ? "Low-to-Medium Risk" : "Moderate Risk",
-      investment_thesis: `High Composite DNA score (${score.toFixed(1)}/100). Favorable risk-adjusted Sortino ratio with strong momentum breakout above 50-day moving average.`,
+      investment_thesis: `High Multi-Factor score (${score.toFixed(1)}/100). Favorable risk-adjusted Sortino ratio with strong momentum breakout above 50-day moving average.`,
       primary_catalyst: "Upcoming product cycle expansion, institutional accumulation & multiple re-rating.",
+      factor_verdict: score > 85 ? "Elite Core Pick" : "Strong Differential",
       dna_verdict: score > 85 ? "Elite Core Pick" : "Strong Differential",
       archetype_alignment: isHighGrowth ? "Pelosi / Druckenmiller High Synergy" : "Buffett Value Alignment",
     };

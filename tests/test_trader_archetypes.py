@@ -13,7 +13,7 @@ def test_trader_archetype_analyzer_equity():
         price_df=pd.DataFrame({"Close": [300, 305, 310]}),
         risk_metrics={"Sortino_Ratio": 2.1, "Skewness": -0.1},
         macro_indicators={"yield_curve_spread": 0.47, "credit_spread_oas": 2.69},
-        dna_scores={"qualityScore": 90, "valuationScore": 75, "momentumScore": 80, "growthScore": 85, "tailRiskScore": 82, "piotroskiFScore": 8},
+        factor_scores={"qualityScore": 90, "valuationScore": 75, "momentumScore": 80, "growthScore": 85, "tailRiskScore": 82, "piotroskiFScore": 8},
     )
 
     assert "consensusScore" in res
@@ -36,7 +36,7 @@ def test_trader_archetype_analyzer_crypto():
         price_df=pd.DataFrame({"Close": [60000, 62000, 64000]}),
         risk_metrics={"Sortino_Ratio": 1.9, "Skewness": 0.2},
         macro_indicators={"yield_curve_spread": 0.47, "credit_spread_oas": 2.69},
-        dna_scores={"qualityScore": 92, "valuationScore": 70, "momentumScore": 85, "growthScore": 90, "tailRiskScore": 75},
+        factor_scores={"qualityScore": 92, "valuationScore": 70, "momentumScore": 85, "growthScore": 90, "tailRiskScore": 75},
     )
 
     buffett_archetype = next(a for a in res["archetypes"] if "Warren Buffett" in a["name"])

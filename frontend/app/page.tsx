@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import TradingViewChart from "../components/TradingViewChart";
 import RiskMetricsCard from "../components/RiskMetricsCard";
 import WatchlistSidebar from "../components/WatchlistSidebar";
-import AssetDNARadar from "../components/AssetDNARadar";
+import AssetFactorRadar from "../components/AssetFactorRadar";
 import TraderArchetypesCard from "../components/TraderArchetypesCard";
 import { AnalyticsResponse, fetchAssetAnalytics } from "../lib/api";
 
@@ -73,11 +73,11 @@ export default function DashboardPage() {
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              Quantitative Market & Asset DNA Terminal
+              Quantitative Market & Multi-Factor Terminal
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Live multi-asset data, 5-factor DNA profiling, FRED macroeconomic indicators & iconic trader archetype consensus
+            Live multi-asset data, 5-factor quantitative profiling, FRED macroeconomic indicators & iconic trader archetype consensus
           </p>
         </div>
 
@@ -134,15 +134,15 @@ export default function DashboardPage() {
           <WatchlistSidebar activeSymbol={symbol} onSelectSymbol={handleSelectSymbol} />
         </div>
 
-        {/* Center Main Interactive Chart, Asset DNA Profile, Trader Archetypes & Bottom Risk Grid (3 Cols) */}
+        {/* Center Main Interactive Chart, 5-Factor Profile, Trader Archetypes & Bottom Risk Grid (3 Cols) */}
         <div className="lg:col-span-3 space-y-6">
           {/* Main Chart */}
           <TradingViewChart symbol={symbol} data={analyticsData?.candles} />
 
-          {/* Multi-Dimensional Financial Asset DNA Profile & FRED Macro Grid */}
-          <AssetDNARadar
+          {/* 5-Factor Quantitative Asset Profile & FRED Macro Grid */}
+          <AssetFactorRadar
             symbol={symbol}
-            dnaScores={analyticsData?.dnaScores}
+            factorScores={analyticsData?.factorScores || analyticsData?.dnaScores}
             macroDifficulty={analyticsData?.macroDifficulty}
             expectedReturn={analyticsData?.expectedReturn}
           />
@@ -160,7 +160,7 @@ export default function DashboardPage() {
           <div className="bg-[#090d14] border border-[#243044] rounded-lg p-4 text-[11px] text-slate-500 font-mono leading-relaxed">
             <span className="text-slate-400 font-bold block mb-1">?? REGULATORY & COMPLIANCE DISCLAIMER:</span>
             Antigravity Quantitative Market Terminal is strictly an educational and quantitative research software tool. 
-            All metrics, Asset DNA ratings, expected return estimates, volatility forecasts, and trader archetype alignment models represent algorithmic statistical heuristics and do not constitute financial, investment, tax, or legal advice. 
+            All metrics, factor ratings, expected return estimates, volatility forecasts, and trader archetype alignment models represent algorithmic statistical heuristics and do not constitute financial, investment, tax, or legal advice. 
             Past statistical performance does not guarantee future results.
           </div>
         </div>

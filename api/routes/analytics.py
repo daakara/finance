@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Query
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import requests
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
 from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
@@ -61,7 +60,7 @@ def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
 
 @router.get("/{symbol}")
 def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data period (1y, 2y, 5y)")):
-    """Fetch live market data, calculate Cornish-Fisher risk, DNA scores, FRED macro & Trader Archetypes."""
+    """Fetch live market data, calculate Cornish-Fisher risk, 5-Factor scores, FRED macro & Trader Archetypes."""
     try:
         clean_period = period if isinstance(period, str) else "1y"
         upper_sym = symbol.upper().strip()
@@ -110,7 +109,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
 
         piotroski_f = calculate_piotroski_f_score(info, {})
 
-        # Calculate 5-Factor Asset DNA Profile
+        # Calculate 5-Factor Quantitative Asset Profile
         first_close = float(hist["Close"].iloc[0])
         overall_return = (current_price - first_close) / first_close if first_close > 0 else 0.0
         growth_score = min(98, max(30, int(50 + overall_return * 35)))
@@ -126,7 +125,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
         sortino = adv_metrics.get("Sortino_Ratio", 1.5)
         tail_risk_score = min(96, max(30, int(50 + sortino * 16)))
 
-        composite_dna = round(
+        composite_score = round(
             (growth_score * 0.25) +
             (quality_score * 0.25) +
             (valuation_score * 0.15) +
@@ -134,19 +133,19 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             (tail_risk_score * 0.15)
         )
 
-        verdict = "Elite Core Alpha" if composite_dna >= 85 else (
-            "Strong Differential Pick" if composite_dna >= 75 else (
-                "Moderate Growth Hold" if composite_dna >= 65 else "High Volatility Speculative"
+        verdict = "Elite Core Alpha" if composite_score >= 85 else (
+            "Strong Differential Pick" if composite_score >= 75 else (
+                "Moderate Growth Hold" if composite_score >= 65 else "High Volatility Speculative"
             )
         )
 
-        dna_scores = {
+        factor_scores = {
             "growthScore": growth_score,
             "qualityScore": quality_score,
             "valuationScore": valuation_score,
             "momentumScore": momentum_score,
             "tailRiskScore": tail_risk_score,
-            "compositeDNAScore": composite_dna,
+            "compositeFactorScore": composite_score,
             "verdict": verdict,
             "piotroskiFScore": piotroski_f,
         }
@@ -173,7 +172,7 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             price_df=hist,
             risk_metrics=adv_metrics,
             macro_indicators=macro_difficulty,
-            dna_scores=dna_scores,
+            factor_scores=factor_scores,
         )
 
         return {
@@ -182,7 +181,8 @@ def get_asset_analytics(symbol: str, period: str = Query("1y", description="Data
             "currentPrice": current_price,
             "priceChangePct24h": price_change_pct,
             "candles": candles,
-            "dnaScores": dna_scores,
+            "factorScores": factor_scores,
+            "dnaScores": factor_scores,  # Backward compatibility
             "macroDifficulty": macro_difficulty,
             "expectedReturn": expected_return,
             "traderArchetypes": trader_archetypes,

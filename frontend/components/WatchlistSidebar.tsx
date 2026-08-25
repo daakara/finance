@@ -28,6 +28,19 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     activeCategory === "All" ? true : item.type === activeCategory
   );
 
+  const handleCategoryClick = (cat: "All" | "Stock" | "ETF" | "Crypto") => {
+    setActiveCategory(cat);
+    setIsMobileExpanded(true);
+
+    // Auto-select the top asset in this category if current asset is not in it
+    if (cat !== "All") {
+      const topItem = WATCHLIST_ITEMS.find((item) => item.type === cat);
+      if (topItem && activeSymbol !== topItem.symbol) {
+        onSelectSymbol(topItem.symbol);
+      }
+    }
+  };
+
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 shadow-xl space-y-3 h-full">
       {/* Header with Mobile Accordion Toggle */}
@@ -55,11 +68,11 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
-            onClick={() => setActiveCategory(cat)}
+            onClick={() => handleCategoryClick(cat)}
             className={`flex-1 py-1 rounded text-[10px] font-mono font-medium transition-colors ${
               activeCategory === cat
-                ? "bg-cyan-500 text-slate-950 font-bold"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
             }`}
           >
             {cat}

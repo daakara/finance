@@ -1,22 +1,22 @@
 "use client";
 
-import { AssetDNAScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
+import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
 
-interface AssetDNARadarProps {
+interface AssetFactorRadarProps {
   symbol: string;
-  dnaScores?: AssetDNAScores;
+  factorScores?: AssetFactorScores;
   macroDifficulty?: MacroDifficultyRating;
   expectedReturn?: ExpectedReturnForecast;
 }
 
-export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expectedReturn }: AssetDNARadarProps) {
-  const scores = dnaScores || {
+export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty, expectedReturn }: AssetFactorRadarProps) {
+  const scores = factorScores || {
     growthScore: 84,
     qualityScore: 90,
     valuationScore: 72,
     momentumScore: 78,
     tailRiskScore: 82,
-    compositeDNAScore: 82,
+    compositeFactorScore: 82,
     verdict: "Elite Core Alpha",
     piotroskiFScore: 8,
   };
@@ -42,13 +42,13 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-5">
-      {/* Header with Composite DNA Pill */}
+      {/* Header with Composite Factor Health Pill */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
         <div>
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
             <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight">
-              {symbol} Financial DNA Profile
+              {symbol} 5-Factor Quantitative Profile
             </h3>
             {scores.piotroskiFScore && (
               <span className="text-[10px] font-mono bg-[#1b2434] text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded">
@@ -57,14 +57,14 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
             )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            5-factor multi-dimensional quantitative rating across growth, balance sheet health, valuation, momentum, and downside risk
+            5-factor multi-dimensional quantitative rating across growth, balance sheet quality, valuation, momentum, and downside risk
           </p>
         </div>
 
         <div className="flex items-center space-x-2">
           <div className="bg-cyan-950/80 border border-cyan-700/80 px-3 py-1 rounded-lg text-right font-mono">
-            <span className="text-[10px] text-cyan-300 block uppercase leading-none font-bold">DNA Score</span>
-            <span className="text-base font-bold text-cyan-400">{scores.compositeDNAScore} / 100</span>
+            <span className="text-[10px] text-cyan-300 block uppercase leading-none font-bold">Factor Score</span>
+            <span className="text-base font-bold text-cyan-400">{scores.compositeFactorScore} / 100</span>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-mono">
             {scores.verdict}
@@ -72,9 +72,9 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
         </div>
       </div>
 
-      {/* 5-Factor DNA Dimension Bars Grid */}
+      {/* 5-Factor Dimension Bars Grid */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-        {/* Growth DNA */}
+        {/* Growth Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-slate-400">Growth</span>
@@ -86,7 +86,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           <span className="text-[9px] text-slate-500 block">Top Quintile CAGR</span>
         </div>
 
-        {/* Quality / Health DNA */}
+        {/* Quality / Health Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-slate-400">Quality & Health</span>
@@ -100,7 +100,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           </span>
         </div>
 
-        {/* Valuation DNA */}
+        {/* Valuation Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-slate-400">Valuation</span>
@@ -112,7 +112,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           <span className="text-[9px] text-slate-500 block">Fair vs Peer Median</span>
         </div>
 
-        {/* Momentum DNA */}
+        {/* Momentum Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-slate-400">Momentum</span>
@@ -124,7 +124,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           <span className="text-[9px] text-slate-500 block">Breakout Above 50DMA</span>
         </div>
 
-        {/* Tail-Risk DNA */}
+        {/* Tail-Risk Factor */}
         <div className="bg-[#090d14] border border-[#243044] rounded-lg p-3 space-y-1.5">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-slate-400">Tail Risk</span>
