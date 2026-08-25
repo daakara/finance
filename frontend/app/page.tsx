@@ -138,7 +138,7 @@ export default function DashboardPage() {
           {/* Main Chart */}
           <TradingViewChart symbol={symbol} data={analyticsData?.candles} />
 
-          {/* FPL-DNA Style Financial Asset DNA Profile */}
+          {/* Multi-Dimensional Financial Asset DNA Profile */}
           <AssetDNARadar
             symbol={symbol}
             dnaScores={analyticsData?.dnaScores}

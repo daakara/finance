@@ -47,7 +47,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            5-factor underlying fingerprint modelled after FPL DNA quantitative framework
+            5-factor multi-dimensional quantitative rating across growth, balance sheet health, valuation, momentum, and downside risk
           </p>
         </div>
 
@@ -152,7 +152,7 @@ export default function AssetDNARadar({ symbol, dnaScores, macroDifficulty, expe
           </div>
         </div>
 
-        {/* Macro Difficulty Rating (MDR) - The FDR of Finance */}
+        {/* Macro Difficulty Rating (MDR) */}
         <div className="bg-[#090d14] border border-[#243044] rounded-xl p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
