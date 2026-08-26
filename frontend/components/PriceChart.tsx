@@ -31,9 +31,14 @@ export default function PriceChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const vwapSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [activeInterval, setActiveInterval] = useState<string>(interval);
+
+  // Synchronize internal active interval whenever parent prop changes (e.g. Day Trade / Long Term mode switches)
+  useEffect(() => {
+    setActiveInterval(interval);
+  }, [interval]);
 
   const intervals = [
     { label: "1m", value: "1m" },
@@ -50,8 +55,13 @@ export default function PriceChart({
     }
   };
 
+  const isIntraday = activeInterval !== "1d";
+
   useEffect(() => {
     if (!chartContainerRef.current) return;
+
+    // Reset container DOM before instantiating new chart
+    chartContainerRef.current.innerHTML = "";
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -70,7 +80,7 @@ export default function PriceChart({
       },
       timeScale: {
         borderColor: "#334155",
-        timeVisible: activeInterval !== "1d",
+        timeVisible: isIntraday,
         secondsVisible: false,
       },
     });
@@ -84,14 +94,14 @@ export default function PriceChart({
       wickDownColor: "#f43f5e",
     });
 
-    const vwapSeries = chart.addLineSeries({
-      color: "#f59e0b",
+    const overlaySeries = chart.addLineSeries({
+      color: isIntraday ? "#f59e0b" : "#38bdf8",
       lineWidth: 2,
-      title: "VWAP",
+      title: isIntraday ? "VWAP" : "20 EMA",
     });
 
     seriesRef.current = candlestickSeries;
-    vwapSeriesRef.current = vwapSeries;
+    lineSeriesRef.current = overlaySeries;
     chartRef.current = chart;
 
     const handleResize = () => {
@@ -109,20 +119,31 @@ export default function PriceChart({
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [activeInterval]);
+  }, [activeInterval, isIntraday]);
 
   useEffect(() => {
     if (!seriesRef.current || candles.length === 0) return;
 
     try {
+      // Map and sanitize candlestick timestamps
       const formattedData = candles
-        .map((c) => ({
-          time: c.time as any,
-          open: Number(c.open),
-          high: Number(c.high),
-          low: Number(c.low),
-          close: Number(c.close),
-        }))
+        .map((c) => {
+          let timeVal: any = c.time;
+          if (typeof timeVal === "string" && isIntraday && !timeVal.includes("-")) {
+            timeVal = Number(timeVal);
+          } else if (typeof timeVal === "number" && !isIntraday) {
+            const d = new Date(timeVal * 1000);
+            timeVal = d.toISOString().split("T")[0];
+          }
+
+          return {
+            time: timeVal,
+            open: Number(c.open),
+            high: Number(c.high),
+            low: Number(c.low),
+            close: Number(c.close),
+          };
+        })
         .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0)
         .sort((a, b) => {
           const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
@@ -130,24 +151,48 @@ export default function PriceChart({
           return tA - tB;
         });
 
-      if (formattedData.length > 0) {
-        seriesRef.current.setData(formattedData as any);
+      // Deduplicate timestamps to prevent Lightweight Charts crash
+      const uniqueData: any[] = [];
+      const seenTimes = new Set();
+      for (const item of formattedData) {
+        if (!seenTimes.has(item.time)) {
+          seenTimes.add(item.time);
+          uniqueData.push(item);
+        }
+      }
 
-        if (vwapSeriesRef.current) {
-          let cumVol = 0;
-          let cumVP = 0;
-          const vwapData = formattedData.map((c, i) => {
-            const vol = candles[i]?.volume || 1000;
-            const typical = (c.high + c.low + c.close) / 3;
-            cumVol += vol;
-            cumVP += typical * vol;
-            const val = cumVol > 0 ? cumVP / cumVol : c.close;
-            return {
-              time: c.time,
-              value: Number(val.toFixed(2)),
-            };
-          });
-          vwapSeriesRef.current.setData(vwapData as any);
+      if (uniqueData.length > 0) {
+        seriesRef.current.setData(uniqueData as any);
+
+        if (lineSeriesRef.current) {
+          if (isIntraday) {
+            // Compute Intraday VWAP
+            let cumVol = 0;
+            let cumVP = 0;
+            const vwapData = uniqueData.map((c, i) => {
+              const vol = candles[i]?.volume || 1000;
+              const typical = (c.high + c.low + c.close) / 3;
+              cumVol += vol;
+              cumVP += typical * vol;
+              const val = cumVol > 0 ? cumVP / cumVol : c.close;
+              return {
+                time: c.time,
+                value: Number(val.toFixed(2)),
+              };
+            });
+            lineSeriesRef.current.setData(vwapData as any);
+          } else {
+            // Compute Daily 20-Day Moving Average
+            const maData = uniqueData.map((c, idx, arr) => {
+              const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
+              const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
+              return {
+                time: c.time,
+                value: Number(avg.toFixed(2)),
+              };
+            });
+            lineSeriesRef.current.setData(maData as any);
+          }
         }
 
         chartRef.current?.timeScale().fitContent();
@@ -155,7 +200,7 @@ export default function PriceChart({
     } catch (err) {
       console.warn("Error setting chart data:", err);
     }
-  }, [candles]);
+  }, [candles, isIntraday]);
 
   const isPositive = priceChangePct >= 0;
 
@@ -212,7 +257,7 @@ export default function PriceChart({
                 aria-label={`Set timeframe interval to ${item.label}`}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   activeInterval === item.value
-                    ? "bg-cyan-500 text-slate-950 shadow-sm"
+                    ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
@@ -226,7 +271,7 @@ export default function PriceChart({
       {/* Chart Canvas */}
       <div
         role="region"
-        aria-label={`${symbol} interactive candlestick and VWAP price chart`}
+        aria-label={`${symbol} interactive candlestick and trend chart`}
         className="flex-1 w-full min-h-[280px] sm:min-h-[320px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />

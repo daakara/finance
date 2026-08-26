@@ -1,4 +1,4 @@
-"""
+﻿"""
 Multi-Asset Data Pipeline for Hidden Gems Scanner
 Fetches comprehensive data from multiple sources for screening analysis
 """
@@ -113,7 +113,7 @@ class MultiAssetDataPipeline:
             # Cache valid result (TTL 5 minutes = 300 seconds)
             if hasattr(self, 'disk_cache') and self.disk_cache is not None and not data.get('error'):
                 try:
-                    self.disk_cache.set(cache_key, data, expire=300)
+                    if hasattr(self.disk_cache, 'set'): self.disk_cache.set(cache_key, data, expire=300)
                 except Exception as e:
                     logger.warning(f"Cache write error: {e}")
             
@@ -791,3 +791,4 @@ if __name__ == "__main__":
     print(f"Crypto data keys: {list(crypto_data.keys())}")
     
     print("\n✅ Data pipeline test completed")
+
