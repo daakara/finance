@@ -3,18 +3,18 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Quantitative Terminal User Guide & Algorithmic Methodologies",
+  title: "Quantitative Terminal Field Manual & Algorithmic Handbook",
   description:
-    "Comprehensive guide to Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
+    "Institutional manual detailing Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, Cornish-Fisher Modified VaR, and 9-Point Piotroski scoring.",
   openGraph: {
-    title: "Finance Terminal: Quantitative User Guide & Methodologies",
-    description: "Master institutional quantitative trading, legislative STOCK Act signals, and risk invalidation frameworks.",
-    url: "https://finance-xp8.pages.dev/guide",
+    title: "Finance Terminal: Quantitative Field Manual & Algorithmic Handbook",
+    description: "Master institutional quantitative trading, legislative STOCK Act signals, volatility invalidation ladders, and tail risk management.",
+    url: "https://finance-xp8.pages.dev/guide/",
     siteName: "Finance Terminal",
     type: "article",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/guide",
+    canonical: "https://finance-xp8.pages.dev/guide/",
   },
 };
 
@@ -22,7 +22,7 @@ export default function GuidePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "Quantitative Terminal User Guide & Algorithmic Methodologies",
+    "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
     "description": "Comprehensive guide to Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
     "author": {
       "@type": "Organization",
@@ -41,8 +41,8 @@ export default function GuidePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070a10] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black">
-      {/* Schema.org TechArticle Structured Data for SEO / GEO Rich Results */}
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
+      {/* Schema.org Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -50,130 +50,226 @@ export default function GuidePage() {
 
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 font-mono space-y-8 sm:space-y-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 font-mono space-y-10 sm:space-y-14 pb-24 sm:pb-16">
         {/* Hero Header */}
         <header className="border-b border-[#243044] pb-6 sm:pb-8 space-y-3">
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-[11px] font-bold">
-              DOCUMENTATION & SPECIFICATION
+              INSTITUTIONAL QUANTITATIVE FIELD MANUAL
             </span>
-            <span className="text-slate-500 text-xs">• 100% Grounded Provenance</span>
+            <span className="text-slate-500 text-xs">• Version 2.4 Specification</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Quantitative Platform User Guide & Algorithmic Blueprint
+            Quantitative Platform Blueprint & Execution Handbook
           </h1>
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-sans">
-            A comprehensive reference manual detailing how our mathematical models calculate entry ladders, stop-loss invalidation thresholds, Congressional STOCK Act disclosure conviction, and macroeconomic regimes.
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            A comprehensive, mathematically rigorous reference manual for professional traders, quantitative analysts, and fundamental investors. Learn the formulas, invalidation rules, statutory insider metrics, and portfolio risk equations powering this terminal.
           </p>
+
+          {/* Quick Jump Navigation */}
+          <div className="bg-[#090d14] p-3 rounded-xl border border-[#1b2434] flex flex-wrap gap-2 text-[11px] pt-3">
+            <span className="text-slate-500 font-bold uppercase py-0.5">Quick Jump:</span>
+            <a href="#chapter-1" className="text-cyan-400 hover:underline">Ch 1: Workspaces</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-2" className="text-cyan-400 hover:underline">Ch 2: Algorithmic Math</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-3" className="text-amber-400 hover:underline">Ch 3: STOCK Act Insiders</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-4" className="text-emerald-400 hover:underline">Ch 4: 5-Factor Radar</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 5: Risk & Modified VaR</a>
+          </div>
         </header>
 
-        {/* Section 1: In-Terminal Modular Workspaces */}
-        <section id="workspaces" className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-400 flex items-center gap-2 border-b border-[#1b2434] pb-2">
-            <span>🗂️ 1. The 4 Modular In-Terminal Workspaces</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            To eliminate cognitive overload, the Terminal groups deep analytical tools into 4 dedicated workspace tabs directly beneath the live candlestick chart:
+        {/* CHAPTER 1: WORKSPACES & DUAL USER JOURNEYS */}
+        <section id="chapter-1" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">🗂️</span>
+            <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
+              Chapter 1: The 4 In-Terminal Modular Workspaces
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Traditional terminals force analysts to scroll through hundreds of stacked widgets, causing severe cognitive overload and losing chart context. Our terminal splits analysis into 4 modular domains anchored directly beneath the live price chart:
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-1.5">
-              <strong className="text-cyan-300 text-sm flex items-center gap-1.5">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-cyan-300 text-sm flex items-center gap-1.5 font-mono">
                 <span>🎯</span>
-                <span>Execution & Levels</span>
+                <span>Execution & Levels (Default)</span>
               </strong>
-              <p className="text-xs text-slate-400">
-                Calculates live optimal accumulation ranges, 14-period Turtle ATR stop-losses, and multi-tier take-profit targets with a minimum 2:1 reward-to-risk requirement.
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Answers: <em>&ldquo;Where do I enter, where is my stop, and when do I take profit?&rdquo;</em> Houses the Minervini VCP accumulation ladder, Intraday Position Sizer, and ATR14 volatility bands.
               </p>
             </div>
 
-            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-1.5">
-              <strong className="text-amber-300 text-sm flex items-center gap-1.5">
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-amber-300 text-sm flex items-center gap-1.5 font-mono">
                 <span>🏛️</span>
                 <span>Smart Money & Insiders</span>
               </strong>
-              <p className="text-xs text-slate-400">
-                Tracks official US House & Senate STOCK Act disclosures, SEC Form 4 insider transactions, and unusual options flow call sweeps with dark pool volume context.
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Answers: <em>&ldquo;What are politicians, corporate executives, and option market makers doing?&rdquo;</em> Displays US House/Senate STOCK Act filings, dark pool ATS volumes, and options sweeps.
               </p>
             </div>
 
-            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-1.5">
-              <strong className="text-emerald-300 text-sm flex items-center gap-1.5">
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-emerald-300 text-sm flex items-center gap-1.5 font-mono">
                 <span>📊</span>
-                <span>Factors & Macro</span>
+                <span>Factors & Macro Intelligence</span>
               </strong>
-              <p className="text-xs text-slate-400">
-                Displays 5-factor radar scores (Growth, Quality, Valuation, Momentum, Tail Risk), 9-point Piotroski F-Scores, and Federal Reserve yield curve regime spreads.
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Answers: <em>&ldquo;How healthy is the company and what is the macro regime?&rdquo;</em> Displays 5-Factor profile radar, 9-point Piotroski F-Scores, and FRED 10Y-2Y yield curve spreads.
               </p>
             </div>
 
-            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-1.5">
-              <strong className="text-purple-300 text-sm flex items-center gap-1.5">
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-purple-300 text-sm flex items-center gap-1.5 font-mono">
                 <span>🛡️</span>
-                <span>Risk & Contagion</span>
+                <span>Risk & Contagion Networks</span>
               </strong>
-              <p className="text-xs text-slate-400">
-                Maps directed supply-chain and peer contagion network graphs alongside continuous self-healing forecast accuracy calibration audits.
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Answers: <em>&ldquo;If a peer or supplier collapses, how does the shock cascade?&rdquo;</em> Displays directed supply-chain topologies, Cornish-Fisher M-VaR, and self-healing hit rate calibrations.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Section 2: Algorithmic Execution Playbook */}
-        <section id="algorithmic-playbook" className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-400 flex items-center gap-2 border-b border-[#1b2434] pb-2">
-            <span>🧮 2. Mathematical Execution Formulas & Risk Rules</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Our execution engine replaces discretionary guesswork with rigorous algorithmic boundaries:
+        {/* CHAPTER 2: ALGORITHMIC EXECUTION & FORMULAS */}
+        <section id="chapter-2" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">🧮</span>
+            <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
+              Chapter 2: Algorithmic Execution Formulas & Sizing Math
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Our execution engine replaces emotional discretion with concrete mathematical boundaries based on Mark Minervini&apos;s Volatility Contraction Pattern (VCP) and Linda Raschke&apos;s 20 EMA pullback setup.
           </p>
 
+          {/* Sizing Math */}
           <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              A. Dual Take-Profit Ladder (TP1 & TP2)
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>📐 1. Exact Position Sizing Equation</span>
             </h3>
-            <ul className="text-xs text-slate-300 space-y-2 list-disc pl-5">
-              <li>
-                <strong>Target 1 (Scale 50% Position)</strong>: Computed as Spot + 2.5x ATR14 (Long-Term) or Spot + 1.75x ATR14 (Day Trader). Once reached, stop-loss is raised to breakeven.
-              </li>
-              <li>
-                <strong>Target 2 (Extended Runner Exit)</strong>: Computed as Spot + 4.5x ATR14 (Long-Term) or Spot + 3.0x ATR14 (Day Trader) at channel exhaustion.
-              </li>
-            </ul>
-
-            <h3 className="text-sm font-bold text-rose-400 uppercase tracking-wider pt-2">
-              B. Volatility Invalidation Stop-Loss
-            </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Calculated dynamically via 14-period Average True Range: <code>Stop Loss = Entry_Min - 1.8 * ATR14</code>. If daily price closes below this floor, the thesis is structurally invalidated.
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              Never risk more than your pre-defined capital threshold ($1\%–2\%$ of account equity per trade). The terminal calculates exact share volume using:
+            </p>
+            <div className="bg-[#070a10] p-3 rounded-lg border border-[#162030] text-cyan-300 font-bold text-xs">
+              Shares to Buy = (Account Capital * Risk Budget %) / (Entry Price - Stop Loss Price)
+            </div>
+            <p className="text-[11px] text-slate-400 leading-snug font-sans">
+              <strong>Example:</strong> With a \$50,000 portfolio risking 1% (\$500) buying NVDA at \$213.05 with a Stop Loss at \$201.35 (\$11.70 per share risk), the sizer dictates buying exactly <strong>42 shares</strong>.
             </p>
           </div>
-        </section>
 
-        {/* Section 3: Congressional STOCK Act Disclosures */}
-        <section id="stock-act" className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-amber-400 flex items-center gap-2 border-b border-[#1b2434] pb-2">
-            <span>🏛️ 3. Congressional STOCK Act & Smart Money Tracking</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Under Public Law 112-105 (2012 STOCK Act), members of the US Congress must disclose securities transactions within 45 days. Our system evaluates:
-          </p>
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2 text-xs text-slate-300">
-            <div>• <strong>Filing Delay Penalty</strong>: Discounts trades reported near the 45-day statutory deadline to avoid copycat top-buying.</div>
-            <div>• <strong>Jurisdiction Overlap</strong>: Cross-references member committee assignments (e.g. Armed Services, Energy & Commerce) against ticker sector classification.</div>
-            <div>• <strong>Direct Statutory Source Linking</strong>: Every trade includes a direct link to the Office of the Clerk (US House) or Electronic Financial Disclosure (US Senate).</div>
+          {/* Multi-Tier Take Profit Ladder */}
+          <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>🎯 2. Dual Take-Profit Ladder (TP1 & TP2)</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#111722] p-3 rounded-lg border border-[#243044] space-y-1">
+                <strong className="text-emerald-400 block font-bold">Target 1 (Scale 50% Position)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Formula: <code>Spot + (2.5 * ATR14)</code>. Once price touches TP1, sell 50% of the position to lock in profit and automatically raise the stop loss on the remaining 50% to breakeven.
+                </p>
+              </div>
+              <div className="bg-[#111722] p-3 rounded-lg border border-[#243044] space-y-1">
+                <strong className="text-purple-400 block font-bold">Target 2 (Extended Runner Exit)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Formula: <code>Spot + (4.5 * ATR14)</code>. Trail the remaining 50% runner along the 20 EMA until a daily candle closes below the moving average.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Section 4: Quantitative Risk Modeling */}
-        <section id="risk-framework" className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-purple-400 flex items-center gap-2 border-b border-[#1b2434] pb-2">
-            <span>🛡️ 4. Cornish-Fisher Modified Value-at-Risk (M-VaR)</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Standard Gaussian VaR assumes normal distribution, dangerously underestimating real-world crash risk. Our engine applies Cornish-Fisher expansion to calibrate for asset skewness (S) and excess kurtosis (K):
+        {/* CHAPTER 3: CONGRESSIONAL STOCK ACT INTELLIGENCE */}
+        <section id="chapter-3" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">🏛️</span>
+            <h2 className="text-lg sm:text-xl font-bold text-amber-400 tracking-tight">
+              Chapter 3: Congressional STOCK Act & Political Alpha
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Under Public Law 112-105 (Stop Trading on Congressional Knowledge Act of 2012), members of the US Congress and Senate are legally required to disclose securities transactions within 45 days.
           </p>
-          <div className="bg-[#090d14] p-4 rounded-xl border border-[#1e293b] font-mono text-xs text-cyan-300">
-            Z_cf = z_alpha + (z_alpha^2 - 1)*S / 6 + (z_alpha^3 - 3*z_alpha)*K / 24 - (2*z_alpha^3 - 5*z_alpha)*S^2 / 36
+
+          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-[#243044] space-y-3 text-xs">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-100 uppercase tracking-wider">
+              How the Terminal Filters Actionable Political Signals:
+            </h3>
+            <ul className="space-y-2 text-slate-300 font-sans list-disc pl-5">
+              <li>
+                <strong>Filing Lag Decay:</strong> Trades disclosed near the 45-day statutory deadline are penalized in conviction scoring to prevent retail traders from buying the tail end of an expired legislative catalyst.
+              </li>
+              <li>
+                <strong>Committee Jurisdiction Overlap:</strong> Trades are weighted 2.5x higher when a member sits on a committee with direct oversight of the traded asset (e.g. Armed Services purchasing Defense contractors, Energy & Commerce purchasing Semiconductors).
+              </li>
+              <li>
+                <strong>Option Sweeps vs. Equity:</strong> Deep In-The-Money (ITM) Call purchases (e.g., Nancy Pelosi LEAPS) indicate leveraged institutional accumulation with defined downside floor risk.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* CHAPTER 4: 5-FACTOR RADAR & PIOTROSKI F-SCORE */}
+        <section id="chapter-4" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">📊</span>
+            <h2 className="text-lg sm:text-xl font-bold text-emerald-400 tracking-tight">
+              Chapter 4: 5-Factor Fundamental DNA & Piotroski Score
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            The platform synthesizes thousands of fundamental balance sheet data points into a multi-dimensional quantitative profile:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="bg-[#0b1019] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+              <strong className="text-cyan-400 font-bold block">1. Growth Score (0-100)</strong>
+              <p className="text-slate-300 text-[11px] font-sans">Calculated via 3-year revenue CAGR, forward EPS expansion rate, and free cash flow acceleration.</p>
+            </div>
+            <div className="bg-[#0b1019] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+              <strong className="text-emerald-400 font-bold block">2. Quality Score (0-100)</strong>
+              <p className="text-slate-300 text-[11px] font-sans">Measures Return on Invested Capital (ROIC &gt; 15%), gross profit margin moats, and low financial leverage.</p>
+            </div>
+            <div className="bg-[#0b1019] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+              <strong className="text-purple-400 font-bold block">3. Valuation Score (0-100)</strong>
+              <p className="text-slate-300 text-[11px] font-sans">Derived from PEG ratio, EV/EBITDA multiple discounts, and enterprise DCF fair value spreads.</p>
+            </div>
+            <div className="bg-[#0b1019] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+              <strong className="text-amber-400 font-bold block">4. Piotroski 9-Point F-Score</strong>
+              <p className="text-slate-300 text-[11px] font-sans">Scores 8-9 indicate pristine balance sheet quality; scores &le; 3 signal structural accounting insolvency.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* CHAPTER 5: QUANTITATIVE RISK & CORNISH-FISHER M-VAR */}
+        <section id="chapter-5" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">🛡️</span>
+            <h2 className="text-lg sm:text-xl font-bold text-purple-400 tracking-tight">
+              Chapter 5: Tail Risk Modeling & Cornish-Fisher Modified VaR
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Standard Gaussian Value-at-Risk assumes that asset returns follow a symmetric normal distribution. In reality, equity markets exhibit negative skewness (sharp crashes) and excess kurtosis (fat tails).
+          </p>
+
+          <div className="bg-[#090d14] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+              Cornish-Fisher Expansion Formula:
+            </h3>
+            <div className="bg-[#05070a] p-3 rounded-lg border border-[#162030] font-mono text-cyan-300 text-xs leading-relaxed overflow-x-auto">
+              Z_cf = z_alpha + (z_alpha^2 - 1)*S / 6 + (z_alpha^3 - 3*z_alpha)*K / 24 - (2*z_alpha^3 - 5*z_alpha)*S^2 / 36
+            </div>
+            <p className="text-xs text-slate-300 font-sans leading-relaxed">
+              Where <code>S</code> represents sample skewness, <code>K</code> represents excess kurtosis, and <code>z_alpha</code> represents the standard normal quantile (e.g. 1.645 for 95% confidence). This accurately reflects real-world tail crash risk during market liquidity shocks.
+            </p>
           </div>
         </section>
 
@@ -181,7 +277,7 @@ export default function GuidePage() {
         <footer className="border-t border-[#243044] pt-6 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow transition-transform active:scale-95"
+            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow transition-transform active:scale-95 cursor-pointer"
           >
             ← Return to Quantitative Terminal
           </Link>
