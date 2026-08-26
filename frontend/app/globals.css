@@ -51,6 +51,65 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* 🌓 GLOBAL PAPER LIGHT THEME OVERRIDES */
+[data-theme="paper"] .bg-\[\#070a10\] {
+  background-color: #f4f6f9 !important;
+}
+
+[data-theme="paper"] .bg-\[\#0c1017\] {
+  background-color: #ffffff !important;
+}
+
+[data-theme="paper"] .bg-\[\#111722\] {
+  background-color: #ffffff !important;
+}
+
+[data-theme="paper"] .bg-\[\#090d14\] {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="paper"] .bg-\[\#0b1019\] {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="paper"] .bg-\[\#162030\] {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="paper"] .bg-\[\#1b2434\] {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="paper"] .text-slate-100,
+[data-theme="paper"] .text-slate-200,
+[data-theme="paper"] .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="paper"] .text-slate-300,
+[data-theme="paper"] .text-slate-400 {
+  color: #334155 !important;
+}
+
+[data-theme="paper"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+[data-theme="paper"] .border-\[\#243044\],
+[data-theme="paper"] .border-\[\#1b2434\],
+[data-theme="paper"] .border-\[\#1e293b\],
+[data-theme="paper"] .border-\[\#2b3a52\],
+[data-theme="paper"] .border-\[\#162030\] {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="paper"] input,
+[data-theme="paper"] textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
 /* Accessible focus ring utility */
 .focus-ring {
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
