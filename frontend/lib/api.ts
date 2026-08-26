@@ -127,7 +127,18 @@ export interface CatalystForecastData {
   multi_year_forecast: CatalystForecastYear[];
 }
 
+export interface CongressTradeDetails {
+  committee_assignments?: string[];
+  legislative_conflict_thesis?: string;
+  historical_win_rate_pct?: number;
+  annualized_tech_alpha_pct?: number;
+  source_filing_url?: string;
+  stock_act_compliance?: string;
+  key_catalyst?: string;
+}
+
 export interface CongressTradeItem {
+  id?: string;
   politician: string;
   chamber: string;
   ticker: string;
@@ -140,9 +151,23 @@ export interface CongressTradeItem {
   days_to_filing: number;
   performance_since_pct: number;
   sentiment: string;
+  details?: CongressTradeDetails;
+}
+
+export interface OptionsFlowDetails {
+  execution_urgency?: string;
+  strike_distance_pct?: number;
+  moneyness?: string;
+  delta_est?: number;
+  gamma_pin_level?: string;
+  open_interest_before?: number;
+  volume_today?: number;
+  institutional_intent?: string;
+  market_maker_hedging_impact?: string;
 }
 
 export interface OptionsFlowItem {
+  id?: string;
   time: string;
   ticker: string;
   type: string;
@@ -154,6 +179,7 @@ export interface OptionsFlowItem {
   implied_volatility: string;
   order_type: string;
   sentiment: string;
+  details?: OptionsFlowDetails;
 }
 
 export interface SmartMoneyOverview {
@@ -582,3 +608,4 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
     })),
   };
 }
+
