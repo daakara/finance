@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi } from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi, LineStyle } from "lightweight-charts";
 import { CandleData } from "../lib/api";
 
 interface PriceChartProps {
@@ -49,10 +49,11 @@ export default function PriceChart({
 }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const lineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
   const [activeInterval, setActiveInterval] = useState<string>(interval);
+  const [chartMode, setChartMode] = useState<"CANDLE" | "LINE">("CANDLE");
 
   // Synchronize internal active interval whenever parent prop changes
   useEffect(() => {
@@ -70,14 +71,14 @@ export default function PriceChart({
 
   const isIntraday = userRole === "DAY_TRADER";
 
+  // 1. Initialize Chart Container and Series
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    // Reset container DOM before instantiating new chart
     chartContainerRef.current.innerHTML = "";
 
     const width = chartContainerRef.current.clientWidth || 800;
-    const height = chartContainerRef.current.clientHeight || 320;
+    const height = chartContainerRef.current.clientHeight || 340;
 
     const chart = createChart(chartContainerRef.current, {
       width: width,
@@ -87,24 +88,25 @@ export default function PriceChart({
         textColor: "#94a3b8",
       },
       grid: {
-        vertLines: { color: "#1e293b" },
-        horzLines: { color: "#1e293b" },
+        vertLines: { color: "#162032" },
+        horzLines: { color: "#162032" },
       },
       crosshair: {
         mode: 1,
       },
       rightPriceScale: {
-        borderColor: "#334155",
+        borderColor: "#243044",
         autoScale: true,
       },
       timeScale: {
-        borderColor: "#334155",
+        borderColor: "#243044",
         timeVisible: isIntraday,
         secondsVisible: false,
       },
     });
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    // Candlestick Series
+    const candleSeries = chart.addCandlestickSeries({
       upColor: "#10b981",
       downColor: "#f43f5e",
       borderUpColor: "#10b981",
@@ -113,14 +115,17 @@ export default function PriceChart({
       wickDownColor: "#f43f5e",
     });
 
-    const overlaySeries = chart.addLineSeries({
+    // Indicator Overlay Line (VWAP or 20 EMA)
+    const overlayLine = chart.addLineSeries({
       color: isIntraday ? "#f59e0b" : "#38bdf8",
       lineWidth: 2,
+      lineStyle: LineStyle.Solid,
       title: isIntraday ? "VWAP" : "20 EMA",
+      priceLineVisible: false,
     });
 
-    seriesRef.current = candlestickSeries;
-    lineSeriesRef.current = overlaySeries;
+    candlestickSeriesRef.current = candleSeries;
+    overlayLineSeriesRef.current = overlayLine;
     chartRef.current = chart;
 
     const handleResize = () => {
@@ -137,20 +142,24 @@ export default function PriceChart({
     return () => {
       window.removeEventListener("resize", handleResize);
       chart.remove();
+      chartRef.current = null;
+      candlestickSeriesRef.current = null;
+      overlayLineSeriesRef.current = null;
     };
-  }, [activeInterval, isIntraday]);
+  }, [isIntraday]);
 
+  // 2. Feed Data to Candlestick and Line Overlay Series
   useEffect(() => {
-    if (!seriesRef.current || candles.length === 0) return;
+    if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current || !candles || candles.length === 0) return;
 
     try {
-      // Map and sanitize candlestick timestamps based on timeframe
-      const formattedData = candles
+      // Format timestamps according to Lightweight Charts rules
+      const sanitized = candles
         .map((c) => {
           let timeVal: any = c.time;
-          
+
           if (isIntraday) {
-            // Intraday timestamps MUST be numeric Unix timestamp in seconds (UTCTimestamp)
+            // Numeric epoch in seconds
             if (typeof timeVal === "string") {
               if (timeVal.includes("-") || timeVal.includes("T")) {
                 timeVal = Math.floor(new Date(timeVal).getTime() / 1000);
@@ -161,7 +170,7 @@ export default function PriceChart({
               timeVal = Math.floor(timeVal / 1000);
             }
           } else {
-            // Long-term timestamps (1M, 6M, 1Y, 3Y, 5Y) MUST be YYYY-MM-DD string
+            // YYYY-MM-DD date string
             if (typeof timeVal === "number") {
               const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
               timeVal = new Date(ms).toISOString().split("T")[0];
@@ -176,6 +185,7 @@ export default function PriceChart({
             high: Number(c.high),
             low: Number(c.low),
             close: Number(c.close),
+            volume: Number(c.volume || 1000),
           };
         })
         .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0 && c.time)
@@ -185,58 +195,57 @@ export default function PriceChart({
           return tA - tB;
         });
 
-      // Deduplicate timestamps strictly
-      const uniqueData: any[] = [];
+      // Deduplicate sorted timestamps
+      const uniqueCandles: any[] = [];
       const seenTimes = new Set();
-      for (const item of formattedData) {
+      for (const item of sanitized) {
         if (!seenTimes.has(item.time)) {
           seenTimes.add(item.time);
-          uniqueData.push(item);
+          uniqueCandles.push(item);
         }
       }
 
-      if (uniqueData.length > 0) {
-        seriesRef.current.setData(uniqueData as any);
+      if (uniqueCandles.length > 0) {
+        // Set Candlestick Data
+        candlestickSeriesRef.current.setData(uniqueCandles.map(({ time, open, high, low, close }) => ({
+          time, open, high, low, close
+        })));
 
-        if (lineSeriesRef.current) {
-          if (isIntraday) {
-            // Compute Intraday VWAP
-            let cumVol = 0;
-            let cumVP = 0;
-            const vwapData = uniqueData.map((c, i) => {
-              const vol = candles[i]?.volume || 1000;
-              const typical = (c.high + c.low + c.close) / 3;
-              cumVol += vol;
-              cumVP += typical * vol;
-              const val = cumVol > 0 ? cumVP / cumVol : c.close;
-              return {
-                time: c.time,
-                value: Number(val.toFixed(2)),
-              };
-            });
-            lineSeriesRef.current.setData(vwapData as any);
-          } else {
-            // Compute 20-Period Moving Average (Daily/Weekly/Monthly)
-            const maData = uniqueData.map((c, idx, arr) => {
-              const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
-              const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
-              return {
-                time: c.time,
-                value: Number(avg.toFixed(2)),
-              };
-            });
-            lineSeriesRef.current.setData(maData as any);
-          }
+        // Generate Overlay Line Data (VWAP for Intraday, 20 EMA for Long Term)
+        if (isIntraday) {
+          let cumVol = 0;
+          let cumVP = 0;
+          const vwapPoints = uniqueCandles.map((c) => {
+            const typical = (c.high + c.low + c.close) / 3;
+            cumVol += c.volume;
+            cumVP += typical * c.volume;
+            const val = cumVol > 0 ? cumVP / cumVol : c.close;
+            return {
+              time: c.time,
+              value: Number(val.toFixed(2)),
+            };
+          });
+          overlayLineSeriesRef.current.setData(vwapPoints);
+        } else {
+          const maPoints = uniqueCandles.map((c, idx, arr) => {
+            const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
+            const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
+            return {
+              time: c.time,
+              value: Number(avg.toFixed(2)),
+            };
+          });
+          overlayLineSeriesRef.current.setData(maPoints);
         }
 
         setTimeout(() => {
           chartRef.current?.timeScale().fitContent();
-        }, 50);
+        }, 30);
       }
     } catch (err) {
-      console.warn("Error setting chart data:", err);
+      console.warn("Error rendering chart series:", err);
     }
-  }, [candles, isIntraday]);
+  }, [candles, isIntraday, activeInterval]);
 
   const isPositive = priceChangePct >= 0;
 
@@ -262,13 +271,18 @@ export default function PriceChart({
           >
             {isPositive ? `+${priceChangePct.toFixed(2)}%` : `${priceChangePct.toFixed(2)}%`}
           </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
+            isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
+          }`}>
+            {isIntraday ? "⚡ VWAP Active" : "🏛️ 20 EMA Active"}
+          </span>
         </div>
 
         {/* Right: Technicals Badges & Role-Adaptive Interval Group */}
         <div className="flex items-center space-x-2">
           {technicals?.rsi_14 !== undefined && (
             <div aria-label={`Relative Strength Index 14: ${technicals.rsi_14.toFixed(1)}`} className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
-              <span className="text-slate-400">RSI(14):</span>
+              <span className="text-slate-400">RSI:</span>
               <span
                 className={`font-bold tabular-nums ${
                   technicals.rsi_14 > 70
@@ -286,7 +300,7 @@ export default function PriceChart({
           {/* Role-Adaptive Timeframe Interval Buttons */}
           <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             <span className="text-[10px] text-slate-500 font-bold px-1 hidden md:inline">
-              {userRole === "DAY_TRADER" ? "⚡ Scalp Range:" : "🏛️ Long Horizon:"}
+              {userRole === "DAY_TRADER" ? "⚡ Scalp:" : "🏛️ Horizon:"}
             </span>
             {activeIntervalList.map((item) => (
               <button
@@ -310,7 +324,7 @@ export default function PriceChart({
         </div>
       </div>
 
-      {/* Chart Canvas */}
+      {/* Chart Canvas Container */}
       <div
         role="region"
         aria-label={`${symbol} interactive candlestick and trend chart`}
