@@ -1,5 +1,6 @@
 ﻿import "./globals.css";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
+import OfflineStatusBanner from "../components/OfflineStatusBanner";
 
 export const metadata = {
   title: "Financial Market Analysis Platform",
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body className="min-h-screen bg-[#070a10] text-[#c9d1d9] antialiased">
+        <OfflineStatusBanner />
         <ServiceWorkerRegister />
         {children}
       </body>
