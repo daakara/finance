@@ -31,28 +31,28 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   return (
     <>
       <header role="banner" className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-[1750px] mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <div className="max-w-[1750px] mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-6">
           {/* Left: Brand Logo & Title */}
-          <div className="flex items-center space-x-2 sm:space-x-6 min-w-0">
+          <div className="flex items-center space-x-2 sm:space-x-4 shrink-0 min-w-0">
             <Link href="/" aria-label="Finance Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
               <div aria-hidden="true" className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600 flex items-center justify-center font-mono font-bold text-white shadow-lg shadow-cyan-950/50 group-hover:scale-105 transition-transform text-xs sm:text-sm">
                 FT
               </div>
               <div className="min-w-0">
-                <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base hidden sm:block leading-none">
+                <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base hidden xl:block leading-none">
                   FINANCE TERMINAL
                 </span>
-                <span className="font-bold tracking-tight text-white font-mono text-xs sm:hidden block leading-none">
+                <span className="font-bold tracking-tight text-white font-mono text-xs xl:hidden block leading-none">
                   TERMINAL
                 </span>
-                <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden sm:block">
+                <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block">
                   Quantitative Intel
                 </span>
               </div>
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav aria-label="Main Navigation" className="hidden md:flex items-center space-x-1 font-mono text-xs">
+            <nav aria-label="Main Navigation" className="hidden lg:flex items-center space-x-1 font-mono text-xs">
               <Link
                 href="/"
                 aria-current={pathname === "/" ? "page" : undefined}
@@ -95,25 +95,26 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             </nav>
           </div>
 
-          {/* Center/Right: Universal Omni-Search & Role Switcher */}
-          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
-            {/* 🔍 Universal Omni-Search Trigger */}
+          {/* Center: Prominent Global Omni-Search Bar */}
+          <div className="flex-1 max-w-xl mx-auto flex items-center justify-center px-1 sm:px-2">
             <UniversalOmniSearch />
+          </div>
 
-            {/* Trading Horizon Switcher */}
+          {/* Right: Trading Horizon Mode Switcher */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
               <button
                 onClick={() => handleRoleToggle("DAY_TRADER")}
                 role="button"
                 aria-pressed={activeRole === "DAY_TRADER"}
-                aria-label="Switch to Day Trader mode: 5-minute charts, VWAP, and intraday execution targets"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                aria-label="Switch to Day Trader mode"
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs sm:text-sm">⚡</span>
+                <span aria-hidden="true" className="text-xs">⚡</span>
                 <span className="font-mono tracking-tight text-[11px] sm:text-xs">Day Trade</span>
               </button>
 
@@ -121,14 +122,14 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 onClick={() => handleRoleToggle("LONG_TERM")}
                 role="button"
                 aria-pressed={activeRole === "LONG_TERM"}
-                aria-label="Switch to Long-Term Investor mode: Daily charts, Piotroski F-score, and Cornish-Fisher VaR"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                aria-label="Switch to Long-Term Investor mode"
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs sm:text-sm">🏛️</span>
+                <span aria-hidden="true" className="text-xs">🏛️</span>
                 <span className="font-mono tracking-tight text-[11px] sm:text-xs">Long Term</span>
               </button>
             </div>
@@ -140,7 +141,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       <nav
         role="navigation"
         aria-label="Mobile Navigation Dock"
-        className="md:hidden fixed bottom-3 left-3 right-3 bg-[#0c1017]/95 backdrop-blur-md border border-[#243044] rounded-2xl p-1.5 shadow-2xl flex items-center justify-around z-50 font-mono text-xs"
+        className="lg:hidden fixed bottom-3 left-3 right-3 bg-[#0c1017]/95 backdrop-blur-md border border-[#243044] rounded-2xl p-1.5 shadow-2xl flex items-center justify-around z-50 font-mono text-xs"
       >
         <Link
           href="/"
