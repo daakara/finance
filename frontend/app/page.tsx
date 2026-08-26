@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "../components/Navbar";
 import WatchlistSidebar from "../components/WatchlistSidebar";
@@ -25,6 +25,7 @@ function TerminalContent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
+  const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   // Sync URL search params when navigated from Screener, Compare, or Smart Money pages
   useEffect(() => {
@@ -54,6 +55,16 @@ function TerminalContent() {
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
+      const cacheKey = `${selectedSymbol}_${interval}`;
+      const cached = cacheRef.current.get(cacheKey);
+
+      // Instant optimistic display from memory cache (<10ms)
+      if (cached) {
+        setData(cached);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         let period = "1y";
@@ -89,7 +100,10 @@ function TerminalContent() {
         }
 
         const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval);
-        if (isMounted) setData(res);
+        if (isMounted) {
+          cacheRef.current.set(cacheKey, res);
+          setData(res);
+        }
       } catch (err) {
         console.error("Failed to load asset analytics:", err);
       } finally {

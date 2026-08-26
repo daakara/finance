@@ -212,12 +212,15 @@ def get_asset_analytics(
 
         piotroski = 8 if upper_sym in KNOWN_ETFS else calculate_piotroski_f_score(info, {})
         rev_g = info.get("revenueGrowth") if info.get("revenueGrowth") is not None else 0.16
-        growth_score = 75 if upper_sym in KNOWN_ETFS else min(99, max(45, int(rev_g * 250 + 55)))
-        quality_score = min(99, max(45, int(piotroski * 11)))
+        growth_score = 75 if upper_sym in KNOWN_ETFS else min(99, max(70, int(rev_g * 250 + 65)))
+        quality_score = min(99, max(70, int(piotroski * 11)))
         pe_val = info.get("trailingPE") or info.get("forwardPE") or 24.0
-        valuation_score = 75 if upper_sym in KNOWN_ETFS else (82 if pe_val < 35 else 68)
-        momentum_score = min(99, max(35, int(60 + price_change_pct * 3.5)))
-        tail_risk_score = min(99, max(35, int(100 - abs(adv_metrics.get("Modified_VaR_95", 2.2)) * 9)))
+        valuation_score = 75 if upper_sym in KNOWN_ETFS else (85 if pe_val < 40 else 75)
+        momentum_score = min(99, max(55, int(65 + price_change_pct * 3.5)))
+        mvar = adv_metrics.get("Modified_VaR_95", 2.2)
+        if mvar is None or math.isnan(mvar):
+            mvar = 2.2
+        tail_risk_score = min(99, max(65, int(100 - abs(mvar) * 7)))
 
         composite_score = int(np.mean([growth_score, quality_score, valuation_score, momentum_score, tail_risk_score]))
 

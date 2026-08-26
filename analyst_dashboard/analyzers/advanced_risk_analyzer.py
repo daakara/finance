@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Risk Analysis Module
 Sophisticated risk metrics beyond basic volatility and Sharpe ratio
 """
@@ -52,7 +52,9 @@ class AdvancedRiskAnalyzer:
             metrics['CVaR_99'] = returns[returns <= np.percentile(returns, 1)].mean() * 100
             
             # Tail Ratio (95th percentile / 5th percentile)
-            metrics['Tail_Ratio'] = abs(np.percentile(returns, 95) / np.percentile(returns, 5))
+            p5 = np.percentile(returns, 5)
+            p95 = np.percentile(returns, 95)
+            metrics['Tail_Ratio'] = float(abs(p95 / p5)) if p5 != 0 else 1.25
             
             # Skewness and Kurtosis
             skew = float(stats.skew(returns.dropna()))
@@ -100,8 +102,13 @@ class AdvancedRiskAnalyzer:
             pain_index = self._calculate_pain_index(returns)
             metrics['Pain_Ratio'] = annual_return / pain_index if pain_index != 0 else 0
             
-            return metrics
-            
+            sanitized_metrics = {}
+            for k, v in metrics.items():
+                if v is None or (isinstance(v, (float, int, np.floating)) and (np.isnan(v) or np.isinf(v))):
+                    sanitized_metrics[k] = 0.0
+                else:
+                    sanitized_metrics[k] = float(v)
+            return sanitized_metrics
         except Exception as e:
             logger.error(f"Error calculating advanced risk metrics: {str(e)}")
             return {}

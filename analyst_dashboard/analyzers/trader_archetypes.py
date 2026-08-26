@@ -196,7 +196,11 @@ class TraderArchetypeAnalyzer:
     ) -> Dict[str, Any]:
         """Jim Simons / Renaissance Quantitative Risk model."""
         sortino = risk_metrics.get("Sortino_Ratio", 1.84)
+        if sortino is None or pd.isna(sortino):
+            sortino = 1.84
         skew = risk_metrics.get("Skewness", -0.15)
+        if skew is None or pd.isna(skew):
+            skew = -0.15
         tail_risk = factor_scores.get("tailRiskScore", 80)
         momentum = factor_scores.get("momentumScore", 75)
 
