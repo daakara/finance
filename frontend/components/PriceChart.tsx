@@ -52,26 +52,17 @@ export default function PriceChart({
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
 
-  const [activeInterval, setActiveInterval] = useState<string>(interval);
-  const [chartMode, setChartMode] = useState<"CANDLE" | "LINE">("CANDLE");
-
-  // Synchronize internal active interval whenever parent prop changes
-  useEffect(() => {
-    setActiveInterval(interval);
-  }, [interval]);
-
   const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
+  const isIntraday = userRole === "DAY_TRADER";
 
+  // Handle button clicks directly notifying parent to trigger API load
   const handleIntervalClick = (val: string) => {
-    setActiveInterval(val);
     if (onIntervalChange) {
       onIntervalChange(val);
     }
   };
 
-  const isIntraday = userRole === "DAY_TRADER";
-
-  // 1. Initialize Chart Container and Series
+  // 1. Initialize Chart Container and Series on Mount or Role Change
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -148,7 +139,7 @@ export default function PriceChart({
     };
   }, [isIntraday]);
 
-  // 2. Feed Data to Candlestick and Line Overlay Series
+  // 2. Feed Data to Candlestick and Line Overlay Series whenever candles or interval changes
   useEffect(() => {
     if (!candlestickSeriesRef.current || !overlayLineSeriesRef.current || !candles || candles.length === 0) return;
 
@@ -245,7 +236,7 @@ export default function PriceChart({
     } catch (err) {
       console.warn("Error rendering chart series:", err);
     }
-  }, [candles, isIntraday, activeInterval]);
+  }, [candles, isIntraday, interval]);
 
   const isPositive = priceChangePct >= 0;
 
@@ -306,11 +297,11 @@ export default function PriceChart({
               <button
                 key={item.value}
                 onClick={() => handleIntervalClick(item.value)}
-                aria-pressed={activeInterval === item.value}
+                aria-pressed={interval === item.value}
                 aria-label={`Set timeframe interval to ${item.label} (${item.desc})`}
                 title={item.desc}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  activeInterval === item.value
+                  interval === item.value
                     ? userRole === "DAY_TRADER"
                       ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
                       : "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
