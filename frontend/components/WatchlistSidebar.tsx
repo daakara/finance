@@ -8,15 +8,27 @@ interface WatchlistSidebarProps {
 }
 
 const WATCHLIST_ITEMS = [
-  { symbol: "BTC-USD", name: "Bitcoin", price: "$78,213", change: "+2.80%", isUp: true, type: "Crypto" },
-  { symbol: "ETH-USD", name: "Ethereum", price: "$2,438", change: "+1.65%", isUp: true, type: "Crypto" },
+  // Mega-Cap Tech & Equities
   { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
   { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
-  { symbol: "MSFT", name: "Microsoft", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
+  { symbol: "MSFT", name: "Microsoft Corp.", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
   { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
   { symbol: "TSLA", name: "Tesla Inc.", price: "$350.25", change: "+2.15%", isUp: true, type: "Stock" },
+  { symbol: "PLTR", name: "Palantir Tech", price: "$142.80", change: "+4.12%", isUp: true, type: "Stock" },
+
+  // Institutional Index, Sector, Commodity & Bond ETFs
   { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },
   { symbol: "QQQ", name: "Invesco QQQ", price: "$710.72", change: "+1.10%", isUp: true, type: "ETF" },
+  { symbol: "SMH", name: "VanEck Semi ETF", price: "$288.40", change: "+2.45%", isUp: true, type: "ETF" },
+  { symbol: "XLK", name: "Tech Select SPDR", price: "$246.15", change: "+1.30%", isUp: true, type: "ETF" },
+  { symbol: "IWM", name: "Russell 2000 ETF", price: "$224.50", change: "+0.95%", isUp: true, type: "ETF" },
+  { symbol: "GLD", name: "SPDR Gold Shares", price: "$264.20", change: "+0.40%", isUp: true, type: "ETF" },
+  { symbol: "TLT", name: "20+ Yr Treasury", price: "$88.65", change: "-0.30%", isUp: false, type: "ETF" },
+  { symbol: "XLE", name: "Energy Select ETF", price: "$86.10", change: "+1.05%", isUp: true, type: "ETF" },
+
+  // Digital Assets / Crypto
+  { symbol: "BTC-USD", name: "Bitcoin", price: "$78,213", change: "+2.80%", isUp: true, type: "Crypto" },
+  { symbol: "ETH-USD", name: "Ethereum", price: "$2,438", change: "+1.65%", isUp: true, type: "Crypto" },
   { symbol: "SOL-USD", name: "Solana", price: "$96.73", change: "+0.24%", isUp: true, type: "Crypto" },
 ];
 
@@ -90,7 +102,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         id="watchlist-stream-panel"
         role="region"
         aria-label="Filtered asset stream"
-        className={`space-y-1.5 overflow-y-auto max-h-[440px] ${
+        className={`space-y-1.5 overflow-y-auto max-h-[460px] ${
           isMobileExpanded ? "block" : "hidden lg:block"
         }`}
       >
@@ -113,7 +125,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
                   {item.type}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 block truncate max-w-[120px]">{item.name}</span>
+              <span className="text-[10px] text-slate-400 block truncate max-w-[130px]">{item.name}</span>
             </div>
 
             <div className="text-right">
