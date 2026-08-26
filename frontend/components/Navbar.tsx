@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
+import ThemeToggle from "./ThemeToggle";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -100,8 +101,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             <UniversalOmniSearch />
           </div>
 
-          {/* Right: Trading Horizon Mode Switcher */}
+          {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
           <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
+            {/* 🌓 Theme Toggle */}
+            <ThemeToggle />
+
+            {/* Trading Horizon Switcher */}
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
               <button
                 onClick={() => handleRoleToggle("DAY_TRADER")}

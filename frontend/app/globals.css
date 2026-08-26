@@ -1,9 +1,10 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-app: #090d14;
+  /* Default: Obsidian Dark Terminal */
+  --bg-app: #070a10;
   --bg-surface: #111722;
   --bg-surface-hover: #1b2434;
   --bg-element: #162030;
@@ -21,16 +22,36 @@
   --accent-amber: #f59e0b;
 }
 
+[data-theme="paper"] {
+  /* Editorial Paper Light Terminal */
+  --bg-app: #f4f6f9;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f1f5f9;
+  --bg-element: #e2e8f0;
+  --border-subtle: #cbd5e1;
+  --border-strong: #94a3b8;
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-faint: #64748b;
+
+  --accent-cyan: #0284c7;
+  --accent-emerald: #16a34a;
+  --accent-emerald-dark: #dcfce7;
+  --accent-rose: #dc2626;
+  --accent-amber: #d97706;
+}
+
 body {
   background-color: var(--bg-app);
   color: var(--text-main);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Accessible focus ring utility */
 .focus-ring {
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
 }
-
