@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import UniversalOmniSearch from "./UniversalOmniSearch";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -94,8 +95,11 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             </nav>
           </div>
 
-          {/* Right: Role Switcher */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          {/* Center/Right: Universal Omni-Search & Role Switcher */}
+          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+            {/* 🔍 Universal Omni-Search Trigger */}
+            <UniversalOmniSearch />
+
             {/* Trading Horizon Switcher */}
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
               <button
@@ -141,50 +145,52 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         <Link
           href="/"
           aria-current={pathname === "/" ? "page" : undefined}
-          className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all active:scale-[0.96] ${
-            pathname === "/"
-              ? "bg-[#1b2434] text-cyan-400 font-bold shadow-sm"
-              : "text-slate-400 hover:text-slate-200"
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span className="text-sm">📊</span>
-          <span className="text-[10px] mt-0.5">Terminal</span>
+          <svg aria-hidden="true" className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect width="7" height="9" x="3" y="3" rx="1" />
+            <rect width="7" height="5" x="14" y="3" rx="1" />
+            <rect width="7" height="9" x="14" y="12" rx="1" />
+            <rect width="7" height="5" x="3" y="16" rx="1" />
+          </svg>
+          <span className="text-[10px] tracking-tight">Terminal</span>
         </Link>
+
         <Link
           href="/screener"
           aria-current={pathname === "/screener" ? "page" : undefined}
-          className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all active:scale-[0.96] ${
-            pathname === "/screener"
-              ? "bg-[#1b2434] text-cyan-400 font-bold shadow-sm"
-              : "text-slate-400 hover:text-slate-200"
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span className="text-sm">💎</span>
-          <span className="text-[10px] mt-0.5">Gems</span>
+          <svg aria-hidden="true" className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <span className="text-[10px] tracking-tight">Gems</span>
         </Link>
+
         <Link
           href="/compare"
           aria-current={pathname === "/compare" ? "page" : undefined}
-          className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all active:scale-[0.96] ${
-            pathname === "/compare"
-              ? "bg-[#1b2434] text-cyan-400 font-bold shadow-sm"
-              : "text-slate-400 hover:text-slate-200"
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span className="text-sm">⚔️</span>
-          <span className="text-[10px] mt-0.5">Compare</span>
+          <span aria-hidden="true" className="text-base mb-0.5 leading-none">⚔️</span>
+          <span className="text-[10px] tracking-tight">Compare</span>
         </Link>
+
         <Link
           href="/smart-money"
           aria-current={pathname === "/smart-money" ? "page" : undefined}
-          className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all active:scale-[0.96] ${
-            pathname === "/smart-money"
-              ? "bg-[#1b2434] text-cyan-400 font-bold shadow-sm"
-              : "text-slate-400 hover:text-slate-200"
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span className="text-sm">🏛️</span>
-          <span className="text-[10px] mt-0.5">Smart</span>
+          <span aria-hidden="true" className="text-base mb-0.5 leading-none">🏛️</span>
+          <span className="text-[10px] tracking-tight">Insiders</span>
         </Link>
       </nav>
     </>
