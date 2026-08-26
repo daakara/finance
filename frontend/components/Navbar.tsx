@@ -160,61 +160,83 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         </div>
       </header>
 
-      {/* Floating Bottom Navigation Dock for Mobile Devices */}
+            {/* Floating Bottom Navigation Dock for Mobile Devices */}
       <nav
         role="navigation"
         aria-label="Mobile Navigation Dock"
-        className="lg:hidden fixed bottom-3 left-3 right-3 bg-[#0c1017]/95 backdrop-blur-md border border-[#243044] rounded-2xl p-1.5 shadow-2xl flex items-center justify-around z-50 font-mono text-xs"
+        className="lg:hidden fixed bottom-2 left-2 right-2 bg-[#0c1017]/95 backdrop-blur-md border border-[#243044] rounded-2xl p-1 shadow-2xl flex items-center justify-around z-50 font-mono text-[10px]"
       >
         <Link
           href="/"
           aria-current={pathname === "/" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <svg aria-hidden="true" className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect width="7" height="9" x="3" y="3" rx="1" />
             <rect width="7" height="5" x="14" y="3" rx="1" />
             <rect width="7" height="9" x="14" y="12" rx="1" />
             <rect width="7" height="5" x="3" y="16" rx="1" />
           </svg>
-          <span className="text-[10px] tracking-tight">Terminal</span>
+          <span className="text-[9px] tracking-tight">Terminal</span>
         </Link>
 
         <Link
           href="/screener"
           aria-current={pathname === "/screener" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <svg aria-hidden="true" className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
-          <span className="text-[10px] tracking-tight">Gems</span>
+          <span className="text-[9px] tracking-tight">Gems</span>
         </Link>
 
         <Link
           href="/compare"
           aria-current={pathname === "/compare" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-base mb-0.5 leading-none">⚔️</span>
-          <span className="text-[10px] tracking-tight">Compare</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚔️</span>
+          <span className="text-[9px] tracking-tight">Compare</span>
         </Link>
 
         <Link
           href="/smart-money"
           aria-current={pathname === "/smart-money" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors min-w-[54px] min-h-[48px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-base mb-0.5 leading-none">🏛️</span>
-          <span className="text-[10px] tracking-tight">Insiders</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🏛️</span>
+          <span className="text-[9px] tracking-tight">Insiders</span>
+        </Link>
+
+        <Link
+          href="/portfolio"
+          aria-current={pathname === "/portfolio" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
+          <span className="text-[9px] tracking-tight">Portfolio</span>
+        </Link>
+
+        <Link
+          href="/guide"
+          aria-current={pathname === "/guide" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
+          <span className="text-[9px] tracking-tight">Guide</span>
         </Link>
       </nav>
     </>
