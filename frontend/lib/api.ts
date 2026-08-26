@@ -83,6 +83,34 @@ export interface MarketGraphNode {
   impact: string;
 }
 
+export interface CatalystMilestone {
+  date: string;
+  event: string;
+  impact: string;
+}
+
+export interface MultiYearForecastItem {
+  year: number;
+  revenue_billions: number;
+  net_margin_pct: number;
+  projected_eps: number;
+  implied_pe: number;
+  implied_target: number;
+}
+
+export interface CatalystForecastData {
+  symbol: string;
+  company_name: string;
+  sector: string;
+  primary_drug_trial: string;
+  trial_phase: string;
+  trial_readout_timeline: string;
+  efficacy_summary: string;
+  competitive_edge: string;
+  upcoming_milestones: CatalystMilestone[];
+  multi_year_forecast: MultiYearForecastItem[];
+}
+
 export interface MarketGraphData {
   rootNode: string;
   topology: {
@@ -109,6 +137,7 @@ export interface AnalyticsResponse {
   traderArchetypes?: TraderArchetypeConsensus;
   selfHealingAudit?: SelfHealingAudit;
   marketGraph?: MarketGraphData;
+  catalystForecast?: CatalystForecastData;
   analytics: {
     advanced_metrics?: {
       VaR_95?: number;
@@ -302,4 +331,6 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
     })),
   };
 }
+
+
 

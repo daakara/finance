@@ -11,6 +11,7 @@ from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnaly
 from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
 from analyst_dashboard.analyzers.self_healing_engine import SelfHealingForecastAuditor
 from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
+from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 
 router = APIRouter()
@@ -19,6 +20,7 @@ fred_fetcher = FredMacroFetcher()
 trader_analyzer = TraderArchetypeAnalyzer()
 self_healing_auditor = SelfHealingForecastAuditor()
 market_graph_engine = MarketGraphEngine()
+catalyst_engine = CatalystEngine()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 
@@ -294,6 +296,7 @@ def get_asset_analytics(
             "traderArchetypes": trader_archetypes,
             "selfHealingAudit": self_healing_audit,
             "marketGraph": market_graph,
+            "catalystForecast": catalyst_engine.get_asset_catalyst_report(upper_sym, current_price),
             "analytics": risk_output,
         }
 
@@ -301,4 +304,7 @@ def get_asset_analytics(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
 

@@ -8,8 +8,7 @@ interface WatchlistSidebarProps {
 }
 
 const WATCHLIST_ITEMS = [
-  // Mega-Cap Tech & Equities
-  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
+  // Mega-Cap Tech & Global Pharma Equities\r\n  { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },\r\n  { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },\r\n  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
   { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
   { symbol: "MSFT", name: "Microsoft Corp.", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
   { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
@@ -144,4 +143,5 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     </div>
   );
 }
+
 

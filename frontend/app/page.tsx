@@ -10,6 +10,7 @@ import TraderArchetypesCard from "../components/TraderArchetypesCard";
 import DayTraderPositionSizer from "../components/DayTraderPositionSizer";
 import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
 import MarketGraphCard from "../components/MarketGraphCard";
+import CatalystForecastCard from "../components/CatalystForecastCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
 export default function TerminalPage() {
@@ -107,6 +108,7 @@ export default function TerminalPage() {
                 expectedReturn={data?.expectedReturn}
               />
               <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
+              <CatalystForecastCard data={data?.catalystForecast} />
               <TraderArchetypesCard
                 symbol={selectedSymbol}
                 traderArchetypes={data?.traderArchetypes}
@@ -119,4 +121,6 @@ export default function TerminalPage() {
     </div>
   );
 }
+
+
 
