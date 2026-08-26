@@ -1,0 +1,28 @@
+﻿# Finance Intelligence Platform - Quantitative Architecture & LLM Index
+
+> Finance Intelligence Platform (FT) is an institutional-grade quantitative analytics, congressional stock trading intelligence, and macroeconomic risk engine designed for retail traders and quantitative analysts.
+
+## Platform Capabilities & Documentation
+
+- **Live Terminal**: https://finance-xp8.pages.dev
+- **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide
+- **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener
+- **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare
+- **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money
+
+## Core Quantitative Engines & Methodologies
+
+1. **Smart Money Intelligence**:
+   - Tracking legislative transactions under the 2012 Stop Trading on Congressional Knowledge (STOCK) Act (Public Law 112-105).
+   - Unusual Options Flow & Institutional Block Sweeps tracking OPRA & FINRA ATS Dark Pool volumes.
+   - Committee Assignment & Jurisdiction Overlap analysis.
+
+2. **Algorithmic Execution & Volatility Sizing**:
+   - Mark Minervini 3-Stage Volatility Contraction Pattern (VCP) for growth and swing accumulation.
+   - Linda Raschke 20-period Exponential Moving Average (20 EMA) pullback model for intraday momentum.
+   - 14-period Turtle Average True Range (ATR) trailing stop-loss and dual take-profit ladders (Target 1 Scale + Target 2 Runner).
+
+3. **Risk Management & Macroeconomic Modeling**:
+   - Cornish-Fisher Modified Value-at-Risk (M-VaR 95% and 99%) adjusting for skewness and fat-tailed kurtosis.
+   - Piotroski 9-Point F-Score fundamental health evaluation.
+   - Federal Reserve Economic Data (FRED) yield curve (10Y-2Y spread) macro regime analysis.
