@@ -12,6 +12,7 @@ import DayTraderPositionSizer from "../components/DayTraderPositionSizer";
 import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
 import MarketGraphCard from "../components/MarketGraphCard";
 import CatalystForecastCard from "../components/CatalystForecastCard";
+import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
 function TerminalContent() {
@@ -24,7 +25,7 @@ function TerminalContent() {
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
 
-  // Sync URL search params when navigated from Screener or Compare pages
+  // Sync URL search params when navigated from Screener, Compare, or Smart Money pages
   useEffect(() => {
     if (urlSymbol && urlSymbol.toUpperCase() !== selectedSymbol) {
       setSelectedSymbol(urlSymbol.toUpperCase());
@@ -137,14 +138,20 @@ function TerminalContent() {
 
           {/* DUAL-JOURNEY WORKSPACE ROUTING */}
           {userRole === "DAY_TRADER" ? (
-            /* Day Trader Journey: Live Risk Sizer, Intraday Technicals, Continuous Self-Healing */
+            /* Day Trader Journey: Live Risk Sizer, Intraday Technicals, Continuous Self-Healing, Real-Time Flow Tape */
             <div className="space-y-4 sm:space-y-5">
               {data && <DayTraderPositionSizer symbol={selectedSymbol} data={data} />}
+              <CongressionalTradesCard
+                symbol={selectedSymbol}
+                congressTrades={data?.smartMoney?.congressTrades}
+                optionsFlow={data?.smartMoney?.optionsFlow}
+                userRole={userRole}
+              />
               <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
               <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
             </div>
           ) : (
-            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, 5-Strategy Consensus */
+            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, Congressional Insider Trades */
             <div className="space-y-4 sm:space-y-5">
               <AssetFactorRadar
                 symbol={selectedSymbol}
@@ -153,6 +160,12 @@ function TerminalContent() {
                 expectedReturn={data?.expectedReturn}
               />
               <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
+              <CongressionalTradesCard
+                symbol={selectedSymbol}
+                congressTrades={data?.smartMoney?.congressTrades}
+                optionsFlow={data?.smartMoney?.optionsFlow}
+                userRole={userRole}
+              />
               <CatalystForecastCard data={data?.catalystForecast} />
               <TraderArchetypesCard
                 symbol={selectedSymbol}

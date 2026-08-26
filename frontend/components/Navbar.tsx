@@ -38,11 +38,9 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 FT
               </div>
               <div className="min-w-0">
-                {/* Desktop Title */}
                 <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base hidden sm:block leading-none">
                   FINANCE TERMINAL
                 </span>
-                {/* Mobile Title */}
                 <span className="font-bold tracking-tight text-white font-mono text-xs sm:hidden block leading-none">
                   TERMINAL
                 </span>
@@ -84,27 +82,20 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               >
                 <span>⚔️ Compare</span>
               </Link>
+              <Link
+                href="/smart-money"
+                aria-current={pathname === "/smart-money" ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                  pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <span>🏛️ Smart Money</span>
+              </Link>
             </nav>
           </div>
 
-          {/* Right: Mobile Hidden Gems Quick Link & Role Switcher */}
+          {/* Right: Role Switcher */}
           <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-            {/* Mobile-Only Hidden Gems Quick Link */}
-            <Link
-              href="/screener"
-              aria-label="Navigate to Hidden Gems Screener"
-              className={`md:hidden flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono font-bold border transition-colors ${
-                pathname === "/screener"
-                  ? "bg-purple-950/80 text-purple-300 border-purple-600 shadow-md"
-                  : "bg-[#090d14] text-slate-300 border-[#243044] hover:border-purple-500"
-              }`}
-            >
-              <svg aria-hidden="true" className="w-3 h-3 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-              <span>Gems</span>
-            </Link>
-
             {/* Trading Horizon Switcher */}
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
               <button
@@ -182,6 +173,18 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         >
           <span className="text-sm">⚔️</span>
           <span className="text-[10px] mt-0.5">Compare</span>
+        </Link>
+        <Link
+          href="/smart-money"
+          aria-current={pathname === "/smart-money" ? "page" : undefined}
+          className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all active:scale-[0.96] ${
+            pathname === "/smart-money"
+              ? "bg-[#1b2434] text-cyan-400 font-bold shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span className="text-sm">🏛️</span>
+          <span className="text-[10px] mt-0.5">Smart</span>
         </Link>
       </nav>
     </>

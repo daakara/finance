@@ -4,7 +4,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import analytics, volatility, screener, regimes, cache
+from api.routes import analytics, volatility, screener, regimes, cache, smart_money
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 
 app = FastAPI(
@@ -43,9 +43,11 @@ app.include_router(volatility.router, prefix="/api/v1/volatility", tags=["Volati
 app.include_router(screener.router, prefix="/api/v1/screener", tags=["Screener"])
 app.include_router(regimes.router, prefix="/api/v1/regimes", tags=["Market Regimes"])
 app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management"])
+app.include_router(smart_money.router, prefix="/api/v1/smart-money", tags=["Smart Money & Flow"])
 
 
 @app.get("/health", tags=["Health"])
 def health_check():
     """Service health check endpoint."""
     return {"status": "online", "version": "1.0.0"}
+
