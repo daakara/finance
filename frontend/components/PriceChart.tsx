@@ -10,6 +10,7 @@ interface PriceChartProps {
   currentPrice?: number;
   priceChangePct?: number;
   interval?: string;
+  userRole?: "DAY_TRADER" | "LONG_TERM";
   onIntervalChange?: (interval: string) => void;
   technicals?: {
     vwap?: number | null;
@@ -19,12 +20,28 @@ interface PriceChartProps {
   };
 }
 
+// ⚡ Dedicated Day Trader Timeframes (Intraday Momentum & Execution)
+const DAY_TRADER_INTERVALS = [
+  { label: "1m", value: "1m", desc: "1-Minute Scalp" },
+  { label: "5m", value: "5m", desc: "5-Minute VWAP" },
+  { label: "15m", value: "15m", desc: "15-Minute Flag" },
+  { label: "1h", value: "1h", desc: "1-Hour Trend" },
+];
+
+// 🏛️ Dedicated Long-Term Investor Timeframes (Multi-Month / Multi-Year Horizons)
+const LONG_TERM_INTERVALS = [
+  { label: "1D", value: "1d", desc: "Daily (1-Year)" },
+  { label: "1W", value: "1wk", desc: "Weekly (3-Year)" },
+  { label: "1M", value: "1mo", desc: "Monthly (5-Year)" },
+];
+
 export default function PriceChart({
   symbol,
   candles,
   currentPrice,
   priceChangePct = 0,
   interval = "1d",
+  userRole = "LONG_TERM",
   onIntervalChange,
   technicals,
 }: PriceChartProps) {
@@ -40,13 +57,7 @@ export default function PriceChart({
     setActiveInterval(interval);
   }, [interval]);
 
-  const intervals = [
-    { label: "1m", value: "1m" },
-    { label: "5m", value: "5m" },
-    { label: "15m", value: "15m" },
-    { label: "1h", value: "1h" },
-    { label: "1D", value: "1d" },
-  ];
+  const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
 
   const handleIntervalClick = (val: string) => {
     setActiveInterval(val);
@@ -55,7 +66,7 @@ export default function PriceChart({
     }
   };
 
-  const isIntraday = activeInterval !== "1d";
+  const isIntraday = activeInterval !== "1d" && activeInterval !== "1wk" && activeInterval !== "1mo";
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -131,7 +142,7 @@ export default function PriceChart({
     if (!seriesRef.current || candles.length === 0) return;
 
     try {
-      // Map and sanitize candlestick timestamps
+      // Map and sanitize candlestick timestamps based on timeframe
       const formattedData = candles
         .map((c) => {
           let timeVal: any = c.time;
@@ -145,11 +156,10 @@ export default function PriceChart({
                 timeVal = Math.floor(Number(timeVal));
               }
             } else if (typeof timeVal === "number" && timeVal > 20000000000) {
-              // Milliseconds -> convert to seconds
               timeVal = Math.floor(timeVal / 1000);
             }
           } else {
-            // Daily timestamps MUST be YYYY-MM-DD string
+            // Daily, Weekly, Monthly timestamps MUST be YYYY-MM-DD string
             if (typeof timeVal === "number") {
               const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
               timeVal = new Date(ms).toISOString().split("T")[0];
@@ -173,7 +183,7 @@ export default function PriceChart({
           return tA - tB;
         });
 
-      // Deduplicate timestamps strictly to prevent Lightweight Charts engine drop
+      // Deduplicate timestamps strictly
       const uniqueData: any[] = [];
       const seenTimes = new Set();
       for (const item of formattedData) {
@@ -204,7 +214,7 @@ export default function PriceChart({
             });
             lineSeriesRef.current.setData(vwapData as any);
           } else {
-            // Compute Daily 20-Day Moving Average
+            // Compute 20-Period Moving Average (Daily/Weekly/Monthly)
             const maData = uniqueData.map((c, idx, arr) => {
               const slice = arr.slice(Math.max(0, idx - 19), idx + 1);
               const avg = slice.reduce((sum, item) => sum + item.close, 0) / slice.length;
@@ -217,7 +227,6 @@ export default function PriceChart({
           }
         }
 
-        // Fit content on next tick
         setTimeout(() => {
           chartRef.current?.timeScale().fitContent();
         }, 50);
@@ -253,7 +262,7 @@ export default function PriceChart({
           </span>
         </div>
 
-        {/* Right: Technicals Badges & Interval Group */}
+        {/* Right: Technicals Badges & Role-Adaptive Interval Group */}
         <div className="flex items-center space-x-2">
           {technicals?.rsi_14 !== undefined && (
             <div aria-label={`Relative Strength Index 14: ${technicals.rsi_14.toFixed(1)}`} className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
@@ -272,17 +281,23 @@ export default function PriceChart({
             </div>
           )}
 
-          {/* Timeframe Interval Buttons */}
+          {/* Role-Adaptive Timeframe Interval Buttons */}
           <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
-            {intervals.map((item) => (
+            <span className="text-[10px] text-slate-500 font-bold px-1 hidden md:inline">
+              {userRole === "DAY_TRADER" ? "⚡ Scalp Range:" : "🏛️ Horizon:"}
+            </span>
+            {activeIntervalList.map((item) => (
               <button
                 key={item.value}
                 onClick={() => handleIntervalClick(item.value)}
                 aria-pressed={activeInterval === item.value}
-                aria-label={`Set timeframe interval to ${item.label}`}
+                aria-label={`Set timeframe interval to ${item.label} (${item.desc})`}
+                title={item.desc}
                 className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   activeInterval === item.value
-                    ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
+                    ? userRole === "DAY_TRADER"
+                      ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
+                      : "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >

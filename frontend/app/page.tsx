@@ -36,6 +36,7 @@ function TerminalContent() {
     if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
       setUserRole(saved);
       if (saved === "DAY_TRADER") setInterval("5m");
+      else setInterval("1d");
     }
   }, []);
 
@@ -53,7 +54,14 @@ function TerminalContent() {
     async function loadData() {
       setLoading(true);
       try {
-        const res = await fetchAssetAnalytics(selectedSymbol, "1y", interval);
+        let period = "1y";
+        if (interval === "1m") period = "1d";
+        else if (interval === "5m" || interval === "15m") period = "5d";
+        else if (interval === "1h") period = "1mo";
+        else if (interval === "1wk") period = "3y";
+        else if (interval === "1mo") period = "5y";
+
+        const res = await fetchAssetAnalytics(selectedSymbol, period, interval);
         if (isMounted) setData(res);
       } catch (err) {
         console.error("Failed to load asset analytics:", err);
@@ -88,7 +96,7 @@ function TerminalContent() {
 
         {/* Right Column: Dynamic Terminal Workspace */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5">
-          {/* Main Candlestick Chart */}
+          {/* Main Candlestick Chart with Role-Segregated Intervals */}
           <div className="min-h-[380px] sm:min-h-[420px]">
             <PriceChart
               symbol={selectedSymbol}
@@ -96,6 +104,7 @@ function TerminalContent() {
               currentPrice={data?.currentPrice}
               priceChangePct={data?.priceChangePct24h}
               interval={interval}
+              userRole={userRole}
               onIntervalChange={setInterval}
               technicals={data?.technicals}
             />
