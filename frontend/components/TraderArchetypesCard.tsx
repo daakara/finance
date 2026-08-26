@@ -88,8 +88,8 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
       {/* 5 Archetypes Adaptive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {data.archetypes.map((item, idx) => {
-          const isHigh = item.alignmentScore >= 80;
-          const isMid = item.alignmentScore >= 65;
+          const isHigh = ((item.alignmentScore ?? 80) ?? 80) >= 80;
+          const isMid = ((item.alignmentScore ?? 80) ?? 80) >= 65;
 
           return (
             <div
@@ -107,7 +107,7 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
                       isHigh ? "text-cyan-400" : isMid ? "text-emerald-400" : "text-amber-400"
                     }`}
                   >
-                    {item.alignmentScore}%
+                    {(item.alignmentScore ?? 80)}%
                   </span>
                 </div>
 

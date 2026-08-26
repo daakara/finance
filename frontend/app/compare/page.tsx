@@ -135,7 +135,7 @@ function CompareContent() {
       roic: `${(quality * 0.42).toFixed(1)}%`,
       grossMargin: `${(growth * 0.78).toFixed(1)}%`,
       piotroski: piotroski,
-      keyCatalyst: liveData?.catalystForecast?.upcoming_milestones?.[0]?.event || "Upcoming quarterly earnings & institutional accumulation.",
+      keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || "Upcoming quarterly earnings & institutional accumulation.",
       trialEfficacy: "High operational moat with expanding gross profit margins and high return on invested capital.",
       primaryRisk: "Macro interest rate headwinds and multiple compression risk.",
       longTermVerdict: scores?.verdict || "Strong Buy / Core Accumulation",
