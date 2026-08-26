@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#06b6d4" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className="min-h-screen bg-[#070a10] text-[#c9d1d9] antialiased">
+      <body className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] antialiased transition-colors duration-200">
         <OfflineStatusBanner />
         <OnboardingModal />
         <ServiceWorkerRegister />

@@ -126,7 +126,7 @@ function TerminalContent() {
   }, [selectedSymbol, interval]);
 
   return (
-    <div className="min-h-screen bg-[#070a10] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
       {/* Skip to Main Content Link for Keyboard Accessibility */}
       <a
         href="#main-content"
