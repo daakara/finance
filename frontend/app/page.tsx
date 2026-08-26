@@ -21,7 +21,7 @@ function TerminalContent() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [interval, setInterval] = useState<string>("1d");
+  const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
 
   // Sync URL search params when navigated from Screener or Compare pages
@@ -36,7 +36,7 @@ function TerminalContent() {
     if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
       setUserRole(saved);
       if (saved === "DAY_TRADER") setInterval("5m");
-      else setInterval("1d");
+      else setInterval("1y_hist");
     }
   }, []);
 
@@ -45,7 +45,7 @@ function TerminalContent() {
     if (role === "DAY_TRADER") {
       setInterval("5m");
     } else {
-      setInterval("1d");
+      setInterval("1y_hist");
     }
   };
 
@@ -55,13 +55,38 @@ function TerminalContent() {
       setLoading(true);
       try {
         let period = "1y";
-        if (interval === "1m") period = "1d";
-        else if (interval === "5m" || interval === "15m") period = "5d";
-        else if (interval === "1h") period = "1mo";
-        else if (interval === "1wk") period = "3y";
-        else if (interval === "1mo") period = "5y";
+        let apiInterval = "1d";
 
-        const res = await fetchAssetAnalytics(selectedSymbol, period, interval);
+        // Map Day Trader intervals
+        if (interval === "1m") {
+          period = "1d";
+          apiInterval = "1m";
+        } else if (interval === "5m" || interval === "15m") {
+          period = "5d";
+          apiInterval = interval;
+        } else if (interval === "1h") {
+          period = "1mo";
+          apiInterval = "1h";
+        }
+        // Map Long-Term Horizons up to 5 Years
+        else if (interval === "1m_hist") {
+          period = "1mo";
+          apiInterval = "1d";
+        } else if (interval === "6m_hist") {
+          period = "6mo";
+          apiInterval = "1d";
+        } else if (interval === "1y_hist" || interval === "1d") {
+          period = "1y";
+          apiInterval = "1d";
+        } else if (interval === "3y_hist" || interval === "1wk") {
+          period = "3y";
+          apiInterval = "1wk";
+        } else if (interval === "5y_hist" || interval === "1mo") {
+          period = "5y";
+          apiInterval = "1mo";
+        }
+
+        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval);
         if (isMounted) setData(res);
       } catch (err) {
         console.error("Failed to load asset analytics:", err);
@@ -96,7 +121,7 @@ function TerminalContent() {
 
         {/* Right Column: Dynamic Terminal Workspace */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5">
-          {/* Main Candlestick Chart with Role-Segregated Intervals */}
+          {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
           <div className="min-h-[380px] sm:min-h-[420px]">
             <PriceChart
               symbol={selectedSymbol}
@@ -149,4 +174,3 @@ export default function TerminalPage() {
     </Suspense>
   );
 }
-

@@ -28,11 +28,13 @@ const DAY_TRADER_INTERVALS = [
   { label: "1h", value: "1h", desc: "1-Hour Trend" },
 ];
 
-// 🏛️ Dedicated Long-Term Investor Timeframes (Multi-Month / Multi-Year Horizons)
+// 🏛️ Dedicated Long-Term Macro Horizons (Expanded from 1-Month to 5-Year Deep History)
 const LONG_TERM_INTERVALS = [
-  { label: "1D", value: "1d", desc: "Daily (1-Year)" },
-  { label: "1W", value: "1wk", desc: "Weekly (3-Year)" },
-  { label: "1M", value: "1mo", desc: "Monthly (5-Year)" },
+  { label: "1M", value: "1m_hist", desc: "1-Month Swing (Daily)" },
+  { label: "6M", value: "6m_hist", desc: "6-Month Cyclical (Daily)" },
+  { label: "1Y", value: "1y_hist", desc: "1-Year Macro (Daily)" },
+  { label: "3Y", value: "3y_hist", desc: "3-Year Multi-Year (Weekly)" },
+  { label: "5Y", value: "5y_hist", desc: "5-Year Secular (Monthly)" },
 ];
 
 export default function PriceChart({
@@ -40,7 +42,7 @@ export default function PriceChart({
   candles,
   currentPrice,
   priceChangePct = 0,
-  interval = "1d",
+  interval = "1y_hist",
   userRole = "LONG_TERM",
   onIntervalChange,
   technicals,
@@ -66,7 +68,7 @@ export default function PriceChart({
     }
   };
 
-  const isIntraday = activeInterval !== "1d" && activeInterval !== "1wk" && activeInterval !== "1mo";
+  const isIntraday = userRole === "DAY_TRADER";
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -159,7 +161,7 @@ export default function PriceChart({
               timeVal = Math.floor(timeVal / 1000);
             }
           } else {
-            // Daily, Weekly, Monthly timestamps MUST be YYYY-MM-DD string
+            // Long-term timestamps (1M, 6M, 1Y, 3Y, 5Y) MUST be YYYY-MM-DD string
             if (typeof timeVal === "number") {
               const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
               timeVal = new Date(ms).toISOString().split("T")[0];
@@ -284,7 +286,7 @@ export default function PriceChart({
           {/* Role-Adaptive Timeframe Interval Buttons */}
           <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             <span className="text-[10px] text-slate-500 font-bold px-1 hidden md:inline">
-              {userRole === "DAY_TRADER" ? "⚡ Scalp Range:" : "🏛️ Horizon:"}
+              {userRole === "DAY_TRADER" ? "⚡ Scalp Range:" : "🏛️ Long Horizon:"}
             </span>
             {activeIntervalList.map((item) => (
               <button
