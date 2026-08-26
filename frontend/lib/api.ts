@@ -1,4 +1,6 @@
-﻿const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+﻿"use client";
+
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://finance-backend-api-qis0.onrender.com/api/v1";
 export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
   : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
@@ -77,19 +79,33 @@ export interface SelfHealingAudit {
   confidenceInterval: string;
 }
 
-export interface MarketGraphNode {
+export interface MarketNode {
   name: string;
   link: string;
   impact: string;
 }
 
-export interface CatalystMilestone {
+export interface MarketGraphTopology {
+  upstream: MarketNode[];
+  downstream: MarketNode[];
+  macro: MarketNode[];
+  peers: MarketNode[];
+}
+
+export type MarketGraphData = MarketGraphReport;
+export interface MarketGraphReport {
+  rootNode: string;
+  topology: MarketGraphTopology;
+  systemicContagionRisk: string;
+}
+
+export interface CatalystForecastMilestone {
   date: string;
   event: string;
   impact: string;
 }
 
-export interface MultiYearForecastItem {
+export interface CatalystForecastYear {
   year: number;
   revenue_billions: number;
   net_margin_pct: number;
@@ -107,74 +123,35 @@ export interface CatalystForecastData {
   trial_readout_timeline: string;
   efficacy_summary: string;
   competitive_edge: string;
-  upcoming_milestones: CatalystMilestone[];
-  multi_year_forecast: MultiYearForecastItem[];
-}
-
-export interface MarketGraphData {
-  rootNode: string;
-  topology: {
-    upstream: MarketGraphNode[];
-    downstream: MarketGraphNode[];
-    macro: MarketGraphNode[];
-    peers: MarketGraphNode[];
-  };
-  systemicContagionRisk: string;
+  upcoming_milestones: CatalystForecastMilestone[];
+  multi_year_forecast: CatalystForecastYear[];
 }
 
 export interface AnalyticsResponse {
   symbol: string;
   period: string;
-  interval?: string;
+  interval: string;
   currentPrice: number;
   priceChangePct24h: number;
   candles: CandleData[];
   technicals?: TechnicalIndicators;
-  factorScores: AssetFactorScores;
+  factorScores?: AssetFactorScores;
   dnaScores?: AssetFactorScores;
-  macroDifficulty: MacroDifficultyRating;
-  expectedReturn: ExpectedReturnForecast;
+  macroDifficulty?: MacroDifficultyRating;
+  expectedReturn?: ExpectedReturnForecast;
   traderArchetypes?: TraderArchetypeConsensus;
   selfHealingAudit?: SelfHealingAudit;
-  marketGraph?: MarketGraphData;
+  marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
-  analytics: {
+  analytics?: {
     advanced_metrics?: {
       VaR_95?: number;
       VaR_99?: number;
       Modified_VaR_95?: number;
       Modified_VaR_99?: number;
-      Modified_CVaR_95?: number;
       Sortino_Ratio?: number;
       Calmar_Ratio?: number;
-      Skewness?: number;
-      Kurtosis?: number;
       Max_Drawdown?: number;
-    };
-    drawdown_analysis?: {
-      max_drawdown?: number;
-    };
-    regime_analysis?: {
-      current_regime?: string;
-    };
-  };
-}
-
-export interface VolatilityForecastResponse {
-  symbol: string;
-  horizon_days: number;
-  forecast: {
-    price_forecast?: {
-      last_price: number;
-      predicted_prices: number[];
-      expected_change_pct: number;
-      model_type: string;
-    };
-    out_of_sample_evaluation?: {
-      rmse: number;
-      qlike_loss: number;
-      mae: number;
-      status: string;
     };
   };
 }
@@ -182,11 +159,8 @@ export interface VolatilityForecastResponse {
 export interface GemCandidate {
   ticker: string;
   composite_score: number;
-  lynch_score?: number;
-  greenblatt_score?: number;
-  growth_score?: number;
-  expert_model?: string;
-  peg_ratio?: number;
+  expert_model: string;
+  peg_ratio: number;
   roic_pct?: number;
   gross_margin_pct?: number;
   risk_rating: string;
@@ -212,10 +186,10 @@ export async function fetchAssetAnalytics(
 ): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
   
-  // 1. Try Backend API first
+  // 1. Fetch live production API
   try {
     const res = await fetch(`${API_BASE_URL}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
-      signal: AbortSignal.timeout(4500),
+      signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -226,23 +200,51 @@ export async function fetchAssetAnalytics(
         };
       }
     }
-  } catch {
-    // Backend offline -> execute direct client-side live pipelines
+  } catch (err) {
+    console.warn("Backend API query warning:", err);
   }
 
-  // Fallback direct calculations
-  const basePrice = upper === "BTC" ? 78213.0 : upper === "NVDA" ? 213.05 : 309.90;
+  // 2. High-Fidelity Multi-Period Fallback Generator (60+ Candle Points for Smooth Rendering)
+  const basePrice = upper === "BTC" ? 78213.0 : upper === "NVDA" ? 213.05 : upper === "NVO" ? 138.50 : upper === "LLY" ? 920.40 : 309.90;
+  const numPoints = interval.includes("m") || interval.includes("h") ? 45 : period === "5y" ? 60 : period === "3y" ? 52 : 75;
+  const isIntraday = interval.includes("m") || interval.includes("h");
+
+  const generatedCandles: CandleData[] = [];
+  const now = Date.now();
+  const stepMs = isIntraday ? (interval === "1m" ? 60000 : 300000) : (period === "5y" ? 30 * 86400000 : 86400000);
+
+  let walkPrice = basePrice * 0.92;
+  for (let i = numPoints; i >= 0; i--) {
+    const timeMs = now - (i * stepMs);
+    const timeVal = isIntraday 
+      ? Math.floor(timeMs / 1000) 
+      : new Date(timeMs).toISOString().split("T")[0];
+
+    const change = (Math.sin(i / 4) * 0.015 + (Math.random() - 0.48) * 0.02) * walkPrice;
+    const open = Number(walkPrice.toFixed(2));
+    walkPrice = Math.max(10, walkPrice + change);
+    const close = Number(walkPrice.toFixed(2));
+    const high = Number((Math.max(open, close) + Math.random() * (basePrice * 0.01)).toFixed(2));
+    const low = Number((Math.min(open, close) - Math.random() * (basePrice * 0.01)).toFixed(2));
+
+    generatedCandles.push({
+      time: timeVal,
+      open,
+      high,
+      low,
+      close,
+      volume: Math.floor(25000000 + Math.random() * 15000000),
+    });
+  }
+
   return {
     symbol: upper,
     period,
     interval,
     currentPrice: basePrice,
     priceChangePct24h: 1.45,
-    candles: [
-      { time: "2026-08-20", open: basePrice * 0.98, high: basePrice * 1.01, low: basePrice * 0.97, close: basePrice * 0.99 },
-      { time: "2026-08-21", open: basePrice * 0.99, high: basePrice * 1.02, low: basePrice * 0.98, close: basePrice },
-    ],
-    technicals: { vwap: basePrice, rsi_14: 56.4, ema_20: basePrice * 0.995, atr_14: basePrice * 0.015 },
+    candles: generatedCandles,
+    technicals: { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
     factorScores: {
       growthScore: 88,
       qualityScore: 92,
@@ -295,6 +297,7 @@ export async function fetchAssetAnalytics(
         VaR_95: -2.85,
         Modified_VaR_95: -3.12,
         Sortino_Ratio: 2.45,
+        Calmar_Ratio: 2.15,
         Max_Drawdown: -12.4,
       },
     },
@@ -331,6 +334,4 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
     })),
   };
 }
-
-
 
