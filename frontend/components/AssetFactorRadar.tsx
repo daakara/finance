@@ -11,13 +11,13 @@ interface AssetFactorRadarProps {
 
 export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty, expectedReturn }: AssetFactorRadarProps) {
   const scores = factorScores || {
-    growthScore: 84,
-    qualityScore: 90,
-    valuationScore: 72,
-    momentumScore: 78,
-    tailRiskScore: 82,
-    compositeFactorScore: 82,
-    verdict: "Strong Buy / Core Hold",
+    growthScore: 88,
+    qualityScore: 92,
+    valuationScore: 75,
+    momentumScore: 84,
+    tailRiskScore: 80,
+    compositeFactorScore: 85,
+    verdict: "Strong Buy / Core Accumulation",
     piotroskiFScore: 8,
   };
 

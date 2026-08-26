@@ -49,48 +49,6 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"All" | "Stock" | "ETF" | "Crypto">("All");
 
-  // Keep active symbol synchronized with real-time loaded data
-  useEffect(() => {
-    let isMounted = true;
-    async function syncActiveItem() {
-      if (!activeSymbol) return;
-      try {
-        const liveData = await fetchAssetAnalytics(activeSymbol);
-        if (isMounted && liveData && liveData.currentPrice !== undefined) {
-          const symClean = activeSymbol.toUpperCase().replace("-USD", "");
-          const isUp = (liveData.priceChangePct24h ?? 0) >= 0;
-          const changeStr = `${isUp ? "+" : ""}${(liveData.priceChangePct24h ?? 0).toFixed(2)}%`;
-          const priceStr = `$${liveData.currentPrice.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`;
-
-          setItems((prevItems) =>
-            prevItems.map((item) => {
-              const itemClean = item.symbol.toUpperCase().replace("-USD", "");
-              if (itemClean === symClean) {
-                return {
-                  ...item,
-                  price: priceStr,
-                  change: changeStr,
-                  isUp: isUp,
-                };
-              }
-              return item;
-            })
-          );
-        }
-      } catch (err) {
-        console.warn("Watchlist live sync error:", err);
-      }
-    }
-
-    syncActiveItem();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeSymbol]);
-
   const filteredItems = items.filter((item) =>
     activeCategory === "All" ? true : item.type === activeCategory
   );
