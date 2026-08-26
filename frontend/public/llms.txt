@@ -4,11 +4,12 @@
 
 ## Platform Capabilities & Documentation
 
-- **Live Terminal**: https://finance-xp8.pages.dev
-- **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide
-- **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener
-- **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare
-- **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money
+- **Live Terminal**: https://finance-xp8.pages.dev/
+- **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide/
+- **Private Portfolio & Risk Allocations**: https://finance-xp8.pages.dev/portfolio/
+- **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener/
+- **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare/
+- **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money/
 
 ## Core Quantitative Engines & Methodologies
 
