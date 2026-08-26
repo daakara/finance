@@ -6,9 +6,38 @@ import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
+  liveCurrentPrice?: number;
+  livePriceChangePct?: number;
 }
 
-export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
+export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCurrentPrice, livePriceChangePct }: WatchlistSidebarProps) {
+  // Synchronize incoming live current price and percent change with the active watchlist item
+  useEffect(() => {
+    if (liveCurrentPrice !== undefined && activeSymbol) {
+      const symClean = activeSymbol.toUpperCase().replace("-USD", "");
+      const isUp = (livePriceChangePct ?? 0) >= 0;
+      const changeStr = `${isUp ? "+" : ""}${(livePriceChangePct ?? 0).toFixed(2)}%`;
+      const priceStr = `${liveCurrentPrice.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
+      setItems((prevItems) =>
+        prevItems.map((item) => {
+          const itemClean = item.symbol.toUpperCase().replace("-USD", "");
+          if (itemClean === symClean) {
+            return {
+              ...item,
+              price: priceStr,
+              change: changeStr,
+              isUp: isUp,
+            };
+          }
+          return item;
+        })
+      );
+    }
+  }, [liveCurrentPrice, livePriceChangePct, activeSymbol]);
   const [items, setItems] = useState<WatchlistDefinition[]>(SHARED_WATCHLIST_ITEMS);
   const [pinnedSymbols, setPinnedSymbols] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");

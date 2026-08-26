@@ -13,6 +13,7 @@ interface PriceChartProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onIntervalChange?: (interval: string) => void;
   smartMoneyHeadline?: string;
+  loading?: boolean;
   technicals?: {
     vwap?: number | null;
     rsi_14?: number;
@@ -47,6 +48,7 @@ export default function PriceChart({
   userRole = "LONG_TERM",
   onIntervalChange,
   smartMoneyHeadline,
+  loading = false,
   technicals,
 }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -343,6 +345,19 @@ export default function PriceChart({
         className="flex-1 w-full min-h-[320px] h-[340px] sm:h-[400px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
+        {loading && (
+          <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3 z-10 transition-opacity">
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping"></span>
+            </div>
+            <div className="text-xs font-mono font-bold text-cyan-300 tracking-wider flex items-center gap-1.5">
+              <span>⚡</span>
+              <span>SYNCHRONIZING {symbol} QUANT FEED...</span>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

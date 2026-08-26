@@ -334,19 +334,30 @@ export async function fetchAssetAnalytics(
   const now = Date.now();
   const stepMs = isIntraday ? (interval === "1m" ? 60000 : 300000) : (period === "5y" ? 30 * 86400000 : 86400000);
 
-  let walkPrice = basePrice * 0.92;
+  let walkPrice = basePrice * 0.94;
   for (let i = numPoints; i >= 0; i--) {
     const timeMs = now - (i * stepMs);
     const timeVal = isIntraday 
       ? Math.floor(timeMs / 1000) 
       : new Date(timeMs).toISOString().split("T")[0];
 
-    const change = (Math.sin(i / 4) * 0.015 + (Math.random() - 0.48) * 0.02) * walkPrice;
-    const open = Number(walkPrice.toFixed(2));
-    walkPrice = Math.max(10, walkPrice + change);
-    const close = Number(walkPrice.toFixed(2));
-    const high = Number((Math.max(open, close) + Math.random() * (basePrice * 0.01)).toFixed(2));
-    const low = Number((Math.min(open, close) - Math.random() * (basePrice * 0.01)).toFixed(2));
+    let open: number;
+    let close: number;
+
+    if (i === 0) {
+      // Pin the final candle precisely to basePrice and baseChangePct
+      const prevClose = basePrice / (1 + (baseChangePct / 100));
+      open = Number(prevClose.toFixed(2));
+      close = Number(basePrice.toFixed(2));
+    } else {
+      const change = (Math.sin(i / 4) * 0.015 + (Math.random() - 0.48) * 0.02) * walkPrice;
+      open = Number(walkPrice.toFixed(2));
+      walkPrice = Math.max(10, walkPrice + change);
+      close = Number(walkPrice.toFixed(2));
+    }
+
+    const high = Number((Math.max(open, close) + Math.random() * (basePrice * 0.008)).toFixed(2));
+    const low = Number((Math.min(open, close) - Math.random() * (basePrice * 0.008)).toFixed(2));
 
     generatedCandles.push({
       time: timeVal,

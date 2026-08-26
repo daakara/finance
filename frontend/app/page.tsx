@@ -118,7 +118,12 @@ function TerminalContent() {
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 pb-20 sm:pb-5">
         {/* Left Column: Watchlist Sidebar */}
         <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full">
-          <WatchlistSidebar activeSymbol={selectedSymbol} onSelectSymbol={setSelectedSymbol} />
+          <WatchlistSidebar
+            activeSymbol={selectedSymbol}
+            onSelectSymbol={setSelectedSymbol}
+            liveCurrentPrice={data?.currentPrice}
+            livePriceChangePct={data?.priceChangePct24h}
+          />
         </aside>
 
         {/* Right Column: Dynamic Terminal Workspace */}
@@ -140,6 +145,7 @@ function TerminalContent() {
                   ? `${data.smartMoney.optionsFlow[0].type} (${data.smartMoney.optionsFlow[0].premium})`
                   : undefined
               }
+              loading={loading}
               technicals={data?.technicals}
             />
           </div>
