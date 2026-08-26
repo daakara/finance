@@ -68,12 +68,12 @@ export default function UniversalOmniSearch() {
 
   return (
     <>
-      {/* Prominent High-Visibility Search Input Trigger in Navbar */}
+      {/* 🖥️ Desktop / Tablet: Full Wide Search Trigger */}
       <button
         onClick={() => setIsOpen(true)}
         type="button"
         aria-label="Search ticker, crypto, ETF or company across global markets"
-        className="w-full max-w-[480px] flex items-center justify-between bg-[#070a11] hover:bg-[#111722] border border-[#243044] hover:border-cyan-500/80 text-slate-300 hover:text-white px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono transition-all shadow-inner group cursor-pointer"
+        className="hidden md:flex w-full items-center justify-between bg-[#070a11] hover:bg-[#111722] border border-[#243044] hover:border-cyan-500/80 text-slate-300 hover:text-white px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono transition-all shadow-inner group cursor-pointer"
       >
         <div className="flex items-center space-x-2.5 min-w-0">
           <svg aria-hidden="true" className="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -85,29 +85,54 @@ export default function UniversalOmniSearch() {
           </span>
         </div>
         <div className="flex items-center space-x-1 shrink-0 ml-2">
-          <kbd className="hidden sm:inline-block bg-[#162030] text-cyan-400 font-bold text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
+          <kbd className="inline-block bg-[#162030] text-cyan-400 font-bold text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
             ⌘K
           </kbd>
-          <kbd className="hidden sm:inline-block bg-[#162030] text-slate-400 text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
+          <kbd className="inline-block bg-[#162030] text-slate-400 text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
             /
           </kbd>
         </div>
       </button>
 
-      {/* Fullscreen Modal Backdrop */}
+      {/* 📱 Mobile: Dedicated High-Visibility Search Icon Button in Header */}
+      <button
+        onClick={() => setIsOpen(true)}
+        type="button"
+        aria-label="Search any asset"
+        className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-[#111722] border border-cyan-500/50 text-cyan-400 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer"
+      >
+        <svg aria-hidden="true" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </button>
+
+      {/* Fullscreen Search Modal Backdrop */}
       {isOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Universal Asset Search"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-start justify-center pt-16 sm:pt-24 p-3 sm:p-4 font-mono animate-fadeIn"
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-24 p-3 sm:p-4 font-mono animate-fadeIn"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#0c1017] border border-[#243044] rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 relative max-h-[85vh] flex flex-col"
+            className="bg-[#0c1017] border border-[#243044] rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 relative max-h-[90vh] flex flex-col"
           >
             {/* Search Input Bar */}
+            <div className="flex items-center justify-between pb-1">
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                🔍 Global Asset Terminal Search
+              </span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 bg-[#162030] rounded border border-[#243044]"
+              >
+                ESC ✕
+              </button>
+            </div>
+
             <form onSubmit={handleFormSubmit} className="relative flex items-center">
               <span className="absolute left-3.5 text-cyan-400 text-base">🔍</span>
               <input
@@ -116,14 +141,14 @@ export default function UniversalOmniSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type ANY ticker (e.g. NVDA, LLY, TSLA, BTC-USD, COIN, PLTR)..."
-                className="w-full bg-[#070a11] border-2 border-cyan-500/70 focus:border-cyan-400 text-white pl-10 pr-24 py-3 rounded-xl text-sm outline-none placeholder:text-slate-500 font-mono tracking-wide shadow-lg"
+                className="w-full bg-[#070a11] border-2 border-cyan-500/70 focus:border-cyan-400 text-white pl-10 pr-20 py-2.5 sm:py-3 rounded-xl text-sm outline-none placeholder:text-slate-500 font-mono tracking-wide shadow-lg"
               />
               {cleanQ && (
                 <button
                   type="submit"
-                  className="absolute right-2 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer"
+                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer"
                 >
-                  Analyze ↵
+                  Go ↵
                 </button>
               )}
             </form>
@@ -137,14 +162,14 @@ export default function UniversalOmniSearch() {
                   className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 border border-cyan-500/60 hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer"
                 >
                   <div>
-                    <span className="text-xs font-bold text-cyan-300">Run Live Quantitative Analysis Pipeline for:</span>
-                    <div className="text-lg font-black text-white tracking-wider flex items-center gap-2">
+                    <span className="text-xs font-bold text-cyan-300">Run Live Analysis for Custom Asset:</span>
+                    <div className="text-base sm:text-lg font-black text-white tracking-wider flex items-center gap-2">
                       <span>{cleanQ}</span>
-                      <span className="text-[10px] bg-cyan-900/80 text-cyan-200 px-2 py-0.5 rounded font-mono font-semibold">Custom Asset</span>
+                      <span className="text-[10px] bg-cyan-900/80 text-cyan-200 px-2 py-0.5 rounded font-mono font-semibold">Live Pipeline</span>
                     </div>
                   </div>
                   <span className="text-xs text-cyan-400 font-bold group-hover:translate-x-1 transition-transform">
-                    Launch Pipeline →
+                    Launch →
                   </span>
                 </button>
               )}
@@ -181,9 +206,9 @@ export default function UniversalOmniSearch() {
             </div>
 
             {/* Keyboard Footer */}
-            <div className="pt-3 border-t border-[#1b2434] flex items-center justify-between text-[11px] text-slate-500">
+            <div className="pt-2 sm:pt-3 border-t border-[#1b2434] flex items-center justify-between text-[11px] text-slate-500">
               <span>Press <kbd className="bg-[#162030] text-slate-300 px-1.5 py-0.5 rounded border border-[#2b394f]">ESC</kbd> to close</span>
-              <span>Press <kbd className="bg-[#162030] text-slate-300 px-1.5 py-0.5 rounded border border-[#2b394f]">ENTER</kbd> to analyze</span>
+              <span>Tap any symbol to analyze</span>
             </div>
           </div>
         </div>

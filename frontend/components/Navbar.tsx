@@ -31,7 +31,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   return (
     <>
       <header role="banner" className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-[1750px] mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-6">
+        <div className="max-w-[1750px] mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           {/* Left: Brand Logo & Title */}
           <div className="flex items-center space-x-2 sm:space-x-4 shrink-0 min-w-0">
             <Link href="/" aria-label="Finance Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
@@ -95,27 +95,27 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             </nav>
           </div>
 
-          {/* Center: Prominent Global Omni-Search Bar */}
+          {/* Center: Global Omni-Search Bar (Desktop & Mobile) */}
           <div className="flex-1 max-w-xl mx-auto flex items-center justify-center px-1 sm:px-2">
             <UniversalOmniSearch />
           </div>
 
           {/* Right: Trading Horizon Mode Switcher */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+          <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
               <button
                 onClick={() => handleRoleToggle("DAY_TRADER")}
                 role="button"
                 aria-pressed={activeRole === "DAY_TRADER"}
                 aria-label="Switch to Day Trader mode"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
                 <span aria-hidden="true" className="text-xs">⚡</span>
-                <span className="font-mono tracking-tight text-[11px] sm:text-xs">Day Trade</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Day Trade</span>
               </button>
 
               <button
@@ -123,14 +123,14 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 role="button"
                 aria-pressed={activeRole === "LONG_TERM"}
                 aria-label="Switch to Long-Term Investor mode"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[34px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
                 <span aria-hidden="true" className="text-xs">🏛️</span>
-                <span className="font-mono tracking-tight text-[11px] sm:text-xs">Long Term</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Long Term</span>
               </button>
             </div>
           </div>
