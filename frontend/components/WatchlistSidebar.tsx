@@ -45,33 +45,38 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
       {/* Header with Mobile Accordion Toggle */}
       <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
             Watchlist & Signals
-          </span>
+          </h2>
           <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">
             Live Feeds
           </span>
         </div>
 
-        {/* Accordion toggle button with tactile press feedback */}
+        {/* Accordion toggle button with ARIA attributes */}
         <button
           onClick={() => setIsMobileExpanded((prev) => !prev)}
-          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1.5 min-h-[32px] rounded flex items-center gap-1.5 hover:bg-[#162030] active:scale-[0.96] transition-transform duration-100"
+          aria-expanded={isMobileExpanded}
+          aria-controls="watchlist-stream-panel"
+          aria-label={isMobileExpanded ? "Collapse Watchlist Stream" : "Expand Watchlist Stream"}
+          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1.5 min-h-[32px] rounded flex items-center gap-1.5 hover:bg-[#162030] active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
         >
           <span>{isMobileExpanded ? "Hide List" : "Show List"}</span>
-          <span className="text-[10px]">{isMobileExpanded ? "▲" : "▼"}</span>
+          <span aria-hidden="true" className="text-[10px]">{isMobileExpanded ? "▲" : "▼"}</span>
         </button>
       </div>
 
-      {/* Asset Category Filters with 40px Touch Target on Mobile */}
-      <div className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+      {/* Asset Category Filters */}
+      <div role="tablist" aria-label="Asset category filter" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
         {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
+            role="tab"
+            aria-selected={activeCategory === cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`flex-1 py-1.5 sm:py-1 min-h-[36px] sm:min-h-[28px] rounded text-[11px] sm:text-[10px] font-bold transition-colors active:scale-[0.96] transition-transform duration-100 ${
+            className={`flex-1 py-1.5 sm:py-1 min-h-[36px] sm:min-h-[28px] rounded text-[11px] sm:text-[10px] font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
               activeCategory === cat
-                ? "bg-cyan-500 text-slate-950 shadow-sm"
+                ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                 : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
             }`}
           >
@@ -80,8 +85,11 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         ))}
       </div>
 
-      {/* Watchlist Stream Items with Tabular Numerals & Tactile Click */}
+      {/* Watchlist Stream Items */}
       <div
+        id="watchlist-stream-panel"
+        role="region"
+        aria-label="Filtered asset stream"
         className={`space-y-1.5 overflow-y-auto max-h-[440px] ${
           isMobileExpanded ? "block" : "hidden lg:block"
         }`}
@@ -90,7 +98,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
           <button
             key={item.symbol}
             onClick={() => onSelectSymbol(item.symbol)}
-            className={`w-full flex items-center justify-between p-2.5 sm:p-2 rounded-lg border text-left active:scale-[0.98] transition-transform transition-colors duration-150 ${
+            aria-current={activeSymbol === item.symbol ? "true" : undefined}
+            aria-label={`${item.name} (${item.symbol}), price ${item.price}, change ${item.change}`}
+            className={`w-full flex items-center justify-between p-2.5 sm:p-2 rounded-lg border text-left active:scale-[0.98] transition-transform transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
               activeSymbol === item.symbol
                 ? "bg-[#1b2434] border-cyan-500 shadow-md"
                 : "bg-[#090d14] border-[#1b2434] hover:border-[#364866]"

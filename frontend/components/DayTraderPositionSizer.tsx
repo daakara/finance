@@ -49,14 +49,14 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
-      {/* Header with Concentric Radius */}
+    <section aria-labelledby="position-sizer-title" className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              <svg className="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse motion-reduce:animate-none"></span>
+            <h3 id="position-sizer-title" className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
+              <svg aria-hidden="true" className="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="22" y1="12" x2="18" y2="12" />
                 <line x1="6" y1="12" x2="2" y2="12" />
@@ -71,11 +71,13 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           </p>
         </div>
 
-        {/* Long / Short Toggle with Tactile Scale on Press */}
-        <div className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+        {/* Long / Short Toggle */}
+        <div role="radiogroup" aria-label="Trade direction" className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
           <button
+            role="radio"
+            aria-checked={tradeDirection === "LONG"}
             onClick={() => setTradeDirection("LONG")}
-            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 ${
+            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
               tradeDirection === "LONG"
                 ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
                 : "text-slate-400 hover:text-slate-200"
@@ -84,8 +86,10 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             BUY / LONG
           </button>
           <button
+            role="radio"
+            aria-checked={tradeDirection === "SHORT"}
             onClick={() => setTradeDirection("SHORT")}
-            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 ${
+            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
               tradeDirection === "SHORT"
                 ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
                 : "text-slate-400 hover:text-slate-200"
@@ -96,24 +100,30 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         </div>
       </div>
 
-      {/* Interactive Controls & Live Quant Badges */}
+      {/* Interactive Sliders with Full ARIA Accessibility */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Capital Slider */}
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2">
-          <div className="flex justify-between items-center text-xs">
+          <label htmlFor="capital-slider" className="flex justify-between items-center text-xs cursor-pointer">
             <span className="text-slate-300">Portfolio Capital</span>
             <span className="text-amber-400 font-bold text-sm tabular-nums">${accountSize.toLocaleString()}</span>
-          </div>
+          </label>
           <input
+            id="capital-slider"
             type="range"
             min={1000}
             max={250000}
             step={1000}
             value={accountSize}
+            aria-label="Portfolio Capital Amount"
+            aria-valuemin={1000}
+            aria-valuemax={250000}
+            aria-valuenow={accountSize}
+            aria-valuetext={`$${accountSize.toLocaleString()}`}
             onChange={(e) => setAccountSize(Number(e.target.value))}
-            className="w-full accent-amber-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg"
+            className="w-full accent-amber-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
           />
-          <div className="flex justify-between text-[10px] text-slate-500 tabular-nums">
+          <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">
             <span>$1k</span>
             <span>$50k</span>
             <span>$100k</span>
@@ -123,20 +133,26 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
 
         {/* Risk Budget Slider */}
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2">
-          <div className="flex justify-between items-center text-xs">
+          <label htmlFor="risk-slider" className="flex justify-between items-center text-xs cursor-pointer">
             <span className="text-slate-300">Risk Budget Per Trade</span>
             <span className="text-rose-400 font-bold text-sm tabular-nums">{riskPct.toFixed(2)}% (${dollarRisk.toFixed(0)})</span>
-          </div>
+          </label>
           <input
+            id="risk-slider"
             type="range"
             min={0.25}
             max={3.0}
             step={0.25}
             value={riskPct}
+            aria-label="Risk Budget Percentage"
+            aria-valuemin={0.25}
+            aria-valuemax={3.0}
+            aria-valuenow={riskPct}
+            aria-valuetext={`${riskPct.toFixed(2)} percent, equals $${dollarRisk.toFixed(0)} maximum risk`}
             onChange={(e) => setRiskPct(Number(e.target.value))}
-            className="w-full accent-rose-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg"
+            className="w-full accent-rose-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none"
           />
-          <div className="flex justify-between text-[10px] text-slate-500">
+          <div className="flex justify-between text-[10px] text-slate-400">
             <span>0.25% (Conservative)</span>
             <span>1.0% (Standard)</span>
             <span>3.0% (Aggressive)</span>
@@ -144,24 +160,24 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
         </div>
       </div>
 
-      {/* Sizing Outputs: Tabular Numerals */}
+      {/* Sizing Outputs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
           <span className="text-[10px] text-slate-400 block">Recommended Size</span>
           <span className="text-base sm:text-lg font-bold text-cyan-400 tabular-nums">{positionUnits} Units</span>
-          <span className="text-[9px] text-slate-500 block mt-0.5">Shares / Tokens</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5">Shares / Tokens</span>
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
           <span className="text-[10px] text-slate-400 block">Total Exposure</span>
           <span className="text-base sm:text-lg font-bold text-slate-200 tabular-nums">${totalPositionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-          <span className="text-[9px] text-slate-500 block mt-0.5 tabular-nums">{leverageRatio}x Capital Ratio</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{leverageRatio}x Capital Ratio</span>
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
           <span className="text-[10px] text-slate-400 block">Statistical Stop Dist</span>
           <span className="text-base sm:text-lg font-bold text-purple-400 tabular-nums">${stopDistanceDollar.toFixed(2)}</span>
-          <span className="text-[9px] text-slate-500 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% mVaR Vol</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5 tabular-nums">{stopDistancePct.toFixed(2)}% mVaR Vol</span>
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
@@ -169,41 +185,41 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           <span className={`text-base sm:text-lg font-bold tabular-nums ${rsi > 70 ? "text-rose-400" : rsi < 30 ? "text-emerald-400" : "text-amber-400"}`}>
             {rsi.toFixed(1)}
           </span>
-          <span className="text-[9px] text-slate-500 block mt-0.5">{rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral"}</span>
+          <span className="text-[9px] text-slate-400 block mt-0.5">{rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral"}</span>
         </div>
       </div>
 
-      {/* Execution Targets: Concentric Radii & Tabular Prices */}
+      {/* Execution Targets */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center font-mono">
         {/* 1.0R Stop-Loss */}
         <div className="bg-rose-950/40 border border-rose-800/80 p-3 rounded-lg">
           <span className="text-[10px] text-rose-300 uppercase font-bold block">1.0R Stop-Loss</span>
           <span className="text-sm sm:text-base font-bold text-rose-400 block tabular-nums">${stopPrice.toFixed(2)}</span>
-          <span className="text-[9px] text-rose-300/80 block mt-0.5 tabular-nums">-${dollarRisk.toFixed(0)} Max Risk</span>
+          <span className="text-[9px] text-rose-300/90 block mt-0.5 tabular-nums">-${dollarRisk.toFixed(0)} Max Risk</span>
         </div>
 
         {/* 1.5R Scalp Target */}
         <div className="bg-cyan-950/40 border border-cyan-800/80 p-3 rounded-lg">
           <span className="text-[10px] text-cyan-300 uppercase font-bold block">1.5R Scalp</span>
           <span className="text-sm sm:text-base font-bold text-cyan-400 block tabular-nums">${target15.toFixed(2)}</span>
-          <span className="text-[9px] text-cyan-300/80 block mt-0.5 tabular-nums">+${(dollarRisk * 1.5).toFixed(0)} Profit</span>
+          <span className="text-[9px] text-cyan-300/90 block mt-0.5 tabular-nums">+${(dollarRisk * 1.5).toFixed(0)} Profit</span>
         </div>
 
         {/* 2.0R Optimal Target */}
         <div className="bg-emerald-950/40 border border-emerald-800/80 p-3 rounded-lg">
           <span className="text-[10px] text-emerald-300 uppercase font-bold block">2.0R Optimal</span>
           <span className="text-sm sm:text-base font-bold text-emerald-400 block tabular-nums">${target20.toFixed(2)}</span>
-          <span className="text-[9px] text-emerald-300/80 block mt-0.5 tabular-nums">+${(dollarRisk * 2.0).toFixed(0)} Profit</span>
+          <span className="text-[9px] text-emerald-300/90 block mt-0.5 tabular-nums">+${(dollarRisk * 2.0).toFixed(0)} Profit</span>
         </div>
 
         {/* 3.0R Momentum Runner */}
         <div className="bg-purple-950/40 border border-purple-800/80 p-3 rounded-lg">
           <span className="text-[10px] text-purple-300 uppercase font-bold block">3.0R Runner</span>
           <span className="text-sm sm:text-base font-bold text-purple-400 block tabular-nums">${target30.toFixed(2)}</span>
-          <span className="text-[9px] text-purple-300/80 block mt-0.5 tabular-nums">+${(dollarRisk * 3.0).toFixed(0)} Profit</span>
+          <span className="text-[9px] text-purple-300/90 block mt-0.5 tabular-nums">+${(dollarRisk * 3.0).toFixed(0)} Profit</span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

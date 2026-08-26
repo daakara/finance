@@ -160,18 +160,19 @@ export default function PriceChart({
   const isPositive = priceChangePct >= 0;
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-5 shadow-xl flex flex-col h-full font-mono">
-      {/* Header Bar with Tabular Numerals & Expanded Hit-Area Buttons */}
+    <section aria-labelledby="chart-header-symbol" className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-5 shadow-xl flex flex-col h-full font-mono">
+      {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1b2434]">
         {/* Left: Symbol & Live Tabular Price */}
         <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <span className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</span>
+          <h1 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h1>
           {currentPrice && (
-            <span className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
+            <span aria-label={`Current price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
               ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           )}
           <span
+            aria-label={`24 hour change: ${isPositive ? "+" : ""}${priceChangePct.toFixed(2)} percent`}
             className={`px-2 py-0.5 rounded text-xs font-semibold tabular-nums ${
               isPositive
                 ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
@@ -182,10 +183,10 @@ export default function PriceChart({
           </span>
         </div>
 
-        {/* Right: Technicals Badges & Tactile Scale-on-Press Interval Pills */}
+        {/* Right: Technicals Badges & Interval Group */}
         <div className="flex items-center space-x-2">
           {technicals?.rsi_14 !== undefined && (
-            <div className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
+            <div aria-label={`Relative Strength Index 14: ${technicals.rsi_14.toFixed(1)}`} className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
               <span className="text-slate-400">RSI(14):</span>
               <span
                 className={`font-bold tabular-nums ${
@@ -201,13 +202,15 @@ export default function PriceChart({
             </div>
           )}
 
-          {/* Timeframe Interval Buttons with Tactile Press Feedback & Min 36px Tap Target */}
-          <div className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+          {/* Timeframe Interval Buttons */}
+          <div role="group" aria-label="Candlestick chart interval" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             {intervals.map((item) => (
               <button
                 key={item.value}
                 onClick={() => handleIntervalClick(item.value)}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 ${
+                aria-pressed={activeInterval === item.value}
+                aria-label={`Set timeframe interval to ${item.label}`}
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   activeInterval === item.value
                     ? "bg-cyan-500 text-slate-950 shadow-sm"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -221,10 +224,14 @@ export default function PriceChart({
       </div>
 
       {/* Chart Canvas */}
-      <div className="flex-1 w-full min-h-[280px] sm:min-h-[320px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]">
+      <div
+        role="region"
+        aria-label={`${symbol} interactive candlestick and VWAP price chart`}
+        className="flex-1 w-full min-h-[280px] sm:min-h-[320px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
+      >
         <div ref={chartContainerRef} className="w-full h-full" />
       </div>
-    </div>
+    </section>
   );
 }
 

@@ -57,83 +57,62 @@ export default function TerminalPage() {
 
   return (
     <div className="min-h-screen bg-[#070a10] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+      {/* Skip to Main Content Link for Keyboard Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-cyan-500 focus:text-black focus:font-bold focus:rounded-md focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
 
-      <main className="flex-1 flex flex-col lg:flex-row p-3 md:p-6 gap-6 max-w-[1750px] w-full mx-auto">
-        {/* Watchlist Sidebar */}
-        <aside className="w-full lg:w-80 shrink-0">
-          <WatchlistSidebar activeSymbol={selectedSymbol} onSelectSymbol={(sym) => setSelectedSymbol(sym)} />
+      {/* Semantic Main Content Landmark */}
+      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Left Column: Watchlist Sidebar */}
+        <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full">
+          <WatchlistSidebar activeSymbol={selectedSymbol} onSelectSymbol={setSelectedSymbol} />
         </aside>
 
-        {/* Main Terminal Workspace (Dynamically Tailored by Journey) */}
-        <section className="flex-1 flex flex-col space-y-6 min-w-0">
-          {/* Top Interactive Candlestick Chart */}
-          <div className="h-[440px] w-full">
+        {/* Right Column: Dynamic Terminal Workspace */}
+        <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5">
+          {/* Main Candlestick Chart */}
+          <div className="min-h-[380px] sm:min-h-[420px]">
             <PriceChart
               symbol={selectedSymbol}
               candles={data?.candles || []}
               currentPrice={data?.currentPrice}
               priceChangePct={data?.priceChangePct24h}
               interval={interval}
-              onIntervalChange={(newInterval) => setInterval(newInterval)}
+              onIntervalChange={setInterval}
               technicals={data?.technicals}
             />
           </div>
 
-          {/* DUAL-JOURNEY DYNAMIC VIEW */}
+          {/* DUAL-JOURNEY WORKSPACE ROUTING */}
           {userRole === "DAY_TRADER" ? (
-            <>
-              {/* Day Trader Primary: Intraday Position Sizer & Execution Targets */}
-              {data && (
-                <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
-              )}
-
-              {/* Day Trader Secondary: Self-Healing Accuracy & Walk-Forward Audit */}
-              <SelfHealingAccuracyCard
-                symbol={selectedSymbol}
-                auditData={data?.selfHealingAudit}
-              />
-
-              {/* Day Trader Tertiary: Tail-Risk & Benchmark Ratios */}
+            /* Day Trader Journey: Live Risk Sizer, Intraday Technicals, Continuous Self-Healing */
+            <div className="space-y-4 sm:space-y-5">
+              {data && <DayTraderPositionSizer symbol={selectedSymbol} data={data} />}
+              <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
               <RiskMetricsCard analyticsData={data || undefined} />
-
-              {/* Day Trader Quaternary: Institutional Strategy Snapshot */}
-              <TraderArchetypesCard
-                symbol={selectedSymbol}
-                traderArchetypes={data?.traderArchetypes}
-              />
-            </>
+            </div>
           ) : (
-            <>
-              {/* Long-Term Primary: 5-Factor Fundamental Scorecard & Macro Intelligence */}
+            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, 5-Strategy Consensus */
+            <div className="space-y-4 sm:space-y-5">
               <AssetFactorRadar
                 symbol={selectedSymbol}
                 factorScores={data?.factorScores}
                 macroDifficulty={data?.macroDifficulty}
                 expectedReturn={data?.expectedReturn}
               />
-
-              {/* Long-Term Secondary: Market Graph & Contagion Engine */}
-              <MarketGraphCard
-                symbol={selectedSymbol}
-                marketGraph={data?.marketGraph}
-              />
-
-              {/* Long-Term Tertiary: Institutional Multi-Strategy Consensus */}
+              <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
               <TraderArchetypesCard
                 symbol={selectedSymbol}
                 traderArchetypes={data?.traderArchetypes}
               />
-
-              {/* Long-Term Quaternary: Self-Healing Forecast Auditor */}
-              <SelfHealingAccuracyCard
-                symbol={selectedSymbol}
-                auditData={data?.selfHealingAudit}
-              />
-
-              {/* Long-Term Quinary: Risk & Distribution Analytics */}
               <RiskMetricsCard analyticsData={data || undefined} />
-            </>
+            </div>
           )}
         </section>
       </main>
