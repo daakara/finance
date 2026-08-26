@@ -14,6 +14,7 @@ from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -23,6 +24,7 @@ self_healing_auditor = SelfHealingForecastAuditor()
 market_graph_engine = MarketGraphEngine()
 catalyst_engine = CatalystEngine()
 smart_money_engine = SmartMoneyEngine()
+eodhd_fetcher = EODHDMarketFetcher()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 
@@ -148,7 +150,11 @@ def get_asset_analytics(
             hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
         if hist.empty:
-            raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
+            eodhd_df = eodhd_fetcher.fetch_historical_candles(upper_sym)
+            if eodhd_df is not None and not eodhd_df.empty:
+                hist = eodhd_df
+            else:
+                raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
 
         # Format candles for lightweight charts (support Unix timestamps for intraday)
         candles = []
@@ -268,6 +274,7 @@ def get_asset_analytics(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
