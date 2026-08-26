@@ -7,24 +7,41 @@ interface SmartMoneyDetailModalProps {
   congressItem?: CongressTradeItem | null;
   optionsItem?: OptionsFlowItem | null;
   onClose: () => void;
+  onSelectSymbol?: (symbol: string) => void;
 }
 
 export default function SmartMoneyDetailModal({
   congressItem,
   optionsItem,
   onClose,
+  onSelectSymbol,
 }: SmartMoneyDetailModalProps) {
   const router = useRouter();
 
   if (!congressItem && !optionsItem) return null;
 
-  const targetTicker = congressItem?.ticker || optionsItem?.ticker || "AAPL";
+  const rawTicker = congressItem?.ticker || optionsItem?.ticker || "AAPL";
+  const targetTicker = rawTicker.trim().toUpperCase();
 
   const handleNavigateTerminal = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onClose();
-    router.push(`/?symbol=${targetTicker}`);
+
+    if (onSelectSymbol) {
+      onSelectSymbol(targetTicker);
+      // Smooth scroll to top terminal workspace
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } else {
+      // Force navigation to root terminal with query param
+      if (typeof window !== "undefined") {
+        window.location.href = `/?symbol=${encodeURIComponent(targetTicker)}`;
+      } else {
+        router.push(`/?symbol=${encodeURIComponent(targetTicker)}`);
+      }
+    }
   };
 
   return (

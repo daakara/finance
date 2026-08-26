@@ -9,6 +9,7 @@ interface CongressionalTradesCardProps {
   congressTrades?: CongressTradeItem[];
   optionsFlow?: OptionsFlowItem[];
   userRole?: "DAY_TRADER" | "LONG_TERM";
+  onSelectSymbol?: (symbol: string) => void;
 }
 
 export default function CongressionalTradesCard({
@@ -16,6 +17,7 @@ export default function CongressionalTradesCard({
   congressTrades = [],
   optionsFlow = [],
   userRole = "LONG_TERM",
+  onSelectSymbol,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
   const [selectedCongress, setSelectedCongress] = useState<CongressTradeItem | null>(null);
@@ -30,22 +32,21 @@ export default function CongressionalTradesCard({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
           <div>
             <div className="flex items-center space-x-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${isDayTrader ? "bg-amber-400" : "bg-purple-400"} animate-pulse`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                isDayTrader ? "bg-amber-400" : "bg-purple-400"
+              } animate-pulse`}></span>
               <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                <svg className={`w-4 h-4 ${isDayTrader ? "text-amber-400" : "text-purple-400"} shrink-0`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-                <span>{symbol} {isDayTrader ? "Institutional Options Flow Tape & Sweeps" : "Congressional STOCK Act Disclosures"}</span>
+                <span>{isDayTrader ? "⚡ Intraday Options Sweeps & Dark Pool Block Prints" : "🏛️ Capitol Hill & Institutional Order Flow Radar"}</span>
               </h3>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
               {isDayTrader
-                ? "Unusual call sweeps, dark pool blocks, and high-urgency order flow (click row for forensic details)"
-                : "Capitol Hill House & Senate insider transaction tracking and post-filing returns (click row for forensic details)"}
+                ? `High-velocity OPRA options order flow & volume-to-open-interest anomalies for ${symbol}`
+                : `STOCK Act Title I Article 105 disclosures & congressional committee alignment for ${symbol}`}
             </p>
           </div>
 
-          <span className={`text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-md font-semibold border ${
+          <span className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border ${
             isDayTrader
               ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
               : "text-purple-400 bg-purple-950/60 border-purple-800/80"
@@ -123,20 +124,18 @@ export default function CongressionalTradesCard({
             </table>
           </div>
         ) : (
-          /* Long Term: Congressional STOCK Act Disclosures */
+          /* Long Term Investor: Congressional Trades Disclosure List */
           <div className="space-y-3">
             {congressTrades.length > 0 ? (
-              congressTrades.map((trade, idx) => (
+              congressTrades.map((trade, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   onClick={() => setSelectedCongress(trade)}
-                  className="bg-[#090d14] p-3 sm:p-4 rounded-lg border border-[#243044] hover:border-cyan-500/60 cursor-pointer flex flex-wrap items-center justify-between gap-3 transition-colors group"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#090d14] hover:bg-[#162030] border border-[#1e293b] hover:border-purple-500/40 transition-all cursor-pointer gap-3 group"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold text-slate-100 group-hover:text-cyan-400 transition-colors">
-                        {trade.politician}
-                      </span>
+                      <span className="font-bold text-white text-sm group-hover:text-purple-300">{trade.politician}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1b2434] text-slate-400 font-semibold">{trade.chamber}</span>
                     </div>
                     <div className="text-[11px] text-slate-400 flex items-center space-x-2">
@@ -193,6 +192,7 @@ export default function CongressionalTradesCard({
           setSelectedCongress(null);
           setSelectedOptions(null);
         }}
+        onSelectSymbol={onSelectSymbol}
       />
     </>
   );

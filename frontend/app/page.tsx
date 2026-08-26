@@ -101,16 +101,20 @@ function TerminalContent() {
 
         const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval);
         if (isMounted) {
-          cacheRef.current.set(cacheKey, res);
           setData(res);
+          cacheRef.current.set(cacheKey, res);
         }
       } catch (err) {
         console.error("Failed to load asset analytics:", err);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
+
     loadData();
+
     return () => {
       isMounted = false;
     };
@@ -175,6 +179,7 @@ function TerminalContent() {
                 congressTrades={data?.smartMoney?.congressTrades}
                 optionsFlow={data?.smartMoney?.optionsFlow}
                 userRole={userRole}
+                onSelectSymbol={setSelectedSymbol}
               />
               <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
               <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
@@ -195,6 +200,7 @@ function TerminalContent() {
                 congressTrades={data?.smartMoney?.congressTrades}
                 optionsFlow={data?.smartMoney?.optionsFlow}
                 userRole={userRole}
+                onSelectSymbol={setSelectedSymbol}
               />
               <CatalystForecastCard data={data?.catalystForecast} />
               <TraderArchetypesCard
@@ -217,4 +223,3 @@ export default function TerminalPage() {
     </Suspense>
   );
 }
-
