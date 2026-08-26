@@ -116,7 +116,7 @@ function TerminalContent() {
             <div className="space-y-4 sm:space-y-5">
               {data && <DayTraderPositionSizer symbol={selectedSymbol} data={data} />}
               <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
-              <RiskMetricsCard analyticsData={data || undefined} />
+              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
             </div>
           ) : (
             /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, 5-Strategy Consensus */
@@ -133,7 +133,7 @@ function TerminalContent() {
                 symbol={selectedSymbol}
                 traderArchetypes={data?.traderArchetypes}
               />
-              <RiskMetricsCard analyticsData={data || undefined} />
+              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
             </div>
           )}
         </section>
@@ -149,3 +149,4 @@ export default function TerminalPage() {
     </Suspense>
   );
 }
+
