@@ -1,6 +1,8 @@
 ﻿import "./globals.css";
+import { Suspense } from "react";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
 import OfflineStatusBanner from "../components/OfflineStatusBanner";
+import MatomoTracker from "../components/MatomoTracker";
 
 export const metadata = {
   title: "Financial Market Analysis Platform",
@@ -37,6 +39,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-[#070a10] text-[#c9d1d9] antialiased">
         <OfflineStatusBanner />
         <ServiceWorkerRegister />
+        <Suspense fallback={null}>
+          <MatomoTracker />
+        </Suspense>
         {children}
       </body>
     </html>

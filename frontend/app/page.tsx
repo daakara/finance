@@ -15,6 +15,7 @@ import CatalystForecastCard from "../components/CatalystForecastCard";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
+import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
@@ -47,6 +48,7 @@ function TerminalContent() {
   }, []);
 
   const handleRoleChange = (role: "DAY_TRADER" | "LONG_TERM") => {
+    trackRoleSwitch(role);
     setUserRole(role);
     if (role === "DAY_TRADER") {
       setInterval("5m");
@@ -176,7 +178,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "EXECUTION"}
-              onClick={() => setActiveTab("EXECUTION")}
+              onClick={() => { setActiveTab("EXECUTION"); trackWorkspaceSwitch("Execution & Levels", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "EXECUTION"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
@@ -190,7 +192,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "SMART_MONEY"}
-              onClick={() => setActiveTab("SMART_MONEY")}
+              onClick={() => { setActiveTab("SMART_MONEY"); trackWorkspaceSwitch("Smart Money", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "SMART_MONEY"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
@@ -204,7 +206,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "FUNDAMENTALS"}
-              onClick={() => setActiveTab("FUNDAMENTALS")}
+              onClick={() => { setActiveTab("FUNDAMENTALS"); trackWorkspaceSwitch("Factors & Macro", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "FUNDAMENTALS"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
@@ -218,7 +220,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "RISK_CONTAGION"}
-              onClick={() => setActiveTab("RISK_CONTAGION")}
+              onClick={() => { setActiveTab("RISK_CONTAGION"); trackWorkspaceSwitch("Risk & Contagion", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "RISK_CONTAGION"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
