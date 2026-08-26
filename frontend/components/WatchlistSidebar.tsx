@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
 
 interface WatchlistSidebarProps {
@@ -8,16 +8,41 @@ interface WatchlistSidebarProps {
   onSelectSymbol: (symbol: string) => void;
 }
 
-
-
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
-  const items: WatchlistDefinition[] = SHARED_WATCHLIST_ITEMS;
+  const [items, setItems] = useState<WatchlistDefinition[]>(SHARED_WATCHLIST_ITEMS);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"All" | "Stock" | "ETF" | "Crypto">("All");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const filteredItems = items.filter((item) =>
-    activeCategory === "All" ? true : item.type === activeCategory
-  );
+  // Global keyboard shortcut: Press "/" to focus search input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const cleanQuery = searchQuery.trim().toUpperCase();
+
+  // Filter items by category AND search query (ticker or company name)
+  const filteredItems = items.filter((item) => {
+    const matchesCategory = activeCategory === "All" ? true : item.type === activeCategory;
+    if (!matchesCategory) return false;
+
+    if (!cleanQuery) return true;
+    const matchSymbol = item.symbol.toUpperCase().includes(cleanQuery);
+    const matchName = item.name.toUpperCase().includes(cleanQuery);
+    return matchSymbol || matchName;
+  });
 
   const handleCategoryClick = (cat: "All" | "Stock" | "ETF" | "Crypto") => {
     setActiveCategory(cat);
@@ -28,6 +53,15 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
       if (topItem && activeSymbol !== topItem.symbol) {
         onSelectSymbol(topItem.symbol);
       }
+    }
+  };
+
+  // Submit custom unlisted ticker
+  const handleCustomTickerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cleanQuery) {
+      onSelectSymbol(cleanQuery);
+      setSearchQuery("");
     }
   };
 
@@ -64,6 +98,40 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         </button>
       </div>
 
+      {/* 🔍 Search & Quick-Add Input Bar */}
+      <form onSubmit={handleCustomTickerSubmit} className="relative">
+        <div className="relative flex items-center">
+          <svg
+            className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search ticker, name, or '/'..."
+            className="w-full bg-[#090d14] border border-[#243044] rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 text-slate-400 hover:text-white text-xs font-bold"
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </form>
+
       {/* Asset Category Filters */}
       <div role="tablist" aria-label="Asset Class Filter" className="grid grid-cols-4 gap-1 p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[11px]">
         {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
@@ -92,46 +160,67 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
           isMobileExpanded ? "block" : "hidden sm:block"
         }`}
       >
-        {filteredItems.map((item) => {
-          const itemClean = item.symbol.toUpperCase().replace("-USD", "");
-          const activeClean = activeSymbol.toUpperCase().replace("-USD", "");
-          const isSelected = activeClean === itemClean;
-          return (
-            <button
-              key={item.symbol}
-              onClick={() => onSelectSymbol(item.symbol)}
-              aria-label={`Select ${item.name} (${item.symbol}), Price ${item.price}, Change ${item.change}`}
-              className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left transition-all active:scale-[0.98] ${
-                isSelected
-                  ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"
-                  : "bg-[#0b1019] border-[#1b2434] hover:bg-[#131b28] hover:border-[#2b3a52]"
-              }`}
-            >
-              <div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-bold text-xs text-white">{item.symbol}</span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
-                    {item.type}
-                  </span>
+        {filteredItems.length === 0 ? (
+          <div className="p-3 text-center bg-[#090d14] rounded-lg border border-[#1e293b] space-y-2">
+            <p className="text-xs text-slate-400">
+              No preset asset matching &quot;{searchQuery}&quot;
+            </p>
+            {cleanQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectSymbol(cleanQuery);
+                  setSearchQuery("");
+                }}
+                className="w-full bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 py-1.5 px-2 rounded-md text-xs font-bold transition-transform active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-cyan-950/40"
+              >
+                <span>➕</span>
+                <span>Analyze &quot;{cleanQuery}&quot; in Terminal</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredItems.map((item) => {
+            const itemClean = item.symbol.toUpperCase().replace("-USD", "");
+            const activeClean = activeSymbol.toUpperCase().replace("-USD", "");
+            const isSelected = activeClean === itemClean;
+            return (
+              <button
+                key={item.symbol}
+                onClick={() => onSelectSymbol(item.symbol)}
+                aria-label={`Select ${item.name} (${item.symbol}), Price ${item.price}, Change ${item.change}`}
+                className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left transition-all active:scale-[0.98] ${
+                  isSelected
+                    ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"
+                    : "bg-[#0b1019] border-[#1b2434] hover:bg-[#131b28] hover:border-[#2b3a52]"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-bold text-xs text-white">{item.symbol}</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
+                      {item.type}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate max-w-[120px]">
+                    {item.name}
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-400 truncate max-w-[120px]">
-                  {item.name}
-                </div>
-              </div>
 
-              <div className="text-right">
-                <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
-                <div
-                  className={`text-[10px] font-semibold tabular-nums ${
-                    item.isUp ? "text-emerald-400" : "text-rose-400"
-                  }`}
-                >
-                  {item.change}
+                <div className="text-right">
+                  <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
+                  <div
+                    className={`text-[10px] font-semibold tabular-nums ${
+                      item.isUp ? "text-emerald-400" : "text-rose-400"
+                    }`}
+                  >
+                    {item.change}
+                  </div>
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );
