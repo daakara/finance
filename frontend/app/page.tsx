@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "../components/Navbar";
 import WatchlistSidebar from "../components/WatchlistSidebar";
 import PriceChart from "../components/PriceChart";
@@ -13,12 +14,22 @@ import MarketGraphCard from "../components/MarketGraphCard";
 import CatalystForecastCard from "../components/CatalystForecastCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
-export default function TerminalPage() {
-  const [selectedSymbol, setSelectedSymbol] = useState<string>("AAPL");
+function TerminalContent() {
+  const searchParams = useSearchParams();
+  const urlSymbol = searchParams.get("symbol");
+
+  const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [interval, setInterval] = useState<string>("1d");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
+
+  // Sync URL search params when navigated from Screener or Compare pages
+  useEffect(() => {
+    if (urlSymbol && urlSymbol.toUpperCase() !== selectedSymbol) {
+      setSelectedSymbol(urlSymbol.toUpperCase());
+    }
+  }, [urlSymbol]);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -69,7 +80,7 @@ export default function TerminalPage() {
       <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
 
       {/* Semantic Main Content Landmark */}
-      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5">
+      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 pb-20 sm:pb-5">
         {/* Left Column: Watchlist Sidebar */}
         <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full">
           <WatchlistSidebar activeSymbol={selectedSymbol} onSelectSymbol={setSelectedSymbol} />
@@ -99,7 +110,7 @@ export default function TerminalPage() {
               <RiskMetricsCard analyticsData={data || undefined} />
             </div>
           ) : (
-            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, 5-Strategy Consensus */
+            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, 5-Strategy Consensus */
             <div className="space-y-4 sm:space-y-5">
               <AssetFactorRadar
                 symbol={selectedSymbol}
@@ -122,5 +133,10 @@ export default function TerminalPage() {
   );
 }
 
-
-
+export default function TerminalPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#070a10] text-slate-100 flex items-center justify-center font-mono">Loading Terminal...</div>}>
+      <TerminalContent />
+    </Suspense>
+  );
+}

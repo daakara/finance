@@ -8,7 +8,10 @@ interface WatchlistSidebarProps {
 }
 
 const WATCHLIST_ITEMS = [
-  // Mega-Cap Tech & Global Pharma Equities\r\n  { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },\r\n  { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },\r\n  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
+  // Mega-Cap Tech & Global Pharma Equities
+  { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },
+  { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },
+  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
   { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
   { symbol: "MSFT", name: "Microsoft Corp.", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
   { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
@@ -59,36 +62,43 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
           <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
             Watchlist & Signals
           </h2>
-          <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">
-            Live Feeds
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1e293b] text-cyan-400 font-semibold">
+            LIVE
           </span>
         </div>
 
-        {/* Accordion toggle button with ARIA attributes */}
+        {/* Mobile-Only Accordion Trigger */}
         <button
-          onClick={() => setIsMobileExpanded((prev) => !prev)}
+          onClick={() => setIsMobileExpanded(!isMobileExpanded)}
           aria-expanded={isMobileExpanded}
-          aria-controls="watchlist-stream-panel"
-          aria-label={isMobileExpanded ? "Collapse Watchlist Stream" : "Expand Watchlist Stream"}
-          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1.5 min-h-[32px] rounded flex items-center gap-1.5 hover:bg-[#162030] active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+          aria-controls="watchlist-items-container"
+          className="sm:hidden flex items-center space-x-1 text-xs text-cyan-400 font-bold px-2 py-1 bg-[#162030] rounded border border-[#243044] active:scale-[0.96] transition-transform"
         >
-          <span>{isMobileExpanded ? "Hide List" : "Show List"}</span>
-          <span aria-hidden="true" className="text-[10px]">{isMobileExpanded ? "▲" : "▼"}</span>
+          <span>{isMobileExpanded ? "Hide Assets" : `Show (${filteredItems.length})`}</span>
+          <svg
+            className={`w-3.5 h-3.5 transform transition-transform ${isMobileExpanded ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
       </div>
 
       {/* Asset Category Filters */}
-      <div role="tablist" aria-label="Asset category filter" className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+      <div role="tablist" aria-label="Asset Class Filter" className="grid grid-cols-4 gap-1 p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[11px]">
         {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
             role="tab"
             aria-selected={activeCategory === cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`flex-1 py-1.5 sm:py-1 min-h-[36px] sm:min-h-[28px] rounded text-[11px] sm:text-[10px] font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            className={`py-1 rounded font-bold transition-all active:scale-[0.96] ${
               activeCategory === cat
-                ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
-                : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                ? "bg-cyan-500 text-slate-950 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {cat}
@@ -96,52 +106,54 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         ))}
       </div>
 
-      {/* Watchlist Stream Items */}
+      {/* Asset Items List */}
       <div
-        id="watchlist-stream-panel"
+        id="watchlist-items-container"
         role="region"
-        aria-label="Filtered asset stream"
-        className={`space-y-1.5 overflow-y-auto max-h-[460px] ${
-          isMobileExpanded ? "block" : "hidden lg:block"
+        aria-label="Asset List"
+        className={`space-y-1.5 overflow-y-auto max-h-[480px] pr-1 transition-all ${
+          isMobileExpanded ? "block" : "hidden sm:block"
         }`}
       >
-        {filteredItems.map((item) => (
-          <button
-            key={item.symbol}
-            onClick={() => onSelectSymbol(item.symbol)}
-            aria-current={activeSymbol === item.symbol ? "true" : undefined}
-            aria-label={`${item.name} (${item.symbol}), price ${item.price}, change ${item.change}`}
-            className={`w-full flex items-center justify-between p-2.5 sm:p-2 rounded-lg border text-left active:scale-[0.98] transition-transform transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-              activeSymbol === item.symbol
-                ? "bg-[#1b2434] border-cyan-500 shadow-md"
-                : "bg-[#090d14] border-[#1b2434] hover:border-[#364866]"
-            }`}
-          >
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold text-slate-100">{item.symbol}</span>
-                <span className="text-[9px] text-slate-400 px-1 py-0.2 rounded bg-[#162030]">
-                  {item.type}
-                </span>
+        {filteredItems.map((item) => {
+          const isSelected = activeSymbol === item.symbol;
+          return (
+            <button
+              key={item.symbol}
+              onClick={() => onSelectSymbol(item.symbol)}
+              aria-label={`Select ${item.name} (${item.symbol}), Price ${item.price}, Change ${item.change}`}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left transition-all active:scale-[0.98] ${
+                isSelected
+                  ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"
+                  : "bg-[#0b1019] border-[#1b2434] hover:bg-[#131b28] hover:border-[#2b3a52]"
+              }`}
+            >
+              <div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="font-bold text-xs text-white">{item.symbol}</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
+                    {item.type}
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 truncate max-w-[120px]">
+                  {item.name}
+                </div>
               </div>
-              <span className="text-[10px] text-slate-400 block truncate max-w-[130px]">{item.name}</span>
-            </div>
 
-            <div className="text-right">
-              <span className="text-xs font-bold text-slate-200 block tabular-nums">{item.price}</span>
-              <span
-                className={`text-[10px] font-semibold tabular-nums ${
-                  item.isUp ? "text-emerald-400" : "text-rose-400"
-                }`}
-              >
-                {item.change}
-              </span>
-            </div>
-          </button>
-        ))}
+              <div className="text-right">
+                <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
+                <div
+                  className={`text-[10px] font-semibold tabular-nums ${
+                    item.isUp ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
+                  {item.change}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
-
-
