@@ -48,7 +48,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* Metric 1 */}
-        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group hover:border-[#364866] transition-colors">
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
               {isDayTrader ? "14-Day True Range (ATR)" : "Modified VaR (95%)"}
@@ -69,7 +69,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group hover:border-[#364866] transition-colors">
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
               {isDayTrader ? "Single-Session Max Loss" : "Modified VaR (99%)"}
@@ -90,7 +90,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group hover:border-[#364866] transition-colors">
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">Sortino Ratio</span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
@@ -109,7 +109,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group hover:border-[#364866] transition-colors">
+        <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
               {isDayTrader ? "RSI (14-Period Momentum)" : "Calmar Ratio"}
