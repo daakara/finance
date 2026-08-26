@@ -13,6 +13,8 @@ import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
 import MarketGraphCard from "../components/MarketGraphCard";
 import CatalystForecastCard from "../components/CatalystForecastCard";
 import InstitutionalFeeds from "../components/InstitutionalFeeds";
+import CompositeConvictionCard from "../components/CompositeConvictionCard";
+import { FredMacroData, SecForm4Trade, fetchFredMacroRegime, fetchSecForm4Insiders } from "../lib/institutionalFeeds";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
@@ -30,7 +32,14 @@ function TerminalContent() {
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("EXECUTION");
+  const [macroData, setMacroData] = useState<FredMacroData | null>(null);
+  const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
+
+  useEffect(() => {
+    fetchFredMacroRegime().then(setMacroData);
+    fetchSecForm4Insiders(selectedSymbol).then(setInsiderTrades);
+  }, [selectedSymbol]);
 
   // Sync URL search params when navigated from Screener, Compare, or Smart Money pages
   useEffect(() => {
@@ -173,6 +182,15 @@ function TerminalContent() {
               technicals={data?.technicals}
             />
           </div>
+
+          {/* 💎 DECISION-SYNTHESIS COMPOSITE CONVICTION SCORECARD */}
+          <CompositeConvictionCard
+            symbol={selectedSymbol}
+            data={data}
+            macro={macroData}
+            insiders={insiderTrades}
+            userRole={userRole}
+          />
 
           {/* 🗂️ MODULAR WORKSPACE TABS (Eliminates Cognitive Overload & Infinite Scroll) */}
           <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
