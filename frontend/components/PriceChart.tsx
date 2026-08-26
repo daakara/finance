@@ -240,7 +240,19 @@ export default function PriceChart({
     }
   }, [candles, isIntraday, interval]);
 
-  const isPositive = priceChangePct >= 0;
+  // Calculate dynamic period return based on the active candle dataset
+  let dynamicPeriodReturn = priceChangePct;
+  let dynamicTimeframeLabel = isIntraday ? "24h" : interval.replace("_hist", "").toUpperCase();
+
+  if (candles && candles.length >= 2) {
+    const firstOpen = Number(candles[0].open);
+    const lastClose = Number(candles[candles.length - 1].close);
+    if (firstOpen > 0 && !isNaN(firstOpen) && !isNaN(lastClose)) {
+      dynamicPeriodReturn = ((lastClose - firstOpen) / firstOpen) * 100;
+    }
+  }
+
+  const isPositive = dynamicPeriodReturn >= 0;
 
   return (
     <section aria-labelledby="chart-header-symbol" className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-5 shadow-xl flex flex-col h-full font-mono">
@@ -255,14 +267,15 @@ export default function PriceChart({
             </span>
           )}
           <span
-            aria-label={`24 hour change: ${isPositive ? "+" : ""}${priceChangePct.toFixed(2)} percent`}
-            className={`px-2 py-0.5 rounded text-xs font-semibold tabular-nums ${
+            aria-label={`Timeframe ${dynamicTimeframeLabel} change: ${isPositive ? "+" : ""}${dynamicPeriodReturn.toFixed(2)} percent`}
+            className={`px-2 py-0.5 rounded text-xs font-bold tabular-nums flex items-center gap-1 ${
               isPositive
                 ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
                 : "bg-rose-950/80 text-rose-400 border border-rose-800/80"
             }`}
           >
-            {isPositive ? `+${priceChangePct.toFixed(2)}%` : `${priceChangePct.toFixed(2)}%`}
+            <span>{isPositive ? `+${dynamicPeriodReturn.toFixed(2)}%` : `${dynamicPeriodReturn.toFixed(2)}%`}</span>
+            <span className="text-[9px] opacity-75 font-normal uppercase">{dynamicTimeframeLabel}</span>
           </span>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
             isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
