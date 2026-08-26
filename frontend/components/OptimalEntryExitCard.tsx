@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { OptimalExecutionPlan } from "../lib/api";
+import InsightProvenanceModal from "./InsightProvenanceModal";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -178,6 +179,13 @@ export default function OptimalEntryExitCard({
           <div className="text-[11px] text-slate-400">{invalidation_condition}</div>
         </div>
       </div>
+
+      {/* 📜 Deep Dive & Verified Sources Provenance Trigger */}
+      <InsightProvenanceModal
+        symbol={symbol}
+        executionPlan={executionPlan}
+        userRole={userRole}
+      />
     </div>
   );
 }
