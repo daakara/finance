@@ -1,19 +1,8 @@
-// Service Worker for Finance Intelligence Platform PWA
-const CACHE_NAME = "finance-platform-v2";
-const STATIC_ASSETS = [
-  "/",
-  "/manifest.json",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png"
-];
+﻿// Service Worker v3 - Force cache invalidation on deployment
+const CACHE_NAME = "finance-platform-v3-" + Date.now();
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -21,9 +10,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
+          return caches.delete(key);
         })
       );
     }).then(() => self.clients.claim())
@@ -31,29 +18,8 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-
-  // Bypass API requests to ensure fresh real-time financial tape
-  if (url.pathname.startsWith("/api") || url.hostname.includes("onrender.com")) {
-    return;
-  }
-
-  // Stale-While-Revalidate for static shell assets
+  // Always fetch live network first
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === "basic") {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        return cachedResponse;
-      });
-
-      return cachedResponse || fetchPromise;
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
