@@ -1,51 +1,17 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { fetchAssetAnalytics } from "../lib/api";
+import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
 
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
 }
 
-interface WatchlistItem {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  isUp: boolean;
-  type: "Stock" | "ETF" | "Crypto";
-}
 
-const INITIAL_WATCHLIST_ITEMS: WatchlistItem[] = [
-  // Mega-Cap Tech & Global Pharma Equities
-  { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },
-  { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },
-  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
-  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
-  { symbol: "MSFT", name: "Microsoft Corp.", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
-  { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
-  { symbol: "TSLA", name: "Tesla Inc.", price: "$350.25", change: "+2.15%", isUp: true, type: "Stock" },
-  { symbol: "PLTR", name: "Palantir Tech", price: "$142.80", change: "+4.12%", isUp: true, type: "Stock" },
-
-  // Institutional Index, Sector, Commodity & Bond ETFs
-  { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },
-  { symbol: "QQQ", name: "Invesco QQQ", price: "$710.72", change: "+1.10%", isUp: true, type: "ETF" },
-  { symbol: "SMH", name: "VanEck Semi ETF", price: "$288.40", change: "+2.45%", isUp: true, type: "ETF" },
-  { symbol: "XLK", name: "Tech Select SPDR", price: "$246.15", change: "+1.30%", isUp: true, type: "ETF" },
-  { symbol: "IWM", name: "Russell 2000 ETF", price: "$224.50", change: "+0.95%", isUp: true, type: "ETF" },
-  { symbol: "GLD", name: "SPDR Gold Shares", price: "$264.20", change: "+0.40%", isUp: true, type: "ETF" },
-  { symbol: "TLT", name: "20+ Yr Treasury", price: "$88.65", change: "-0.30%", isUp: false, type: "ETF" },
-  { symbol: "XLE", name: "Energy Select ETF", price: "$86.10", change: "+1.05%", isUp: true, type: "ETF" },
-
-  // Digital Assets / Crypto
-  { symbol: "BTC-USD", name: "Bitcoin", price: "$78,213", change: "+2.80%", isUp: true, type: "Crypto" },
-  { symbol: "ETH-USD", name: "Ethereum", price: "$2,438", change: "+1.65%", isUp: true, type: "Crypto" },
-  { symbol: "SOL-USD", name: "Solana", price: "$96.73", change: "+0.24%", isUp: true, type: "Crypto" },
-];
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
-  const [items, setItems] = useState<WatchlistItem[]>(INITIAL_WATCHLIST_ITEMS);
+  const items: WatchlistDefinition[] = SHARED_WATCHLIST_ITEMS;
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"All" | "Stock" | "ETF" | "Crypto">("All");
 

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
+import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "../lib/constants";
 
 interface AssetFactorRadarProps {
   symbol: string;
@@ -10,35 +11,12 @@ interface AssetFactorRadarProps {
 }
 
 export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty, expectedReturn }: AssetFactorRadarProps) {
-  const scores = factorScores || {
-    growthScore: 88,
-    qualityScore: 92,
-    valuationScore: 75,
-    momentumScore: 84,
-    tailRiskScore: 80,
-    compositeFactorScore: 85,
-    verdict: "Strong Buy / Core Accumulation",
-    piotroskiFScore: 8,
-  };
+  const defaultObj = SHARED_FACTOR_SCORES[symbol?.toUpperCase()?.replace("-USD", "")] || SHARED_FACTOR_SCORES["AAPL"];
+  const scores = factorScores || defaultObj.scores;
 
-  const mdr = macroDifficulty || {
-    rating: 1,
-    regime: "Optimal Expansionary Goldilocks",
-    interestRateImpact: "Steepening curve (+0.47%) and tight credit spreads fuel strong risk-on alpha",
-    inflationImpact: "CPI (2.4% YoY) moderation reduces discount rate pressure on valuations",
-    yield_curve_spread: 0.47,
-    fed_funds_rate: 3.63,
-    credit_spread_oas: 2.69,
-    cpi_yoy: 2.4,
-  };
+  const mdr = macroDifficulty || DEFAULT_MACRO_DIFFICULTY;
 
-  const er = expectedReturn || {
-    p10Pessimistic: -8.4,
-    p50Expected: +18.6,
-    p90Optimistic: +38.2,
-    annualizedVolatility: 22.4,
-    forecastHorizonDays: 90,
-  };
+  const er = expectedReturn || DEFAULT_EXPECTED_RETURN;
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">

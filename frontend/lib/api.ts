@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "./constants";
+
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://finance-backend-api-qis0.onrender.com/api/v1";
 export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
@@ -322,105 +324,7 @@ export async function fetchAssetAnalytics(
   }
 
   // 2. High-Fidelity Multi-Period Fallback Generator (60+ Candle Points for Smooth Rendering)
-  const ASSET_SCORE_MAP: Record<string, { price: number; changePct: number; scores: AssetFactorScores }> = {
-    "AAPL": {
-      price: 309.90,
-      changePct: -0.45,
-      scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Buy / Core Hold", piotroskiFScore: 8 }
-    },
-    "NVDA": {
-      price: 213.05,
-      changePct: 3.14,
-      scores: { growthScore: 96, qualityScore: 95, valuationScore: 68, momentumScore: 94, tailRiskScore: 76, compositeFactorScore: 91, verdict: "Exceptional Growth Leader", piotroskiFScore: 8 }
-    },
-    "NVO": {
-      price: 138.50,
-      changePct: 1.85,
-      scores: { growthScore: 89, qualityScore: 94, valuationScore: 74, momentumScore: 86, tailRiskScore: 85, compositeFactorScore: 88, verdict: "High Quality Compounder", piotroskiFScore: 8 }
-    },
-    "LLY": {
-      price: 920.40,
-      changePct: 2.10,
-      scores: { growthScore: 92, qualityScore: 91, valuationScore: 65, momentumScore: 90, tailRiskScore: 81, compositeFactorScore: 86, verdict: "Secular Pharma Leader", piotroskiFScore: 7 }
-    },
-    "MSFT": {
-      price: 491.71,
-      changePct: 0.85,
-      scores: { growthScore: 86, qualityScore: 96, valuationScore: 70, momentumScore: 80, tailRiskScore: 88, compositeFactorScore: 87, verdict: "Fortress Balance Sheet", piotroskiFScore: 8 }
-    },
-    "GOOGL": {
-      price: 346.96,
-      changePct: 1.40,
-      scores: { growthScore: 85, qualityScore: 93, valuationScore: 78, momentumScore: 82, tailRiskScore: 86, compositeFactorScore: 86, verdict: "Deep Value & AI Moat", piotroskiFScore: 8 }
-    },
-    "TSLA": {
-      price: 350.25,
-      changePct: 2.15,
-      scores: { growthScore: 80, qualityScore: 82, valuationScore: 55, momentumScore: 88, tailRiskScore: 68, compositeFactorScore: 77, verdict: "High Beta Autonomy Speculation", piotroskiFScore: 6 }
-    },
-    "PLTR": {
-      price: 142.80,
-      changePct: 4.12,
-      scores: { growthScore: 94, qualityScore: 90, valuationScore: 62, momentumScore: 95, tailRiskScore: 74, compositeFactorScore: 87, verdict: "Commercial AI Breakout", piotroskiFScore: 8 }
-    },
-    "SPY": {
-      price: 765.91,
-      changePct: 0.65,
-      scores: { growthScore: 75, qualityScore: 88, valuationScore: 75, momentumScore: 80, tailRiskScore: 90, compositeFactorScore: 82, verdict: "Core Index Benchmark", piotroskiFScore: 8 }
-    },
-    "QQQ": {
-      price: 710.72,
-      changePct: 1.10,
-      scores: { growthScore: 85, qualityScore: 90, valuationScore: 72, momentumScore: 86, tailRiskScore: 84, compositeFactorScore: 85, verdict: "Nasdaq-100 Growth Engine", piotroskiFScore: 8 }
-    },
-    "SMH": {
-      price: 288.40,
-      changePct: 2.45,
-      scores: { growthScore: 92, qualityScore: 90, valuationScore: 68, momentumScore: 92, tailRiskScore: 78, compositeFactorScore: 88, verdict: "Semiconductor Supercycle", piotroskiFScore: 8 }
-    },
-    "XLK": {
-      price: 246.15,
-      changePct: 1.30,
-      scores: { growthScore: 88, qualityScore: 92, valuationScore: 70, momentumScore: 88, tailRiskScore: 82, compositeFactorScore: 86, verdict: "Broad Technology Sector", piotroskiFScore: 8 }
-    },
-    "IWM": {
-      price: 224.50,
-      changePct: 0.95,
-      scores: { growthScore: 70, qualityScore: 75, valuationScore: 80, momentumScore: 75, tailRiskScore: 75, compositeFactorScore: 75, verdict: "Small-Cap Value Rotation", piotroskiFScore: 6 }
-    },
-    "GLD": {
-      price: 264.20,
-      changePct: 0.40,
-      scores: { growthScore: 50, qualityScore: 95, valuationScore: 70, momentumScore: 78, tailRiskScore: 95, compositeFactorScore: 80, verdict: "Macro Hedge & Safe Haven", piotroskiFScore: 8 }
-    },
-    "TLT": {
-      price: 88.65,
-      changePct: -0.30,
-      scores: { growthScore: 40, qualityScore: 98, valuationScore: 85, momentumScore: 60, tailRiskScore: 88, compositeFactorScore: 74, verdict: "Duration Rate Hedge", piotroskiFScore: 8 }
-    },
-    "XLE": {
-      price: 86.10,
-      changePct: 1.05,
-      scores: { growthScore: 68, qualityScore: 85, valuationScore: 82, momentumScore: 72, tailRiskScore: 80, compositeFactorScore: 78, verdict: "Energy Cash Flow Dividend", piotroskiFScore: 7 }
-    },
-    "BTC": {
-      price: 78213.0,
-      changePct: 2.80,
-      scores: { growthScore: 90, qualityScore: 80, valuationScore: 60, momentumScore: 92, tailRiskScore: 65, compositeFactorScore: 81, verdict: "Digital Gold & Liquidity Beta", piotroskiFScore: 7 }
-    },
-    "ETH": {
-      price: 2438.0,
-      changePct: 1.65,
-      scores: { growthScore: 85, qualityScore: 82, valuationScore: 65, momentumScore: 86, tailRiskScore: 70, compositeFactorScore: 80, verdict: "Smart Contract Settlement Layer", piotroskiFScore: 7 }
-    },
-    "SOL": {
-      price: 96.73,
-      changePct: 0.24,
-      scores: { growthScore: 92, qualityScore: 78, valuationScore: 62, momentumScore: 90, tailRiskScore: 62, compositeFactorScore: 80, verdict: "High Throughput DeFi Beta", piotroskiFScore: 6 }
-    },
-  };
-
-  const matched = ASSET_SCORE_MAP[upper] || ASSET_SCORE_MAP["AAPL"];
+  const matched = SHARED_FACTOR_SCORES[upper] || SHARED_FACTOR_SCORES["AAPL"];
   const basePrice = matched.price;
   const baseChangePct = matched.changePct;
   const numPoints = interval.includes("m") || interval.includes("h") ? 45 : period === "5y" ? 60 : period === "3y" ? 52 : 75;
@@ -463,23 +367,8 @@ export async function fetchAssetAnalytics(
     candles: generatedCandles,
     technicals: { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
     factorScores: matched.scores,
-    macroDifficulty: {
-      rating: 1,
-      regime: "Optimal Expansionary Goldilocks",
-      interestRateImpact: "Steepening curve (+0.47%) and tight credit spreads fuel strong risk-on alpha",
-      inflationImpact: "CPI (2.4% YoY) moderation reduces discount rate pressure on valuations",
-      yield_curve_spread: 0.47,
-      fed_funds_rate: 3.63,
-      credit_spread_oas: 2.69,
-      cpi_yoy: 2.4,
-    },
-    expectedReturn: {
-      p10Pessimistic: -8.4,
-      p50Expected: +18.6,
-      p90Optimistic: +38.2,
-      annualizedVolatility: 22.4,
-      forecastHorizonDays: 90,
-    },
+    macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
+    expectedReturn: DEFAULT_EXPECTED_RETURN,
     selfHealingAudit: {
       auditStatus: "Self-Healed & Auto-Calibrated",
       accuracyScore: 92.4,
