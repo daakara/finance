@@ -58,10 +58,10 @@ export default function OnboardingModal() {
           </button>
         </div>
 
-        {/* STEP 1: WELCOME & PLATFORM INTRODUCTION */}
+                {/* STEP 1: WELCOME & PLATFORM INTRODUCTION */}
         {step === 1 && (
           <div className="space-y-4">
-            <div className="text-center space-y-2 py-2">
+            <div className="text-center space-y-2 py-1">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 mx-auto flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-950/50">
                 FT
               </div>
@@ -69,24 +69,28 @@ export default function OnboardingModal() {
                 Welcome to Finance Terminal
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-                Institutional-grade quantitative intelligence, real-time Congressional STOCK Act disclosures, and automated risk models in one zero-login terminal.
+                Professional market intelligence, political insider tracking, and automated trade execution levels — with zero sign-up required.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-[#090d14] p-3 rounded-xl border border-[#1b2434]">
-                <strong className="text-cyan-400 block mb-1">🏛️ Smart Money</strong>
-                <span className="text-slate-400 text-[11px]">Track Nancy Pelosi & Congressional stock purchases.</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+                <strong className="text-cyan-400 block font-bold text-xs">🏛️ Political Insiders</strong>
+                <span className="text-slate-300 text-[11px] font-sans leading-snug block">
+                  Track real-time stock purchases by US Congress members and top politicians.
+                </span>
               </div>
-              <div className="bg-[#090d14] p-3 rounded-xl border border-[#1b2434]">
-                <strong className="text-purple-400 block mb-1">🧮 Minervini VCP</strong>
-                <span className="text-slate-400 text-[11px]">Algorithmic 3-stage volatility contraction entry ladders.</span>
+              <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1">
+                <strong className="text-purple-400 block font-bold text-xs">🎯 Clear Buy &amp; Sell Zones</strong>
+                <span className="text-slate-300 text-[11px] font-sans leading-snug block">
+                  Automated entry prices, stop-loss protection, and multi-tier profit targets.
+                </span>
               </div>
             </div>
 
             <button
               onClick={() => setStep(2)}
-              className="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg transition-transform active:scale-95 cursor-pointer"
+              className="w-full py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg transition-transform active:scale-95 cursor-pointer"
             >
               Choose Trading Style →
             </button>
