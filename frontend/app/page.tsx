@@ -132,6 +132,13 @@ function TerminalContent() {
               interval={interval}
               userRole={userRole}
               onIntervalChange={setInterval}
+              smartMoneyHeadline={
+                data?.smartMoney?.congressTrades?.[0]
+                  ? `${data.smartMoney.congressTrades[0].politician.split(" ")[0]} ${data.smartMoney.congressTrades[0].amount_range}`
+                  : data?.smartMoney?.optionsFlow?.[0]
+                  ? `${data.smartMoney.optionsFlow[0].type} (${data.smartMoney.optionsFlow[0].premium})`
+                  : undefined
+              }
               technicals={data?.technicals}
             />
           </div>
@@ -187,3 +194,4 @@ export default function TerminalPage() {
     </Suspense>
   );
 }
+

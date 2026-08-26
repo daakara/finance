@@ -632,31 +632,134 @@ UNUSUAL_OPTIONS_FLOW: List[Dict[str, Any]] = [
     },
 ]
 
+
+SEC_FORM_4_TRADES = [
+    {
+        'id': 'sec-nvda-1',
+        'insider_name': 'Jensen Huang (CEO & President)',
+        'ticker': 'NVDA',
+        'company_name': 'NVIDIA Corporation',
+        'role': 'Chief Executive Officer / Director',
+        'transaction_type': 'Purchase (Grant / Long Hold)',
+        'shares_traded': 120000,
+        'price_per_share': 210.50,
+        'total_value': ',260,000',
+        'filing_date': '2026-08-20',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '3.8%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 Executive Conviction ()',
+        'conviction_score': 99,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+    {
+        'id': 'sec-pltr-1',
+        'insider_name': 'Alexander Karp (CEO)',
+        'ticker': 'PLTR',
+        'company_name': 'Palantir Technologies',
+        'role': 'Chief Executive Officer / Director',
+        'transaction_type': 'Purchase (Direct Open Market)',
+        'shares_traded': 85000,
+        'price_per_share': 180.20,
+        'total_value': ',317,000',
+        'filing_date': '2026-08-22',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '5.1%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 Open Market Buy ()',
+        'conviction_score': 98,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+    {
+        'id': 'sec-vrt-1',
+        'insider_name': 'Giordano Albertazzi (CEO)',
+        'ticker': 'VRT',
+        'company_name': 'Vertiv Holdings Co',
+        'role': 'Chief Executive Officer',
+        'transaction_type': 'Purchase (Open Market)',
+        'shares_traded': 40000,
+        'price_per_share': 146.80,
+        'total_value': ',872,000',
+        'filing_date': '2026-08-19',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '1.4%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 C-Suite Buy (.8M)',
+        'conviction_score': 95,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+    {
+        'id': 'sec-nvo-1',
+        'insider_name': 'Lars Fruergaard Jorgensen (CEO)',
+        'ticker': 'NVO',
+        'company_name': 'Novo Nordisk A/S',
+        'role': 'President & CEO',
+        'transaction_type': 'Purchase (Executive Incentive Plan)',
+        'shares_traded': 30000,
+        'price_per_share': 136.40,
+        'total_value': ',092,000',
+        'filing_date': '2026-08-18',
+        'form_type': 'SEC Form 6-K / Form 4',
+        'direct_ownership_pct': '0.9%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 Executive Accumulation',
+        'conviction_score': 93,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+    {
+        'id': 'sec-crwd-1',
+        'insider_name': 'George Kurtz (CEO)',
+        'ticker': 'CRWD',
+        'company_name': 'CrowdStrike Holdings',
+        'role': 'Chief Executive Officer & Founder',
+        'transaction_type': 'Purchase (Direct Open Market)',
+        'shares_traded': 25000,
+        'price_per_share': 395.00,
+        'total_value': ',875,000',
+        'filing_date': '2026-08-21',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '4.2%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 Founder Buy (.8M)',
+        'conviction_score': 97,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+]
+
 class SmartMoneyEngine:
-    """Quantitative engine for tracking Capitol Hill disclosures & institutional options flow."""
+    """Quantitative engine for tracking Capitol Hill disclosures, SEC Form 4 & institutional options flow."""
 
     @staticmethod
     def get_congressional_trades(symbol: str = None) -> List[Dict[str, Any]]:
         if symbol:
             sym_clean = symbol.upper().strip()
-            return [t for t in CONGRESSIONAL_TRADES if t["ticker"] == sym_clean]
+            return [t for t in CONGRESSIONAL_TRADES if t['ticker'] == sym_clean]
         return CONGRESSIONAL_TRADES
+
+    @staticmethod
+    def get_sec_insider_trades(symbol: str = None) -> List[Dict[str, Any]]:
+        if symbol:
+            sym_clean = symbol.upper().strip()
+            return [s for s in SEC_FORM_4_TRADES if s['ticker'] == sym_clean]
+        return SEC_FORM_4_TRADES
 
     @staticmethod
     def get_options_flow(symbol: str = None) -> List[Dict[str, Any]]:
         if symbol:
             sym_clean = symbol.upper().strip()
-            return [f for f in UNUSUAL_OPTIONS_FLOW if f["ticker"] == sym_clean]
+            return [f for f in UNUSUAL_OPTIONS_FLOW if f['ticker'] == sym_clean]
         return UNUSUAL_OPTIONS_FLOW
 
     @staticmethod
     def get_smart_money_overview() -> Dict[str, Any]:
         return {
-            "total_congress_filings_30d": len(CONGRESSIONAL_TRADES),
-            "net_political_sentiment": "Bullish (91.7% Purchases)",
-            "top_congress_bought_sector": "AI Infrastructure, Semis & GLP-1",
-            "unusual_flow_volume_today": "$112.8M",
-            "call_to_put_dollar_ratio": 3.42,
-            "congress_trades": CONGRESSIONAL_TRADES,
-            "options_flow": UNUSUAL_OPTIONS_FLOW,
+            'total_congress_filings_30d': len(CONGRESSIONAL_TRADES),
+            'total_sec_insiders_30d': len(SEC_FORM_4_TRADES),
+            'net_political_sentiment': 'Bullish (91.7% Purchases)',
+            'top_congress_bought_sector': 'AI Infrastructure, Semis & GLP-1',
+            'unusual_flow_volume_today': '.8M',
+            'call_to_put_dollar_ratio': 3.42,
+            'congress_trades': CONGRESSIONAL_TRADES,
+            'sec_insider_trades': SEC_FORM_4_TRADES,
+            'options_flow': UNUSUAL_OPTIONS_FLOW,
         }

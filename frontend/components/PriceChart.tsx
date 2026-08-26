@@ -12,6 +12,7 @@ interface PriceChartProps {
   interval?: string;
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onIntervalChange?: (interval: string) => void;
+  smartMoneyHeadline?: string;
   technicals?: {
     vwap?: number | null;
     rsi_14?: number;
@@ -45,6 +46,7 @@ export default function PriceChart({
   interval = "1y_hist",
   userRole = "LONG_TERM",
   onIntervalChange,
+  smartMoneyHeadline,
   technicals,
 }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -267,6 +269,12 @@ export default function PriceChart({
           }`}>
             {isIntraday ? "⚡ VWAP Active" : "🏛️ 20 EMA Active"}
           </span>
+          {smartMoneyHeadline && (
+            <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
+              <span>🏛️ Smart Money:</span>
+              <span className="text-white">{smartMoneyHeadline}</span>
+            </span>
+          )}
         </div>
 
         {/* Right: Technicals Badges & Role-Adaptive Interval Group */}
@@ -326,3 +334,4 @@ export default function PriceChart({
     </section>
   );
 }
+

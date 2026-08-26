@@ -152,6 +152,8 @@ export interface CongressTradeItem {
   days_to_filing: number;
   performance_since_pct: number;
   sentiment: string;
+  conviction_tier?: string;
+  conviction_score?: number;
   signal_strength?: number;
   details?: CongressTradeDetails;
 }
@@ -181,17 +183,40 @@ export interface OptionsFlowItem {
   implied_volatility: string;
   order_type: string;
   sentiment: string;
+  conviction_tier?: string;
+  conviction_score?: number;
   signal_strength?: number;
   details?: OptionsFlowDetails;
 }
 
+export interface SecInsiderTradeItem {
+  id?: string;
+  insider_name: string;
+  ticker: string;
+  company_name: string;
+  role: string;
+  transaction_type: string;
+  shares_traded: number;
+  price_per_share: number;
+  total_value: string;
+  filing_date: string;
+  form_type: string;
+  direct_ownership_pct: string;
+  sentiment: string;
+  conviction_tier?: string;
+  conviction_score?: number;
+  sec_url?: string;
+}
+
 export interface SmartMoneyOverview {
   total_congress_filings_30d: number;
+  total_sec_insiders_30d?: number;
   net_political_sentiment: string;
   top_congress_bought_sector: string;
   unusual_flow_volume_today: string;
   call_to_put_dollar_ratio: number;
   congress_trades: CongressTradeItem[];
+  sec_insider_trades?: SecInsiderTradeItem[];
   options_flow: OptionsFlowItem[];
 }
 
@@ -611,5 +636,7 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
     })),
   };
 }
+
+
 
 
