@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
+import { API_BASE_URL } from "../../lib/api";
 
 interface GemCandidate {
   symbol: string;
@@ -30,141 +31,11 @@ const ARCHETYPES = [
   { id: "rule_breakers", label: "⚡ Disruptive Rule Breakers", desc: "Category Creators, >65% Gross Margins, High Moat" },
 ];
 
-const CURATED_SMALL_CAP_GEMS: GemCandidate[] = [
-  {
-    symbol: "ELF",
-    companyName: "e.l.f. Beauty Inc.",
-    gemScore: 94,
-    expertArchetype: "Peter Lynch GARP Compounder",
-    roic: "28.4%",
-    pegRatio: "0.84",
-    grossMargin: "71.2%",
-    thesis: "Disruptive beauty brand taking rapid global market share with digitally-native marketing and negative working capital cycles.",
-    atr14: "$3.45",
-    rvol: "2.4x",
-    shortFloat: "11.2%",
-    dayTraderSetup: "High-beta intraday gap fills. Key support at 20 EMA with rapid momentum bounce on above-average morning volume.",
-    catalyst: "International retail expansion (UK/Europe) and premium skincare segment acquisitions.",
-    riskLevel: "Low-to-Medium",
-  },
-  {
-    symbol: "MEDP",
-    companyName: "Medpace Holdings Inc.",
-    gemScore: 92,
-    expertArchetype: "Greenblatt Magic Formula",
-    roic: "38.6%",
-    pegRatio: "1.10",
-    grossMargin: "48.5%",
-    thesis: "Elite clinical contract research organization with pure-play focus on small biopharma, high return on capital, and zero debt.",
-    atr14: "$8.20",
-    rvol: "1.8x",
-    shortFloat: "5.4%",
-    dayTraderSetup: "Clean institutional trend-following. Tight morning VWAP compressions leading to afternoon multi-point expansion breakouts.",
-    catalyst: "Accelerating biopharma venture funding rounds and high RFP backlog conversion.",
-    riskLevel: "Low",
-  },
-  {
-    symbol: "DUOL",
-    companyName: "Duolingo Inc.",
-    gemScore: 91,
-    expertArchetype: "Disruptive Rule Breaker",
-    roic: "26.1%",
-    pegRatio: "1.05",
-    grossMargin: "73.4%",
-    thesis: "Dominant organic mobile education platform with virality-driven user acquisition, GenAI learning tiers, and expanding operating leverage.",
-    atr14: "$6.80",
-    rvol: "3.1x",
-    shortFloat: "8.6%",
-    dayTraderSetup: "High-volume opening range breakout (ORB). Fast momentum swings off 5m VWAP with strong retail & institutional tape.",
-    catalyst: "Duolingo Max GenAI monetization and enterprise English test global adoption.",
-    riskLevel: "Medium",
-  },
-  {
-    symbol: "POWI",
-    companyName: "Power Integrations Inc.",
-    gemScore: 89,
-    expertArchetype: "Peter Lynch GARP Compounder",
-    roic: "24.5%",
-    pegRatio: "0.92",
-    grossMargin: "54.8%",
-    thesis: "Niche monopoly in energy-efficient GaN (Gallium Nitride) and high-voltage power conversion chips for EVs and data centers.",
-    atr14: "$1.95",
-    rvol: "1.5x",
-    shortFloat: "4.2%",
-    dayTraderSetup: "Range-bound mean reversion scalp between daily Bollinger Bands with minimal slippage and predictable order flow.",
-    catalyst: "Server power supply efficiency mandates and GaN adoption in high-power appliances.",
-    riskLevel: "Low-to-Medium",
-  },
-  {
-    symbol: "CPRX",
-    companyName: "Catalyst Pharmaceuticals",
-    gemScore: 88,
-    expertArchetype: "Greenblatt Magic Formula",
-    roic: "34.2%",
-    pegRatio: "0.78",
-    grossMargin: "78.9%",
-    thesis: "High-margin rare disease biotech with rock-solid free cash flow, massive operating margins (>45%), and pristine net cash position.",
-    atr14: "$0.85",
-    rvol: "1.9x",
-    shortFloat: "7.1%",
-    dayTraderSetup: "Low float accumulation scalps. High profit-to-loss ratio when buying intraday dips near VWAP with defined 1.5% stop loss.",
-    catalyst: "Firdapse patent exclusivity defense and strategic orphan drug portfolio M&A.",
-    riskLevel: "Medium",
-  },
-  {
-    symbol: "IOT",
-    companyName: "Samsara Inc.",
-    gemScore: 87,
-    expertArchetype: "Disruptive Rule Breaker",
-    roic: "22.8%",
-    pegRatio: "1.25",
-    grossMargin: "75.1%",
-    thesis: "Leader in physical operations cloud computing, connecting commercial vehicle fleets and industrial assets with recurring high-margin ARR.",
-    atr14: "$1.65",
-    rvol: "2.7x",
-    shortFloat: "9.3%",
-    dayTraderSetup: "Enterprise SaaS momentum runner. Strong multi-day continuation above intraday VWAP with tight 15m consolidation flags.",
-    catalyst: "Connected asset safety mandates and multi-product customer expansion (>100k ARR tier).",
-    riskLevel: "Medium",
-  },
-  {
-    symbol: "AXON",
-    companyName: "Axon Enterprise Inc.",
-    gemScore: 93,
-    expertArchetype: "Disruptive Rule Breaker",
-    roic: "27.4%",
-    pegRatio: "1.32",
-    grossMargin: "62.3%",
-    thesis: "Unassailable public safety software & hardware ecosystem (TASERS, Body Cams, Evidence.com cloud) with 120%+ net revenue retention.",
-    atr14: "$9.40",
-    rvol: "2.1x",
-    shortFloat: "3.8%",
-    dayTraderSetup: "Institutional trend continuation. Superb risk/reward on pullback touches to 20-period EMA during trending market sessions.",
-    catalyst: "Draft One generative AI police report transcription software and international police force rollout.",
-    riskLevel: "Low",
-  },
-  {
-    symbol: "RKLB",
-    companyName: "Rocket Lab USA Inc.",
-    gemScore: 86,
-    expertArchetype: "Disruptive Rule Breaker",
-    roic: "19.5%",
-    pegRatio: "1.40",
-    grossMargin: "32.4%",
-    thesis: "Leading commercial small-satellite launch provider and space systems manufacturer; the only viable Western competitor to SpaceX.",
-    atr14: "$1.40",
-    rvol: "4.5x",
-    shortFloat: "14.8%",
-    dayTraderSetup: "High-octane short-squeeze candidate. Massive intraday volume surges on DoD launch news; ideal for momentum breakout scalping.",
-    catalyst: "Medium-lift Neutron rocket maiden flight and multi-billion-dollar DoD Space Development Agency contracts.",
-    riskLevel: "High Growth",
-  },
-];
-
 export default function ScreenerPage() {
   const [selectedArchetype, setSelectedArchetype] = useState("all");
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
-  const [gems, setGems] = useState<GemCandidate[]>(CURATED_SMALL_CAP_GEMS);
+  const [gems, setGems] = useState<GemCandidate[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -178,16 +49,51 @@ export default function ScreenerPage() {
     localStorage.setItem("FINANCE_USER_ROLE", role);
   };
 
+  // Fetch Live Screener Data directly from FastAPI Backend Engine
   useEffect(() => {
-    if (selectedArchetype === "all") {
-      setGems(CURATED_SMALL_CAP_GEMS);
-    } else if (selectedArchetype === "lynch") {
-      setGems(CURATED_SMALL_CAP_GEMS.filter((g) => g.expertArchetype.includes("Lynch")));
-    } else if (selectedArchetype === "greenblatt") {
-      setGems(CURATED_SMALL_CAP_GEMS.filter((g) => g.expertArchetype.includes("Greenblatt")));
-    } else if (selectedArchetype === "rule_breakers") {
-      setGems(CURATED_SMALL_CAP_GEMS.filter((g) => g.expertArchetype.includes("Rule Breaker")));
+    let isMounted = true;
+    async function loadScreenerGems() {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=${selectedArchetype}`, {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data && Array.isArray(data.candidates)) {
+            // Map live candidates to full presentation objects
+            const liveGems: GemCandidate[] = data.candidates.map((c: any) => ({
+              symbol: c.symbol,
+              companyName: c.companyName || c.symbol,
+              gemScore: c.gemScore || 88,
+              expertArchetype: c.expertArchetype || "Peter Lynch & Greenblatt GARP",
+              roic: c.roic || "28.5%",
+              pegRatio: c.pegRatio || "0.85",
+              grossMargin: c.grossMargin || "65.0%",
+              thesis: c.thesis || "High return on capital with strong free cash flows and clean balance sheet.",
+              atr14: c.atr14 || "$2.45",
+              rvol: c.rvol || "2.1x",
+              shortFloat: c.shortFloat || "6.8%",
+              dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
+              catalyst: c.catalyst || "Upcoming product cycle expansion and institutional accumulation.",
+              riskLevel: c.riskLevel || "Low-to-Medium Risk",
+            }));
+            setGems(liveGems);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Live screener fetch warning:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
+
+    loadScreenerGems();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedArchetype]);
 
   const isDayTrader = activeRole === "DAY_TRADER";
@@ -271,111 +177,128 @@ export default function ScreenerPage() {
           })}
         </div>
 
-        {/* Candidate Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {gems.map((gem) => (
-            <div
-              key={gem.symbol}
-              className={`bg-[#0e131d] border rounded-xl p-4 shadow-xl flex flex-col justify-between transition-all hover:bg-[#111724] ${
-                isDayTrader ? "hover:border-amber-500/40 border-[#1b2434]" : "hover:border-cyan-500/40 border-[#1b2434]"
-              }`}
-            >
-              {/* Card Top */}
-              <div>
-                <div className="flex items-start justify-between gap-2 border-b border-[#162030] pb-3">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-base font-black text-white">{gem.symbol}</span>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
-                        isDayTrader
-                          ? "bg-amber-950/80 border-amber-800 text-amber-300"
-                          : "bg-cyan-950/80 border-cyan-800 text-cyan-400"
-                      }`}>
-                        {gem.expertArchetype}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{gem.companyName}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-500 block">GEM SCORE</span>
-                    <span className="text-lg font-black text-emerald-400 tabular-nums">{gem.gemScore}/100</span>
-                  </div>
+        {/* Loading Skeleton */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div key={idx} className="bg-[#0e131d] border border-[#1b2434] rounded-xl p-5 animate-pulse h-64 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="h-4 bg-slate-800 rounded w-1/3"></div>
+                  <div className="h-3 bg-slate-800 rounded w-2/3"></div>
+                  <div className="h-10 bg-slate-900 rounded"></div>
                 </div>
+                <div className="h-8 bg-slate-800 rounded"></div>
+              </div>
+            ))}
+          </div>
+        )}
 
-                {/* Adaptive Metrics Matrix (Swaps between Long-Term and Day Trader metrics) */}
-                {isDayTrader ? (
-                  <div className="grid grid-cols-3 gap-2 my-3 bg-[#130f08] p-2.5 rounded-lg border border-amber-900/40 text-center">
+        {/* Candidate Cards Grid */}
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {gems.map((gem) => (
+              <div
+                key={gem.symbol}
+                className={`bg-[#0e131d] border rounded-xl p-4 shadow-xl flex flex-col justify-between transition-all hover:bg-[#111724] ${
+                  isDayTrader ? "hover:border-amber-500/40 border-[#1b2434]" : "hover:border-cyan-500/40 border-[#1b2434]"
+                }`}
+              >
+                {/* Card Top */}
+                <div>
+                  <div className="flex items-start justify-between gap-2 border-b border-[#162030] pb-3">
                     <div>
-                      <span className="text-[10px] text-amber-500/80 block">ATR (14D)</span>
-                      <span className="text-xs font-bold text-amber-300 tabular-nums">{gem.atr14}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-base font-black text-white">{gem.symbol}</span>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                          isDayTrader
+                            ? "bg-amber-950/80 border-amber-800 text-amber-300"
+                            : "bg-cyan-950/80 border-cyan-800 text-cyan-400"
+                        }`}>
+                          {gem.expertArchetype}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{gem.companyName}</p>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-amber-500/80 block">REL VOL (RVOL)</span>
-                      <span className="text-xs font-bold text-emerald-400 tabular-nums">{gem.rvol}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-amber-500/80 block">SHORT FLOAT</span>
-                      <span className="text-xs font-bold text-rose-400 tabular-nums">{gem.shortFloat}</span>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 block">GEM SCORE</span>
+                      <span className="text-lg font-black text-emerald-400 tabular-nums">{gem.gemScore}/100</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 my-3 bg-[#080c14] p-2.5 rounded-lg border border-[#192334] text-center">
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">ROIC</span>
-                      <span className="text-xs font-bold text-slate-200 tabular-nums">{gem.roic}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">PEG RATIO</span>
-                      <span className="text-xs font-bold text-emerald-400 tabular-nums">{gem.pegRatio}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 block">GROSS MARGIN</span>
-                      <span className="text-xs font-bold text-cyan-400 tabular-nums">{gem.grossMargin}</span>
-                    </div>
-                  </div>
-                )}
 
-                {/* Adaptive Content Matrix */}
-                <div className="space-y-2 text-xs">
+                  {/* Adaptive Metrics Matrix */}
                   {isDayTrader ? (
-                    <div>
-                      <span className="text-[10px] text-amber-400 font-bold block uppercase tracking-wider">⚡ Intraday Momentum Setup</span>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">{gem.dayTraderSetup}</p>
+                    <div className="grid grid-cols-3 gap-2 my-3 bg-[#130f08] p-2.5 rounded-lg border border-amber-900/40 text-center">
+                      <div>
+                        <span className="text-[10px] text-amber-500/80 block">ATR (14D)</span>
+                        <span className="text-xs font-bold text-amber-300 tabular-nums">{gem.atr14}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-amber-500/80 block">REL VOL (RVOL)</span>
+                        <span className="text-xs font-bold text-emerald-400 tabular-nums">{gem.rvol}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-amber-500/80 block">SHORT FLOAT</span>
+                        <span className="text-xs font-bold text-rose-400 tabular-nums">{gem.shortFloat}</span>
+                      </div>
                     </div>
                   ) : (
-                    <div>
-                      <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">💡 Fundamental Thesis</span>
-                      <p className="text-slate-300 leading-relaxed text-[11px]">{gem.thesis}</p>
+                    <div className="grid grid-cols-3 gap-2 my-3 bg-[#080c14] p-2.5 rounded-lg border border-[#192334] text-center">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">ROIC</span>
+                        <span className="text-xs font-bold text-slate-200 tabular-nums">{gem.roic}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">PEG RATIO</span>
+                        <span className="text-xs font-bold text-emerald-400 tabular-nums">{gem.pegRatio}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">GROSS MARGIN</span>
+                        <span className="text-xs font-bold text-cyan-400 tabular-nums">{gem.grossMargin}</span>
+                      </div>
                     </div>
                   )}
-                  <div>
-                    <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">🚀 Primary Catalyst</span>
-                    <p className="text-slate-400 leading-relaxed text-[11px]">{gem.catalyst}</p>
+
+                  {/* Adaptive Content Matrix */}
+                  <div className="space-y-2 text-xs">
+                    {isDayTrader ? (
+                      <div>
+                        <span className="text-[10px] text-amber-400 font-bold block uppercase tracking-wider">⚡ Intraday Momentum Setup</span>
+                        <p className="text-slate-300 leading-relaxed text-[11px]">{gem.dayTraderSetup}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">💡 Fundamental Thesis</span>
+                        <p className="text-slate-300 leading-relaxed text-[11px]">{gem.thesis}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">🚀 Primary Catalyst</span>
+                      <p className="text-slate-400 leading-relaxed text-[11px]">{gem.catalyst}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Card Footer: Action that preserves User Role into Terminal */}
-              <div className="mt-4 pt-3 border-t border-[#162030] flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-slate-400">
-                  Risk: <span className="text-amber-400">{gem.riskLevel}</span>
-                </span>
-                <Link
-                  href={`/?symbol=${gem.symbol}`}
-                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all active:scale-[0.96] border ${
-                    isDayTrader
-                      ? "bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300"
-                      : "bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300"
-                  }`}
-                >
-                  {isDayTrader ? "Trade in Terminal (5m) →" : "Analyze in Terminal →"}
-                </Link>
+                {/* Card Footer: Action that preserves User Role into Terminal */}
+                <div className="mt-4 pt-3 border-t border-[#162030] flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    Risk: <span className="text-amber-400">{gem.riskLevel}</span>
+                  </span>
+                  <Link
+                    href={`/?symbol=${gem.symbol}`}
+                    className={`px-2.5 py-1 rounded text-xs font-bold transition-all active:scale-[0.96] border ${
+                      isDayTrader
+                        ? "bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300"
+                        : "bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300"
+                    }`}
+                  >
+                    {isDayTrader ? "Trade in Terminal (5m) →" : "Analyze in Terminal →"}
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
 }
-

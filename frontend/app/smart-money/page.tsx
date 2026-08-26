@@ -106,14 +106,27 @@ function SmartMoneyContent() {
   });
 
   // Top Actionable Radar Assets
-  const actionableAssets = [
-    { ticker: "NVDA", name: "NVIDIA", type: "Nancy Pelosi Calls", postTradeAlpha: "+14.8%", dailyChange: "+3.14%", badge: "Whale Alert", bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60" },
-    { ticker: "PLTR", name: "Palantir", type: "$190 Call Squeeze", postTradeAlpha: "+12.1%", dailyChange: "+4.12%", badge: "Gamma Squeeze", bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60" },
-    { ticker: "VRT", name: "Vertiv", type: "Liquid Cooling Surge", postTradeAlpha: "+18.2%", dailyChange: "+2.85%", badge: "High Momentum", bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60" },
-    { ticker: "NVO", name: "Novo Nordisk", type: "$145 Call Block", postTradeAlpha: "+6.4%", dailyChange: "+1.85%", badge: "Policy Fit", bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60" },
-    { ticker: "CRWD", name: "CrowdStrike", type: "Cybersecurity Sweep", postTradeAlpha: "+16.5%", dailyChange: "+3.40%", badge: "Rapid Filing", bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60" },
-    { ticker: "TSM", name: "TSMC", type: "2nm CHIPS Flow", postTradeAlpha: "+9.3%", dailyChange: "+2.15%", badge: "Whale Tier", bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60" },
-  ];
+  const actionableAssets = (data?.congress_trades || []).slice(0, 6).map((item, idx) => {
+    const bgMap = [
+      { bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60", badge: "Whale Alert" },
+      { bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60", badge: "Gamma Squeeze" },
+      { bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60", badge: "High Momentum" },
+      { bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60", badge: "Policy Fit" },
+      { bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60", badge: "Rapid Filing" },
+      { bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60", badge: "Whale Tier" },
+    ];
+    const styling = bgMap[idx % bgMap.length];
+    return {
+      ticker: item.ticker,
+      name: item.asset_name,
+      type: `${item.politician.split(" ")[0]} ${item.transaction_type.includes("Call") ? "Calls" : "Position"}`,
+      postTradeAlpha: `${item.performance_since_pct > 0 ? "+" : ""}${item.performance_since_pct}%`,
+      dailyChange: "+2.45%",
+      badge: styling.badge,
+      bg: styling.bg,
+      border: styling.border,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-[#070a10] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">

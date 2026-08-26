@@ -17,11 +17,14 @@ from api.main import app
 client = TestClient(app)
 
 CURATED_SMALL_CAP_GEMS = [
-    {"symbol": "ELF", "expected_archetype": "Peter Lynch GARP Compounder"},
-    {"symbol": "MEDP", "expected_archetype": "Greenblatt Magic Formula"},
-    {"symbol": "DUOL", "expected_archetype": "Disruptive Rule Breaker"},
-    {"symbol": "POWI", "expected_archetype": "Peter Lynch GARP Compounder"},
     {"symbol": "CPRX", "expected_archetype": "Greenblatt Magic Formula"},
+    {"symbol": "ACLS", "expected_archetype": "Peter Lynch GARP Compounder"},
+    {"symbol": "TMDX", "expected_archetype": "Disruptive Rule Breaker"},
+    {"symbol": "LNTH", "expected_archetype": "Greenblatt Magic Formula"},
+    {"symbol": "MEDP", "expected_archetype": "Greenblatt Magic Formula"},
+    {"symbol": "POWI", "expected_archetype": "Peter Lynch GARP Compounder"},
+    {"symbol": "ELF", "expected_archetype": "Peter Lynch GARP Compounder"},
+    {"symbol": "DUOL", "expected_archetype": "Disruptive Rule Breaker"},
 ]
 
 def test_screener_to_terminal_cross_route_semantic_parity():

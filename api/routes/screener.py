@@ -10,16 +10,14 @@ screener = HiddenGemsScreener()
 
 # Authentic High-Alpha Small/Mid-Cap Universe (Purged of mega-caps like NVDA, AAPL, BTC)
 DEFAULT_CANDIDATES = [
-    "ELF",   # e.l.f. Beauty - High ROE/ROIC GARP compounder
-    "CELH",  # Celsius Holdings - Fast-growing consumer disruptor
-    "POWI",  # Power Integrations - High gross margin niche semiconductor
-    "MEDP",  # Medpace Holdings - Clinical CRO, 38% ROIC, Greenblatt Magic Formula
-    "CPRX",  # Catalyst Pharmaceuticals - High EBIT/EV earnings yield, clean balance sheet
-    "ULTA",  # Ulta Beauty - High return on capital cash cow
-    "DUOL",  # Duolingo - Rule Breaker, AI education disruptor, 73% gross margin
-    "IOT",   # Samsara - Connected IoT operations platform
-    "AXON",  # Axon Enterprise - Public safety cloud ecosystem, recurring SaaS
-    "RKLB"   # Rocket Lab USA - Space systems & commercial satellite launch disruptor
+    "CPRX",  # Catalyst Pharmaceuticals - $2.4B Small-cap, 34% ROIC, Greenblatt Magic Formula
+    "POWI",  # Power Integrations - $4.1B Mid-cap, 54.8% gross margin GaN power chips
+    "MEDP",  # Medpace Holdings - $10.5B Mid-cap clinical CRO, 38.6% ROIC, zero debt
+    "TMDX",  # TransMedics Group - $3.8B Small-cap, warm organ perfusion disruption
+    "ACLS",  # Axcelis Technologies - $3.2B Small-cap, SiC ion implantation monopoly
+    "LNTH",  # Lantheus Holdings - $4.9B Small-cap, PSMA diagnostic radiopharmaceuticals
+    "ELF",   # e.l.f. Beauty - $9.2B Mid-cap, Peter Lynch GARP Compounder
+    "DUOL",  # Duolingo - $13.8B Mid-cap, 73.4% gross margin Rule Breaker
 ]
 
 
