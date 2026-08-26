@@ -41,37 +41,37 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
   };
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 shadow-xl space-y-3 h-full">
+    <div className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-4 shadow-xl space-y-3 h-full font-mono">
       {/* Header with Mobile Accordion Toggle */}
       <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
             Watchlist & Signals
           </span>
-          <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded font-mono">
+          <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">
             Live Feeds
           </span>
         </div>
 
-        {/* Accordion toggle button visible on mobile (< 1024px) */}
+        {/* Accordion toggle button with tactile press feedback */}
         <button
           onClick={() => setIsMobileExpanded((prev) => !prev)}
-          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1 rounded font-mono flex items-center gap-1.5 hover:bg-[#162030] transition-colors"
+          className="lg:hidden text-xs text-cyan-400 bg-[#090d14] border border-[#243044] px-2.5 py-1.5 min-h-[32px] rounded flex items-center gap-1.5 hover:bg-[#162030] active:scale-[0.96] transition-transform duration-100"
         >
           <span>{isMobileExpanded ? "Hide List" : "Show List"}</span>
           <span className="text-[10px]">{isMobileExpanded ? "▲" : "▼"}</span>
         </button>
       </div>
 
-      {/* Asset Category Filters */}
+      {/* Asset Category Filters with 40px Touch Target on Mobile */}
       <div className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
         {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`flex-1 py-1 rounded text-[10px] font-mono font-medium transition-colors ${
+            className={`flex-1 py-1.5 sm:py-1 min-h-[36px] sm:min-h-[28px] rounded text-[11px] sm:text-[10px] font-bold transition-colors active:scale-[0.96] transition-transform duration-100 ${
               activeCategory === cat
-                ? "bg-cyan-500 text-slate-950 font-bold shadow-sm"
+                ? "bg-cyan-500 text-slate-950 shadow-sm"
                 : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
             }`}
           >
@@ -80,9 +80,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         ))}
       </div>
 
-      {/* Watchlist Stream Items */}
+      {/* Watchlist Stream Items with Tabular Numerals & Tactile Click */}
       <div
-        className={`space-y-1.5 overflow-y-auto max-h-[440px] transition-all duration-200 ${
+        className={`space-y-1.5 overflow-y-auto max-h-[440px] ${
           isMobileExpanded ? "block" : "hidden lg:block"
         }`}
       >
@@ -90,7 +90,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
           <button
             key={item.symbol}
             onClick={() => onSelectSymbol(item.symbol)}
-            className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left font-mono ${
+            className={`w-full flex items-center justify-between p-2.5 sm:p-2 rounded-lg border text-left active:scale-[0.98] transition-transform transition-colors duration-150 ${
               activeSymbol === item.symbol
                 ? "bg-[#1b2434] border-cyan-500 shadow-md"
                 : "bg-[#090d14] border-[#1b2434] hover:border-[#364866]"
@@ -107,9 +107,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
             </div>
 
             <div className="text-right">
-              <span className="text-xs font-bold text-slate-200 block">{item.price}</span>
+              <span className="text-xs font-bold text-slate-200 block tabular-nums">{item.price}</span>
               <span
-                className={`text-[10px] font-semibold ${
+                className={`text-[10px] font-semibold tabular-nums ${
                   item.isUp ? "text-emerald-400" : "text-rose-400"
                 }`}
               >

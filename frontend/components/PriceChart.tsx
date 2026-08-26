@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData } from "lightweight-charts";
+import { createChart, IChartApi, ISeriesApi } from "lightweight-charts";
 import { CandleData } from "../lib/api";
 
 interface PriceChartProps {
@@ -53,7 +53,6 @@ export default function PriceChart({
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    // Create lightweight-charts instance
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { color: "#0b0f19" },
@@ -71,31 +70,29 @@ export default function PriceChart({
       },
       timeScale: {
         borderColor: "#334155",
-        timeVisible: true,
+        timeVisible: activeInterval !== "1d",
         secondsVisible: false,
       },
-      handleScroll: true,
-      handleScale: true,
     });
 
     const candlestickSeries = chart.addCandlestickSeries({
       upColor: "#10b981",
-      downColor: "#ef4444",
-      borderVisible: false,
+      downColor: "#f43f5e",
+      borderUpColor: "#10b981",
+      borderDownColor: "#f43f5e",
       wickUpColor: "#10b981",
-      wickDownColor: "#ef4444",
+      wickDownColor: "#f43f5e",
     });
 
-    // VWAP Line Overlay
     const vwapSeries = chart.addLineSeries({
       color: "#f59e0b",
       lineWidth: 2,
       title: "VWAP",
     });
 
-    chartRef.current = chart;
     seriesRef.current = candlestickSeries;
     vwapSeriesRef.current = vwapSeries;
+    chartRef.current = chart;
 
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
@@ -107,123 +104,113 @@ export default function PriceChart({
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize();
 
     return () => {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, []);
+  }, [activeInterval]);
 
   useEffect(() => {
-    if (!seriesRef.current || !candles || candles.length === 0) return;
-
-    // Format candle data for lightweight charts
-    const formattedData: CandlestickData[] = candles
-      .filter((c) => c && c.time && c.close > 0)
-      .map((c) => ({
-        time: c.time as any,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }));
-
-    // Ensure strictly chronological
-    formattedData.sort((a, b) => {
-      const timeA = typeof a.time === "number" ? a.time : new Date(a.time as string).getTime();
-      const timeB = typeof b.time === "number" ? b.time : new Date(b.time as string).getTime();
-      return timeA - timeB;
-    });
-
-    // Remove duplicates
-    const uniqueData: CandlestickData[] = [];
-    const seen = new Set();
-    for (const item of formattedData) {
-      if (!seen.has(item.time)) {
-        seen.add(item.time);
-        uniqueData.push(item);
-      }
-    }
+    if (!seriesRef.current || candles.length === 0) return;
 
     try {
-      seriesRef.current.setData(uniqueData);
+      const formattedData = candles
+        .map((c) => ({
+          time: c.time as any,
+          open: Number(c.open),
+          high: Number(c.high),
+          low: Number(c.low),
+          close: Number(c.close),
+        }))
+        .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0)
+        .sort((a, b) => {
+          const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
+          const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
+          return tA - tB;
+        });
 
-      // Compute simple intraday VWAP curve
-      if (vwapSeriesRef.current && uniqueData.length > 5) {
-        let cumVol = 0;
-        let cumVP = 0;
-        const vwapData: LineData[] = [];
+      if (formattedData.length > 0) {
+        seriesRef.current.setData(formattedData as any);
 
-        for (let i = 0; i < uniqueData.length; i++) {
-          const c = uniqueData[i];
-          const rawCandle = candles[i];
-          const vol = rawCandle?.volume || 1000;
-          const typ = (c.high + c.low + c.close) / 3;
-          cumVol += vol;
-          cumVP += typ * vol;
-          vwapData.push({
-            time: c.time,
-            value: Number((cumVP / (cumVol || 1)).toFixed(2)),
+        if (vwapSeriesRef.current) {
+          let cumVol = 0;
+          let cumVP = 0;
+          const vwapData = formattedData.map((c, i) => {
+            const vol = candles[i]?.volume || 1000;
+            const typical = (c.high + c.low + c.close) / 3;
+            cumVol += vol;
+            cumVP += typical * vol;
+            const val = cumVol > 0 ? cumVP / cumVol : c.close;
+            return {
+              time: c.time,
+              value: Number(val.toFixed(2)),
+            };
           });
+          vwapSeriesRef.current.setData(vwapData as any);
         }
-        vwapSeriesRef.current.setData(vwapData);
-      }
 
-      chartRef.current?.timeScale().fitContent();
+        chartRef.current?.timeScale().fitContent();
+      }
     } catch (err) {
-      console.warn("Error updating chart data:", err);
+      console.warn("Error setting chart data:", err);
     }
   }, [candles]);
 
   const isPositive = priceChangePct >= 0;
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 shadow-xl flex flex-col h-full">
-      {/* Chart Top Navigation Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-3 mb-3">
-        {/* Symbol & Price Banner */}
-        <div className="flex items-center space-x-3">
-          <span className="text-xl font-bold font-mono text-slate-100">{symbol}</span>
+    <div className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-5 shadow-xl flex flex-col h-full font-mono">
+      {/* Header Bar with Tabular Numerals & Expanded Hit-Area Buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1b2434]">
+        {/* Left: Symbol & Live Tabular Price */}
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <span className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</span>
           {currentPrice && (
-            <div className="flex items-baseline space-x-2">
-              <span className="text-xl font-mono font-extrabold text-white">${currentPrice}</span>
+            <span className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
+              ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          )}
+          <span
+            className={`px-2 py-0.5 rounded text-xs font-semibold tabular-nums ${
+              isPositive
+                ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
+                : "bg-rose-950/80 text-rose-400 border border-rose-800/80"
+            }`}
+          >
+            {isPositive ? `+${priceChangePct.toFixed(2)}%` : `${priceChangePct.toFixed(2)}%`}
+          </span>
+        </div>
+
+        {/* Right: Technicals Badges & Tactile Scale-on-Press Interval Pills */}
+        <div className="flex items-center space-x-2">
+          {technicals?.rsi_14 !== undefined && (
+            <div className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
+              <span className="text-slate-400">RSI(14):</span>
               <span
-                className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded ${
-                  isPositive ? "bg-emerald-950 text-emerald-400 border border-emerald-800" : "bg-rose-950 text-rose-400 border border-rose-800"
+                className={`font-bold tabular-nums ${
+                  technicals.rsi_14 > 70
+                    ? "text-rose-400"
+                    : technicals.rsi_14 < 30
+                    ? "text-emerald-400"
+                    : "text-cyan-400"
                 }`}
               >
-                {isPositive ? "+" : ""}
-                {priceChangePct}%
+                {technicals.rsi_14.toFixed(1)}
               </span>
             </div>
           )}
-        </div>
 
-        {/* Intraday Timeframe Pills & Technical Overlays */}
-        <div className="flex items-center space-x-2">
-          {technicals?.vwap && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono bg-amber-950/60 text-amber-300 border border-amber-800/80 px-2 py-0.5 rounded">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              VWAP: ${technicals.vwap}
-            </span>
-          )}
-          {technicals?.rsi_14 && (
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono bg-[#1b2434] text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded">
-              RSI: {technicals.rsi_14}
-            </span>
-          )}
-
-          {/* Timeframe Buttons */}
-          <div className="flex items-center bg-[#090d14] p-0.5 rounded-lg border border-[#243044]">
+          {/* Timeframe Interval Buttons with Tactile Press Feedback & Min 36px Tap Target */}
+          <div className="flex items-center space-x-1 bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             {intervals.map((item) => (
               <button
                 key={item.value}
                 onClick={() => handleIntervalClick(item.value)}
-                className={`px-2.5 py-1 text-xs font-mono font-semibold rounded-md transition-all ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 ${
                   activeInterval === item.value
-                    ? "bg-cyan-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-cyan-500 text-slate-950 shadow-sm"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
                 {item.label}
@@ -233,8 +220,10 @@ export default function PriceChart({
         </div>
       </div>
 
-      {/* Lightweight Chart Container */}
-      <div className="flex-1 w-full min-h-[360px] relative rounded-lg overflow-hidden" ref={chartContainerRef} />
+      {/* Chart Canvas */}
+      <div className="flex-1 w-full min-h-[280px] sm:min-h-[320px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]">
+        <div ref={chartContainerRef} className="w-full h-full" />
+      </div>
     </div>
   );
 }
