@@ -72,36 +72,36 @@ export default function UniversalOmniSearch() {
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        aria-label="Search ticker, crypto, ETF or company across global markets"
-        className="hidden md:flex w-full items-center justify-between bg-[#070a11] hover:bg-[#111722] border border-[#243044] hover:border-cyan-500/80 text-slate-300 hover:text-white px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono transition-all shadow-inner group cursor-pointer"
+        aria-label="Search ticker, crypto, ETF or company across global markets (Press Slash or Command-K)"
+        className="hidden md:flex w-full items-center justify-between bg-[#090d14] hover:bg-[#131b29] border border-[#2b3a52] hover:border-cyan-400 text-slate-200 hover:text-white px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono transition-all shadow-inner group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
       >
         <div className="flex items-center space-x-2.5 min-w-0">
-          <svg aria-hidden="true" className="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg aria-hidden="true" className="w-4 h-4 text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span className="truncate text-slate-400 group-hover:text-slate-200">
+          <span className="truncate text-slate-300 group-hover:text-white font-medium">
             Search any ticker, stock, ETF or crypto...
           </span>
         </div>
         <div className="flex items-center space-x-1 shrink-0 ml-2">
-          <kbd className="inline-block bg-[#162030] text-cyan-400 font-bold text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
+          <kbd className="inline-block bg-[#162030] text-cyan-300 font-bold text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
             ⌘K
           </kbd>
-          <kbd className="inline-block bg-[#162030] text-slate-400 text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
+          <kbd className="inline-block bg-[#162030] text-slate-300 font-bold text-[10px] px-1.5 py-0.5 rounded border border-[#2b394f]">
             /
           </kbd>
         </div>
       </button>
 
-      {/* 📱 Mobile: Dedicated High-Visibility Search Icon Button in Header */}
+      {/* 📱 Mobile: High-Visibility Accessible Search Button (Min 44x44px Touch Target) */}
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        aria-label="Search any asset"
-        className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-[#111722] border border-cyan-500/50 text-cyan-400 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer"
+        aria-label="Search any asset or ticker"
+        className="md:hidden flex items-center justify-center min-w-[36px] min-h-[36px] p-2 rounded-lg bg-[#111722] hover:bg-[#1b2537] border border-cyan-400/70 text-cyan-300 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
       >
-        <svg aria-hidden="true" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <svg aria-hidden="true" className="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -118,35 +118,39 @@ export default function UniversalOmniSearch() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#0c1017] border border-[#243044] rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 relative max-h-[90vh] flex flex-col"
+            className="bg-[#0c1017] border border-[#2b3a52] rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 relative max-h-[90vh] flex flex-col"
           >
             {/* Search Input Bar */}
             <div className="flex items-center justify-between pb-1">
-              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                🔍 Global Asset Terminal Search
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🔍</span>
+                <span>Global Asset Terminal Search</span>
               </span>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-1 bg-[#162030] rounded border border-[#243044]"
+                aria-label="Close search dialog"
+                className="text-slate-300 hover:text-white text-xs px-2.5 py-1 bg-[#162030] hover:bg-[#223147] rounded-lg border border-[#2b394f] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none transition-colors"
               >
                 ESC ✕
               </button>
             </div>
 
             <form onSubmit={handleFormSubmit} className="relative flex items-center">
-              <span className="absolute left-3.5 text-cyan-400 text-base">🔍</span>
+              <span className="absolute left-3.5 text-cyan-400 text-base" aria-hidden="true">🔍</span>
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type ANY ticker (e.g. NVDA, LLY, TSLA, BTC-USD, COIN, PLTR)..."
-                className="w-full bg-[#070a11] border-2 border-cyan-500/70 focus:border-cyan-400 text-white pl-10 pr-20 py-2.5 sm:py-3 rounded-xl text-sm outline-none placeholder:text-slate-500 font-mono tracking-wide shadow-lg"
+                aria-label="Type any ticker symbol or asset name"
+                className="w-full bg-[#070a11] border-2 border-cyan-500 focus:border-cyan-400 text-white pl-10 pr-20 py-2.5 sm:py-3 rounded-xl text-sm outline-none placeholder:text-slate-400 font-mono tracking-wide shadow-lg focus-visible:ring-2 focus-visible:ring-cyan-400"
               />
               {cleanQ && (
                 <button
                   type="submit"
-                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer"
+                  aria-label={`Submit search for ${cleanQ}`}
+                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   Go ↵
                 </button>
@@ -154,18 +158,18 @@ export default function UniversalOmniSearch() {
             </form>
 
             {/* Live Matches / Direct Submission */}
-            <div className="overflow-y-auto space-y-1.5 flex-1 pr-1">
+            <div className="overflow-y-auto space-y-1.5 flex-1 pr-1" role="listbox">
               {cleanQ && (
                 <button
                   type="button"
                   onClick={() => handleSelectTicker(cleanQ)}
-                  className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 border border-cyan-500/60 hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer"
+                  className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/70 to-indigo-950/70 border border-cyan-500 hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   <div>
                     <span className="text-xs font-bold text-cyan-300">Run Live Analysis for Custom Asset:</span>
                     <div className="text-base sm:text-lg font-black text-white tracking-wider flex items-center gap-2">
                       <span>{cleanQ}</span>
-                      <span className="text-[10px] bg-cyan-900/80 text-cyan-200 px-2 py-0.5 rounded font-mono font-semibold">Live Pipeline</span>
+                      <span className="text-[10px] bg-cyan-900 text-cyan-200 px-2 py-0.5 rounded font-mono font-semibold">Live Pipeline</span>
                     </div>
                   </div>
                   <span className="text-xs text-cyan-400 font-bold group-hover:translate-x-1 transition-transform">
@@ -174,9 +178,9 @@ export default function UniversalOmniSearch() {
                 </button>
               )}
 
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider pt-2 px-1 flex items-center justify-between">
+              <div className="text-[10px] text-slate-300 font-bold uppercase tracking-wider pt-2 px-1 flex items-center justify-between">
                 <span>{cleanQ ? "Matching Universe Assets" : "Popular Universe Assets"}</span>
-                <span>Instant Load</span>
+                <span className="text-cyan-400">Instant Load</span>
               </div>
 
               {matchingPresets.map((item) => (
@@ -184,19 +188,19 @@ export default function UniversalOmniSearch() {
                   key={item.symbol}
                   type="button"
                   onClick={() => handleSelectTicker(item.symbol)}
-                  className="w-full text-left p-2.5 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-[#1b2434] hover:border-cyan-500/60 flex items-center justify-between transition-colors group cursor-pointer"
+                  className="w-full text-left p-2.5 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-[#1e2a3c] hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="bg-[#111722] px-2.5 py-1 rounded text-xs font-black text-white group-hover:text-cyan-400 border border-[#243044]">
+                    <div className="bg-[#111722] px-2.5 py-1 rounded text-xs font-black text-white group-hover:text-cyan-300 border border-[#243044]">
                       {item.symbol}
                     </div>
                     <div>
-                      <div className="text-xs font-semibold text-slate-200">{item.name}</div>
-                      <div className="text-[10px] text-slate-500">{item.type}</div>
+                      <div className="text-xs font-semibold text-slate-100">{item.name}</div>
+                      <div className="text-[10px] text-slate-400">{item.type}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs font-bold text-slate-300">{item.price}</div>
+                    <div className="text-xs font-bold text-slate-200">{item.price}</div>
                     <div className={`text-[10px] font-semibold ${item.isUp ? "text-emerald-400" : "text-rose-400"}`}>
                       {item.change}
                     </div>
@@ -206,8 +210,8 @@ export default function UniversalOmniSearch() {
             </div>
 
             {/* Keyboard Footer */}
-            <div className="pt-2 sm:pt-3 border-t border-[#1b2434] flex items-center justify-between text-[11px] text-slate-500">
-              <span>Press <kbd className="bg-[#162030] text-slate-300 px-1.5 py-0.5 rounded border border-[#2b394f]">ESC</kbd> to close</span>
+            <div className="pt-2 sm:pt-3 border-t border-[#1e2a3c] flex items-center justify-between text-[11px] text-slate-400">
+              <span>Press <kbd className="bg-[#162030] text-slate-200 px-1.5 py-0.5 rounded border border-[#2b394f]">ESC</kbd> to close</span>
               <span>Tap any symbol to analyze</span>
             </div>
           </div>
