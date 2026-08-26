@@ -16,6 +16,8 @@ import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
+type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
+
 function TerminalContent() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol");
@@ -25,6 +27,7 @@ function TerminalContent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("EXECUTION");
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
   // Sync URL search params when navigated from Screener, Compare, or Smart Money pages
@@ -168,12 +171,79 @@ function TerminalContent() {
             />
           </div>
 
-          {/* DUAL-JOURNEY WORKSPACE ROUTING */}
-          {userRole === "DAY_TRADER" ? (
-            /* Day Trader Journey: Live Risk Sizer, Intraday Technicals, Continuous Self-Healing, Real-Time Flow Tape */
-            <div className="space-y-4 sm:space-y-5">
-              {data && <DayTraderPositionSizer symbol={selectedSymbol} data={data} />}
+          {/* 🗂️ MODULAR WORKSPACE TABS (Eliminates Cognitive Overload & Infinite Scroll) */}
+          <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
+            <button
+              role="tab"
+              aria-selected={activeTab === "EXECUTION"}
+              onClick={() => setActiveTab("EXECUTION")}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                activeTab === "EXECUTION"
+                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+              }`}
+            >
+              <span>🎯</span>
+              <span className="truncate">Execution & Levels</span>
+            </button>
+
+            <button
+              role="tab"
+              aria-selected={activeTab === "SMART_MONEY"}
+              onClick={() => setActiveTab("SMART_MONEY")}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                activeTab === "SMART_MONEY"
+                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+              }`}
+            >
+              <span>🏛️</span>
+              <span className="truncate">Smart Money</span>
+            </button>
+
+            <button
+              role="tab"
+              aria-selected={activeTab === "FUNDAMENTALS"}
+              onClick={() => setActiveTab("FUNDAMENTALS")}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                activeTab === "FUNDAMENTALS"
+                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+              }`}
+            >
+              <span>📊</span>
+              <span className="truncate">Factors & Macro</span>
+            </button>
+
+            <button
+              role="tab"
+              aria-selected={activeTab === "RISK_CONTAGION"}
+              onClick={() => setActiveTab("RISK_CONTAGION")}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                activeTab === "RISK_CONTAGION"
+                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+              }`}
+            >
+              <span>🛡️</span>
+              <span className="truncate">Risk & Contagion</span>
+            </button>
+          </div>
+
+          {/* TAB 1: EXECUTION & LEVELS */}
+          {activeTab === "EXECUTION" && (
+            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+              {userRole === "DAY_TRADER" && data && (
+                <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
+              )}
               <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
+              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
+            </div>
+          )}
+
+          {/* TAB 2: SMART MONEY & INSIDER DISCLOSURES */}
+          {activeTab === "SMART_MONEY" && (
+            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
               <CongressionalTradesCard
                 symbol={selectedSymbol}
                 congressTrades={data?.smartMoney?.congressTrades}
@@ -181,32 +251,31 @@ function TerminalContent() {
                 userRole={userRole}
                 onSelectSymbol={setSelectedSymbol}
               />
-              <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
-              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
+              <TraderArchetypesCard
+                symbol={selectedSymbol}
+                traderArchetypes={data?.traderArchetypes}
+              />
             </div>
-          ) : (
-            /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, Congressional Insider Trades */
-            <div className="space-y-4 sm:space-y-5">
-              <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
+          )}
+
+          {/* TAB 3: FUNDAMENTALS & MACRO REGIME */}
+          {activeTab === "FUNDAMENTALS" && (
+            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
               <AssetFactorRadar
                 symbol={selectedSymbol}
                 factorScores={data?.factorScores}
                 macroDifficulty={data?.macroDifficulty}
                 expectedReturn={data?.expectedReturn}
               />
-              <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
-              <CongressionalTradesCard
-                symbol={selectedSymbol}
-                congressTrades={data?.smartMoney?.congressTrades}
-                optionsFlow={data?.smartMoney?.optionsFlow}
-                userRole={userRole}
-                onSelectSymbol={setSelectedSymbol}
-              />
               <CatalystForecastCard data={data?.catalystForecast} />
-              <TraderArchetypesCard
-                symbol={selectedSymbol}
-                traderArchetypes={data?.traderArchetypes}
-              />
+            </div>
+          )}
+
+          {/* TAB 4: RISK & CONTAGION */}
+          {activeTab === "RISK_CONTAGION" && (
+            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+              <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
+              <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
               <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
             </div>
           )}
