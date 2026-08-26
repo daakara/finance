@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -66,3 +66,9 @@ Thumbs.db
 # *.csv
 # *.xlsx
 # *.parquet
+
+
+# Frontend Next.js build artifacts
+frontend/.next/
+frontend/out/
+frontend/node_modules/
