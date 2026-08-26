@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 
 interface SmartMoneyDetailModalProps {
@@ -14,7 +14,18 @@ export default function SmartMoneyDetailModal({
   optionsItem,
   onClose,
 }: SmartMoneyDetailModalProps) {
+  const router = useRouter();
+
   if (!congressItem && !optionsItem) return null;
+
+  const targetTicker = congressItem?.ticker || optionsItem?.ticker || "AAPL";
+
+  const handleNavigateTerminal = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+    router.push(`/?symbol=${targetTicker}`);
+  };
 
   return (
     <div
@@ -40,7 +51,7 @@ export default function SmartMoneyDetailModal({
               </span>
             </div>
             <h2 id="modal-title" className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2">
-              <span>{congressItem?.ticker || optionsItem?.ticker}</span>
+              <span>{targetTicker}</span>
               <span className="text-sm font-normal text-slate-400">
                 {congressItem ? congressItem.asset_name : optionsItem?.type}
               </span>
@@ -219,13 +230,13 @@ export default function SmartMoneyDetailModal({
             ← Back to Smart Money List
           </button>
 
-          <Link
-            href={`/?symbol=${congressItem?.ticker || optionsItem?.ticker}`}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs shadow-lg transition-transform active:scale-95 flex items-center gap-1.5"
+          <button
+            onClick={handleNavigateTerminal}
+            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs shadow-lg transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <span>Open Full Quantitative Terminal</span>
             <span>→</span>
-          </Link>
+          </button>
         </div>
       </div>
     </div>
