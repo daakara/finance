@@ -143,6 +143,7 @@ export interface CongressTradeItem {
   chamber: string;
   ticker: string;
   asset_name: string;
+  sector?: string;
   transaction_type: string;
   amount_range: string;
   filing_date: string;
@@ -151,6 +152,7 @@ export interface CongressTradeItem {
   days_to_filing: number;
   performance_since_pct: number;
   sentiment: string;
+  signal_strength?: number;
   details?: CongressTradeDetails;
 }
 
@@ -179,6 +181,7 @@ export interface OptionsFlowItem {
   implied_volatility: string;
   order_type: string;
   sentiment: string;
+  signal_strength?: number;
   details?: OptionsFlowDetails;
 }
 
@@ -608,4 +611,5 @@ export async function runHiddenGemsScreener(tickers: string[]): Promise<Screener
     })),
   };
 }
+
 

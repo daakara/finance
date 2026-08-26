@@ -11,7 +11,8 @@ function SmartMoneyContent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [filterQuery, setFilterQuery] = useState<string>("");
-  
+  const [activeSector, setActiveSector] = useState<string>("ALL");
+
   // Interactive Forensic Modal Selection
   const [selectedCongress, setSelectedCongress] = useState<CongressTradeItem | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<OptionsFlowItem | null>(null);
@@ -48,22 +49,44 @@ function SmartMoneyContent() {
 
   const isDayTrader = userRole === "DAY_TRADER";
 
-  // Filter options flow or congressional trades based on query
+  // Filter options flow or congressional trades based on query & sector
   const optionsFlow = (data?.options_flow || []).filter((item) => {
-    if (!filterQuery) return true;
-    const q = filterQuery.toUpperCase();
-    return item.ticker.includes(q) || item.type.toUpperCase().includes(q);
+    if (filterQuery) {
+      const q = filterQuery.toUpperCase();
+      const match = item.ticker.includes(q) || item.type.toUpperCase().includes(q) || item.order_type.toUpperCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
   });
 
   const congressTrades = (data?.congress_trades || []).filter((item) => {
-    if (!filterQuery) return true;
-    const q = filterQuery.toUpperCase();
-    return (
-      item.ticker.includes(q) ||
-      item.politician.toUpperCase().includes(q) ||
-      item.asset_name.toUpperCase().includes(q)
-    );
+    if (filterQuery) {
+      const q = filterQuery.toUpperCase();
+      const match = (
+        item.ticker.includes(q) ||
+        item.politician.toUpperCase().includes(q) ||
+        item.asset_name.toUpperCase().includes(q) ||
+        (item.sector && item.sector.toUpperCase().includes(q))
+      );
+      if (!match) return false;
+    }
+    if (activeSector !== "ALL") {
+      if (!item.sector || !item.sector.toUpperCase().includes(activeSector.toUpperCase())) {
+        return false;
+      }
+    }
+    return true;
   });
+
+  // Top Actionable Radar Assets
+  const actionableAssets = [
+    { ticker: "NVDA", name: "NVIDIA", type: "Calls + Pelos", alpha: "+14.8%", badge: "Top Bullish Alpha", bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60" },
+    { ticker: "PLTR", name: "Palantir", type: "$190 Call Squeeze", alpha: "+12.1%", badge: "High Gamma Pin", bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60" },
+    { ticker: "VRT", name: "Vertiv", type: "Liquid Cooling Surge", alpha: "+18.2%", badge: "Insider + Flow", bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60" },
+    { ticker: "NVO", name: "Novo Nordisk", type: "$145 Call Block", alpha: "+6.4%", badge: "Ph3 Catalyst", bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60" },
+    { ticker: "CRWD", name: "CrowdStrike", type: "Cybersecurity Sweep", alpha: "+16.5%", badge: "Aggressive Ask", bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60" },
+    { ticker: "TSM", name: "TSMC", type: "2nm CHIPS Flow", alpha: "+9.3%", badge: "Foundry Demand", bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#070a10] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
@@ -76,20 +99,20 @@ function SmartMoneyContent() {
 
       <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
 
-      <main id="main-content" role="main" className="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-6 space-y-5 pb-20 sm:pb-6 font-mono">
+      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-6 space-y-5 pb-20 sm:pb-6 font-mono">
         {/* Page Header */}
         <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <span className={`w-3 h-3 rounded-full ${isDayTrader ? "bg-amber-400" : "bg-purple-400"} animate-pulse`}></span>
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <span>{isDayTrader ? "⚡ Smart Money: Institutional Options Sweeps & Dark Pool" : "🏛️ Smart Money: US Congressional STOCK Act Portfolio Tracker"}</span>
+                <span>{isDayTrader ? "⚡ Smart Money: Institutional Options Sweeps & Dark Pool Scanner" : "🏛️ Smart Money: Market-Wide Congressional STOCK Act Feed"}</span>
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl">
               {isDayTrader
-                ? "Real-time institutional call/put sweeps, block orders, dark pool cross trades, and gamma positioning across mega-caps. Click any row for deep forensic analytics."
-                : "Tracking insider stock filings from the US House of Representatives & Senate under the STOCK Act with post-filing return attribution. Click any row for deep forensic analytics."}
+                ? "Live real-time feed of multi-exchange institutional sweeps, dark pool prints, and gamma squeezes across the entire market. Click any asset to inspect or trade."
+                : "Tracking insider stock filings across the US House of Representatives & Senate under the STOCK Act with post-filing return attribution across all sectors."}
             </p>
           </div>
 
@@ -97,32 +120,85 @@ function SmartMoneyContent() {
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">30D Filings</span>
-              <span className="text-base font-bold text-slate-200 tabular-nums">{data?.total_congress_filings_30d ?? 6}</span>
+              <span className="text-base font-bold text-slate-200 tabular-nums">{data?.total_congress_filings_30d ?? 12}</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">Political Sentiment</span>
-              <span className="text-base font-bold text-emerald-400">83% Bullish</span>
+              <span className="text-base font-bold text-emerald-400">91.7% Bullish</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">Flow Vol Today</span>
-              <span className="text-base font-bold text-amber-400 tabular-nums">$58.2M</span>
+              <span className="text-base font-bold text-amber-400 tabular-nums">$112.8M</span>
             </div>
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
+        {/* TOP ACTIONABLE SMART MONEY RADAR (Stocknear style instant cards) */}
+        <section aria-label="Top Smart Money Discoveries" className="space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <span>🔥</span>
+              <span>TOP ACTIONABLE SMART MONEY DISCOVERIES TODAY</span>
+            </span>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Instant Terminal Jump</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {actionableAssets.map((card, i) => (
+              <Link
+                key={i}
+                href={`/?symbol=${card.ticker}`}
+                className={`bg-gradient-to-b ${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-black text-white group-hover:text-cyan-400 font-mono tracking-tight">
+                    {card.ticker}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 tabular-nums">{card.alpha}</span>
+                </div>
+                <div className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{card.name}</div>
+                <div className="text-[10px] text-slate-400 truncate mt-1">{card.type}</div>
+                <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
+                  <span className="text-cyan-300 font-semibold">{card.badge}</span>
+                  <span className="text-slate-400 group-hover:text-white">Analyze →</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Filter, Sector & Search Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0d121c] p-3 rounded-lg border border-[#1e293b]">
-          <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <input
               type="text"
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Search ticker or politician (e.g. NVDA, Pelosi, NVO)..."
+              placeholder="Search ticker, politician, or sector (e.g. NVDA, Pelosi, AI, GLP-1)..."
               className="bg-[#070a10] border border-[#243044] rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 w-full sm:w-80"
             />
+
+            {!isDayTrader && (
+              <div className="flex items-center gap-1 overflow-x-auto py-1">
+                {["ALL", "Semiconductors", "Healthcare", "AI", "Defense"].map((sec) => (
+                  <button
+                    key={sec}
+                    onClick={() => setActiveSector(sec)}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold transition-colors ${
+                      activeSector === sec
+                        ? "bg-purple-900/80 text-purple-200 border border-purple-600"
+                        : "bg-[#090d14] text-slate-400 hover:text-slate-200 border border-[#1e293b]"
+                    }`}
+                  >
+                    {sec}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="text-[11px] text-slate-400 flex items-center gap-2">
-            <span className="bg-[#1b2434] px-2 py-0.5 rounded text-cyan-400 text-[10px] border border-[#2b394f]">💡 ProTip: Click any row for details</span>
+            <span className="bg-[#1b2434] px-2 py-0.5 rounded text-cyan-400 text-[10px] border border-[#2b394f]">💡 Click row for forensic thesis</span>
             <span>Showing <strong className="text-slate-200">{isDayTrader ? optionsFlow.length : congressTrades.length}</strong> records</span>
           </div>
         </div>
@@ -225,7 +301,7 @@ function SmartMoneyContent() {
                     <th className="py-3 px-4">Politician</th>
                     <th className="py-3 px-4">Chamber</th>
                     <th className="py-3 px-4">Ticker</th>
-                    <th className="py-3 px-4">Asset Name</th>
+                    <th className="py-3 px-4">Asset Name & Sector</th>
                     <th className="py-3 px-4">Type</th>
                     <th className="py-3 px-4 text-right">Amount ($)</th>
                     <th className="py-3 px-4">Filing Date</th>
@@ -244,7 +320,7 @@ function SmartMoneyContent() {
                   ) : congressTrades.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="py-8 text-center text-slate-500">
-                        No congressional trades found matching &quot;{filterQuery}&quot;.
+                        No congressional trades found matching filter criteria.
                       </td>
                     </tr>
                   ) : (
@@ -273,7 +349,10 @@ function SmartMoneyContent() {
                             {t.ticker}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-300 max-w-[150px] truncate">{t.asset_name}</td>
+                        <td className="py-3 px-4 text-slate-300 max-w-[200px]">
+                          <div className="font-semibold truncate">{t.asset_name}</div>
+                          {t.sector && <div className="text-[10px] text-cyan-400 truncate">{t.sector}</div>}
+                        </td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
