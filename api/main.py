@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import analytics, volatility, screener, regimes, cache
+from api.middleware.rate_limiter import RedisRateLimitMiddleware
 
 app = FastAPI(
     title="Financial Market Analysis API",
@@ -11,6 +12,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# 1. CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,6 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 2. Distributed Redis & Memory-Fallback Rate Limiter Middleware
+app.add_middleware(RedisRateLimitMiddleware, default_limit=120, window_seconds=60)
+
+# 3. API Routers
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(volatility.router, prefix="/api/v1/volatility", tags=["Volatility & Forecasting"])
 app.include_router(screener.router, prefix="/api/v1/screener", tags=["Screener"])
@@ -30,4 +36,3 @@ app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management
 def health_check():
     """Service health check endpoint."""
     return {"status": "online", "version": "1.0.0"}
-
