@@ -12,6 +12,7 @@ import DayTraderPositionSizer from "../components/DayTraderPositionSizer";
 import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
 import MarketGraphCard from "../components/MarketGraphCard";
 import CatalystForecastCard from "../components/CatalystForecastCard";
+import InstitutionalFeeds from "../components/InstitutionalFeeds";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
@@ -269,6 +270,7 @@ function TerminalContent() {
                 macroDifficulty={data?.macroDifficulty}
                 expectedReturn={data?.expectedReturn}
               />
+              <InstitutionalFeeds activeSymbol={selectedSymbol} />
               <CatalystForecastCard data={data?.catalystForecast} />
             </div>
           )}
