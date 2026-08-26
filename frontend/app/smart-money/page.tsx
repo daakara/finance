@@ -107,12 +107,12 @@ function SmartMoneyContent() {
 
   // Top Actionable Radar Assets
   const actionableAssets = [
-    { ticker: "NVDA", name: "NVIDIA", type: "Calls + Pelosi", alpha: "+14.8%", badge: "Whale Alert", bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60" },
-    { ticker: "PLTR", name: "Palantir", type: "$190 Call Squeeze", alpha: "+12.1%", badge: "Gamma Squeeze", bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60" },
-    { ticker: "VRT", name: "Vertiv", type: "Liquid Cooling Surge", alpha: "+18.2%", badge: "High Momentum", bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60" },
-    { ticker: "NVO", name: "Novo Nordisk", type: "$145 Call Block", alpha: "+6.4%", badge: "Policy Fit", bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60" },
-    { ticker: "CRWD", name: "CrowdStrike", type: "Cybersecurity Sweep", alpha: "+16.5%", badge: "Rapid Filing", bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60" },
-    { ticker: "TSM", name: "TSMC", type: "2nm CHIPS Flow", alpha: "+9.3%", badge: "Whale Tier", bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60" },
+    { ticker: "NVDA", name: "NVIDIA", type: "Nancy Pelosi Calls", postTradeAlpha: "+14.8%", dailyChange: "+3.14%", badge: "Whale Alert", bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60" },
+    { ticker: "PLTR", name: "Palantir", type: "$190 Call Squeeze", postTradeAlpha: "+12.1%", dailyChange: "+4.12%", badge: "Gamma Squeeze", bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60" },
+    { ticker: "VRT", name: "Vertiv", type: "Liquid Cooling Surge", postTradeAlpha: "+18.2%", dailyChange: "+2.85%", badge: "High Momentum", bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60" },
+    { ticker: "NVO", name: "Novo Nordisk", type: "$145 Call Block", postTradeAlpha: "+6.4%", dailyChange: "+1.85%", badge: "Policy Fit", bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60" },
+    { ticker: "CRWD", name: "CrowdStrike", type: "Cybersecurity Sweep", postTradeAlpha: "+16.5%", dailyChange: "+3.40%", badge: "Rapid Filing", bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60" },
+    { ticker: "TSM", name: "TSMC", type: "2nm CHIPS Flow", postTradeAlpha: "+9.3%", dailyChange: "+2.15%", badge: "Whale Tier", bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60" },
   ];
 
   return (
@@ -175,11 +175,19 @@ function SmartMoneyContent() {
                 href={`/?symbol=${card.ticker}`}
                 className={`bg-gradient-to-b ${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-black text-white group-hover:text-cyan-400 font-mono tracking-tight">
-                    {card.ticker}
-                  </span>
-                  <span className="text-xs font-bold text-emerald-400 tabular-nums">{card.alpha}</span>
+                <div className="flex items-start justify-between gap-1">
+                  <div>
+                    <span className="text-base font-black text-white group-hover:text-cyan-400 font-mono tracking-tight">
+                      {card.ticker}
+                    </span>
+                    <div className="text-[10px] text-slate-400">
+                      24h: <span className="text-emerald-400 font-bold">{card.dailyChange}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-black text-emerald-400 tabular-nums">{card.postTradeAlpha}</div>
+                    <div className="text-[9px] text-cyan-400/90 font-semibold uppercase tracking-wider">Since Filing</div>
+                  </div>
                 </div>
                 <div className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{card.name}</div>
                 <div className="text-[10px] text-slate-400 truncate mt-1">{card.type}</div>
