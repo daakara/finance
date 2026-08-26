@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import Script from "next/script";
 
 export default function MatomoTracker() {
   const pathname = usePathname();
@@ -11,13 +10,34 @@ export default function MatomoTracker() {
 
   const matomoUrl = process.env.NEXT_PUBLIC_MATOMO_URL || "https://analytics.example.com";
   const matomoSiteId = process.env.NEXT_PUBLIC_MATOMO_SITE_ID || "1";
+  const sanitizedMatomoUrl = matomoUrl.replace(/\/+$/, "") + "/";
 
-  // SPA Route Change & User Journey Path Tracking
+  // 1. Initial Setup on Client Mount
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     window._paq = window._paq || [];
+    window._paq.push(["setTrackerUrl", sanitizedMatomoUrl + "matomo.php"]);
+    window._paq.push(["setSiteId", matomoSiteId]);
+    window._paq.push(["enableLinkTracking"]);
+    window._paq.push(["enableHeartBeatTimer", 15]);
 
+    // Inject remote matomo.js loader
+    if (!document.getElementById("matomo-js-script")) {
+      const script = document.createElement("script");
+      script.id = "matomo-js-script";
+      script.type = "text/javascript";
+      script.async = true;
+      script.src = sanitizedMatomoUrl + "matomo.js";
+      document.head.appendChild(script);
+    }
+  }, [sanitizedMatomoUrl, matomoSiteId]);
+
+  // 2. SPA Route Change & User Journey Path Tracking
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window._paq = window._paq || [];
     const fullUrl = window.location.pathname + window.location.search;
 
     if (previousUrlRef.current && previousUrlRef.current !== fullUrl) {
@@ -27,30 +47,13 @@ export default function MatomoTracker() {
       window._paq.push(["deleteCustomVariables", "page"]);
       window._paq.push(["trackPageView"]);
       window._paq.push(["enableLinkTracking"]);
+    } else if (!previousUrlRef.current) {
+      // First page view on initial load
+      window._paq.push(["trackPageView"]);
     }
 
     previousUrlRef.current = fullUrl;
   }, [pathname, searchParams]);
 
-  const sanitizedMatomoUrl = matomoUrl.replace(/\/+$/, "") + "/";
-
-  return (
-    <>
-      <Script id="matomo-base-init" strategy="afterInteractive">
-        {`
-          var _paq = window._paq = window._paq || [];
-          _paq.push(['trackPageView']);
-          _paq.push(['enableLinkTracking']);
-          _paq.push(['enableHeartBeatTimer', 15]);
-          (function() {
-            var u="${sanitizedMatomoUrl}";
-            _paq.push(['setTrackerUrl', u+'matomo.php']);
-            _paq.push(['setSiteId', '${matomoSiteId}']);
-            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-          })();
-        `}
-      </Script>
-    </>
-  );
+  return null;
 }
