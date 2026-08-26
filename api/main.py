@@ -1,5 +1,6 @@
 ﻿"""FastAPI Backend Application Entry Point."""
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,12 +13,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# 1. CORS Middleware
+# 1. Strict CORS Whitelist Configuration
+ALLOWED_ORIGINS = [
+    "https://finance-xp8.pages.dev",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+]
+
+# Allow custom environment-based origins if specified
+extra_origin = os.getenv("ALLOWED_ORIGIN", "")
+if extra_origin and extra_origin not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append(extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
