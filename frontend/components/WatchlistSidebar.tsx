@@ -10,10 +10,28 @@ interface WatchlistSidebarProps {
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
   const [items, setItems] = useState<WatchlistDefinition[]>(SHARED_WATCHLIST_ITEMS);
+  const [pinnedSymbols, setPinnedSymbols] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"All" | "Stock" | "ETF" | "Crypto">("All");
+  const [activeCategory, setActiveCategory] = useState<"All" | "Pinned" | "Stock" | "ETF" | "Crypto">("All");
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Load pinned symbols from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("FINANCE_PINNED_SYMBOLS");
+      if (saved) {
+        setPinnedSymbols(JSON.parse(saved));
+      } else {
+        // Default pinned items
+        const defaultPins = ["AAPL", "NVDA", "BTC-USD"];
+        setPinnedSymbols(defaultPins);
+        localStorage.setItem("FINANCE_PINNED_SYMBOLS", JSON.stringify(defaultPins));
+      }
+    } catch {
+      setPinnedSymbols(["AAPL", "NVDA"]);
+    }
+  }, []);
 
   // Global keyboard shortcut: Press "/" to focus search input
   useEffect(() => {
@@ -31,12 +49,33 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  const togglePin = (e: React.MouseEvent, sym: string) => {
+    e.stopPropagation();
+    const cleanSym = sym.toUpperCase();
+    let updated: string[];
+    if (pinnedSymbols.includes(cleanSym)) {
+      updated = pinnedSymbols.filter((s) => s !== cleanSym);
+    } else {
+      updated = [...pinnedSymbols, cleanSym];
+    }
+    setPinnedSymbols(updated);
+    try {
+      localStorage.setItem("FINANCE_PINNED_SYMBOLS", JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Could not save pinned symbols:", err);
+    }
+  };
+
   const cleanQuery = searchQuery.trim().toUpperCase();
 
   // Filter items by category AND search query (ticker or company name)
   const filteredItems = items.filter((item) => {
-    const matchesCategory = activeCategory === "All" ? true : item.type === activeCategory;
-    if (!matchesCategory) return false;
+    const cleanItemSym = item.symbol.toUpperCase();
+    if (activeCategory === "Pinned") {
+      if (!pinnedSymbols.includes(cleanItemSym)) return false;
+    } else if (activeCategory !== "All") {
+      if (item.type !== activeCategory) return false;
+    }
 
     if (!cleanQuery) return true;
     const matchSymbol = item.symbol.toUpperCase().includes(cleanQuery);
@@ -44,11 +83,11 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     return matchSymbol || matchName;
   });
 
-  const handleCategoryClick = (cat: "All" | "Stock" | "ETF" | "Crypto") => {
+  const handleCategoryClick = (cat: "All" | "Pinned" | "Stock" | "ETF" | "Crypto") => {
     setActiveCategory(cat);
     setIsMobileExpanded(true);
 
-    if (cat !== "All") {
+    if (cat !== "All" && cat !== "Pinned") {
       const topItem = items.find((item) => item.type === cat);
       if (topItem && activeSymbol !== topItem.symbol) {
         onSelectSymbol(topItem.symbol);
@@ -61,6 +100,23 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     e.preventDefault();
     if (cleanQuery) {
       onSelectSymbol(cleanQuery);
+      // Automatically add to list if not already present
+      const alreadyInList = items.some((i) => i.symbol.toUpperCase() === cleanQuery);
+      if (!alreadyInList) {
+        const newItem: WatchlistDefinition = {
+          symbol: cleanQuery,
+          name: `${cleanQuery} Custom Asset`,
+          price: "$---",
+          change: "0.00%",
+          isUp: true,
+          type: "Stock",
+        };
+        const updatedItems = [newItem, ...items];
+        setItems(updatedItems);
+        const updatedPins = [cleanQuery, ...pinnedSymbols];
+        setPinnedSymbols(updatedPins);
+        localStorage.setItem("FINANCE_PINNED_SYMBOLS", JSON.stringify(updatedPins));
+      }
       setSearchQuery("");
     }
   };
@@ -132,21 +188,22 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         </div>
       </form>
 
-      {/* Asset Category Filters */}
-      <div role="tablist" aria-label="Asset Class Filter" className="grid grid-cols-4 gap-1 p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[11px]">
-        {(["All", "Stock", "ETF", "Crypto"] as const).map((cat) => (
+      {/* Asset Category Filters with Pinned Filter */}
+      <div role="tablist" aria-label="Asset Class Filter" className="grid grid-cols-5 gap-1 p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[10px]">
+        {(["All", "Pinned", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
             role="tab"
             aria-selected={activeCategory === cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`py-1 rounded font-bold transition-all active:scale-[0.96] ${
+            className={`py-1 rounded font-bold transition-all active:scale-[0.96] flex items-center justify-center gap-0.5 ${
               activeCategory === cat
-                ? "bg-cyan-500 text-slate-950 shadow-sm"
+                ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            {cat}
+            {cat === "Pinned" && <span>⭐</span>}
+            <span>{cat}</span>
           </button>
         ))}
       </div>
@@ -184,30 +241,42 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
             const itemClean = item.symbol.toUpperCase().replace("-USD", "");
             const activeClean = activeSymbol.toUpperCase().replace("-USD", "");
             const isSelected = activeClean === itemClean;
+            const isPinned = pinnedSymbols.includes(item.symbol.toUpperCase());
             return (
-              <button
+              <div
                 key={item.symbol}
                 onClick={() => onSelectSymbol(item.symbol)}
-                aria-label={`Select ${item.name} (${item.symbol}), Price ${item.price}, Change ${item.change}`}
-                className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left transition-all active:scale-[0.98] ${
+                className={`w-full flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-all active:scale-[0.98] ${
                   isSelected
                     ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"
                     : "bg-[#0b1019] border-[#1b2434] hover:bg-[#131b28] hover:border-[#2b3a52]"
                 }`}
               >
-                <div>
-                  <div className="flex items-center space-x-1.5">
-                    <span className="font-bold text-xs text-white">{item.symbol}</span>
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
-                      {item.type}
+                <div className="flex items-center space-x-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={(e) => togglePin(e, item.symbol)}
+                    aria-label={isPinned ? `Unpin ${item.symbol}` : `Pin ${item.symbol}`}
+                    className="text-xs hover:scale-125 transition-transform shrink-0 p-0.5"
+                  >
+                    <span className={isPinned ? "text-amber-400" : "text-slate-600 hover:text-slate-400"}>
+                      ★
                     </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 truncate max-w-[120px]">
-                    {item.name}
+                  </button>
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="font-bold text-xs text-white">{item.symbol}</span>
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
+                        {item.type}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate max-w-[110px]">
+                      {item.name}
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
                   <div
                     className={`text-[10px] font-semibold tabular-nums ${
@@ -217,7 +286,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
                     {item.change}
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })
         )}
