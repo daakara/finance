@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { getAnonymousUserId } from "../lib/portfolio";
 
 export default function MatomoTracker() {
   const pathname = usePathname();
@@ -17,6 +18,8 @@ export default function MatomoTracker() {
     if (typeof window === "undefined") return;
 
     window._paq = window._paq || [];
+    const anonId = getAnonymousUserId();
+    window._paq.push(["setUserId", anonId]);
     window._paq.push(["setTrackerUrl", sanitizedMatomoUrl + "matomo.php"]);
     window._paq.push(["setSiteId", matomoSiteId]);
     window._paq.push(["enableLinkTracking"]);
@@ -38,6 +41,8 @@ export default function MatomoTracker() {
     if (typeof window === "undefined") return;
 
     window._paq = window._paq || [];
+    const anonId = getAnonymousUserId();
+    window._paq.push(["setUserId", anonId]);
     const fullUrl = window.location.pathname + window.location.search;
 
     if (previousUrlRef.current && previousUrlRef.current !== fullUrl) {

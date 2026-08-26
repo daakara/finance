@@ -93,6 +93,15 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               >
                 <span>🏛️ Smart Money</span>
               </Link>
+                            <Link
+                href="/portfolio"
+                aria-current={pathname === "/portfolio" ? "page" : undefined}
+                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                  pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <span>💼 Portfolio</span>
+              </Link>
               <Link
                 href="/guide"
                 aria-current={pathname === "/guide" ? "page" : undefined}

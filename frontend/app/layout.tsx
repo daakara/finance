@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
 import OfflineStatusBanner from "../components/OfflineStatusBanner";
 import MatomoTracker from "../components/MatomoTracker";
+import OnboardingModal from "../components/OnboardingModal";
 
 export const metadata = {
   title: "Financial Market Analysis Platform",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-[#070a10] text-[#c9d1d9] antialiased">
         <OfflineStatusBanner />
+        <OnboardingModal />
         <ServiceWorkerRegister />
         <Suspense fallback={null}>
           <MatomoTracker />
