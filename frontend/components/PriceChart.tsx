@@ -35,7 +35,7 @@ export default function PriceChart({
 
   const [activeInterval, setActiveInterval] = useState<string>(interval);
 
-  // Synchronize internal active interval whenever parent prop changes (e.g. Day Trade / Long Term mode switches)
+  // Synchronize internal active interval whenever parent prop changes
   useEffect(() => {
     setActiveInterval(interval);
   }, [interval]);
@@ -63,7 +63,12 @@ export default function PriceChart({
     // Reset container DOM before instantiating new chart
     chartContainerRef.current.innerHTML = "";
 
+    const width = chartContainerRef.current.clientWidth || 800;
+    const height = chartContainerRef.current.clientHeight || 320;
+
     const chart = createChart(chartContainerRef.current, {
+      width: width,
+      height: height,
       layout: {
         background: { color: "#0b0f19" },
         textColor: "#94a3b8",
@@ -77,6 +82,7 @@ export default function PriceChart({
       },
       rightPriceScale: {
         borderColor: "#334155",
+        autoScale: true,
       },
       timeScale: {
         borderColor: "#334155",
@@ -129,11 +135,27 @@ export default function PriceChart({
       const formattedData = candles
         .map((c) => {
           let timeVal: any = c.time;
-          if (typeof timeVal === "string" && isIntraday && !timeVal.includes("-")) {
-            timeVal = Number(timeVal);
-          } else if (typeof timeVal === "number" && !isIntraday) {
-            const d = new Date(timeVal * 1000);
-            timeVal = d.toISOString().split("T")[0];
+          
+          if (isIntraday) {
+            // Intraday timestamps MUST be numeric Unix timestamp in seconds (UTCTimestamp)
+            if (typeof timeVal === "string") {
+              if (timeVal.includes("-") || timeVal.includes("T")) {
+                timeVal = Math.floor(new Date(timeVal).getTime() / 1000);
+              } else {
+                timeVal = Math.floor(Number(timeVal));
+              }
+            } else if (typeof timeVal === "number" && timeVal > 20000000000) {
+              // Milliseconds -> convert to seconds
+              timeVal = Math.floor(timeVal / 1000);
+            }
+          } else {
+            // Daily timestamps MUST be YYYY-MM-DD string
+            if (typeof timeVal === "number") {
+              const ms = timeVal > 20000000000 ? timeVal : timeVal * 1000;
+              timeVal = new Date(ms).toISOString().split("T")[0];
+            } else if (typeof timeVal === "string" && timeVal.includes("T")) {
+              timeVal = timeVal.split("T")[0];
+            }
           }
 
           return {
@@ -144,14 +166,14 @@ export default function PriceChart({
             close: Number(c.close),
           };
         })
-        .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0)
+        .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0 && c.time)
         .sort((a, b) => {
           const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
           const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
           return tA - tB;
         });
 
-      // Deduplicate timestamps to prevent Lightweight Charts crash
+      // Deduplicate timestamps strictly to prevent Lightweight Charts engine drop
       const uniqueData: any[] = [];
       const seenTimes = new Set();
       for (const item of formattedData) {
@@ -195,7 +217,10 @@ export default function PriceChart({
           }
         }
 
-        chartRef.current?.timeScale().fitContent();
+        // Fit content on next tick
+        setTimeout(() => {
+          chartRef.current?.timeScale().fitContent();
+        }, 50);
       }
     } catch (err) {
       console.warn("Error setting chart data:", err);
@@ -272,11 +297,10 @@ export default function PriceChart({
       <div
         role="region"
         aria-label={`${symbol} interactive candlestick and trend chart`}
-        className="flex-1 w-full min-h-[280px] sm:min-h-[320px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
+        className="flex-1 w-full min-h-[320px] h-[340px] sm:h-[400px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
       </div>
     </section>
   );
 }
-
