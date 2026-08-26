@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnalyticsResponse } from "../lib/api";
+import { loadPortfolioPositions, savePortfolioPositions, PortfolioPosition } from "../lib/portfolio";
 
 interface DayTraderPositionSizerProps {
   symbol: string;
@@ -12,6 +13,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const [accountSize, setAccountSize] = useState<number>(25000);
   const [riskPct, setRiskPct] = useState<number>(1.0);
   const [tradeDirection, setTradeDirection] = useState<"LONG" | "SHORT">("LONG");
+  const [addedFeedback, setAddedFeedback] = useState<boolean>(false);
 
   const currentPrice = data.currentPrice || 100.0;
   const metrics = data.analytics?.advanced_metrics || {};
@@ -47,6 +49,27 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const target30 = tradeDirection === "LONG"
     ? currentPrice + stopDistanceDollar * 3.0
     : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
+
+    const handleSaveToPortfolio = () => {
+    const existing = loadPortfolioPositions();
+    const newPos: PortfolioPosition = {
+      symbol: symbol.toUpperCase().replace("-USD", ""),
+      name: `${symbol.toUpperCase().replace("-USD", "")} Intraday Trade`,
+      shares: positionUnits,
+      entryPrice: currentPrice,
+      currentPrice: currentPrice,
+      stopLossPrice: stopPrice,
+      targetPrice: target20,
+      addedAt: new Date().toISOString().split("T")[0],
+      assetType: "Stock",
+    };
+    // Replace if exists, or prepend
+    const symKey = symbol.toUpperCase().replace("-USD", "");
+    const updated = [newPos, ...existing.filter((p) => p.symbol !== symKey)];
+    savePortfolioPositions(updated);
+    setAddedFeedback(true);
+    setTimeout(() => setAddedFeedback(false), 3000);
+  };
 
   return (
     <section aria-labelledby="position-sizer-title" className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
@@ -218,6 +241,20 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           <span className="text-sm sm:text-base font-bold text-purple-400 block tabular-nums">${target30.toFixed(2)}</span>
           <span className="text-[9px] text-purple-300/90 block mt-0.5 tabular-nums">+${(dollarRisk * 3.0).toFixed(0)} Profit</span>
         </div>
+      </div>
+      {/* 🎯 STAGE 3 EXECUTION: 1-Click Send Trade to Portfolio */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={handleSaveToPortfolio}
+          className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
+            addedFeedback
+              ? "bg-emerald-600 text-white font-extrabold shadow-emerald-950/60"
+              : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white"
+          }`}
+        >
+          <span>{addedFeedback ? "✓ SIZED TRADE SAVED TO MY PORTFOLIO!" : "💼 Send Sized Trade to My Portfolio (1-Click)"}</span>
+        </button>
       </div>
     </section>
   );

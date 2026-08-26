@@ -178,6 +178,13 @@ function TerminalContent() {
                   ? `${data.smartMoney.optionsFlow[0].type} (${data.smartMoney.optionsFlow[0].premium})`
                   : undefined
               }
+              catalystHeadline={
+                data?.catalystForecast?.primary_drug_trial
+                  ? `${data.catalystForecast.primary_drug_trial} (${data.catalystForecast.trial_phase}) - ${data.catalystForecast.trial_readout_timeline}`
+                  : data?.catalystForecast?.efficacy_summary
+                  ? data.catalystForecast.efficacy_summary
+                  : undefined
+              }
               loading={loading}
               technicals={data?.technicals}
             />

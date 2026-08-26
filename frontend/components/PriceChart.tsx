@@ -13,6 +13,7 @@ interface PriceChartProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onIntervalChange?: (interval: string) => void;
   smartMoneyHeadline?: string;
+  catalystHeadline?: string;
   loading?: boolean;
   technicals?: {
     vwap?: number | null;
@@ -48,6 +49,7 @@ export default function PriceChart({
   userRole = "LONG_TERM",
   onIntervalChange,
   smartMoneyHeadline,
+  catalystHeadline,
   loading = false,
   technicals,
 }: PriceChartProps) {
@@ -260,8 +262,9 @@ export default function PriceChart({
     <section aria-labelledby="chart-header-symbol" className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-5 shadow-xl flex flex-col h-full font-mono">
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#1b2434]">
-        {/* Left: Symbol & Live Tabular Price */}
-        <div className="flex items-center space-x-2.5 sm:space-x-3">
+        <div className="space-y-1.5 w-full sm:w-auto">
+                {/* Left: Symbol & Live Tabular Price */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <h1 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h1>
           {currentPrice && (
             <span aria-label={`Current price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
@@ -285,10 +288,20 @@ export default function PriceChart({
             {isIntraday ? "⚡ VWAP Active" : "🏛️ 20 EMA Active"}
           </span>
           {smartMoneyHeadline && (
-            <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
-              <span>🏛️ Smart Money:</span>
-              <span className="text-white">{smartMoneyHeadline}</span>
-            </span>
+              <span className="hidden xl:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 animate-pulse">
+                <span>🏛️ Smart Money:</span>
+                <span className="text-white">{smartMoneyHeadline}</span>
+              </span>
+            )}
+          </div>
+
+          {/* 🎯 STAGE 1 DISCOVERY: 1-Line Catalyst Micro-Tag */}
+          {catalystHeadline && (
+            <div className="flex items-center space-x-1.5 text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg">
+              <span className="text-xs">🔥</span>
+              <span className="font-semibold text-slate-300">Catalyst Pulse:</span>
+              <span className="text-amber-200 font-sans truncate">{catalystHeadline}</span>
+            </div>
           )}
         </div>
 
