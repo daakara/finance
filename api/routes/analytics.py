@@ -15,6 +15,7 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
+from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -25,6 +26,7 @@ market_graph_engine = MarketGraphEngine()
 catalyst_engine = CatalystEngine()
 smart_money_engine = SmartMoneyEngine()
 eodhd_fetcher = EODHDMarketFetcher()
+optimal_execution_engine = OptimalExecutionEngine()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 
@@ -262,6 +264,7 @@ def get_asset_analytics(
             "traderArchetypes": trader_archetypes,
             "selfHealingAudit": self_healing_audit,
             "marketGraph": market_graph,
+            "optimalExecution": optimal_execution_engine.calculate_trade_levels(price_df=hist, current_price=current_price, user_role="DAY_TRADER" if clean_interval in ["1m", "5m", "15m", "1h"] else "LONG_TERM", technicals=technicals),
             "catalystForecast": catalyst_engine.get_asset_catalyst_report(upper_sym, current_price),
             "smartMoney": {
                 "congressTrades": smart_money_engine.get_congressional_trades(upper_sym),

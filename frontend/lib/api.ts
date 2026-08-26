@@ -220,6 +220,25 @@ export interface SmartMoneyOverview {
   options_flow: OptionsFlowItem[];
 }
 
+export interface OptimalExecutionPlan {
+  current_price: number;
+  optimal_entry_min: number;
+  optimal_entry_max: number;
+  stop_loss: number;
+  stop_loss_pct: number;
+  take_profit_1: number;
+  take_profit_1_pct: number;
+  take_profit_2: number;
+  take_profit_2_pct: number;
+  risk_reward_ratio: number;
+  setup_pattern: string;
+  entry_thesis: string;
+  invalidation_condition: string;
+  stage_phase: string;
+  vcp_contraction_status: string;
+  atr_14?: number;
+}
+
 export interface AnalyticsResponse {
   symbol: string;
   period: string;
@@ -236,6 +255,7 @@ export interface AnalyticsResponse {
   selfHealingAudit?: SelfHealingAudit;
   marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
+  optimalExecution?: OptimalExecutionPlan;
   smartMoney?: {
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];

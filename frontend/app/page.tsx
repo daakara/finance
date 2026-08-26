@@ -13,6 +13,7 @@ import SelfHealingAccuracyCard from "../components/SelfHealingAccuracyCard";
 import MarketGraphCard from "../components/MarketGraphCard";
 import CatalystForecastCard from "../components/CatalystForecastCard";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
+import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 
 function TerminalContent() {
@@ -148,6 +149,7 @@ function TerminalContent() {
             /* Day Trader Journey: Live Risk Sizer, Intraday Technicals, Continuous Self-Healing, Real-Time Flow Tape */
             <div className="space-y-4 sm:space-y-5">
               {data && <DayTraderPositionSizer symbol={selectedSymbol} data={data} />}
+              <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
               <CongressionalTradesCard
                 symbol={selectedSymbol}
                 congressTrades={data?.smartMoney?.congressTrades}
@@ -160,6 +162,7 @@ function TerminalContent() {
           ) : (
             /* Long-Term Wealth Journey: Fundamental Factor Radar, Market Graph Contagion, Catalysts, Congressional Insider Trades */
             <div className="space-y-4 sm:space-y-5">
+              <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
               <AssetFactorRadar
                 symbol={selectedSymbol}
                 factorScores={data?.factorScores}
