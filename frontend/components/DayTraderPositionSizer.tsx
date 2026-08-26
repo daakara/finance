@@ -67,7 +67,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-            Statistical stop-loss sizing powered by Cornish-Fisher fat-tail risk (Modified VaR) and ATR(14)
+            Calculates exact shares and dollar risk based on market volatility and stop-loss boundaries
           </p>
         </div>
 

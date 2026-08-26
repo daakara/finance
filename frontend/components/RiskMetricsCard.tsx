@@ -34,7 +34,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             {isDayTrader
               ? "Real-time ATR volatility, single-day drawdown boundaries, and intraday risk-adjusted ratios"
-              : "Non-normal return distribution models & Cornish-Fisher tail risk quantification"}
+              : "Downside Crash Protection & Black-Swan Tail Risk Evaluation"}
           </p>
         </div>
         <span className={`text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-md font-semibold border ${
@@ -42,7 +42,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
             : "text-cyan-400 bg-cyan-950/60 border-cyan-800/80"
         }`}>
-          {isDayTrader ? "Intraday Risk Engine" : "Cornish-Fisher Model"}
+          {isDayTrader ? "Intraday Risk Engine" : "Crash-Adjusted VaR"}
         </span>
       </div>
 

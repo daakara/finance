@@ -56,8 +56,8 @@ export default function OptimalEntryExitCard({
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             {isDayTrader
-              ? "Linda Raschke 20 EMA Momentum Pullback & Turtle ATR Sizing"
-              : "Mark Minervini Volatility Contraction Pattern (VCP) & Stage 2 Pivot"}
+              ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
+              : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
         </div>
 

@@ -92,7 +92,7 @@ export default function InsightProvenanceModal({
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   {isDayTrader
                     ? "Linda Raschke 20-period Exponential Moving Average (20 EMA) pullback model with intraday 14-period Turtle ATR volatility sizing."
-                    : "Mark Minervini 3-Stage Volatility Contraction Pattern (VCP) detecting institutional accumulation and supply absorption."}
+                    : "Institutional Accumulation Pattern: Detects tight price consolidation and volume dry-ups before high-probability breakouts."}
                 </p>
                 <div className="bg-[#111722] p-2.5 rounded-lg border border-[#1e2433] text-[11px] font-mono text-slate-400">
                   <span className="text-cyan-400 font-bold block mb-1">Mathematical Constraints:</span>
