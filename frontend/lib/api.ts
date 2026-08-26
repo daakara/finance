@@ -322,7 +322,31 @@ export async function fetchAssetAnalytics(
   }
 
   // 2. High-Fidelity Multi-Period Fallback Generator (60+ Candle Points for Smooth Rendering)
-  const basePrice = upper === "BTC" ? 78213.0 : upper === "NVDA" ? 213.05 : upper === "NVO" ? 138.50 : upper === "LLY" ? 920.40 : 309.90;
+  const ASSET_PRICE_MAP: Record<string, { price: number; changePct: number }> = {
+    "NVO": { price: 138.50, changePct: 1.85 },
+    "LLY": { price: 920.40, changePct: 2.10 },
+    "AAPL": { price: 309.90, changePct: -0.45 },
+    "NVDA": { price: 213.05, changePct: 3.14 },
+    "MSFT": { price: 491.71, changePct: 0.85 },
+    "GOOGL": { price: 346.96, changePct: 1.40 },
+    "TSLA": { price: 350.25, changePct: 2.15 },
+    "PLTR": { price: 142.80, changePct: 4.12 },
+    "SPY": { price: 765.91, changePct: 0.65 },
+    "QQQ": { price: 710.72, changePct: 1.10 },
+    "SMH": { price: 288.40, changePct: 2.45 },
+    "XLK": { price: 246.15, changePct: 1.30 },
+    "IWM": { price: 224.50, changePct: 0.95 },
+    "GLD": { price: 264.20, changePct: 0.40 },
+    "TLT": { price: 88.65, changePct: -0.30 },
+    "XLE": { price: 86.10, changePct: 1.05 },
+    "BTC": { price: 78213.0, changePct: 2.80 },
+    "ETH": { price: 2438.0, changePct: 1.65 },
+    "SOL": { price: 96.73, changePct: 0.24 },
+  };
+
+  const matched = ASSET_PRICE_MAP[upper] || { price: 309.90, changePct: -0.45 };
+  const basePrice = matched.price;
+  const baseChangePct = matched.changePct;
   const numPoints = interval.includes("m") || interval.includes("h") ? 45 : period === "5y" ? 60 : period === "3y" ? 52 : 75;
   const isIntraday = interval.includes("m") || interval.includes("h");
 
@@ -359,7 +383,7 @@ export async function fetchAssetAnalytics(
     period,
     interval,
     currentPrice: basePrice,
-    priceChangePct24h: 1.45,
+    priceChangePct24h: baseChangePct,
     candles: generatedCandles,
     technicals: { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
     factorScores: {

@@ -1,13 +1,23 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchAssetAnalytics } from "../lib/api";
 
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
 }
 
-const WATCHLIST_ITEMS = [
+interface WatchlistItem {
+  symbol: string;
+  name: string;
+  price: string;
+  change: string;
+  isUp: boolean;
+  type: "Stock" | "ETF" | "Crypto";
+}
+
+const INITIAL_WATCHLIST_ITEMS: WatchlistItem[] = [
   // Mega-Cap Tech & Global Pharma Equities
   { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },
   { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },
@@ -35,10 +45,53 @@ const WATCHLIST_ITEMS = [
 ];
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: WatchlistSidebarProps) {
+  const [items, setItems] = useState<WatchlistItem[]>(INITIAL_WATCHLIST_ITEMS);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"All" | "Stock" | "ETF" | "Crypto">("All");
 
-  const filteredItems = WATCHLIST_ITEMS.filter((item) =>
+  // Keep active symbol synchronized with real-time loaded data
+  useEffect(() => {
+    let isMounted = true;
+    async function syncActiveItem() {
+      if (!activeSymbol) return;
+      try {
+        const liveData = await fetchAssetAnalytics(activeSymbol);
+        if (isMounted && liveData && liveData.currentPrice !== undefined) {
+          const symClean = activeSymbol.toUpperCase().replace("-USD", "");
+          const isUp = (liveData.priceChangePct24h ?? 0) >= 0;
+          const changeStr = `${isUp ? "+" : ""}${(liveData.priceChangePct24h ?? 0).toFixed(2)}%`;
+          const priceStr = `$${liveData.currentPrice.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`;
+
+          setItems((prevItems) =>
+            prevItems.map((item) => {
+              const itemClean = item.symbol.toUpperCase().replace("-USD", "");
+              if (itemClean === symClean) {
+                return {
+                  ...item,
+                  price: priceStr,
+                  change: changeStr,
+                  isUp: isUp,
+                };
+              }
+              return item;
+            })
+          );
+        }
+      } catch (err) {
+        console.warn("Watchlist live sync error:", err);
+      }
+    }
+
+    syncActiveItem();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeSymbol]);
+
+  const filteredItems = items.filter((item) =>
     activeCategory === "All" ? true : item.type === activeCategory
   );
 
@@ -47,7 +100,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
     setIsMobileExpanded(true);
 
     if (cat !== "All") {
-      const topItem = WATCHLIST_ITEMS.find((item) => item.type === cat);
+      const topItem = items.find((item) => item.type === cat);
       if (topItem && activeSymbol !== topItem.symbol) {
         onSelectSymbol(topItem.symbol);
       }
@@ -116,7 +169,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol }: Watch
         }`}
       >
         {filteredItems.map((item) => {
-          const isSelected = activeSymbol === item.symbol;
+          const itemClean = item.symbol.toUpperCase().replace("-USD", "");
+          const activeClean = activeSymbol.toUpperCase().replace("-USD", "");
+          const isSelected = activeClean === itemClean;
           return (
             <button
               key={item.symbol}
