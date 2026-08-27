@@ -1,4 +1,4 @@
-"""Unit tests for Category C Advanced ML Features (GMM Market Regime Detection & ARIMA Price Forecasting)."""
+﻿"""Unit tests for Category C Advanced ML Features (GMM Market Regime Detection & ARIMA Price Forecasting)."""
 
 import unittest
 import pandas as pd
@@ -33,7 +33,7 @@ class TestCategoryCAnalytics(unittest.TestCase):
     def test_arima_price_forecasting(self):
         """Verify ARIMA price forecasting output structure."""
         result = self.vol_forecaster.generate_volatility_forecast(self.price_data, forecast_horizon=10)
-
+        self.assertNotIn("error", result)
         self.assertIn("price_forecast", result)
         pf = result["price_forecast"]
         self.assertIn("predicted_prices", pf)
@@ -43,4 +43,3 @@ class TestCategoryCAnalytics(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

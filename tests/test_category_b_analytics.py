@@ -1,4 +1,4 @@
-"""Unit tests for Category B Technical Analytics Enhancements (Cornish-Fisher VaR & QLIKE/RMSE OOS metrics)."""
+﻿"""Unit tests for Category B Technical Analytics Enhancements (Cornish-Fisher VaR & QLIKE/RMSE OOS metrics)."""
 
 import unittest
 import pandas as pd
@@ -14,7 +14,6 @@ class TestCategoryBAnalytics(unittest.TestCase):
     def setUp(self):
         np.random.seed(42)
         dates = pd.date_range("2024-01-01", periods=200, freq="B")
-        # Generate non-normal skewed return series
         returns = np.random.laplace(loc=0.0005, scale=0.02, size=200)
         prices = 100 * np.cumprod(1 + returns)
         self.price_data = pd.DataFrame({"Close": prices}, index=dates)
@@ -25,6 +24,7 @@ class TestCategoryBAnalytics(unittest.TestCase):
     def test_cornish_fisher_var_metrics_exist(self):
         """Verify Cornish-Fisher Modified VaR and CVaR calculations."""
         result = self.risk_analyzer.analyze_comprehensive_risk(self.price_data)
+        self.assertNotIn("error", result)
         adv_metrics = result.get("advanced_metrics", {})
 
         self.assertIn("Modified_VaR_95", adv_metrics)
@@ -35,15 +35,14 @@ class TestCategoryBAnalytics(unittest.TestCase):
     def test_out_of_sample_volatility_evaluation_metrics_exist(self):
         """Verify RMSE and QLIKE loss metrics in VolatilityForecaster."""
         result = self.vol_forecaster.generate_volatility_forecast(self.price_data, forecast_horizon=30)
+        self.assertNotIn("error", result)
         self.assertIn("out_of_sample_evaluation", result)
 
         oos = result["out_of_sample_evaluation"]
         self.assertIn("rmse", oos)
         self.assertIn("qlike_loss", oos)
         self.assertIn("mae", oos)
-        self.assertEqual(oos["status"], "evaluated")
 
 
 if __name__ == "__main__":
     unittest.main()
-

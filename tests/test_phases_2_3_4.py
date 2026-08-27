@@ -1,7 +1,8 @@
-"""Unit tests for Phase 2, Phase 3, and Phase 4 enhancements (DiskCache, DB Persistence, CI gates)."""
+﻿"""Unit tests for Phase 2, Phase 3, and Phase 4 enhancements (DiskCache, DB Persistence, CI gates)."""
 
 import unittest
 import os
+import tempfile
 import pandas as pd
 import numpy as np
 
@@ -14,7 +15,15 @@ class TestPhases234Enhancements(unittest.TestCase):
 
     def setUp(self):
         self.pipeline = MultiAssetDataPipeline()
-        self.db_engine = HistoryDatabaseEngine()
+        self.temp_db = os.path.join(tempfile.gettempdir(), "test_finance_history.db")
+        self.db_engine = HistoryDatabaseEngine(db_path=self.temp_db)
+
+    def tearDown(self):
+        if os.path.exists(self.temp_db):
+            try:
+                os.remove(self.temp_db)
+            except Exception:
+                pass
 
     def test_disk_cache_initialization(self):
         """Verify DiskCache object is initialized on MultiAssetDataPipeline."""
@@ -23,14 +32,11 @@ class TestPhases234Enhancements(unittest.TestCase):
     def test_db_engine_screening_log(self):
         """Verify database engine logs screening history."""
         self.db_engine.log_screening_result("AAPL", 88.5, "High Conviction", {"sector": "tech"})
-        # Should execute without error
 
     def test_db_engine_forecast_log(self):
         """Verify database engine logs forecast performance."""
         self.db_engine.log_forecast_performance("MSFT", 30, "GARCH(1,1)", 0.015, 0.25)
-        # Should execute without error
 
 
 if __name__ == "__main__":
     unittest.main()
-
