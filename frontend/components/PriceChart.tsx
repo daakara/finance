@@ -295,12 +295,13 @@ export default function PriceChart({
             )}
           </div>
 
-          {/* 🎯 STAGE 1 DISCOVERY: 1-Line Catalyst Micro-Tag */}
+          {/* 🎯 STAGE 1 DISCOVERY: Streamlined Catalyst Headline Chip */}
           {catalystHeadline && (
-            <div className="flex items-center space-x-1.5 text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg">
-              <span className="text-xs">🔥</span>
-              <span className="font-semibold text-slate-300">Catalyst Pulse:</span>
-              <span className="text-amber-200 font-sans truncate">{catalystHeadline}</span>
+            <div className="flex items-center space-x-1.5 text-[11px] sm:text-xs text-amber-300 bg-amber-950/40 border border-amber-800/60 px-2.5 py-1 rounded-lg w-full">
+              <span className="text-xs shrink-0">🔥</span>
+              <span className="text-amber-100 font-sans leading-snug font-medium">
+                {catalystHeadline}
+              </span>
             </div>
           )}
         </div>
