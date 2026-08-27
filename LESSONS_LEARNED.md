@@ -126,3 +126,42 @@ Timeframe/interval selector pills (`1M`, `6M`, `1Y`, `3Y`, `5Y` and `1m`, `5m`, 
 5. **Automated Quality Gate**:
    - Enforced via `test_chart_timeframe_state_and_api_contract` in `tests/test_nextjs_frontend_structure.py`.
 
+---
+
+## 7. 🌓 Dual-Theme Token Synchronization, Canvas Pixel Adaptation & Arbitrary Utility Collisions
+
+### 🚨 What Went Wrong
+When switching from Cyber Dark to Paper Light theme (`data-theme="paper"`):
+* **Root Cause 1 (Tailwind Opacity Class Selector Failure)**:
+  - `Navbar.tsx` and container components used opacity-suffixed utilities: `bg-[#0c1017]/95`.
+  - `globals.css` only targeted `.bg-[#0c1017]`. Because CSS class selectors must match the escaped class name exactly, `.bg-\[\#0c1017\]` did not match `.bg-\[\#0c1017\]\/95`. The header remained 95% dark while child text turned dark `#0f172a`, causing black-on-black invisible text.
+* **Root Cause 2 (HTML5 Canvas Pixel Decoupling)**:
+  - TradingView Lightweight Charts renders directly to an HTML5 `<canvas>` via JavaScript 2D rendering contexts.
+  - Canvas pixels are completely decoupled from CSS stylesheets. Even though surrounding DOM cards turned white, chart canvas backgrounds remained hard-coded to `#0b0f19` with `#162032` dark gridlines.
+* **Root Cause 3 (Arbitrary Utility Proliferation)**:
+  - Dozens of disparate dark hexes (`bg-[#090d14]`, `bg-[#1e293b]`, `bg-[#080c14]`, `bg-[#0d131f]`) had no light theme definitions, leaving search inputs, badges (`LIVE`), and timeframe selector bars dark.
+
+### 🛡️ The Preventive Standard
+1. **Substring Attribute Selectors for Universal Theme Overrides**:
+   - Use CSS attribute substring selectors `[class*="bg-[#..."]` in `globals.css` rather than literal escaped class names:
+     ```css
+     [data-theme="paper"] [class*="bg-[#0c1017]"],
+     [data-theme="paper"] [class*="bg-[#111722]"] {
+       background-color: #ffffff !important;
+     }
+     [data-theme="paper"] [class*="bg-[#090d14]"] {
+       background-color: #f1f5f9 !important;
+     }
+     ```
+2. **Dynamic Canvas Theme Subscriptions**:
+   - All chart components (`PriceChart.tsx`, `TradingViewChart.tsx`) must:
+     1. Read `document.documentElement.getAttribute("data-theme")` on initialization.
+     2. Listen for custom window event `"finance:theme-change"`.
+     3. Attach a `MutationObserver` on `data-theme` attribute mutations.
+     4. Dynamically invoke `chart.applyOptions({ layout: { background: { color: isLight ? "#ffffff" : "#0b0f19" }, textColor: ... }, grid: { ... } })`.
+3. **Contrast-Compliant Badge Matrix**:
+   - Badge overlays (Amber catalyst, Cyan VWAP, Emerald/Rose metrics) must dynamically swap dark container tinting (`bg-*-950`) to soft pastel fills (`bg-*-50`/`bg-*-100`) with high-contrast foreground text (`text-*-800`/`text-*-900`).
+4. **Automated Quality Gate**:
+   - Enforced via `test_light_paper_theme_compliance` in `tests/test_nextjs_frontend_structure.py`.
+
+

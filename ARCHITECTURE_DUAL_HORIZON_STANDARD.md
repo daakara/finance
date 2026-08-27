@@ -67,3 +67,16 @@ If a page or sub-view is inherently single-horizon or purely informational (e.g.
    - TradingView Lightweight Charts must always resize and auto-fit via `chart.timeScale().fitContent()`.
    - Never call deprecated or non-existent methods like `resetTimeScale()`.
 
+---
+
+## 5. 🌓 Universal Dual-Theme Theming Standard
+
+### Rule D: Theme-Aware Components & Canvas Subscriptions
+1. **Dynamic HTML5 Canvas Adaptation**:
+   - All financial chart components must bind to `"finance:theme-change"` and `MutationObserver` on `data-theme` to dynamically toggle between Dark (`#0b0f19` canvas, `#162032` grid) and Paper Light (`#ffffff` canvas, `#f1f5f9` grid).
+2. **Opacity-Safe Global Classes**:
+   - Never write single-theme hardcoded dark classes without ensuring `[data-theme="paper"]` wildcard substring rules map them to high-contrast paper equivalents.
+3. **Badge Visibility Guarantees**:
+   - Both Day Trader indicators (Amber ATR, VWAP) and Long Term metrics (Cyan ROIC, Emerald Piotroski) must retain high contrast in both themes.
+
+

@@ -1,4 +1,4 @@
-﻿# 🍉 Finance Quantitative Terminal: Impeccable & Watermelon UX Blueprint
+# 🍉 Finance Quantitative Terminal: Impeccable & Watermelon UX Blueprint
 
 > **Design Engineering Standard & UX Architecture Specification**  
 > Synthesizing **Anthropic Impeccable** (distinctive aesthetic direction, zero AI slop, OKLCH perceptual color, fluid typography) and **Watermelon Design Engineering** (concentric radii, tactile `0.96` press scales, optical alignments, tabular numerals, 40px touch targets, zero layout shifts).
@@ -97,3 +97,30 @@ Every current and future page in the platform adheres to this blueprint:
 * **Context-Preserved Terminal Jump**:
   - In Day Trade mode: `[ Trade NVO in Terminal (5m) → ]` opens `/?symbol=NVO` with 5m interval and VWAP ready.
   - In Long Term mode: `[ Analyze NVO in Terminal (1D) → ]` opens `/?symbol=NVO` with 1D interval and factor radar ready.
+
+---
+
+## 6. 🌓 Dual-Theme System Specification: Obsidian Dark vs. Editorial Paper Light
+
+| Design Token | 🌌 Obsidian Dark (`data-theme="dark"`) | 📜 Editorial Paper Light (`data-theme="paper"`) |
+| :--- | :--- | :--- |
+| **Canvas Background** | `oklch(0.12 0.015 250)` (`#070a10` / `#070a11`) | `oklch(0.97 0.005 250)` (`#f4f6f9`) |
+| **Surface Paneling** | `oklch(0.16 0.02 250)` (`#111722` / `#0c1017`) | `oklch(1.00 0.000 0)` (`#ffffff`) |
+| **Inset Telemetry Wells** | `oklch(0.10 0.015 250)` (`#090d14` / `#080c14`) | `oklch(0.95 0.005 250)` (`#f1f5f9`) |
+| **Border Subtle** | `#243044` | `#e2e8f0` |
+| **Primary Text** | `#f0f4f8` / `text-white` | `#0f172a` (Near Black) |
+| **Muted Text** | `#94a3b8` / `#64748b` | `#334155` / `#64748b` |
+| **Chart Canvas Background** | `#0b0f19` | `#ffffff` |
+| **Chart Grid Lines** | `#162032` | `#f1f5f9` |
+| **Chart Price/Time Border**| `#243044` | `#e2e8f0` |
+| **Amber Catalyst Pill** | `bg-amber-950/40 text-amber-300 border-amber-800` | `bg-amber-50 text-amber-900 border-amber-200` |
+| **Cyan VWAP Pill** | `bg-cyan-950/40 text-cyan-300 border-cyan-800` | `bg-cyan-50 text-cyan-800 border-cyan-200` |
+| **Emerald Compounding** | `bg-emerald-950/40 text-emerald-300 border-emerald-800`| `bg-emerald-50 text-emerald-800 border-emerald-200` |
+| **Rose Downside Alert** | `bg-rose-950/40 text-rose-300 border-rose-800` | `bg-rose-50 text-rose-800 border-rose-200` |
+| **Purple Institutional** | `bg-purple-950/40 text-purple-300 border-purple-800` | `bg-purple-50 text-purple-800 border-purple-200` |
+
+### Architectural Theming Rules:
+1. **Canvas Dynamic Adaptation**: Never render `<canvas>` charts with fixed background strings. Always attach `MutationObserver` on `data-theme` and listen to `"finance:theme-change"` window events to apply responsive canvas palette swaps.
+2. **Universal Substring Utility Overrides**: Never rely on exact escaped Tailwind class matching in CSS files. Use wildcard substring selectors (`[class*="bg-[#0c1017]"]`) so that opacity modifiers (`/95`, `/80`) are consistently mapped to their light-theme equivalents.
+3. **Contrast Ratio Compliance**: Foreground text against tinted badges in Light Mode must satisfy minimum **WCAG AA 4.5:1** contrast ratio (dark 800/900 tints against 50/100 pastel fills).
+

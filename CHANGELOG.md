@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-27
+
+### Fixed
+- 🌓 **Comprehensive Paper Light Theming**: Overhauled CSS selector architecture with wildcard substring attributes (`[class*="bg-[#..."]`), eliminating dark background retention on headers, sidebars, cards, insets, pills, and inputs.
+- 📊 **Dynamic HTML5 Chart Canvas Adaptation**: Replaced hardcoded black canvas background and dark grid lines in Lightweight Charts with reactive theme color palettes, responding in real-time to `"finance:theme-change"` and `data-theme` mutations without page reloads.
+- 🏷️ **Accessible Badge High-Contrast Contrast**: Mapped dark pill backgrounds (`bg-*-950`) to soft pastel fills (`bg-*-50`) with high-contrast text (`text-*-800`/`900`), complying with WCAG AA standards.
+
+### Added
+- 🧪 **Theme Compliance Quality Gate**: Added `test_light_paper_theme_compliance` in `tests/test_nextjs_frontend_structure.py` to prevent theme regression across headers, cards, and canvas components.
+
+---
+
 ## [1.1.0] - 2026-08-27
 
 ### Fixed
