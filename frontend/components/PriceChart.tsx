@@ -248,7 +248,7 @@ export default function PriceChart({
 
   // Calculate dynamic period return based on the active candle dataset
   let dynamicPeriodReturn = priceChangePct;
-  let dynamicTimeframeLabel = isIntraday ? "24h" : interval.replace("_hist", "").toUpperCase();
+  let dynamicTimeframeLabel = interval.replace("_hist", "").toUpperCase();
 
   if (candles && candles.length >= 2) {
     const firstOpen = Number(candles[0].open);
