@@ -27,7 +27,7 @@ jobs:
         env:
           PYTHONPATH: "."
         run: |
-          pytest tests/
+          pytest tests/ -v
 
       - name: Purge Backend Runtime & Disk Cache
         run: |

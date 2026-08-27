@@ -33,7 +33,7 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/ -v
+        pytest tests/ -v || (pytest tests/ --tb=short && exit 1)
 
   lint:
     name: Code Quality
