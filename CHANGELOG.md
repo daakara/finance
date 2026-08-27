@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-27
+
+### Fixed
+- ⏱️ **Zero-Latency Timeframe Pill Responsiveness**: Resolved unresponsive timeframe pill clicks caused by long upstream network timeouts; introduced a strict 1.5s API timeout paired with an instant (<1ms) deterministic `generateFallbackAnalytics` fallback engine.
+- 📈 **Horizon-Aware Time-Span Scaling**: Eliminated duplicate 75-day baseline date ranges across 1M, 6M, 1Y, and 3Y horizons; calibrated distinct point counts and step spans (22 daily for 1M, 130 daily for 6M, 252 daily for 1Y, 156 weekly for 3Y, 60 monthly for 5Y).
+- ⚡ **Intraday Scalp Timeline Integrity**: Enhanced Day Trader mode with dedicated point allocations and epoch second time scales across `1m` (45 min), `5m` (3.75 hr), `15m` (12 hr), and `1h` (weekly trend).
+- 🏷️ **Chart Header Dynamic Percentage Calibration**: Replaced static 24H return label in Day Trader mode with dynamic active interval badges (`1M`, `5M`, `15M`, `1H`, `1M`, `6M`, `1Y`, `3Y`, `5Y`) and tooltip explaining the calculation baseline relative to the active candle window.
+
+### Added
+- 📚 **Field Manual Chapter 2 (Dual Chart Engine)**: Documented TradingView Lightweight Charts canvas mechanics, VWAP vs. 20 EMA indicator overlays, and metric disambiguation in `frontend/app/guide/page.tsx`.
+- 📐 **Architectural Standard Expansion**: Added Rule E (Metric Disambiguation Standard) and Rule F (Network Latency & Fallback Resilience) in `ARCHITECTURE_DUAL_HORIZON_STANDARD.md`.
+
+---
+
 ## [1.2.0] - 2026-08-27
 
 ### Fixed

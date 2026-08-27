@@ -79,4 +79,29 @@ If a page or sub-view is inherently single-horizon or purely informational (e.g.
 3. **Badge Visibility Guarantees**:
    - Both Day Trader indicators (Amber ATR, VWAP) and Long Term metrics (Cyan ROIC, Emerald Piotroski) must retain high contrast in both themes.
 
+---
+
+## 6. 🎯 Metric Disambiguation & Return Baseline Standard
+
+### Rule E: Distinct Visual & Semantic Return Badges
+1. **Watchlist 24H Daily Baseline**:
+   - Every watchlist row metric MUST represent the **24-Hour Return** ($R_{24h} = \frac{P_{\text{current}} - P_{\text{prevClose}}}{P_{\text{prevClose}}}$) relative to yesterday's closing price.
+   - Must be styled with an explicit `24H` badge and `title="24-Hour Daily Return relative to previous close"`.
+2. **Chart Header Active Horizon Baseline**:
+   - The chart header percentage return MUST compute the **Active Horizon Cumulative Return** ($R_{\text{horizon}} = \frac{P_{\text{lastClose}} - P_{\text{firstOpen}}}{P_{\text{firstOpen}}}$) across the active candle dataset.
+   - Must feature a dynamic uppercase timeframe tag pill (`1M`, `6M`, `1Y`, `3Y`, `5Y` or `1M`, `5M`, `15M`, `1H`) with tooltip specifying the exact starting date baseline.
+
+---
+
+## 7. ⚡ Network Resilience & Instant Zero-Latency Fallbacks
+
+### Rule F: Snappy API Timeouts with Instant Fallback Execution
+1. **1.5-Second Fast Timeout**:
+   - Frontend `fetchAssetAnalytics()` calls must enforce a strict `AbortSignal.timeout(1500)` to prevent UI freezes if the upstream backend on Render is cold or sleeping.
+2. **Deterministic Horizon-Scaled Fallback Engine**:
+   - When offline or during backend warm-up, `generateFallbackAnalytics` provides instant (<1ms) calibrated candle feeds across:
+     - **Scalp**: `1m` (45 1-min bars), `5m` (45 5-min bars), `15m` (48 15-min bars), `1h` (40 1-hr bars).
+     - **Macro**: `1M` (22 daily bars), `6M` (130 daily bars), `1Y` (252 daily bars), `3Y` (156 weekly bars), `5Y` (60 monthly bars).
+   - Guarantees strictly monotonic ascending timestamps for flawless TradingView Lightweight Charts rendering without canvas lockup.
+
 

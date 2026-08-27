@@ -1,69 +1,69 @@
-# 📈 Financial Market Analysis Platform
+# 📈 Finance Terminal | Quantitative Intelligence & Execution Platform
 
-A comprehensive, professional-grade financial analysis platform with two powerful applications: a Main Financial Dashboard and a Hidden Gems Stock Scanner. Built with Python and Streamlit for real-time market analysis with **100% live data integrity**.
+A professional-grade, institutional financial intelligence platform featuring real-time Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, and Cornish-Fisher Modified Value-at-Risk modeling.
 
+**Live Deployment**: [https://finance-xp8.pages.dev/](https://finance-xp8.pages.dev/)
+
+![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
+![React](https://img.shields.io/badge/react-18-cyan.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
-![Streamlit](https://img.shields.io/badge/streamlit-1.40+-red.svg)
+![FastAPI](https://img.shields.io/badge/fastapi-0.110+-green.svg)
+![Cloudflare Pages](https://img.shields.io/badge/deployed-cloudflare%20pages-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Data Policy](https://img.shields.io/badge/data-live%20only-brightgreen.svg)
-![Tests](https://img.shields.io/badge/tests-13%2F13%20passing-brightgreen.svg)
 
-## 🚀 Features
+---
 
-### Market Analysis
-- **Real-time Market Data**: Live stock, ETF, and cryptocurrency data
-- **Market Indices Tracking**: S&P 500, NASDAQ, Dow Jones, and international indices
-- **Economic Indicators**: Treasury rates, VIX, currency indices
+## 🚀 Key Modules & Capabilities
 
-### Technical Analysis
-- **Technical Indicators**: RSI, MACD, Bollinger Bands, Moving Averages, Stochastic, Williams %R, ATR, OBV
-- **Pattern Recognition**: Support/resistance levels, trend analysis
-- **Interactive Charts**: Professional candlestick charts with volume overlays
-- **Trading Signals**: Automated signal generation based on technical indicators
+### 1. 📈 Interactive Dual-Horizon Candlestick Engine
+- **Lightweight Charts Canvas**: Sub-millisecond rendering with automatic viewport fitting (`fitContent()`) and dynamic canvas theming (Dark vs. Paper Light).
+- **⚡ Day Trader Scalp Sessions**: `1m`, `5m`, `15m`, `1h` timeframes with live **Volume-Weighted Average Price (VWAP)** indicator overlay and Unix epoch time scaling.
+- **🏛️ Long-Term Macro Horizons**: `1M`, `6M`, `1Y`, `3Y`, `5Y` timeframes with **20 Exponential Moving Average (20 EMA)** trend support overlay and ISO calendar date scaling.
+- **🎯 Metric Disambiguation**: Clear separation between the Watchlist **24H Daily Return** and the Chart Header **Active Horizon Return** with explicit date baseline tooltips.
+- **⚡ Fast Fallback Resilience**: 1.5s API timeout with high-fidelity instant (<1ms) fallback generator (`generateFallbackAnalytics`).
 
-### Fundamental Analysis
-- **Financial Ratios**: P/E, PEG, P/B, P/S, D/E, Current Ratio, Quick Ratio
-- **Profitability Metrics**: ROE, ROA, ROIC, Profit Margins
-- **Valuation Models**: DCF, Dividend Discount Model, WACC calculations
-- **Quality & Value Scoring**: Proprietary scoring system for investment evaluation
+### 2. 🏛️ Congressional STOCK Act & Legal Insider Intelligence
+- **Public Law 112-105 Tracking**: Disclosures from US House and Senate members (e.g. Nancy Pelosi LEAPS call purchases).
+- **Committee Jurisdiction Overlap**: Weighting trades based on direct legislative committee oversight (Armed Services, Energy & Commerce).
+- **SEC EDGAR Form 4**: Open-market insider purchases (&ge; \$100k) by CEOs, CFOs, and Board Directors within 2 business days.
 
-### Portfolio Management
-- **Portfolio Construction**: Custom weight allocation and rebalancing
-- **Risk Analytics**: Sharpe ratio, Sortino ratio, Maximum Drawdown, VaR, CVaR
-- **Performance Attribution**: Alpha, Beta, tracking error analysis
-- **Optimization**: Modern Portfolio Theory implementation
-- **Correlation Analysis**: Asset correlation matrices and heat maps
+### 3. 🎯 Minervini VCP & Algorithmic Execution Ladder
+- **Volatility Contraction Pattern (VCP)**: 3-stage contraction detection with volume dry-up confirmations.
+- **Strict Execution Invariant**: `Stop Loss < Optimal Entry Min <= Optimal Entry Max <= Current Spot < Target 1 < Target 2`.
+- **Intraday Position Sizer**: 1-click execution calculation risking $1\%–2\%$ account equity into persistent local storage tracking.
 
-### Visualization
-- **Interactive Charts**: Plotly-powered professional charts
-- **Customizable Dashboards**: Multi-tab interface with real-time updates
-- **Performance Tracking**: Cumulative returns, drawdown analysis
-- **Comparison Tools**: Multi-asset normalized price comparisons
+### 4. 🛡️ Cornish-Fisher Modified VaR & Macro Regimes
+- **Non-Normal Fat-Tail VaR**: Polynomial Cornish-Fisher expansion adjusting for skewness and kurtosis with monotonic 99% $\le$ 95% safety floors.
+- **FRED Macro Regimes**: Real-time 10Y-2Y Yield Curve spreads (`T10Y2Y`) and OAS Credit Spreads (`BAMLH0A0HYM2`) applying dynamic 0.5x–1.25x position risk multipliers.
+
+---
 
 ## 🏗️ Architecture
 
-The platform follows a modular, production-ready architecture:
-
 ```
 finance/
-├── app.py                    # Main Streamlit application
-├── config.py                 # Configuration and constants
-├── data/
-│   ├── fetchers.py          # Data retrieval (yfinance, ccxt, APIs)
-│   ├── processors.py        # Data cleaning and transformation
-│   └── cache.py             # Intelligent caching system
-├── analysis/
-│   ├── technical.py         # Technical analysis indicators
-│   ├── fundamental.py       # Fundamental analysis metrics
-│   └── portfolio.py         # Portfolio analytics and optimization
-├── visualizations/
-│   ├── charts.py            # Interactive chart creation
-│   ├── dashboards.py        # Dashboard layouts
-│   └── themes.py            # Visual styling
-├── utils/
-│   ├── helpers.py           # Utility functions
-│   ├── validators.py        # Input validation
-│   └── formatters.py        # Data formatting
+├── frontend/                     # Next.js 14 App Router + TailwindCSS (Cloudflare Pages)
+│   ├── app/
+│   │   ├── page.tsx             # Main Terminal with 4 Modular Workspaces
+│   │   ├── compare/page.tsx     # Normalized Multi-Asset Benchmarking
+│   │   ├── screener/page.tsx    # Expert Model Stock Screener (Magic Formula, Lynch, VCP)
+│   │   ├── smart-money/page.tsx # Congressional STOCK Act & Dark Pool Feeds
+│   │   ├── portfolio/page.tsx   # Local Anonymous Portfolio & Execution Tracker
+│   │   └── guide/page.tsx       # Institutional Field Manual & Math Specification
+│   ├── components/
+│   │   ├── PriceChart.tsx       # Dual-Horizon TradingView Lightweight Charts
+│   │   ├── Navbar.tsx           # Global Navigation & Role Switcher
+│   │   ├── WatchlistSidebar.tsx # Real-Time 24H Watchlist & Search
+│   │   └── ...                  # Workspace Cards (Execution, Factors, Risk, Smart Money)
+│   └── lib/
+│       ├── api.ts               # Analytics Engine, Timeout Budgets & Horizon Fallback
+│       ├── constants.ts         # Shared Factor Scores & Multi-Period Baselines
+│       └── institutionalFeeds.ts# FRED Macro & SEC Form 4 Ingestion
+├── api/                          # FastAPI Backend Services (Render)
+│   └── main.py                  # Analytical Endpoints & Live Market Ingestion
+├── analyst_dashboard/            # Quantitative Analyzers & Mathematical Engines
+│   ├── analyzers/               # Advanced Risk, Factor Models & Execution Analyzers
+│   └── visualizers/             # Streamlit Visualizations & Exploration Dashboards
 └── requirements.txt
 ```
 

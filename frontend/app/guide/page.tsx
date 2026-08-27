@@ -71,15 +71,17 @@ export default function GuidePage() {
             <span className="text-slate-500 font-bold uppercase py-0.5">Quick Jump:</span>
             <a href="#chapter-1" className="text-cyan-400 hover:underline">Ch 1: Workspaces</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-2" className="text-cyan-400 hover:underline">Ch 2: Algorithmic Math</a>
+            <a href="#chapter-chart" className="text-amber-400 hover:underline font-bold">Ch 2: Dual Chart Engine</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-3" className="text-amber-400 hover:underline">Ch 3: STOCK Act Insiders</a>
+            <a href="#chapter-2" className="text-cyan-400 hover:underline">Ch 3: Algorithmic Math</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-4" className="text-emerald-400 hover:underline">Ch 4: 5-Factor Radar</a>
+            <a href="#chapter-3" className="text-amber-400 hover:underline">Ch 4: STOCK Act Insiders</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 5: Risk & Modified VaR</a>
+            <a href="#chapter-4" className="text-emerald-400 hover:underline">Ch 5: 5-Factor Radar</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 6: Multi-Source Synthesis & FRED Macro</a>
+            <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 6: Risk & Modified VaR</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 7: Multi-Source Synthesis & FRED Macro</a>
           </div>
         </header>
 
@@ -138,12 +140,88 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 2: ALGORITHMIC EXECUTION & FORMULAS */}
+        {/* CHAPTER 2: INTERACTIVE DUAL-HORIZON CANDLESTICK & INDICATOR ENGINE */}
+        <section id="chapter-chart" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">📈</span>
+            <h2 className="text-lg sm:text-xl font-bold text-amber-400 tracking-tight">
+              Chapter 2: Interactive Dual-Horizon Candlestick & Indicator Engine
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            The platform embeds an institutional TradingView Lightweight Charts canvas that dynamically adapts its time scale, indicators, and mathematical percentage baselines according to your selected trading persona:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            <div className="bg-[#111722] p-4 rounded-xl border border-amber-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-amber-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>⚡</span>
+                  <span>Day Trader Scalp Sessions</span>
+                </strong>
+                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-700">INTRADAY</span>
+              </div>
+              <ul className="text-xs text-slate-300 font-sans space-y-1.5 list-disc pl-4">
+                <li><strong>Timeframes:</strong> <code>1m</code> (45-min scalp), <code>5m</code> (3.75-hr session), <code>15m</code> (12-hr multi-session), <code>1h</code> (weekly trend).</li>
+                <li><strong>Primary Overlay:</strong> <strong>Volume-Weighted Average Price (VWAP)</strong> in amber (<code>#f59e0b</code>). Institutional benchmark for intraday mean-reversion.</li>
+                <li><strong>Time Scale:</strong> Microsecond UTC Unix epoch timestamps formatted for high-frequency price action.</li>
+              </ul>
+            </div>
+
+            <div className="bg-[#111722] p-4 rounded-xl border border-cyan-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-cyan-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>🏛️</span>
+                  <span>Long-Term Macro Horizons</span>
+                </strong>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700">MACRO</span>
+              </div>
+              <ul className="text-xs text-slate-300 font-sans space-y-1.5 list-disc pl-4">
+                <li><strong>Horizons:</strong> <code>1M</code> (22 daily bars), <code>6M</code> (130 daily bars), <code>1Y</code> (252 daily bars), <code>3Y</code> (156 weekly bars), <code>5Y</code> (60 monthly bars).</li>
+                <li><strong>Primary Overlay:</strong> <strong>20 Exponential Moving Average (20 EMA)</strong> in sky blue (<code>#38bdf8</code>). Dynamic support floor for institutional pullbacks.</li>
+                <li><strong>Time Scale:</strong> Calendar-accurate ISO <code>YYYY-MM-DD</code> date formatting with strict monotonic ordering.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Metric Disambiguation Callout */}
+          <div className="bg-[#090d14] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <span>🎯 Metric Disambiguation: Watchlist Row vs. Chart Header Return</span>
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              To eliminate confusion between short-term noise and long-term trends, the terminal explicitly separates two distinct percentage return calculations:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1.5">
+                <strong className="text-slate-200 block font-mono">Watchlist Sidebar Badge (24H Daily Return)</strong>
+                <div className="bg-[#0b1019] p-2 rounded text-emerald-400 font-mono text-[11px]">
+                  R_24h = (Current Price - Previous Close) / Previous Close
+                </div>
+                <p className="text-[11px] text-slate-400 font-sans leading-snug">
+                  Measures purely today&apos;s daily trading change relative to yesterday&apos;s closing bell (e.g. <code>+2.65% 24H</code>).
+                </p>
+              </div>
+
+              <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1.5">
+                <strong className="text-slate-200 block font-mono">Chart Header Badge (Active Horizon Return)</strong>
+                <div className="bg-[#0b1019] p-2 rounded text-cyan-300 font-mono text-[11px]">
+                  R_horizon = (Last Candle Close - First Candle Open) / First Candle Open
+                </div>
+                <p className="text-[11px] text-slate-400 font-sans leading-snug">
+                  Measures total cumulative trajectory across the active dataset with explicit horizon pill tag (e.g. <code>+28.40% 1Y</code> or <code>+0.80% 5M</code>).
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CHAPTER 3: ALGORITHMIC EXECUTION & FORMULAS */}
         <section id="chapter-2" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🧮</span>
             <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
-              Chapter 2: Algorithmic Execution Formulas & Sizing Math
+              Chapter 3: Algorithmic Execution Formulas & Sizing Math
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -188,12 +266,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 3: CONGRESSIONAL STOCK ACT INTELLIGENCE */}
+        {/* CHAPTER 4: CONGRESSIONAL STOCK ACT INTELLIGENCE */}
         <section id="chapter-3" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🏛️</span>
             <h2 className="text-lg sm:text-xl font-bold text-amber-400 tracking-tight">
-              Chapter 3: Congressional STOCK Act & Political Alpha
+              Chapter 4: Congressional STOCK Act & Political Alpha
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -218,12 +296,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 4: 5-FACTOR RADAR & PIOTROSKI F-SCORE */}
+        {/* CHAPTER 5: 5-FACTOR RADAR & PIOTROSKI F-SCORE */}
         <section id="chapter-4" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">📊</span>
             <h2 className="text-lg sm:text-xl font-bold text-emerald-400 tracking-tight">
-              Chapter 4: 5-Factor Fundamental DNA & Piotroski Score
+              Chapter 5: 5-Factor Fundamental DNA & Piotroski Score
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -250,12 +328,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 5: RISK & MODIFIED VAR */}
+        {/* CHAPTER 6: RISK & MODIFIED VAR */}
         <section id="chapter-5" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🛡️</span>
             <h2 className="text-lg sm:text-xl font-bold text-purple-400 tracking-tight">
-              Chapter 5: Mathematical Invariants & Cornish-Fisher Modified VaR
+              Chapter 6: Mathematical Invariants & Cornish-Fisher Modified VaR
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -291,12 +369,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-                {/* CHAPTER 6: MULTI-SOURCE SYNTHESIS, FRED MACRO & SEC EDGAR FORM 4 */}
+        {/* CHAPTER 7: MULTI-SOURCE SYNTHESIS, FRED MACRO & SEC EDGAR FORM 4 */}
         <section id="chapter-6" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">💎</span>
             <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
-              Chapter 6: Multi-Source Synthesis, FRED Macro Regimes & SEC Form 4
+              Chapter 7: Multi-Source Synthesis, FRED Macro Regimes & SEC Form 4
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
