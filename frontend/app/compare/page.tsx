@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -37,7 +37,12 @@ const SEO_CURATED_PRESETS = [
   { id: "cprx-vs-powi", label: "💎 Catalyst Pharma (CPRX) vs. Power Integrations (POWI)", a: "CPRX", b: "POWI" },
 ];
 
-const AVAILABLE_TICKERS = ["NVO", "LLY", "SPY", "QQQ", "NVDA", "AAPL", "TSLA", "PLTR", "CPRX", "POWI", "ACLS", "TMDX", "LNTH", "MEDP", "ELF", "DUOL"];
+const AVAILABLE_TICKERS = [
+  "NVDA", "AAPL", "MSFT", "TSLA", "PLTR", "AMZN", "GOOGL", "AMD", "ARM", "SMCI",
+  "CRWD", "PANW", "COIN", "MARA", "MSTR", "DUOL", "CELH", "IONQ", "RKLB",
+  "LNTH", "CPRX", "MEDP", "ACLS", "ELF", "POWI", "TMDX", "ISRG", "VRTX", "LLY", "NVO",
+  "VRT", "ETN", "ANET", "SPY", "QQQ", "SMH", "IWM", "GLD", "TLT"
+];
 
 function CompareContent() {
   const searchParams = useSearchParams();

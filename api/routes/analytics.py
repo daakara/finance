@@ -146,6 +146,7 @@ def get_asset_analytics(
     response: Response,
     period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
     interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
+    user_role: str = Query("LONG_TERM", description="Trading Horizon lens (DAY_TRADER or LONG_TERM)"),
 ):
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
@@ -332,7 +333,7 @@ def get_asset_analytics(
             "traderArchetypes": trader_archetypes,
             "selfHealingAudit": self_healing_audit,
             "marketGraph": market_graph,
-            "optimalExecution": optimal_execution_engine.calculate_trade_levels(price_df=hist, current_price=current_price, user_role="DAY_TRADER" if clean_interval in ["1m", "5m", "15m", "1h"] else "LONG_TERM", technicals=technicals),
+            "optimalExecution": optimal_execution_engine.calculate_trade_levels(price_df=hist, current_price=current_price, user_role=user_role if user_role in ["DAY_TRADER", "LONG_TERM"] else ("DAY_TRADER" if clean_interval in ["1m", "5m", "15m", "1h"] else "LONG_TERM"), technicals=technicals),
             "catalystForecast": catalyst_report,
             "smartMoney": {
                 "congressTrades": smart_money_engine.get_congressional_trades(upper_sym),

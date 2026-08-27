@@ -165,7 +165,7 @@ export default function ScreenerPage() {
 
   const handleScanSavedWatchlist = () => {
     try {
-      const savedPortfolio = localStorage.getItem("FINANCE_PORTFOLIO_V1");
+      const savedPortfolio = localStorage.getItem("FINANCE_USER_PORTFOLIO") || localStorage.getItem("FINANCE_PORTFOLIO_V1");
       let tickers = "NVDA, AAPL, MSFT, TSLA, AMZN, PLTR, AMD";
       if (savedPortfolio) {
         const parsed = JSON.parse(savedPortfolio);
