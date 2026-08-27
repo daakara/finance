@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
@@ -308,11 +308,14 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
                 <div className="text-right shrink-0">
                   <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
                   <div
-                    className={`text-[10px] font-semibold tabular-nums ${
+                    title="24-Hour Daily Return relative to previous close"
+                    aria-label={`24-hour change: ${item.change}`}
+                    className={`text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5 ${
                       item.isUp ? "text-emerald-400" : "text-rose-400"
                     }`}
                   >
-                    {item.change}
+                    <span>{item.change}</span>
+                    <span className="text-[8px] opacity-70 font-normal">24H</span>
                   </div>
                 </div>
               </div>

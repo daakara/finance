@@ -274,15 +274,18 @@ export default function PriceChart({
             </span>
           )}
           <span
+            title={`Active ${dynamicTimeframeLabel} Horizon Return calculated from ${candles && candles.length > 0 ? (typeof candles[0].time === "number" ? new Date(candles[0].time * 1000).toLocaleDateString() : candles[0].time) : "period start"} to current price`}
             aria-label={`Timeframe ${dynamicTimeframeLabel} change: ${isPositive ? "+" : ""}${dynamicPeriodReturn.toFixed(2)} percent`}
-            className={`px-2 py-0.5 rounded text-xs font-bold tabular-nums flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded text-xs font-bold tabular-nums flex items-center gap-1 cursor-help ${
               isPositive
                 ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/80"
                 : "bg-rose-950/80 text-rose-400 border border-rose-800/80"
             }`}
           >
             <span>{isPositive ? `+${dynamicPeriodReturn.toFixed(2)}%` : `${dynamicPeriodReturn.toFixed(2)}%`}</span>
-            <span className="text-[9px] opacity-75 font-normal uppercase">{dynamicTimeframeLabel}</span>
+            <span className="text-[9px] opacity-90 font-semibold px-1 py-0.2 rounded bg-black/40 border border-white/10 uppercase tracking-wider">
+              {dynamicTimeframeLabel}
+            </span>
           </span>
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border hidden sm:inline ${
             isIntraday ? "bg-amber-950/80 text-amber-300 border-amber-800" : "bg-cyan-950/80 text-cyan-300 border-cyan-800"
