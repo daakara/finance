@@ -16,6 +16,7 @@ from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
+from analyst_dashboard.data.market_db import MarketDatabaseEngine
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -27,6 +28,7 @@ catalyst_engine = CatalystEngine()
 smart_money_engine = SmartMoneyEngine()
 eodhd_fetcher = EODHDMarketFetcher()
 optimal_execution_engine = OptimalExecutionEngine()
+market_db = MarketDatabaseEngine()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 INFO_CACHE: dict[str, tuple[float, dict]] = {}
@@ -175,7 +177,28 @@ def get_asset_analytics(
             if eodhd_df is not None and not eodhd_df.empty:
                 hist = eodhd_df
             else:
-                raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
+                # Check persistent database for historical daily candles
+                db_candles = market_db.get_daily_candles(upper_sym, limit=252)
+                if db_candles:
+                    hist_data = []
+                    for c in db_candles:
+                        hist_data.append({
+                            "Open": c["open"],
+                            "High": c["high"],
+                            "Low": c["low"],
+                            "Close": c["close"],
+                            "Volume": c["volume"],
+                        })
+                    hist = pd.DataFrame(hist_data, index=pd.to_datetime([c["time"] for c in db_candles]))
+                else:
+                    raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
+
+        # Automatically persist daily candles into SQLite store
+        if clean_interval == "1d" and not hist.empty:
+            try:
+                market_db.save_daily_candles(upper_sym, hist)
+            except Exception as e:
+                pass
 
         # Format candles for lightweight charts (support Unix timestamps for intraday)
         candles = []
@@ -278,6 +301,18 @@ def get_asset_analytics(
 
         # Market Relationship & Contagion Graph
         market_graph = market_graph_engine.get_relationship_graph(symbol=fetch_sym)
+        catalyst_report = catalyst_engine.get_asset_catalyst_report(upper_sym, current_price)
+
+        # Persist factor scores and catalyst snapshot into SQLite
+        try:
+            market_db.save_factor_snapshot(upper_sym, {
+                "currentPrice": current_price,
+                "priceChangePct24h": price_change_pct,
+                **factor_scores,
+            })
+            market_db.save_catalyst(upper_sym, catalyst_report)
+        except Exception:
+            pass
 
         return {
             "symbol": upper_sym,
@@ -295,7 +330,7 @@ def get_asset_analytics(
             "selfHealingAudit": self_healing_audit,
             "marketGraph": market_graph,
             "optimalExecution": optimal_execution_engine.calculate_trade_levels(price_df=hist, current_price=current_price, user_role="DAY_TRADER" if clean_interval in ["1m", "5m", "15m", "1h"] else "LONG_TERM", technicals=technicals),
-            "catalystForecast": catalyst_engine.get_asset_catalyst_report(upper_sym, current_price),
+            "catalystForecast": catalyst_report,
             "smartMoney": {
                 "congressTrades": smart_money_engine.get_congressional_trades(upper_sym),
                 "optionsFlow": smart_money_engine.get_options_flow(upper_sym),
