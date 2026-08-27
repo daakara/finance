@@ -83,9 +83,8 @@ export default function ScreenerPage() {
   useEffect(() => {
     let isMounted = true;
     async function loadScreenerGems() {
-      setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=${selectedFilter}`, {
+        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=all`, {
           signal: AbortSignal.timeout(8000),
         });
         if (res.ok) {
@@ -143,9 +142,33 @@ export default function ScreenerPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedFilter]);
+  }, []);
 
   const isDayTrader = activeRole === "DAY_TRADER";
+
+  // Instant Client-Side Filter with 0ms Latency
+  const displayGems = gems.filter((gem) => {
+    if (selectedFilter === "high_confluence") return (gem.confluenceScore || 0) >= 80;
+    if (selectedFilter === "in_buy_zone") return gem.executionStatus === "IN_BUY_ZONE";
+    if (selectedFilter === "approaching_target") return gem.executionStatus === "APPROACHING_TARGET";
+    if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.5;
+    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch");
+    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic");
+    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive");
+    return true;
+  });
+
+  const getTabCount = (tabId: string) => {
+    if (tabId === "all") return gems.length;
+    if (tabId === "high_confluence") return gems.filter((g) => (g.confluenceScore || 0) >= 80).length;
+    if (tabId === "in_buy_zone") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
+    if (tabId === "approaching_target") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
+    if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.5).length;
+    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch")).length;
+    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic")).length;
+    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive")).length;
+    return gems.length;
+  };
 
   return (
     <main id="main-content" role="main" className="min-h-screen bg-[#070a11] text-slate-100 font-mono flex flex-col pb-20 sm:pb-8">
@@ -198,6 +221,7 @@ export default function ScreenerPage() {
         <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
           {FILTER_TABS.map((tab) => {
             const isActive = selectedFilter === tab.id;
+            const count = getTabCount(tab.id);
             return (
               <button
                 key={tab.id}
@@ -216,6 +240,11 @@ export default function ScreenerPage() {
                   <div className="flex items-center justify-between gap-1">
                     <span className={`text-xs font-black truncate ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
                       {tab.label}
+                    </span>
+                    <span className={`text-[10px] font-black px-1.5 py-0.2 rounded ${
+                      isActive ? (isDayTrader ? "bg-amber-400 text-slate-950" : "bg-cyan-400 text-slate-950") : "bg-[#1b2639] text-slate-300"
+                    }`}>
+                      {count}
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-tight">{tab.desc}</p>
@@ -245,7 +274,7 @@ export default function ScreenerPage() {
         )}
 
         {/* Candidate Cards Grid */}
-        {!loading && gems.length === 0 && (
+        {!loading && displayGems.length === 0 && (
           <div className="p-8 text-center bg-[#0e131d] border border-[#1b2434] rounded-xl">
             <span className="text-3xl block mb-2">🔍</span>
             <h3 className="text-base font-bold text-white">No active candidates matching &quot;{selectedFilter}&quot;</h3>
@@ -259,9 +288,9 @@ export default function ScreenerPage() {
           </div>
         )}
 
-        {!loading && gems.length > 0 && (
+        {!loading && displayGems.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {gems.map((gem) => {
+            {displayGems.map((gem) => {
               const statusBg =
                 gem.executionStatus === "IN_BUY_ZONE"
                   ? "bg-emerald-950/80 border-emerald-500/80 text-emerald-300"
