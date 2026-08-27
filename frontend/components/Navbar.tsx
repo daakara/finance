@@ -96,25 +96,25 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                   pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span>âš”ï¸ Compare</span>
+                <span>⚔️ Compare</span>
               </Link>
-                            <Link
+              <Link
                 href="/smart-money"
                 aria-current={pathname === "/smart-money" ? "page" : undefined}
                 className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span>ðŸ›ï¸ Smart Money</span>
+                <span>🏛️ Smart Money</span>
               </Link>
-                            <Link
+              <Link
                 href="/portfolio"
                 aria-current={pathname === "/portfolio" ? "page" : undefined}
                 className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span>ðŸ’¼ Portfolio</span>
+                <span>💼 Portfolio</span>
               </Link>
               <Link
                 href="/guide"
@@ -123,7 +123,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                   pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span>ðŸ“– Guide</span>
+                <span>📖 Guide</span>
               </Link>
               <button
                 type="button"
@@ -131,7 +131,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 aria-label="Open Terminal Setup & Onboarding Tour"
                 className="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
               >
-                <span>âœ¨ Tour</span>
+                <span>✨ Tour</span>
               </button>
             </nav>
           </div>
@@ -143,7 +143,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
           <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
-            {/* ðŸŒ“ Theme Toggle */}
+            {/* Theme Toggle */}
             <ThemeToggle />
 
             {/* Trading Horizon Switcher */}
@@ -159,7 +159,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">âš¡</span>
+                <span aria-hidden="true" className="text-xs">⚡</span>
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">Day Trade</span>
               </button>
 
@@ -174,7 +174,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">ðŸ›ï¸</span>
+                <span aria-hidden="true" className="text-xs">🏛️</span>
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">Long Term</span>
               </button>
             </div>
