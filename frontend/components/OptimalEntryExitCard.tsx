@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
+import PositionSizerModal from "./PositionSizerModal";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -14,6 +16,8 @@ export default function OptimalEntryExitCard({
   executionPlan,
   userRole = "LONG_TERM",
 }: OptimalEntryExitCardProps) {
+  const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
+
   if (!executionPlan) return null;
 
   const isDayTrader = userRole === "DAY_TRADER";
@@ -187,11 +191,32 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 📜 Deep Dive & Verified Sources Provenance Trigger */}
-      <InsightProvenanceModal
+      {/* 📜 Deep Dive Provenance & Position Sizer Triggers */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]">
+        <button
+          type="button"
+          onClick={() => setIsSizerOpen(true)}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow"
+        >
+          <span>⚖️</span>
+          <span>Size Position & Kelly Risk</span>
+        </button>
+
+        <InsightProvenanceModal
+          symbol={symbol}
+          executionPlan={executionPlan}
+          userRole={userRole}
+        />
+      </div>
+
+      <PositionSizerModal
+        isOpen={isSizerOpen}
+        onClose={() => setIsSizerOpen(false)}
         symbol={symbol}
-        executionPlan={executionPlan}
-        userRole={userRole}
+        entryPrice={current_price}
+        stopLoss={stop_loss}
+        takeProfit1={take_profit_1}
+        riskRewardRatio={risk_reward_ratio}
       />
     </div>
   );

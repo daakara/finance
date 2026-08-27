@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
+import PositionSizerModal from "../../components/PositionSizerModal";
 import { API_BASE_URL } from "../../lib/api";
 
 interface GemCandidate {
@@ -38,10 +39,17 @@ interface GemCandidate {
   riskRewardRatio?: number;
   setupPattern?: string;
   entryThesis?: string;
+  // Confluence Conviction Score
+  confluenceScore?: number;
+  confluenceRating?: string;
+  confluenceBadgeColor?: string;
+  confluenceReasons?: string[];
+  confluenceWarnings?: string[];
 }
 
 const FILTER_TABS = [
   { id: "all", label: "✨ All Setups", desc: "Small & Mid-Cap High-Conviction Setups", badge: "Universe" },
+  { id: "high_confluence", label: "⭐ High Confluence", desc: "Multi-Factor Technical, Smart Money & Catalyst Alignment (≥ 75%)", badge: "High Conviction" },
   { id: "in_buy_zone", label: "🎯 In Buy Zone", desc: "Price within 1.5% of optimal entry floor/ceiling", badge: "Actionable" },
   { id: "approaching_target", label: "🚀 Near TP Target", desc: "Price approaching Take-Profit 1 or 2 ladders", badge: "Profit Taking" },
   { id: "high_rr", label: "⚡ High R:R", desc: "Asymmetric risk-reward setups with tight stop losses", badge: "Asymmetric" },
@@ -55,6 +63,7 @@ export default function ScreenerPage() {
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [gems, setGems] = useState<GemCandidate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [sizerGem, setSizerGem] = useState<GemCandidate | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -110,6 +119,11 @@ export default function ScreenerPage() {
               riskRewardRatio: c.riskRewardRatio || 2.85,
               setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
               entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",
+              confluenceScore: c.confluenceScore || 85,
+              confluenceRating: c.confluenceRating || "⭐ HIGH CONFLUENCE",
+              confluenceBadgeColor: c.confluenceBadgeColor || "emerald",
+              confluenceReasons: c.confluenceReasons || [],
+              confluenceWarnings: c.confluenceWarnings || [],
             }));
             setGems(liveGems);
             setLoading(false);
@@ -143,11 +157,11 @@ export default function ScreenerPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">💎</span>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  High-Alpha Gems & Optimal Execution Scanner
+                  High-Alpha Gems & Confluence Execution Scanner
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-                Scan active universe opportunities with real-time **Optimal Buy Zones**, **Stop-Loss Lines**, and **Take-Profit Targets** calibrated via Minervini VCP & ATR risk models.
+                Scan active universe opportunities with **Multi-Factor Confluence (Technical + SEC Form 4 + Catalyst Runway)**, real-time **Optimal Buy Zones**, and **Dynamic Position Sizing**.
               </p>
             </div>
 
@@ -179,7 +193,7 @@ export default function ScreenerPage() {
         </div>
 
         {/* Execution & Archetype Filter Tabs */}
-        <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2.5 mb-6">
+        <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
           {FILTER_TABS.map((tab) => {
             const isActive = selectedFilter === tab.id;
             return (
@@ -201,12 +215,12 @@ export default function ScreenerPage() {
                     <span className={`text-xs font-black truncate ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
                       {tab.label}
                     </span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-[#1e293b] text-slate-400">
-                      {tab.badge}
-                    </span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-tight">{tab.desc}</p>
                 </div>
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-[#1e293b] text-slate-400 self-start mt-2">
+                  {tab.badge}
+                </span>
               </button>
             );
           })}
@@ -274,10 +288,15 @@ export default function ScreenerPage() {
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5">{gem.companyName}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right space-y-1">
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded border inline-block ${statusBg}`}>
                           {gem.statusLabel}
                         </span>
+                        {gem.confluenceScore && (
+                          <div className="text-[10px] text-cyan-400 font-bold">
+                            ⭐ {gem.confluenceScore}% Confluence
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -328,11 +347,17 @@ export default function ScreenerPage() {
                     </div>
                   </div>
 
-                  {/* Card Footer: Action linking to Terminal with preloaded symbol */}
-                  <div className="mt-4 pt-3 border-t border-[#162030] flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-slate-400">
-                      Model: <span className="text-cyan-300 font-bold">{gem.expertArchetype}</span>
-                    </span>
+                  {/* Card Footer: Action linking to Terminal and Position Sizer */}
+                  <div className="mt-4 pt-3 border-t border-[#162030] flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSizerGem(gem)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-[#111726] hover:bg-slate-800 border-[#223149] text-slate-300 flex items-center gap-1 shadow"
+                    >
+                      <span>⚖️</span>
+                      <span>Size Position</span>
+                    </button>
+
                     <Link
                       href={`/?symbol=${gem.symbol}`}
                       className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1 shadow"
@@ -347,6 +372,19 @@ export default function ScreenerPage() {
           </div>
         )}
       </div>
+
+      {/* Interactive Position Sizer Modal */}
+      {sizerGem && (
+        <PositionSizerModal
+          isOpen={!!sizerGem}
+          onClose={() => setSizerGem(null)}
+          symbol={sizerGem.symbol}
+          entryPrice={sizerGem.currentPrice || 100}
+          stopLoss={sizerGem.stopLoss || (sizerGem.currentPrice || 100) * 0.95}
+          takeProfit1={sizerGem.takeProfit1 || (sizerGem.currentPrice || 100) * 1.05}
+          riskRewardRatio={sizerGem.riskRewardRatio || 2.5}
+        />
+      )}
     </main>
   );
 }
