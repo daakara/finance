@@ -1,0 +1,25 @@
+﻿# robots.txt for Finance Terminal
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI Crawlers & LLM Agents
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+Sitemap: https://finance-xp8.pages.dev/sitemap.xml

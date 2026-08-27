@@ -1,4 +1,4 @@
-﻿# Finance Intelligence Platform - Quantitative Architecture & LLM Index
+# Finance Intelligence Platform - Quantitative Architecture & LLM Index
 
 > Finance Intelligence Platform (FT) is an institutional-grade quantitative analytics, congressional stock trading intelligence, and macroeconomic risk engine designed for retail traders and quantitative analysts.
 
@@ -6,24 +6,28 @@
 
 - **Live Terminal**: https://finance-xp8.pages.dev/
 - **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide/
-- **Private Portfolio & Risk Allocations**: https://finance-xp8.pages.dev/portfolio/
+- **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money/
 - **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener/
 - **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare/
-- **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money/
+- **Private Portfolio & Risk Allocations**: https://finance-xp8.pages.dev/portfolio/
 
 ## Core Quantitative Engines & Methodologies
 
-1. **Smart Money Intelligence**:
+1. **Smart Money Intelligence & Statutory Insider Tracking**:
    - Tracking legislative transactions under the 2012 Stop Trading on Congressional Knowledge (STOCK) Act (Public Law 112-105).
+   - **Quantitative Legislative Alignment Index (0–100)**: Scoring committee oversight overlap (+16 to +32 pts), transaction sizing tiers ($50k–$1M+), and historical politician win rate alpha.
+   - **Staleness Time-Decay Engine**: Multi-tier signal decay penalizing disclosures older than 15, 30, and 45 days, with explicit late-filer mean-reversion risk warnings.
    - Unusual Options Flow & Institutional Block Sweeps tracking OPRA & FINRA ATS Dark Pool volumes.
-   - Committee Assignment & Jurisdiction Overlap analysis.
+   - SEC EDGAR Form 4 open-market insider purchases (>= $100k) by C-Suite executives.
 
 2. **Algorithmic Execution & Volatility Sizing**:
    - Mark Minervini 3-Stage Volatility Contraction Pattern (VCP) for growth and swing accumulation.
-   - Linda Raschke 20-period Exponential Moving Average (20 EMA) pullback model for intraday momentum.
-   - 14-period Turtle Average True Range (ATR) trailing stop-loss and dual take-profit ladders (Target 1 Scale + Target 2 Runner).
+   - Linda Raschke 20-period Exponential Moving Average (20 EMA) pullback model for momentum.
+   - **4 Mathematical ATR Execution States**: Real-time state classification (`IN_BUY_ZONE`, `APPROACHING_TARGET`, `WAITING_PULLBACK`, `STOPPED_OUT`).
+   - 14-period Turtle Average True Range (ATR) trailing stop-loss and dual take-profit ladders (Target 1 Scale 50% + Target 2 Runner Exit).
 
-3. **Risk Management & Macroeconomic Modeling**:
+3. **Risk Management, Self-Healing & Macroeconomic Modeling**:
    - Cornish-Fisher Modified Value-at-Risk (M-VaR 95% and 99%) adjusting for skewness and fat-tailed kurtosis.
+   - **Self-Healing Forecast Auditor**: Continuous model calibration using Kupiec POF VaR exception tests, walk-forward RMSE tracking, and dynamic confidence bound expansion.
    - Piotroski 9-Point F-Score fundamental health evaluation.
-   - Federal Reserve Economic Data (FRED) yield curve (10Y-2Y spread) macro regime analysis.
+   - Federal Reserve Economic Data (FRED) yield curve (10Y-2Y spread) and OAS credit spread macro regime analysis with 0.5x-1.25x position risk multipliers.
