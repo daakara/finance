@@ -16,12 +16,10 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
 
   useEffect(() => {
-    const saved = localStorage.getItem("FINANCE_USER_ROLE");
-    if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
-      setActiveRole(saved);
-      if (onRoleChange) onRoleChange(saved);
-    }
+    setActiveRole(userRole);
+  }, [userRole]);
 
+  useEffect(() => {
     const handleRoleEvent = (e: Event) => {
       const custom = e as CustomEvent<"DAY_TRADER" | "LONG_TERM">;
       if (custom.detail === "DAY_TRADER" || custom.detail === "LONG_TERM") {

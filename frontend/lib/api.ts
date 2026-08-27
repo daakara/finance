@@ -333,7 +333,7 @@ export function generateFallbackAnalytics(
   const matched = SHARED_FACTOR_SCORES[upper] || SHARED_FACTOR_SCORES["AAPL"];
   const basePrice = matched.price;
   const baseChangePct = matched.changePct;
-  const isIntraday = interval.includes("m") || interval.includes("h");
+  const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h" || interval === "30m";
 
   // Horizon-aware numPoints and time step (stepMs) so each period spans the correct calendar window
   const horizonConfig: Record<string, { points: number; spanMs: number }> = {
@@ -529,10 +529,10 @@ export async function fetchAssetAnalytics(
 ): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
   
-  // 1. Fetch live production API with 1500ms timeout
+  // 1. Fetch live production API with 8000ms timeout
   try {
     const res = await fetch(`${API_BASE_URL}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
-      signal: AbortSignal.timeout(1500),
+      signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
       const data = await res.json();

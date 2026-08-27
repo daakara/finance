@@ -1,4 +1,4 @@
-﻿"""FastAPI Backend Application Entry Point."""
+"""FastAPI Backend Application Entry Point."""
 
 import os
 from fastapi import FastAPI
@@ -17,7 +17,9 @@ app = FastAPI(
 ALLOWED_ORIGINS = [
     "https://finance-xp8.pages.dev",
     "http://localhost:3000",
+    "http://localhost:3005",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3005",
     "http://localhost:8000",
 ]
 
@@ -29,6 +31,7 @@ if extra_origin and extra_origin not in ALLOWED_ORIGINS:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.pages\.dev|https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],

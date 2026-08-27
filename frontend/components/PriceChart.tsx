@@ -237,7 +237,6 @@ export default function PriceChart({
 
         // Refresh chart view and auto-fit timeScale immediately
         if (chartRef.current) {
-          chartRef.current.timeScale().resetTimeScale();
           chartRef.current.timeScale().fitContent();
         }
       }
@@ -337,12 +336,13 @@ export default function PriceChart({
             </span>
             {activeIntervalList.map((item) => (
               <button
+                type="button"
                 key={item.value}
                 onClick={() => handleIntervalClick(item.value)}
                 aria-pressed={interval === item.value}
                 aria-label={`Set timeframe interval to ${item.label} (${item.desc})`}
                 title={item.desc}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36px] sm:min-h-[30px] rounded text-xs font-bold transition-colors active:scale-[0.96] transition-transform duration-100 cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   interval === item.value
                     ? userRole === "DAY_TRADER"
                       ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"

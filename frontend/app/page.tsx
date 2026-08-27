@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "../components/Navbar";
 import WatchlistSidebar from "../components/WatchlistSidebar";
@@ -57,7 +57,7 @@ function TerminalContent() {
     }
   }, []);
 
-  const handleRoleChange = (role: "DAY_TRADER" | "LONG_TERM") => {
+  const handleRoleChange = useCallback((role: "DAY_TRADER" | "LONG_TERM") => {
     trackRoleSwitch(role);
     setUserRole(role);
     if (role === "DAY_TRADER") {
@@ -65,7 +65,7 @@ function TerminalContent() {
     } else {
       setInterval("1y_hist");
     }
-  };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
