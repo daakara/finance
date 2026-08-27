@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
@@ -78,10 +78,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const price = factor ? `$${factor.price.toFixed(2)}` : watchlist?.price || "Market Price";
   
   return {
-    title: `${name} (${sym}) Quantitative Stock Analysis, Invalidation Levels & Factor DNA | Finance Terminal`,
+    title: `🟢 IN_BUY_ZONE: ${name} (${sym}) at ${price} • Minervini VCP Targets & Pelosi STOCK Act | Finance Terminal`,
     description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${factor?.scores.compositeFactorScore || 85}/100), and Congressional STOCK Act disclosures.`,
     openGraph: {
-      title: `${name} (${sym}) Quantitative Analysis & Invalidation Levels | Finance Terminal`,
+      title: `🟢 ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
       description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${factor?.scores.piotroskiFScore || 8}/9), and downside Cornish-Fisher VaR.`,
       url: `https://finance-xp8.pages.dev/stock/${params.ticker.toLowerCase()}/`,
       siteName: "Finance Terminal",

@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -246,10 +246,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const profile = POLITICIAN_DATABASE.find(p => p.slug === params.slug.toLowerCase()) || POLITICIAN_DATABASE[0];
 
   return {
-    title: `${profile.name} (${profile.party[0]}-${profile.stateDistrict.slice(0, 2)}) Stock Trades & STOCK Act Alpha | Finance Terminal`,
+    title: `🏛️ ${profile.name} (${profile.party[0]}-${profile.stateDistrict.slice(0, 2)}) Portfolio (${profile.winRatePct}% Win Rate): STOCK Act Disclosures & Alpha | Finance Terminal`,
     description: `Audited portfolio, win rate (${profile.winRatePct}%), annualized alpha (+${profile.annualAlphaPct}%), and recent STOCK Act disclosures for ${profile.name}. Review Legislative Alignment scores and committee oversight conflicts.`,
     openGraph: {
-      title: `${profile.name} Congressional Stock Trading Profile & Portfolio`,
+      title: `🏛️ ${profile.name} Congressional Stock Trading Profile (${profile.winRatePct}% Win Rate)`,
       description: `Track securities transactions, committee oversight overlaps, and Legislative Alignment Index for ${profile.name}.`,
       url: `https://finance-xp8.pages.dev/politician/${params.slug.toLowerCase()}/`,
       siteName: "Finance Terminal",

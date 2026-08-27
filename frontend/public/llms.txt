@@ -7,7 +7,10 @@
 - **Live Terminal**: https://finance-xp8.pages.dev/
 - **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide/
 - **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money/
+- **Congressional Late-Filer Hall of Shame**: https://finance-xp8.pages.dev/smart-money/late-filers/
 - **Congressional Politician Portfolios**: https://finance-xp8.pages.dev/politician/nancy-pelosi/
+- **Congressional Committee Jurisdiction Hubs**: https://finance-xp8.pages.dev/committee/armed-services/
+- **Quantitative Strategy Screener Hubs**: https://finance-xp8.pages.dev/strategy/minervini-vcp/
 - **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener/
 - **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare/
 - **Individual Stock Analysis Hubs**: https://finance-xp8.pages.dev/stock/nvda/
