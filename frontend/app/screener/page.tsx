@@ -44,7 +44,7 @@ const FILTER_TABS = [
   { id: "all", label: "✨ All Setups", desc: "Small & Mid-Cap High-Conviction Setups", badge: "Universe" },
   { id: "in_buy_zone", label: "🎯 In Buy Zone", desc: "Price within 1.5% of optimal entry floor/ceiling", badge: "Actionable" },
   { id: "approaching_target", label: "🚀 Near TP Target", desc: "Price approaching Take-Profit 1 or 2 ladders", badge: "Profit Taking" },
-  { id: "high_rr", label: "⚡ High R:R (≥ 2.5)", desc: "Asymmetric risk-reward setups with tight stop losses", badge: "Asymmetric" },
+  { id: "high_rr", label: "⚡ High R:R", desc: "Asymmetric risk-reward setups with tight stop losses", badge: "Asymmetric" },
   { id: "lynch", label: "📈 Peter Lynch GARP", desc: "PEG < 1.0, Low Net Debt, Overlooked Compounders", badge: "GARP" },
   { id: "greenblatt", label: "🧪 Magic Formula", desc: "High ROIC (>25%) + Bargain Earnings Yield", badge: "Value" },
   { id: "rule_breakers", label: "🔥 Rule Breakers", desc: "Category Creators, >65% Gross Margins, High Moat", badge: "Disruptive" },

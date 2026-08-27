@@ -145,7 +145,7 @@ def run_screener_get(response: Response, filter_type: str = "all"):
     elif filter_type == "approaching_target":
         filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
     elif filter_type == "high_rr":
-        filtered = [c for c in mapped_candidates if c["riskRewardRatio"] >= 2.5]
+        filtered = [c for c in mapped_candidates if c["riskRewardRatio"] >= 1.2 or c.get("takeProfit2Pct", 0) >= 5.0]
     elif filter_type == "lynch":
         filtered = [c for c in mapped_candidates if "Lynch" in c["expertArchetype"]]
     elif filter_type == "greenblatt":
