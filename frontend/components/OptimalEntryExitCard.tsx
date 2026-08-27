@@ -4,6 +4,7 @@ import { useState } from "react";
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
+import AlertTriggerModal from "./AlertTriggerModal";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -17,6 +18,7 @@ export default function OptimalEntryExitCard({
   userRole = "LONG_TERM",
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
+  const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
 
   if (!executionPlan) return null;
 
@@ -191,16 +193,27 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 📜 Deep Dive Provenance & Position Sizer Triggers */}
+      {/* 📜 Deep Dive Provenance, Position Sizer & Alerts Triggers */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]">
-        <button
-          type="button"
-          onClick={() => setIsSizerOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow"
-        >
-          <span>⚖️</span>
-          <span>Size Position & Kelly Risk</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsSizerOpen(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 shadow"
+          >
+            <span>⚖️</span>
+            <span>Size Position</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAlertOpen(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-amber-600/20 hover:bg-amber-500 hover:text-slate-950 border-amber-500/50 text-amber-300 flex items-center gap-1.5 shadow"
+          >
+            <span>🔔</span>
+            <span>Set Trigger Alert</span>
+          </button>
+        </div>
 
         <InsightProvenanceModal
           symbol={symbol}
@@ -217,6 +230,17 @@ export default function OptimalEntryExitCard({
         stopLoss={stop_loss}
         takeProfit1={take_profit_1}
         riskRewardRatio={risk_reward_ratio}
+      />
+
+      <AlertTriggerModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        symbol={symbol}
+        currentPrice={current_price}
+        optimalEntryMin={optimal_entry_min}
+        optimalEntryMax={optimal_entry_max}
+        stopLoss={stop_loss}
+        takeProfit1={take_profit_1}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import PositionSizerModal from "../../components/PositionSizerModal";
+import AlertTriggerModal from "../../components/AlertTriggerModal";
 import { API_BASE_URL } from "../../lib/api";
 
 interface GemCandidate {
@@ -64,6 +65,7 @@ export default function ScreenerPage() {
   const [gems, setGems] = useState<GemCandidate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sizerGem, setSizerGem] = useState<GemCandidate | null>(null);
+  const [alertGem, setAlertGem] = useState<GemCandidate | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -347,16 +349,27 @@ export default function ScreenerPage() {
                     </div>
                   </div>
 
-                  {/* Card Footer: Action linking to Terminal and Position Sizer */}
+                  {/* Card Footer: Action linking to Terminal, Position Sizer and Alerts */}
                   <div className="mt-4 pt-3 border-t border-[#162030] flex flex-wrap items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSizerGem(gem)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-[#111726] hover:bg-slate-800 border-[#223149] text-slate-300 flex items-center gap-1 shadow"
-                    >
-                      <span>⚖️</span>
-                      <span>Size Position</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSizerGem(gem)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-[#111726] hover:bg-slate-800 border-[#223149] text-slate-300 flex items-center gap-1 shadow"
+                      >
+                        <span>⚖️</span>
+                        <span>Size</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAlertGem(gem)}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-[#18140c] hover:bg-amber-950 border-amber-900/60 text-amber-300 flex items-center gap-1 shadow"
+                      >
+                        <span>🔔</span>
+                        <span>Alert</span>
+                      </button>
+                    </div>
 
                     <Link
                       href={`/?symbol=${gem.symbol}`}
@@ -383,6 +396,20 @@ export default function ScreenerPage() {
           stopLoss={sizerGem.stopLoss || (sizerGem.currentPrice || 100) * 0.95}
           takeProfit1={sizerGem.takeProfit1 || (sizerGem.currentPrice || 100) * 1.05}
           riskRewardRatio={sizerGem.riskRewardRatio || 2.5}
+        />
+      )}
+
+      {/* Interactive Alert Trigger Modal */}
+      {alertGem && (
+        <AlertTriggerModal
+          isOpen={!!alertGem}
+          onClose={() => setAlertGem(null)}
+          symbol={alertGem.symbol}
+          currentPrice={alertGem.currentPrice || 100}
+          optimalEntryMin={alertGem.optimalEntryMin || (alertGem.currentPrice || 100) * 0.97}
+          optimalEntryMax={alertGem.optimalEntryMax || (alertGem.currentPrice || 100)}
+          stopLoss={alertGem.stopLoss || (alertGem.currentPrice || 100) * 0.95}
+          takeProfit1={alertGem.takeProfit1 || (alertGem.currentPrice || 100) * 1.05}
         />
       )}
     </main>
