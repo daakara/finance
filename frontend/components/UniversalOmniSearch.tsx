@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
+import { prefetchAssetAnalytics } from "../lib/api";
 
 export default function UniversalOmniSearch() {
   const router = useRouter();
@@ -188,6 +189,7 @@ export default function UniversalOmniSearch() {
                   key={item.symbol}
                   type="button"
                   onClick={() => handleSelectTicker(item.symbol)}
+                  onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
                   className="w-full text-left p-2.5 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-[#1e2a3c] hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   <div className="flex items-center space-x-3">

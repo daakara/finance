@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
+import { prefetchAssetAnalytics } from "../lib/api";
 
 interface WatchlistSidebarProps {
   activeSymbol: string;
@@ -275,6 +276,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
               <div
                 key={item.symbol}
                 onClick={() => onSelectSymbol(item.symbol)}
+                onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
                 className={`w-full flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-all active:scale-[0.98] ${
                   isSelected
                     ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"

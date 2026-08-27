@@ -847,3 +847,19 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
     ],
   };
 }
+
+const PREFETCH_CACHE = new Set<string>();
+
+/**
+ * High-speed background prefetcher with deduplication for hover triggers.
+ */
+export function prefetchAssetAnalytics(symbol: string, period: string = "1y", interval: string = "1d"): void {
+  if (typeof window === "undefined" || !symbol) return;
+  const upper = symbol.toUpperCase().replace("-USD", "");
+  const cacheKey = `${upper}_${period}_${interval}`;
+  if (PREFETCH_CACHE.has(cacheKey)) return;
+  PREFETCH_CACHE.add(cacheKey);
+
+  // Background non-blocking prefetch
+  fetchAssetAnalytics(symbol, period, interval).catch(() => {});
+}

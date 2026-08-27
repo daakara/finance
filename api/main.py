@@ -1,16 +1,52 @@
 """FastAPI Backend Application Entry Point."""
 
 import os
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import analytics, volatility, screener, regimes, cache, smart_money
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 
+logger = logging.getLogger("api.main")
+
+
+async def warmup_core_assets():
+    """Background task to pre-fetch and warm up SQLite cache for core universe assets on container boot."""
+    await asyncio.sleep(2)
+    try:
+        from analyst_dashboard.data.market_db import MarketDatabaseEngine
+        import yfinance as yf
+        db = MarketDatabaseEngine()
+        core_symbols = ["LNTH", "CIEN", "NVDA", "AAPL", "MSFT", "PLTR", "SPY", "QQQ"]
+        for sym in core_symbols:
+            try:
+                existing = db.get_daily_candles(sym, limit=5)
+                if not existing:
+                    hist = yf.Ticker(sym).history(period="1y", interval="1d")
+                    if not hist.empty:
+                        db.save_daily_candles(sym, hist)
+                        logger.info(f"Successfully pre-warmed SQLite cache for {sym}")
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"Pre-warming skipped: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(warmup_core_assets())
+    yield
+    task.cancel()
+
+
 app = FastAPI(
     title="Financial Market Analysis API",
     description="High-performance async REST API for multi-asset analytics, GARCH volatility forecasting, and Hidden Gems screening.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # 1. Strict CORS Whitelist Configuration

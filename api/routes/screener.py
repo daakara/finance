@@ -1,6 +1,6 @@
-﻿"""FastAPI Router for Hidden Gems Screener with Peter Lynch, Joel Greenblatt & Disruptive Innovation Models."""
+"""FastAPI Router for Hidden Gems Screener with Peter Lynch, Joel Greenblatt & Disruptive Innovation Models."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel
 from typing import List, Optional
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
@@ -26,8 +26,10 @@ class ScreenerRequest(BaseModel):
 
 
 @router.post("/run")
-def run_screener(request: ScreenerRequest = None):
+def run_screener(request: ScreenerRequest = None, response: Response = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     tickers = (request.tickers if request and request.tickers else DEFAULT_CANDIDATES)
     results = screener.evaluate_candidates(tickers)
 
@@ -42,8 +44,10 @@ run_screener_post = run_screener
 
 
 @router.get("/run")
-def run_screener_get(filter_type: str = "all"):
+def run_screener_get(filter_type: str = "all", response: Response = None):
     """GET endpoint supporting live screener execution and archetype filtering."""
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     results = screener.evaluate_candidates(DEFAULT_CANDIDATES)
 
     # Filter by archetype if requested

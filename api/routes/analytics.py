@@ -2,7 +2,7 @@
 
 import math
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -145,8 +145,12 @@ def get_asset_analytics(
     symbol: str,
     period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
     interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
+    response: Response = None,
 ):
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+
     try:
         clean_period = period if isinstance(period, str) else "1y"
         clean_interval = interval if isinstance(interval, str) else "1d"

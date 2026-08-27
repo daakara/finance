@@ -1,6 +1,6 @@
-﻿"""FastAPI Router for Smart Money, Congressional Disclosures, SEC Filings & FINRA Dark Pool."""
+"""FastAPI Router for Smart Money, Congressional Disclosures, SEC Filings & FINRA Dark Pool."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
@@ -13,8 +13,10 @@ finra_fetcher = FinraTransparencyFetcher()
 capitol_fetcher = CapitolTradesFetcher()
 
 @router.get("/overview")
-def get_smart_money_overview():
+def get_smart_money_overview(response: Response = None):
     """Get market-wide congressional disclosures and unusual options flow overview."""
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
     overview = smart_money_engine.get_smart_money_overview()
     overview["regulatory_sources"] = {
         "sec_edgar": "Official SEC Form 4 & 10-K Public API",
