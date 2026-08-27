@@ -90,7 +90,9 @@ class OptimalExecutionEngine:
             vcp = "VCP 3-Stage Compression Confirmed"
 
         stop_loss = max(0.01, stop_loss)
-        risk_per_share = max(0.01, current_price - stop_loss)
+        # Ensure statutory minimum risk floor of at least 0.5x ATR to avoid infinite/inflated R:R ratios on tight stops
+        min_risk_floor = max(0.01, 0.5 * atr_14)
+        risk_per_share = max(min_risk_floor, current_price - stop_loss)
         reward_per_share = max(0.01, take_profit_1 - current_price)
         rr_ratio = round(reward_per_share / risk_per_share, 2)
 

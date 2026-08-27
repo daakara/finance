@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 
@@ -250,16 +250,16 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 5: QUANTITATIVE RISK & CORNISH-FISHER M-VAR */}
+        {/* CHAPTER 5: RISK & MODIFIED VAR */}
         <section id="chapter-5" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🛡️</span>
             <h2 className="text-lg sm:text-xl font-bold text-purple-400 tracking-tight">
-              Chapter 5: Tail Risk Modeling & Cornish-Fisher Modified VaR
+              Chapter 5: Mathematical Invariants & Cornish-Fisher Modified VaR
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            Standard Gaussian Value-at-Risk assumes that asset returns follow a symmetric normal distribution. In reality, equity markets exhibit negative skewness (sharp crashes) and excess kurtosis (fat tails).
+            Standard Gaussian Value-at-Risk assumes symmetric normal distributions, severely underestimating fat-tail crash risks in equity markets. Our quantitative engine applies a polynomial Cornish-Fisher expansion adjusted for non-normal Skewness and excess Kurtosis:
           </p>
 
           <div className="bg-[#090d14] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
@@ -270,8 +270,24 @@ export default function GuidePage() {
               Z_cf = z_alpha + (z_alpha^2 - 1)*S / 6 + (z_alpha^3 - 3*z_alpha)*K / 24 - (2*z_alpha^3 - 5*z_alpha)*S^2 / 36
             </div>
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
-              Where <code>S</code> represents sample skewness, <code>K</code> represents excess kurtosis, and <code>z_alpha</code> represents the standard normal quantile (e.g. 1.645 for 95% confidence). This accurately reflects real-world tail crash risk during market liquidity shocks.
+              Where <code>S</code> is sample skewness (clipped to <code>[-3.0, 3.0]</code>) and <code>K</code> is excess kurtosis (clipped to <code>[-1.0, 10.0]</code>). This eliminates polynomial inversion on outlier shocks and strictly guarantees that <strong>99% VaR is more conservative than 95% VaR</strong>.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-purple-300 text-sm font-bold block">📐 Strict Execution Invariant</strong>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                The terminal guarantees: <code>Stop Loss &lt; Optimal Entry Min &le; Optimal Entry Max &le; Current Spot &lt; Target 1 &lt; Target 2</code>. Accumulation zones are strictly capped at or below spot price.
+              </p>
+            </div>
+
+            <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] space-y-2">
+              <strong className="text-emerald-300 text-sm font-bold block">⚖️ Bounded Risk Denominators</strong>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Sortino, Calmar, Pain, and Reward-to-Risk ratios enforce minimum denominator floors to prevent artificial ratio spikes on ultra-tight stops.
+              </p>
+            </div>
           </div>
         </section>
 

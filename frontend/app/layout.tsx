@@ -1,4 +1,4 @@
-﻿import "./globals.css";
+import "./globals.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
@@ -86,12 +86,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] antialiased transition-colors duration-200">
         <OfflineStatusBanner />
-        <OnboardingModal />
         <ServiceWorkerRegister />
         <Suspense fallback={null}>
           <MatomoTracker />
         </Suspense>
         {children}
+        <OnboardingModal />
       </body>
     </html>
   );

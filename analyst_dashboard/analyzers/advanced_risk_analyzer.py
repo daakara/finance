@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Risk Analysis Module
 Sophisticated risk metrics beyond basic volatility and Sharpe ratio
 """
@@ -32,6 +32,7 @@ class AdvancedRiskAnalyzer:
                     returns, benchmark_returns
                 )
             
+
             return risk_analysis
             
         except Exception as e:
@@ -56,11 +57,14 @@ class AdvancedRiskAnalyzer:
             p95 = np.percentile(returns, 95)
             metrics['Tail_Ratio'] = float(abs(p95 / p5)) if p5 != 0 else 1.25
             
-            # Skewness and Kurtosis
-            skew = float(stats.skew(returns.dropna()))
-            kurt = float(stats.kurtosis(returns.dropna()))  # excess kurtosis
-            metrics['Skewness'] = skew
-            metrics['Kurtosis'] = kurt
+            # Skewness and Kurtosis (Clipped to prevent polynomial inversion on extreme outliers)
+            raw_skew = float(stats.skew(returns.dropna()))
+            raw_kurt = float(stats.kurtosis(returns.dropna()))  # excess kurtosis
+            
+            skew = float(np.clip(raw_skew if not np.isnan(raw_skew) else 0.0, -3.0, 3.0))
+            kurt = float(np.clip(raw_kurt if not np.isnan(raw_kurt) else 0.0, -1.0, 10.0))
+            metrics['Skewness'] = raw_skew if not np.isnan(raw_skew) else 0.0
+            metrics['Kurtosis'] = raw_kurt if not np.isnan(raw_kurt) else 0.0
 
             # Cornish-Fisher Expansion for Modified VaR (adjusts for non-normality)
             # z_95 = -1.64485, z_99 = -2.32635 for left tail
@@ -70,11 +74,18 @@ class AdvancedRiskAnalyzer:
             cf_z_95 = z_95 + (z_95**2 - 1) * (skew / 6.0) + (z_95**3 - 3 * z_95) * (kurt / 24.0) - (2 * z_95**3 - 5 * z_95) * (skew**2 / 36.0)
             cf_z_99 = z_99 + (z_99**2 - 1) * (skew / 6.0) + (z_99**3 - 3 * z_99) * (kurt / 24.0) - (2 * z_99**3 - 5 * z_99) * (skew**2 / 36.0)
             
+            # Enforce monotonicity: 99% VaR tail multiplier must be strictly deeper than 95%
+            if cf_z_99 > cf_z_95:
+                cf_z_99 = cf_z_95 - 0.681495  # Fallback to standard Gaussian spread
+            
             mean_ret = returns.mean()
             std_ret = returns.std()
             
-            metrics['Modified_VaR_95'] = (mean_ret + cf_z_95 * std_ret) * 100
-            metrics['Modified_VaR_99'] = (mean_ret + cf_z_99 * std_ret) * 100
+            var_95_val = (mean_ret + cf_z_95 * std_ret) * 100
+            var_99_val = (mean_ret + cf_z_99 * std_ret) * 100
+            
+            metrics['Modified_VaR_95'] = var_95_val
+            metrics['Modified_VaR_99'] = min(var_99_val, var_95_val)  # Guarantee 99% VaR is more conservative
             
             # Modified CVaR using returns exceeding Modified VaR threshold
             mvar_threshold = (mean_ret + cf_z_95 * std_ret)
@@ -84,23 +95,23 @@ class AdvancedRiskAnalyzer:
             # Calmar Ratio (Annual Return / Max Drawdown)
             annual_return = returns.mean() * 252
             max_dd = self._calculate_max_drawdown(returns)
-            metrics['Calmar_Ratio'] = annual_return / abs(max_dd) if max_dd != 0 else 0
+            metrics['Calmar_Ratio'] = annual_return / max(0.001, abs(max_dd)) if max_dd != 0 else 0
             
             # Sortino Ratio (downside deviation)
             downside_returns = returns[returns < 0]
             downside_std = downside_returns.std() * np.sqrt(252)
-            metrics['Sortino_Ratio'] = (annual_return * 100) / (downside_std * 100) if downside_std != 0 else 0
+            metrics['Sortino_Ratio'] = (annual_return * 100) / max(0.001, downside_std * 100) if downside_std != 0 else 0
             
             # Omega Ratio
             threshold = 0  # Risk-free rate
             excess_returns = returns - threshold
             positive_returns = excess_returns[excess_returns > 0].sum()
             negative_returns = abs(excess_returns[excess_returns < 0].sum())
-            metrics['Omega_Ratio'] = positive_returns / negative_returns if negative_returns != 0 else np.inf
+            metrics['Omega_Ratio'] = positive_returns / max(1e-6, negative_returns) if negative_returns != 0 else 10.0
             
             # Pain Ratio
             pain_index = self._calculate_pain_index(returns)
-            metrics['Pain_Ratio'] = annual_return / pain_index if pain_index != 0 else 0
+            metrics['Pain_Ratio'] = annual_return / max(0.001, pain_index) if pain_index != 0 else 0
             
             sanitized_metrics = {}
             for k, v in metrics.items():
