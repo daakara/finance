@@ -607,9 +607,9 @@ export function generateFallbackAnalytics(
     optimalExecution: {
       current_price: basePrice,
       optimal_entry_min: Number((basePrice * 0.975).toFixed(2)),
-      optimal_entry_max: Number((basePrice * 0.992).toFixed(2)),
-      stop_loss: Number((basePrice * 0.955).toFixed(2)),
-      stop_loss_pct: -4.5,
+      optimal_entry_max: Number((basePrice * 1.018).toFixed(2)),
+      stop_loss: Number((basePrice * 0.945).toFixed(2)),
+      stop_loss_pct: -5.5,
       take_profit_1: Number((basePrice * 1.045).toFixed(2)),
       take_profit_1_pct: 4.5,
       take_profit_2: Number((basePrice * 1.095).toFixed(2)),

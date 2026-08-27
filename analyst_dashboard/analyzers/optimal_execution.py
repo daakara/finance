@@ -29,8 +29,8 @@ class OptimalExecutionEngine:
             rr = round((tp1 - current_price) / max(0.01, (current_price - stop)), 2)
             return {
                 "current_price": current_price,
-                "optimal_entry_min": round(current_price * 0.985, 2),
-                "optimal_entry_max": current_price,
+                "optimal_entry_min": round(current_price * (0.988 if is_day else 0.975), 2),
+                "optimal_entry_max": round(current_price * (1.008 if is_day else 1.018), 2),
                 "stop_loss": stop,
                 "stop_loss_pct": round(((stop - current_price) / current_price) * 100, 2),
                 "take_profit_1": tp1,
@@ -66,11 +66,10 @@ class OptimalExecutionEngine:
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
-            # Day trader pullback zone: between current price and 20 EMA / VWAP anchor
-            lower_bound = min(current_price * 0.99, ema_20)
-            upper_bound = min(current_price, max(ema_20, current_price * 0.995))
-            entry_min = round(min(lower_bound, upper_bound), 2)
-            entry_max = round(max(lower_bound, upper_bound), 2)
+            # Day trader pullback zone: centered around 20 EMA / VWAP anchor with intraday ATR band
+            pivot = 0.6 * ema_20 + 0.4 * current_price
+            entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.990), 2)
+            entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.008), 2)
             stop_loss = round(entry_min - (1.25 * atr_14), 2)
             take_profit_1 = round(current_price + (1.75 * atr_14), 2)
             take_profit_2 = round(current_price + (3.0 * atr_14), 2)
@@ -80,13 +79,14 @@ class OptimalExecutionEngine:
             stage = "Intraday Momentum Trend Expansion"
             vcp = "Tightening 5m Compression"
         else:
-            # Swing / Long-term accumulation zone: discount pullback between support (50 SMA / -3% to -5% ATR buffer) and spot
-            pullback_support = max(sma_50 if sma_50 < current_price else current_price * 0.95, current_price - (1.0 * atr_14))
-            upper_entry = current_price  # Entry ceiling is at or below current spot
-            lower_entry = min(pullback_support, current_price * 0.97)
+            # Swing / Long-term accumulation zone: structural support floor and breakout resistance corridor
+            # Base pivot combines 20 EMA and structural price consolidation
+            base_pivot = 0.5 * ema_20 + 0.5 * current_price
+            pullback_support = max(sma_50 if sma_50 < current_price else current_price * 0.95, base_pivot - (0.75 * atr_14))
+            breakout_ceiling = max(current_price * 1.018, base_pivot + (0.5 * atr_14))
             
-            entry_min = round(min(lower_entry, upper_entry), 2)
-            entry_max = round(max(lower_entry, upper_entry), 2)
+            entry_min = round(min(pullback_support, current_price * 0.975), 2)
+            entry_max = round(min(breakout_ceiling, current_price + (1.2 * atr_14)), 2)
             stop_loss = round(entry_min - (1.5 * atr_14), 2)
             take_profit_1 = round(current_price + (2.5 * atr_14), 2)
             take_profit_2 = round(current_price + (4.5 * atr_14), 2)
