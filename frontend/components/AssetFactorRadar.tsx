@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
 import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "../lib/constants";
@@ -54,7 +54,7 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
       </div>
 
       {/* 5-Factor Score Breakdown */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: "Growth", score: scores.growthScore, color: "text-emerald-400", bar: "bg-emerald-500" },
           { label: "Quality", score: scores.qualityScore, color: "text-cyan-400", bar: "bg-cyan-500" },
