@@ -89,7 +89,7 @@ export default function PortfolioPage() {
     <div className="min-h-screen bg-[#070a10] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black">
       <Navbar />
 
-      <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 font-mono pb-20 sm:pb-8">
+      <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 font-mono pb-28 sm:pb-8">
         {/* Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#243044] pb-4">
           <div>
