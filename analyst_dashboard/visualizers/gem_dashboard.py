@@ -537,13 +537,7 @@ class GemDashboard:
         st.subheader("📊 Sector Analysis Details")
         
         # Style the dataframe
-        styled_sector_df = df.style.background_gradient(
-            subset=['Opportunity Score'], 
-            cmap='RdYlGn'
-        ).background_gradient(
-            subset=['Capital Flows'], 
-            cmap='RdBu'
-        ).format({
+        styled_sector_df = df.style.format({
             'Opportunity Score': '{:.1f}',
             'Capital Flows': '${:,.0f}M',
             'Momentum': '{:+.1f}%'

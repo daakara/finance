@@ -207,7 +207,7 @@ function TerminalContent() {
               onClick={() => { setActiveTab("EXECUTION"); trackWorkspaceSwitch("Execution & Levels", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "EXECUTION"
-                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -221,7 +221,7 @@ function TerminalContent() {
               onClick={() => { setActiveTab("SMART_MONEY"); trackWorkspaceSwitch("Smart Money", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "SMART_MONEY"
-                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -235,7 +235,7 @@ function TerminalContent() {
               onClick={() => { setActiveTab("FUNDAMENTALS"); trackWorkspaceSwitch("Factors & Macro", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "FUNDAMENTALS"
-                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -249,7 +249,7 @@ function TerminalContent() {
               onClick={() => { setActiveTab("RISK_CONTAGION"); trackWorkspaceSwitch("Risk & Contagion", selectedSymbol); }}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "RISK_CONTAGION"
-                  ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
+                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >

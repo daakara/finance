@@ -242,14 +242,8 @@ body {
   background: #94a3b8;
 }
 
-/* 13. Radar & Discovery Card Gradients in Paper Light Mode */
-[data-theme="paper"] [class*="to-slate-900"],
-[data-theme="paper"] [class*="to-slate-950"] {
-  --tw-gradient-to: #ffffff !important;
-}
-
+/* 13. Radar & Discovery Card Styling in Paper Light Mode */
 [data-theme="paper"] [class*="from-emerald-950"] {
-  --tw-gradient-from: #f0fdf4 !important;
   background-color: #f0fdf4 !important;
   border-color: #bbf7d0 !important;
 }
@@ -258,7 +252,6 @@ body {
 }
 
 [data-theme="paper"] [class*="from-cyan-950"] {
-  --tw-gradient-from: #f0f9ff !important;
   background-color: #f0f9ff !important;
   border-color: #bae6fd !important;
 }
@@ -267,7 +260,6 @@ body {
 }
 
 [data-theme="paper"] [class*="from-purple-950"] {
-  --tw-gradient-from: #faf5ff !important;
   background-color: #faf5ff !important;
   border-color: #e9d5ff !important;
 }
@@ -276,7 +268,6 @@ body {
 }
 
 [data-theme="paper"] [class*="from-blue-950"] {
-  --tw-gradient-from: #eff6ff !important;
   background-color: #eff6ff !important;
   border-color: #bfdbfe !important;
 }
@@ -285,7 +276,6 @@ body {
 }
 
 [data-theme="paper"] [class*="from-indigo-950"] {
-  --tw-gradient-from: #eef2ff !important;
   background-color: #eef2ff !important;
   border-color: #c7d2fe !important;
 }

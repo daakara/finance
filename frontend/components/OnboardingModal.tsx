@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { trackMatomoEvent } from "../lib/matomo";
@@ -99,7 +99,7 @@ export default function OnboardingModal() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="text-center space-y-1 py-1">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 mx-auto flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-950/50">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-600 mx-auto flex items-center justify-center text-xl font-bold shadow-sm text-white">
                 FT
               </div>
               <h2 id="onboarding-modal-title" className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
@@ -169,7 +169,7 @@ export default function OnboardingModal() {
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="w-full py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg transition-transform active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+              className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs shadow-sm transition-transform active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               Continue to Hotkeys &amp; Shortcuts →
             </button>
@@ -212,7 +212,7 @@ export default function OnboardingModal() {
               <button
                 type="button"
                 onClick={handleComplete}
-                className="w-2/3 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold rounded-xl text-xs shadow-lg transition-transform active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none"
+                className="w-2/3 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs shadow-sm transition-transform active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none"
               >
                 🚀 Launch Terminal
               </button>

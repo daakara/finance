@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { AnalyticsResponse } from "../lib/api";
@@ -250,7 +250,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
             addedFeedback
               ? "bg-emerald-600 text-white font-extrabold shadow-emerald-950/60"
-              : "bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white"
+              : "bg-cyan-600 hover:bg-cyan-500 text-white"
           }`}
         >
           <span>{addedFeedback ? "✓ SIZED TRADE SAVED TO MY PORTFOLIO!" : "💼 Send Sized Trade to My Portfolio (1-Click)"}</span>

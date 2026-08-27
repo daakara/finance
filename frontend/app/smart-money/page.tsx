@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
@@ -108,12 +108,12 @@ function SmartMoneyContent() {
   // Top Actionable Radar Assets
   const actionableAssets = (data?.congress_trades || []).slice(0, 6).map((item, idx) => {
     const bgMap = [
-      { bg: "from-emerald-950/60 to-slate-900", border: "border-emerald-700/60", badge: "Whale Alert" },
-      { bg: "from-cyan-950/60 to-slate-900", border: "border-cyan-700/60", badge: "Gamma Squeeze" },
-      { bg: "from-purple-950/60 to-slate-900", border: "border-purple-700/60", badge: "High Momentum" },
-      { bg: "from-blue-950/60 to-slate-900", border: "border-blue-700/60", badge: "Policy Fit" },
-      { bg: "from-indigo-950/60 to-slate-900", border: "border-indigo-700/60", badge: "Rapid Filing" },
-      { bg: "from-amber-950/60 to-slate-900", border: "border-amber-700/60", badge: "Whale Tier" },
+      { bg: "bg-[#111722]", border: "border-emerald-700/60", badge: "Whale Alert" },
+      { bg: "bg-[#111722]", border: "border-cyan-700/60", badge: "Gamma Squeeze" },
+      { bg: "bg-[#111722]", border: "border-purple-700/60", badge: "High Momentum" },
+      { bg: "bg-[#111722]", border: "border-blue-700/60", badge: "Policy Fit" },
+      { bg: "bg-[#111722]", border: "border-indigo-700/60", badge: "Rapid Filing" },
+      { bg: "bg-[#111722]", border: "border-amber-700/60", badge: "Whale Tier" },
     ];
     const styling = bgMap[idx % bgMap.length];
     return {
@@ -186,7 +186,7 @@ function SmartMoneyContent() {
               <Link
                 key={i}
                 href={`/?symbol=${card.ticker}`}
-                className={`bg-gradient-to-b ${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
+                className={`${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
               >
                 <div className="flex items-start justify-between gap-1">
                   <div>

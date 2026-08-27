@@ -428,7 +428,7 @@ export default function GuidePage() {
         <footer className="border-t border-[#243044] pt-6 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow transition-transform active:scale-95 cursor-pointer"
+            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95 cursor-pointer"
           >
             ← Return to Quantitative Terminal
           </Link>

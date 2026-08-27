@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
@@ -249,7 +249,7 @@ export default function SmartMoneyDetailModal({
 
           <button
             onClick={handleNavigateTerminal}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs shadow-lg transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-xs shadow-sm transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <span>Open Full Quantitative Terminal</span>
             <span>→</span>

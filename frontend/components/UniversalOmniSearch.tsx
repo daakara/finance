@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -150,7 +150,7 @@ export default function UniversalOmniSearch() {
                 <button
                   type="submit"
                   aria-label={`Submit search for ${cleanQ}`}
-                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  className="absolute right-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-transform active:scale-95 shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   Go ↵
                 </button>
@@ -163,7 +163,7 @@ export default function UniversalOmniSearch() {
                 <button
                   type="button"
                   onClick={() => handleSelectTicker(cleanQ)}
-                  className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/70 to-indigo-950/70 border border-cyan-500 hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  className="w-full text-left p-3 rounded-xl bg-[#0b1019] border border-cyan-500 hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                 >
                   <div>
                     <span className="text-xs font-bold text-cyan-300">Run Live Analysis for Custom Asset:</span>
