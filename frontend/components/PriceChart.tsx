@@ -347,7 +347,7 @@ export default function PriceChart({
         </div>
 
         {/* Right: Technicals Badges & Role-Adaptive Interval Group */}
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto mt-1 sm:mt-0">
           {technicals?.rsi_14 !== undefined && (
             <div aria-label={`Relative Strength Index 14: ${technicals.rsi_14.toFixed(1)}`} className="hidden sm:flex items-center space-x-1.5 bg-[#090d14] px-2.5 py-1 rounded-md border border-[#243044] text-[11px]">
               <span className="text-slate-400">RSI:</span>

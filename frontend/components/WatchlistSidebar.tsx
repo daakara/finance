@@ -147,19 +147,20 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
         setPinnedSymbols(updatedPins);
         localStorage.setItem("FINANCE_PINNED_SYMBOLS", JSON.stringify(updatedPins));
       }
+      setIsMobileExpanded(false);
       setSearchQuery("");
     }
   };
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-xl p-3.5 sm:p-4 shadow-xl space-y-3 h-full font-mono">
+    <div className="bg-[#111722] border border-[#243044] rounded-xl p-3 sm:p-4 shadow-xl space-y-3 h-full font-mono">
       {/* Header with Mobile Accordion Toggle */}
-      <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
-        <div className="flex items-center space-x-2">
-          <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+      <div className="flex items-center justify-between border-b border-[#1b2434] pb-3 gap-2">
+        <div className="flex items-center space-x-2 min-w-0">
+          <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider truncate">
             Watchlist & Signals
           </h2>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1e293b] text-cyan-400 font-semibold">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1e293b] text-cyan-400 font-semibold shrink-0">
             LIVE
           </span>
         </div>
@@ -169,9 +170,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
           onClick={() => setIsMobileExpanded(!isMobileExpanded)}
           aria-expanded={isMobileExpanded}
           aria-controls="watchlist-items-container"
-          className="sm:hidden flex items-center space-x-1 text-xs text-cyan-400 font-bold px-2 py-1 bg-[#162030] rounded border border-[#243044] active:scale-[0.96] transition-transform"
+          className="sm:hidden flex items-center space-x-1 text-xs text-cyan-400 font-bold px-2.5 py-1 bg-[#162030] rounded-lg border border-[#243044] active:scale-[0.96] transition-transform shrink-0"
         >
-          <span>{isMobileExpanded ? "Hide Assets" : `Show (${filteredItems.length})`}</span>
+          <span>{isMobileExpanded ? "Hide" : `Show (${filteredItems.length})`}</span>
           <svg
             className={`w-3.5 h-3.5 transform transition-transform ${isMobileExpanded ? "rotate-180" : ""}`}
             viewBox="0 0 24 24"
@@ -218,15 +219,15 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
         </div>
       </form>
 
-      {/* Asset Category Filters with Pinned Filter */}
-      <div role="tablist" aria-label="Asset Class Filter" className="grid grid-cols-5 gap-1 p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[10px]">
+      {/* Asset Category Filters with Pinned Filter (Horizontal Scroll on Mobile) */}
+      <div role="tablist" aria-label="Asset Class Filter" className="flex items-center gap-1 overflow-x-auto no-scrollbar p-1 bg-[#090d14] rounded-lg border border-[#1b2434] text-[10px]">
         {(["All", "Pinned", "Stock", "ETF", "Crypto"] as const).map((cat) => (
           <button
             key={cat}
             role="tab"
             aria-selected={activeCategory === cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`py-1 rounded font-bold transition-all active:scale-[0.96] flex items-center justify-center gap-0.5 ${
+            className={`flex-1 min-w-[54px] py-1 px-1.5 rounded font-bold transition-all active:scale-[0.96] flex items-center justify-center gap-0.5 shrink-0 sm:shrink ${
               activeCategory === cat
                 ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                 : "text-slate-400 hover:text-slate-200"
@@ -257,6 +258,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
                 type="button"
                 onClick={() => {
                   onSelectSymbol(cleanQuery);
+                  setIsMobileExpanded(false);
                   setSearchQuery("");
                 }}
                 className="w-full bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 py-1.5 px-2 rounded-md text-xs font-bold transition-transform active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-cyan-950/40"
@@ -275,7 +277,10 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
             return (
               <div
                 key={item.symbol}
-                onClick={() => onSelectSymbol(item.symbol)}
+                onClick={() => {
+                  onSelectSymbol(item.symbol);
+                  setIsMobileExpanded(false);
+                }}
                 onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
                 className={`w-full flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-all active:scale-[0.98] ${
                   isSelected

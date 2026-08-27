@@ -151,19 +151,9 @@ function TerminalContent() {
       <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
 
       {/* Semantic Main Content Landmark */}
-      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 pb-28 sm:pb-5">
-        {/* Left Column: Watchlist Sidebar */}
-        <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full">
-          <WatchlistSidebar
-            activeSymbol={selectedSymbol}
-            onSelectSymbol={setSelectedSymbol}
-            liveCurrentPrice={data?.currentPrice}
-            livePriceChangePct={data?.priceChangePct24h}
-          />
-        </aside>
-
-        {/* Right Column: Dynamic Terminal Workspace */}
-        <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5">
+      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
+        {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
+        <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
           <div className="min-h-[380px] sm:min-h-[420px]">
             <PriceChart
@@ -312,6 +302,16 @@ function TerminalContent() {
             </div>
           )}
         </section>
+
+        {/* Watchlist Sidebar (Left column on desktop, Below chart on mobile) */}
+        <aside aria-label="Watchlist and Real-Time Feeds" className="lg:col-span-1 h-full order-2 lg:order-1 min-w-0">
+          <WatchlistSidebar
+            activeSymbol={selectedSymbol}
+            onSelectSymbol={setSelectedSymbol}
+            liveCurrentPrice={data?.currentPrice}
+            livePriceChangePct={data?.priceChangePct24h}
+          />
+        </aside>
       </main>
     </div>
   );
