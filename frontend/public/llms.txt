@@ -7,8 +7,10 @@
 - **Live Terminal**: https://finance-xp8.pages.dev/
 - **User Guide & Quantitative Methodologies**: https://finance-xp8.pages.dev/guide/
 - **Smart Money & Congressional Disclosures**: https://finance-xp8.pages.dev/smart-money/
+- **Congressional Politician Portfolios**: https://finance-xp8.pages.dev/politician/nancy-pelosi/
 - **Hidden Gems Screener**: https://finance-xp8.pages.dev/screener/
 - **Asset Comparison Matrix**: https://finance-xp8.pages.dev/compare/
+- **Individual Stock Analysis Hubs**: https://finance-xp8.pages.dev/stock/nvda/
 - **Private Portfolio & Risk Allocations**: https://finance-xp8.pages.dev/portfolio/
 
 ## Core Quantitative Engines & Methodologies

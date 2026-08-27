@@ -1,0 +1,35 @@
+﻿name: Daily Pre-Market Static Export & SEO Freshness
+
+on:
+  schedule:
+    # Runs at 08:00 UTC (04:00 AM EST, prior to US pre-market open) Monday through Friday
+    - cron: '0 8 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & Refresh Static SEO Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compile 50+ Static Programmatic SEO Pages
+        working-directory: frontend
+        run: npm run build
+
+      - name: Verify Static Export Integrity
+        working-directory: frontend
+        run: test -d out && test -f out/sitemap.xml && test -f out/robots.txt
