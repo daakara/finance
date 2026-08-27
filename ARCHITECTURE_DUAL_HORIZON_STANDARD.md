@@ -1,4 +1,4 @@
-﻿# Architectural UX Standard: Dual-Horizon Persona Policy (Day Trader vs. Long-Term Investor)
+# Architectural UX Standard: Dual-Horizon Persona Policy (Day Trader vs. Long-Term Investor)
 
 **Applies to**: All current and future frontend pages, views, modules, and components across `daakara/finance`.
 
@@ -50,3 +50,20 @@ If a page or sub-view is inherently single-horizon or purely informational (e.g.
 - **Key**: `"FINANCE_USER_ROLE"`
 - **Values**: `"DAY_TRADER"` | `"LONG_TERM"`
 - **Persistence**: Persists across browser refreshes and cross-page navigation.
+
+---
+
+## 4. ⚡ Timeframe & Role State Decoupling Standard
+
+### Rule C: Timeframe State Isolation
+1. **Never trigger role re-synchronization on timeframe changes**:
+   - The active timeframe state (`interval`) is subordinate to the active `userRole`.
+   - Changing the timeframe from `1Y` to `1M` or `5m` to `1m` must NEVER cause the parent or child components (`Navbar`, `Watchlist`) to fire `onRoleChange`.
+   - `handleRoleChange` in top-level pages must ALWAYS be wrapped in `useCallback(..., [])` to maintain stable reference identity.
+2. **Dedicated Timeframe Taxonomy**:
+   - **Intraday Scalps (`DAY_TRADER`)**: `1m`, `5m`, `15m`, `1h` (Formatted with Unix epoch seconds).
+   - **Macro Horizons (`LONG_TERM`)**: `1m_hist` (1M), `6m_hist` (6M), `1y_hist` (1Y), `3y_hist` (3Y), `5y_hist` (5Y) (Formatted with ISO `YYYY-MM-DD` dates).
+3. **Chart Engine Safety**:
+   - TradingView Lightweight Charts must always resize and auto-fit via `chart.timeScale().fitContent()`.
+   - Never call deprecated or non-existent methods like `resetTimeScale()`.
+

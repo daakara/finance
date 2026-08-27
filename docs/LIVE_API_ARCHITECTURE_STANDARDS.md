@@ -1,4 +1,4 @@
-﻿# 📡 Live API Architecture & Dynamic Data Ingestion Standard
+# 📡 Live API Architecture & Dynamic Data Ingestion Standard
 
 **Effective Date**: August 26, 2026  
 **Status**: ACTIVE / MANDATORY
@@ -37,3 +37,25 @@ If the remote backend is unreachable or rate-limited:
 1. Fallback definitions must be centralized strictly in `frontend/lib/constants.ts` (Single Source of Truth).
 2. Fallbacks must never contain contradictory verdicts or out-of-bounds metrics.
 3. Fallback closing prices must be strictly anchored to the asset's verified market baseline.
+
+---
+
+## 4. ⏱️ Timeframe Parameter Mapping & Timeout SLAs
+
+### API Parameter Mapping Matrix
+
+| UI Selector | Horizon / Scalp Type | `period` Query Param | `interval` Query Param | Time Representation | Point Count |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`1m`** | 1-Minute Scalp | `1d` | `1m` | Unix Epoch (seconds) | 45 |
+| **`5m`** | 5-Minute VWAP | `5d` | `5m` | Unix Epoch (seconds) | 45 |
+| **`15m`** | 15-Minute Flag | `5d` | `15m` | Unix Epoch (seconds) | 48 |
+| **`1h`** | 1-Hour Trend | `1mo` | `1h` | Unix Epoch (seconds) | 40 |
+| **`1M`** (`1m_hist`) | 1-Month Swing | `1mo` | `1d` | `YYYY-MM-DD` | ~22 |
+| **`6M`** (`6m_hist`) | 6-Month Cyclical | `6mo` | `1d` | `YYYY-MM-DD` | ~130 |
+| **`1Y`** (`1y_hist`) | 1-Year Macro | `1y` | `1d` | `YYYY-MM-DD` | ~252 |
+| **`3Y`** (`3y_hist`) | 3-Year Multi-Year | `3y` | `1wk` | `YYYY-MM-DD` | ~156 |
+| **`5Y`** (`5y_hist`) | 5-Year Secular | `5y` | `1mo` | `YYYY-MM-DD` | ~60 |
+
+### SLA & Fallback Contract:
+- **Client Fetch Timeout**: Set to **`8000ms`** via `AbortSignal.timeout(8000)` to accommodate cold container startups without premature client aborts.
+- **Strict Intraday Matching**: Backend and fallback engines must only treat `["1m", "5m", "15m", "30m", "1h"]` as intraday. `1mo` is strictly a monthly macro interval.

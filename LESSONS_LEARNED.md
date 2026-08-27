@@ -1,4 +1,4 @@
-﻿# 🧠 Engineering Lessons Learned & Architectural Insights
+# 🧠 Engineering Lessons Learned & Architectural Insights
 
 > **Living Technical Knowledge Base**  
 > Documenting systemic failure modes, financial engineering edge cases, rendering discrepancies, and automated QA gates discovered across development of `daakara/finance`.
@@ -89,3 +89,40 @@ Wildcard CORS (`allow_origins=["*"]`) and unhedged public APIs risked scraping a
 1. **Strict CORS Whitelist**: Whitelist only authorized domains (`https://finance-xp8.pages.dev`, `http://localhost:3000`).
 2. **Cloudflare Security Headers**: Enforce `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Strict-Transport-Security` in `frontend/public/_headers`.
 3. **Distributed Sliding-Window Rate Limiter**: Implemented `RedisRateLimitMiddleware` with local in-memory fallback to guarantee zero-downtime protection.
+
+---
+
+## 6. ⏱️ Timeframe State Isolation, Re-Render Loops & Chart Engine API Contracts
+
+### 🚨 What Went Wrong
+Timeframe/interval selector pills (`1M`, `6M`, `1Y`, `3Y`, `5Y` and `1m`, `5m`, `15m`, `1h`) appeared completely unresponsive or intermittently locked up when tapped on mobile and desktop devices.
+* **Root Cause 1 (Unmemoized Callback Reset Loop)**:
+  - `Navbar.tsx` included `useEffect(() => { ... onRoleChange(saved); }, [onRoleChange])`.
+  - In `page.tsx`, `handleRoleChange` was passed as an unmemoized inline function.
+  - Whenever the user clicked ANY interval button, `page.tsx` re-rendered $\rightarrow$ created a new `handleRoleChange` function reference $\rightarrow$ triggered `Navbar.tsx`'s `useEffect` $\rightarrow$ called `onRoleChange(saved)` $\rightarrow$ immediately forced `interval` state back to `"1y_hist"` or `"5m"`, wiping out the user's click instantly.
+* **Root Cause 2 (Lightweight Charts v4 API Breaking Call)**:
+  - `PriceChart.tsx` called `chartRef.current.timeScale().resetTimeScale()`.
+  - In Lightweight Charts v4, `resetTimeScale()` does not exist. Calling it threw an uncaught `TypeError`, was caught by a generic `catch (err)`, and silently skipped the vital `chart.timeScale().fitContent()` call, preventing viewport scaling.
+* **Root Cause 3 (Substring Match Fallback Misclassification)**:
+  - `api.ts` checked `const isIntraday = interval.includes("m") || interval.includes("h")`.
+  - The 5-Year secular horizon uses monthly bars (`apiInterval = "1mo"`). Because `"1mo"` contains `"m"`, it was misclassified as an intraday scalp, truncating the dataset to 22 points instead of 60 monthly points.
+
+### 🛡️ The Preventive Standard
+1. **Strict State Isolation Between Role and Timeframe Selection**:
+   - Role switching callbacks must never re-trigger on child mounts or prop identity changes.
+   - Always memoize role switch handlers with `useCallback(..., [])`.
+   - `Navbar.tsx` must only react to user toggle clicks and external broadcast events, never reading `localStorage` inside reactive dependency loops.
+2. **Lightweight Charts v4 Safe Rescaling**:
+   - Never call `resetTimeScale()`. Always use:
+     ```ts
+     if (chartRef.current) {
+       chartRef.current.timeScale().fitContent();
+     }
+     ```
+3. **Exact-Match Interval Categorization**:
+   - Intraday intervals must be matched against an exact whitelist (`["1m", "5m", "15m", "30m", "1h"]`), never via loose `.includes("m")` substrings which collide with `"1mo"` (1 month).
+4. **Mobile Touch & Accessibility Contract**:
+   - All timeframe buttons must explicitly declare `type="button"` and `className="... touch-manipulation cursor-pointer min-h-[36px]"`.
+5. **Automated Quality Gate**:
+   - Enforced via `test_chart_timeframe_state_and_api_contract` in `tests/test_nextjs_frontend_structure.py`.
+

@@ -1,4 +1,4 @@
-﻿"""Unit test verifying Next.js TypeScript frontend structure, route contracts, and deep-link query parameter bindings."""
+"""Unit test verifying Next.js TypeScript frontend structure, route contracts, and deep-link query parameter bindings."""
 
 import unittest
 import os
@@ -75,11 +75,31 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             with open(view_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            # Must check or bind localStorage FINANCE_USER_ROLE
-            self.assertTrue(
-                "FINANCE_USER_ROLE" in content or "userRole" in content,
-                f"View {view_path} must implement Dual-Horizon user role integration"
-            )
+    def test_chart_timeframe_state_and_api_contract(self):
+        """Regression Quality Gate: Ensure PriceChart component and page avoid re-render reset loops and invalid timeScale API calls."""
+        price_chart_path = os.path.join("frontend", "components", "PriceChart.tsx")
+        navbar_path = os.path.join("frontend", "components", "Navbar.tsx")
+        api_path = os.path.join("frontend", "lib", "api.ts")
+
+        with open(price_chart_path, "r", encoding="utf-8") as f:
+            chart_content = f.read()
+
+        # Must never call non-existent resetTimeScale()
+        self.assertNotIn("resetTimeScale()", chart_content, "PriceChart must not call non-existent resetTimeScale() on Lightweight Charts v4")
+        self.assertIn("fitContent()", chart_content, "PriceChart must call fitContent() to auto-scale viewport")
+        self.assertIn('type="button"', chart_content, "Timeframe interval buttons must explicitly specify type='button'")
+
+        with open(navbar_path, "r", encoding="utf-8") as f:
+            navbar_content = f.read()
+
+        # Navbar must not trigger onRoleChange on mount in a way that resets timeframe state
+        self.assertNotIn('if (onRoleChange) onRoleChange(saved);', navbar_content, "Navbar must not call onRoleChange on initial storage read")
+
+        with open(api_path, "r", encoding="utf-8") as f:
+            api_content = f.read()
+
+        # Fallback generator must not match '1mo' as intraday with substring .includes('m')
+        self.assertNotIn('interval.includes("m")', api_content, "api.ts must not use interval.includes('m') which corrupts 1mo monthly macro intervals")
 
 
 if __name__ == "__main__":

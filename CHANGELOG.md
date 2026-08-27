@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-27
+
+### Fixed
+- ⏱️ **Timeframe Selector Responsiveness**: Broken re-render reset loop between `Navbar.tsx` and `page.tsx` eliminated via `useCallback` and decoupled state synchronization.
+- 📈 **Lightweight Charts Rescaling**: Removed non-existent `resetTimeScale()` call that threw silent `TypeError` in v4, restoring smooth `fitContent()` viewport auto-scaling.
+- 📊 **Macro 5Y Horizon Parsing**: Fixed `generateFallbackAnalytics` to strictly match intraday intervals, preventing `1mo` monthly bars from being misclassified and truncated.
+- 📱 **Mobile Touch Accessibility**: Added explicit `type="button"` and `touch-manipulation` to all timeframe selector elements.
+- 🛡️ **Network Resilience**: Extended API client timeout from 1500ms to 8000ms to eliminate cold-start drops and prevent fallback baseline jumping.
+
+### Added
+- 🧪 Automated regression quality gate in `tests/test_nextjs_frontend_structure.py` enforcing timeframe state isolation, chart API conformance, and interval matching rules.
+
+---
+
 ## [1.0.0] - 2025-10-31
 
 ### Added
