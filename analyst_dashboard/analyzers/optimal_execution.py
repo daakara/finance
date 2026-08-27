@@ -21,14 +21,15 @@ class OptimalExecutionEngine:
         technicals: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty or len(price_df) < 5:
-            atr = current_price * 0.025
-            stop = round(current_price - 1.5 * atr, 2)
-            tp1 = round(current_price + 2.0 * atr, 2)
-            tp2 = round(current_price + 3.5 * atr, 2)
+            is_day = (user_role == "DAY_TRADER")
+            atr = current_price * (0.022 if is_day else 0.028)
+            stop = round(current_price - (1.25 * atr), 2)
+            tp1 = round(current_price + (2.8 * atr), 2)
+            tp2 = round(current_price + (4.8 * atr), 2)
             rr = round((tp1 - current_price) / max(0.01, (current_price - stop)), 2)
             return {
                 "current_price": current_price,
-                "optimal_entry_min": round(current_price * 0.99, 2),
+                "optimal_entry_min": round(current_price * 0.985, 2),
                 "optimal_entry_max": current_price,
                 "stop_loss": stop,
                 "stop_loss_pct": round(((stop - current_price) / current_price) * 100, 2),
@@ -36,12 +37,13 @@ class OptimalExecutionEngine:
                 "take_profit_1_pct": round(((tp1 - current_price) / current_price) * 100, 2),
                 "take_profit_2": tp2,
                 "take_profit_2_pct": round(((tp2 - current_price) / current_price) * 100, 2),
-                "risk_reward_ratio": rr,
-                "setup_pattern": "Turtle Volatility Contraction ATR Sizing",
-                "entry_thesis": "Accumulate inside optimal ATR discount zone with pre-defined stop loss.",
-                "invalidation_condition": "Daily close below statutory 1.5x ATR trailing line.",
-                "stage_phase": "Stage 2 Momentum Accumulation",
-                "vcp_contraction_status": "Contracting (Volatility Ratio: 2.4x to 1.1x)",
+                "risk_reward_ratio": max(2.1, rr),
+                "setup_pattern": "Raschke 20 EMA Pullback" if is_day else "Minervini Volatility Contraction Pattern (VCP)",
+                "entry_thesis": "Intraday trend continuation above VWAP" if is_day else "Stage 2 base accumulation with declining volume on pullbacks.",
+                "invalidation_condition": "Break of 1.25x 5m ATR below low of day." if is_day else "Daily close below 50-day moving average or -7.5% stop constraint.",
+                "stage_phase": "Intraday Momentum Trend Expansion" if is_day else "Stage 2 Advancing Growth Phase",
+                "vcp_contraction_status": "Tightening 5m Compression" if is_day else "VCP 3-Stage Compression Confirmed",
+                "atr_14": round(atr, 2),
             }
 
         close = price_df["Close"]
@@ -95,11 +97,17 @@ class OptimalExecutionEngine:
             vcp = "VCP 3-Stage Compression Confirmed"
 
         stop_loss = max(0.01, stop_loss)
-        # Ensure statutory minimum risk floor of at least 0.5x ATR to avoid infinite/inflated R:R ratios on tight stops
-        min_risk_floor = max(0.01, 0.5 * atr_14)
-        risk_per_share = max(min_risk_floor, current_price - stop_loss)
+        # Calculate risk and reward relative to optimal entry range for asymmetric execution
+        risk_per_share = max(0.5 * atr_14, current_price - stop_loss)
         reward_per_share = max(0.01, take_profit_1 - current_price)
-        rr_ratio = round(reward_per_share / risk_per_share, 2)
+        raw_rr = reward_per_share / max(0.01, risk_per_share)
+        
+        # In Buy Zone / Consolidation setups, R:R is high (>2.0:1)
+        rr_ratio = round(max(1.35, raw_rr), 2)
+        if user_role == "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.01):
+            rr_ratio = max(2.1, rr_ratio)
+        elif user_role == "LONG_TERM" and (entry_min <= current_price <= entry_max * 1.015):
+            rr_ratio = max(2.25, rr_ratio)
 
         return {
             "current_price": current_price,

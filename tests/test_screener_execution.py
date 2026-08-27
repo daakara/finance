@@ -63,9 +63,9 @@ def test_screener_differential_subsets():
         ("in_buy_zone", lambda c: c["executionStatus"] == "IN_BUY_ZONE"),
         ("approaching_target", lambda c: c["executionStatus"] == "APPROACHING_TARGET"),
         ("high_rr", lambda c: c["riskRewardRatio"] >= 2.0),
-        ("lynch", lambda c: "Lynch" in c["expertArchetype"] or c["symbol"] in ["ACLS", "ELF", "POWI"]),
-        ("greenblatt", lambda c: "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"] or c["symbol"] in ["LNTH", "CPRX", "MEDP"]),
-        ("rule_breakers", lambda c: "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"] or c["symbol"] in ["TMDX", "LLY"]),
+        ("lynch", lambda c: float(c["pegRatio"]) <= 1.0 or "Lynch" in c["expertArchetype"]),
+        ("greenblatt", lambda c: float(c["roic"].replace("%", "")) >= 20.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]),
+        ("rule_breakers", lambda c: float(c["grossMargin"].replace("%", "")) >= 60.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]),
     ]
 
     for filter_name, validator in filters:

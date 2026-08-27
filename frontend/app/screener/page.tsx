@@ -190,17 +190,17 @@ export default function ScreenerPage() {
   const isDayTrader = activeRole === "DAY_TRADER";
   const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
 
-  // Instant Client-Side Filter with 0ms Latency
+  // Instant Client-Side Filter with 0ms Latency and Numerical Attribute Resolution
   const displayGems = gems.filter((gem) => {
     if (selectedFilter === "high_confluence") return (gem.confluenceScore || 0) >= 80;
     if (selectedFilter === "in_buy_zone" || selectedFilter === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
     if (selectedFilter === "approaching_target" || selectedFilter === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
     if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
-    if (selectedFilter === "high_rvol") return ["NVDA", "TSLA", "PLTR", "SMCI", "COIN", "AMD", "META"].includes(gem.symbol);
-    if (selectedFilter === "squeeze") return ["TSLA", "DUOL", "SMCI", "CELH", "IONQ", "RKLB"].includes(gem.symbol);
-    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI", "DECK", "ULTA"].includes(gem.symbol);
-    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP", "ISRG"].includes(gem.symbol);
-    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive") || ["TMDX", "LLY", "VRT", "ANET"].includes(gem.symbol);
+    if (selectedFilter === "high_rvol") return parseFloat(gem.rvol?.replace("x", "") || "0") >= 2.5;
+    if (selectedFilter === "squeeze") return parseFloat(gem.shortFloat?.replace("%", "") || "0") >= 6.0;
+    if (selectedFilter === "lynch") return parseFloat(gem.pegRatio || "99") <= 1.0 || gem.expertArchetype.includes("Lynch");
+    if (selectedFilter === "greenblatt") return parseFloat(gem.roic?.replace("%", "") || "0") >= 20.0 || gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic");
+    if (selectedFilter === "rule_breakers") return parseFloat(gem.grossMargin?.replace("%", "") || "0") >= 60.0 || gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive");
     return true;
   });
 
@@ -210,11 +210,11 @@ export default function ScreenerPage() {
     if (tabId === "in_buy_zone" || tabId === "vwap_pullback") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
     if (tabId === "approaching_target" || tabId === "orb_breakout") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
     if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.0).length;
-    if (tabId === "high_rvol") return gems.filter((g) => ["NVDA", "TSLA", "PLTR", "SMCI", "COIN", "AMD", "META"].includes(g.symbol)).length;
-    if (tabId === "squeeze") return gems.filter((g) => ["TSLA", "DUOL", "SMCI", "CELH", "IONQ", "RKLB"].includes(g.symbol)).length;
-    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI", "DECK", "ULTA"].includes(g.symbol)).length;
-    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP", "ISRG"].includes(g.symbol)).length;
-    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive") || ["TMDX", "LLY", "VRT", "ANET"].includes(g.symbol)).length;
+    if (tabId === "high_rvol") return gems.filter((g) => parseFloat(g.rvol?.replace("x", "") || "0") >= 2.5).length;
+    if (tabId === "squeeze") return gems.filter((g) => parseFloat(g.shortFloat?.replace("%", "") || "0") >= 6.0).length;
+    if (tabId === "lynch") return gems.filter((g) => parseFloat(g.pegRatio || "99") <= 1.0 || g.expertArchetype.includes("Lynch")).length;
+    if (tabId === "greenblatt") return gems.filter((g) => parseFloat(g.roic?.replace("%", "") || "0") >= 20.0 || g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic")).length;
+    if (tabId === "rule_breakers") return gems.filter((g) => parseFloat(g.grossMargin?.replace("%", "") || "0") >= 60.0 || g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive")).length;
     return gems.length;
   };
 
@@ -303,7 +303,7 @@ export default function ScreenerPage() {
               <button
                 type="button"
                 onClick={handleClearCustomQuery}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 transition-all active:scale-[0.96] flex items-center gap-1"
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-[#1a2333] hover:bg-[#223046] border border-[#2b3c58] text-slate-300 transition-all active:scale-[0.96] flex items-center gap-1.5 shadow"
               >
                 <span>✕</span>
                 <span>Reset (60-Asset Catalog)</span>
@@ -370,16 +370,53 @@ export default function ScreenerPage() {
 
         {/* Candidate Cards Grid */}
         {!loading && displayGems.length === 0 && (
-          <div className="p-8 text-center bg-[#0e131d] border border-[#1b2434] rounded-xl">
-            <span className="text-3xl block mb-2">🔍</span>
-            <h3 className="text-base font-bold text-white">No active candidates matching &quot;{selectedFilter}&quot;</h3>
-            <p className="text-xs text-slate-400 mt-1">Try switching filter tabs or scanning across all setups.</p>
-            <button
-              onClick={() => setSelectedFilter("all")}
-              className="mt-4 px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-all"
-            >
-              View All Setups
-            </button>
+          <div className="p-8 text-center bg-[#0e131d] border border-[#1b2434] rounded-2xl max-w-xl mx-auto my-6">
+            <span className="text-4xl block mb-3">🔍</span>
+            <h3 className="text-base font-bold text-white">
+              {activeCustomQuery ? `No matches found for "${activeCustomQuery}"` : `No active candidates in "${selectedFilter}"`}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              {activeCustomQuery
+                ? "Try scanning common US market leaders or click a suggested sector basket below:"
+                : "Try selecting 'All Setups' or switching between Day Trader and Long Term lenses."}
+            </p>
+
+            {activeCustomQuery && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                {["NVDA, TSLA, PLTR", "AAPL, MSFT, AMD", "LNTH, CPRX, ISRG", "COIN, MARA, MSTR"].map((basket) => (
+                  <button
+                    key={basket}
+                    type="button"
+                    onClick={() => {
+                      setCustomTickerInput(basket);
+                      setActiveCustomQuery(basket);
+                    }}
+                    className="px-2.5 py-1 bg-[#141b29] hover:bg-[#1f293d] border border-[#233249] text-cyan-300 rounded-lg text-[11px] font-bold transition-all"
+                  >
+                    + {basket}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => setSelectedFilter("all")}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow"
+              >
+                View All Setups
+              </button>
+              {activeCustomQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearCustomQuery}
+                  className="px-4 py-2 bg-[#1b2434] hover:bg-[#263349] text-slate-200 rounded-xl text-xs font-bold transition-all"
+                >
+                  Reset to 60-Asset Catalog
+                </button>
+              )}
+            </div>
           </div>
         )}
 
