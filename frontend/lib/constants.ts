@@ -155,8 +155,8 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     scores: { growthScore: 94, qualityScore: 89, valuationScore: 72, momentumScore: 92, tailRiskScore: 81, compositeFactorScore: 86, verdict: "Disruptive Rule Breaker", piotroskiFScore: 8 }
   },
   "LNTH": {
-    price: 74.80,
-    changePct: 1.60,
+    price: 100.78,
+    changePct: -4.09,
     scores: { growthScore: 89, qualityScore: 94, valuationScore: 86, momentumScore: 85, tailRiskScore: 88, compositeFactorScore: 88, verdict: "Greenblatt Magic Formula", piotroskiFScore: 9 }
   },
   "POWI": {

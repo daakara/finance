@@ -114,7 +114,10 @@ function TerminalContent() {
           apiInterval = "1mo";
         }
 
-        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval);
+        const knownPrice = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.currentPrice : undefined;
+        const knownChange = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.priceChangePct24h : undefined;
+
+        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, knownPrice, knownChange);
         if (isMounted) {
           setData(res);
           cacheRef.current.set(cacheKey, res);

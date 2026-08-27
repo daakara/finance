@@ -323,16 +323,130 @@ export interface ScreenerResponse {
   results: GemCandidate[];
 }
 
+// 🧠 Global Spot Price & Metadata Registry (Enforces 100% price parity across all timeframes)
+export const SpotPriceRegistry = new Map<string, {
+  price: number;
+  changePct: number;
+  technicals?: any;
+  catalyst?: any;
+  smartMoney?: any;
+}>();
+
+// Authentic Asset Catalysts for Core & Discovery Tickers
+const ASSET_CATALYSTS: Record<string, { trial: string; phase: string; timeline: string; thesis: string }> = {
+  "LNTH": {
+    trial: "PYLARIFY Imaging Volume & Alzheimer Diagnostic Pipeline",
+    phase: "Commercial / Expansion (Phase 3)",
+    timeline: "Q3 2026 Earnings & Product Roadmap",
+    thesis: "Market leader in diagnostic radiopharmaceuticals and PSMA-targeted PET imaging agents for prostate cancer.",
+  },
+  "CIEN": {
+    trial: "WaveLogic 6 Nano 800G Coherent Optics",
+    phase: "Hyperscale AI Deployment",
+    timeline: "FY26 Optical Interconnect Ramp",
+    thesis: "Niche monopoly in coherent optical networking vital for GPU cluster interconnects and data center scale-out.",
+  },
+  "NVO": {
+    trial: "CagriSema Phase 3 REDEFINE & Oral Amycretin",
+    phase: "Phase 3 Pivotal / Registration",
+    timeline: "Q4 2026 Phase 3 Trial Readouts",
+    thesis: "Secular obesity and diabetes therapeutic franchise with accelerating multi-billion manufacturing capacity.",
+  },
+  "LLY": {
+    trial: "Zepbound Sleep Apnea Label & Orforglipron GLP-1",
+    phase: "Phase 3 Registration & FDA Filing",
+    timeline: "H2 2026 Regulatory Submissions",
+    thesis: "Global pharmaceutical market cap leader driving dual-incretin and triple-agonist metabolic platforms.",
+  },
+  "NVDA": {
+    trial: "Blackwell GB200 NVL72 Rack-Scale Compute",
+    phase: "Mass Production & Hyperscale Delivery",
+    timeline: "Continuous FY26/27 Data Center Shipments",
+    thesis: "Dominant accelerated computing full-stack architecture with CUDA ecosystem standard and hardware moats.",
+  },
+  "AAPL": {
+    trial: "Apple Intelligence On-Device AI Architecture",
+    phase: "Global iOS Rollout & Enterprise Services",
+    timeline: "Fall Product Cycle & Developer Conferences",
+    thesis: "Consumer hardware ecosystem with 2.2B active installed devices and high-margin recurring services growth.",
+  },
+  "MSFT": {
+    trial: "Azure OpenAI Enterprise & Copilot Monetization",
+    phase: "Production Enterprise Scaling",
+    timeline: "Quarterly Cloud Consumption Reporting",
+    thesis: "Commercial enterprise software moat with mission-critical Azure infrastructure and security integrations.",
+  },
+  "PLTR": {
+    trial: "AIP (Artificial Intelligence Platform) Enterprise Bootcamps",
+    phase: "Commercial Acceleration",
+    timeline: "Q3/Q4 2026 Enterprise Expansion",
+    thesis: "Government defense and commercial ontology operating system enabling autonomous business workflows.",
+  },
+  "TSLA": {
+    trial: "Full Self-Driving (FSD) v12.5 & Robotaxi Network",
+    phase: "Commercial Validation & Autonomous Scaling",
+    timeline: "Cybercab Demonstration & Fleet Rollout",
+    thesis: "Next-gen electric vehicle platform and vision-only end-to-end neural network autonomy.",
+  },
+  "CPRX": {
+    trial: "FIRDAPSE Lambert-Eaton Myasthenic Syndrome Expansion",
+    phase: "Commercial Monopoly",
+    timeline: "FY26 Label Expansion Data",
+    thesis: "Rare neurological disease commercial franchise with pristine balance sheet and high cash conversion.",
+  },
+  "ACLS": {
+    trial: "Purion Power SiC Ion Implantation Platform",
+    phase: "Automotive & Industrial Scaling",
+    timeline: "Q4 2026 Semiconductor Equipment Deliveries",
+    thesis: "Specialized monopoly in high-energy ion implantation required for Silicon Carbide electric vehicle inverters.",
+  },
+  "TMDX": {
+    trial: "Organ Care System (OCS) Aviation Logistics Network",
+    phase: "National Clinical Standard of Care",
+    timeline: "Continuous OCS Flight Operations Expansion",
+    thesis: "Disruptive warm perfusion technology revolutionizing heart, lung, and liver transplantation survival rates.",
+  },
+  "POWI": {
+    trial: "GaN (Gallium Nitride) High-Voltage Power Conversion",
+    phase: "Data Center & Automotive Adoption",
+    timeline: "FY26 Server Efficiency Compliance Window",
+    thesis: "Energy-efficient power conversion ICs reducing phantom power loss across EVs, chargers, and servers.",
+  },
+  "MEDP": {
+    trial: "Clinical Biotech Contract Research Acceleration",
+    phase: "Full-Service CRO Operations",
+    timeline: "Continuous RFP Backlog Delivery",
+    thesis: "High return-on-capital contract research organization catering exclusively to emerging biopharma.",
+  },
+  "ELF": {
+    trial: "Global Retail Expansion & Skincare Integration",
+    phase: "International Rollout",
+    timeline: "UK/Europe Market Share Expansion",
+    thesis: "Digitally-native, fast-beauty disruptor taking rapid global market share with premium quality-to-price ratio.",
+  },
+  "DUOL": {
+    trial: "Duolingo Max Generative AI Subscription Tiers",
+    phase: "Global Commercial Rollout",
+    timeline: "Continuous AI Course Launch",
+    thesis: "Gamified learning platform with organic user acquisition and accelerating ARPU conversion.",
+  },
+};
+
 // High-Fidelity Multi-Period Horizon & Day-Trader Fallback Generator (<1ms instant execution)
 export function generateFallbackAnalytics(
   symbol: string,
   period: string = "1y",
-  interval: string = "1d"
+  interval: string = "1d",
+  overridePrice?: number,
+  overrideChangePct?: number
 ): AnalyticsResponse {
   const upper = symbol.toUpperCase().replace("-USD", "");
   const matched = SHARED_FACTOR_SCORES[upper] || SHARED_FACTOR_SCORES["AAPL"];
-  const basePrice = matched.price;
-  const baseChangePct = matched.changePct;
+  const registered = SpotPriceRegistry.get(upper);
+
+  // Always anchor to: 1) explicit override, 2) live registry price, 3) static factor score
+  const basePrice = overridePrice || registered?.price || matched.price;
+  const baseChangePct = overrideChangePct !== undefined ? overrideChangePct : (registered?.changePct ?? matched.changePct);
   const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h" || interval === "30m";
 
   // Horizon-aware numPoints and time step (stepMs) so each period spans the correct calendar window
@@ -356,7 +470,6 @@ export function generateFallbackAnalytics(
   const stepMs = hConfig.spanMs;
 
   // Horizon-specific return multipliers to provide authentic period changes
-  // For intraday, keyed by interval (1m/5m/15m/1h); for daily+, keyed by period (1mo/6mo/1y/3y/5y)
   const horizonChangeMultiplier: Record<string, number> = {
     "1m": 0.4,
     "5m": 0.8,
@@ -418,6 +531,13 @@ export function generateFallbackAnalytics(
     });
   }
 
+  const assetCat = ASSET_CATALYSTS[upper] || {
+    trial: "Next-Gen Product Cycle & AI Architecture",
+    phase: "Production & Enterprise Scaling",
+    timeline: "Quarterly Earnings & Developer Conferences",
+    thesis: `${upper} demonstrating strong institutional accumulation and robust balance sheet factors.`,
+  };
+
   return {
     symbol: upper,
     period,
@@ -425,7 +545,7 @@ export function generateFallbackAnalytics(
     currentPrice: basePrice,
     priceChangePct24h: baseChangePct,
     candles: generatedCandles,
-    technicals: { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
+    technicals: registered?.technicals || { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
     factorScores: matched.scores,
     macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
     expectedReturn: DEFAULT_EXPECTED_RETURN,
@@ -449,14 +569,14 @@ export function generateFallbackAnalytics(
       },
       systemicContagionRisk: "Low-to-Moderate (Well-Diversified)",
     },
-    catalystForecast: {
+    catalystForecast: registered?.catalyst || {
       company_name: `${upper} Corporation`,
       symbol: upper,
-      sector: "Technology / Growth Equities",
-      primary_drug_trial: "N/A - Commercial Tech/Equities",
-      trial_phase: "Commercial / Expansion",
-      trial_readout_timeline: "Q3 2026 Earnings & Product Roadmap",
-      efficacy_summary: `${upper} showing robust institutional conviction and strong factor alignment heading into upcoming macro window.`,
+      sector: "Multi-Asset Technology / Growth",
+      primary_drug_trial: assetCat.trial,
+      trial_phase: assetCat.phase,
+      trial_readout_timeline: assetCat.timeline,
+      efficacy_summary: assetCat.thesis,
       competitive_edge: "High market share moat and continuous cash generation",
       upcoming_milestones: [
         { date: "2026-09-15", event: "Q3 Product Line Readout", impact: "High" },
@@ -486,22 +606,8 @@ export function generateFallbackAnalytics(
       vcp_contraction_status: "VCP 3-Stage Compression Confirmed",
       atr_14: Number((basePrice * 0.022).toFixed(2)),
     },
-    smartMoney: {
-      congressTrades: [
-        {
-          politician: "Nancy Pelosi (D-CA)",
-          chamber: "House",
-          ticker: upper,
-          asset_name: `${upper} Corporation`,
-          transaction_type: "Purchase",
-          amount_range: "$500,001 - $1,000,000",
-          filing_date: "2026-08-14",
-          transaction_date: "2026-08-10",
-          days_to_filing: 4,
-          performance_since_pct: 3.8,
-          sentiment: "Bullish",
-        },
-      ],
+    smartMoney: registered?.smartMoney || {
+      congressTrades: [],
       optionsFlow: [
         {
           time: "14:23:05",
@@ -521,11 +627,13 @@ export function generateFallbackAnalytics(
   };
 }
 
-// Comprehensive Live Asset Analytics Engine with Snappy 1500ms Timeout
+// Comprehensive Live Asset Analytics Engine with Spot Price Registry Memory
 export async function fetchAssetAnalytics(
   symbol: string,
   period: string = "1y",
-  interval: string = "1d"
+  interval: string = "1d",
+  overridePrice?: number,
+  overrideChangePct?: number
 ): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
   
@@ -537,6 +645,15 @@ export async function fetchAssetAnalytics(
     if (res.ok) {
       const data = await res.json();
       if (data && data.candles && data.candles.length > 0) {
+        // Save live price and metadata to registry for consistent cross-timeline fallback anchoring
+        SpotPriceRegistry.set(upper, {
+          price: data.currentPrice,
+          changePct: data.priceChangePct24h,
+          technicals: data.technicals,
+          catalyst: data.catalystForecast,
+          smartMoney: data.smartMoney,
+        });
+
         return {
           ...data,
           factorScores: data.factorScores || data.dnaScores,
@@ -547,8 +664,15 @@ export async function fetchAssetAnalytics(
     // Gracefully fall through to fast fallback
   }
 
-  // 2. High-Fidelity Multi-Period Fallback Generator
-  return generateFallbackAnalytics(symbol, period, interval);
+  // 2. High-Fidelity Multi-Period Fallback Generator anchored to known live spot price
+  const reg = SpotPriceRegistry.get(upper);
+  return generateFallbackAnalytics(
+    symbol,
+    period,
+    interval,
+    overridePrice || reg?.price,
+    overrideChangePct !== undefined ? overrideChangePct : reg?.changePct
+  );
 }
 
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {

@@ -1,4 +1,4 @@
-﻿"""FastAPI Router for Asset Analytics, Intraday Technicals, Self-Healing Engine & Market Graph."""
+"""FastAPI Router for Asset Analytics, Intraday Technicals, Self-Healing Engine & Market Graph."""
 
 import math
 from datetime import datetime
@@ -29,6 +29,8 @@ eodhd_fetcher = EODHDMarketFetcher()
 optimal_execution_engine = OptimalExecutionEngine()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
+INFO_CACHE: dict[str, tuple[float, dict]] = {}
+CACHE_TTL_SECONDS = 3600.0
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
@@ -203,12 +205,18 @@ def get_asset_analytics(
         risk_output = risk_analyzer.analyze_comprehensive_risk(price_data=hist)
         adv_metrics = risk_output.get("advanced_metrics", {})
 
-        # Compute Fundamental Factor / DNA Scores & Piotroski F-Score
+        # Compute Fundamental Factor / DNA Scores & Piotroski F-Score (cached to avoid redundant multi-second scrapes)
+        now_ts = datetime.utcnow().timestamp()
         info = {}
-        try:
-            info = ticker_obj.info or {}
-        except Exception:
-            pass
+        if upper_sym in INFO_CACHE and (now_ts - INFO_CACHE[upper_sym][0]) < CACHE_TTL_SECONDS:
+            info = INFO_CACHE[upper_sym][1]
+        else:
+            try:
+                info = ticker_obj.info or {}
+                if info:
+                    INFO_CACHE[upper_sym] = (now_ts, info)
+            except Exception:
+                pass
 
         piotroski = 8 if upper_sym in KNOWN_ETFS else calculate_piotroski_f_score(info, {})
         rev_g = info.get("revenueGrowth") if info.get("revenueGrowth") is not None else 0.16
