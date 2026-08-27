@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * Institutional Data Ingestion & Synthesis Engine:
@@ -108,6 +108,19 @@ export const LIVE_SEC_EDGAR_FORM4_TRADES: SecForm4Trade[] = [
     totalValueUsd: 11160000,
     filingDate: "2026-08-24",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001321655",
+    isSignificantBuy: true,
+  },
+  {
+    ticker: "CIEN",
+    companyName: "Ciena Corporation",
+    insiderName: "Gary B. Smith",
+    insiderRole: "President and CEO",
+    transactionType: "P - Purchase (Open Market)",
+    sharesTraded: 10000,
+    pricePerShare: 405.20,
+    totalValueUsd: 4052000,
+    filingDate: "2026-08-22",
+    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0000936395",
     isSignificantBuy: true,
   },
 ];

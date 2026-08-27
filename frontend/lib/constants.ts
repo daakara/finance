@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared Single Source of Truth for Asset Data, Price Fallbacks, and Factor Baselines.
  * Enforces state parity across Watchlist, Radar, Chart, and Terminal components.
  */
@@ -24,6 +24,7 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
   { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
   { symbol: "TSLA", name: "Tesla Inc.", price: "$350.25", change: "+2.15%", isUp: true, type: "Stock" },
   { symbol: "PLTR", name: "Palantir Tech", price: "$142.80", change: "+4.12%", isUp: true, type: "Stock" },
+  { symbol: "CIEN", name: "Ciena Corp.", price: "$417.00", change: "+2.65%", isUp: true, type: "Stock" },
 
   // Institutional Index, Sector, Commodity & Bond ETFs
   { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },
@@ -197,6 +198,11 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     price: 154.30,
     changePct: 2.70,
     scores: { growthScore: 90, qualityScore: 88, valuationScore: 68, momentumScore: 89, tailRiskScore: 80, compositeFactorScore: 84, verdict: "AI Compute Challenger", piotroskiFScore: 8 }
+  },
+  "CIEN": {
+    price: 417.00,
+    changePct: 2.65,
+    scores: { growthScore: 86, qualityScore: 89, valuationScore: 74, momentumScore: 84, tailRiskScore: 82, compositeFactorScore: 84, verdict: "Optical Networking AI Beneficiary", piotroskiFScore: 8 }
   },
 };
 export const DEFAULT_MACRO_DIFFICULTY: MacroDifficultyRating = {
