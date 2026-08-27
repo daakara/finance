@@ -78,6 +78,7 @@ export default function ScreenerPage() {
   const [alertGem, setAlertGem] = useState<GemCandidate | null>(null);
   const [customTickerInput, setCustomTickerInput] = useState<string>("");
   const [activeCustomQuery, setActiveCustomQuery] = useState<string>("");
+  const [copyToast, setCopyToast] = useState<boolean>(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -187,6 +188,17 @@ export default function ScreenerPage() {
     setSelectedFilter("all");
   };
 
+  const handleCopyTickers = () => {
+    try {
+      const symbols = displayGems.map((g) => g.symbol).join(", ");
+      navigator.clipboard.writeText(symbols);
+      setCopyToast(true);
+      setTimeout(() => setCopyToast(false), 2500);
+    } catch (err) {
+      console.warn("Could not copy tickers:", err);
+    }
+  };
+
   const isDayTrader = activeRole === "DAY_TRADER";
   const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
 
@@ -249,7 +261,7 @@ export default function ScreenerPage() {
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                ⚡ Day Trader (Intraday ATR)
+                ⚡ Day Trader (Scalps/Intraday)
               </button>
               <button
                 onClick={() => handleRoleToggle("LONG_TERM")}
@@ -259,23 +271,23 @@ export default function ScreenerPage() {
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                🏛️ Swing / Long-Term (VCP)
+                🏛️ Long-Term (Compounders)
               </button>
             </div>
           </div>
         </div>
 
-        {/* Custom Watchlist & On-Demand Ticker Scanner Bar */}
-        <div className="mb-5 bg-[#0c1017] border border-[#1b2434] rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-          <form onSubmit={handleCustomSearch} className="flex-1 min-w-[280px] flex items-center gap-2">
+        {/* Custom Multi-Ticker Search Bar & Watchlist Scanner */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-[#0d121c] p-3 rounded-2xl border border-[#1e293b]">
+          <form onSubmit={handleCustomSearch} className="flex-1 flex items-center gap-2 min-w-[280px]">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <span className="absolute left-3 top-2.5 text-xs text-slate-500">🔍</span>
               <input
                 type="text"
                 value={customTickerInput}
                 onChange={(e) => setCustomTickerInput(e.target.value)}
-                placeholder="Scan custom tickers (e.g. AAPL, AMD, META, AVGO, CRWD)..."
-                className="w-full bg-[#111722] border border-[#223149] rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                placeholder="Search specific tickers: e.g. NVDA, AAPL, PLTR, MSFT, LLY..."
+                className="w-full bg-[#070a11] border border-[#243044] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono transition-colors"
               />
             </div>
             <button
@@ -289,7 +301,7 @@ export default function ScreenerPage() {
             </button>
           </form>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleScanSavedWatchlist}
@@ -297,6 +309,16 @@ export default function ScreenerPage() {
             >
               <span>💼</span>
               <span>Scan My Portfolio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyTickers}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-[#141b29] hover:bg-[#1c2638] border border-[#223149] text-cyan-300 hover:text-white transition-all active:scale-[0.96] flex items-center gap-1.5 shadow"
+              title="Copy filtered tickers to clipboard for Thinkorswim, TradingView, or IBKR"
+            >
+              <span>📋</span>
+              <span>{copyToast ? "✅ Tickers Copied!" : `Copy ${displayGems.length} Tickers`}</span>
             </button>
 
             {activeCustomQuery && (

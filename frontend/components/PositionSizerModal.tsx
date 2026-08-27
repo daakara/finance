@@ -41,6 +41,44 @@ export default function PositionSizerModal({
   const fullKelly = Math.max(0, (b * p - q) / b);
   const halfKellyPct = Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
 
+  const [savedToast, setSavedToast] = useState<boolean>(false);
+
+  const handleSaveToPortfolio = () => {
+    try {
+      const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");
+      let currentPositions = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(currentPositions)) currentPositions = [];
+
+      const newPos = {
+        symbol,
+        name: `${symbol} Corporation`,
+        shares,
+        entryPrice,
+        currentPrice: entryPrice,
+        targetPrice: takeProfit1,
+        stopLossPrice: stopLoss,
+        addedAt: new Date().toISOString().split("T")[0],
+        assetType: "Stock",
+      };
+
+      const existingIndex = currentPositions.findIndex((p: any) => p.symbol === symbol);
+      let updated;
+      if (existingIndex >= 0) {
+        updated = [...currentPositions];
+        updated[existingIndex] = newPos;
+      } else {
+        updated = [newPos, ...currentPositions];
+      }
+
+      localStorage.setItem("FINANCE_USER_PORTFOLIO", JSON.stringify(updated));
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 3500);
+      window.dispatchEvent(new Event("storage"));
+    } catch (err) {
+      console.warn("Failed to save to portfolio:", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
       <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100">
@@ -161,13 +199,30 @@ export default function PositionSizerModal({
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
             Buy <span className="text-white font-bold">{shares} shares</span> of {symbol} at ${entryPrice.toFixed(2)}. Place GTC Stop-Loss at ${stopLoss.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
           </div>
+
+          {/* Success Toast */}
+          {savedToast && (
+            <div className="bg-emerald-950/90 border border-emerald-600 text-emerald-300 p-2.5 rounded-xl text-xs flex items-center justify-between font-bold animate-fade-in">
+              <span>✅ Added {shares} shares of {symbol} to your private portfolio!</span>
+              <a href="/portfolio" className="underline hover:text-white">View Portfolio →</a>
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[#1b2537] bg-[#0e1422] flex items-center justify-end">
+        {/* Footer with 1-Click Save to Portfolio */}
+        <div className="p-4 border-t border-[#1b2537] bg-[#0e1422] flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleSaveToPortfolio}
+            className="px-4 py-2 bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow"
+          >
+            <span>💼</span>
+            <span>Save to My Portfolio</span>
+          </button>
+
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-all shadow"
+            className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow active:scale-95"
           >
             Done
           </button>

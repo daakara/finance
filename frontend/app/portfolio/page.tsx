@@ -170,6 +170,7 @@ export default function PortfolioPage() {
               <thead className="bg-[#090d14] text-slate-400 border-b border-[#1b2434] uppercase text-[10px]">
                 <tr>
                   <th className="py-3 px-4">Asset</th>
+                  <th className="py-3 px-4">Execution Status</th>
                   <th className="py-3 px-4">Shares</th>
                   <th className="py-3 px-4">Entry Price</th>
                   <th className="py-3 px-4">Current Price</th>
@@ -187,6 +188,34 @@ export default function PortfolioPage() {
                   const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
                   const posUp = pnl >= 0;
 
+                  // Execution state alert
+                  let statusBadge = null;
+                  if (pos.targetPrice && pos.currentPrice >= pos.targetPrice) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold text-[10px] whitespace-nowrap animate-pulse">
+                        🎯 TP1 TARGET HIT
+                      </span>
+                    );
+                  } else if (pos.stopLossPrice && pos.currentPrice <= pos.stopLossPrice) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold text-[10px] whitespace-nowrap">
+                        🛑 STOP LOSS HIT
+                      </span>
+                    );
+                  } else if (pos.stopLossPrice && pos.currentPrice <= pos.stopLossPrice * 1.02) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-bold text-[10px] whitespace-nowrap">
+                        ⚠️ NEAR STOP FLOOR
+                      </span>
+                    );
+                  } else {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/60 font-bold text-[10px] whitespace-nowrap">
+                        🟢 ACTIVE HOLDING
+                      </span>
+                    );
+                  }
+
                   return (
                     <tr key={pos.symbol} className="hover:bg-[#151e2d] transition-colors">
                       <td className="py-3 px-4">
@@ -195,6 +224,7 @@ export default function PortfolioPage() {
                           <span className="text-[10px] text-slate-500 font-normal">({pos.name})</span>
                         </Link>
                       </td>
+                      <td className="py-3 px-4">{statusBadge}</td>
                       <td className="py-3 px-4 text-slate-200">{pos.shares}</td>
                       <td className="py-3 px-4 text-slate-300">${pos.entryPrice.toFixed(2)}</td>
                       <td className="py-3 px-4 text-white font-bold">${pos.currentPrice.toFixed(2)}</td>

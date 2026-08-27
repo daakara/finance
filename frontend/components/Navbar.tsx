@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
+import OnboardingTourModal from "./OnboardingTourModal";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -14,6 +15,7 @@ interface NavbarProps {
 export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarProps) {
   const pathname = usePathname();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setActiveRole(userRole);
@@ -27,12 +29,20 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         if (onRoleChange) onRoleChange(custom.detail);
       }
     };
+    const handleOnboardingEvent = () => {
+      setIsOnboardingOpen(true);
+    };
+
     window.addEventListener("finance:role-change", handleRoleEvent);
-    return () => window.removeEventListener("finance:role-change", handleRoleEvent);
+    window.addEventListener("open-onboarding", handleOnboardingEvent);
+    return () => {
+      window.removeEventListener("finance:role-change", handleRoleEvent);
+      window.removeEventListener("open-onboarding", handleOnboardingEvent);
+    };
   }, [onRoleChange]);
 
   const handleOpenOnboarding = () => {
-    window.dispatchEvent(new CustomEvent("open-onboarding"));
+    setIsOnboardingOpen(true);
   };
 
   const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
@@ -259,6 +269,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           <span className="text-[9px] tracking-tight">Guide</span>
         </Link>
       </nav>
+
+      {/* Onboarding Tour Modal */}
+      <OnboardingTourModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+      />
     </>
   );
 }

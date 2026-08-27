@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
+import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
 
 interface PageProps {
@@ -215,11 +216,24 @@ export default function StockDetailPage({ params }: PageProps) {
                 🟢 IN_BUY_ZONE (Optimal Accumulation)
               </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-slate-500 uppercase">Composite Score:</span>
-              <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">
-                {compositeScore}/100
-              </span>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500 uppercase">Composite Score:</span>
+                <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">
+                  {compositeScore}/100
+                </span>
+              </div>
+              <ShareTradeCardButton
+                ticker={sym}
+                name={name}
+                spotPrice={spotPrice}
+                entryMin={entryMin}
+                entryMax={entryMax}
+                target1={target1}
+                stopLoss={stopLoss}
+                compositeScore={compositeScore}
+                piotroskiScore={piotroskiScore}
+              />
             </div>
           </div>
         </header>
