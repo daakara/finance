@@ -94,9 +94,9 @@ def run_screener_get(response: Response, filter_type: str = "all"):
             status_color = "emerald"
             entry_min = round(current_price * 0.97, 2)
             entry_max = round(current_price * 1.005, 2)
-            stop_loss = round(current_price * 0.945, 2)
-            tp1 = round(current_price * 1.085, 2)
-            tp2 = round(current_price * 1.155, 2)
+            stop_loss = round(current_price * 0.965, 2)
+            tp1 = round(current_price * 1.095, 2)
+            tp2 = round(current_price * 1.165, 2)
             rr_ratio = round((tp1 - current_price) / max(0.01, (current_price - stop_loss)), 2)
         elif sym in ["TMDX", "DUOL"]:
             execution_status = "APPROACHING_TARGET"
@@ -181,7 +181,7 @@ def run_screener_get(response: Response, filter_type: str = "all"):
     elif filter_type == "approaching_target":
         filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
     elif filter_type == "high_rr":
-        filtered = [c for c in mapped_candidates if c["riskRewardRatio"] >= 2.5]
+        filtered = [c for c in mapped_candidates if c["riskRewardRatio"] >= 2.0]
     elif filter_type == "high_confluence":
         filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0]
     elif filter_type == "lynch":

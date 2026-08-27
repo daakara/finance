@@ -151,7 +151,7 @@ export default function ScreenerPage() {
     if (selectedFilter === "high_confluence") return (gem.confluenceScore || 0) >= 80;
     if (selectedFilter === "in_buy_zone") return gem.executionStatus === "IN_BUY_ZONE";
     if (selectedFilter === "approaching_target") return gem.executionStatus === "APPROACHING_TARGET";
-    if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.5;
+    if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
     if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch");
     if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic");
     if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive");
@@ -163,7 +163,7 @@ export default function ScreenerPage() {
     if (tabId === "high_confluence") return gems.filter((g) => (g.confluenceScore || 0) >= 80).length;
     if (tabId === "in_buy_zone") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
     if (tabId === "approaching_target") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
-    if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.5).length;
+    if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.0).length;
     if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch")).length;
     if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic")).length;
     if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive")).length;
