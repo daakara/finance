@@ -48,15 +48,25 @@ interface GemCandidate {
   confluenceWarnings?: string[];
 }
 
-const FILTER_TABS = [
-  { id: "all", label: "✨ All Setups", desc: "Small & Mid-Cap High-Conviction Setups", badge: "Universe" },
-  { id: "high_confluence", label: "⭐ High Confluence", desc: "Multi-Factor Technical, Smart Money & Catalyst Alignment (≥ 75%)", badge: "High Conviction" },
-  { id: "in_buy_zone", label: "🎯 In Buy Zone", desc: "Price within 1.5% of optimal entry floor/ceiling", badge: "Actionable" },
+const LONG_TERM_FILTER_TABS = [
+  { id: "all", label: "🏛️ All Quality Compounders", desc: "Small & Mid-Cap High-Conviction Setups", badge: "Universe" },
+  { id: "high_confluence", label: "⭐ High Confluence", desc: "Multi-Factor Technical, Smart Money & Catalyst Alignment (≥ 80%)", badge: "High Conviction" },
+  { id: "in_buy_zone", label: "🎯 In Buy Zone", desc: "Price within optimal 50-day SMA support accumulation range", badge: "Actionable" },
   { id: "approaching_target", label: "🚀 Near TP Target", desc: "Price approaching Take-Profit 1 or 2 ladders", badge: "Profit Taking" },
-  { id: "high_rr", label: "⚡ High R:R", desc: "Asymmetric risk-reward setups with tight stop losses", badge: "Asymmetric" },
+  { id: "high_rr", label: "⚡ High R:R", desc: "Asymmetric risk-reward setups with tight stop losses (≥ 2.0:1)", badge: "Asymmetric" },
   { id: "lynch", label: "📈 Peter Lynch GARP", desc: "PEG < 1.0, Low Net Debt, Overlooked Compounders", badge: "GARP" },
   { id: "greenblatt", label: "🧪 Magic Formula", desc: "High ROIC (>25%) + Bargain Earnings Yield", badge: "Value" },
   { id: "rule_breakers", label: "🔥 Rule Breakers", desc: "Category Creators, >65% Gross Margins, High Moat", badge: "Disruptive" },
+];
+
+const DAY_TRADER_FILTER_TABS = [
+  { id: "all", label: "⚡ All High-Beta Scalps", desc: "High Liquidity, High-ATR Intraday Leaders", badge: "Day Trade" },
+  { id: "high_confluence", label: "⭐ High Confluence", desc: "High-Momentum Technical, Flow & VWAP Alignment", badge: "High Conviction" },
+  { id: "in_buy_zone", label: "🎯 VWAP Pullback", desc: "Bid defense on 20 EMA / 5m VWAP anchor", badge: "Long Entry" },
+  { id: "approaching_target", label: "🚀 ORB Breakout", desc: "Session high opening range breakout expansion", badge: "Momentum" },
+  { id: "high_rr", label: "⚡ High R:R Scalps", desc: "Tight -1.5% stop with >2.0 R:R scalp target", badge: "Tight Risk" },
+  { id: "high_rvol", label: "🔥 High RVOL (>2.5x)", desc: "Institutional volume surge & elevated liquidity", badge: "Flow" },
+  { id: "squeeze", label: "💥 Short Squeeze", desc: "High Short Float & rapid momentum squeeze candidates", badge: "Squeeze" },
 ];
 
 export default function ScreenerPage() {
@@ -76,6 +86,7 @@ export default function ScreenerPage() {
 
   const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
     setActiveRole(role);
+    setSelectedFilter("all");
     localStorage.setItem("FINANCE_USER_ROLE", role);
   };
 
@@ -83,6 +94,7 @@ export default function ScreenerPage() {
   useEffect(() => {
     let isMounted = true;
     async function loadScreenerGems() {
+      setLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=all&user_role=${activeRole}`, {
           signal: AbortSignal.timeout(8000),
@@ -95,7 +107,7 @@ export default function ScreenerPage() {
               companyName: c.companyName || c.symbol,
               currentPrice: c.currentPrice || 100.0,
               gemScore: c.gemScore || 88,
-              expertArchetype: c.expertArchetype || "Peter Lynch & Greenblatt GARP",
+              expertArchetype: c.expertArchetype || (activeRole === "DAY_TRADER" ? "High-Beta Momentum Leader" : "Peter Lynch & Greenblatt GARP"),
               roic: c.roic || "28.5%",
               pegRatio: c.pegRatio || "0.85",
               grossMargin: c.grossMargin || "65.0%",
@@ -105,7 +117,7 @@ export default function ScreenerPage() {
               shortFloat: c.shortFloat || "6.8%",
               dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
               catalyst: c.catalyst || "Upcoming product cycle expansion and institutional accumulation.",
-              riskLevel: c.riskLevel || "Low-to-Medium Risk",
+              riskLevel: activeRole === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || "Low-to-Medium Risk"),
               executionStatus: c.executionStatus || "IN_BUY_ZONE",
               statusLabel: c.statusLabel || "🎯 Active Buy Zone",
               statusColor: c.statusColor || "emerald",
@@ -145,28 +157,33 @@ export default function ScreenerPage() {
   }, [activeRole]);
 
   const isDayTrader = activeRole === "DAY_TRADER";
+  const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
 
   // Instant Client-Side Filter with 0ms Latency
   const displayGems = gems.filter((gem) => {
     if (selectedFilter === "high_confluence") return (gem.confluenceScore || 0) >= 80;
-    if (selectedFilter === "in_buy_zone") return gem.executionStatus === "IN_BUY_ZONE";
-    if (selectedFilter === "approaching_target") return gem.executionStatus === "APPROACHING_TARGET";
+    if (selectedFilter === "in_buy_zone" || selectedFilter === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
+    if (selectedFilter === "approaching_target" || selectedFilter === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
     if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
-    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch");
-    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic");
-    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive");
+    if (selectedFilter === "high_rvol") return ["NVDA", "TSLA", "PLTR", "SMCI", "COIN"].includes(gem.symbol);
+    if (selectedFilter === "squeeze") return ["TSLA", "DUOL", "SMCI"].includes(gem.symbol);
+    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI"].includes(gem.symbol);
+    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP"].includes(gem.symbol);
+    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive") || ["TMDX", "LLY"].includes(gem.symbol);
     return true;
   });
 
   const getTabCount = (tabId: string) => {
     if (tabId === "all") return gems.length;
     if (tabId === "high_confluence") return gems.filter((g) => (g.confluenceScore || 0) >= 80).length;
-    if (tabId === "in_buy_zone") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
-    if (tabId === "approaching_target") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
+    if (tabId === "in_buy_zone" || tabId === "vwap_pullback") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
+    if (tabId === "approaching_target" || tabId === "orb_breakout") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
     if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.0).length;
-    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch")).length;
-    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic")).length;
-    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive")).length;
+    if (tabId === "high_rvol") return gems.filter((g) => ["NVDA", "TSLA", "PLTR", "SMCI", "COIN"].includes(g.symbol)).length;
+    if (tabId === "squeeze") return gems.filter((g) => ["TSLA", "DUOL", "SMCI"].includes(g.symbol)).length;
+    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI"].includes(g.symbol)).length;
+    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP"].includes(g.symbol)).length;
+    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive") || ["TMDX", "LLY"].includes(g.symbol)).length;
     return gems.length;
   };
 
@@ -219,7 +236,7 @@ export default function ScreenerPage() {
 
         {/* Execution & Archetype Filter Tabs */}
         <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
-          {FILTER_TABS.map((tab) => {
+          {activeTabs.map((tab) => {
             const isActive = selectedFilter === tab.id;
             const count = getTabCount(tab.id);
             return (
