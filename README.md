@@ -22,18 +22,21 @@ A professional-grade, institutional financial intelligence platform featuring re
 - **🎯 Metric Disambiguation**: Clear separation between the Watchlist **24H Daily Return** and the Chart Header **Active Horizon Return** with explicit date baseline tooltips.
 - **⚡ Fast Fallback Resilience**: 1.5s API timeout with high-fidelity instant (<1ms) fallback generator (`generateFallbackAnalytics`).
 
-### 2. 🏛️ Congressional STOCK Act & Legal Insider Intelligence
-- **Public Law 112-105 Tracking**: Disclosures from US House and Senate members (e.g. Nancy Pelosi LEAPS call purchases).
-- **Committee Jurisdiction Overlap**: Weighting trades based on direct legislative committee oversight (Armed Services, Energy & Commerce).
+### 2. 🏛️ Congressional STOCK Act, Legislative Alignment & Staleness Decay
+- **Public Law 112-105 Tracking**: Real-time disclosures from US House and Senate members (e.g. Nancy Pelosi LEAPS call purchases).
+- **⚖️ Legislative Alignment Index (0–100)**: Quantitative scoring of committee jurisdiction conflict overlap (+16 to +32 pts), transaction sizing tiers ($50k–$1M+), and verified historical alpha.
+- **⏱️ Staleness Time-Decay Engine**: Automatic conviction decay penalizing disclosures older than 15, 30, and 45 days, with explicit late-filer mean-reversion risk warnings for non-compliant filers.
 - **SEC EDGAR Form 4**: Open-market insider purchases (&ge; \$100k) by CEOs, CFOs, and Board Directors within 2 business days.
 
 ### 3. 🎯 Minervini VCP & Algorithmic Execution Ladder
 - **Volatility Contraction Pattern (VCP)**: 3-stage contraction detection with volume dry-up confirmations.
+- **⚡ 4 Mathematical ATR States**: Real-time state tagging (`IN_BUY_ZONE`, `APPROACHING_TARGET`, `WAITING_PULLBACK`, `STOPPED_OUT`).
 - **Strict Execution Invariant**: `Stop Loss < Optimal Entry Min <= Optimal Entry Max <= Current Spot < Target 1 < Target 2`.
 - **Intraday Position Sizer**: 1-click execution calculation risking $1\%–2\%$ account equity into persistent local storage tracking.
 
-### 4. 🛡️ Cornish-Fisher Modified VaR & Macro Regimes
+### 4. 🛡️ Cornish-Fisher Modified VaR & Self-Healing Engine
 - **Non-Normal Fat-Tail VaR**: Polynomial Cornish-Fisher expansion adjusting for skewness and kurtosis with monotonic 99% $\le$ 95% safety floors.
+- **🤖 Self-Healing Forecast Auditor**: Continuous model calibration using Kupiec POF VaR exception tests, walk-forward RMSE tracking, and dynamic confidence bound expansion.
 - **FRED Macro Regimes**: Real-time 10Y-2Y Yield Curve spreads (`T10Y2Y`) and OAS Credit Spreads (`BAMLH0A0HYM2`) applying dynamic 0.5x–1.25x position risk multipliers.
 
 ---

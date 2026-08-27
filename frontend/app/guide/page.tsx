@@ -5,10 +5,10 @@ import Navbar from "../../components/Navbar";
 export const metadata: Metadata = {
   title: "Quantitative Terminal Field Manual & Algorithmic Handbook",
   description:
-    "Institutional manual detailing Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, Cornish-Fisher Modified VaR, and 9-Point Piotroski scoring.",
+    "Institutional manual detailing Congressional STOCK Act tracking, Legislative Alignment Index (0-100), Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, Cornish-Fisher Modified VaR, and Self-Healing Forecast Audits.",
   openGraph: {
     title: "Finance Terminal: Quantitative Field Manual & Algorithmic Handbook",
-    description: "Master institutional quantitative trading, legislative STOCK Act signals, volatility invalidation ladders, and tail risk management.",
+    description: "Master institutional quantitative trading, legislative STOCK Act signals, staleness decay penalties, volatility invalidation ladders, and tail risk management.",
     url: "https://finance-xp8.pages.dev/guide/",
     siteName: "Finance Terminal",
     type: "article",
@@ -23,7 +23,7 @@ export default function GuidePage() {
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
-    "description": "Comprehensive guide to Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
+    "description": "Comprehensive guide to Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
     "author": {
       "@type": "Organization",
       "name": "Finance Terminal Quantitative Intelligence"
@@ -37,7 +37,7 @@ export default function GuidePage() {
       }
     },
     "datePublished": "2026-08-26",
-    "dateModified": "2026-08-26"
+    "dateModified": "2026-08-27"
   };
 
   return (
@@ -57,31 +57,31 @@ export default function GuidePage() {
             <span className="px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-[11px] font-bold">
               INSTITUTIONAL QUANTITATIVE FIELD MANUAL
             </span>
-            <span className="text-slate-500 text-xs">• Version 2.4 Specification</span>
+            <span className="text-slate-500 text-xs">• Version 2.5 Specification</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
             Quantitative Platform Blueprint & Execution Handbook
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            A comprehensive, mathematically rigorous reference manual for professional traders, quantitative analysts, and fundamental investors. Learn the formulas, invalidation rules, statutory insider metrics, and portfolio risk equations powering this terminal.
+            A comprehensive, mathematically rigorous reference manual for professional traders, quantitative analysts, and fundamental investors. Learn the formulas, invalidation rules, statutory insider metrics, legislative alignment algorithms, and portfolio risk equations powering this terminal.
           </p>
 
           {/* Quick Jump Navigation */}
           <div className="bg-[#090d14] p-3 rounded-xl border border-[#1b2434] flex flex-wrap gap-2 text-[11px] pt-3">
             <span className="text-slate-500 font-bold uppercase py-0.5">Quick Jump:</span>
-            <a href="#chapter-1" className="text-cyan-400 hover:underline">Ch 1: Workspaces</a>
+            <a href="#chapter-1" className="text-cyan-400 hover:underline">Ch 1: Workspaces & Mobile UX</a>
             <span className="text-slate-600">•</span>
             <a href="#chapter-chart" className="text-amber-400 hover:underline font-bold">Ch 2: Dual Chart Engine</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-2" className="text-cyan-400 hover:underline">Ch 3: Algorithmic Math</a>
+            <a href="#chapter-2" className="text-cyan-400 hover:underline">Ch 3: Execution & Screener Math</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-3" className="text-amber-400 hover:underline">Ch 4: STOCK Act Insiders</a>
+            <a href="#chapter-3" className="text-amber-400 hover:underline font-bold">Ch 4: STOCK Act & Alignment</a>
             <span className="text-slate-600">•</span>
             <a href="#chapter-4" className="text-emerald-400 hover:underline">Ch 5: 5-Factor Radar</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 6: Risk & Modified VaR</a>
+            <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 6: Risk & Self-Healing VaR</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 7: Multi-Source Synthesis & FRED Macro</a>
+            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 7: Multi-Source Synthesis & FRED</a>
           </div>
         </header>
 
@@ -90,11 +90,11 @@ export default function GuidePage() {
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🗂️</span>
             <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
-              Chapter 1: The 4 In-Terminal Modular Workspaces
+              Chapter 1: The 4 In-Terminal Workspaces & Viewport-Adaptive Architecture
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            Traditional terminals force analysts to scroll through hundreds of stacked widgets, causing severe cognitive overload and losing chart context. Our terminal splits analysis into 4 mobile-optimized modular domains (with dynamic viewport-responsive labels) anchored directly beneath the live price chart:
+            Traditional financial terminals force analysts to scroll through dozens of stacked widgets, causing severe cognitive overload and losing chart context. Our terminal splits analysis into 4 modular domains anchored directly beneath the live price chart, with fully responsive viewport layout optimization:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
@@ -114,7 +114,7 @@ export default function GuidePage() {
                 <span>Smart Money & Insiders</span>
               </strong>
               <p className="text-xs text-slate-300 font-sans leading-relaxed">
-                Answers: <em>&ldquo;What are politicians, corporate executives, and option market makers doing?&rdquo;</em> Displays US House/Senate STOCK Act filings, dark pool ATS volumes, and options sweeps.
+                Answers: <em>&ldquo;What are politicians, corporate executives, and option market makers doing?&rdquo;</em> Displays US House/Senate STOCK Act filings, Legislative Alignment Index (0-100), dark pool ATS volumes, and options sweeps.
               </p>
             </div>
 
@@ -137,6 +137,16 @@ export default function GuidePage() {
                 Answers: <em>&ldquo;If a peer or supplier collapses, how does the shock cascade?&rdquo;</em> Displays directed supply-chain topologies, Cornish-Fisher M-VaR, and self-healing hit rate calibrations.
               </p>
             </div>
+          </div>
+
+          {/* Mobile-Adaptive UX Callout */}
+          <div className="bg-[#090d14] p-4 rounded-xl border border-[#1e293b] space-y-2 text-xs">
+            <h3 className="font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+              <span>📱 Mobile-First Layout Reordering & Viewport Physics</span>
+            </h3>
+            <p className="text-slate-300 font-sans leading-relaxed">
+              On mobile viewports (&lt;1024px), the terminal dynamically inverts DOM order (<code>order-1 lg:order-2</code>) so the active ticker hero, price, timeframe controls, and candlestick chart appear at the focal top. The Watchlist sidebar collapses into an intuitive accordion with horizontally scrollable filter pills (<code>overflow-x-auto no-scrollbar</code>) and auto-collapses upon selecting a ticker.
+            </p>
           </div>
         </section>
 
@@ -216,12 +226,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 3: ALGORITHMIC EXECUTION & FORMULAS */}
+        {/* CHAPTER 3: ALGORITHMIC EXECUTION, ATR STATES & SCREENER MATH */}
         <section id="chapter-2" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🧮</span>
             <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
-              Chapter 3: Algorithmic Execution Formulas & Sizing Math
+              Chapter 3: Algorithmic Execution Formulas, ATR States & Screener Math
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -253,7 +263,7 @@ export default function GuidePage() {
               <div className="bg-[#111722] p-3 rounded-lg border border-[#243044] space-y-1">
                 <strong className="text-emerald-400 block font-bold">Target 1 (Scale 50% Position)</strong>
                 <p className="text-slate-300 text-[11px] font-sans">
-                  Formula: <code>Spot + (2.5 * ATR14)</code>. Once price touches TP1, sell 50% of the position to lock in profit and automatically raise the stop loss on the remaining 50% to breakeven.
+                  Formula: <code>Spot + (2.5 * ATR14)</code>. Once price touches TP1, scale out 50% of the position to lock in profit and automatically raise the stop loss on the remaining 50% to breakeven.
                 </p>
               </div>
               <div className="bg-[#111722] p-3 rounded-lg border border-[#243044] space-y-1">
@@ -264,35 +274,144 @@ export default function GuidePage() {
               </div>
             </div>
           </div>
+
+          {/* 4 Mathematical ATR Execution States */}
+          <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>⚡ 3. The 4 Mathematical ATR Execution States</span>
+            </h3>
+            <p className="text-xs text-slate-300 font-sans leading-relaxed">
+              Every candidate in the terminal and screener is dynamically classified into one of four disjoint execution states based on price relative to ATR bands:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#111722] p-3 rounded-lg border border-emerald-900/60 space-y-1">
+                <strong className="text-emerald-400 font-bold block">🟢 IN_BUY_ZONE (Optimal Accumulation)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Condition: <code>Optimal Entry Min &le; Spot &le; Optimal Entry Max</code>. Asset is resting directly inside institutional accumulation volume.
+                </p>
+              </div>
+              <div className="bg-[#111722] p-3 rounded-lg border border-cyan-900/60 space-y-1">
+                <strong className="text-cyan-400 font-bold block">🔵 APPROACHING_TARGET (Momentum Expansion)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Condition: <code>Optimal Entry Max &lt; Spot &lt; Target 1</code>. Trade is active and trending toward the first scale-out level.
+                </p>
+              </div>
+              <div className="bg-[#111722] p-3 rounded-lg border border-amber-900/60 space-y-1">
+                <strong className="text-amber-400 font-bold block">🟡 WAITING_PULLBACK (Overextended / High Risk)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Condition: <code>Spot &gt; Target 1</code>. Price is extended past ATR bands; buying here carries elevated mean-reversion risk.
+                </p>
+              </div>
+              <div className="bg-[#111722] p-3 rounded-lg border border-rose-900/60 space-y-1">
+                <strong className="text-rose-400 font-bold block">🔴 STOPPED_OUT (Invalidation Exit)</strong>
+                <p className="text-slate-300 text-[11px] font-sans">
+                  Condition: <code>Spot &lt; Stop Loss</code>. Technical structure has broken down; strict capital preservation dictates exiting.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Screener Quantitative Filter Engine */}
+          <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>🔍 4. Screener Numerical Filter Thresholds</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-500 block uppercase">Momentum</span>
+                <strong className="text-cyan-400 font-mono">RVOL &ge; 2.5x</strong>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-500 block uppercase">Short Squeeze</span>
+                <strong className="text-amber-400 font-mono">Short Float &ge; 6%</strong>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-500 block uppercase">Quality Moat</span>
+                <strong className="text-emerald-400 font-mono">ROIC &ge; 20%</strong>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-500 block uppercase">Value Growth</span>
+                <strong className="text-purple-400 font-mono">PEG &le; 1.0</strong>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* CHAPTER 4: CONGRESSIONAL STOCK ACT INTELLIGENCE */}
+        {/* CHAPTER 4: CONGRESSIONAL STOCK ACT, LEGISLATIVE ALIGNMENT & STALENESS DECAY */}
         <section id="chapter-3" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🏛️</span>
             <h2 className="text-lg sm:text-xl font-bold text-amber-400 tracking-tight">
-              Chapter 4: Congressional STOCK Act & Political Alpha
+              Chapter 4: Congressional STOCK Act, Legislative Alignment & Staleness Decay
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            Under Public Law 112-105 (Stop Trading on Congressional Knowledge Act of 2012), members of the US Congress and Senate are legally required to disclose securities transactions within 45 days.
+            Under Public Law 112-105 (Stop Trading on Congressional Knowledge Act of 2012), members of the US Congress and Senate are legally mandated to disclose securities transactions within 45 days. The terminal processes these disclosures through a quantitative intelligence pipeline:
           </p>
 
-          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-[#243044] space-y-3 text-xs">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-100 uppercase tracking-wider">
-              How the Terminal Filters Actionable Political Signals:
-            </h3>
+          {/* Legislative Alignment Score */}
+          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-purple-800/60 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                <span>⚖️ 1. Quantitative Legislative Alignment Index (0–100)</span>
+              </h3>
+              <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-700 font-bold">ALGORITHM</span>
+            </div>
+            <p className="text-slate-300 font-sans leading-relaxed">
+              Measures the empirical strength of regulatory and legislative tailwinds behind a politician&apos;s trade:
+            </p>
             <ul className="space-y-2 text-slate-300 font-sans list-disc pl-5">
               <li>
-                <strong>Filing Lag Decay:</strong> Trades disclosed near the 45-day statutory deadline are penalized in conviction scoring to prevent retail traders from buying the tail end of an expired legislative catalyst.
+                <strong>Committee Jurisdiction Overlap (+16 to +32 pts):</strong> Direct committee oversight matching asset sector (e.g., Armed Services/Intelligence purchasing Defense AI; Energy &amp; Commerce purchasing Semiconductors; Foreign Affairs purchasing global pharma).
               </li>
               <li>
-                <strong>Committee Jurisdiction Overlap:</strong> Trades are weighted 2.5x higher when a member sits on a committee with direct oversight of the traded asset (e.g. Armed Services purchasing Defense contractors, Energy & Commerce purchasing Semiconductors).
+                <strong>Dollar Sizing Bracket (+5 to +15 pts):</strong> Scales conviction according to transaction size ($50k–$100k, $250k–$500k, $1M–$5M).
               </li>
               <li>
-                <strong>Option Sweeps vs. Equity:</strong> Deep In-The-Money (ITM) Call purchases (e.g., Nancy Pelosi LEAPS) indicate leveraged institutional accumulation with defined downside floor risk.
+                <strong>3-Year Historical Track Record (+4 to +10 pts):</strong> Factors in audited multi-year politician win rates (&gt;75%) and annualized alpha.
               </li>
             </ul>
+          </div>
+
+          {/* Staleness Decay and Late Filer Warnings */}
+          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-rose-800/60 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-rose-300 uppercase tracking-wider flex items-center gap-2">
+                <span>⏱️ 2. STOCK Act Filing Latency & Signal Time-Decay</span>
+              </h3>
+              <span className="text-[10px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded border border-rose-700 font-bold">RISK PROTECTION</span>
+            </div>
+            <p className="text-slate-300 font-sans leading-relaxed">
+              If a politician disclosed a trade 60 days after execution, the price move is already priced in. To protect retail traders from buying stale news, the terminal applies an exponential time-decay penalty:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <div className="bg-[#090d14] p-2.5 rounded border border-emerald-800/50">
+                <span className="text-emerald-400 font-bold block">⚡ Fresh (&lt;15 Days Lag)</span>
+                <p className="text-[11px] text-slate-400 font-sans">0 pt penalty. 100% full signal conviction.</p>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-cyan-800/50">
+                <span className="text-cyan-400 font-bold block">⏳ Standard (16–30 Days Lag)</span>
+                <p className="text-[11px] text-slate-400 font-sans">-5 pt penalty. Normal statutory compliance.</p>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-amber-800/50">
+                <span className="text-amber-400 font-bold block">⚠️ Aging Signal (31–45 Days Lag)</span>
+                <p className="text-[11px] text-slate-400 font-sans">-16 pt penalty. Approaching statutory deadline.</p>
+              </div>
+              <div className="bg-[#090d14] p-2.5 rounded border border-rose-800/50">
+                <span className="text-rose-400 font-bold block">🛑 Late Filer (&gt;45 Days Lag)</span>
+                <p className="text-[11px] text-slate-400 font-sans">-32 pt penalty. Explicit priced-in mean reversion warning.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Legislative & Regulatory Catalysts */}
+          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-cyan-800/60 space-y-2 text-xs">
+            <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+              <span>🏛️ 3. Regulatory Policy Milestones in Catalyst Engine</span>
+            </h3>
+            <p className="text-slate-300 font-sans leading-relaxed">
+              Upcoming legislative committee hearings (e.g. AI Compute Export Control Waivers, Medicare GLP-1 Coverage Votes, DoD NDAA Appropriations Reviews) are directly mapped into the ticker catalyst calendar alongside earnings and clinical trial readouts.
+            </p>
           </div>
         </section>
 
@@ -328,12 +447,12 @@ export default function GuidePage() {
           </div>
         </section>
 
-        {/* CHAPTER 6: RISK & MODIFIED VAR */}
+        {/* CHAPTER 6: RISK & SELF-HEALING FORECAST AUDITOR */}
         <section id="chapter-5" className="space-y-4">
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">🛡️</span>
             <h2 className="text-lg sm:text-xl font-bold text-purple-400 tracking-tight">
-              Chapter 6: Mathematical Invariants & Cornish-Fisher Modified VaR
+              Chapter 6: Mathematical Invariants, Cornish-Fisher VaR & Self-Healing Engine
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -367,6 +486,30 @@ export default function GuidePage() {
               </p>
             </div>
           </div>
+
+          {/* Self-Healing Forecast Auditor */}
+          <div className="bg-[#111722] p-4 sm:p-5 rounded-xl border border-purple-800/60 space-y-3 text-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                <span>🤖 The Self-Healing Forecast Auditor</span>
+              </h3>
+              <span className="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded border border-purple-700 font-bold">AUTO-CALIBRATION</span>
+            </div>
+            <p className="text-slate-300 font-sans leading-relaxed">
+              The engine continuously audits its own forward price and risk predictions through a 3-pillar self-healing mechanism:
+            </p>
+            <ul className="space-y-2 text-slate-300 font-sans list-disc pl-5">
+              <li>
+                <strong>Kupiec Proportion of Failures (POF) Test:</strong> Statistically tests if actual price breaches exceed the nominal VaR confidence level (&alpha; = 5%).
+              </li>
+              <li>
+                <strong>Walk-Forward RMSE Error Tracking:</strong> Measures root-mean-square forecasting errors over rolling 30-day windows.
+              </li>
+              <li>
+                <strong>Dynamic Volatility Expansion:</strong> If forecast errors widen, the model automatically expands confidence intervals by +15% to preserve conservative risk bounds.
+              </li>
+            </ul>
+          </div>
         </section>
 
         {/* CHAPTER 7: MULTI-SOURCE SYNTHESIS, FRED MACRO & SEC EDGAR FORM 4 */}
@@ -374,7 +517,7 @@ export default function GuidePage() {
           <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
             <span className="text-lg sm:text-xl">💎</span>
             <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
-              Chapter 7: Multi-Source Synthesis, FRED Macro Regimes & SEC Form 4
+              Chapter 7: Multi-Source Synthesis, FRED Macro Regimes & Cross-App Sync
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
@@ -414,11 +557,11 @@ export default function GuidePage() {
 
             <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
               <div className="flex items-center justify-between">
-                <strong className="text-purple-400 font-bold text-sm">💼 1-Click Execution Hand-off</strong>
+                <strong className="text-purple-400 font-bold text-sm">💼 Cross-App Portfolio Sync</strong>
                 <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">PORTFOLIO SYNC</span>
               </div>
               <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
-                Directly sends mathematically calculated share quantities, volatility stop-losses, and multi-tier profit targets from the Position Sizer into persistent, anonymous local storage tracking with zero manual re-typing.
+                Synchronizes positions across <code>/</code>, <code>/portfolio</code>, and <code>/screener</code> using unified local storage keys (<code>FINANCE_USER_PORTFOLIO</code> and <code>FINANCE_PORTFOLIO_V1</code>) with zero manual re-entry.
               </p>
             </div>
           </div>
