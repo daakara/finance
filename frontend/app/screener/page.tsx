@@ -84,7 +84,7 @@ export default function ScreenerPage() {
     let isMounted = true;
     async function loadScreenerGems() {
       try {
-        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=all`, {
+        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=all&user_role=${activeRole}`, {
           signal: AbortSignal.timeout(8000),
         });
         if (res.ok) {
@@ -142,7 +142,7 @@ export default function ScreenerPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeRole]);
 
   const isDayTrader = activeRole === "DAY_TRADER";
 
@@ -361,20 +361,40 @@ export default function ScreenerPage() {
                       </div>
                     </div>
 
-                    {/* Fundamental / Technical Thesis */}
+                    {/* Fundamental / Technical Dual-Horizon Thesis */}
                     <div className="space-y-1.5 text-xs">
                       <div>
-                        <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">
-                          📐 Setup Pattern:
+                        <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDayTrader ? "text-amber-400" : "text-cyan-400"}`}>
+                          📐 {isDayTrader ? "Day Trade Scalp Setup:" : "Setup Pattern:"}
                         </span>
-                        <p className="text-slate-300 leading-relaxed text-[11px]">{gem.setupPattern}</p>
+                        <p className="text-slate-300 leading-relaxed text-[11px]">
+                          {isDayTrader ? gem.dayTraderSetup : gem.setupPattern}
+                        </p>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                          🚀 Catalyst & Growth:
-                        </span>
-                        <p className="text-slate-400 leading-relaxed text-[11px]">{gem.catalyst}</p>
-                      </div>
+
+                      {isDayTrader ? (
+                        <div className="bg-[#131109] p-2 rounded border border-amber-950/60 flex items-center justify-between text-[10px]">
+                          <div>
+                            <span className="text-slate-500 block">ATR 14:</span>
+                            <span className="text-amber-300 font-bold">{gem.atr14}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">RVOL:</span>
+                            <span className="text-amber-300 font-bold">{gem.rvol}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Short Float:</span>
+                            <span className="text-rose-400 font-bold">{gem.shortFloat}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                            🚀 Catalyst & Growth:
+                          </span>
+                          <p className="text-slate-400 leading-relaxed text-[11px]">{gem.catalyst}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 

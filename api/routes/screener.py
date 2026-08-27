@@ -61,10 +61,12 @@ run_screener_post = run_screener
 
 
 @router.get("/run")
-def run_screener_get(response: Response, filter_type: str = "all"):
+def run_screener_get(response: Response, filter_type: str = "all", user_role: str = "LONG_TERM"):
     """GET endpoint supporting live screener execution, archetype filtering, and optimal execution signal scanning."""
     response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     results = screener.evaluate_candidates(DEFAULT_CANDIDATES)
+
+    is_day_trader = (user_role == "DAY_TRADER")
 
     # Map candidate fields with live optimal execution levels
     mapped_candidates = []
@@ -85,38 +87,71 @@ def run_screener_get(response: Response, filter_type: str = "all"):
         else:
             hist_df = pd.DataFrame()
 
-        execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role="LONG_TERM")
+        execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
 
-        # Differentiated Execution State Profiles based on Technical Positioning & Support Distance
+        # Differentiated Execution State Profiles based on Trading Horizon (Day Trader vs Swing/Long Term)
         if sym in ["LNTH", "CPRX", "ELF", "ACLS"]:
             execution_status = "IN_BUY_ZONE"
             status_label = "🎯 Active Buy Zone"
             status_color = "emerald"
-            entry_min = round(current_price * 0.97, 2)
-            entry_max = round(current_price * 1.005, 2)
-            stop_loss = round(current_price * 0.965, 2)
-            tp1 = round(current_price * 1.095, 2)
-            tp2 = round(current_price * 1.165, 2)
+            if is_day_trader:
+                entry_min = round(current_price * 0.99, 2)
+                entry_max = round(current_price * 1.002, 2)
+                stop_loss = round(current_price * 0.985, 2)  # Tight -1.5% Intraday stop
+                tp1 = round(current_price * 1.038, 2)        # +3.8% Scalp Target
+                tp2 = round(current_price * 1.065, 2)
+                setup_pat = "Raschke 20 EMA Pullback & VWAP Defense"
+                entry_th = "Intraday momentum trend continuation above 5m VWAP anchor."
+            else:
+                entry_min = round(current_price * 0.97, 2)
+                entry_max = round(current_price * 1.005, 2)
+                stop_loss = round(current_price * 0.965, 2)  # -3.5% Swing stop
+                tp1 = round(current_price * 1.095, 2)        # +9.5% Swing Target
+                tp2 = round(current_price * 1.165, 2)
+                setup_pat = "Minervini Volatility Contraction Pattern (VCP 3-Stage)"
+                entry_th = "Stage 2 accumulation breakout above 50-day pivot."
             rr_ratio = round((tp1 - current_price) / max(0.01, (current_price - stop_loss)), 2)
         elif sym in ["TMDX", "DUOL"]:
             execution_status = "APPROACHING_TARGET"
             status_label = "🚀 Near TP Target"
             status_color = "amber"
-            entry_min = round(current_price * 0.91, 2)
-            entry_max = round(current_price * 0.94, 2)
-            stop_loss = round(current_price * 0.88, 2)
-            tp1 = round(current_price * 1.025, 2)
-            tp2 = round(current_price * 1.065, 2)
+            if is_day_trader:
+                entry_min = round(current_price * 0.97, 2)
+                entry_max = round(current_price * 0.98, 2)
+                stop_loss = round(current_price * 0.96, 2)
+                tp1 = round(current_price * 1.015, 2)
+                tp2 = round(current_price * 1.035, 2)
+                setup_pat = "Opening Range Breakout (ORB 15m Expansion)"
+                entry_th = "Target expansion into daily session high resistance."
+            else:
+                entry_min = round(current_price * 0.91, 2)
+                entry_max = round(current_price * 0.94, 2)
+                stop_loss = round(current_price * 0.88, 2)
+                tp1 = round(current_price * 1.025, 2)
+                tp2 = round(current_price * 1.065, 2)
+                setup_pat = "Stage 2 Growth Momentum Extension"
+                entry_th = "Approaching initial swing profit target."
             rr_ratio = 1.45
         else:  # MEDP, POWI
             execution_status = "WAITING_PULLBACK"
             status_label = "⏳ Pullback Pending"
             status_color = "cyan"
-            entry_min = round(current_price * 0.93, 2)
-            entry_max = round(current_price * 0.96, 2)
-            stop_loss = round(current_price * 0.89, 2)
-            tp1 = round(current_price * 1.06, 2)
-            tp2 = round(current_price * 1.12, 2)
+            if is_day_trader:
+                entry_min = round(current_price * 0.975, 2)
+                entry_max = round(current_price * 0.985, 2)
+                stop_loss = round(current_price * 0.965, 2)
+                tp1 = round(current_price * 1.025, 2)
+                tp2 = round(current_price * 1.045, 2)
+                setup_pat = "Extended Momentum Awaiting VWAP Mean Reversion"
+                entry_th = "Wait for pullback to 20 EMA before entering long."
+            else:
+                entry_min = round(current_price * 0.93, 2)
+                entry_max = round(current_price * 0.96, 2)
+                stop_loss = round(current_price * 0.89, 2)
+                tp1 = round(current_price * 1.06, 2)
+                tp2 = round(current_price * 1.12, 2)
+                setup_pat = "Consolidation Base Under 50-day SMA"
+                entry_th = "Wait for constructive handle formation."
             rr_ratio = 1.85
 
         # Compute multi-factor confluence conviction score
@@ -165,8 +200,8 @@ def run_screener_get(response: Response, filter_type: str = "all"):
             "takeProfit2": tp2,
             "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1),
             "riskRewardRatio": rr_ratio,
-            "setupPattern": execution.get("setup_pattern", "Minervini Volatility Contraction Pattern (VCP 3-Stage)"),
-            "entryThesis": execution.get("entry_thesis", "Stage 2 accumulation breakout above 50-day pivot."),
+            "setupPattern": setup_pat,
+            "entryThesis": entry_th,
             # Confluence Conviction Score & Position Sizing
             "confluenceScore": confluence_res["confluenceScore"],
             "confluenceRating": confluence_res["confluenceRating"],
