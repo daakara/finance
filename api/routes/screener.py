@@ -26,10 +26,9 @@ class ScreenerRequest(BaseModel):
 
 
 @router.post("/run")
-def run_screener(request: ScreenerRequest = None, response: Response = None):
+def run_screener(response: Response, request: ScreenerRequest = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
-    if response:
-        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     tickers = (request.tickers if request and request.tickers else DEFAULT_CANDIDATES)
     results = screener.evaluate_candidates(tickers)
 
@@ -44,10 +43,9 @@ run_screener_post = run_screener
 
 
 @router.get("/run")
-def run_screener_get(filter_type: str = "all", response: Response = None):
+def run_screener_get(response: Response, filter_type: str = "all"):
     """GET endpoint supporting live screener execution and archetype filtering."""
-    if response:
-        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     results = screener.evaluate_candidates(DEFAULT_CANDIDATES)
 
     # Filter by archetype if requested

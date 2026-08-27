@@ -143,13 +143,12 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
 @router.get("/{symbol}")
 def get_asset_analytics(
     symbol: str,
+    response: Response,
     period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
     interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
-    response: Response = None,
 ):
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
-    if response:
-        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
 
     try:
         clean_period = period if isinstance(period, str) else "1y"

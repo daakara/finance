@@ -13,10 +13,9 @@ finra_fetcher = FinraTransparencyFetcher()
 capitol_fetcher = CapitolTradesFetcher()
 
 @router.get("/overview")
-def get_smart_money_overview(response: Response = None):
+def get_smart_money_overview(response: Response):
     """Get market-wide congressional disclosures and unusual options flow overview."""
-    if response:
-        response.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+    response.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
     overview = smart_money_engine.get_smart_money_overview()
     overview["regulatory_sources"] = {
         "sec_edgar": "Official SEC Form 4 & 10-K Public API",

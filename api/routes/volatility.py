@@ -14,12 +14,11 @@ forecaster = VolatilityForecaster()
 @router.get("/{symbol}")
 def get_volatility_forecast(
     symbol: str,
+    response: Response,
     horizon: int = Query(30, ge=5, le=90, description="Forecast horizon in days"),
-    response: Response = None,
 ):
     """Generate multi-model GARCH volatility forecasts and ARIMA price forecasts."""
-    if response:
-        response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
+    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
     try:
         stock_data = pipeline.fetch_stock_data(symbol, period="1y")
         price_df = stock_data.get("price_data", pd.DataFrame())
