@@ -312,8 +312,8 @@ export default function ScreenerPage() {
           </div>
         </div>
 
-        {/* Execution & Archetype Filter Tabs */}
-        <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
+        {/* Execution & Archetype Filter Tabs - 4-Column Balanced Grid */}
+        <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {activeTabs.map((tab) => {
             const isActive = selectedFilter === tab.id;
             const count = getTabCount(tab.id);
@@ -323,7 +323,7 @@ export default function ScreenerPage() {
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setSelectedFilter(tab.id)}
-                className={`p-2.5 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
+                className={`p-3.5 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
                   isActive
                     ? isDayTrader
                       ? "bg-[#21190c] border-amber-500 shadow-md shadow-amber-950/40"
@@ -332,19 +332,19 @@ export default function ScreenerPage() {
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className={`text-xs font-black truncate ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-xs font-black ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
                       {tab.label}
                     </span>
-                    <span className={`text-[10px] font-black px-1.5 py-0.2 rounded ${
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded shrink-0 ${
                       isActive ? (isDayTrader ? "bg-amber-400 text-slate-950" : "bg-cyan-400 text-slate-950") : "bg-[#1b2639] text-slate-300"
                     }`}>
                       {count}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-tight">{tab.desc}</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed font-sans">{tab.desc}</p>
                 </div>
-                <span className="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-[#1e293b] text-slate-400 self-start mt-2">
+                <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-[#1e293b] text-slate-300 self-start mt-3">
                   {tab.badge}
                 </span>
               </button>
