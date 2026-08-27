@@ -19,26 +19,84 @@ export const metadata: Metadata = {
 };
 
 export default function GuidePage() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
-    "description": "Comprehensive guide to Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
-    "author": {
-      "@type": "Organization",
-      "name": "Finance Terminal Quantitative Intelligence"
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
+      "description": "Comprehensive guide to Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
+      "author": {
+        "@type": "Organization",
+        "name": "Finance Terminal Quantitative Intelligence"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Finance Terminal",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://finance-xp8.pages.dev/icons/icon-512x512.png"
+        }
+      },
+      "datePublished": "2026-08-26",
+      "dateModified": "2026-08-27"
     },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Finance Terminal",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://finance-xp8.pages.dev/icons/icon-512x512.png"
-      }
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the Congressional STOCK Act filing deadline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Under Public Law 112-105 (Stop Trading on Congressional Knowledge Act of 2012), members of the US Congress and Senate are legally required to disclose securities transactions within 45 days of execution or 30 days of notification."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How is the Legislative Alignment Index calculated?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Legislative Alignment Index (0–100) quantifies the correlation between a politician's trade and their legislative influence by evaluating committee jurisdiction overlap (+16 to +32 pts), transaction sizing tiers ($50k to $1M+), and audited multi-year politician win rates."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the 4 Mathematical ATR Execution States?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The 4 ATR Execution States are: 1) IN_BUY_ZONE (Optimal Accumulation), 2) APPROACHING_TARGET (Momentum Expansion), 3) WAITING_PULLBACK (Overextended / Chasing Risk), and 4) STOPPED_OUT (Invalidation Exit)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Cornish-Fisher Modified Value-at-Risk (M-VaR) differ from standard VaR?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Standard Gaussian VaR assumes a normal distribution, underestimating fat-tail crash risks. Cornish-Fisher M-VaR uses a polynomial expansion adjusting for sample skewness and excess kurtosis to provide accurate downside risk boundaries."
+          }
+        }
+      ]
     },
-    "datePublished": "2026-08-26",
-    "dateModified": "2026-08-27"
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Finance Terminal",
+          "item": "https://finance-xp8.pages.dev/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Field Manual & Algorithmic Handbook",
+          "item": "https://finance-xp8.pages.dev/guide/"
+        }
+      ]
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
