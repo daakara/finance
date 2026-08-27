@@ -48,6 +48,12 @@ export default function AlertTriggerModal({
 
   if (!isOpen) return null;
 
+  const safeCurrent = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0 ? currentPrice : 100;
+  const safeEntryMin = typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0 ? optimalEntryMin : safeCurrent * 0.98;
+  const safeEntryMax = typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0 ? optimalEntryMax : safeCurrent * 1.02;
+  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeCurrent * 0.95;
+  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeCurrent * 1.10;
+
   const handleRequestPermission = async () => {
     const res = await AlertManager.requestPermission();
     setPermission(res);
@@ -58,14 +64,14 @@ export default function AlertTriggerModal({
       handleRequestPermission();
     }
     const rule: ExecutionAlertRule = {
-      symbol: symbol.toUpperCase(),
+      symbol: (symbol || "ASSET").toUpperCase(),
       notifyOnBuyZone: notifyBuyZone,
       notifyOnStopLossWarning: notifyStopLoss,
       notifyOnTakeProfit1: notifyTakeProfit,
-      optimalEntryMin,
-      optimalEntryMax,
-      stopLoss,
-      takeProfit1,
+      optimalEntryMin: safeEntryMin,
+      optimalEntryMax: safeEntryMax,
+      stopLoss: safeStop,
+      takeProfit1: safeTarget,
       createdAt: Date.now(),
     };
     AlertManager.saveAlertRule(rule);
@@ -75,7 +81,7 @@ export default function AlertTriggerModal({
   };
 
   const handleRemoveAlerts = () => {
-    AlertManager.removeAlertRule(symbol);
+    AlertManager.removeAlertRule(symbol || "ASSET");
     setIsSaved(false);
     onClose();
   };
@@ -96,7 +102,7 @@ export default function AlertTriggerModal({
                 Execution Price & Invalidation Alerts
               </h2>
               <p className="text-[11px] text-slate-400">
-                Live monitoring for <span className="text-cyan-400 font-bold">{symbol}</span> @ ${currentPrice.toFixed(2)}
+                Live monitoring for <span className="text-cyan-400 font-bold">{symbol || "Asset"}</span> @ ${safeCurrent.toFixed(2)}
               </p>
             </div>
           </div>
@@ -134,7 +140,7 @@ export default function AlertTriggerModal({
                   <span>🎯 Optimal Buy Zone Entry</span>
                 </span>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Alert when price touches ${optimalEntryMin.toFixed(2)} – ${optimalEntryMax.toFixed(2)}
+                  Alert when price touches ${safeEntryMin.toFixed(2)} – ${safeEntryMax.toFixed(2)}
                 </p>
               </div>
               <input
@@ -152,7 +158,7 @@ export default function AlertTriggerModal({
                   <span>🛑 Stop-Loss Warning Line</span>
                 </span>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Alert within 1.0% of statutory stop at ${stopLoss.toFixed(2)}
+                  Alert within 1.0% of statutory stop at ${safeStop.toFixed(2)}
                 </p>
               </div>
               <input
@@ -170,7 +176,7 @@ export default function AlertTriggerModal({
                   <span>🚀 Take-Profit 1 Expansion</span>
                 </span>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Alert when price approaches ${takeProfit1.toFixed(2)} target
+                  Alert when price approaches ${safeTarget.toFixed(2)} target
                 </p>
               </div>
               <input

@@ -16,32 +16,35 @@ export default function PositionSizerModal({
   isOpen,
   onClose,
   symbol,
-  entryPrice,
+  entryPrice = 100,
   stopLoss,
   takeProfit1,
   riskRewardRatio = 2.5,
 }: PositionSizerProps) {
   const [accountSize, setAccountSize] = useState<number>(25000);
   const [riskPct, setRiskPct] = useState<number>(1.0);
+  const [savedToast, setSavedToast] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
-  const riskPerShare = Math.max(0.01, entryPrice - stopLoss);
+  const safeEntry = typeof entryPrice === "number" && !isNaN(entryPrice) && entryPrice > 0 ? entryPrice : 100;
+  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeEntry * 0.95;
+  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeEntry * 1.10;
+
+  const riskPerShare = Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = accountSize * (riskPct / 100);
   const shares = Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
-  const totalAllocation = Number((shares * entryPrice).toFixed(2));
-  const portfolioAllocPct = Number(((totalAllocation / accountSize) * 100).toFixed(1));
+  const totalAllocation = Number((shares * safeEntry).toFixed(2));
+  const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
   const actualDollarRisk = Number((shares * riskPerShare).toFixed(2));
-  const projectedProfit = Number((shares * (takeProfit1 - entryPrice)).toFixed(2));
+  const projectedProfit = Number((shares * (safeTarget - safeEntry)).toFixed(2));
 
   // Half-Kelly calculation
-  const b = Math.max(0.5, (takeProfit1 - entryPrice) / riskPerShare);
+  const b = Math.max(0.5, (safeTarget - safeEntry) / riskPerShare);
   const p = 0.55;
   const q = 0.45;
   const fullKelly = Math.max(0, (b * p - q) / b);
   const halfKellyPct = Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
-
-  const [savedToast, setSavedToast] = useState<boolean>(false);
 
   const handleSaveToPortfolio = () => {
     try {
@@ -50,13 +53,13 @@ export default function PositionSizerModal({
       if (!Array.isArray(currentPositions)) currentPositions = [];
 
       const newPos = {
-        symbol,
-        name: `${symbol} Corporation`,
+        symbol: symbol || "ASSET",
+        name: `${symbol || "ASSET"} Corporation`,
         shares,
-        entryPrice,
-        currentPrice: entryPrice,
-        targetPrice: takeProfit1,
-        stopLossPrice: stopLoss,
+        entryPrice: safeEntry,
+        currentPrice: safeEntry,
+        targetPrice: safeTarget,
+        stopLossPrice: safeStop,
         addedAt: new Date().toISOString().split("T")[0],
         assetType: "Stock",
       };
@@ -91,7 +94,7 @@ export default function PositionSizerModal({
                 Institutional Position Sizer & Kelly Risk
               </h2>
               <p className="text-[11px] text-slate-400">
-                Calibrated for <span className="text-cyan-400 font-bold">{symbol}</span> @ ${entryPrice.toFixed(2)}
+                Calibrated for <span className="text-cyan-400 font-bold">{symbol}</span> @ ${safeEntry.toFixed(2)}
               </p>
             </div>
           </div>
@@ -177,13 +180,13 @@ export default function PositionSizerModal({
               <div className="bg-[#140e11] p-2.5 rounded-lg border border-rose-950/60">
                 <span className="text-[10px] text-rose-400 block font-semibold">HARD MAX LOSS</span>
                 <span className="font-bold text-rose-300 tabular-nums">-${actualDollarRisk.toFixed(2)}</span>
-                <span className="text-[10px] text-rose-500/80 block mt-0.5">at ${stopLoss.toFixed(2)} stop</span>
+                <span className="text-[10px] text-rose-500/80 block mt-0.5">at ${safeStop.toFixed(2)} stop</span>
               </div>
 
               <div className="bg-[#0a1414] p-2.5 rounded-lg border border-emerald-950/60">
                 <span className="text-[10px] text-emerald-400 block font-semibold">TARGET PROFIT (TP1)</span>
                 <span className="font-bold text-emerald-300 tabular-nums">+${projectedProfit.toFixed(2)}</span>
-                <span className="text-[10px] text-emerald-500/80 block mt-0.5">at ${takeProfit1.toFixed(2)} (+{(((takeProfit1 - entryPrice)/entryPrice)*100).toFixed(1)}%)</span>
+                <span className="text-[10px] text-emerald-500/80 block mt-0.5">at ${safeTarget.toFixed(2)} (+{(((safeTarget - safeEntry)/safeEntry)*100).toFixed(1)}%)</span>
               </div>
 
               <div className="bg-[#12110c] p-2.5 rounded-lg border border-amber-950/60">
@@ -197,7 +200,7 @@ export default function PositionSizerModal({
           {/* Action Guidance */}
           <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
-            Buy <span className="text-white font-bold">{shares} shares</span> of {symbol} at ${entryPrice.toFixed(2)}. Place GTC Stop-Loss at ${stopLoss.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
+            Buy <span className="text-white font-bold">{shares} shares</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
           </div>
 
           {/* Success Toast */}
