@@ -78,6 +78,8 @@ export default function GuidePage() {
             <a href="#chapter-4" className="text-emerald-400 hover:underline">Ch 4: 5-Factor Radar</a>
             <span className="text-slate-600">•</span>
             <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 5: Risk & Modified VaR</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 6: Multi-Source Synthesis & FRED Macro</a>
           </div>
         </header>
 
@@ -270,6 +272,61 @@ export default function GuidePage() {
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
               Where <code>S</code> represents sample skewness, <code>K</code> represents excess kurtosis, and <code>z_alpha</code> represents the standard normal quantile (e.g. 1.645 for 95% confidence). This accurately reflects real-world tail crash risk during market liquidity shocks.
             </p>
+          </div>
+        </section>
+
+                {/* CHAPTER 6: MULTI-SOURCE SYNTHESIS, FRED MACRO & SEC EDGAR FORM 4 */}
+        <section id="chapter-6" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">💎</span>
+            <h2 className="text-lg sm:text-xl font-bold text-cyan-400 tracking-tight">
+              Chapter 6: Multi-Source Synthesis, FRED Macro Regimes & SEC Form 4
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Pure technical price action creates frequent false breakouts when market liquidity is hostile. To eliminate blindspots, the terminal continuously correlates 4 authoritative quantitative streams into a unified <strong>Composite Conviction Score (0–100)</strong>:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-emerald-400 font-bold text-sm">🏛️ Federal Reserve FRED Macro</strong>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">MACRO REGIME</span>
+              </div>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Tracks 10Y-2Y Treasury Yield Curve spreads (<code>T10Y2Y</code>) and High-Yield Option-Adjusted Credit Spreads (<code>BAMLH0A0HYM2</code>). Applies a dynamic <strong>0.5x to 1.25x Macro Risk Multiplier</strong> to scale position budgets based on systemic credit stress.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-cyan-400 font-bold text-sm">🏢 SEC EDGAR Form 4 (C-Suite)</strong>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">LEGAL INSIDERS</span>
+              </div>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Filters open-market stock purchases (&ge; $100,000 USD) by CEOs, CFOs, and Board Directors under Section 16(a) of the Securities Exchange Act of 1934 (mandatory 2-day disclosure). Verified directly against official SEC EDGAR CIK databases.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-amber-400 font-bold text-sm">🔥 1-Line Catalyst Micro-Tags</strong>
+                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">DISCOVERY PULSE</span>
+              </div>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Embedded directly into the main chart header to answer <em>&ldquo;Why is this stock moving today?&rdquo;</em> in under 1 second, connecting earnings beats, FDA trial readouts, and AI chip demand to price momentum.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-purple-400 font-bold text-sm">💼 1-Click Execution Hand-off</strong>
+                <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">PORTFOLIO SYNC</span>
+              </div>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Directly sends mathematically calculated share quantities, volatility stop-losses, and multi-tier profit targets from the Position Sizer into persistent, anonymous local storage tracking with zero manual re-typing.
+              </p>
+            </div>
           </div>
         </section>
 
