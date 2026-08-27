@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -224,7 +224,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">âš”ï¸</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚔️</span>
           <span className="text-[9px] tracking-tight">Compare</span>
         </Link>
 
@@ -235,7 +235,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">ðŸ›ï¸</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🏛️</span>
           <span className="text-[9px] tracking-tight">Insiders</span>
         </Link>
 
@@ -246,7 +246,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">ðŸ’¼</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
           <span className="text-[9px] tracking-tight">Portfolio</span>
         </Link>
 
@@ -257,7 +257,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">ðŸ“–</span>
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
           <span className="text-[9px] tracking-tight">Guide</span>
         </Link>
       </nav>

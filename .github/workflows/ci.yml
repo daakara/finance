@@ -33,15 +33,7 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/ -v -rxXs --tb=auto || (pytest tests/ --lf -v --tb=long && exit 1)
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        pytest tests/ -v
 
   lint:
     name: Code Quality
@@ -86,13 +78,6 @@ jobs:
     - name: Run Bandit security linter
       run: |
         bandit -r . -f json -o bandit-report.json || true
-    
-    - name: Upload Bandit report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: bandit-security-report
-        path: bandit-report.json
 
   build:
     name: Build Check
