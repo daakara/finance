@@ -1,6 +1,8 @@
 ﻿"""Tests for Catalyst Forecasting Engine and Comparison Endpoints."""
 
+from unittest.mock import patch, MagicMock
 import pytest
+import pandas as pd
 from fastapi.testclient import TestClient
 from api.main import app
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
@@ -30,9 +32,23 @@ def test_catalyst_engine_generic_asset():
 
 def test_analytics_api_returns_catalyst_forecast():
     """Verify that the FastAPI /analytics/{symbol} endpoint bundles catalyst forecasts."""
-    res = client.get("/api/v1/analytics/NVO?period=1y&interval=1d")
-    assert res.status_code == 200
-    data = res.json()
-    assert "catalystForecast" in data
-    assert data["catalystForecast"]["symbol"] == "NVO"
-    assert "Amycretin" in data["catalystForecast"]["primary_drug_trial"]
+    prices = [100 + i * 0.5 for i in range(60)]
+    mock_df = pd.DataFrame({
+        "Open": prices,
+        "High": [p + 1.0 for p in prices],
+        "Low": [p - 1.0 for p in prices],
+        "Close": prices,
+        "Volume": [1000000] * 60
+    }, index=pd.date_range("2026-01-01", periods=60))
+
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = mock_df
+    mock_ticker.info = {"trailingPE": 35.0}
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        res = client.get("/api/v1/analytics/NVO?period=1y&interval=1d")
+        assert res.status_code == 200
+        data = res.json()
+        assert "catalystForecast" in data
+        assert data["catalystForecast"]["symbol"] == "NVO"
+        assert "Amycretin" in data["catalystForecast"]["primary_drug_trial"]
