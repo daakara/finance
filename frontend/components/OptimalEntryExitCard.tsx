@@ -83,7 +83,7 @@ export default function OptimalEntryExitCard({
                 : "text-emerald-400 bg-emerald-950/60 border-emerald-800 hover:bg-emerald-900/80"
             }`}
           >
-            <span>{isDayTrader ? "⚡ Intraday (Click to Switch)" : "🏛️ Swing/Growth (Click to Switch)"}</span>
+            <span>{isDayTrader ? "⚡ Intraday ⇄" : "🏛️ Swing/Growth ⇄"}</span>
           </button>
         </div>
       </div>

@@ -92,7 +92,7 @@ export default function GuidePage() {
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            Traditional terminals force analysts to scroll through hundreds of stacked widgets, causing severe cognitive overload and losing chart context. Our terminal splits analysis into 4 modular domains anchored directly beneath the live price chart:
+            Traditional terminals force analysts to scroll through hundreds of stacked widgets, causing severe cognitive overload and losing chart context. Our terminal splits analysis into 4 mobile-optimized modular domains (with dynamic viewport-responsive labels) anchored directly beneath the live price chart:
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">

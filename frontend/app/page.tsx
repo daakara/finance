@@ -205,56 +205,56 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "EXECUTION"}
               onClick={() => { setActiveTab("EXECUTION"); trackWorkspaceSwitch("Execution & Levels", selectedSymbol); }}
-              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "EXECUTION"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
               <span>🎯</span>
-              <span className="truncate">Execution & Levels</span>
+              <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
             </button>
 
             <button
               role="tab"
               aria-selected={activeTab === "SMART_MONEY"}
               onClick={() => { setActiveTab("SMART_MONEY"); trackWorkspaceSwitch("Smart Money", selectedSymbol); }}
-              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "SMART_MONEY"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
               <span>🏛️</span>
-              <span className="truncate">Smart Money</span>
+              <span className="whitespace-nowrap">Smart Money</span>
             </button>
 
             <button
               role="tab"
               aria-selected={activeTab === "FUNDAMENTALS"}
               onClick={() => { setActiveTab("FUNDAMENTALS"); trackWorkspaceSwitch("Factors & Macro", selectedSymbol); }}
-              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "FUNDAMENTALS"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
               <span>📊</span>
-              <span className="truncate">Factors & Macro</span>
+              <span className="whitespace-nowrap"><span className="sm:hidden">Factors</span><span className="hidden sm:inline">Factors & Macro</span></span>
             </button>
 
             <button
               role="tab"
               aria-selected={activeTab === "RISK_CONTAGION"}
               onClick={() => { setActiveTab("RISK_CONTAGION"); trackWorkspaceSwitch("Risk & Contagion", selectedSymbol); }}
-              className={`flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl font-bold transition-all active:scale-[0.97] cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "RISK_CONTAGION"
                   ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-lg shadow-cyan-950/50"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
               <span>🛡️</span>
-              <span className="truncate">Risk & Contagion</span>
+              <span className="whitespace-nowrap"><span className="sm:hidden">Risk</span><span className="hidden sm:inline">Risk & Contagion</span></span>
             </button>
           </div>
 
