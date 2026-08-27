@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -28,8 +28,8 @@
   --bg-surface: #ffffff;
   --bg-surface-hover: #f1f5f9;
   --bg-element: #e2e8f0;
-  --border-subtle: #cbd5e1;
-  --border-strong: #94a3b8;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
 
   --text-main: #0f172a;
   --text-muted: #475569;
@@ -51,38 +51,71 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* 🌓 GLOBAL PAPER LIGHT THEME OVERRIDES */
-[data-theme="paper"] .bg-\[\#070a10\] {
+/* 🌓 COMPREHENSIVE PAPER LIGHT THEME SYSTEM */
+
+/* 1. App Body & Root Backgrounds */
+[data-theme="paper"] body,
+[data-theme="paper"] .min-h-screen,
+[data-theme="paper"] [class*="bg-[#070a10]"],
+[data-theme="paper"] [class*="bg-[#070a11]"],
+[data-theme="paper"] [class*="bg-[#05070a]"] {
   background-color: #f4f6f9 !important;
 }
 
-[data-theme="paper"] .bg-\[\#0c1017\] {
+/* 2. Primary Cards, Sidebar & Container Panels */
+[data-theme="paper"] header,
+[data-theme="paper"] aside,
+[data-theme="paper"] section,
+[data-theme="paper"] nav[aria-label="Mobile Navigation Dock"],
+[data-theme="paper"] [class*="bg-[#0c1017]"],
+[data-theme="paper"] [class*="bg-[#111722]"],
+[data-theme="paper"] [class*="bg-[#0b1019]"],
+[data-theme="paper"] [class*="bg-[#0d131f]"],
+[data-theme="paper"] [class*="bg-[#0e131d]"] {
   background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
-[data-theme="paper"] .bg-\[\#111722\] {
-  background-color: #ffffff !important;
-}
-
-[data-theme="paper"] .bg-\[\#090d14\] {
+/* 3. Sub-elements, Inset Wells & Controls */
+[data-theme="paper"] [class*="bg-[#090d14]"],
+[data-theme="paper"] [class*="bg-[#080c14]"],
+[data-theme="paper"] [class*="bg-[#0f141f]"] {
   background-color: #f1f5f9 !important;
 }
 
-[data-theme="paper"] .bg-\[\#0b1019\] {
-  background-color: #f8fafc !important;
-}
-
-[data-theme="paper"] .bg-\[\#162030\] {
+[data-theme="paper"] [class*="bg-[#162030]"],
+[data-theme="paper"] [class*="bg-[#1b2434]"],
+[data-theme="paper"] [class*="bg-[#1e293b]"] {
   background-color: #e2e8f0 !important;
 }
 
-[data-theme="paper"] .bg-\[\#1b2434\] {
-  background-color: #e2e8f0 !important;
+/* 4. Canvas Container & Loading Overlays */
+[data-theme="paper"] div[role="region"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
+[data-theme="paper"] [class*="bg-[#0b0f19]"] {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* 5. Universal Border Adaptation */
+[data-theme="paper"] [class*="border-[#243044]"],
+[data-theme="paper"] [class*="border-[#1b2434]"],
+[data-theme="paper"] [class*="border-[#1e293b]"],
+[data-theme="paper"] [class*="border-[#2b3a52]"],
+[data-theme="paper"] [class*="border-[#162030]"],
+[data-theme="paper"] [class*="border-[#192334]"],
+[data-theme="paper"] [class*="border-[#1d2636]"],
+[data-theme="paper"] [class*="border-slate-800"],
+[data-theme="paper"] [class*="border-slate-700"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* 6. High-Contrast Text System */
+[data-theme="paper"] .text-white,
 [data-theme="paper"] .text-slate-100,
-[data-theme="paper"] .text-slate-200,
-[data-theme="paper"] .text-white {
+[data-theme="paper"] .text-slate-200 {
   color: #0f172a !important;
 }
 
@@ -95,19 +128,106 @@ body {
   color: #64748b !important;
 }
 
-[data-theme="paper"] .border-\[\#243044\],
-[data-theme="paper"] .border-\[\#1b2434\],
-[data-theme="paper"] .border-\[\#1e293b\],
-[data-theme="paper"] .border-\[\#2b3a52\],
-[data-theme="paper"] .border-\[\#162030\] {
+/* 7. Color Badges & Chips */
+[data-theme="paper"] [class*="bg-emerald-950"] {
+  background-color: #dcfce7 !important;
+  border-color: #bbf7d0 !important;
+  color: #15803d !important;
+}
+[data-theme="paper"] [class*="bg-emerald-950"] * {
+  color: #15803d !important;
+}
+
+[data-theme="paper"] [class*="bg-rose-950"] {
+  background-color: #ffe4e6 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+[data-theme="paper"] [class*="bg-rose-950"] * {
+  color: #be123c !important;
+}
+
+[data-theme="paper"] [class*="bg-amber-950"] {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+}
+[data-theme="paper"] [class*="bg-amber-950"] * {
+  color: #92400e !important;
+}
+
+[data-theme="paper"] [class*="bg-cyan-950"] {
+  background-color: #e0f2fe !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+[data-theme="paper"] [class*="bg-cyan-950"] * {
+  color: #0369a1 !important;
+}
+
+[data-theme="paper"] [class*="bg-purple-950"] {
+  background-color: #f3e8ff !important;
+  border-color: #e9d5ff !important;
+  color: #6b21a8 !important;
+}
+[data-theme="paper"] [class*="bg-purple-950"] * {
+  color: #6b21a8 !important;
+}
+
+/* 8. Inputs, Textareas, Selects & Placeholders */
+[data-theme="paper"] input,
+[data-theme="paper"] textarea,
+[data-theme="paper"] select {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-[data-theme="paper"] input,
-[data-theme="paper"] textarea {
+[data-theme="paper"] input::placeholder,
+[data-theme="paper"] textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* 9. Interactive Hover & Focus States */
+[data-theme="paper"] .hover\:bg-\[\#162030\]:hover,
+[data-theme="paper"] .hover\:bg-\[\#1b2537\]:hover,
+[data-theme="paper"] .hover\:bg-\[\#1b2434\]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="paper"] .hover\:text-white:hover,
+[data-theme="paper"] .hover\:text-slate-200:hover {
+  color: #0f172a !important;
+}
+
+/* 10. Workspace Tab Inactive States */
+[data-theme="paper"] button[role="tab"][aria-selected="false"] {
+  color: #475569 !important;
+}
+[data-theme="paper"] button[role="tab"][aria-selected="false"]:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* 11. Modals, Popovers & Dialogs */
+[data-theme="paper"] [role="dialog"],
+[data-theme="paper"] [role="listbox"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 12. Custom Scrollbars in Paper Mode */
+[data-theme="paper"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+[data-theme="paper"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+[data-theme="paper"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Accessible focus ring utility */

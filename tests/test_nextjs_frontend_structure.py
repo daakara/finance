@@ -101,6 +101,25 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         # Fallback generator must not match '1mo' as intraday with substring .includes('m')
         self.assertNotIn('interval.includes("m")', api_content, "api.ts must not use interval.includes('m') which corrupts 1mo monthly macro intervals")
 
+    def test_light_paper_theme_compliance(self):
+        """Regression Quality Gate: Ensure Paper Light theme overrides cover headers, panels, cards, and canvas."""
+        globals_css_path = os.path.join("frontend", "app", "globals.css")
+        price_chart_path = os.path.join("frontend", "components", "PriceChart.tsx")
+
+        with open(globals_css_path, "r", encoding="utf-8") as f:
+            css_content = f.read()
+
+        self.assertIn('[data-theme="paper"]', css_content, "globals.css must specify data-theme='paper' overrides")
+        self.assertIn('[data-theme="paper"] header', css_content, "globals.css must override header in light theme")
+        self.assertIn('[data-theme="paper"] [class*="bg-[#0c1017]"]', css_content, "globals.css must override navbar/tab dark backgrounds")
+        self.assertIn('[data-theme="paper"] [class*="bg-[#111722]"]', css_content, "globals.css must override card/sidebar backgrounds")
+
+        with open(price_chart_path, "r", encoding="utf-8") as f:
+            chart_content = f.read()
+
+        self.assertIn("finance:theme-change", chart_content, "PriceChart must listen for finance:theme-change event")
+        self.assertIn("isPaperTheme", chart_content, "PriceChart must adapt initial canvas layout to active theme")
+
 
 if __name__ == "__main__":
     unittest.main()

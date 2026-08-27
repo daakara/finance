@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { trackMatomoEvent } from "../lib/matomo";
@@ -12,6 +12,7 @@ export default function ThemeToggle() {
       if (saved === "paper" || saved === "dark") {
         setTheme(saved);
         document.documentElement.setAttribute("data-theme", saved);
+        window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: saved }));
       } else {
         document.documentElement.setAttribute("data-theme", "dark");
       }
@@ -27,6 +28,7 @@ export default function ThemeToggle() {
       localStorage.setItem("FINANCE_THEME", nextTheme);
     } catch {}
     document.documentElement.setAttribute("data-theme", nextTheme);
+    window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: nextTheme }));
     trackMatomoEvent("User Journey", "Toggle Theme", nextTheme);
   };
 

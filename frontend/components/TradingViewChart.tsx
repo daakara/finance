@@ -25,24 +25,26 @@ export default function TradingViewChart({ data, symbol = "AAPL" }: TradingViewC
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    const isLight = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
+
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#0B0E14" },
-        textColor: "#64748B",
+        background: { type: ColorType.Solid, color: isLight ? "#ffffff" : "#0B0E14" },
+        textColor: isLight ? "#475569" : "#64748B",
       },
       grid: {
-        vertLines: { color: "#1E293B" },
-        horzLines: { color: "#1E293B" },
+        vertLines: { color: isLight ? "#f1f5f9" : "#1E293B" },
+        horzLines: { color: isLight ? "#f1f5f9" : "#1E293B" },
       },
       crosshair: {
         vertLine: { color: "#38BDF8", width: 1, style: 3 },
         horzLine: { color: "#38BDF8", width: 1, style: 3 },
       },
       timeScale: {
-        borderColor: "#1E293B",
+        borderColor: isLight ? "#e2e8f0" : "#1E293B",
       },
       rightPriceScale: {
-        borderColor: "#1E293B",
+        borderColor: isLight ? "#e2e8f0" : "#1E293B",
       },
       autoSize: true,
     });

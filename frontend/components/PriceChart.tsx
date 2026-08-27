@@ -77,26 +77,28 @@ export default function PriceChart({
     const width = chartContainerRef.current.clientWidth || 800;
     const height = chartContainerRef.current.clientHeight || 340;
 
+    const isPaperTheme = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
+
     const chart = createChart(chartContainerRef.current, {
       width: width,
       height: height,
       layout: {
-        background: { color: "#0b0f19" },
-        textColor: "#94a3b8",
+        background: { color: isPaperTheme ? "#ffffff" : "#0b0f19" },
+        textColor: isPaperTheme ? "#475569" : "#94a3b8",
       },
       grid: {
-        vertLines: { color: "#162032" },
-        horzLines: { color: "#162032" },
+        vertLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
+        horzLines: { color: isPaperTheme ? "#f1f5f9" : "#162032" },
       },
       crosshair: {
         mode: 1,
       },
       rightPriceScale: {
-        borderColor: "#243044",
+        borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
         autoScale: true,
       },
       timeScale: {
-        borderColor: "#243044",
+        borderColor: isPaperTheme ? "#e2e8f0" : "#243044",
         timeVisible: isIntraday,
         secondsVisible: false,
       },
@@ -134,10 +136,44 @@ export default function PriceChart({
       }
     };
 
+    const handleThemeChange = () => {
+      const isLight = document.documentElement.getAttribute("data-theme") === "paper";
+      if (chartRef.current) {
+        chartRef.current.applyOptions({
+          layout: {
+            background: { color: isLight ? "#ffffff" : "#0b0f19" },
+            textColor: isLight ? "#475569" : "#94a3b8",
+          },
+          grid: {
+            vertLines: { color: isLight ? "#f1f5f9" : "#162032" },
+            horzLines: { color: isLight ? "#f1f5f9" : "#162032" },
+          },
+          rightPriceScale: {
+            borderColor: isLight ? "#e2e8f0" : "#243044",
+          },
+          timeScale: {
+            borderColor: isLight ? "#e2e8f0" : "#243044",
+          },
+        });
+      }
+    };
+
     window.addEventListener("resize", handleResize);
+    window.addEventListener("finance:theme-change", handleThemeChange);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
+          handleThemeChange();
+        }
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("finance:theme-change", handleThemeChange);
+      observer.disconnect();
       chart.remove();
       chartRef.current = null;
       candlestickSeriesRef.current = null;
