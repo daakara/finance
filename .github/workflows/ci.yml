@@ -33,7 +33,7 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/ -v || (pytest tests/ --tb=short && exit 1)
+        pytest tests/ -v
 
   lint:
     name: Code Quality
@@ -112,7 +112,6 @@ jobs:
     
     - name: Verify data integrity policy
       run: |
-        # Ensure no sample data generation functions exist in production code
         if grep -r "_generate_sample" --include="*.py" data/ analyst_dashboard/ --exclude-dir=tests; then
           echo "ERROR: Sample data generation found in production code!"
           exit 1
