@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
@@ -133,21 +133,49 @@ export default function CongressionalTradesCard({
                   onClick={() => setSelectedCongress(trade)}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#090d14] hover:bg-[#162030] border border-[#1e293b] hover:border-purple-500/40 transition-all cursor-pointer gap-3 group"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-white text-sm group-hover:text-purple-300">{trade.politician}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1b2434] text-slate-400 font-semibold">{trade.chamber}</span>
+                      {trade.legislative_alignment_score !== undefined && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                          trade.legislative_alignment_score >= 80
+                            ? "bg-purple-950/80 text-purple-300 border-purple-700/80"
+                            : trade.legislative_alignment_score >= 60
+                            ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/80"
+                            : "bg-[#162030] text-slate-400 border-[#243044]"
+                        }`}>
+                          ⚖️ Alignment: {trade.legislative_alignment_score}/100
+                        </span>
+                      )}
+                      {trade.staleness_badge && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                          trade.staleness_status === "LATE_FILER"
+                            ? "bg-rose-950/80 text-rose-300 border-rose-800/80"
+                            : trade.staleness_status === "AGING"
+                            ? "bg-amber-950/80 text-amber-300 border-amber-800/80"
+                            : "bg-emerald-950/80 text-emerald-300 border-emerald-800/80"
+                        }`}>
+                          {trade.staleness_badge}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[11px] text-slate-400 flex items-center space-x-2">
+                    <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-semibold text-cyan-400">{trade.transaction_type}</span>
                       <span>•</span>
                       <span>{trade.amount_range}</span>
                       <span>•</span>
                       <span>Filed: {trade.filing_date} ({trade.days_to_filing}d lag)</span>
                     </div>
+                    {trade.staleness_warning && (
+                      <div className="text-[10px] text-rose-400/90 font-sans font-medium flex items-center gap-1 bg-rose-950/30 border border-rose-900/40 px-2 py-0.5 rounded">
+                        <span>⚠️</span>
+                        <span>{trade.staleness_warning}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center space-x-3 text-right">
+                  <div className="flex items-center space-x-3 text-right shrink-0">
                     <div>
                       <span className="text-[10px] text-slate-500 block uppercase">Return Since Filing</span>
                       <span className={`text-sm sm:text-base font-bold tabular-nums ${

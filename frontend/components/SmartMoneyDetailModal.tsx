@@ -98,16 +98,33 @@ export default function SmartMoneyDetailModal({
                 <strong className="text-emerald-400 font-bold">{congressItem.amount_range}</strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 block uppercase">Filing Lag</span>
-                <strong className="text-amber-400">{congressItem.days_to_filing} Days</strong>
+                <span className="text-[10px] text-slate-500 block uppercase">STOCK Act Lag</span>
+                <strong className={congressItem.staleness_status === "LATE_FILER" ? "text-rose-400 font-bold" : "text-amber-400"}>
+                  {congressItem.days_to_filing} Days {congressItem.staleness_status === "LATE_FILER" ? "(Late)" : ""}
+                </strong>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 block uppercase">Return Since</span>
-                <strong className={congressItem.performance_since_pct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                  {congressItem.performance_since_pct >= 0 ? `+${congressItem.performance_since_pct}%` : `${congressItem.performance_since_pct}%`}
+                <span className="text-[10px] text-slate-500 block uppercase">Legislative Alignment</span>
+                <strong className="text-purple-300 font-bold">
+                  {congressItem.legislative_alignment_score || 50}/100
                 </strong>
               </div>
             </div>
+
+            {/* Staleness Warning Banner if Applicable */}
+            {congressItem.staleness_warning && (
+              <div className="bg-rose-950/40 border border-rose-800/60 p-3 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
+                <span className="text-base">⚠️</span>
+                <div>
+                  <strong className="font-bold block text-rose-200 uppercase tracking-wider text-[11px]">
+                    STOCK Act Staleness & Compliance Warning
+                  </strong>
+                  <p className="mt-0.5 text-rose-300/90 leading-relaxed">
+                    {congressItem.staleness_warning} Effective signal strength penalized by -{congressItem.staleness_penalty || 0} pts (Decayed Strength: {congressItem.effective_signal_strength ?? 60}).
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Committee Assignments */}
             <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-1.5">

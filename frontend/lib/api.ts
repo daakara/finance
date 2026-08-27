@@ -179,10 +179,18 @@ export interface CongressTradeItem {
   sentiment: string;
   conviction_tier?: string;
   conviction_score?: number;
+  signal_strength?: number;
   source_doc_url?: string;
   committee_assignment?: string;
   jurisdiction_relevance?: string;
   sector?: string;
+  legislative_alignment_score?: number;
+  staleness_status?: "FRESH" | "NORMAL" | "AGING" | "LATE_FILER";
+  staleness_badge?: string;
+  staleness_warning?: string | null;
+  staleness_penalty?: number;
+  effective_signal_strength?: number;
+  compliance_tier?: string;
   details?: CongressTradeDetails;
 }
 

@@ -19,6 +19,7 @@ function SmartMoneyContent() {
   const [activeTab, setActiveTab] = useState<"CONGRESS" | "SEC_FORM_4" | "OPTIONS_FLOW">("CONGRESS");
   const [filterQuery, setFilterQuery] = useState<string>("");
   const [activeSector, setActiveSector] = useState<string>("ALL");
+  const [complianceFilter, setComplianceFilter] = useState<"ALL" | "FRESH" | "LATE_FILER" | "HIGH_ALIGN">("ALL");
 
   // Interactive Forensic Modal Selection
   const [selectedCongress, setSelectedCongress] = useState<CongressTradeItem | null>(null);
@@ -87,6 +88,13 @@ function SmartMoneyContent() {
       if (!item.sector || !item.sector.toUpperCase().includes(activeSector.toUpperCase())) {
         return false;
       }
+    }
+    if (complianceFilter === "FRESH") {
+      if (item.days_to_filing > 15 && item.staleness_status !== "FRESH") return false;
+    } else if (complianceFilter === "LATE_FILER") {
+      if (item.days_to_filing <= 45 && item.staleness_status !== "LATE_FILER") return false;
+    } else if (complianceFilter === "HIGH_ALIGN") {
+      if ((item.legislative_alignment_score || 0) < 80) return false;
     }
     return true;
   });
@@ -264,23 +272,47 @@ function SmartMoneyContent() {
           </div>
         </div>
 
-        {/* Dynamic Sector Filter for Congressional Tab */}
+        {/* Dynamic Sector & Compliance Filter for Congressional Tab */}
         {activeTab === "CONGRESS" && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-[11px] text-slate-500 font-bold uppercase mr-1">Sector:</span>
-            {["ALL", "Semiconductors", "Healthcare", "AI", "Defense"].map((sec) => (
-              <button
-                key={sec}
-                onClick={() => setActiveSector(sec)}
-                className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
-                  activeSector === sec
-                    ? "bg-purple-900 text-purple-200 border border-purple-500"
-                    : "bg-[#090d14] text-slate-400 hover:text-slate-200 border border-[#1e293b]"
-                }`}
-              >
-                {sec}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111722]/80 p-2.5 rounded-lg border border-[#1e293b] text-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <span className="text-[11px] text-slate-500 font-bold uppercase mr-1">Sector:</span>
+              {["ALL", "Semiconductors", "Healthcare", "AI", "Defense"].map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setActiveSector(sec)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
+                    activeSector === sec
+                      ? "bg-purple-900 text-purple-200 border border-purple-500"
+                      : "bg-[#090d14] text-slate-400 hover:text-slate-200 border border-[#1e293b]"
+                  }`}
+                >
+                  {sec}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <span className="text-[11px] text-slate-500 font-bold uppercase mr-1">STOCK Act Latency:</span>
+              {[
+                { id: "ALL", label: "All Disclosures" },
+                { id: "FRESH", label: "⚡ Fresh (<15d)" },
+                { id: "LATE_FILER", label: "🛑 Late Filers (>45d)" },
+                { id: "HIGH_ALIGN", label: "⚖️ High Alignment (≥80)" },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setComplianceFilter(c.id as any)}
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors ${
+                    complianceFilter === c.id
+                      ? "bg-cyan-900 text-cyan-200 border border-cyan-500"
+                      : "bg-[#090d14] text-slate-400 hover:text-slate-200 border border-[#1e293b]"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -349,14 +381,14 @@ function SmartMoneyContent() {
                         </td>
                         <td className="py-3 px-4 text-right text-slate-300 tabular-nums">${f.spot_price.toFixed(2)}</td>
                         <td className="py-3 px-4 text-right font-bold text-amber-400 tabular-nums">{f.premium}</td>
-                        <td className="py-3 px-4 text-right font-bold text-cyan-400 tabular-nums">{f.volume_oi_ratio}x</td>
+                        <td className="py-3 px-4 text-right text-slate-300 font-semibold tabular-nums">{f.volume_oi_ratio}x</td>
                         <td className="py-3 px-4">
-                          <span className="bg-amber-950/70 text-amber-300 border border-amber-800/80 px-2 py-0.5 rounded text-[10px] font-bold">
-                            {f.conviction_tier || "⚡ Unusual Sweep"}
+                          <span className="bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded text-[10px] font-bold">
+                            {f.conviction_tier || "⚡ Whale Sweep"}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-[11px] text-emerald-400 font-semibold">{f.sentiment}</span>
+                          <span className="text-emerald-400 font-bold">{f.sentiment}</span>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <button
@@ -463,9 +495,9 @@ function SmartMoneyContent() {
                     <th className="py-3 px-4">Asset Name & Sector</th>
                     <th className="py-3 px-4">Type</th>
                     <th className="py-3 px-4 text-right">Amount ($)</th>
-                    <th className="py-3 px-4">Filing Date</th>
-                    <th className="py-3 px-4 text-right">Lag</th>
-                    <th className="py-3 px-4">Conviction Badge</th>
+                    <th className="py-3 px-4">Filing Status & Lag</th>
+                    <th className="py-3 px-4 text-center">Legislative Alignment</th>
+                    <th className="py-3 px-4 text-right">Effective Strength</th>
                     <th className="py-3 px-4 text-right">Return Since</th>
                     <th className="py-3 px-4 text-center">Action</th>
                   </tr>
@@ -491,7 +523,13 @@ function SmartMoneyContent() {
                         className="hover:bg-[#162030] cursor-pointer transition-colors group"
                       >
                         <td className="py-3 px-4 font-bold text-slate-100 group-hover:text-purple-300 transition-colors">
-                          {t.politician}
+                          <div>{t.politician}</div>
+                          {t.staleness_warning && (
+                            <div className="text-[10px] text-rose-400 mt-0.5 font-normal flex items-center gap-1">
+                              <span>⚠️</span>
+                              <span className="truncate max-w-[200px]">{t.staleness_warning}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <span
@@ -525,12 +563,38 @@ function SmartMoneyContent() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right font-bold text-emerald-400 tabular-nums">{t.amount_range}</td>
-                        <td className="py-3 px-4 text-slate-400 tabular-nums">{t.filing_date}</td>
-                        <td className="py-3 px-4 text-right text-slate-300 tabular-nums">{t.days_to_filing}d</td>
                         <td className="py-3 px-4">
-                          <span className="bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                            {t.conviction_tier || "🏛️ STOCK Act"}
+                          <div className="tabular-nums text-slate-300 font-semibold">{t.filing_date}</div>
+                          <div className="mt-0.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                              t.staleness_status === "LATE_FILER"
+                                ? "bg-rose-950/80 text-rose-300 border-rose-800"
+                                : t.staleness_status === "AGING"
+                                ? "bg-amber-950/80 text-amber-300 border-amber-800"
+                                : "bg-emerald-950/80 text-emerald-300 border-emerald-800"
+                            }`}>
+                              {t.staleness_badge || `${t.days_to_filing}d lag`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            (t.legislative_alignment_score || 50) >= 80
+                              ? "bg-purple-950/90 text-purple-300 border-purple-700"
+                              : (t.legislative_alignment_score || 50) >= 65
+                              ? "bg-cyan-950/90 text-cyan-300 border-cyan-700"
+                              : "bg-[#162030] text-slate-400 border-[#243044]"
+                          }`}>
+                            {t.legislative_alignment_score || 50}/100
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-right tabular-nums font-bold text-slate-200">
+                          <span className={t.effective_signal_strength && t.effective_signal_strength < 70 ? "text-amber-400" : "text-emerald-400"}>
+                            {t.effective_signal_strength ?? t.signal_strength ?? 90}
+                          </span>
+                          {t.staleness_penalty ? (
+                            <span className="text-[10px] text-rose-400 ml-1">(-{t.staleness_penalty})</span>
+                          ) : null}
                         </td>
                         <td
                           className={`py-3 px-4 text-right font-bold tabular-nums ${

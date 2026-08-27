@@ -1,4 +1,4 @@
-﻿"""High-Density Institutional & Congressional Smart Money Feed Engine."""
+"""High-Density Institutional & Congressional Smart Money Feed Engine."""
 
 from typing import List, Dict, Any
 
@@ -313,6 +313,58 @@ CONGRESSIONAL_TRADES: List[Dict[str, Any]] = [
             "source_filing_url": "https://disclosures-clerk.house.gov",
             "stock_act_compliance": "Standard filing window.",
             "key_catalyst": "Apple Intelligence subscription ramp vs consumer upgrade replacement duration.",
+        },
+    },
+    {
+        "id": "cong-late-nvda",
+        "politician": "Tommy Tuberville (R-AL)",
+        "chamber": "Senate",
+        "ticker": "NVDA",
+        "asset_name": "NVIDIA Corporation",
+        "sector": "Semiconductors & AI Hardware",
+        "transaction_type": "Purchase (Common Stock)",
+        "amount_range": "$250,000 - $500,000",
+        "filing_date": "2026-08-26",
+        "transaction_date": "2026-06-29",
+        "strike_price": "N/A (Equity)",
+        "days_to_filing": 58,
+        "performance_since_pct": 21.4,
+        "sentiment": "Strong Bullish",
+        "signal_strength": 92,
+        "details": {
+            "committee_assignments": ["Senate Armed Services"],
+            "legislative_conflict_thesis": "Late disclosure past 45-day statutory STOCK Act deadline following NDAA high-performance computing appropriations vote.",
+            "historical_win_rate_pct": 64.5,
+            "annualized_tech_alpha_pct": 18.4,
+            "source_filing_url": "https://efdsearch.senate.gov",
+            "stock_act_compliance": "Non-compliant (58 days latency vs 45-day statutory limit).",
+            "key_catalyst": "Blackwell enterprise deployment and DoD classified AI cluster orders.",
+        },
+    },
+    {
+        "id": "cong-late-tsla",
+        "politician": "Ro Khanna (D-CA)",
+        "chamber": "House",
+        "ticker": "TSLA",
+        "asset_name": "Tesla Inc.",
+        "sector": "Autonomous Mobility & AI Compute",
+        "transaction_type": "Sale (Partial)",
+        "amount_range": "$100,000 - $250,000",
+        "filing_date": "2026-08-25",
+        "transaction_date": "2026-07-07",
+        "strike_price": "N/A (Equity)",
+        "days_to_filing": 49,
+        "performance_since_pct": -4.2,
+        "sentiment": "Bearish / Trimming",
+        "signal_strength": 80,
+        "details": {
+            "committee_assignments": ["Armed Services (Cyber & Innovative Technologies)", "Oversight & Accountability"],
+            "legislative_conflict_thesis": "Late filing exceeding statutory window ahead of federal autonomous vehicle regulatory hearings.",
+            "historical_win_rate_pct": 69.2,
+            "annualized_tech_alpha_pct": 21.5,
+            "source_filing_url": "https://disclosures-clerk.house.gov",
+            "stock_act_compliance": "Non-compliant (49 days latency vs 45-day statutory limit).",
+            "key_catalyst": "FSD V13 regulatory approval timeline and Robotaxi autonomous permit reviews.",
         },
     },
 ]
@@ -726,15 +778,125 @@ SEC_FORM_4_TRADES = [
     },
 ]
 
+
+def calculate_legislative_alignment(trade: Dict[str, Any]) -> int:
+    """Calculate quantitative Legislative Alignment & Conflict Index (0 - 100)."""
+    score = 45  # Neutral baseline
+    details = trade.get("details", {})
+    committees = details.get("committee_assignments", [])
+    sector = trade.get("sector", "").lower()
+
+    # 1. Jurisdiction Committee Overlap (up to +35 pts)
+    for c in committees:
+        c_lower = c.lower()
+        if any(term in c_lower for term in ["armed services", "defense", "intelligence"]) and any(term in sector for term in ["defense", "ai", "cyber", "software", "foundry"]):
+            score += 32
+            break
+        elif any(term in c_lower for term in ["energy", "commerce", "technology", "innovative"]) and any(term in sector for term in ["semiconductor", "ai", "tech", "cooling", "power", "cybersecurity"]):
+            score += 30
+            break
+        elif any(term in c_lower for term in ["foreign affairs", "homeland"]) and any(term in sector for term in ["pharma", "foundry", "aerospace", "semiconductor", "defense"]):
+            score += 26
+            break
+        elif any(term in c_lower for term in ["veterans", "agriculture", "finance", "banking"]):
+            score += 16
+            break
+
+    # 2. Dollar Bracket Sizing Tier (up to +15 pts)
+    amt = trade.get("amount_range", "")
+    if "$1,000,000" in amt or "$5,000,000" in amt:
+        score += 15
+    elif "$500,000" in amt:
+        score += 11
+    elif "$250,000" in amt:
+        score += 8
+    else:
+        score += 5
+
+    # 3. Politician Historical Track Record (up to +10 pts)
+    win_rate = details.get("historical_win_rate_pct", 65.0)
+    if win_rate >= 75.0:
+        score += 10
+    elif win_rate >= 70.0:
+        score += 7
+    elif win_rate >= 65.0:
+        score += 4
+
+    return min(99, max(35, score))
+
+
+def compute_filing_staleness(days_to_filing: int, base_strength: int = 90) -> Dict[str, Any]:
+    """Compute STOCK Act filing latency, staleness decay penalty, and compliance tier."""
+    if days_to_filing <= 15:
+        return {
+            "staleness_status": "FRESH",
+            "staleness_badge": "⚡ Fresh Filing (<15d)",
+            "staleness_penalty": 0,
+            "staleness_warning": None,
+            "effective_signal_strength": base_strength,
+            "compliance_tier": "Punctual (Under 15 Days)",
+        }
+    elif days_to_filing <= 30:
+        penalty = 5
+        return {
+            "staleness_status": "NORMAL",
+            "staleness_badge": "⏳ Standard Lag (16-30d)",
+            "staleness_penalty": penalty,
+            "staleness_warning": None,
+            "effective_signal_strength": max(10, base_strength - penalty),
+            "compliance_tier": "Compliant (Within 30 Days)",
+        }
+    elif days_to_filing <= 45:
+        penalty = 16
+        return {
+            "staleness_status": "AGING",
+            "staleness_badge": "⚠️ Aging Signal (31-45d)",
+            "staleness_penalty": penalty,
+            "staleness_warning": f"Disclosed {days_to_filing} days after execution — approaching statutory limit.",
+            "effective_signal_strength": max(10, base_strength - penalty),
+            "compliance_tier": "Late Approaching (31-45 Days)",
+        }
+    else:
+        penalty = 32
+        return {
+            "staleness_status": "LATE_FILER",
+            "staleness_badge": f"🛑 Late Filer ({days_to_filing}d Lag)",
+            "staleness_penalty": penalty,
+            "staleness_warning": f"Filed {days_to_filing} days late (exceeds statutory 45d window) — high risk of priced-in mean reversion.",
+            "effective_signal_strength": max(10, base_strength - penalty),
+            "compliance_tier": "Non-Compliant (>45 Days Late)",
+        }
+
+
 class SmartMoneyEngine:
     """Quantitative engine for tracking Capitol Hill disclosures, SEC Form 4 & institutional options flow."""
 
     @staticmethod
+    def enrich_trade(trade: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich trade with quantitative legislative alignment and STOCK Act staleness metrics."""
+        t_copy = trade.copy()
+        days = t_copy.get("days_to_filing", 15)
+        base_strength = t_copy.get("signal_strength", 90)
+
+        alignment_score = calculate_legislative_alignment(t_copy)
+        staleness_info = compute_filing_staleness(days, base_strength)
+
+        t_copy["legislative_alignment_score"] = alignment_score
+        t_copy["staleness_status"] = staleness_info["staleness_status"]
+        t_copy["staleness_badge"] = staleness_info["staleness_badge"]
+        t_copy["staleness_warning"] = staleness_info["staleness_warning"]
+        t_copy["staleness_penalty"] = staleness_info["staleness_penalty"]
+        t_copy["effective_signal_strength"] = staleness_info["effective_signal_strength"]
+        t_copy["compliance_tier"] = staleness_info["compliance_tier"]
+        return t_copy
+
+    @staticmethod
     def get_congressional_trades(symbol: str = None) -> List[Dict[str, Any]]:
+        enriched_trades = [SmartMoneyEngine.enrich_trade(t) for t in CONGRESSIONAL_TRADES]
         if symbol:
             sym_clean = symbol.upper().strip()
-            return [t for t in CONGRESSIONAL_TRADES if t['ticker'] == sym_clean]
-        return CONGRESSIONAL_TRADES
+            return [t for t in enriched_trades if t['ticker'] == sym_clean]
+        return enriched_trades
 
     @staticmethod
     def get_sec_insider_trades(symbol: str = None) -> List[Dict[str, Any]]:
@@ -752,6 +914,10 @@ class SmartMoneyEngine:
 
     @staticmethod
     def get_smart_money_overview() -> Dict[str, Any]:
+        enriched_trades = [SmartMoneyEngine.enrich_trade(t) for t in CONGRESSIONAL_TRADES]
+        late_filers = [t for t in enriched_trades if t.get("staleness_status") == "LATE_FILER"]
+        fresh_trades = [t for t in enriched_trades if t.get("staleness_status") == "FRESH"]
+
         return {
             'total_congress_filings_30d': len(CONGRESSIONAL_TRADES),
             'total_sec_insiders_30d': len(SEC_FORM_4_TRADES),
@@ -759,7 +925,9 @@ class SmartMoneyEngine:
             'top_congress_bought_sector': 'AI Infrastructure, Semis & GLP-1',
             'unusual_flow_volume_today': '.8M',
             'call_to_put_dollar_ratio': 3.42,
-            'congress_trades': CONGRESSIONAL_TRADES,
+            'late_filers_count': len(late_filers),
+            'fresh_trades_count': len(fresh_trades),
+            'congress_trades': enriched_trades,
             'sec_insider_trades': SEC_FORM_4_TRADES,
             'options_flow': UNUSUAL_OPTIONS_FLOW,
         }
