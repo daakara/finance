@@ -40,6 +40,11 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             5-factor fundamental rating across growth, balance sheet quality, valuation, price momentum, and downside risk
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
+              <span>🧬</span> 5-Factor Fundamental DNA & Piotroski 9-Point Solvency Matrix
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">

@@ -44,6 +44,11 @@ export default function CongressionalTradesCard({
                 ? `High-velocity OPRA options order flow & volume-to-open-interest anomalies for ${symbol}`
                 : `STOCK Act Title I Article 105 disclosures & congressional committee alignment for ${symbol}`}
             </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
+                <span>🏛️</span> {isDayTrader ? "OPRA Options Flow Aggregation & Gamma Exposure" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)"}
+              </span>
+            </div>
           </div>
 
           <span className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border ${

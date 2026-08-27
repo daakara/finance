@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { MarketGraphData } from "../lib/api";
 
@@ -36,6 +36,11 @@ export default function MarketGraphCard({ symbol, marketGraph }: MarketGraphCard
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             Directed topology mapping supply chain dependencies, downstream customers, macro drivers, and peer contagion
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
+              <span>🌐</span> Directed Network Topology: Supply Chain, Macro Sensitivities & Peer Contagion
+            </span>
+          </div>
         </div>
 
         <span className="text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-md bg-[#1b2434] text-emerald-400 border border-emerald-800/60">

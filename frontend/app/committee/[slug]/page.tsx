@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -261,6 +261,17 @@ export default function CommitteeHubPage({ params }: PageProps) {
           <span>/</span>
           <span className="text-slate-300 font-bold">{committee.name}</span>
         </nav>
+
+        {/* Forensic Research Provenance Banner */}
+        <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 text-xs text-purple-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>🏛️</span>
+            <span><strong>Legislative Oversight & Conflict Forensic Dossier:</strong> Audited statutory oversight areas, committee membership securities transactions, and conflict-of-interest alignment.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900/60 border border-purple-700/80 font-bold uppercase shrink-0 hidden sm:inline">
+            Forensic Audit
+          </span>
+        </div>
 
         {/* Hero Header */}
         <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-3">

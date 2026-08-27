@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -386,6 +386,17 @@ export default function StrategyDetailPage({ params }: PageProps) {
           <span>/</span>
           <span className="text-slate-300 font-bold">{strategy.name}</span>
         </nav>
+
+        {/* Strategy Methodology Provenance Banner */}
+        <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs text-cyan-200 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>📈</span>
+            <span><strong>Algorithmic Strategy Matrix & Screening Rules:</strong> Multi-factor quantitative formulation, risk guardrails, and systematic candidate ranking parameters.</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-700/80 font-bold uppercase shrink-0 hidden sm:inline">
+            Quantitative Ruleset
+          </span>
+        </div>
 
         {/* Hero Header */}
         <header className="bg-[#0b1019] p-5 sm:p-6 rounded-2xl border border-[#1e293b] space-y-3">

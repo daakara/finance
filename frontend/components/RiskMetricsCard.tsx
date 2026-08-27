@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { AnalyticsResponse } from "../lib/api";
 
@@ -36,6 +36,11 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
               ? "Real-time ATR volatility, single-day drawdown boundaries, and intraday risk-adjusted ratios"
               : "Downside Crash Protection & Black-Swan Tail Risk Evaluation"}
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
+              <span>🧮</span> {isDayTrader ? "Live ATR 14-Period Intraday Volatility Engine" : "Non-Normal Cornish-Fisher Modified VaR Model"}
+            </span>
+          </div>
         </div>
         <span className={`text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-md font-semibold border ${
           isDayTrader

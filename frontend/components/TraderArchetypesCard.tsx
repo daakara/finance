@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { TraderArchetypeConsensus } from "../lib/api";
 
@@ -72,6 +72,11 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             5 iconic investor archetypes evaluating moat, policy subsidies, macro trends, quantitative risk, and disruptive growth
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
+              <span>🎭</span> 5-Persona Quantitative Consensus Framework (Buffett, Pelosi, Druckenmiller, Simons, Gardner)
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">

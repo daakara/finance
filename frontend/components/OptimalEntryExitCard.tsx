@@ -65,6 +65,11 @@ export default function OptimalEntryExitCard({
               ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
               : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
+              <span>📡</span> Live Algorithmic Execution Ladder (Minervini VCP + 14-ATR Corridor)
+            </span>
+          </div>
         </div>
 
         {/* Reward-to-Risk Pill */}

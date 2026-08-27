@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { CatalystForecastData } from "../lib/api";
 
@@ -19,7 +19,12 @@ export default function CatalystForecastCard({ data }: CatalystForecastCardProps
             <h2 id="catalyst-header" className="text-sm sm:text-base font-bold text-white tracking-tight">
               Clinical Trials, Pipeline Catalysts & 5-Year Earnings Model
             </h2>
-            <span className="text-[11px] text-cyan-400 font-semibold">{data.company_name} ({data.symbol}) • {data.sector}</span>
+            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+              <span className="text-[11px] text-cyan-400 font-semibold">{data.company_name} ({data.symbol}) • {data.sector}</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/80 inline-flex items-center gap-1">
+                <span>🔬</span> Milestone Schedule & Forward DCF Trajectory Simulation
+              </span>
+            </div>
           </div>
         </div>
         <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-950/80 text-indigo-300 border border-indigo-800/80">

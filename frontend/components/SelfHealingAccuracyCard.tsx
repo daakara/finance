@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { SelfHealingAudit } from "../lib/api";
 
@@ -36,6 +36,11 @@ export default function SelfHealingAccuracyCard({ symbol, auditData }: SelfHeali
           <p className="text-xs text-slate-400 mt-0.5">
             Continuous walk-forward feedback loop comparing past quantitative predictions against realized price action
           </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 inline-flex items-center gap-1">
+              <span>🧪</span> Walk-Forward Backtest Audit (Kupiec POF Statistical Proportion of Failures Test)
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
