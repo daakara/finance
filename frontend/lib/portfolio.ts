@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * Robust Zero-Login Portfolio Engine.
@@ -123,4 +123,53 @@ export function calculatePortfolioSummary(positions: PortfolioPosition[]): Portf
     totalUnrealizedPnLPct,
     positionsCount: positions.length,
   };
+}
+
+export function exportPortfolioToCsv(positions: PortfolioPosition[]): void {
+  if (typeof window === "undefined" || positions.length === 0) return;
+  const headers = [
+    "Symbol",
+    "Name",
+    "Asset Type",
+    "Shares",
+    "Entry Price ($)",
+    "Current Price ($)",
+    "Target Price ($)",
+    "Stop Loss ($)",
+    "Cost Basis ($)",
+    "Market Value ($)",
+    "Unrealized P&L ($)",
+    "Unrealized P&L (%)",
+    "Added Date",
+  ];
+
+  const rows = positions.map((pos) => {
+    const cost = pos.shares * pos.entryPrice;
+    const value = pos.shares * pos.currentPrice;
+    const pnl = value - cost;
+    const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+    return [
+      pos.symbol,
+      `"${pos.name.replace(/"/g, '""')}"`,
+      pos.assetType,
+      pos.shares,
+      pos.entryPrice.toFixed(2),
+      pos.currentPrice.toFixed(2),
+      pos.targetPrice ? pos.targetPrice.toFixed(2) : "N/A",
+      pos.stopLossPrice ? pos.stopLossPrice.toFixed(2) : "N/A",
+      cost.toFixed(2),
+      value.toFixed(2),
+      pnl.toFixed(2),
+      `${pnlPct.toFixed(2)}%`,
+      pos.addedAt || "N/A",
+    ].join(",");
+  });
+
+  const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(","), ...rows].join("\n"));
+  const link = document.createElement("a");
+  link.setAttribute("href", csvContent);
+  link.setAttribute("download", `finance_terminal_portfolio_${new Date().toISOString().split("T")[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

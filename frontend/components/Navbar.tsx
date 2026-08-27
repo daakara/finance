@@ -95,7 +95,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 <svg aria-hidden="true" className="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
-                <span>Hidden Gems</span>
+                <span>Screener</span>
               </Link>
               <Link
                 href="/compare"
@@ -151,6 +151,17 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
           <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
+            {/* Tour Button (Mobile visible) */}
+            <button
+              type="button"
+              onClick={handleOpenOnboarding}
+              aria-label="Open Terminal Setup & Onboarding Tour"
+              className="lg:hidden p-1.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[32px] min-w-[32px]"
+              title="Terminal Tour & Guide"
+            >
+              <span>✨</span>
+            </button>
+
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -222,7 +233,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
-          <span className="text-[9px] tracking-tight">Gems</span>
+          <span className="text-[9px] tracking-tight">Screener</span>
         </Link>
 
         <Link

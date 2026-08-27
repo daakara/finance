@@ -25,16 +25,26 @@ type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGI
 function TerminalContent() {
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol");
+  const urlTab = searchParams.get("tab")?.toUpperCase();
 
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("EXECUTION");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(
+    (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")
+      ? urlTab as WorkspaceTab
+      : "EXECUTION"
+  );
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
+
+  useEffect(() => {
+    setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  }, [data]);
 
   useEffect(() => {
     fetchFredMacroRegime().then(setMacroData);
@@ -47,6 +57,25 @@ function TerminalContent() {
       setSelectedSymbol(urlSymbol.toUpperCase());
     }
   }, [urlSymbol]);
+
+  useEffect(() => {
+    if (urlTab && (urlTab === "SMART_MONEY" || urlTab === "FUNDAMENTALS" || urlTab === "RISK_CONTAGION" || urlTab === "EXECUTION")) {
+      if (urlTab !== activeTab) {
+        setActiveTab(urlTab as WorkspaceTab);
+      }
+    }
+  }, [urlTab]);
+
+  const handleTabChange = useCallback((tab: WorkspaceTab, label: string) => {
+    setActiveTab(tab);
+    trackWorkspaceSwitch(label, selectedSymbol);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab.toLowerCase());
+      if (selectedSymbol) url.searchParams.set("symbol", selectedSymbol);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [selectedSymbol]);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -156,6 +185,40 @@ function TerminalContent() {
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
           <div className="min-h-[380px] sm:min-h-[420px]">
+            {data && (
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-[10px] font-mono">
+                <div className="flex items-center gap-2">
+                  {data._dataSource === 'live' ? (
+                    <span className="text-emerald-400 flex items-center gap-1 bg-emerald-950/40 border border-emerald-800/50 px-2 py-0.5 rounded">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      📡 Live Market Feed
+                    </span>
+                  ) : (
+                    <span className="text-amber-400 flex items-center gap-1 bg-amber-950/40 border border-amber-800/50 px-2 py-0.5 rounded">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      📊 Quantitative Model Snapshot
+                    </span>
+                  )}
+                  {lastUpdatedTime && (
+                    <span className="text-slate-400 hidden sm:inline">
+                      Updated: <span className="text-slate-300 font-semibold">{lastUpdatedTime}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-slate-500 flex items-center gap-2">
+                  <span className="hidden md:inline">NYSE/NASDAQ Session State</span>
+                  <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">15m Delayed/EOD</span>
+                </div>
+              </div>
+            )}
+
+            {data?._dataSource === 'fallback' && (
+              <div className="mb-2 p-2 rounded-lg bg-amber-950/30 border border-amber-800/40 text-[11px] font-mono text-amber-300 flex items-center justify-between">
+                <span>⚠️ Note: Operating in offline fallback simulation mode — live institutional feeds will auto-resume upon backend handshake.</span>
+              </div>
+            )}
+
             <PriceChart
               symbol={selectedSymbol}
               candles={data?.candles || []}
@@ -197,7 +260,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "EXECUTION"}
-              onClick={() => { setActiveTab("EXECUTION"); trackWorkspaceSwitch("Execution & Levels", selectedSymbol); }}
+              onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "EXECUTION"
                   ? "bg-cyan-600 text-white shadow-sm font-extrabold"
@@ -211,7 +274,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "SMART_MONEY"}
-              onClick={() => { setActiveTab("SMART_MONEY"); trackWorkspaceSwitch("Smart Money", selectedSymbol); }}
+              onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "SMART_MONEY"
                   ? "bg-cyan-600 text-white shadow-sm font-extrabold"
@@ -225,7 +288,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "FUNDAMENTALS"}
-              onClick={() => { setActiveTab("FUNDAMENTALS"); trackWorkspaceSwitch("Factors & Macro", selectedSymbol); }}
+              onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "FUNDAMENTALS"
                   ? "bg-cyan-600 text-white shadow-sm font-extrabold"
@@ -239,7 +302,7 @@ function TerminalContent() {
             <button
               role="tab"
               aria-selected={activeTab === "RISK_CONTAGION"}
-              onClick={() => { setActiveTab("RISK_CONTAGION"); trackWorkspaceSwitch("Risk & Contagion", selectedSymbol); }}
+              onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
               className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 activeTab === "RISK_CONTAGION"
                   ? "bg-cyan-600 text-white shadow-sm font-extrabold"
@@ -258,7 +321,6 @@ function TerminalContent() {
                 <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
               )}
               <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
-              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
             </div>
           )}
 

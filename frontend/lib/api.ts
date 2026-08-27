@@ -277,6 +277,7 @@ export interface OptimalExecutionPlan {
 }
 
 export interface AnalyticsResponse {
+  _dataSource?: "live" | "fallback";
   symbol: string;
   period: string;
   interval: string;
@@ -555,6 +556,7 @@ export function generateFallbackAnalytics(
   };
 
   return {
+    _dataSource: "fallback" as const,
     symbol: upper,
     period,
     interval,
@@ -675,6 +677,7 @@ export async function fetchAssetAnalytics(
 
         return {
           ...data,
+          _dataSource: "live" as const,
           factorScores: data.factorScores || data.dnaScores,
         };
       }

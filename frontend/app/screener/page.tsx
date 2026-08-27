@@ -81,9 +81,18 @@ export default function ScreenerPage() {
   const [copyToast, setCopyToast] = useState<boolean>(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("FINANCE_USER_ROLE");
-    if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
-      setActiveRole(saved);
+    const savedRole = localStorage.getItem("FINANCE_USER_ROLE");
+    if (savedRole === "DAY_TRADER" || savedRole === "LONG_TERM") {
+      setActiveRole(savedRole);
+    }
+    const savedFilter = localStorage.getItem("FINANCE_SCREENER_TAB");
+    if (savedFilter) {
+      setSelectedFilter(savedFilter);
+    }
+    const savedQuery = localStorage.getItem("FINANCE_SCREENER_QUERY");
+    if (savedQuery) {
+      setActiveCustomQuery(savedQuery);
+      setCustomTickerInput(savedQuery);
     }
   }, []);
 
@@ -91,6 +100,12 @@ export default function ScreenerPage() {
     setActiveRole(role);
     setSelectedFilter("all");
     localStorage.setItem("FINANCE_USER_ROLE", role);
+    localStorage.setItem("FINANCE_SCREENER_TAB", "all");
+  };
+
+  const handleSelectFilter = (tabId: string) => {
+    setSelectedFilter(tabId);
+    localStorage.setItem("FINANCE_SCREENER_TAB", tabId);
   };
 
   const executeScreenerFetch = async (role: "DAY_TRADER" | "LONG_TERM", customQuery?: string) => {
@@ -197,6 +212,57 @@ export default function ScreenerPage() {
     } catch (err) {
       console.warn("Could not copy tickers:", err);
     }
+  };
+
+  const handleExportScreenerCsv = () => {
+    if (typeof window === "undefined" || displayGems.length === 0) return;
+    const headers = [
+      "Symbol",
+      "Company Name",
+      "Current Price ($)",
+      "Execution Status",
+      "Optimal Entry Min ($)",
+      "Optimal Entry Max ($)",
+      "Stop Loss ($)",
+      "Take Profit 1 ($)",
+      "Take Profit 2 ($)",
+      "Risk-Reward Ratio",
+      "Confluence Score",
+      "Confluence Rating",
+      "Setup Pattern",
+      "Archetype",
+      "Catalyst",
+      "Risk Level",
+    ];
+
+    const rows = displayGems.map((g) =>
+      [
+        g.symbol,
+        `"${(g.companyName || g.symbol).replace(/"/g, '""')}"`,
+        g.currentPrice ? g.currentPrice.toFixed(2) : "N/A",
+        g.executionStatus || "N/A",
+        g.optimalEntryMin ? g.optimalEntryMin.toFixed(2) : "N/A",
+        g.optimalEntryMax ? g.optimalEntryMax.toFixed(2) : "N/A",
+        g.stopLoss ? g.stopLoss.toFixed(2) : "N/A",
+        g.takeProfit1 ? g.takeProfit1.toFixed(2) : "N/A",
+        g.takeProfit2 ? g.takeProfit2.toFixed(2) : "N/A",
+        g.riskRewardRatio ? g.riskRewardRatio.toFixed(2) : "N/A",
+        g.confluenceScore !== undefined ? g.confluenceScore : "N/A",
+        g.confluenceRating || "N/A",
+        `"${(g.setupPattern || "").replace(/"/g, '""')}"`,
+        `"${(g.expertArchetype || "").replace(/"/g, '""')}"`,
+        `"${(g.catalyst || "").replace(/"/g, '""')}"`,
+        g.riskLevel || "N/A",
+      ].join(",")
+    );
+
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent([headers.join(","), ...rows].join("\n"));
+    const link = document.createElement("a");
+    link.setAttribute("href", csvContent);
+    link.setAttribute("download", `finance_screener_${selectedFilter}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const isDayTrader = activeRole === "DAY_TRADER";
@@ -321,6 +387,16 @@ export default function ScreenerPage() {
               <span>{copyToast ? "✅ Tickers Copied!" : `Copy ${displayGems.length} Tickers`}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={handleExportScreenerCsv}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-[#141b29] hover:bg-[#1c2638] border border-[#223149] text-slate-200 hover:text-white transition-all active:scale-[0.96] flex items-center gap-1.5 shadow"
+              title="Download filtered screener candidates as CSV spreadsheet"
+            >
+              <span>📥</span>
+              <span>Export CSV</span>
+            </button>
+
             {activeCustomQuery && (
               <button
                 type="button"
@@ -344,7 +420,7 @@ export default function ScreenerPage() {
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => setSelectedFilter(tab.id)}
+                onClick={() => handleSelectFilter(tab.id)}
                 className={`p-3.5 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
                   isActive
                     ? isDayTrader

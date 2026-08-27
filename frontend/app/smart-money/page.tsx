@@ -129,7 +129,8 @@ function SmartMoneyContent() {
       name: item.asset_name,
       type: `${item.politician.split(" ")[0]} ${item.transaction_type.includes("Call") ? "Calls" : "Position"}`,
       postTradeAlpha: `${item.performance_since_pct > 0 ? "+" : ""}${item.performance_since_pct}%`,
-      dailyChange: "+2.45%",
+      amountRange: item.amount_range || "Undisclosed",
+      sector: item.sector || "Equity",
       badge: styling.badge,
       bg: styling.bg,
       border: styling.border,
@@ -202,7 +203,7 @@ function SmartMoneyContent() {
                       {card.ticker}
                     </span>
                     <div className="text-[10px] text-slate-400">
-                      24h: <span className="text-emerald-400 font-bold">{card.dailyChange}</span>
+                      Filed: <span className="text-emerald-400 font-bold">{card.amountRange}</span>
                     </div>
                   </div>
                   <div className="text-right">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import {
@@ -10,8 +10,10 @@ import {
   savePortfolioPositions,
   calculatePortfolioSummary,
   getAnonymousUserId,
+  exportPortfolioToCsv,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
+import { fetchAssetAnalytics } from "../../lib/api";
 import { trackMatomoEvent } from "../../lib/matomo";
 
 export default function PortfolioPage() {
@@ -25,6 +27,8 @@ export default function PortfolioPage() {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [anonId, setAnonId] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
   // Form State for Adding Position
   const [newSymbol, setNewSymbol] = useState("NVDA");
@@ -33,12 +37,51 @@ export default function PortfolioPage() {
   const [newStopLoss, setNewStopLoss] = useState("185.00");
   const [newTarget, setNewTarget] = useState("240.00");
 
+  const refreshQuotes = useCallback(async (basePositions: PortfolioPosition[]) => {
+    if (basePositions.length === 0) return;
+    setIsRefreshing(true);
+    try {
+      const updatedPromises = basePositions.map(async (pos) => {
+        try {
+          const res = await fetchAssetAnalytics(pos.symbol, "1mo", "1d");
+          if (res && res.currentPrice && !isNaN(res.currentPrice)) {
+            return {
+              ...pos,
+              currentPrice: res.currentPrice,
+            };
+          }
+        } catch {
+          // Fallback to SHARED_FACTOR_SCORES if API request fails
+          const matched = SHARED_FACTOR_SCORES[pos.symbol.toUpperCase()];
+          if (matched && matched.price) {
+            return {
+              ...pos,
+              currentPrice: matched.price,
+            };
+          }
+        }
+        return pos;
+      });
+
+      const resolved = await Promise.all(updatedPromises);
+      setPositions(resolved);
+      setSummary(calculatePortfolioSummary(resolved));
+      savePortfolioPositions(resolved);
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    } catch (err) {
+      console.warn("Failed to refresh live portfolio quotes:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
   useEffect(() => {
     setAnonId(getAnonymousUserId());
     const loaded = loadPortfolioPositions();
     setPositions(loaded);
     setSummary(calculatePortfolioSummary(loaded));
-  }, []);
+    refreshQuotes(loaded);
+  }, [refreshQuotes]);
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +126,11 @@ export default function PortfolioPage() {
     trackMatomoEvent("User Journey", "Remove Portfolio Position", symbol);
   };
 
+  const handleExportCsv = () => {
+    exportPortfolioToCsv(positions);
+    trackMatomoEvent("User Journey", "Export Portfolio CSV", `Positions count: ${positions.length}`);
+  };
+
   const isPositive = summary.totalUnrealizedPnL >= 0;
 
   return (
@@ -98,6 +146,11 @@ export default function PortfolioPage() {
                 🔒 ZERO-LOGIN PRIVATE STORAGE
               </span>
               <span className="text-slate-500 text-xs hidden sm:inline">• Persistent in Client Storage</span>
+              {lastSyncTime && (
+                <span className="text-slate-400 text-xs hidden md:inline">
+                  • Synced: <span className="text-slate-300 font-bold">{lastSyncTime}</span>
+                </span>
+              )}
             </div>
             <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
               My Portfolio & Risk Allocations
@@ -107,7 +160,26 @@ export default function PortfolioPage() {
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button
+              onClick={() => refreshQuotes(positions)}
+              disabled={isRefreshing}
+              className={`px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
+                isRefreshing ? "opacity-60 cursor-not-allowed" : ""
+              }`}
+            >
+              <span className={isRefreshing ? "animate-spin" : ""}>🔄</span>
+              <span className="hidden sm:inline">{isRefreshing ? "Syncing Quotes..." : "Refresh Quotes"}</span>
+            </button>
+
+            <button
+              onClick={handleExportCsv}
+              className="px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+            >
+              <span>📥</span>
+              <span className="hidden sm:inline">Export CSV</span>
+            </button>
+
             <button
               onClick={() => setShowAddModal(true)}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
