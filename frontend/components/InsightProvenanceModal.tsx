@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { OptimalExecutionPlan } from "../lib/api";
@@ -96,9 +96,9 @@ export default function InsightProvenanceModal({
                 </p>
                 <div className="bg-[#111722] p-2.5 rounded-lg border border-[#1e2433] text-[11px] font-mono text-slate-400">
                   <span className="text-cyan-400 font-bold block mb-1">Mathematical Constraints:</span>
-                  <div>• Stop-Loss: Entry Floor - 1.8x ATR14 (${executionPlan.stop_loss.toFixed(2)})</div>
-                  <div>• Target 1: Spot + 2.5x ATR14 (${executionPlan.take_profit_1.toFixed(2)})</div>
-                  <div>• Reward-to-Risk: {executionPlan.risk_reward_ratio}:1.0 Minimum Asymmetry Gate</div>
+                  <div>• Stop-Loss: Entry Floor - 1.8x ATR14 (${(executionPlan.stop_loss || 0).toFixed(2)})</div>
+                  <div>• Target 1: Spot + 2.5x ATR14 (${(executionPlan.take_profit_1 || 0).toFixed(2)})</div>
+                  <div>• Reward-to-Risk: {executionPlan.risk_reward_ratio || 2.5}:1.0 Minimum Asymmetry Gate</div>
                 </div>
               </div>
 
