@@ -33,7 +33,7 @@ jobs:
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/ -v --tb=short
+        pytest tests/ -v -rxXs --tb=auto || (pytest tests/ --lf -v --tb=long && exit 1)
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
