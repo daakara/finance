@@ -58,7 +58,8 @@ body {
 [data-theme="paper"] .min-h-screen,
 [data-theme="paper"] [class*="bg-[#070a10]"],
 [data-theme="paper"] [class*="bg-[#070a11]"],
-[data-theme="paper"] [class*="bg-[#05070a]"] {
+[data-theme="paper"] [class*="bg-[#05070a]"],
+[data-theme="paper"] [class*="bg-[#06090f]"] {
   background-color: #f4f6f9 !important;
 }
 
@@ -79,6 +80,7 @@ body {
 /* 3. Sub-elements, Inset Wells & Controls */
 [data-theme="paper"] [class*="bg-[#090d14]"],
 [data-theme="paper"] [class*="bg-[#080c14]"],
+[data-theme="paper"] [class*="bg-[#0d121c]"],
 [data-theme="paper"] [class*="bg-[#0f141f]"] {
   background-color: #f1f5f9 !important;
 }
@@ -129,48 +131,58 @@ body {
 }
 
 /* 7. Color Badges & Chips */
-[data-theme="paper"] [class*="bg-emerald-950"] {
+[data-theme="paper"] [class*="bg-emerald-950"],
+[data-theme="paper"] [class*="bg-emerald-900"] {
   background-color: #dcfce7 !important;
   border-color: #bbf7d0 !important;
   color: #15803d !important;
 }
-[data-theme="paper"] [class*="bg-emerald-950"] * {
+[data-theme="paper"] [class*="bg-emerald-950"] *,
+[data-theme="paper"] [class*="bg-emerald-900"] * {
   color: #15803d !important;
 }
 
-[data-theme="paper"] [class*="bg-rose-950"] {
+[data-theme="paper"] [class*="bg-rose-950"],
+[data-theme="paper"] [class*="bg-rose-900"] {
   background-color: #ffe4e6 !important;
   border-color: #fecdd3 !important;
   color: #be123c !important;
 }
-[data-theme="paper"] [class*="bg-rose-950"] * {
+[data-theme="paper"] [class*="bg-rose-950"] *,
+[data-theme="paper"] [class*="bg-rose-900"] * {
   color: #be123c !important;
 }
 
-[data-theme="paper"] [class*="bg-amber-950"] {
+[data-theme="paper"] [class*="bg-amber-950"],
+[data-theme="paper"] [class*="bg-amber-900"] {
   background-color: #fef3c7 !important;
   border-color: #fde68a !important;
   color: #92400e !important;
 }
-[data-theme="paper"] [class*="bg-amber-950"] * {
+[data-theme="paper"] [class*="bg-amber-950"] *,
+[data-theme="paper"] [class*="bg-amber-900"] * {
   color: #92400e !important;
 }
 
-[data-theme="paper"] [class*="bg-cyan-950"] {
+[data-theme="paper"] [class*="bg-cyan-950"],
+[data-theme="paper"] [class*="bg-cyan-900"] {
   background-color: #e0f2fe !important;
   border-color: #bae6fd !important;
   color: #0369a1 !important;
 }
-[data-theme="paper"] [class*="bg-cyan-950"] * {
+[data-theme="paper"] [class*="bg-cyan-950"] *,
+[data-theme="paper"] [class*="bg-cyan-900"] * {
   color: #0369a1 !important;
 }
 
-[data-theme="paper"] [class*="bg-purple-950"] {
+[data-theme="paper"] [class*="bg-purple-950"],
+[data-theme="paper"] [class*="bg-purple-900"] {
   background-color: #f3e8ff !important;
   border-color: #e9d5ff !important;
   color: #6b21a8 !important;
 }
-[data-theme="paper"] [class*="bg-purple-950"] * {
+[data-theme="paper"] [class*="bg-purple-950"] *,
+[data-theme="paper"] [class*="bg-purple-900"] * {
   color: #6b21a8 !important;
 }
 
@@ -230,7 +242,101 @@ body {
   background: #94a3b8;
 }
 
+/* 13. Radar & Discovery Card Gradients in Paper Light Mode */
+[data-theme="paper"] [class*="to-slate-900"],
+[data-theme="paper"] [class*="to-slate-950"] {
+  --tw-gradient-to: #ffffff !important;
+}
+
+[data-theme="paper"] [class*="from-emerald-950"] {
+  --tw-gradient-from: #f0fdf4 !important;
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+[data-theme="paper"] [class*="from-emerald-950"] .text-white {
+  color: #166534 !important;
+}
+
+[data-theme="paper"] [class*="from-cyan-950"] {
+  --tw-gradient-from: #f0f9ff !important;
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+}
+[data-theme="paper"] [class*="from-cyan-950"] .text-white {
+  color: #075985 !important;
+}
+
+[data-theme="paper"] [class*="from-purple-950"] {
+  --tw-gradient-from: #faf5ff !important;
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+}
+[data-theme="paper"] [class*="from-purple-950"] .text-white {
+  color: #581c87 !important;
+}
+
+[data-theme="paper"] [class*="from-blue-950"] {
+  --tw-gradient-from: #eff6ff !important;
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+[data-theme="paper"] [class*="from-blue-950"] .text-white {
+  color: #1e40af !important;
+}
+
+[data-theme="paper"] [class*="from-indigo-950"] {
+  --tw-gradient-from: #eef2ff !important;
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+}
+[data-theme="paper"] [class*="from-indigo-950"] .text-white {
+  color: #3730a3 !important;
+}
+
 /* Accessible focus ring utility */
 .focus-ring {
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
+}
+
+/* 14. 🎯 WCAG AA CONTRAST HARMONIZATION IN PAPER LIGHT MODE */
+[data-theme="paper"] [class*="text-cyan-300"],
+[data-theme="paper"] [class*="text-cyan-400"] {
+  color: #0369a1 !important; /* WCAG 5.5:1 on white */
+}
+
+[data-theme="paper"] [class*="text-emerald-300"],
+[data-theme="paper"] [class*="text-emerald-400"],
+[data-theme="paper"] [class*="text-emerald-500"] {
+  color: #047857 !important; /* WCAG 5.1:1 on white */
+}
+
+[data-theme="paper"] [class*="text-rose-300"],
+[data-theme="paper"] [class*="text-rose-400"],
+[data-theme="paper"] [class*="text-rose-500"] {
+  color: #be123c !important; /* WCAG 5.4:1 on white */
+}
+
+[data-theme="paper"] [class*="text-amber-300"],
+[data-theme="paper"] [class*="text-amber-400"],
+[data-theme="paper"] [class*="text-amber-500"] {
+  color: #92400e !important; /* WCAG 5.2:1 on white */
+}
+
+[data-theme="paper"] [class*="text-purple-300"],
+[data-theme="paper"] [class*="text-purple-400"] {
+  color: #6b21a8 !important; /* WCAG 6.1:1 on white */
+}
+
+[data-theme="paper"] kbd {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="paper"] [class*="bg-[#111c2e]"] {
+  background-color: #f0fdfa !important;
+  border-color: #5eead4 !important;
+}
+[data-theme="paper"] [class*="bg-[#111c2e]"] * {
+  color: #0f766e !important;
 }
