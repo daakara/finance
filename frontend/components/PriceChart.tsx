@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { createChart, IChartApi, ISeriesApi, LineStyle } from "lightweight-charts";
@@ -235,9 +235,11 @@ export default function PriceChart({
           overlayLineSeriesRef.current.setData(maPoints);
         }
 
-        setTimeout(() => {
-          chartRef.current?.timeScale().fitContent();
-        }, 30);
+        // Refresh chart view and auto-fit timeScale immediately
+        if (chartRef.current) {
+          chartRef.current.timeScale().resetTimeScale();
+          chartRef.current.timeScale().fitContent();
+        }
       }
     } catch (err) {
       console.warn("Error rendering chart series:", err);
