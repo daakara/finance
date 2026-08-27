@@ -76,6 +76,8 @@ export default function ScreenerPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [sizerGem, setSizerGem] = useState<GemCandidate | null>(null);
   const [alertGem, setAlertGem] = useState<GemCandidate | null>(null);
+  const [customTickerInput, setCustomTickerInput] = useState<string>("");
+  const [activeCustomQuery, setActiveCustomQuery] = useState<string>("");
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -90,71 +92,100 @@ export default function ScreenerPage() {
     localStorage.setItem("FINANCE_USER_ROLE", role);
   };
 
-  // Fetch Live Screener Data directly from FastAPI Backend Engine
-  useEffect(() => {
-    let isMounted = true;
-    async function loadScreenerGems() {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE_URL}/screener/run?filter_type=all&user_role=${activeRole}`, {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted && data && Array.isArray(data.candidates)) {
-            const liveGems: GemCandidate[] = data.candidates.map((c: any) => ({
-              symbol: c.symbol,
-              companyName: c.companyName || c.symbol,
-              currentPrice: c.currentPrice || 100.0,
-              gemScore: c.gemScore || 88,
-              expertArchetype: c.expertArchetype || (activeRole === "DAY_TRADER" ? "High-Beta Momentum Leader" : "Peter Lynch & Greenblatt GARP"),
-              roic: c.roic || "28.5%",
-              pegRatio: c.pegRatio || "0.85",
-              grossMargin: c.grossMargin || "65.0%",
-              thesis: c.thesis || "High return on capital with strong free cash flows and clean balance sheet.",
-              atr14: c.atr14 || `$${((c.currentPrice || 100) * 0.025).toFixed(2)}`,
-              rvol: c.rvol || "2.1x",
-              shortFloat: c.shortFloat || "6.8%",
-              dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
-              catalyst: c.catalyst || "Upcoming product cycle expansion and institutional accumulation.",
-              riskLevel: activeRole === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || "Low-to-Medium Risk"),
-              executionStatus: c.executionStatus || "IN_BUY_ZONE",
-              statusLabel: c.statusLabel || "🎯 Active Buy Zone",
-              statusColor: c.statusColor || "emerald",
-              optimalEntryMin: c.optimalEntryMin || Number(((c.currentPrice || 100) * 0.975).toFixed(2)),
-              optimalEntryMax: c.optimalEntryMax || Number(((c.currentPrice || 100) * 0.995).toFixed(2)),
-              stopLoss: c.stopLoss || Number(((c.currentPrice || 100) * 0.955).toFixed(2)),
-              stopLossPct: c.stopLossPct || -4.5,
-              takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.045).toFixed(2)),
-              takeProfit1Pct: c.takeProfit1Pct || 4.5,
-              takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.095).toFixed(2)),
-              takeProfit2Pct: c.takeProfit2Pct || 9.5,
-              riskRewardRatio: c.riskRewardRatio || 2.85,
-              setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
-              entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",
-              confluenceScore: c.confluenceScore || 85,
-              confluenceRating: c.confluenceRating || "⭐ HIGH CONFLUENCE",
-              confluenceBadgeColor: c.confluenceBadgeColor || "emerald",
-              confluenceReasons: c.confluenceReasons || [],
-              confluenceWarnings: c.confluenceWarnings || [],
-            }));
-            setGems(liveGems);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Live screener fetch warning:", err);
-      } finally {
-        if (isMounted) setLoading(false);
+  const executeScreenerFetch = async (role: "DAY_TRADER" | "LONG_TERM", customQuery?: string) => {
+    setLoading(true);
+    try {
+      let url = `${API_BASE_URL}/screener/run?filter_type=all&user_role=${role}`;
+      if (customQuery && customQuery.trim()) {
+        url += `&custom_tickers=${encodeURIComponent(customQuery.trim())}`;
       }
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.candidates)) {
+          const liveGems: GemCandidate[] = data.candidates.map((c: any) => ({
+            symbol: c.symbol,
+            companyName: c.companyName || c.symbol,
+            currentPrice: c.currentPrice || 100.0,
+            gemScore: c.gemScore || 88,
+            expertArchetype: c.expertArchetype || (role === "DAY_TRADER" ? "High-Beta Momentum Leader" : "Peter Lynch & Greenblatt GARP"),
+            roic: c.roic || "28.5%",
+            pegRatio: c.pegRatio || "0.85",
+            grossMargin: c.grossMargin || "65.0%",
+            thesis: c.thesis || "High return on capital with strong free cash flows and clean balance sheet.",
+            atr14: c.atr14 || `$${((c.currentPrice || 100) * 0.025).toFixed(2)}`,
+            rvol: c.rvol || "2.1x",
+            shortFloat: c.shortFloat || "6.8%",
+            dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
+            catalyst: c.catalyst || "Upcoming product cycle expansion and institutional accumulation.",
+            riskLevel: role === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || "Low-to-Medium Risk"),
+            executionStatus: c.executionStatus || "IN_BUY_ZONE",
+            statusLabel: c.statusLabel || "🎯 Active Buy Zone",
+            statusColor: c.statusColor || "emerald",
+            optimalEntryMin: c.optimalEntryMin || Number(((c.currentPrice || 100) * 0.975).toFixed(2)),
+            optimalEntryMax: c.optimalEntryMax || Number(((c.currentPrice || 100) * 0.995).toFixed(2)),
+            stopLoss: c.stopLoss || Number(((c.currentPrice || 100) * 0.955).toFixed(2)),
+            stopLossPct: c.stopLossPct || -4.5,
+            takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.045).toFixed(2)),
+            takeProfit1Pct: c.takeProfit1Pct || 4.5,
+            takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.095).toFixed(2)),
+            takeProfit2Pct: c.takeProfit2Pct || 9.5,
+            riskRewardRatio: c.riskRewardRatio || 2.85,
+            setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
+            entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",
+            confluenceScore: c.confluenceScore || 85,
+            confluenceRating: c.confluenceRating || "⭐ HIGH CONFLUENCE",
+            confluenceBadgeColor: c.confluenceBadgeColor || "emerald",
+            confluenceReasons: c.confluenceReasons || [],
+            confluenceWarnings: c.confluenceWarnings || [],
+          }));
+          setGems(liveGems);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Live screener fetch warning:", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    loadScreenerGems();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeRole]);
+  // Fetch Live Screener Data when activeRole changes
+  useEffect(() => {
+    executeScreenerFetch(activeRole, activeCustomQuery);
+  }, [activeRole, activeCustomQuery]);
+
+  const handleCustomSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customTickerInput.trim()) {
+      setActiveCustomQuery(customTickerInput.trim());
+      setSelectedFilter("all");
+    }
+  };
+
+  const handleScanSavedWatchlist = () => {
+    try {
+      const savedPortfolio = localStorage.getItem("FINANCE_PORTFOLIO_V1");
+      let tickers = "NVDA, AAPL, MSFT, TSLA, AMZN, PLTR, AMD";
+      if (savedPortfolio) {
+        const parsed = JSON.parse(savedPortfolio);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          tickers = parsed.map((p: any) => p.symbol || p.ticker).filter(Boolean).join(", ");
+        }
+      }
+      setCustomTickerInput(tickers);
+      setActiveCustomQuery(tickers);
+      setSelectedFilter("all");
+    } catch (err) {
+      console.warn("Error scanning watchlist:", err);
+    }
+  };
+
+  const handleClearCustomQuery = () => {
+    setCustomTickerInput("");
+    setActiveCustomQuery("");
+    setSelectedFilter("all");
+  };
 
   const isDayTrader = activeRole === "DAY_TRADER";
   const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
@@ -165,11 +196,11 @@ export default function ScreenerPage() {
     if (selectedFilter === "in_buy_zone" || selectedFilter === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
     if (selectedFilter === "approaching_target" || selectedFilter === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
     if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
-    if (selectedFilter === "high_rvol") return ["NVDA", "TSLA", "PLTR", "SMCI", "COIN"].includes(gem.symbol);
-    if (selectedFilter === "squeeze") return ["TSLA", "DUOL", "SMCI"].includes(gem.symbol);
-    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI"].includes(gem.symbol);
-    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP"].includes(gem.symbol);
-    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive") || ["TMDX", "LLY"].includes(gem.symbol);
+    if (selectedFilter === "high_rvol") return ["NVDA", "TSLA", "PLTR", "SMCI", "COIN", "AMD", "META"].includes(gem.symbol);
+    if (selectedFilter === "squeeze") return ["TSLA", "DUOL", "SMCI", "CELH", "IONQ", "RKLB"].includes(gem.symbol);
+    if (selectedFilter === "lynch") return gem.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI", "DECK", "ULTA"].includes(gem.symbol);
+    if (selectedFilter === "greenblatt") return gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP", "ISRG"].includes(gem.symbol);
+    if (selectedFilter === "rule_breakers") return gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive") || ["TMDX", "LLY", "VRT", "ANET"].includes(gem.symbol);
     return true;
   });
 
@@ -179,11 +210,11 @@ export default function ScreenerPage() {
     if (tabId === "in_buy_zone" || tabId === "vwap_pullback") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
     if (tabId === "approaching_target" || tabId === "orb_breakout") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
     if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.0).length;
-    if (tabId === "high_rvol") return gems.filter((g) => ["NVDA", "TSLA", "PLTR", "SMCI", "COIN"].includes(g.symbol)).length;
-    if (tabId === "squeeze") return gems.filter((g) => ["TSLA", "DUOL", "SMCI"].includes(g.symbol)).length;
-    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI"].includes(g.symbol)).length;
-    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP"].includes(g.symbol)).length;
-    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive") || ["TMDX", "LLY"].includes(g.symbol)).length;
+    if (tabId === "high_rvol") return gems.filter((g) => ["NVDA", "TSLA", "PLTR", "SMCI", "COIN", "AMD", "META"].includes(g.symbol)).length;
+    if (tabId === "squeeze") return gems.filter((g) => ["TSLA", "DUOL", "SMCI", "CELH", "IONQ", "RKLB"].includes(g.symbol)).length;
+    if (tabId === "lynch") return gems.filter((g) => g.expertArchetype.includes("Lynch") || ["ACLS", "ELF", "POWI", "DECK", "ULTA"].includes(g.symbol)).length;
+    if (tabId === "greenblatt") return gems.filter((g) => g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic") || ["LNTH", "CPRX", "MEDP", "ISRG"].includes(g.symbol)).length;
+    if (tabId === "rule_breakers") return gems.filter((g) => g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive") || ["TMDX", "LLY", "VRT", "ANET"].includes(g.symbol)).length;
     return gems.length;
   };
 
@@ -193,7 +224,7 @@ export default function ScreenerPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
         {/* Page Hero Header with Dual-Horizon View Mode Indicator */}
-        <div className="mb-6 border-b border-[#1b2434] pb-5">
+        <div className="mb-5 border-b border-[#1b2434] pb-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center space-x-2">
@@ -203,7 +234,7 @@ export default function ScreenerPage() {
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-                Scan active universe opportunities with **Multi-Factor Confluence (Technical + SEC Form 4 + Catalyst Runway)**, real-time **Optimal Buy Zones**, and **Dynamic Position Sizing**.
+                Scan {activeCustomQuery ? `Custom Ticker Selection: "${activeCustomQuery}"` : "Active 60-Asset Multi-Sector Universe"} with **Multi-Factor Confluence**, **Optimal Buy Zones**, and **Dynamic Position Sizing**.
               </p>
             </div>
 
@@ -231,6 +262,53 @@ export default function ScreenerPage() {
                 🏛️ Swing / Long-Term (VCP)
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Custom Watchlist & On-Demand Ticker Scanner Bar */}
+        <div className="mb-5 bg-[#0c1017] border border-[#1b2434] rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+          <form onSubmit={handleCustomSearch} className="flex-1 min-w-[280px] flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <input
+                type="text"
+                value={customTickerInput}
+                onChange={(e) => setCustomTickerInput(e.target.value)}
+                placeholder="Scan custom tickers (e.g. AAPL, AMD, META, AVGO, CRWD)..."
+                className="w-full bg-[#111722] border border-[#223149] rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all active:scale-[0.96] flex items-center gap-1.5 shadow ${
+                isDayTrader ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : "bg-cyan-500 hover:bg-cyan-400 text-slate-950"
+              }`}
+            >
+              <span>⚡</span>
+              <span>Scan</span>
+            </button>
+          </form>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleScanSavedWatchlist}
+              className="px-3 py-2 rounded-xl text-xs font-bold bg-[#141b29] hover:bg-[#1c2638] border border-[#223149] text-slate-200 transition-all active:scale-[0.96] flex items-center gap-1.5 shadow"
+            >
+              <span>💼</span>
+              <span>Scan My Portfolio</span>
+            </button>
+
+            {activeCustomQuery && (
+              <button
+                type="button"
+                onClick={handleClearCustomQuery}
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 transition-all active:scale-[0.96] flex items-center gap-1"
+              >
+                <span>✕</span>
+                <span>Reset (60-Asset Catalog)</span>
+              </button>
+            )}
           </div>
         </div>
 

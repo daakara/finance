@@ -15,60 +15,72 @@ optimal_engine = OptimalExecutionEngine()
 confluence_engine = ConfluenceEngine()
 market_db = MarketDatabaseEngine()
 
-# Authentic Dual-Horizon Universes
+# Authentic Multi-Sector Dual-Horizon Universes (60 Total Quality Assets)
 DAY_TRADER_CANDIDATES = [
-    "NVDA",  # High-Beta AI Leader - 2.8x RVOL, ATR $5.20, High Liquidity Scalp
-    "TSLA",  # High Intraday Volatility & Short Squeeze - 3.1x RVOL, ATR $9.40
-    "PLTR",  # Breakout Momentum Leader - 3.5x RVOL, ATR $2.10
-    "ARM",   # High-Beta Semi IP - 2.4x RVOL, ATR $6.80
-    "SMCI",  # Massive ATR Swing Engine - 4.2x RVOL, ATR $18.50
-    "CRWD",  # Cloud Security Momentum - 2.2x RVOL, ATR $7.90
-    "COIN",  # Crypto High-Beta Proxy - 2.9x RVOL, ATR $11.30
-    "DUOL",  # Short Float Squeeze Momentum - 2.6x RVOL, ATR $12.40, 8.2% Short
+    # AI & Megacap Momentum
+    "NVDA", "TSLA", "PLTR", "ARM", "SMCI", "AMD", "META", "AAPL", "MSFT", "AMZN",
+    # Cloud & Cybersecurity
+    "CRWD", "PANW", "NET", "DDOG", "MDB",
+    # Crypto & FinTech Beta
+    "COIN", "MARA", "MSTR", "HOOD",
+    # High-Beta Volatility & Squeeze Runners
+    "DUOL", "CELH", "IONQ", "RKLB", "APP",
 ]
 
 LONG_TERM_CANDIDATES = [
-    "LNTH",  # Lantheus Holdings - 36.5% ROIC, 0.68 PEG, Magic Formula Compounder
-    "CPRX",  # Catalyst Pharmaceuticals - 34.2% ROIC, Zero Debt, Peter Lynch GARP
-    "MEDP",  # Medpace Holdings - 38.6% ROIC, High FCF Clinical CRO Monopoly
-    "ACLS",  # Axcelis Technologies - SiC Ion Implantation Monopoly, PEG 0.74
-    "ELF",   # e.l.f. Beauty - 71% Gross Margin, Peter Lynch Organic Growth
-    "POWI",  # Power Integrations - High Moat GaN Power Chip Leader
-    "TMDX",  # TransMedics - Disruptive Warm Organ Perfusion Rule Breaker
-    "LLY",   # Eli Lilly - Secular Incretin/GLP-1 Pharmaceutical Moat
+    # MedTech & Biotech Monopolies
+    "LNTH", "CPRX", "MEDP", "TMDX", "ISRG", "VRTX", "LLY", "NVO", "DXCM", "PODD",
+    # High-Moat Semiconductors & SiC Ion Implantation
+    "ACLS", "POWI", "ON", "MPWR", "KLAC", "LRCX", "ASML", "AVGO",
+    # Peter Lynch GARP & Organic Consumer Compounders
+    "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
+    # Clean Tech, Power Infrastructure & Industrials
+    "VRT", "ETN", "PWR", "GEV", "FIX", "EME",
+    # Disruptive Cloud & EDA Infrastructure
+    "ANET", "NOW", "SNPS", "CDNS",
 ]
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 
 CANDIDATE_BASELINES = {
-    "CPRX": 23.40,
-    "POWI": 68.50,
-    "MEDP": 342.10,
-    "TMDX": 92.60,
-    "ACLS": 84.20,
-    "LNTH": 100.78,
-    "ELF": 118.40,
-    "DUOL": 284.50,
-    "NVDA": 128.50,
-    "TSLA": 218.40,
-    "PLTR": 31.20,
-    "ARM": 134.80,
-    "SMCI": 43.60,
-    "CRWD": 272.50,
-    "COIN": 212.30,
-    "LLY": 924.50,
+    # Small & Mid-Cap Compounders
+    "CPRX": 23.40, "POWI": 68.50, "MEDP": 342.10, "TMDX": 92.60,
+    "ACLS": 84.20, "LNTH": 100.78, "ELF": 118.40, "DUOL": 284.50,
+    # High-Beta AI & Large Cap Momentum
+    "NVDA": 128.50, "TSLA": 218.40, "PLTR": 31.20, "ARM": 134.80,
+    "SMCI": 43.60, "AMD": 146.20, "META": 512.40, "AAPL": 226.50,
+    "MSFT": 418.20, "AMZN": 178.60, "GOOGL": 164.80,
+    # Cloud, Cyber & SaaS
+    "CRWD": 272.50, "PANW": 348.10, "NET": 82.40, "DDOG": 114.20, "MDB": 288.60,
+    # Crypto & FinTech
+    "COIN": 212.30, "MARA": 16.80, "MSTR": 134.20, "HOOD": 21.60,
+    # Growth Runners
+    "CELH": 38.40, "IONQ": 9.20, "RKLB": 7.10, "APP": 86.40,
+    # MedTech & Pharma Monopolies
+    "ISRG": 446.50, "VRTX": 482.10, "LLY": 924.50, "NVO": 136.40, "DXCM": 78.50, "PODD": 194.20,
+    # Semis & Equipment
+    "ON": 72.40, "MPWR": 812.30, "KLAC": 734.50, "LRCX": 792.10, "ASML": 824.60, "AVGO": 158.40,
+    # Consumer Compounders
+    "DECK": 942.10, "LULU": 264.50, "ONON": 44.20, "MNST": 50.80, "ULTA": 368.40,
+    # Power, Industrials & Infrastructure
+    "VRT": 88.40, "ETN": 312.50, "PWR": 268.10, "GEV": 224.60, "FIX": 346.20, "EME": 382.40,
+    # Enterprise Cloud & EDA
+    "ANET": 358.40, "NOW": 842.10, "SNPS": 564.20, "CDNS": 286.50,
 }
 
 
 class ScreenerRequest(BaseModel):
     tickers: Optional[List[str]] = None
+    user_role: Optional[str] = "LONG_TERM"
 
 
 @router.post("/run")
 def run_screener(response: Response, request: ScreenerRequest = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
     response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
-    tickers = (request.tickers if request and request.tickers else DEFAULT_CANDIDATES)
+    role = request.user_role if request and request.user_role else "LONG_TERM"
+    default_pool = DAY_TRADER_CANDIDATES if role == "DAY_TRADER" else LONG_TERM_CANDIDATES
+    tickers = (request.tickers if request and request.tickers else default_pool)
     results = screener.evaluate_candidates(tickers)
 
     return {
@@ -82,12 +94,24 @@ run_screener_post = run_screener
 
 
 @router.get("/run")
-def run_screener_get(response: Response, filter_type: str = "all", user_role: str = "LONG_TERM"):
-    """GET endpoint supporting live screener execution, archetype filtering, and optimal execution signal scanning."""
+def run_screener_get(
+    response: Response,
+    filter_type: str = "all",
+    user_role: str = "LONG_TERM",
+    custom_tickers: Optional[str] = None,
+):
+    """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
     response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     
     is_day_trader = (user_role == "DAY_TRADER")
-    active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
+
+    # On-demand custom watchlist input support
+    if custom_tickers and custom_tickers.strip():
+        parsed = [t.strip().upper() for t in custom_tickers.replace(",", " ").split() if t.strip()]
+        active_universe = parsed if parsed else (DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES)
+    else:
+        active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
+
     results = screener.evaluate_candidates(active_universe)
 
     # Map candidate fields with live optimal execution levels

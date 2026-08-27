@@ -130,11 +130,27 @@ def test_screener_dual_horizon_distinct_universes():
     assert "LNTH" in long_syms or "CPRX" in long_syms, "Long term universe must contain high-ROIC compounders"
 
 
+def test_screener_custom_tickers_on_demand():
+    """Verify on-demand custom ticker list evaluation."""
+    resp = Response()
+    custom_list = "AAPL, AMD, META, AVGO, CRWD"
+    data = run_screener_get(resp, filter_type="all", user_role="DAY_TRADER", custom_tickers=custom_list)
+    candidates = data.get("candidates", [])
+    syms = [c["symbol"] for c in candidates]
+
+    assert len(syms) == 5, "Must evaluate all 5 custom tickers"
+    assert "AAPL" in syms and "AMD" in syms and "META" in syms, "Custom symbols must match parsed input"
+    for c in candidates:
+        assert c["currentPrice"] > 0
+        assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
+
+
 if __name__ == "__main__":
     test_optimal_execution_levels()
     test_screener_differential_subsets()
     test_screener_disjoint_execution_states()
     test_screener_candidate_data_integrity()
     test_screener_dual_horizon_distinct_universes()
+    test_screener_custom_tickers_on_demand()
     print("[PASS] ALL SCREENER EXECUTION & DIFFERENTIAL TESTS PASSED SUCCESSFULLY")
 
