@@ -1,4 +1,4 @@
-﻿"""Tests for OptimalExecutionEngine (Minervini VCP, Turtle ATR & Raschke 20 EMA levels)."""
+"""Tests for OptimalExecutionEngine (Minervini VCP, Turtle ATR & Raschke 20 EMA levels)."""
 
 import pytest
 import pandas as pd
@@ -26,6 +26,7 @@ def test_optimal_execution_engine_long_term():
     curr = float(prices[-1])
     plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=curr, user_role="LONG_TERM")
     assert plan["stop_loss"] < curr
+    assert plan["optimal_entry_min"] <= plan["optimal_entry_max"] <= curr
     assert plan["take_profit_1"] > curr
     assert plan["take_profit_2"] > plan["take_profit_1"]
     assert "Minervini" in plan["setup_pattern"]
@@ -43,6 +44,7 @@ def test_optimal_execution_engine_day_trader():
     curr = float(prices[-1])
     plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=curr, user_role="DAY_TRADER")
     assert plan["stop_loss"] < curr
+    assert plan["optimal_entry_min"] <= plan["optimal_entry_max"] <= curr
     assert plan["take_profit_1"] > curr
     assert "Raschke" in plan["setup_pattern"]
     assert plan["risk_reward_ratio"] >= 1.0

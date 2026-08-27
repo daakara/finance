@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
@@ -147,7 +147,7 @@ export default function OptimalEntryExitCard({
             <span className="text-[10px] text-slate-400 hidden sm:inline">• 20 EMA & Value Area Pullback</span>
           </div>
           <strong className="text-cyan-300 text-sm font-bold tabular-nums">
-            ${optimal_entry_min.toFixed(2)} – ${optimal_entry_max.toFixed(2)}
+            ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
           </strong>
         </div>
 

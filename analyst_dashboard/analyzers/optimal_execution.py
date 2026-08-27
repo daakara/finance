@@ -1,4 +1,4 @@
-﻿"""Optimal Entry & Exit Execution Engine based on Minervini VCP, Turtle ATR, Raschke 20 EMA & Institutional Volume Profile."""
+"""Optimal Entry & Exit Execution Engine based on Minervini VCP, Turtle ATR, Raschke 20 EMA & Institutional Volume Profile."""
 
 import math
 from typing import Dict, Any, List, Optional
@@ -59,8 +59,11 @@ class OptimalExecutionEngine:
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
-            entry_min = round(min(current_price, ema_20), 2)
-            entry_max = round(max(current_price, ema_20), 2)
+            # Day trader pullback zone: between current price and 20 EMA / VWAP anchor
+            lower_bound = min(current_price * 0.99, ema_20)
+            upper_bound = min(current_price, max(ema_20, current_price * 0.995))
+            entry_min = round(min(lower_bound, upper_bound), 2)
+            entry_max = round(max(lower_bound, upper_bound), 2)
             stop_loss = round(entry_min - (1.25 * atr_14), 2)
             take_profit_1 = round(current_price + (1.75 * atr_14), 2)
             take_profit_2 = round(current_price + (3.0 * atr_14), 2)
@@ -70,9 +73,14 @@ class OptimalExecutionEngine:
             stage = "Intraday Momentum Trend Expansion"
             vcp = "Tightening 5m Compression"
         else:
-            entry_min = round(max(sma_50, current_price * 0.98), 2)
-            entry_max = round(current_price * 1.005, 2)
-            stop_loss = round(current_price - (1.8 * atr_14), 2)
+            # Swing / Long-term accumulation zone: discount pullback between support (50 SMA / -3% to -5% ATR buffer) and spot
+            pullback_support = max(sma_50 if sma_50 < current_price else current_price * 0.95, current_price - (1.0 * atr_14))
+            upper_entry = current_price  # Entry ceiling is at or below current spot
+            lower_entry = min(pullback_support, current_price * 0.97)
+            
+            entry_min = round(min(lower_entry, upper_entry), 2)
+            entry_max = round(max(lower_entry, upper_entry), 2)
+            stop_loss = round(entry_min - (1.5 * atr_14), 2)
             take_profit_1 = round(current_price + (2.5 * atr_14), 2)
             take_profit_2 = round(current_price + (4.5 * atr_14), 2)
             setup_name = "Minervini VCP (Volatility Contraction Pattern)"
