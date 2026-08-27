@@ -2,20 +2,25 @@
 
 import math
 from typing import Dict, Any, List, Optional
-import pandas as pd
-import numpy as np
+
+try:
+    import pandas as pd
+    import numpy as np
+except ImportError:
+    pd = None
+    np = None
 
 class OptimalExecutionEngine:
     """Calculates mathematical entry price targets, stop-loss invalidation thresholds, and take-profit ladders."""
 
     @staticmethod
     def calculate_trade_levels(
-        price_df: pd.DataFrame,
+        price_df: Any,
         current_price: float,
         user_role: str = "LONG_TERM",
         technicals: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        if price_df.empty or len(price_df) < 5:
+        if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty or len(price_df) < 5:
             atr = current_price * 0.025
             stop = round(current_price - 1.5 * atr, 2)
             tp1 = round(current_price + 2.0 * atr, 2)
