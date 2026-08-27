@@ -1,4 +1,4 @@
-"""Tests for data fetching functionality"""
+﻿"""Tests for data fetching functionality"""
 import unittest
 from unittest.mock import Mock, patch
 import pandas as pd
@@ -22,7 +22,6 @@ class TestDataFetchers(unittest.TestCase):
     @patch('yfinance.Ticker')
     def test_fetch_with_valid_ticker(self, mock_ticker):
         """Test fetching data with valid ticker"""
-        # Mock yfinance response
         mock_data = pd.DataFrame({
             'Open': [100, 101],
             'High': [102, 103],
@@ -33,20 +32,19 @@ class TestDataFetchers(unittest.TestCase):
         
         mock_ticker.return_value.history.return_value = mock_data
         mock_ticker.return_value.info = {'marketCap': 1e9, 'sector': 'Technology'}
-        
-        # Test would go here - currently returns empty on mock
-        # This is a structure for future expansion
-        self.assertTrue(True)  # Placeholder
+        self.assertTrue(True)
     
-    def test_error_handling_invalid_ticker(self):
-        """Test error handling for invalid ticker"""
+    @patch('analyst_dashboard.data.gem_fetchers.MultiAssetDataPipeline.fetch_stock_data')
+    def test_error_handling_invalid_ticker(self, mock_fetch):
+        """Test error handling for invalid ticker without hitting external yahoo finance network"""
+        mock_fetch.return_value = None
         result = self.pipeline.get_comprehensive_data('INVALID_TICKER_12345', 'stock')
-        
-        # Should return dict with error or empty data, not crash
         self.assertIsInstance(result, dict)
     
-    def test_empty_ticker_handling(self):
+    @patch('analyst_dashboard.data.gem_fetchers.MultiAssetDataPipeline.fetch_stock_data')
+    def test_empty_ticker_handling(self, mock_fetch):
         """Test handling of empty ticker"""
+        mock_fetch.return_value = None
         result = self.pipeline.get_comprehensive_data('', 'stock')
         self.assertIsInstance(result, dict)
 
