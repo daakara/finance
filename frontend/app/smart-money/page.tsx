@@ -12,11 +12,30 @@ import {
   SecInsiderTradeItem,
 } from "../../lib/api";
 
+type TimeframeOption = "7D" | "30D" | "90D" | "180D" | "1Y" | "ALL";
+
+const isWithinTimeframe = (dateStr?: string, tf: TimeframeOption = "30D"): boolean => {
+  if (!dateStr || tf === "ALL") return true;
+  const targetDate = new Date(dateStr);
+  if (isNaN(targetDate.getTime())) return true;
+  // Calculate difference from reference time
+  const now = new Date();
+  const diffDays = Math.max(0, (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (tf === "7D") return diffDays <= 7;
+  if (tf === "30D") return diffDays <= 30;
+  if (tf === "90D") return diffDays <= 90;
+  if (tf === "180D") return diffDays <= 180;
+  if (tf === "1Y") return diffDays <= 365;
+  return true;
+};
+
 function SmartMoneyContent() {
   const [data, setData] = useState<SmartMoneyOverview | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<"CONGRESS" | "SEC_FORM_4" | "OPTIONS_FLOW">("CONGRESS");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("30D");
   const [filterQuery, setFilterQuery] = useState<string>("");
   const [activeSector, setActiveSector] = useState<string>("ALL");
   const [complianceFilter, setComplianceFilter] = useState<"ALL" | "FRESH" | "LATE_FILER" | "HIGH_ALIGN">("ALL");
@@ -73,8 +92,13 @@ function SmartMoneyContent() {
     return true;
   });
 
-  // Filter congressional trades
+  // Filter congressional trades by search, sector, compliance, and horizon timeframe
   const congressTrades = (data?.congress_trades || []).filter((item) => {
+    if (timeframe !== "ALL") {
+      if (!isWithinTimeframe(item.filing_date || item.transaction_date, timeframe)) {
+        return false;
+      }
+    }
     if (filterQuery) {
       const q = filterQuery.toUpperCase();
       const match =
@@ -99,8 +123,13 @@ function SmartMoneyContent() {
     return true;
   });
 
-  // Filter SEC Form 4 insider trades
+  // Filter SEC Form 4 insider trades by search and horizon timeframe
   const secInsiders: SecInsiderTradeItem[] = (data?.sec_insider_trades || []).filter((item) => {
+    if (timeframe !== "ALL") {
+      if (!isWithinTimeframe(item.filing_date, timeframe)) {
+        return false;
+      }
+    }
     if (filterQuery) {
       const q = filterQuery.toUpperCase();
       const match =
@@ -163,15 +192,15 @@ function SmartMoneyContent() {
             </p>
           </div>
 
-          {/* Quick Stats Badges */}
+          {/* Quick Stats Badges (Dynamically Aggregated by Selected Timeframe) */}
           <div className="flex flex-wrap items-center gap-2.5">
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
-              <span className="text-[10px] text-slate-500 block uppercase">30D Disclosures</span>
-              <span className="text-base font-bold text-slate-200 tabular-nums">{data?.total_congress_filings_30d ?? 12}</span>
+              <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} Disclosures</span>
+              <span className="text-base font-bold text-slate-200 tabular-nums">{congressTrades.length}</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
-              <span className="text-[10px] text-slate-500 block uppercase">SEC Insiders</span>
-              <span className="text-base font-bold text-cyan-400 tabular-nums">{data?.total_sec_insiders_30d ?? 5}</span>
+              <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} SEC Insiders</span>
+              <span className="text-base font-bold text-cyan-400 tabular-nums">{secInsiders.length}</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">Options Volume</span>
@@ -262,13 +291,40 @@ function SmartMoneyContent() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Horizon Timeframe Selector */}
+            <div role="radiogroup" aria-label="Smart Money Disclosure Window" className="flex items-center bg-[#070a10] p-1 rounded-lg border border-[#243044] overflow-x-auto">
+              <span className="text-[10px] text-slate-500 font-bold uppercase px-1.5 hidden sm:inline">Window:</span>
+              {[
+                { id: "7D", label: "⚡ 7D" },
+                { id: "30D", label: "📅 30D" },
+                { id: "90D", label: "🏛️ 90D" },
+                { id: "180D", label: "📊 180D" },
+                { id: "1Y", label: "📈 1Y" },
+                { id: "ALL", label: "🌐 All" },
+              ].map((tf) => (
+                <button
+                  key={tf.id}
+                  role="radio"
+                  aria-checked={timeframe === tf.id}
+                  onClick={() => setTimeframe(tf.id as TimeframeOption)}
+                  className={`px-2 py-1 text-[10px] sm:text-[11px] font-bold rounded transition-colors ${
+                    timeframe === tf.id
+                      ? "bg-cyan-500 text-slate-950 font-black shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                  }`}
+                >
+                  {tf.label}
+                </button>
+              ))}
+            </div>
+
             <input
               type="text"
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Search ticker, politician, or CEO..."
-              className="bg-[#070a10] border border-[#243044] rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 w-48 sm:w-64"
+              placeholder="Search ticker, politician, CEO..."
+              className="bg-[#070a10] border border-[#243044] rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 w-36 sm:w-52"
             />
           </div>
         </div>

@@ -20,8 +20,23 @@ export default function CongressionalTradesCard({
   onSelectSymbol,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
+  const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
   const [selectedCongress, setSelectedCongress] = useState<CongressTradeItem | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<OptionsFlowItem | null>(null);
+
+  const filteredCongressTrades = congressTrades.filter((t) => {
+    if (timeframe === "ALL") return true;
+    const dStr = t.filing_date || t.transaction_date;
+    if (!dStr) return true;
+    const tDate = new Date(dStr);
+    if (isNaN(tDate.getTime())) return true;
+    const diffDays = Math.max(0, (Date.now() - tDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (timeframe === "7D") return diffDays <= 7;
+    if (timeframe === "30D") return diffDays <= 30;
+    if (timeframe === "90D") return diffDays <= 90;
+    if (timeframe === "1Y") return diffDays <= 365;
+    return true;
+  });
 
   return (
     <>
@@ -51,13 +66,41 @@ export default function CongressionalTradesCard({
             </div>
           </div>
 
-          <span className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border ${
-            isDayTrader
-              ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
-              : "text-purple-400 bg-purple-950/60 border-purple-800/80"
-          }`}>
-            {isDayTrader ? "⚡ Real-Time Tape" : "🏛️ Capitol Hill Radar"}
-          </span>
+          <div className="flex items-center gap-2">
+            {!isDayTrader && (
+              <div role="radiogroup" aria-label="Filing timeframe" className="flex items-center bg-[#090d14] p-0.5 rounded-lg border border-[#243044]">
+                {[
+                  { id: "7D", label: "7D" },
+                  { id: "30D", label: "30D" },
+                  { id: "90D", label: "90D" },
+                  { id: "1Y", label: "1Y" },
+                  { id: "ALL", label: "All" },
+                ].map((tf) => (
+                  <button
+                    key={tf.id}
+                    role="radio"
+                    aria-checked={timeframe === tf.id}
+                    onClick={() => setTimeframe(tf.id as any)}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                      timeframe === tf.id
+                        ? "bg-purple-600 text-white font-black shadow-sm"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <span className={`text-[11px] px-2.5 py-1 rounded-md font-semibold border ${
+              isDayTrader
+                ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
+                : "text-purple-400 bg-purple-950/60 border-purple-800/80"
+            }`}>
+              {isDayTrader ? "⚡ Real-Time Tape" : `🏛️ ${timeframe === "ALL" ? "All History" : `${timeframe} Flow`}`}
+            </span>
+          </div>
         </div>
 
         {/* Content Rendering based on Horizon */}
@@ -131,8 +174,8 @@ export default function CongressionalTradesCard({
         ) : (
           /* Long Term Investor: Congressional Trades Disclosure List */
           <div className="space-y-3">
-            {congressTrades.length > 0 ? (
-              congressTrades.map((trade, i) => (
+            {filteredCongressTrades.length > 0 ? (
+              filteredCongressTrades.map((trade, i) => (
                 <div
                   key={i}
                   onClick={() => setSelectedCongress(trade)}
