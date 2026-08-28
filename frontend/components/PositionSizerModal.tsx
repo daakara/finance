@@ -23,7 +23,16 @@ export default function PositionSizerModal({
   riskRewardRatio = 2.5,
   isStage4 = false,
 }: PositionSizerProps) {
-  const [accountSize, setAccountSize] = useState<number>(25000);
+  const [accountSize, setAccountSize] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
+      if (saved) {
+        const parsed = Number(saved);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    return 25000;
+  });
   const [riskPct, setRiskPct] = useState<number>(isStage4 ? 0.25 : 1.0);
   const [savedToast, setSavedToast] = useState<boolean>(false);
 
@@ -131,7 +140,13 @@ export default function PositionSizerModal({
                 <input
                   type="number"
                   value={accountSize}
-                  onChange={(e) => setAccountSize(Math.max(100, Number(e.target.value)))}
+                  onChange={(e) => {
+                    const val = Math.max(100, Number(e.target.value));
+                    setAccountSize(val);
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", String(val));
+                    }
+                  }}
                   className="w-full bg-[#070b13] border border-[#24334b] rounded-lg pl-7 pr-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
                 />
               </div>

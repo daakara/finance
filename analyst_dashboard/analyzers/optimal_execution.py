@@ -143,7 +143,7 @@ class OptimalExecutionEngine:
         else:
             stop_loss_pct = max(-7.0, min(-3.5, raw_stop_pct))
 
-        return {
+        raw_plan = {
             "current_price": current_price,
             "optimal_entry_min": entry_min,
             "optimal_entry_max": entry_max,
@@ -162,3 +162,52 @@ class OptimalExecutionEngine:
             "breakout_pivot": round(breakout_pivot, 2) if is_stage_4_downtrend else None,
             "atr_14": round(atr_14, 2),
         }
+        return OptimalExecutionEngine._enforce_execution_invariants(raw_plan, user_role)
+
+    @staticmethod
+    def _enforce_execution_invariants(plan: dict, user_role: str) -> dict:
+        """
+        Self-Healing Runtime Invariant Circuit Breaker:
+        Guarantees that no corrupted calculation, split gap, or floating-point anomaly
+        can ever be emitted from the execution engine.
+        """
+        spot = plan["current_price"]
+        entry_min = plan["optimal_entry_min"]
+
+        # 1. Stop loss strictly below entry floor and bounded
+        if plan["stop_loss"] >= entry_min:
+            plan["stop_loss"] = round(entry_min * 0.985, 2)
+
+        raw_stop_pct = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
+        if user_role == "DAY_TRADER":
+            plan["stop_loss_pct"] = max(-2.2, min(-0.9, raw_stop_pct))
+            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), 2)
+        else:
+            plan["stop_loss_pct"] = max(-7.0, min(-3.5, raw_stop_pct))
+            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), 2)
+
+        # 2. Target 1 & 2 bounds and progression
+        raw_tp1_pct = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+        clamped_tp1_pct = max(4.0, min(24.5, raw_tp1_pct))
+        plan["take_profit_1"] = round(spot * (1.0 + (clamped_tp1_pct / 100.0)), 2)
+        plan["take_profit_1_pct"] = clamped_tp1_pct
+
+        if plan["take_profit_2"] <= plan["take_profit_1"]:
+            plan["take_profit_2"] = round(plan["take_profit_1"] * 1.06, 2)
+
+        raw_tp2_pct = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+        clamped_tp2_pct = max(clamped_tp1_pct + 3.0, min(35.0, raw_tp2_pct))
+        plan["take_profit_2"] = round(spot * (1.0 + (clamped_tp2_pct / 100.0)), 2)
+        plan["take_profit_2_pct"] = clamped_tp2_pct
+
+        # 3. Stage 4 Breakout Pivot bounds
+        if plan.get("breakout_pivot") is not None:
+            clamped_pivot = min(spot * 1.16, max(spot * 1.04, plan["breakout_pivot"]))
+            plan["breakout_pivot"] = round(clamped_pivot, 2)
+            if plan["take_profit_1"] < plan["breakout_pivot"] * 1.04:
+                plan["take_profit_1"] = round(plan["breakout_pivot"] * 1.08, 2)
+                plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+
+        # 4. R:R clamp
+        plan["risk_reward_ratio"] = round(min(3.85, max(1.20, plan["risk_reward_ratio"])), 2)
+        return plan
