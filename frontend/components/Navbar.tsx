@@ -205,7 +205,8 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       <nav
         role="navigation"
         aria-label="Mobile Navigation Dock"
-        className="lg:hidden fixed inset-x-0 bottom-0 z-[100] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px]"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
+        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
       >
         <Link
           href="/"
