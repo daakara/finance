@@ -1,46 +1,27 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getAnonymousUserId } from "../lib/portfolio";
+
+declare global {
+  interface Window {
+    _paq?: any[];
+    _mtm?: any[];
+  }
+}
 
 export default function MatomoTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const previousUrlRef = useRef<string>("");
 
-  const matomoUrl = process.env.NEXT_PUBLIC_MATOMO_URL || "https://analytics.example.com";
-  const matomoSiteId = process.env.NEXT_PUBLIC_MATOMO_SITE_ID || "1";
-  const sanitizedMatomoUrl = matomoUrl.replace(/\/+$/, "") + "/";
-
-  // 1. Initial Setup on Client Mount
+  // SPA Route Change & User Journey Path Tracking for Matomo Tag Manager & Analytics
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     window._paq = window._paq || [];
-    const anonId = getAnonymousUserId();
-    window._paq.push(["setUserId", anonId]);
-    window._paq.push(["setTrackerUrl", sanitizedMatomoUrl + "matomo.php"]);
-    window._paq.push(["setSiteId", matomoSiteId]);
-    window._paq.push(["enableLinkTracking"]);
-    window._paq.push(["enableHeartBeatTimer", 15]);
-
-    // Inject remote matomo.js loader
-    if (!document.getElementById("matomo-js-script")) {
-      const script = document.createElement("script");
-      script.id = "matomo-js-script";
-      script.type = "text/javascript";
-      script.async = true;
-      script.src = sanitizedMatomoUrl + "matomo.js";
-      document.head.appendChild(script);
-    }
-  }, [sanitizedMatomoUrl, matomoSiteId]);
-
-  // 2. SPA Route Change & User Journey Path Tracking
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    window._paq = window._paq || [];
+    window._mtm = window._mtm || [];
     const anonId = getAnonymousUserId();
     window._paq.push(["setUserId", anonId]);
     const fullUrl = window.location.pathname + window.location.search;
@@ -52,6 +33,13 @@ export default function MatomoTracker() {
       window._paq.push(["deleteCustomVariables", "page"]);
       window._paq.push(["trackPageView"]);
       window._paq.push(["enableLinkTracking"]);
+
+      // Trigger Matomo Tag Manager event on SPA page transitions
+      window._mtm.push({
+        event: "mtm.PageView",
+        customUrl: fullUrl,
+        pageTitle: document.title,
+      });
     } else if (!previousUrlRef.current) {
       // First page view on initial load
       window._paq.push(["trackPageView"]);
