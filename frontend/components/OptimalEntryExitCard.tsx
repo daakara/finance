@@ -10,12 +10,16 @@ interface OptimalEntryExitCardProps {
   symbol: string;
   executionPlan?: OptimalExecutionPlan;
   userRole?: "DAY_TRADER" | "LONG_TERM";
+  smartMoney?: any;
+  macroRegime?: any;
 }
 
 export default function OptimalEntryExitCard({
   symbol,
   executionPlan,
   userRole = "LONG_TERM",
+  smartMoney,
+  macroRegime,
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
@@ -77,6 +81,14 @@ export default function OptimalEntryExitCard({
     }
   }
 
+  const hasSmartMoneyConfluence = Boolean(
+    (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
+    (smartMoney?.congressTrades && smartMoney.congressTrades.some((t: any) => t.tx_type === "Purchase"))
+  );
+  const isAdverseMacro = Boolean(
+    macroRegime?.vix && Number(macroRegime.vix) > 20
+  );
+
   return (
     <div
       className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
@@ -107,6 +119,16 @@ export default function OptimalEntryExitCard({
             <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono text-[10px]">
               <span>📡</span> Minervini VCP + 14-ATR
             </span>
+            {hasSmartMoneyConfluence && (
+              <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 inline-flex items-center gap-1 font-mono text-[10px]" title="Smart Money Confluence: Institutional call sweeps or congressional purchases detected on this asset.">
+                <span>🏛️</span> Smart Money Inflow (+15% Buffer)
+              </span>
+            )}
+            {isAdverseMacro && (
+              <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700/80 inline-flex items-center gap-1 font-mono text-[10px]" title="Elevated macro market volatility (VIX > 20). Defensive sizing active.">
+                <span>⚠️</span> Macro Buffer Active
+              </span>
+            )}
             <span className="hidden sm:inline text-slate-500">•</span>
             <span className="text-slate-400 text-[11px]">Volatility-anchored risk limits</span>
           </div>

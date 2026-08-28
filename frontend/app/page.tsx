@@ -328,7 +328,13 @@ function TerminalContent() {
               {userRole === "DAY_TRADER" && data && (
                 <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
               )}
-              <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data?.optimalExecution} userRole={userRole} />
+              <OptimalEntryExitCard
+                symbol={selectedSymbol}
+                executionPlan={data?.optimalExecution}
+                userRole={userRole}
+                smartMoney={data?.smartMoney}
+                macroRegime={macroData}
+              />
             </div>
           )}
 
