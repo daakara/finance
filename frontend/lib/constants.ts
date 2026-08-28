@@ -210,12 +210,12 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     scores: { growthScore: 93, qualityScore: 91, valuationScore: 74, momentumScore: 89, tailRiskScore: 82, compositeFactorScore: 87, verdict: "AI Networking & Cloud Switching", piotroskiFScore: 8 }
   },
   "VRT": {
-    price: 114.20,
+    price: 88.40,
     changePct: 2.85,
     scores: { growthScore: 95, qualityScore: 86, valuationScore: 68, momentumScore: 96, tailRiskScore: 78, compositeFactorScore: 86, verdict: "High Momentum AI Infrastructure", piotroskiFScore: 7 }
   },
   "CRWD": {
-    price: 378.50,
+    price: 272.50,
     changePct: 3.40,
     scores: { growthScore: 91, qualityScore: 89, valuationScore: 65, momentumScore: 94, tailRiskScore: 79, compositeFactorScore: 85, verdict: "Secular Cybersecurity Leader", piotroskiFScore: 8 }
   },
