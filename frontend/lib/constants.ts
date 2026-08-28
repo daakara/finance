@@ -184,6 +184,11 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     changePct: -1.25,
     scores: { growthScore: 82, qualityScore: 94, valuationScore: 80, momentumScore: 45, tailRiskScore: 78, compositeFactorScore: 76, verdict: "Stage 4 Correction / Base Building Required", piotroskiFScore: 8 }
   },
+  "PODD": {
+    price: 143.41,
+    changePct: -0.95,
+    scores: { growthScore: 84, qualityScore: 91, valuationScore: 76, momentumScore: 42, tailRiskScore: 76, compositeFactorScore: 74, verdict: "Stage 4 Correction / Base Building Required", piotroskiFScore: 8 }
+  },
   "SNPS": {
     price: 464.89,
     changePct: 0.85,

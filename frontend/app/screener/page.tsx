@@ -93,7 +93,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     LLY: { price: 924.50, name: "Eli Lilly and Company", roic: 38.2, peg: 1.35, margin: 79.5, rvol: 2.1, short: 1.8 },
     NVO: { price: 136.40, name: "Novo Nordisk A/S", roic: 44.0, peg: 0.88, margin: 84.0, rvol: 2.3, short: 1.5 },
     DXCM: { price: 78.50, name: "DexCom Inc.", roic: 18.5, peg: 1.20, margin: 64.0, rvol: 2.9, short: 7.2 },
-    PODD: { price: 194.20, name: "Insulet Corporation", roic: 21.0, peg: 1.10, margin: 68.0, rvol: 2.2, short: 6.4 },
+    PODD: { price: 143.41, name: "Insulet Corporation", roic: 21.0, peg: 1.10, margin: 68.0, rvol: 2.2, short: 6.4 },
     ACLS: { price: 84.20, name: "Axcelis Technologies", roic: 27.5, peg: 0.78, margin: 54.0, rvol: 2.6, short: 5.8 },
     POWI: { price: 68.50, name: "Power Integrations", roic: 22.0, peg: 0.85, margin: 56.5, rvol: 1.8, short: 3.2 },
     ON: { price: 72.40, name: "ON Semiconductor", roic: 24.5, peg: 0.89, margin: 52.0, rvol: 2.2, short: 4.1 },
@@ -162,7 +162,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     let statusLabel: string;
     let statusColor: string;
 
-    if (sym === "DECK") {
+    if (sym === "DECK" || sym === "PODD") {
       executionStatus = "WAITING_PULLBACK";
       statusLabel = "⏳ Awaiting Base Formation";
       statusColor = "cyan";

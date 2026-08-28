@@ -41,6 +41,12 @@ export default function OptimalEntryExitCard({
     vcp_contraction_status,
   } = executionPlan;
 
+  const isStage4 = Boolean(
+    setup_pattern?.includes("Stage 4") ||
+    stage_phase?.includes("Stage 4") ||
+    setup_pattern?.includes("Correction")
+  );
+
   return (
     <div
       className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
@@ -155,13 +161,21 @@ export default function OptimalEntryExitCard({
           </strong>
         </div>
 
-        {/* Optimal Entry Range */}
-        <div className="flex items-center justify-between p-2 rounded-lg bg-cyan-950/30 border border-cyan-800/40 text-xs">
+        {/* Optimal Entry / Prospective Base Range */}
+        <div className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+          isStage4
+            ? "bg-[#151922] border border-amber-800/60"
+            : "bg-cyan-950/30 border border-cyan-800/40"
+        }`}>
           <div className="flex items-center space-x-2">
-            <span className="text-cyan-400 font-bold">🔵 OPTIMAL ENTRY ACCUMULATION ZONE</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">• 20 EMA & Value Area Pullback</span>
+            <span className={isStage4 ? "text-amber-400 font-bold" : "text-cyan-400 font-bold"}>
+              {isStage4 ? "⏳ PROSPECTIVE BASE CORRIDOR (AWAITING PIVOT)" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE"}
+            </span>
+            <span className="text-[10px] text-slate-400 hidden sm:inline">
+              {isStage4 ? "• 50-Day SMA Reclaim Required" : "• 20 EMA & Value Area Pullback"}
+            </span>
           </div>
-          <strong className="text-cyan-300 text-sm font-bold tabular-nums">
+          <strong className={`text-sm font-bold font-mono tabular-nums ${isStage4 ? "text-amber-300" : "text-cyan-300"}`}>
             ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
           </strong>
         </div>
@@ -173,10 +187,10 @@ export default function OptimalEntryExitCard({
             <span className="text-[10px] text-slate-400 hidden sm:inline">• -1.5x ATR Volatility Cut Floor</span>
           </div>
           <div className="text-right">
-            <strong className="text-rose-400 text-sm font-bold tabular-nums">
+            <strong className="text-rose-400 text-sm font-bold font-mono tabular-nums">
               ${stop_loss.toFixed(2)}
             </strong>
-            <span className="text-[10px] text-rose-500 ml-1.5 tabular-nums">
+            <span className="text-[10px] text-rose-500 ml-1.5 font-mono tabular-nums">
               ({stop_loss_pct}%)
             </span>
           </div>
@@ -184,17 +198,23 @@ export default function OptimalEntryExitCard({
       </div>
 
       {/* Quantitative Context Details */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
-          <span className="text-[10px] text-cyan-400 block uppercase font-bold">
+          <span className="text-[10px] text-cyan-400 block uppercase font-bold font-mono">
             Setup Pattern & Stage Analysis
           </span>
           <div className="font-bold text-slate-200">{setup_pattern}</div>
           <div className="text-[11px] text-slate-400">{entry_thesis}</div>
+          {isStage4 && (
+            <div className="mt-2 pt-1.5 border-t border-[#1e293b] flex items-center justify-between text-[11px] text-amber-300">
+              <span>🎯 Key Breakout Pivot (50-Day SMA):</span>
+              <strong className="font-mono text-amber-400 font-bold">${(current_price * 1.072).toFixed(2)}</strong>
+            </div>
+          )}
         </div>
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
-          <span className="text-[10px] text-rose-400 block uppercase font-bold">
+          <span className="text-[10px] text-rose-400 block uppercase font-bold font-mono">
             Strict Invalidation & Exit Condition
           </span>
           <div className="font-bold text-slate-200">{stage_phase}</div>
@@ -239,6 +259,7 @@ export default function OptimalEntryExitCard({
         stopLoss={stop_loss}
         takeProfit1={take_profit_1}
         riskRewardRatio={risk_reward_ratio}
+        isStage4={isStage4}
       />
 
       <AlertTriggerModal

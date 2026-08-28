@@ -10,6 +10,7 @@ interface PositionSizerProps {
   stopLoss: number;
   takeProfit1: number;
   riskRewardRatio?: number;
+  isStage4?: boolean;
 }
 
 export default function PositionSizerModal({
@@ -20,9 +21,10 @@ export default function PositionSizerModal({
   stopLoss,
   takeProfit1,
   riskRewardRatio = 2.5,
+  isStage4 = false,
 }: PositionSizerProps) {
   const [accountSize, setAccountSize] = useState<number>(25000);
-  const [riskPct, setRiskPct] = useState<number>(1.0);
+  const [riskPct, setRiskPct] = useState<number>(isStage4 ? 0.25 : 1.0);
   const [savedToast, setSavedToast] = useState<boolean>(false);
 
   if (!isOpen) return null;
@@ -84,7 +86,7 @@ export default function PositionSizerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
-      <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100">
+      <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 font-sans">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#1b2537] bg-[#0e1422]">
           <div className="flex items-center space-x-2">
@@ -94,7 +96,7 @@ export default function PositionSizerModal({
                 Institutional Position Sizer & Kelly Risk
               </h2>
               <p className="text-[11px] text-slate-400">
-                Calibrated for <span className="text-cyan-400 font-bold">{symbol}</span> @ ${safeEntry.toFixed(2)}
+                Calibrated for <span className="text-cyan-400 font-bold font-mono">{symbol}</span> @ ${safeEntry.toFixed(2)}
               </p>
             </div>
           </div>
@@ -105,6 +107,17 @@ export default function PositionSizerModal({
             ✕
           </button>
         </div>
+
+        {/* Stage 4 Capital Protection Advisory */}
+        {isStage4 && (
+          <div className="p-3 bg-amber-950/40 border-b border-amber-800/40 text-amber-300 text-xs font-sans flex items-start gap-2">
+            <span className="text-base leading-none">⚠️</span>
+            <div>
+              <strong className="font-bold block">Stage 4 Markdown Caution:</strong>
+              <span>Capital deployment not recommended until a constructive base forms above the 50-day SMA. Suggested risk defaulted to 0.25% pilot sizing or paper trading.</span>
+            </div>
+          </div>
+        )}
 
         {/* Inputs Body */}
         <div className="p-5 space-y-4">
