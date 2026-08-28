@@ -100,10 +100,10 @@ export default function OnboardingModal() {
           <div className="space-y-4">
             <div className="text-center space-y-1 py-1">
               <div className="w-12 h-12 rounded-2xl bg-cyan-600 mx-auto flex items-center justify-center text-xl font-bold shadow-sm text-white">
-                FT
+                ARX
               </div>
               <h2 id="onboarding-modal-title" className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                Welcome to Finance Terminal
+                Welcome to ARX Terminal
               </h2>
               <p className="text-xs text-slate-300 font-sans">
                 Select your primary trading horizon. The terminal customizes indicators and risk ladders automatically:
