@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
@@ -14,10 +14,12 @@ interface NavbarProps {
 
 export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
 
   const handlePurgeCache = () => {
     setIsPurging(true);
@@ -33,6 +35,39 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       setTimeout(() => setIsPurging(false), 600);
     }
   };
+
+  const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
+    setActiveRole(role);
+    try { localStorage.setItem("FINANCE_USER_ROLE", role); } catch {}
+    if (onRoleChange) onRoleChange(role);
+    window.dispatchEvent(new CustomEvent("finance:role-change", { detail: role }));
+  };
+
+  // Pro-Trader Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.key === "d" || e.key === "D") {
+        const nextRole = activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER";
+        handleRoleToggle(nextRole);
+      } else if (e.key === "s" || e.key === "S") {
+        if (pathname !== "/screener") router.push("/screener");
+      } else if (e.key === "p" || e.key === "P") {
+        if (pathname !== "/portfolio") router.push("/portfolio");
+      } else if (e.key === "t" || e.key === "T") {
+        if (pathname !== "/") router.push("/");
+      } else if (e.key === "?") {
+        setIsShortcutsOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeRole, pathname, router]);
 
   useEffect(() => {
     setActiveRole(userRole);
@@ -60,12 +95,6 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
   const handleOpenOnboarding = () => {
     setIsOnboardingOpen(true);
-  };
-
-  const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
-    setActiveRole(role);
-    localStorage.setItem("FINANCE_USER_ROLE", role);
-    if (onRoleChange) onRoleChange(role);
   };
 
   return (
@@ -334,6 +363,65 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
       />
+
+      {/* Pro-Trader Keyboard Shortcuts Modal */}
+      {isShortcutsOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard Shortcuts Guide"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setIsShortcutsOpen(false)}
+        >
+          <div
+            className="bg-[#0f1520] border border-[#223149] rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 font-sans"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#1b2537] pb-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">⌨️</span>
+                <h3 className="text-base font-black text-white">Pro-Trader Shortcuts</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShortcutsOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1b2537] text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              {[
+                { key: "/", desc: "Open Universal Omni-Search & Ticker Scanner" },
+                { key: "D", desc: "Toggle Day Trader ⚡ / Long Term 🏛️ Mode" },
+                { key: "T", desc: "Navigate to Main Terminal Workspace" },
+                { key: "S", desc: "Navigate to Screener & Pattern Radar" },
+                { key: "P", desc: "Navigate to Private Portfolio Sizer" },
+                { key: "?", desc: "Open / Close Shortcuts Cheatsheet" },
+                { key: "Esc", desc: "Dismiss Open Modals & Dialogs" },
+              ].map((s) => (
+                <div key={s.key} className="flex items-center justify-between p-2 rounded-lg bg-[#090d14] border border-[#1a2333]">
+                  <span className="text-slate-300 font-medium">{s.desc}</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[#1c2738] border border-[#2a3a52] text-cyan-400 font-mono font-bold text-xs shadow-inner">
+                    {s.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-right pt-2">
+              <button
+                type="button"
+                onClick={() => setIsShortcutsOpen(false)}
+                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow"
+              >
+                Got It (Esc)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

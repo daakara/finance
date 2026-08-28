@@ -20,7 +20,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
   const rsi14 = technicals?.rsi_14 ?? 52.0;
 
   return (
-    <div className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono transition-colors ${
+    <div className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
       isDayTrader ? "border-amber-900/40" : "border-[#243044]"
     }`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1b2434] pb-3">
@@ -31,18 +31,18 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             </svg>
             <span>{isDayTrader ? "⚡ Intraday Volatility & Execution Risk Guardrails" : "🏛️ Advanced Tail Risk & Benchmark Ratios"}</span>
           </h3>
-          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">
             {isDayTrader
               ? "Real-time ATR volatility, single-day drawdown boundaries, and intraday risk-adjusted ratios"
               : "Downside Crash Protection & Black-Swan Tail Risk Evaluation"}
           </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
-              <span>🧮</span> {isDayTrader ? "Live ATR 14-Period Intraday Volatility Engine" : "Non-Normal Cornish-Fisher Modified VaR Model"}
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono">
+              <span>🧮</span> {isDayTrader ? "Live 14-ATR Intraday Engine" : "Cornish-Fisher Non-Normal VaR Model"}
             </span>
           </div>
         </div>
-        <span className={`text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-md font-semibold border ${
+        <span className={`text-xs px-2.5 py-0.5 rounded-md font-semibold border ${
           isDayTrader
             ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
             : "text-cyan-400 bg-cyan-950/60 border-cyan-800/80"

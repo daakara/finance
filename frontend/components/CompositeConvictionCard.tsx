@@ -128,13 +128,13 @@ export default function CompositeConvictionCard({
   }, [data, macro, matchedInsider]);
 
   return (
-    <div className="bg-[#111722] border border-[#243044] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 font-mono">
+    <div className="bg-[#111722] border border-[#243044] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 font-sans">
       {/* Top Banner: Composite Score & Actionable Consensus */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 font-mono">
               Multi-Source Synthesis • {cleanSym}
             </span>
           </div>
@@ -146,10 +146,10 @@ export default function CompositeConvictionCard({
         {/* Big Circular/Pill Score Gauge */}
         <div className="flex items-center space-x-3 bg-[#090d14] px-3.5 py-2 rounded-xl border border-[#243044]">
           <div className="text-right">
-            <span className="text-[9px] uppercase font-bold text-slate-400 block">Synthesis Score</span>
+            <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">Synthesis Score</span>
             <span className="text-xs text-slate-300 font-medium">4-Feed Confluence</span>
           </div>
-          <div className={`text-2xl sm:text-3xl font-black tabular-nums ${synthesis.verdictColor}`}>
+          <div className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${synthesis.verdictColor}`}>
             {synthesis.score}<span className="text-xs text-slate-500 font-normal">/100</span>
           </div>
         </div>

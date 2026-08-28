@@ -43,7 +43,7 @@ export default function OptimalEntryExitCard({
 
   return (
     <div
-      className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono transition-colors ${
+      className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
         isDayTrader ? "border-amber-900/40" : "border-[#243044]"
       }`}
     >
@@ -57,28 +57,30 @@ export default function OptimalEntryExitCard({
               } animate-pulse`}
             ></span>
             <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              <span>🎯 {symbol} Optimal Entry, Stop-Loss & Target Ladder</span>
+              <span>🎯 {symbol} Optimal Execution Ladder</span>
             </h3>
           </div>
-          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">
             {isDayTrader
               ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
               : setup_pattern?.includes("Stage 4")
               ? "Stage 4 Correction & Volatility-Constrained Risk Boundaries"
               : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 leading-normal break-words max-w-full">
-              <span>📡</span> Live Algorithmic Execution Ladder (Minervini VCP + 14-ATR Corridor)
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
+            <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono text-[10px]">
+              <span>📡</span> Minervini VCP + 14-ATR
             </span>
+            <span className="hidden sm:inline text-slate-500">•</span>
+            <span className="text-slate-400 text-[11px]">Volatility-anchored risk limits</span>
           </div>
         </div>
 
         {/* Reward-to-Risk Pill */}
         <div className="flex items-center space-x-2">
-          <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right">
-            <span className="text-[9px] text-slate-500 block uppercase font-bold">Reward : Risk</span>
-            <span className="text-sm font-extrabold text-emerald-400 tabular-nums">
+          <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right" title="Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss">
+            <span className="text-[9px] text-slate-500 block uppercase font-bold font-mono">Reward : Risk</span>
+            <span className="text-sm font-extrabold text-emerald-400 font-mono tabular-nums">
               {risk_reward_ratio} : 1.0
             </span>
           </div>
@@ -90,7 +92,7 @@ export default function OptimalEntryExitCard({
               window.dispatchEvent(new CustomEvent("finance:role-change", { detail: nextRole }));
             }}
             aria-label={`Current mode: ${isDayTrader ? "Intraday Playbook" : "Swing/Growth Playbook"}. Click to switch mode.`}
-            className={`text-[10px] sm:text-[11px] px-2.5 py-1 rounded-md font-semibold border cursor-pointer active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            className={`text-xs px-2.5 py-1 rounded-md font-semibold border cursor-pointer active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
               isDayTrader
                 ? "text-amber-400 bg-amber-950/60 border-amber-800 hover:bg-amber-900/80"
                 : "text-emerald-400 bg-emerald-950/60 border-emerald-800 hover:bg-emerald-900/80"
