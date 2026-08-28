@@ -104,6 +104,10 @@ class OptimalExecutionEngine:
                 invalidation = "Breakdown below recent reaction lows or persistent selling below 50-day SMA."
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
+                # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) so post-breakout profitability is preserved
+                breakout_pivot = max(sma_50, current_price * 1.05)
+                take_profit_1 = round(max(breakout_pivot * 1.08, current_price * 1.15), 2)
+                take_profit_2 = round(max(breakout_pivot * 1.18, current_price * 1.25), 2)
             elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
                 thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."

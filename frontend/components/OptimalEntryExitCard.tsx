@@ -114,9 +114,11 @@ export default function OptimalEntryExitCard({
 
         {/* Reward-to-Risk Pill */}
         <div className="flex items-center space-x-2">
-          <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right" title="Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss">
-            <span className="text-[9px] text-slate-500 block uppercase font-bold font-mono">Reward : Risk</span>
-            <span className="text-sm font-extrabold text-emerald-400 font-mono tabular-nums">
+          <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
+            <span className="text-[9px] text-slate-500 block uppercase font-bold font-mono">
+              {isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
+            </span>
+            <span className={`text-sm font-extrabold font-mono tabular-nums ${isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
               {risk_reward_ratio} : 1.0
             </span>
           </div>
