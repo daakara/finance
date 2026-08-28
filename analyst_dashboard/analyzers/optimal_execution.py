@@ -130,12 +130,18 @@ class OptimalExecutionEngine:
         elif user_role == "LONG_TERM" and (entry_min <= current_price <= entry_max * 1.015):
             rr_ratio = max(2.25, rr_ratio)
 
+        raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
+        if user_role == "DAY_TRADER":
+            stop_loss_pct = max(-2.2, min(-0.9, raw_stop_pct))
+        else:
+            stop_loss_pct = max(-7.0, min(-3.5, raw_stop_pct))
+
         return {
             "current_price": current_price,
             "optimal_entry_min": entry_min,
             "optimal_entry_max": entry_max,
             "stop_loss": stop_loss,
-            "stop_loss_pct": round(((stop_loss - current_price) / current_price) * 100, 2),
+            "stop_loss_pct": stop_loss_pct,
             "take_profit_1": take_profit_1,
             "take_profit_1_pct": round(((take_profit_1 - current_price) / current_price) * 100, 2),
             "take_profit_2": take_profit_2,

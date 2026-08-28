@@ -44,42 +44,42 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
 
 export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: number; scores: AssetFactorScores }> = {
   "AAPL": {
-    price: 309.90,
+    price: 226.50,
     changePct: -0.45,
     scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Buy / Core Hold", piotroskiFScore: 8 }
   },
   "NVDA": {
-    price: 213.05,
+    price: 128.50,
     changePct: 3.14,
     scores: { growthScore: 96, qualityScore: 95, valuationScore: 68, momentumScore: 94, tailRiskScore: 76, compositeFactorScore: 91, verdict: "Exceptional Growth Leader", piotroskiFScore: 8 }
   },
   "NVO": {
-    price: 138.50,
+    price: 136.40,
     changePct: 1.85,
     scores: { growthScore: 89, qualityScore: 94, valuationScore: 74, momentumScore: 86, tailRiskScore: 85, compositeFactorScore: 88, verdict: "High Quality Compounder", piotroskiFScore: 8 }
   },
   "LLY": {
-    price: 920.40,
+    price: 924.50,
     changePct: 2.10,
     scores: { growthScore: 92, qualityScore: 91, valuationScore: 65, momentumScore: 90, tailRiskScore: 81, compositeFactorScore: 86, verdict: "Secular Pharma Leader", piotroskiFScore: 7 }
   },
   "MSFT": {
-    price: 491.71,
+    price: 418.20,
     changePct: 0.85,
     scores: { growthScore: 86, qualityScore: 96, valuationScore: 70, momentumScore: 80, tailRiskScore: 88, compositeFactorScore: 87, verdict: "Fortress Balance Sheet", piotroskiFScore: 8 }
   },
   "GOOGL": {
-    price: 346.96,
+    price: 164.80,
     changePct: 1.40,
     scores: { growthScore: 85, qualityScore: 93, valuationScore: 78, momentumScore: 82, tailRiskScore: 86, compositeFactorScore: 86, verdict: "Deep Value & AI Moat", piotroskiFScore: 8 }
   },
   "TSLA": {
-    price: 350.25,
+    price: 218.40,
     changePct: 2.15,
     scores: { growthScore: 80, qualityScore: 82, valuationScore: 55, momentumScore: 88, tailRiskScore: 68, compositeFactorScore: 77, verdict: "High Beta Autonomy Speculation", piotroskiFScore: 6 }
   },
   "PLTR": {
-    price: 142.80,
+    price: 31.20,
     changePct: 4.12,
     scores: { growthScore: 94, qualityScore: 90, valuationScore: 62, momentumScore: 95, tailRiskScore: 74, compositeFactorScore: 87, verdict: "Commercial AI Breakout", piotroskiFScore: 8 }
   },
@@ -140,17 +140,17 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
   },
     // Authentic Small-Cap Discovery Gems (from Screener)
   "CPRX": {
-    price: 21.40,
+    price: 23.40,
     changePct: 1.90,
     scores: { growthScore: 88, qualityScore: 95, valuationScore: 85, momentumScore: 86, tailRiskScore: 90, compositeFactorScore: 89, verdict: "Greenblatt Magic Formula", piotroskiFScore: 9 }
   },
   "ACLS": {
-    price: 94.20,
+    price: 84.20,
     changePct: 2.30,
     scores: { growthScore: 91, qualityScore: 93, valuationScore: 82, momentumScore: 88, tailRiskScore: 85, compositeFactorScore: 88, verdict: "Peter Lynch GARP Compounder", piotroskiFScore: 8 }
   },
   "TMDX": {
-    price: 128.50,
+    price: 92.60,
     changePct: 3.15,
     scores: { growthScore: 94, qualityScore: 89, valuationScore: 72, momentumScore: 92, tailRiskScore: 81, compositeFactorScore: 86, verdict: "Disruptive Rule Breaker", piotroskiFScore: 8 }
   },
@@ -160,22 +160,22 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     scores: { growthScore: 89, qualityScore: 94, valuationScore: 86, momentumScore: 85, tailRiskScore: 88, compositeFactorScore: 88, verdict: "Greenblatt Magic Formula", piotroskiFScore: 9 }
   },
   "POWI": {
-    price: 72.50,
+    price: 68.50,
     changePct: 0.85,
     scores: { growthScore: 85, qualityScore: 92, valuationScore: 80, momentumScore: 82, tailRiskScore: 86, compositeFactorScore: 85, verdict: "Peter Lynch GARP Compounder", piotroskiFScore: 8 }
   },
   "MEDP": {
-    price: 395.10,
+    price: 342.10,
     changePct: 1.45,
     scores: { growthScore: 90, qualityScore: 94, valuationScore: 76, momentumScore: 85, tailRiskScore: 88, compositeFactorScore: 87, verdict: "Greenblatt Magic Formula", piotroskiFScore: 9 }
   },
   "ELF": {
-    price: 182.40,
+    price: 118.40,
     changePct: 2.15,
     scores: { growthScore: 92, qualityScore: 90, valuationScore: 78, momentumScore: 88, tailRiskScore: 84, compositeFactorScore: 88, verdict: "Peter Lynch GARP Compounder", piotroskiFScore: 8 }
   },
   "DUOL": {
-    price: 312.80,
+    price: 284.50,
     changePct: 3.20,
     scores: { growthScore: 94, qualityScore: 88, valuationScore: 70, momentumScore: 92, tailRiskScore: 80, compositeFactorScore: 86, verdict: "Disruptive Rule Breaker", piotroskiFScore: 8 }
   },
@@ -230,7 +230,7 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     scores: { growthScore: 92, qualityScore: 96, valuationScore: 75, momentumScore: 90, tailRiskScore: 86, compositeFactorScore: 89, verdict: "Global Foundry Monopoly", piotroskiFScore: 9 }
   },
   "AMD": {
-    price: 154.30,
+    price: 146.20,
     changePct: 2.70,
     scores: { growthScore: 90, qualityScore: 88, valuationScore: 68, momentumScore: 89, tailRiskScore: 80, compositeFactorScore: 84, verdict: "AI Compute Challenger", piotroskiFScore: 8 }
   },
