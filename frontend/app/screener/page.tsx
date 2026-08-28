@@ -358,9 +358,19 @@ export default function ScreenerPage() {
       executeScreenerFetch(activeRole, activeCustomQuery);
     };
 
+    const handleRoleEvent = (e: Event) => {
+      const custom = e as CustomEvent<"DAY_TRADER" | "LONG_TERM">;
+      if (custom.detail === "DAY_TRADER" || custom.detail === "LONG_TERM") {
+        setActiveRole(custom.detail);
+        setSelectedFilter("all");
+      }
+    };
+
     window.addEventListener("finance:cache-purge", handlePurge);
+    window.addEventListener("finance:role-change", handleRoleEvent);
     return () => {
       window.removeEventListener("finance:cache-purge", handlePurge);
+      window.removeEventListener("finance:role-change", handleRoleEvent);
     };
   }, [activeRole, activeCustomQuery]);
 
@@ -507,33 +517,46 @@ export default function ScreenerPage() {
   const isDayTrader = activeRole === "DAY_TRADER";
   const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
 
-  // Instant Client-Side Filter with 0ms Latency and Numerical Attribute Resolution
-  const displayGems = gems.filter((gem) => {
-    if (selectedFilter === "high_confluence") return (gem.confluenceScore || 0) >= 80;
-    if (selectedFilter === "in_buy_zone" || selectedFilter === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
-    if (selectedFilter === "approaching_target" || selectedFilter === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
-    if (selectedFilter === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
-    if (selectedFilter === "high_rvol") return parseFloat(gem.rvol?.replace("x", "") || "0") >= 2.5;
-    if (selectedFilter === "squeeze") return parseFloat(gem.shortFloat?.replace("%", "") || "0") >= 6.0;
-    if (selectedFilter === "lynch") return parseFloat(gem.pegRatio || "99") <= 1.0 || gem.expertArchetype.includes("Lynch");
-    if (selectedFilter === "greenblatt") return parseFloat(gem.roic?.replace("%", "") || "0") >= 20.0 || gem.expertArchetype.includes("Greenblatt") || gem.expertArchetype.includes("Magic");
-    if (selectedFilter === "rule_breakers") return parseFloat(gem.grossMargin?.replace("%", "") || "0") >= 60.0 || gem.expertArchetype.includes("Rule Breakers") || gem.expertArchetype.includes("Disruptive");
-    return true;
-  });
-
-  const getTabCount = (tabId: string) => {
-    if (tabId === "all") return gems.length;
-    if (tabId === "high_confluence") return gems.filter((g) => (g.confluenceScore || 0) >= 80).length;
-    if (tabId === "in_buy_zone" || tabId === "vwap_pullback") return gems.filter((g) => g.executionStatus === "IN_BUY_ZONE").length;
-    if (tabId === "approaching_target" || tabId === "orb_breakout") return gems.filter((g) => g.executionStatus === "APPROACHING_TARGET").length;
-    if (tabId === "high_rr") return gems.filter((g) => (g.riskRewardRatio || 0) >= 2.0).length;
-    if (tabId === "high_rvol") return gems.filter((g) => parseFloat(g.rvol?.replace("x", "") || "0") >= 2.5).length;
-    if (tabId === "squeeze") return gems.filter((g) => parseFloat(g.shortFloat?.replace("%", "") || "0") >= 6.0).length;
-    if (tabId === "lynch") return gems.filter((g) => parseFloat(g.pegRatio || "99") <= 1.0 || g.expertArchetype.includes("Lynch")).length;
-    if (tabId === "greenblatt") return gems.filter((g) => parseFloat(g.roic?.replace("%", "") || "0") >= 20.0 || g.expertArchetype.includes("Greenblatt") || g.expertArchetype.includes("Magic")).length;
-    if (tabId === "rule_breakers") return gems.filter((g) => parseFloat(g.grossMargin?.replace("%", "") || "0") >= 60.0 || g.expertArchetype.includes("Rule Breakers") || g.expertArchetype.includes("Disruptive")).length;
-    return gems.length;
+  const parseNum = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return isNaN(val) ? 0 : val;
+    if (typeof val === "string") {
+      const cleaned = val.replace(/[^0-9.-]/g, "");
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
   };
+
+  const hasArchetype = (gem: GemCandidate, keyword: string): boolean => {
+    if (!gem || !gem.expertArchetype || typeof gem.expertArchetype !== "string") return false;
+    return gem.expertArchetype.toLowerCase().includes(keyword.toLowerCase());
+  };
+
+  // Instant Client-Side Filter with 0ms Latency and Robust Type Parsing
+  const isMatchFilter = (gem: GemCandidate, filterId: string): boolean => {
+    if (!filterId || filterId === "all") return true;
+    if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
+    if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
+    if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
+    if (filterId === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
+    if (filterId === "high_rvol") return parseNum(gem.rvol) >= 2.5;
+    if (filterId === "squeeze") return parseNum(gem.shortFloat) >= 6.0;
+    if (filterId === "lynch") {
+      const peg = parseNum(gem.pegRatio);
+      return (peg > 0 && peg <= 1.0) || hasArchetype(gem, "Lynch");
+    }
+    if (filterId === "greenblatt") {
+      return parseNum(gem.roic) >= 20.0 || hasArchetype(gem, "Greenblatt") || hasArchetype(gem, "Magic");
+    }
+    if (filterId === "rule_breakers") {
+      return parseNum(gem.grossMargin) >= 60.0 || hasArchetype(gem, "Rule Breakers") || hasArchetype(gem, "Disruptive");
+    }
+    return true;
+  };
+
+  const displayGems = gems.filter((gem) => isMatchFilter(gem, selectedFilter));
+  const getTabCount = (tabId: string) => gems.filter((gem) => isMatchFilter(gem, tabId)).length;
 
   return (
     <main id="main-content" role="main" className="min-h-screen bg-[#070a11] text-slate-100 font-mono flex flex-col pb-20 sm:pb-8">
