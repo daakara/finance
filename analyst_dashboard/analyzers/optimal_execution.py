@@ -69,6 +69,7 @@ class OptimalExecutionEngine:
         # Protect against unadjusted stock splits or dirty historical candles (clamp 50 SMA to [-20%, +18%])
         sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if not math.isnan(raw_sma_50) else current_price * 1.05
         is_stage_4_downtrend = (current_price < sma_50 * 0.98)
+        breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), 2)
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
@@ -108,7 +109,7 @@ class OptimalExecutionEngine:
                 vcp = "Base Consolidation in Progress"
                 # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) and clamp to realistic technical ceilings
                 breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), 2)
-                take_profit_1 = round(min(current_price * 1.25, max(breakout_pivot * 1.08, current_price * 1.12)), 2)
+                take_profit_1 = round(min(current_price * 1.245, max(breakout_pivot * 1.08, current_price * 1.12)), 2)
                 take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), 2)
             elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
