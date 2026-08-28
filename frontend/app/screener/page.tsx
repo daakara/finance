@@ -5,8 +5,15 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import PositionSizerModal from "../../components/PositionSizerModal";
 import AlertTriggerModal from "../../components/AlertTriggerModal";
+import DataSourceBadge from "../../components/DataSourceBadge";
 import { API_BASE_URL } from "../../lib/api";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
+import {
+  getCanonicalAssetName,
+  getCanonicalAssetMoat,
+  getCanonicalAssetRisk,
+  getCanonicalAssetCatalyst,
+} from "../../lib/assetRegistry";
 
 interface GemCandidate {
   symbol: string;
@@ -145,9 +152,13 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
   };
 
   return tickers.map((sym, idx) => {
+    const canonicalName = getCanonicalAssetName(sym);
+    const canonicalMoat = getCanonicalAssetMoat(sym);
+    const canonicalCatalyst = getCanonicalAssetCatalyst(sym);
+
     const base = BASE_PRICES[sym] || {
       price: 100.0,
-      name: `${sym} Corp.`,
+      name: canonicalName,
       roic: 24.0,
       peg: 0.95,
       margin: 62.0,
@@ -224,8 +235,8 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       dayTraderSetup: isDayTrader
         ? "Intraday momentum trend-following above 5m VWAP anchor with defined ATR risk."
         : "Stage 2 accumulation breakout above 50-day pivot.",
-      thesis: `${base.name} demonstrates ${base.roic}% ROIC with ${base.margin}% gross margins.`,
-      catalyst: "Upcoming product cycle expansion and institutional accumulation.",
+      thesis: canonicalMoat || `${base.name} demonstrates ${base.roic}% ROIC with ${base.margin}% gross margins.`,
+      catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || "Upcoming product cycle expansion and institutional accumulation.",
       riskLevel: isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk",
       executionStatus,
       statusLabel,
@@ -255,6 +266,7 @@ export default function ScreenerPage() {
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [gems, setGems] = useState<GemCandidate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dataSource, setDataSource] = useState<"live" | "fallback">("live");
   const [sizerGem, setSizerGem] = useState<GemCandidate | null>(null);
   const [alertGem, setAlertGem] = useState<GemCandidate | null>(null);
   const [customTickerInput, setCustomTickerInput] = useState<string>("");
@@ -337,16 +349,19 @@ export default function ScreenerPage() {
             confluenceWarnings: c.confluenceWarnings || [],
           }));
           setGems(liveGems);
+          setDataSource("live");
           return;
         }
       }
       // Fallback if API response is not OK or empty
       const fallbackList = generateBuiltinGems(role, customQuery);
       setGems(fallbackList);
+      setDataSource("fallback");
     } catch (err) {
       console.warn("Live screener fetch offline/timed out, using quantitative model catalog:", err);
       const fallbackList = generateBuiltinGems(role, customQuery);
       setGems(fallbackList);
+      setDataSource("fallback");
     } finally {
       setLoading(false);
     }
@@ -581,28 +596,31 @@ export default function ScreenerPage() {
             </div>
 
             {/* Lens Switcher Pill */}
-            <div className="flex items-center space-x-2 bg-[#0d131f] p-1.5 rounded-xl border border-[#243044]">
-              <span className="text-[11px] text-slate-400 font-bold px-2 hidden sm:inline">Execution Lens:</span>
-              <button
-                onClick={() => handleRoleToggle("DAY_TRADER")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-[0.96] ${
-                  isDayTrader
-                    ? "bg-amber-500 text-slate-950 shadow-md font-extrabold"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                ⚡ Day Trader (Scalps/Intraday)
-              </button>
-              <button
-                onClick={() => handleRoleToggle("LONG_TERM")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-[0.96] ${
-                  !isDayTrader
-                    ? "bg-cyan-500 text-slate-950 shadow-md font-extrabold"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                🏛️ Long-Term (Compounders)
-              </button>
+            <div className="flex items-center gap-2">
+              <DataSourceBadge source={dataSource} />
+              <div role="radiogroup" aria-label="Execution Lens" className="flex items-center bg-[#070a10] p-1 rounded-xl border border-[#243044]">
+                <span className="text-[11px] text-slate-400 font-bold px-2 hidden sm:inline">Execution Lens:</span>
+                <button
+                  onClick={() => handleRoleToggle("DAY_TRADER")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-[0.96] ${
+                    isDayTrader
+                      ? "bg-amber-500 text-slate-950 shadow-md font-extrabold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  ⚡ Day Trader (Scalps/Intraday)
+                </button>
+                <button
+                  onClick={() => handleRoleToggle("LONG_TERM")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all active:scale-[0.96] ${
+                    !isDayTrader
+                      ? "bg-cyan-500 text-slate-950 shadow-md font-extrabold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  🏛️ Long-Term (Compounders)
+                </button>
+              </div>
             </div>
           </div>
         </div>

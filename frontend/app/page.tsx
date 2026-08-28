@@ -17,6 +17,7 @@ import CompositeConvictionCard from "../components/CompositeConvictionCard";
 import { FredMacroData, SecForm4Trade, fetchFredMacroRegime, fetchSecForm4Insiders } from "../lib/institutionalFeeds";
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
+import DataSourceBadge from "../components/DataSourceBadge";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 
@@ -196,17 +197,7 @@ function TerminalContent() {
             {data && (
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-[10px] font-mono">
                 <div className="flex items-center gap-2">
-                  {data._dataSource === 'live' ? (
-                    <span className="text-emerald-400 flex items-center gap-1 bg-emerald-950/40 border border-emerald-800/50 px-2 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      📡 Live Market Feed
-                    </span>
-                  ) : (
-                    <span className="text-amber-400 flex items-center gap-1 bg-amber-950/40 border border-amber-800/50 px-2 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      📊 Quantitative Model Snapshot
-                    </span>
-                  )}
+                  <DataSourceBadge source={data._dataSource} />
                   {lastUpdatedTime && (
                     <span className="text-slate-400 hidden sm:inline">
                       Updated: <span className="text-slate-300 font-semibold">{lastUpdatedTime}</span>

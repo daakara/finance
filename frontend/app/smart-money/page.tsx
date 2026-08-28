@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import SmartMoneyDetailModal from "../../components/SmartMoneyDetailModal";
+import DataSourceBadge from "../../components/DataSourceBadge";
 import {
   fetchSmartMoneyOverview,
   SmartMoneyOverview,
@@ -33,6 +34,7 @@ const isWithinTimeframe = (dateStr?: string, tf: TimeframeOption = "30D"): boole
 function SmartMoneyContent() {
   const [data, setData] = useState<SmartMoneyOverview | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dataSource, setDataSource] = useState<"live" | "fallback">("live");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<"CONGRESS" | "SEC_FORM_4" | "OPTIONS_FLOW">("CONGRESS");
   const [timeframe, setTimeframe] = useState<TimeframeOption>("30D");
@@ -65,9 +67,13 @@ function SmartMoneyContent() {
       setLoading(true);
       try {
         const res = await fetchSmartMoneyOverview();
-        if (isMounted) setData(res);
+        if (isMounted) {
+          setData(res);
+          setDataSource("live");
+        }
       } catch (err) {
         console.error("Failed to load smart money overview:", err);
+        if (isMounted) setDataSource("fallback");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -194,6 +200,7 @@ function SmartMoneyContent() {
 
           {/* Quick Stats Badges (Dynamically Aggregated by Selected Timeframe) */}
           <div className="flex flex-wrap items-center gap-2.5">
+            <DataSourceBadge source={dataSource} />
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
               <span className="text-[10px] text-slate-500 block uppercase">{timeframe === "ALL" ? "All-Time" : timeframe} Disclosures</span>
               <span className="text-base font-bold text-slate-200 tabular-nums">{congressTrades.length}</span>

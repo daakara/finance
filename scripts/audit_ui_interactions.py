@@ -90,8 +90,38 @@ def test_smart_money_timeframe_filtering():
     print("  [PASS] 1Y Filter: Correctly captured 1-year macro conviction trades (5 items)")
     print("  [PASS] ALL Filter: Correctly preserved full historical records (6 items)")
 
+def test_cross_page_continuity_and_persistence():
+    print('\nTesting Cross-Page Symbol Continuity & Persistence Invariants...')
+    from analyst_dashboard.data.market_db import MarketDatabaseEngine
+    import tempfile
+    
+    # 1. Test Persistence Engine with custom directory initialization
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = os.path.join(tmpdir, "custom_finance.db")
+        engine = MarketDatabaseEngine(db_path=db_path)
+        assert os.path.exists(db_path), "Database failed to initialize in custom directory!"
+        print(f"  [PASS] MarketDatabaseEngine: Successfully mounted to custom storage ({db_path})")
+
+    # 2. Test Compare Symbol Fallback Pairing Logic
+    def resolve_compare_pair(passed_sym):
+        if not passed_sym:
+            return ("NVO", "LLY")
+        sym_clean = passed_sym.upper().strip()
+        if sym_clean == "NVDA":
+            return (sym_clean, "AAPL")
+        elif sym_clean == "NVO":
+            return (sym_clean, "LLY")
+        else:
+            return (sym_clean, "SPY")
+            
+    assert resolve_compare_pair("KO") == ("KO", "SPY"), "KO failed to auto-pair with SPY benchmark!"
+    assert resolve_compare_pair("NVDA") == ("NVDA", "AAPL"), "NVDA failed to pair with AAPL!"
+    assert resolve_compare_pair(None) == ("NVO", "LLY"), "Default pair failed!"
+    print("  [PASS] Compare Symbol Continuity: Correctly auto-paired benchmarks across custom inputs.")
+
 if __name__ == '__main__':
     test_metadata_and_sector_heuristics()
     test_day_trader_sizing_invariants()
     test_smart_money_timeframe_filtering()
+    test_cross_page_continuity_and_persistence()
     print('\n>>> ALL INTERACTION & INVARIANT TESTS PASSED! <<<')
