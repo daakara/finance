@@ -117,3 +117,47 @@ The platform operates under strict mathematical boundaries to guarantee zero cor
 │ Price Consensus Drift        │ .00 Across Registries      │ Hard assertion in static audit suite   │
 └──────────────────────────────┴──────────────────────────────┴────────────────────────────────────────┘
 `
+
+
+---
+
+## 4. Cloudflare Pages & Railway Infrastructure Setup Details
+
+### 🌐 Cloudflare Pages (Frontend Edge Deployment)
+* **Production URL**: https://finance-xp8.pages.dev
+* **Framework Preset**: Next.js (Static Export / SSG)
+* **Build Command**: cd frontend && npm install && npm run build
+* **Build Output Directory**: rontend/out
+* **Environment Variables**:
+  * NEXT_PUBLIC_API_URL: https://web-production-e370b.up.railway.app
+  * NODE_VERSION: 20.x
+* **Static Generation (SSG)**: 77 static routes pre-rendered during build, including:
+  * / (Main Analytics Terminal with 4 workspaces)
+  * /screener (Hidden Gems & Quant Screener)
+  * /portfolio (Anonymous IndexedDB Portfolio Tracker)
+  * /smart-money & /smart-money/late-filers (STOCK Act Radar)
+  * /compare & /compare/[pair] (7 normalized comparison pairs)
+  * /stock/[ticker] (42 pre-cached equity ticker hubs)
+  * /strategy/[type] (5 strategy hubs: Minervini, Magic Formula, etc.)
+  * /politician/[slug] & /committee/[slug] (Congressional trackers)
+
+---
+
+### ⚡ Railway (Backend API & Persistent Volume Deployment)
+* **Production API URL**: https://web-production-e370b.up.railway.app
+* **Service Name**: web (tranquil-radiance / production)
+* **Builder**: Dockerfile (python:3.11-slim)
+* **Start Command**: sh -c 'uvicorn api.main:app --host 0.0.0.0 --port  --workers 2'
+* **Restart Policy**: ON_FAILURE (max 10 retries)
+* **Persistent Volume Setup**:
+  * **Volume Name**: web-volume
+  * **Mount Path**: /root
+  * **Persistent Files on Volume**:
+    * /root/.finance_market_store.db (Historical OHLCV candles, fundamental snapshots)
+    * /root/.finance_platform_history.db (Trade recommendation outcome ledger, GARCH history)
+* **Environment Variables**:
+  * PORT: 8000 (Injected automatically by Railway)
+  * DATA_DIR: /root (Points SQLite engines to the persistent volume)
+  * REDIS_URL: Optional (Falls back to in-memory rate limiting if omitted)
+  * EODHD_API_KEY: Optional (High-throughput candle fallback)
+  * FRED_API_KEY: Optional (Direct Federal Reserve macro yields)

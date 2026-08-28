@@ -62,11 +62,11 @@ finance/
 │       ├── api.ts               # Analytics Engine, Timeout Budgets & Horizon Fallback
 │       ├── constants.ts         # Shared Factor Scores & Multi-Period Baselines
 │       └── institutionalFeeds.ts# FRED Macro & SEC Form 4 Ingestion
-├── api/                          # FastAPI Backend Services (Render)
-│   └── main.py                  # Analytical Endpoints & Live Market Ingestion
-├── analyst_dashboard/            # Quantitative Analyzers & Mathematical Engines
-│   ├── analyzers/               # Advanced Risk, Factor Models & Execution Analyzers
-│   └── visualizers/             # Streamlit Visualizations & Exploration Dashboards
+├── api/                          # FastAPI Backend Services (Railway Container)
+│   └── main.py                  # Analytical Endpoints, Lifespan Warmup & Invariant Gates
+├── analyst_dashboard/            # Quantitative Analyzers, Database & Control Loops
+│   ├── analyzers/               # VaR, Minervini VCP, Factors & Optimal Execution
+│   └── data/                    # MarketDatabaseEngine & HistoryDatabaseEngine (SQLite NVMe)
 └── requirements.txt
 ```
 
@@ -237,6 +237,27 @@ python -m pytest tests/
 - **Momentum**: RSI, Stochastic, Williams %R
 - **Volatility**: Bollinger Bands, ATR, Keltner Channels
 - **Volume**: OBV, Volume Profile, Money Flow Index
+
+## 🚀 Production Cloudflare & Railway Deployment
+
+### 🌐 Cloudflare Pages (Frontend Edge)
+- **Live URL**: [https://finance-xp8.pages.dev/](https://finance-xp8.pages.dev/)
+- **Build Command**: `cd frontend && npm install && npm run build`
+- **Output Directory**: `frontend/out`
+- **SSG Target**: 77 Pre-rendered static pages with zero client-side latency.
+- **Environment Variables**:
+  - `NEXT_PUBLIC_API_URL`: `https://web-production-e370b.up.railway.app`
+
+### ⚡ Railway Backend & Persistent Volume (API Engine)
+- **Live API**: `https://web-production-e370b.up.railway.app`
+- **Container**: `Dockerfile` (`python:3.11-slim` + FastAPI + Uvicorn)
+- **Persistent NVMe Volume**: `web-volume` mounted at `/root`
+- **Persistent Files**:
+  - `/root/.finance_market_store.db` (OHLCV candles & Factor Snapshots)
+  - `/root/.finance_platform_history.db` (Trade recommendation outcome ledger)
+- **Environment Variables**:
+  - `PORT`: `8000`
+  - `DATA_DIR`: `/root`
 
 ## 🤝 Contributing
 
