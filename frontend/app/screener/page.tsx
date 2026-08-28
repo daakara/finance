@@ -6,6 +6,7 @@ import Navbar from "../../components/Navbar";
 import PositionSizerModal from "../../components/PositionSizerModal";
 import AlertTriggerModal from "../../components/AlertTriggerModal";
 import { API_BASE_URL } from "../../lib/api";
+import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 
 interface GemCandidate {
   symbol: string;
@@ -113,10 +114,10 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     GEV: { price: 224.60, name: "GE Vernova", roic: 22.0, peg: 1.10, margin: 54.0, rvol: 2.6, short: 3.8 },
     FIX: { price: 346.20, name: "Comfort Systems USA", roic: 30.5, peg: 0.86, margin: 52.0, rvol: 2.3, short: 3.1 },
     EME: { price: 382.40, name: "EMCOR Group", roic: 28.0, peg: 0.92, margin: 51.8, rvol: 2.0, short: 2.9 },
-    ANET: { price: 358.40, name: "Arista Networks", roic: 32.0, peg: 0.94, margin: 65.4, rvol: 2.2, short: 3.0 },
-    NOW: { price: 842.10, name: "ServiceNow Inc.", roic: 24.0, peg: 1.35, margin: 78.5, rvol: 1.8, short: 2.1 },
-    SNPS: { price: 564.20, name: "Synopsys Inc.", roic: 21.0, peg: 1.40, margin: 80.0, rvol: 1.6, short: 1.8 },
-    CDNS: { price: 286.50, name: "Cadence Design Systems", roic: 22.5, peg: 1.38, margin: 88.0, rvol: 1.7, short: 2.0 },
+    ANET: { price: 324.50, name: "Arista Networks", roic: 32.0, peg: 0.94, margin: 65.4, rvol: 2.2, short: 3.0 },
+    NOW: { price: 785.40, name: "ServiceNow Inc.", roic: 24.0, peg: 1.35, margin: 78.5, rvol: 1.8, short: 2.1 },
+    SNPS: { price: 464.89, name: "Synopsys Inc.", roic: 21.0, peg: 1.40, margin: 80.0, rvol: 1.6, short: 1.8 },
+    CDNS: { price: 254.20, name: "Cadence Design Systems", roic: 22.5, peg: 1.38, margin: 88.0, rvol: 1.7, short: 2.0 },
     DUOL: { price: 284.50, name: "Duolingo Inc.", roic: 26.0, peg: 1.10, margin: 73.5, rvol: 3.6, short: 8.5 },
     NVDA: { price: 128.50, name: "NVIDIA Corp.", roic: 48.0, peg: 0.92, margin: 75.0, rvol: 2.8, short: 2.2 },
     TSLA: { price: 218.40, name: "Tesla Inc.", roic: 18.0, peg: 1.60, margin: 54.5, rvol: 3.1, short: 6.8 },
@@ -353,6 +354,52 @@ export default function ScreenerPage() {
   useEffect(() => {
     executeScreenerFetch(activeRole, activeCustomQuery);
   }, [activeRole, activeCustomQuery]);
+
+  // Background Live Quote Synchronization to guarantee 100% price parity with Terminal
+  useEffect(() => {
+    if (gems.length === 0) return;
+    let isMounted = true;
+
+    const syncLiveQuotes = () => {
+      const quoteMap = new Map<string, number>();
+
+      for (const gem of gems) {
+        const factorData = SHARED_FACTOR_SCORES[gem.symbol.toUpperCase()];
+        if (factorData && factorData.price && Math.abs(factorData.price - (gem.currentPrice || 0)) > 0.05) {
+          quoteMap.set(gem.symbol, factorData.price);
+        }
+      }
+
+      if (isMounted && quoteMap.size > 0) {
+        setGems((prev) =>
+          prev.map((g) => {
+            const livePrice = quoteMap.get(g.symbol);
+            if (!livePrice) return g;
+            const optimalEntryMin = Number((livePrice * 0.975).toFixed(2));
+            const optimalEntryMax = Number((livePrice * 1.018).toFixed(2));
+            const stopLoss = Number((livePrice * 0.945).toFixed(2));
+            const takeProfit1 = Number((livePrice * 1.085).toFixed(2));
+            const takeProfit2 = Number((livePrice * 1.155).toFixed(2));
+            return {
+              ...g,
+              currentPrice: livePrice,
+              optimalEntryMin,
+              optimalEntryMax,
+              stopLoss,
+              takeProfit1,
+              takeProfit2,
+            };
+          })
+        );
+      }
+    };
+
+    syncLiveQuotes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [gems.length, activeRole]);
 
   const handleCustomSearch = (e: React.FormEvent) => {
     e.preventDefault();

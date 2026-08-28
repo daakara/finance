@@ -65,7 +65,7 @@ CANDIDATE_BASELINES = {
     # Power, Industrials & Infrastructure
     "VRT": 88.40, "ETN": 312.50, "PWR": 268.10, "GEV": 224.60, "FIX": 346.20, "EME": 382.40,
     # Enterprise Cloud & EDA
-    "ANET": 358.40, "NOW": 842.10, "SNPS": 564.20, "CDNS": 286.50,
+    "ANET": 324.50, "NOW": 785.40, "SNPS": 464.89, "CDNS": 254.20,
 }
 
 

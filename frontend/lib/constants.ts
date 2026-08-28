@@ -184,6 +184,26 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     changePct: -1.25,
     scores: { growthScore: 82, qualityScore: 94, valuationScore: 80, momentumScore: 45, tailRiskScore: 78, compositeFactorScore: 76, verdict: "Stage 4 Correction / Base Building Required", piotroskiFScore: 8 }
   },
+  "SNPS": {
+    price: 464.89,
+    changePct: 0.85,
+    scores: { growthScore: 88, qualityScore: 94, valuationScore: 78, momentumScore: 72, tailRiskScore: 84, compositeFactorScore: 84, verdict: "EDA Software Moat & AI Chip Design", piotroskiFScore: 8 }
+  },
+  "CDNS": {
+    price: 254.20,
+    changePct: 1.10,
+    scores: { growthScore: 86, qualityScore: 92, valuationScore: 76, momentumScore: 74, tailRiskScore: 82, compositeFactorScore: 83, verdict: "EDA Semiconductor IP Leader", piotroskiFScore: 8 }
+  },
+  "NOW": {
+    price: 785.40,
+    changePct: 1.45,
+    scores: { growthScore: 90, qualityScore: 95, valuationScore: 70, momentumScore: 82, tailRiskScore: 85, compositeFactorScore: 86, verdict: "Enterprise Workflow AI Monopoly", piotroskiFScore: 8 }
+  },
+  "ANET": {
+    price: 324.50,
+    changePct: 2.10,
+    scores: { growthScore: 93, qualityScore: 91, valuationScore: 74, momentumScore: 89, tailRiskScore: 82, compositeFactorScore: 87, verdict: "AI Networking & Cloud Switching", piotroskiFScore: 8 }
+  },
   "VRT": {
     price: 114.20,
     changePct: 2.85,
