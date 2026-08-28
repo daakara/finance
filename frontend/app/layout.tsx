@@ -80,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#06b6d4" />
         {/* Matomo Tag Manager */}
         <script
+          type="text/javascript"
           dangerouslySetInnerHTML={{
             __html: `
               var _mtm = window._mtm = window._mtm || [];
@@ -91,6 +92,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
+        <noscript>
+          <p>
+            <img
+              referrerPolicy="no-referrer-when-downgrade"
+              src="https://data.fpldna.com/matomo/matomo.php?idsite=3&rec=1"
+              style={{ border: 0 }}
+              alt=""
+            />
+          </p>
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
