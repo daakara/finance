@@ -228,15 +228,12 @@ export default function PriceChart({
           return tA - tB;
         });
 
-      // Deduplicate sorted timestamps
-      const uniqueCandles: any[] = [];
-      const seenTimes = new Set();
+      // Deduplicate sorted timestamps preserving the latest candle update
+      const candleMap = new Map<string | number, any>();
       for (const item of sanitized) {
-        if (!seenTimes.has(item.time)) {
-          seenTimes.add(item.time);
-          uniqueCandles.push(item);
-        }
+        candleMap.set(item.time, item);
       }
+      const uniqueCandles = Array.from(candleMap.values());
 
       if (uniqueCandles.length > 0) {
         // Set Candlestick Data

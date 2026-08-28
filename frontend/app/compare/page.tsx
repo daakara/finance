@@ -74,12 +74,17 @@ const AUTHENTIC_FUNDAMENTALS: Record<string, {
   XOM: { category: "Integrated Upstream & LNG Energy Giant", roic: 18.2, grossMargin: 34.5, fwdPe: 12.8, peg: 1.40, fcfYield: 6.8, piotroski: 8, atr14: 1.85, rvol: 1.3, beta: 0.82, marketCap: "$465B" },
   NEM: { category: "Tier-1 Gold & Precious Metals Producer", roic: 12.4, grossMargin: 42.0, fwdPe: 15.5, peg: 1.10, fcfYield: 4.9, piotroski: 7, atr14: 1.20, rvol: 2.0, beta: 0.68, marketCap: "$48B" },
   JPM: { category: "Global Diversified Universal Bank", roic: 18.0, grossMargin: 0, fwdPe: 12.4, peg: 1.30, fcfYield: 5.2, piotroski: 8, atr14: 2.90, rvol: 1.2, beta: 1.05, marketCap: "$620B" },
+  DHL: { category: "Global Express Logistics Leader", roic: 22.0, grossMargin: 38.0, fwdPe: 14.2, peg: 1.10, fcfYield: 5.4, piotroski: 8, atr14: 0.95, rvol: 1.3, beta: 0.85, marketCap: "$52B" },
+  DHLGY: { category: "Global Express Logistics Leader (ADR)", roic: 22.0, grossMargin: 38.0, fwdPe: 14.2, peg: 1.10, fcfYield: 5.4, piotroski: 8, atr14: 0.95, rvol: 1.3, beta: 0.85, marketCap: "$52B" },
+  FDX: { category: "Integrated Air & Ground Express Network", roic: 16.5, grossMargin: 29.0, fwdPe: 13.8, peg: 1.15, fcfYield: 4.8, piotroski: 7, atr14: 4.20, rvol: 1.4, beta: 1.15, marketCap: "$72B" },
+  UPS: { category: "Domestic Ground Delivery Monopoly", roic: 24.0, grossMargin: 26.5, fwdPe: 15.2, peg: 1.35, fcfYield: 5.8, piotroski: 8, atr14: 2.10, rvol: 1.2, beta: 0.90, marketCap: "$112B" },
 };
 
 const SEO_CURATED_PRESETS = [
   { id: "nvo-vs-lly", label: "💊 Novo Nordisk (NVO) vs. Eli Lilly (LLY)", a: "NVO", b: "LLY" },
   { id: "spy-vs-qqq", label: "📊 S&P 500 (SPY) vs. Nasdaq-100 (QQQ)", a: "SPY", b: "QQQ" },
   { id: "nvda-vs-aapl", label: "💻 NVIDIA (NVDA) vs. Apple (AAPL)", a: "NVDA", b: "AAPL" },
+  { id: "fdx-vs-ups", label: "📦 FedEx (FDX) vs. UPS (UPS)", a: "FDX", b: "UPS" },
   { id: "tsla-vs-pltr", label: "🤖 Tesla (TSLA) vs. Palantir (PLTR)", a: "TSLA", b: "PLTR" },
   { id: "cprx-vs-powi", label: "💎 Catalyst Pharma (CPRX) vs. Power Integrations (POWI)", a: "CPRX", b: "POWI" },
 ];
@@ -88,7 +93,7 @@ const AVAILABLE_TICKERS = [
   "NVDA", "AAPL", "MSFT", "TSLA", "PLTR", "AMZN", "GOOGL", "AMD", "ARM", "SMCI",
   "CRWD", "PANW", "COIN", "MARA", "MSTR", "DUOL", "CELH", "IONQ", "RKLB",
   "LNTH", "CPRX", "MEDP", "ACLS", "ELF", "POWI", "TMDX", "ISRG", "VRTX", "LLY", "NVO",
-  "VRT", "ETN", "ANET", "KO", "SBUX", "O", "XOM", "NEM", "JPM", "SPY", "QQQ", "SMH", "IWM", "GLD", "TLT"
+  "VRT", "ETN", "ANET", "KO", "SBUX", "O", "XOM", "NEM", "JPM", "DHL", "DHLGY", "FDX", "UPS", "SPY", "QQQ", "SMH", "IWM", "GLD", "TLT"
 ];
 
 function CompareContent() {

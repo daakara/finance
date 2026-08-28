@@ -61,6 +61,10 @@ export const CANONICAL_ASSET_NAMES: Record<string, string> = {
   VRTX: 'Vertex Pharmaceuticals Incorporated',
   ETN: 'Eaton Corporation plc',
   ANET: 'Arista Networks, Inc.',
+  DHL: 'DHL Group (ADR: DHLGY)',
+  DHLGY: 'DHL Group (Deutsche Post AG ADR)',
+  FDX: 'FedEx Corporation',
+  UPS: 'United Parcel Service, Inc.',
 };
 
 export const CANONICAL_ASSET_MOATS: Record<string, string> = {
@@ -96,6 +100,10 @@ export const CANONICAL_ASSET_MOATS: Record<string, string> = {
   MEDP: 'High return-on-capital contract research organization catering exclusively to emerging biopharma.',
   ELF: 'Digitally-native fast-beauty disruptor taking rapid global market share with premium quality-to-price ratio.',
   DUOL: 'Gamified learning platform with organic user acquisition and accelerating ARPU conversion.',
+  DHL: 'Unrivaled global express logistics, international mail, and freight forwarding network operating across 220+ countries and territories.',
+  DHLGY: 'Unrivaled global express logistics, international mail, and freight forwarding network operating across 220+ countries and territories.',
+  FDX: 'Integrated global air-and-ground express logistics network with proprietary automated hub sorting infrastructure and high-margin B2B freight dominance.',
+  UPS: 'World\'s largest package delivery company with dense ground route infrastructure, high unionized driver moats, and integrated healthcare cold-chain logistics.',
 };
 
 export const CANONICAL_ASSET_RISKS: Record<string, string> = {
@@ -131,6 +139,10 @@ export const CANONICAL_ASSET_RISKS: Record<string, string> = {
   MEDP: 'Early-stage biopharma venture funding contraction and clinical trial cancellation rates.',
   ELF: 'Color cosmetics fashion trend obsolescence and retail inventory de-stocking.',
   DUOL: 'Generative AI consumer competition and mobile app store subscription commission changes.',
+  DHL: 'European economic growth slowdown, global air cargo volume normalization, and jet fuel price volatility.',
+  DHLGY: 'European economic growth slowdown, global air cargo volume normalization, and jet fuel price volatility.',
+  FDX: 'US industrial manufacturing cyclicality, postal service volume contract renegotiations, and pilot labor costs.',
+  UPS: 'E-commerce volume normalization post-peak, Teamsters union wage cost escalation, and Amazon in-house delivery network insourcing.',
 };
 
 export const CANONICAL_ASSET_CATALYSTS: Record<string, AssetCatalystProfile> = {
@@ -313,6 +325,30 @@ export const CANONICAL_ASSET_CATALYSTS: Record<string, AssetCatalystProfile> = {
     phase: 'Sub-2nm Foundry Tool Shipments',
     timeline: 'Continuous Semiconductor Node Equipment Ramps',
     thesis: 'Global monopoly in semiconductor process diagnostic inspection and metrology essential for advanced wafer fabrication yields.',
+  },
+  DHL: {
+    trial: 'Strategy 2030 Global E-Commerce & Air Freight Network Modernization',
+    phase: 'Commercial Logistics Scale & Automation',
+    timeline: 'Quarterly Global Freight Volume & Air Transport Yield Reporting',
+    thesis: 'Unrivaled global express logistics, international mail, and freight forwarding network operating across 220+ countries.',
+  },
+  DHLGY: {
+    trial: 'Strategy 2030 Global E-Commerce & Air Freight Network Modernization',
+    phase: 'Commercial Logistics Scale & Automation',
+    timeline: 'Quarterly Global Freight Volume & Air Transport Yield Reporting',
+    thesis: 'Unrivaled global express logistics, international mail, and freight forwarding network operating across 220+ countries.',
+  },
+  FDX: {
+    trial: 'DRIVE Cost Transformation & Network 2.0 Federal Express Optimization',
+    phase: 'Operational Turnaround & Margin Compounding',
+    timeline: 'Quarterly Operating Margin & Package Yield Readouts',
+    thesis: 'Integrated global air-and-ground express logistics network with proprietary automated hub sorting infrastructure.',
+  },
+  UPS: {
+    trial: 'Network of the Future Automation & Healthcare Cold-Chain Expansion',
+    phase: 'Smart Logistics Network Modernization',
+    timeline: 'Quarterly Package Volume & Healthcare Revenue Milestones',
+    thesis: 'World\'s largest package delivery company with dense ground route infrastructure and high unionized driver moats.',
   },
 };
 

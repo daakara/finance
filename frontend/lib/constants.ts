@@ -239,6 +239,26 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     changePct: 2.65,
     scores: { growthScore: 86, qualityScore: 89, valuationScore: 74, momentumScore: 84, tailRiskScore: 82, compositeFactorScore: 84, verdict: "Optical Networking AI Beneficiary", piotroskiFScore: 8 }
   },
+  "DHL": {
+    price: 42.50,
+    changePct: 1.15,
+    scores: { growthScore: 82, qualityScore: 91, valuationScore: 84, momentumScore: 76, tailRiskScore: 86, compositeFactorScore: 85, verdict: "Global Express Logistics Leader", piotroskiFScore: 8 }
+  },
+  "DHLGY": {
+    price: 42.50,
+    changePct: 1.15,
+    scores: { growthScore: 82, qualityScore: 91, valuationScore: 84, momentumScore: 76, tailRiskScore: 86, compositeFactorScore: 85, verdict: "Global Express Logistics Leader", piotroskiFScore: 8 }
+  },
+  "FDX": {
+    price: 285.00,
+    changePct: 1.45,
+    scores: { growthScore: 80, qualityScore: 88, valuationScore: 80, momentumScore: 82, tailRiskScore: 82, compositeFactorScore: 83, verdict: "Integrated Express Network", piotroskiFScore: 7 }
+  },
+  "UPS": {
+    price: 132.00,
+    changePct: 0.85,
+    scores: { growthScore: 76, qualityScore: 90, valuationScore: 82, momentumScore: 74, tailRiskScore: 85, compositeFactorScore: 82, verdict: "High-Yield Domestic Logistics Moat", piotroskiFScore: 8 }
+  },
 };
 export const DEFAULT_MACRO_DIFFICULTY: MacroDifficultyRating = {
   rating: 1,

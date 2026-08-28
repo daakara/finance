@@ -406,10 +406,9 @@ export function generateFallbackAnalytics(
     const now = Date.now();
     // Derive historical starting price from the expected total horizon return
     const historicalStartPrice = basePrice / (1 + (expectedTotalPctChange / 100));
-    let walkPrice = historicalStartPrice;
 
-    for (let i = numPoints; i >= 0; i--) {
-      const timeMs = now - (i * stepMs);
+    for (let i = 0; i <= numPoints; i++) {
+      const timeMs = now - ((numPoints - i) * stepMs);
       const timeVal = isIntraday 
         ? Math.floor(timeMs / 1000) 
         : new Date(timeMs).toISOString().split("T")[0];
@@ -417,21 +416,21 @@ export function generateFallbackAnalytics(
       let open: number;
       let close: number;
 
-      if (i === 0) {
+      if (i === numPoints) {
         // Pin the final candle precisely to basePrice
-        const prevClose = generatedCandles.length > 0 ? generatedCandles[generatedCandles.length - 1].close : basePrice * 0.99;
+        const prevClose = generatedCandles.length > 0 ? generatedCandles[generatedCandles.length - 1].close : basePrice * 0.995;
         open = Number(prevClose.toFixed(2));
         close = Number(basePrice.toFixed(2));
-      } else if (i === numPoints) {
+      } else if (i === 0) {
         // Pin the first candle to historicalStartPrice
         open = Number(historicalStartPrice.toFixed(2));
         close = Number((historicalStartPrice * 1.002).toFixed(2));
       } else {
         // Smooth deterministic interpolation curve towards current price
-        const progress = 1 - (i / numPoints);
+        const progress = i / numPoints;
         const targetTrendPrice = historicalStartPrice + (basePrice - historicalStartPrice) * progress;
         const wave = Math.sin(i / 3.5) * (basePrice * 0.02);
-        walkPrice = targetTrendPrice + wave;
+        const walkPrice = targetTrendPrice + wave;
         open = Number((walkPrice * 0.998).toFixed(2));
         close = Number(walkPrice.toFixed(2));
       }
