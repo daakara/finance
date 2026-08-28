@@ -220,10 +220,10 @@ export default function PortfolioPage() {
               )}
             </div>
             <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-              My Portfolio & Risk Allocations
+              My Portfolio & Holdings
             </h1>
             <p className="text-xs text-slate-400 font-sans mt-0.5">
-              Client-side position tracker calculating real-time PnL, volatility exposure, and target risk ladders.
+              Track your real-time holdings, profit/loss, stop-loss protection floors, and profit targets — 100% private to your browser.
             </p>
           </div>
 

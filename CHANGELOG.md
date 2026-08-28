@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-08-28
+
+### Added
+- 💬 **Progressive Clarity Vernacular Switcher (`[ 💬 Plain English ]` vs `[ 🤓 Pro Quant ]`)**: Introduced universal language mode switcher in `Navbar.tsx` persisted via `ARX_VERNACULAR_MODE` and broadcast across components via `finance:vernacular-change`.
+- 🎯 **The Bottom Line (No Wall Street Fluff)**: Added punchline summary callout to `CompositeConvictionCard.tsx` delivering 1-sentence trade rules and downside boundary verdicts in plain English.
+- 🛡️ **Rule #1: Protect The Castle**: Enhanced `DayTraderPositionSizer.tsx` with "The Math Made Simple" human explanation breakdown calculating exact share count, dollar risk, and upside profit targets.
+- 🧪 **Human-Centric Metric Translations**: Translated opaque jargon into clear, relatable concepts across `RiskMetricsCard.tsx` ("Worst-Case Crash Test", "Standard Bad Day"), `AssetFactorRadar.tsx` ("BS Detector", "Accounting Truth Check"), and `CongressionalTradesCard.tsx` ("Follow The Money", "Politician Filing Delay").
+- 📖 **Field Manual Chapter 8 (No-BS Jargon Buster)**: Added comprehensive dictionary in `frontend/app/guide/page.tsx` translating Wall Street terminology into human English.
+- 🧪 **Automated Quality Gate**: Added `test_brand_tone_and_progressive_clarity_vernacular_engine` to `tests/test_nextjs_frontend_structure.py`.
+
+---
+
+## [1.4.0] - 2026-08-28
+
+### Fixed
+- 🔗 **Apex Canonical Redirection (`arxterminal.com` -> `www.arxterminal.com`)**: Added Cloudflare Pages `public/_redirects` 301 rules and zero-latency synchronous `<head>` script in `app/layout.tsx` preserving path and query strings.
+- ♿ **WCAG AA Light Mode Contrast Enhancement**: Boosted contrast ratios across text, cards, and radar factor scorecards to $\ge 5.1:1$.
+
+---
+
 ## [1.3.0] - 2026-08-27
 
 ### Fixed

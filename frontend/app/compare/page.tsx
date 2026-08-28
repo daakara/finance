@@ -264,13 +264,13 @@ function CompareContent() {
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">⚔️</span>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Head-to-Head Asset & Pipeline Comparison
+                  Asset Showdown: Head-to-Head Comparison
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
                 {isDayTrader
-                  ? "⚡ Day Trader Lens Active: Comparing 14-day ATR volatility ($), relative volume (RVOL), intraday beta, and opening range setups."
-                  : "🏛️ Long-Term Compounder Lens Active: Comparing multi-year ROIC, gross margins, clinical trial pipelines, and fundamental valuations."}
+                  ? "⚡ Day Trader Lens: Comparing daily swing speed (ATR), order flow volume, and quick scalp potential."
+                  : "🏛️ Long-Term Lens: Comparing true business profitability, moats, valuation bargains, and downside risks."}
               </p>
             </div>
 

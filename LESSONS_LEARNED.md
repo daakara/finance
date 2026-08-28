@@ -164,4 +164,22 @@ When switching from Cyber Dark to Paper Light theme (`data-theme="paper"`):
 4. **Automated Quality Gate**:
    - Enforced via `test_light_paper_theme_compliance` in `tests/test_nextjs_frontend_structure.py`.
 
+---
 
+## 8. 💬 Brand Tone, Progressive Clarity Vernacular Layer & Microcopy Architecture
+
+### 🚨 What Went Wrong
+Institutional finance software typically alienates retail users and non-finance professionals with opaque jargon ("Cornish-Fisher Modified Value at Risk", "Piotroski F-Score", "Target Risk Ladders", "Alpha Attribution") without basic contextual explanations. Conversely, stripping all technical terms alienates quantitative hedge funds and institutional analysts.
+
+### 🛡️ The Preventive Standard (3-Tier Progressive Clarity)
+1. **The 3-Tier Information Hierarchy**:
+   - **Tier 1: The Bottom Line (Human Verdict)** — An instant, humorous, 1-sentence verdict on whether to buy, wait, or avoid (e.g. `🎯 The Bottom Line: Solid core business... don't chase green candles; accumulate near support`).
+   - **Tier 2: Actionable Plain Math** — Exact shares and maximum dollar loss explained in simple arithmetic (e.g. `Rule #1: Protect The Castle — If you buy 75 shares at $33.51 and it hits your stop at $31.16, you lose exactly $176 (1.0% of account)`).
+   - **Tier 3: Pro Quant Drill-Down** — Full institutional mathematical equations, VaR non-normal distributions, and factor scores preserved for advanced users.
+2. **Vernacular Mode Switcher (`[ 💬 Plain English ]` vs `[ 🤓 Pro Quant ]`)**:
+   - Persisted in `localStorage.getItem("ARX_VERNACULAR_MODE")`.
+   - Reactive across all client components via `window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: mode }))`.
+3. **No-BS Jargon Buster in Guide**:
+   - Permanent field reference translating every Wall Street term into intuitive English.
+4. **Automated Quality Gate**:
+   - Enforced via `test_brand_tone_and_progressive_clarity_vernacular_engine` in `tests/test_nextjs_frontend_structure.py`.

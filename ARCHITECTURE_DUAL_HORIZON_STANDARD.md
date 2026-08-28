@@ -104,4 +104,16 @@ If a page or sub-view is inherently single-horizon or purely informational (e.g.
      - **Macro**: `1M` (22 daily bars), `6M` (130 daily bars), `1Y` (252 daily bars), `3Y` (156 weekly bars), `5Y` (60 monthly bars).
    - Guarantees strictly monotonic ascending timestamps for flawless TradingView Lightweight Charts rendering without canvas lockup.
 
+---
 
+## 8. 💬 Brand Tone & Progressive Clarity Vernacular Standard
+
+### Rule G: 3-Tier Progressive Clarity & Vernacular Mode
+1. **Dual-Layer Language Modes**:
+   - **`PLAIN_ENGLISH` (Default)**: Witty, punchy, human explanations that translate complex quant terminology into clear analogies and actionable rules.
+   - **`PRO_QUANT`**: Deep institutional mathematical terminology (VaR fat tails, Sortino downside deviation, factor loadings, ATR statistical stops).
+2. **Universal Vernacular Event Bus**:
+   - Persisted in `localStorage.getItem("ARX_VERNACULAR_MODE")`.
+   - Propagated to all components via `window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: mode }))`.
+3. **The Bottom Line Callout Requirement**:
+   - Core conviction cards (`CompositeConvictionCard`) and sizing tools (`DayTraderPositionSizer`) must always present a 1-sentence "Bottom Line" takeaway explaining the trade rule and downside boundary in plain English.

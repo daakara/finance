@@ -147,6 +147,49 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertNotIn("https://arxterminal.com/", sitemap_content, "sitemap.xml must not contain non-www URLs")
         self.assertIn("https://www.arxterminal.com/", sitemap_content)
 
+    def test_brand_tone_and_progressive_clarity_vernacular_engine(self):
+        """Regression Quality Gate: Ensure Brand Tone, Vernacular Switcher, Bottom Line summaries, and Jargon Buster exist."""
+        navbar_path = os.path.join("frontend", "components", "Navbar.tsx")
+        conviction_path = os.path.join("frontend", "components", "CompositeConvictionCard.tsx")
+        sizer_path = os.path.join("frontend", "components", "DayTraderPositionSizer.tsx")
+        risk_path = os.path.join("frontend", "components", "RiskMetricsCard.tsx")
+        factor_path = os.path.join("frontend", "components", "AssetFactorRadar.tsx")
+        guide_path = os.path.join("frontend", "app", "guide", "page.tsx")
+
+        with open(navbar_path, "r", encoding="utf-8") as f:
+            nav_content = f.read()
+        self.assertIn("ARX TERMINAL", nav_content)
+        self.assertIn("No-BS Market Intel", nav_content)
+        self.assertIn("ARX_VERNACULAR_MODE", nav_content)
+        self.assertIn("finance:vernacular-change", nav_content)
+        self.assertIn("Plain English", nav_content)
+        self.assertIn("Pro Quant", nav_content)
+
+        with open(conviction_path, "r", encoding="utf-8") as f:
+            conv_content = f.read()
+        self.assertIn("The Bottom Line (No Wall Street Fluff)", conv_content)
+        self.assertIn("finance:vernacular-change", conv_content)
+
+        with open(sizer_path, "r", encoding="utf-8") as f:
+            sizer_content = f.read()
+        self.assertIn("Rule #1: Protect The Castle", sizer_content)
+        self.assertIn("The Math Made Simple", sizer_content)
+
+        with open(risk_path, "r", encoding="utf-8") as f:
+            risk_content = f.read()
+        self.assertIn("Worst-Case Crash Test", risk_content)
+        self.assertIn("Standard Bad Day", risk_content)
+        self.assertIn("finance:vernacular-change", risk_content)
+
+        with open(factor_path, "r", encoding="utf-8") as f:
+            factor_content = f.read()
+        self.assertIn("BS Detector", factor_content)
+        self.assertIn("finance:vernacular-change", factor_content)
+
+        with open(guide_path, "r", encoding="utf-8") as f:
+            guide_content = f.read()
+        self.assertIn("Chapter 8: The No-BS Plain-English Jargon Buster", guide_content)
+
 
 if __name__ == "__main__":
     unittest.main()

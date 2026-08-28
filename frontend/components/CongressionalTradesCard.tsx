@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CongressTradeItem, OptionsFlowItem } from "../lib/api";
 import SmartMoneyDetailModal from "./SmartMoneyDetailModal";
 
@@ -23,6 +23,24 @@ export default function CongressionalTradesCard({
   const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
   const [selectedCongress, setSelectedCongress] = useState<CongressTradeItem | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<OptionsFlowItem | null>(null);
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+      if (saved) setVernacularMode(saved);
+    } catch {}
+
+    const handleVernacular = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail) setVernacularMode(custom.detail);
+    };
+
+    window.addEventListener("finance:vernacular-change", handleVernacular);
+    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
+  }, []);
+
+  const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
   const filteredCongressTrades = congressTrades.filter((t) => {
     if (timeframe === "ALL") return true;
@@ -51,17 +69,21 @@ export default function CongressionalTradesCard({
                 isDayTrader ? "bg-amber-400" : "bg-purple-400"
               } animate-pulse`}></span>
               <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                <span>{isDayTrader ? "⚡ Intraday Options Sweeps & Dark Pool Block Prints" : "🏛️ Capitol Hill & Institutional Order Flow Radar"}</span>
+                <span>
+                  {isDayTrader
+                    ? (isPlain ? "⚡ Whale Bets & Big Options Sweeps" : "⚡ Intraday Options Sweeps & Dark Pool Block Prints")
+                    : (isPlain ? "🏛️ Follow The Money (Capitol Hill Insider Trades)" : "🏛️ Capitol Hill & Institutional Order Flow Radar")}
+                </span>
               </h3>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
               {isDayTrader
-                ? `High-velocity OPRA options order flow & volume-to-open-interest anomalies for ${symbol}`
-                : `STOCK Act Title I Article 105 disclosures & congressional committee alignment for ${symbol}`}
+                ? (isPlain ? `Tracking big institutional call/put bets moving on ${symbol} right now.` : `High-velocity OPRA options order flow & volume-to-open-interest anomalies for ${symbol}`)
+                : (isPlain ? `See which members of US Congress bought or sold ${symbol} and their filing delays.` : `STOCK Act Title I Article 105 disclosures & congressional committee alignment for ${symbol}`)}
             </p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
-                <span>🏛️</span> {isDayTrader ? "OPRA Options Flow Aggregation & Gamma Exposure" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)"}
+                <span>🏛️</span> {isDayTrader ? (isPlain ? "Live Big-Money Options Tape" : "OPRA Options Flow Aggregation & Gamma Exposure") : (isPlain ? "STOCK Act Legal Disclosures" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)")}
               </span>
             </div>
           </div>

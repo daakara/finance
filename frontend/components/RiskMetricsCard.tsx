@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { AnalyticsResponse } from "../lib/api";
 
 interface RiskMetricsCardProps {
@@ -11,6 +12,24 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
   const metrics = analyticsData?.analytics?.advanced_metrics;
   const technicals = analyticsData?.technicals;
   const isDayTrader = userRole === "DAY_TRADER";
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+      if (saved) setVernacularMode(saved);
+    } catch {}
+
+    const handleVernacular = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail) setVernacularMode(custom.detail);
+    };
+
+    window.addEventListener("finance:vernacular-change", handleVernacular);
+    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
+  }, []);
+
+  const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
   const var95 = metrics?.Modified_VaR_95 ?? -3.42;
   const var99 = metrics?.Modified_VaR_99 ?? -5.18;
@@ -29,16 +48,20 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             <svg className={`w-4 h-4 shrink-0 ${isDayTrader ? "text-amber-400" : "text-cyan-400"}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <span>{isDayTrader ? "⚡ Intraday Volatility & Execution Risk Guardrails" : "🏛️ Advanced Tail Risk & Benchmark Ratios"}</span>
+            <span>
+              {isDayTrader
+                ? (isPlain ? "⚡ Day Trader Speedometer & Safety Stops" : "⚡ Intraday Volatility & Execution Risk Guardrails")
+                : (isPlain ? "🛡️ Worst-Case Crash Test & Downside Protection" : "🏛️ Advanced Tail Risk & Benchmark Ratios")}
+            </span>
           </h3>
           <p className="text-xs text-slate-400 mt-0.5 font-normal">
             {isDayTrader
-              ? "Real-time ATR volatility, single-day drawdown boundaries, and intraday risk-adjusted ratios"
-              : "Downside Crash Protection & Black-Swan Tail Risk Evaluation"}
+              ? (isPlain ? "Live day range speed, daily max loss limits, and momentum gauges." : "Real-time ATR volatility, single-day drawdown boundaries, and intraday risk-adjusted ratios.")
+              : (isPlain ? "If bad news hits tomorrow, how much could this asset realistically drop?" : "Downside Crash Protection & Black-Swan Tail Risk Evaluation")}
           </p>
           <div className="flex items-center gap-2 mt-1.5">
             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono">
-              <span>🧮</span> {isDayTrader ? "Live 14-ATR Intraday Engine" : "Cornish-Fisher Non-Normal VaR Model"}
+              <span>🧮</span> {isDayTrader ? "Live 14-Day Range Gauge" : (isPlain ? "Black Swan Downside Crash Model" : "Cornish-Fisher Non-Normal VaR Model")}
             </span>
           </div>
         </div>
@@ -47,7 +70,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
             : "text-cyan-400 bg-cyan-950/60 border-cyan-800/80"
         }`}>
-          {isDayTrader ? "Intraday Risk Engine" : "Crash-Adjusted VaR"}
+          {isDayTrader ? (isPlain ? "Intraday Guardrails" : "Intraday Risk Engine") : (isPlain ? "Crash Test Engine" : "Crash-Adjusted VaR")}
         </span>
       </div>
 
@@ -56,10 +79,10 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
-              {isDayTrader ? "14-Day True Range (ATR)" : "Modified VaR (95%)"}
+              {isDayTrader ? (isPlain ? "Typical Daily Swing" : "14-Day True Range (ATR)") : (isPlain ? "Standard Bad Day (95% VaR)" : "Modified VaR (95%)")}
             </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
-              {isDayTrader ? "Intraday" : "95% CF"}
+              {isDayTrader ? "Daily Move" : "95% Level"}
             </span>
           </div>
           <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${isDayTrader ? "text-amber-400" : "text-rose-400"}`}>
@@ -69,7 +92,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             <div className={`${isDayTrader ? "bg-amber-500" : "bg-rose-500"} h-full rounded-full`} style={{ width: `${Math.min(100, Math.abs(var95) * 15)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {isDayTrader ? "Average Daily Dollar Movement" : "Low Tail Risk vs S&P Benchmark"}
+            {isDayTrader ? "Average swing per trading day" : "Expected max drop 19 out of 20 days"}
           </span>
         </div>
 
@@ -77,10 +100,10 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
-              {isDayTrader ? "Single-Session Max Loss" : "Modified VaR (99%)"}
+              {isDayTrader ? (isPlain ? "Max Session Budget" : "Single-Session Max Loss") : (isPlain ? "Worst-Case Shock (99% VaR)" : "Modified VaR (99%)")}
             </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
-              {isDayTrader ? "1D Limit" : "99% CF"}
+              {isDayTrader ? "Hard Stop" : "99% Shock"}
             </span>
           </div>
           <span className="text-xl sm:text-2xl font-bold text-rose-500 block tabular-nums">
@@ -90,16 +113,18 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             <div className="bg-rose-600 h-full rounded-full" style={{ width: `${Math.min(100, Math.abs(var99) * 12)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {isDayTrader ? "Daily Stop-Out Capital Threshold" : "Extreme 99% Tail Risk Horizon"}
+            {isDayTrader ? "Do not hold through this loss level" : "Estimated worst 1-day crash in 100 sessions"}
           </span>
         </div>
 
         {/* Metric 3 */}
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-300">Sortino Ratio</span>
+            <span className="text-xs font-medium text-slate-300">
+              {isPlain ? "Downside Armor (Sortino)" : "Sortino Ratio"}
+            </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
-              {isDayTrader ? "Downside" : "Annualized"}
+              {isDayTrader ? "Downside" : "Armor"}
             </span>
           </div>
           <span className="text-xl sm:text-2xl font-bold text-emerald-400 block tabular-nums">
@@ -109,7 +134,7 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, sortino * 35)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 block">
-            {isDayTrader ? "High Downside Risk Protection" : "Institutional Risk-Adjusted Alpha"}
+            {sortino >= 1.5 ? "Excellent downside protection" : "Moderate downside turbulence"}
           </span>
         </div>
 
@@ -117,10 +142,10 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
         <div className="bg-[#090d14] p-3.5 rounded-lg border border-[#243044] space-y-2 relative group ">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">
-              {isDayTrader ? "RSI (14-Period Momentum)" : "Calmar Ratio"}
+              {isDayTrader ? (isPlain ? "Speedometer (RSI)" : "RSI (14-Period Momentum)") : (isPlain ? "Recovery Speed (Calmar)" : "Calmar Ratio")}
             </span>
             <span className="text-[10px] text-slate-500 font-semibold px-1 rounded bg-[#1b2434]">
-              {isDayTrader ? "Tape Flow" : "Max DD"}
+              {isDayTrader ? "Momentum" : "Max DD"}
             </span>
           </div>
           <span className={`text-xl sm:text-2xl font-bold block tabular-nums ${
@@ -135,8 +160,8 @@ export default function RiskMetricsCard({ analyticsData, userRole = "LONG_TERM" 
           </div>
           <span className="text-[10px] text-slate-400 block">
             {isDayTrader
-              ? rsi14 > 70 ? "Overbought Scalp Risk" : rsi14 < 30 ? "Oversold Bounce Zone" : "Neutral Order Flow"
-              : "Annualized Return / Max Drawdown"}
+              ? rsi14 > 70 ? "Overheating (Don't chase high)" : rsi14 < 30 ? "Oversold (Watch for bounce)" : "Cruising in middle gear"
+              : "Historical return vs deepest drawdown"}
           </span>
         </div>
       </div>

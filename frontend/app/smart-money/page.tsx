@@ -190,11 +190,11 @@ function SmartMoneyContent() {
             <div className="flex items-center space-x-2">
               <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                <span>🏛️ Smart Money Intelligence: Regulatory-Backed Institutional Scanner</span>
+                <span>🏛️ Follow The Money: Smart Money & Insider Radar</span>
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl">
-              Tracking Capitol Hill STOCK Act filings, SEC Form 4 corporate insider purchases, and FINRA ATS dark pool sweeps with statutory lag and return attribution.
+              See what politicians on Capitol Hill, corporate CEOs, and big-money options whales are buying with their own capital — before it hits the headlines.
             </p>
           </div>
 

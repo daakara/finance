@@ -111,11 +111,11 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
                 <line x1="12" y1="6" x2="12" y2="2" />
                 <line x1="12" y1="22" x2="12" y2="18" />
               </svg>
-              <span>{symbol} Day Trader Risk & Position Sizer</span>
+              <span>Rule #1: Protect The Castle ({symbol} Position Sizer)</span>
             </h3>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-            Calculates exact shares and dollar risk based on market volatility and stop-loss boundaries
+            Tells you exactly how many shares to buy so a single bad trade never blows up your account.
           </p>
         </div>
 
@@ -294,6 +294,11 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           </span>
           <span className="text-[9px] text-slate-400 block mt-0.5">{rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral"}</span>
         </div>
+      </div>
+
+      {/* 💡 Plain-English Sizing Takeaway */}
+      <div className="bg-[#090d14] border-l-4 border-amber-500 p-3 rounded-r-xl border-t border-b border-r border-[#243044] text-xs font-sans text-slate-200 leading-relaxed">
+        🛡️ <strong>The Math Made Simple:</strong> If you buy <strong>{positionUnits} shares</strong> at <strong>${currentPrice.toFixed(2)}</strong> and the trade goes wrong, hitting your stop at <strong>${stopPrice.toFixed(2)}</strong>, you lose exactly <strong>${dollarRisk.toFixed(0)} ({riskPct}% of account)</strong>. Your profit targets are <strong>+${(dollarRisk * 1.5).toFixed(0)}</strong> / <strong>+${(dollarRisk * 2.0).toFixed(0)}</strong>. You survive to fight another day.
       </div>
 
       {/* Execution Targets */}

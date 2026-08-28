@@ -587,11 +587,11 @@ export default function ScreenerPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">💎</span>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  High-Alpha Gems & Confluence Execution Scanner
+                  Market Scanner: Unfair Advantage Stock Finder
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
-                Scan {activeCustomQuery ? `Custom Ticker Selection: "${activeCustomQuery}"` : "Active 60-Asset Multi-Sector Universe"} with **Multi-Factor Confluence**, **Optimal Buy Zones**, and **Dynamic Position Sizing**.
+                Filter high-probability trade setups by clear buy zones, calculated profit targets, insider backing, and mathematical edge.
               </p>
             </div>
 

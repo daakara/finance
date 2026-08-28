@@ -16,6 +16,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   const pathname = usePathname();
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
@@ -43,6 +44,21 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
     window.dispatchEvent(new CustomEvent("finance:role-change", { detail: role }));
   };
 
+  const handleVernacularToggle = (mode: "PLAIN_ENGLISH" | "PRO_QUANT") => {
+    setVernacularMode(mode);
+    try { localStorage.setItem("ARX_VERNACULAR_MODE", mode); } catch {}
+    window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: mode }));
+  };
+
+  useEffect(() => {
+    try {
+      const savedV = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+      if (savedV === "PLAIN_ENGLISH" || savedV === "PRO_QUANT") {
+        setVernacularMode(savedV);
+      }
+    } catch {}
+  }, []);
+
   // Pro-Trader Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,6 +70,9 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       if (e.key === "d" || e.key === "D") {
         const nextRole = activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER";
         handleRoleToggle(nextRole);
+      } else if (e.key === "v" || e.key === "V") {
+        const nextV = vernacularMode === "PLAIN_ENGLISH" ? "PRO_QUANT" : "PLAIN_ENGLISH";
+        handleVernacularToggle(nextV);
       } else if (e.key === "s" || e.key === "S") {
         if (pathname !== "/screener") router.push("/screener");
       } else if (e.key === "p" || e.key === "P") {
@@ -67,7 +86,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeRole, pathname, router]);
+  }, [activeRole, vernacularMode, pathname, router]);
 
   useEffect(() => {
     try {
@@ -93,14 +112,22 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         setActiveRole(custom.detail);
       }
     };
+    const handleVernacularEvent = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail === "PLAIN_ENGLISH" || custom.detail === "PRO_QUANT") {
+        setVernacularMode(custom.detail);
+      }
+    };
     const handleOnboardingEvent = () => {
       setIsOnboardingOpen(true);
     };
 
     window.addEventListener("finance:role-change", handleRoleEvent);
+    window.addEventListener("finance:vernacular-change", handleVernacularEvent);
     window.addEventListener("open-onboarding", handleOnboardingEvent);
     return () => {
       window.removeEventListener("finance:role-change", handleRoleEvent);
+      window.removeEventListener("finance:vernacular-change", handleVernacularEvent);
       window.removeEventListener("open-onboarding", handleOnboardingEvent);
     };
   }, []);
@@ -115,19 +142,19 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-4">
           {/* Left: Brand Logo & Title */}
           <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
-            <Link href="/" aria-label="Finance Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
+            <Link href="/" aria-label="ARX Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
               <div aria-hidden="true" className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-cyan-600 flex items-center justify-center font-mono font-bold text-white shadow-sm group-hover:scale-105 transition-transform text-xs sm:text-sm">
-                FT
+                ARX
               </div>
               <div className="min-w-0">
                 <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base hidden xl:block leading-none">
-                  FINANCE TERMINAL
+                  ARX TERMINAL
                 </span>
                 <span className="font-bold tracking-tight text-white font-mono text-xs xl:hidden block leading-none">
-                  TERMINAL
+                  ARX
                 </span>
                 <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block">
-                  Quantitative Intel
+                  No-BS Market Intel
                 </span>
               </div>
             </Link>
@@ -237,6 +264,47 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 <path d="M3 21v-5h5" />
               </svg>
             </button>
+
+            {/* Vernacular Language Mode Switcher (Plain English vs Pro Quant) */}
+            <div role="toolbar" aria-label="Language Vernacular Mode Switcher" className="flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
+              <button
+                type="button"
+                onClick={() => handleVernacularToggle("PLAIN_ENGLISH")}
+                aria-pressed={vernacularMode === "PLAIN_ENGLISH"}
+                aria-label="Switch to Plain English explanation mode"
+                title="Plain English Mode: Clear, punchy, no-BS financial explanations"
+                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
+                  vernacularMode === "PLAIN_ENGLISH"
+                    ? "bg-emerald-500 text-slate-950 shadow-md font-extrabold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <span aria-hidden="true" className="text-xs">💬</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                  <span className="hidden xl:inline">Plain English</span>
+                  <span className="xl:hidden">Plain</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleVernacularToggle("PRO_QUANT")}
+                aria-pressed={vernacularMode === "PRO_QUANT"}
+                aria-label="Switch to Pro Quant mathematical mode"
+                title="Pro Quant Mode: Rigorous mathematical models, VaR metrics, and factor loadings"
+                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer ${
+                  vernacularMode === "PRO_QUANT"
+                    ? "bg-purple-600 text-white shadow-md font-extrabold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <span aria-hidden="true" className="text-xs">🤓</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                  <span className="hidden xl:inline">Pro Quant</span>
+                  <span className="xl:hidden">Quant</span>
+                </span>
+              </button>
+            </div>
 
             {/* Theme Toggle */}
             <ThemeToggle />

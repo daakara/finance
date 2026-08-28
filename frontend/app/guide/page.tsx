@@ -625,13 +625,94 @@ export default function GuidePage() {
           </div>
         </section>
 
+        {/* CHAPTER 8: THE NO-BS PLAIN-ENGLISH JARGON BUSTER */}
+        <section id="chapter-8" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">💬</span>
+            <h2 className="text-lg sm:text-xl font-bold text-emerald-400 tracking-tight">
+              Chapter 8: The No-BS Plain-English Jargon Buster
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            Wall Street loves complicated words because it lets them charge high management fees. Here is what all that technical jargon actually means in plain, unfiltered human English:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-rose-400 font-bold text-sm">Value at Risk (VaR)</strong>
+                <span className="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">The Worst-Case Crash Test</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                If the market has a terrible day tomorrow, how much money will you actually lose? VaR 95% means <em>&ldquo;19 out of 20 days, your losses won&rsquo;t exceed this number.&rdquo;</em>
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-cyan-400 font-bold text-sm">Piotroski F-Score (0–9)</strong>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">The BS & Accounting Truth Detector</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                A 9-point checklist created by a Stanford professor to see if a company is secretly drowning in debt or actually printing real cash. A score of 8 or 9 means their financial books are squeaky clean.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-amber-400 font-bold text-sm">ROIC (Return on Capital)</strong>
+                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">Money-Making Efficiency</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                If you hand the CEO \$100, how many dollars do they bring back? An ROIC of 25% means they turn every \$100 of invested cash into \$25 of pure profit every single year.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-purple-400 font-bold text-sm">STOCK Act Filing Lag</strong>
+                <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">The Politician Delay Penalty</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                US politicians are legally allowed up to 45 days to tell the public what stocks they bought. If a politician bought 35 days ago, you are seeing old news — beware of chasing green candles late.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-emerald-400 font-bold text-sm">Sortino Ratio</strong>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">Downside Body Armor</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                Like the famous Sharpe ratio, but smarter: it only punishes the stock for scary drops, without penalizing it for explosive upside gains. Higher is better.
+              </p>
+            </div>
+
+            <div className="bg-[#0b1019] p-4 rounded-xl border border-[#1b2434] space-y-2">
+              <div className="flex items-center justify-between">
+                <strong className="text-blue-400 font-bold text-sm">VCP (Volatility Contraction)</strong>
+                <span className="text-[10px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded border border-blue-800">HUMAN TRANSLATION</span>
+              </div>
+              <p className="text-slate-200 text-xs font-semibold">The Coiled Spring Setup</p>
+              <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+                When a stock goes from wild 15% daily swings down to calm 2% swings on low volume, sellers have run out of ammo. When buyers step back in, it erupts like a coiled spring.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Footer Navigation */}
         <footer className="border-t border-[#243044] pt-6 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/"
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl shadow-sm transition-transform active:scale-95 cursor-pointer"
           >
-            ← Return to Quantitative Terminal
+            ← Return to ARX Terminal
           </Link>
           <div className="text-xs text-slate-500">
             Grounded in SEC EDGAR, Capitol Hill STOCK Act & Federal Reserve FRED Data
