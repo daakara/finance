@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🛡️ **Rule #1: Protect The Castle**: Enhanced `DayTraderPositionSizer.tsx` with "The Math Made Simple" human explanation breakdown calculating exact share count, dollar risk, and upside profit targets.
 - 🧪 **Human-Centric Metric Translations**: Translated opaque jargon into clear, relatable concepts across `RiskMetricsCard.tsx` ("Worst-Case Crash Test", "Standard Bad Day"), `AssetFactorRadar.tsx` ("BS Detector", "Accounting Truth Check"), and `CongressionalTradesCard.tsx` ("Follow The Money", "Politician Filing Delay").
 - 📖 **Field Manual Chapter 8 (No-BS Jargon Buster)**: Added comprehensive dictionary in `frontend/app/guide/page.tsx` translating Wall Street terminology into human English.
-- 🧪 **Automated Quality Gate**: Added `test_brand_tone_and_progressive_clarity_vernacular_engine` to `tests/test_nextjs_frontend_structure.py`.
+- 🔗 **Cloudflare `*.pages.dev` 301 Canonical Redirection**: Added 301 edge redirection rules in `_redirects` and synchronous `<head>` script in `layout.tsx` for `https://finance-xp8.pages.dev/*` redirecting to `https://www.arxterminal.com/:splat` to prevent duplicate indexing and consolidate SEO authority.
+- 🧪 **Automated Quality Gate**: Added `test_brand_tone_and_progressive_clarity_vernacular_engine` and enhanced `test_canonical_domain_and_redirects_structure` in `tests/test_nextjs_frontend_structure.py`.
 
 ---
 

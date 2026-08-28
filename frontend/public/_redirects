@@ -1,5 +1,10 @@
-﻿# Cloudflare Pages Redirects
+# Cloudflare Pages Redirects
 # 1. Apex to WWW Canonical Redirects
 https://arxterminal.com/*  https://www.arxterminal.com/:splat  301!
 http://arxterminal.com/*   https://www.arxterminal.com/:splat  301!
 http://www.arxterminal.com/* https://www.arxterminal.com/:splat  301!
+
+# 2. Cloudflare pages.dev Subdomain to Canonical Domain Redirects
+https://finance-xp8.pages.dev/* https://www.arxterminal.com/:splat 301!
+http://finance-xp8.pages.dev/*  https://www.arxterminal.com/:splat 301!
+

@@ -78,14 +78,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#06b6d4" />
-        {/* Canonical Apex to WWW & HTTPS Domain Enforcement */}
+        {/* Canonical Apex & pages.dev to WWW & HTTPS Domain Enforcement */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 if (typeof window !== 'undefined') {
                   var host = window.location.hostname;
-                  if (host === 'arxterminal.com') {
+                  if (host === 'arxterminal.com' || host.endsWith('.pages.dev')) {
                     window.location.replace('https://www.arxterminal.com' + window.location.pathname + window.location.search + window.location.hash);
                   }
                 }
