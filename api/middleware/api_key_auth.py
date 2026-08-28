@@ -8,6 +8,7 @@ The frontend sends it as: X-API-Key: <value>
 """
 
 import os
+import hmac
 import logging
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -68,16 +69,9 @@ class ApiKeyAuthMiddleware(BaseHTTPMiddleware):
 
 
 def _secure_compare(a: str, b: str) -> bool:
-    """Constant-time string comparison to prevent timing-based side-channel attacks."""
-    if len(a) != len(b):
-        # Still run the loop on equal-length fallbacks to avoid length leaking
-        b = b[:len(a)] if len(b) > len(a) else b.ljust(len(a))
-        a_bytes, b_bytes = a.encode(), b.encode()
-        result = 1  # force failure
-    else:
-        a_bytes, b_bytes = a.encode(), b.encode()
-        result = 0
-    for x, y in zip(a_bytes, b_bytes):
-        result |= x ^ y
-    return result == 0
+    """Constant-time string comparison using Python standard library hmac.compare_digest."""
+    if not isinstance(a, str) or not isinstance(b, str):
+        return False
+    return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
 

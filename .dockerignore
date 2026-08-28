@@ -1,0 +1,39 @@
+﻿# Git
+.git
+.gitignore
+
+# Environment variables & secrets
+.env
+.env.*
+.env.local
+.env.*.local
+frontend/.env*
+
+# Python build & virtual environments
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Caches & local temporary files
+cache/
+*.cache
+sample_data.py
+**/sample_data/
+**/*sample*.json
+**/sample_gem*.json
+
+# Frontend build artifacts
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+*.tsbuildinfo

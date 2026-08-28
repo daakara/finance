@@ -267,6 +267,45 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             tv_content = f.read()
         self.assertIn("seriesRef.current.setData", tv_content)
 
+    def test_security_guardian_and_ux_architect_contracts(self):
+        """Regression Quality Gate: Ensure .dockerignore, hmac compare, route symbol regex, and JSON-LD sanitation."""
+        dockerignore_path = ".dockerignore"
+        auth_path = os.path.join("api", "middleware", "api_key_auth.py")
+        vol_path = os.path.join("api", "routes", "volatility.py")
+        smart_path = os.path.join("api", "routes", "smart_money.py")
+        guide_path = os.path.join("frontend", "app", "guide", "page.tsx")
+        stock_path = os.path.join("frontend", "app", "stock", "[ticker]", "page.tsx")
+
+        # 1. Docker Build Hygiene (.dockerignore)
+        self.assertTrue(os.path.exists(dockerignore_path), "Missing .dockerignore")
+        with open(dockerignore_path, "r", encoding="utf-8") as f:
+            dockerignore_content = f.read()
+        self.assertIn(".env", dockerignore_content)
+        self.assertIn(".git", dockerignore_content)
+
+        # 2. Timing-Attack Safe HMAC Comparison
+        with open(auth_path, "r", encoding="utf-8") as f:
+            auth_content = f.read()
+        self.assertIn("hmac.compare_digest", auth_content)
+
+        # 3. Route Symbol Regex & Input Gates
+        with open(vol_path, "r", encoding="utf-8") as f:
+            vol_content = f.read()
+        self.assertIn("SYMBOL_REGEX", vol_content)
+        self.assertIn("IS_PRODUCTION", vol_content)
+
+        with open(smart_path, "r", encoding="utf-8") as f:
+            smart_content = f.read()
+        self.assertIn("SYMBOL_REGEX", smart_content)
+        self.assertIn("_validate_symbol", smart_content)
+
+        # 4. JSON-LD Sanitization Against Script Breakout
+        for page_file in [guide_path, stock_path]:
+            self.assertTrue(os.path.exists(page_file), f"Missing {page_file}")
+            with open(page_file, "r", encoding="utf-8") as f:
+                page_content = f.read()
+            self.assertIn(".replace(/</g, \"\\\\u003c\")", page_content, f"Missing JSON-LD sanitation in {page_file}")
+
 
 if __name__ == "__main__":
     unittest.main()

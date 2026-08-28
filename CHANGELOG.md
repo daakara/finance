@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-08-29
+
+### Security & UX Hardening Suite
+- 🐳 **Docker Build Isolation (`.dockerignore`)**: Added root `.dockerignore` ignoring `.env*`, `.git`, `__pycache__`, virtual environments, and local sample caches to prevent secret leakage in container images.
+- 🔑 **Standard Library Timing Protection (`hmac.compare_digest`)**: Upgraded `ApiKeyAuthMiddleware` to use Python stdlib `hmac.compare_digest` for constant-time API key verification.
+- 🛡️ **Route-Level Input Sanitization & Masked 500s**: Added `SYMBOL_REGEX` validation and production error masking across `api/routes/volatility.py` and `api/routes/smart_money.py`.
+- 📜 **JSON-LD Script Breakout Protection**: Sanitized all structured data blocks across dynamic routes with `.replace(/</g, "\\u003c")` to prevent potential injection vectors.
+- 🧪 **Automated Quality Gate**: Added `test_security_guardian_and_ux_architect_contracts` to `tests/test_nextjs_frontend_structure.py` (12/12 passing).
+
+---
+
 ## [1.7.0] - 2026-08-29
 
 ### Frontend QA & Self-Healing

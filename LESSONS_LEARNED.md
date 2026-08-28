@@ -237,4 +237,27 @@ Institutional finance software typically alienates retail users and non-finance 
 6. **Automated Quality Gate**:
    - Enforced via `test_frontend_qa_modal_z_index_and_single_onboarding_ownership` in `tests/test_nextjs_frontend_structure.py`.
 
+---
+
+## 11. 🛡️ Container Build Isolation, Route-Level Regex Gates & Safe JSON-LD Serialization
+
+### 🚨 What Went Wrong
+1. **Container Image Secret Infiltration**: Without `.dockerignore`, `COPY . .` commands in container build stages pack local `.env` files, `.git` history, and local virtual environments into deployed container images.
+2. **Timing Vulnerability in Custom Auth Loops**: Custom XOR loops for API key verification can be susceptible to compiler optimizations or length-leaking branching compared to battle-tested standard library functions.
+3. **Route-Level Input Sanitization Asymmetry**: Validating ticker formats in primary endpoints while omitting validation on secondary analytical endpoints (e.g. volatility or smart money) leaves open doors for malformed inputs.
+4. **JSON-LD Script Breakout**: Outputting `JSON.stringify(data)` in `<script type="application/ld+json">` without escaping literal `<` characters (`\u003c`) allows potential HTML script breakout if unsanitized data enters schema strings.
+
+### 🛡️ The Preventive Standard
+1. **Mandatory `.dockerignore`**:
+   - Explicitly ignore `.git`, `.env*`, `__pycache__`, virtual environments, and temporary caches from all container builds.
+2. **Standard Library Timing Verification (`hmac.compare_digest`)**:
+   - Always utilize `hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))` for secret token comparisons.
+3. **Symmetrical Route-Level Input Gates**:
+   - Apply `SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-]{1,12}$")` consistently across all analytical and financial route handlers.
+4. **Safe JSON-LD Sanitization**:
+   - Always sanitize JSON-LD with `.replace(/</g, "\\u003c")` across all static and dynamic Next.js templates.
+5. **Automated Quality Gate**:
+   - Enforced via `test_security_guardian_and_ux_architect_contracts` in `tests/test_nextjs_frontend_structure.py`.
+
+
 
