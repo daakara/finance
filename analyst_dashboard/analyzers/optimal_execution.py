@@ -65,7 +65,9 @@ class OptimalExecutionEngine:
 
         # 2. Moving Averages
         ema_20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
-        sma_50 = float(close.rolling(50, min_periods=5).mean().iloc[-1])
+        raw_sma_50 = float(close.rolling(50, min_periods=5).mean().iloc[-1])
+        # Protect against unadjusted stock splits or dirty historical candles (clamp 50 SMA to [-20%, +18%])
+        sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if not math.isnan(raw_sma_50) else current_price * 1.05
         is_stage_4_downtrend = (current_price < sma_50 * 0.98)
 
         # Dual-Horizon Strategy Logic
@@ -104,10 +106,10 @@ class OptimalExecutionEngine:
                 invalidation = "Breakdown below recent reaction lows or persistent selling below 50-day SMA."
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
-                # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) so post-breakout profitability is preserved
-                breakout_pivot = max(sma_50, current_price * 1.05)
-                take_profit_1 = round(max(breakout_pivot * 1.08, current_price * 1.15), 2)
-                take_profit_2 = round(max(breakout_pivot * 1.18, current_price * 1.25), 2)
+                # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) and clamp to realistic technical ceilings
+                breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), 2)
+                take_profit_1 = round(min(current_price * 1.25, max(breakout_pivot * 1.08, current_price * 1.12)), 2)
+                take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), 2)
             elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
                 thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."
@@ -127,12 +129,12 @@ class OptimalExecutionEngine:
         reward_per_share = max(0.01, take_profit_1 - current_price)
         raw_rr = reward_per_share / max(0.01, risk_per_share)
         
-        # In Buy Zone / Consolidation setups, R:R is high (>2.0:1)
-        rr_ratio = round(max(1.35, raw_rr), 2)
+        # In Buy Zone / Consolidation setups, R:R is high (>2.0:1) but bounded to realistic swing ceilings
+        rr_ratio = round(min(3.85, max(1.35, raw_rr)), 2)
         if user_role == "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.01):
-            rr_ratio = max(2.1, rr_ratio)
+            rr_ratio = min(3.85, max(2.1, rr_ratio))
         elif user_role == "LONG_TERM" and (entry_min <= current_price <= entry_max * 1.015):
-            rr_ratio = max(2.25, rr_ratio)
+            rr_ratio = min(3.85, max(2.25, rr_ratio))
 
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":

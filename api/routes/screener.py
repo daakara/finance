@@ -61,7 +61,7 @@ CANDIDATE_BASELINES = {
     # Semis & Equipment
     "ON": 72.40, "MPWR": 812.30, "KLAC": 734.50, "LRCX": 792.10, "ASML": 824.60, "AVGO": 158.40,
     # Consumer Compounders
-    "DECK": 86.33, "LULU": 264.50, "ONON": 44.20, "MNST": 50.80, "ULTA": 368.40,
+    "DECK": 86.33, "LULU": 264.50, "ONON": 44.20, "MNST": 46.70, "ULTA": 368.40,
     # Power, Industrials & Infrastructure
     "VRT": 88.40, "ETN": 312.50, "PWR": 268.10, "GEV": 224.60, "FIX": 346.20, "EME": 382.40,
     # Enterprise Cloud & EDA

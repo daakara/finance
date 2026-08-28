@@ -106,7 +106,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     DECK: { price: 86.33, name: "Deckers Outdoor", roic: 34.2, peg: 0.96, margin: 56.0, rvol: 2.0, short: 3.4 },
     LULU: { price: 264.50, name: "Lululemon Athletica", roic: 31.0, peg: 0.88, margin: 58.5, rvol: 2.5, short: 6.2 },
     ONON: { price: 44.20, name: "On Holding AG", roic: 23.5, peg: 1.05, margin: 60.2, rvol: 3.4, short: 8.1 },
-    MNST: { price: 50.80, name: "Monster Beverage", roic: 28.0, peg: 1.15, margin: 54.0, rvol: 1.6, short: 2.0 },
+    MNST: { price: 46.70, name: "Monster Beverage", roic: 28.0, peg: 1.15, margin: 54.0, rvol: 1.6, short: 2.0 },
     ULTA: { price: 368.40, name: "Ulta Beauty", roic: 35.5, peg: 0.79, margin: 52.8, rvol: 2.2, short: 4.5 },
     VRT: { price: 88.40, name: "Vertiv Holdings", roic: 25.0, peg: 0.89, margin: 54.2, rvol: 3.5, short: 4.6 },
     ETN: { price: 312.50, name: "Eaton Corporation", roic: 21.5, peg: 1.20, margin: 53.0, rvol: 1.7, short: 2.2 },
@@ -162,7 +162,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     let statusLabel: string;
     let statusColor: string;
 
-    if (sym === "DECK" || sym === "PODD") {
+    if (sym === "DECK" || sym === "PODD" || sym === "MNST") {
       executionStatus = "WAITING_PULLBACK";
       statusLabel = "⏳ Awaiting Base Formation";
       statusColor = "cyan";
@@ -180,13 +180,13 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       statusColor = "cyan";
     } else {
       executionStatus = "STOPPED_OUT";
-      statusLabel = "🛑 Below Stop Loss";
+      statusLabel = "🛑 Invalidation Alert";
       statusColor = "rose";
     }
 
-    const optimalEntryMin = Number((price * 0.975).toFixed(2));
-    const optimalEntryMax = Number((price * 1.018).toFixed(2));
-    const stopLoss = Number((price * 0.945).toFixed(2));
+    const optimalEntryMin = Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2));
+    const optimalEntryMax = Number((price * (isDayTrader ? 1.004 : 1.015)).toFixed(2));
+    const stopLoss = Number((price * (isDayTrader ? 0.985 : 0.945)).toFixed(2));
     const stopLossPct = -5.5;
     const takeProfit1 = Number((price * 1.085).toFixed(2));
     const takeProfit1Pct = 8.5;
@@ -194,7 +194,9 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const takeProfit2Pct = 15.5;
     const riskRewardRatio = Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2));
 
-    const confluenceScore = Math.min(96, Math.max(72, 75 + (h % 22)));
+    const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST";
+    const rawConfluence = Math.min(96, Math.max(72, 75 + (h % 22)));
+    const confluenceScore = isStage4Candidate ? Math.min(74, rawConfluence) : rawConfluence;
     const confluenceRating = confluenceScore >= 85 ? "⭐ HIGH CONFLUENCE" : "MODERATE CONFLUENCE";
     const confluenceBadgeColor = confluenceScore >= 85 ? "emerald" : "cyan";
 

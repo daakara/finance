@@ -121,13 +121,18 @@ def run_state_space_audit():
         else:
             zone_tag = f"Mid ({zone_pos_pct:.0f}%)"
 
+        rr = res_lt["risk_reward_ratio"]
+        if rr > 3.85:
+            errors.append(f"R:R ratio inflated for {sym}: {rr} : 1.0 (Must be <= 3.85)")
+
         is_stage_4 = "stage 4" in res_lt["setup_pattern"].lower() or "stage 4" in res_lt["stage_phase"].lower()
         if is_stage_4:
-            breakout_pivot = spot * 1.05
+            breakout_pivot = res_lt.get("breakout_pivot") or (spot * 1.05)
+            if breakout_pivot > spot * 1.18:
+                errors.append(f"Stage 4 Breakout Pivot blowout for {sym}: Pivot={breakout_pivot}, MaxAllowed={spot * 1.18}")
             if res_lt["take_profit_1"] < breakout_pivot * 1.05:
                 errors.append(f"Stage 4 TP1 is cannibalized by breakout pivot for {sym}: TP1={res_lt['take_profit_1']}, Pivot={breakout_pivot}")
 
-        is_stage_4 = "stage 4" in res_lt["setup_pattern"].lower() or "stage 4" in res_lt["stage_phase"].lower()
         status_label = "PASS"
         if is_stage_4:
             zone_tag = "Base Corridor"
