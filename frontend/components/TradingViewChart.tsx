@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, ColorType, IChartApi, Time, CandlestickData } from "lightweight-charts";
+import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickData } from "lightweight-charts";
 import { CandleData } from "../lib/api";
 
 interface TradingViewChartProps {
@@ -20,10 +20,13 @@ const TIMEFRAME_OPTIONS = [
 export default function TradingViewChart({ data, symbol = "AAPL" }: TradingViewChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [activeTimeframe, setActiveTimeframe] = useState("1M");
 
+  // 1. Initialize Chart Instance Strictly Once
   useEffect(() => {
     if (!chartContainerRef.current) return;
+    chartContainerRef.current.innerHTML = "";
 
     const isLight = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
 
@@ -57,25 +60,56 @@ export default function TradingViewChart({ data, symbol = "AAPL" }: TradingViewC
       wickDownColor: "#EF4444",
     });
 
-    if (data && data.length > 0) {
-      const targetOption = TIMEFRAME_OPTIONS.find((o) => o.label === activeTimeframe) || TIMEFRAME_OPTIONS[1];
-      const sliceCount = Math.min(data.length, targetOption.days);
-      const filteredData: CandlestickData<Time>[] = data.slice(-sliceCount).map((c) => ({
-        time: c.time as any,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }));
-      candlestickSeries.setData(filteredData);
-    }
-
-    chart.timeScale().fitContent();
+    seriesRef.current = candlestickSeries;
     chartRef.current = chart;
 
-    return () => {
-      chart.remove();
+    const handleThemeChange = () => {
+      const light = typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "paper";
+      chart.applyOptions({
+        layout: {
+          background: { type: ColorType.Solid, color: light ? "#ffffff" : "#0B0E14" },
+          textColor: light ? "#475569" : "#64748B",
+        },
+        grid: {
+          vertLines: { color: light ? "#f1f5f9" : "#1E293B" },
+          horzLines: { color: light ? "#f1f5f9" : "#1E293B" },
+        },
+        timeScale: { borderColor: light ? "#e2e8f0" : "#1E293B" },
+        rightPriceScale: { borderColor: light ? "#e2e8f0" : "#1E293B" },
+      });
     };
+
+    window.addEventListener("finance:theme-change", handleThemeChange);
+    const observer = new MutationObserver(handleThemeChange);
+    if (typeof document !== "undefined") {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    }
+
+    return () => {
+      window.removeEventListener("finance:theme-change", handleThemeChange);
+      observer.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+    };
+  }, []);
+
+  // 2. Reactive Data & Timeframe Updates without re-creating Canvas
+  useEffect(() => {
+    if (!seriesRef.current || !data || data.length === 0) return;
+
+    const targetOption = TIMEFRAME_OPTIONS.find((o) => o.label === activeTimeframe) || TIMEFRAME_OPTIONS[1];
+    const sliceCount = Math.min(data.length, targetOption.days);
+    const filteredData: CandlestickData<Time>[] = data.slice(-sliceCount).map((c) => ({
+      time: c.time as any,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+
+    seriesRef.current.setData(filteredData);
+    chartRef.current?.timeScale().fitContent();
   }, [data, activeTimeframe]);
 
   return (

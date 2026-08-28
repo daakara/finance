@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-08-29
+
+### Frontend QA & Self-Healing
+- 🛡️ **Modal Z-Index Supremacy (`z-[1200]`)**: Upgraded `PositionSizerModal`, `AlertTriggerModal`, `SmartMoneyDetailModal`, and `OnboardingTourModal` to `z-[1200]` to guarantee clean stacking and unblocked click targets above the mobile bottom dock (`z-[999]`).
+- 🎭 **Single Onboarding Ownership**: Removed duplicate `<OnboardingModal />` from `app/layout.tsx`, consolidating on `Navbar.tsx`'s controlled tour modal and eliminating dual-modal stacking on `"open-onboarding"`.
+- 📈 **TradingView Chart Canvas De-coupling**: Separated chart DOM initialization from data filtering in `TradingViewChart.tsx`, updating data via `seriesRef.current.setData(...)` to eliminate canvas destruction on timeframe switches.
+- 🧭 **Dynamic 404 Route Boundaries**: Added `notFound()` guards to `/politician/[slug]`, `/committee/[slug]`, and `/strategy/[type]` when querying unlisted or invalid slugs.
+- 📐 **Mobile Safe-Area Padding (`pb-28`)**: Standardized root content container bottom padding to `pb-28 sm:pb-8` across Screener, Smart Money, Compare, and Portfolio.
+- 🎨 **Dynamic Theme Variable Normalization**: Replaced hardcoded `#070a10` / `#070a11` root container classes with CSS custom properties (`var(--bg-app)`, `var(--text-main)`).
+- 🧪 **Automated Frontend QA Quality Gate**: Added `test_frontend_qa_modal_z_index_and_single_onboarding_ownership` to `tests/test_nextjs_frontend_structure.py`.
+
+---
+
 ## [1.6.0] - 2026-08-29
 
 ### Security & Hardening

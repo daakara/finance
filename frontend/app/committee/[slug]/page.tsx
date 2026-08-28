@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -185,16 +186,22 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: PageProps): Metadata {
-  const committee = COMMITTEE_DATABASE.find(c => c.slug === params.slug.toLowerCase()) || COMMITTEE_DATABASE[0];
+  const committee = COMMITTEE_DATABASE.find(c => c.slug === params.slug.toLowerCase());
+  if (!committee) {
+    return {
+      title: "Congressional Committee Not Found | ARX Terminal",
+      description: "The requested Congressional Committee profile could not be found.",
+    };
+  }
 
   return {
-    title: `🏛️ ${committee.name} Stock Trades & Legislative Conflict Tracking | Finance Terminal`,
+    title: `🏛️ ${committee.name} Stock Trades & Legislative Conflict Tracking | ARX Terminal`,
     description: `Track securities transactions and STOCK Act disclosures by members of the ${committee.name}. Review Legislative Alignment Index (0-100) and regulatory oversight conflicts.`,
     openGraph: {
       title: `${committee.name} Congressional Stock Trading Hub`,
       description: committee.jurisdictionSummary,
       url: `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
-      siteName: "Finance Terminal",
+      siteName: "ARX Terminal",
       type: "article",
     },
     alternates: {
@@ -204,7 +211,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
 }
 
 export default function CommitteeHubPage({ params }: PageProps) {
-  const committee = COMMITTEE_DATABASE.find(c => c.slug === params.slug.toLowerCase()) || COMMITTEE_DATABASE[0];
+  const committee = COMMITTEE_DATABASE.find(c => c.slug === params.slug.toLowerCase());
+  if (!committee) {
+    notFound();
+  }
 
   const jsonLd = [
     {

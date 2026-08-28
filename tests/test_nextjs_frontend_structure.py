@@ -233,6 +233,40 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("ARX_API_HEADERS", api_ts_content)
         self.assertIn("X-API-Key", api_ts_content)
 
+    def test_frontend_qa_modal_z_index_and_single_onboarding_ownership(self):
+        """Regression Quality Gate: Ensure modal z-index supremacy and single onboarding ownership."""
+        pos_modal_path = os.path.join("frontend", "components", "PositionSizerModal.tsx")
+        alert_modal_path = os.path.join("frontend", "components", "AlertTriggerModal.tsx")
+        smart_modal_path = os.path.join("frontend", "components", "SmartMoneyDetailModal.tsx")
+        tour_modal_path = os.path.join("frontend", "components", "OnboardingTourModal.tsx")
+        layout_path = os.path.join("frontend", "app", "layout.tsx")
+        politician_path = os.path.join("frontend", "app", "politician", "[slug]", "page.tsx")
+        tv_chart_path = os.path.join("frontend", "components", "TradingViewChart.tsx")
+
+        # 1. Modal Z-Index Supremacy (z-[1200] exceeds mobile dock z-[999])
+        for path in [pos_modal_path, alert_modal_path, smart_modal_path, tour_modal_path]:
+            self.assertTrue(os.path.exists(path), f"Missing {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("z-[1200]", content, f"{path} must use z-[1200] to exceed mobile dock")
+
+        # 2. Single Onboarding Ownership (No duplicate modal mount in layout.tsx)
+        with open(layout_path, "r", encoding="utf-8") as f:
+            layout_content = f.read()
+        self.assertNotIn("<OnboardingModal", layout_content)
+        self.assertNotIn("import OnboardingModal", layout_content)
+
+        # 3. Dynamic Route 404 Guarding
+        with open(politician_path, "r", encoding="utf-8") as f:
+            politician_content = f.read()
+        self.assertIn("notFound()", politician_content)
+        self.assertNotIn("POLITICIAN_DATABASE[0]", politician_content)
+
+        # 4. Canvas Lifecycle De-coupling
+        with open(tv_chart_path, "r", encoding="utf-8") as f:
+            tv_content = f.read()
+        self.assertIn("seriesRef.current.setData", tv_content)
+
 
 if __name__ == "__main__":
     unittest.main()

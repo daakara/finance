@@ -201,7 +201,7 @@ export default function PortfolioPage() {
   const isPositive = summary.totalUnrealizedPnL >= 0;
 
   return (
-    <div className="min-h-screen bg-[#070a10] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
       <Navbar />
 
       <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 font-mono pb-28 sm:pb-8">

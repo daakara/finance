@@ -97,7 +97,7 @@ export default function AlertTriggerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
       <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#1b2537] bg-[#0e1422]">

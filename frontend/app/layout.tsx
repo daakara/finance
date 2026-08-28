@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
 import OfflineStatusBanner from "../components/OfflineStatusBanner";
 import MatomoTracker from "../components/MatomoTracker";
-import OnboardingModal from "../components/OnboardingModal";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.arxterminal.com"),
@@ -129,7 +128,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MatomoTracker />
         </Suspense>
         {children}
-        <OnboardingModal />
       </body>
     </html>
   );

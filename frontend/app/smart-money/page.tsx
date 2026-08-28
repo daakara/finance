@@ -173,7 +173,7 @@ function SmartMoneyContent() {
   });
 
   return (
-    <div className="min-h-screen bg-[#070a10] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-cyan-500 focus:text-black focus:font-bold focus:rounded-md focus:shadow-lg"
@@ -183,7 +183,7 @@ function SmartMoneyContent() {
 
       <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
 
-      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-6 space-y-5 pb-20 sm:pb-6 font-mono">
+      <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-3 sm:p-6 space-y-5 pb-28 sm:pb-6 font-mono">
         {/* Page Header */}
         <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">

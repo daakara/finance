@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -243,16 +244,22 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: PageProps): Metadata {
-  const profile = POLITICIAN_DATABASE.find(p => p.slug === params.slug.toLowerCase()) || POLITICIAN_DATABASE[0];
+  const profile = POLITICIAN_DATABASE.find(p => p.slug === params.slug.toLowerCase());
+  if (!profile) {
+    return {
+      title: "Politician Profile Not Found | ARX Terminal",
+      description: "The requested politician STOCK Act profile could not be found.",
+    };
+  }
 
   return {
-    title: `🏛️ ${profile.name} (${profile.party[0]}-${profile.stateDistrict.slice(0, 2)}) Portfolio (${profile.winRatePct}% Win Rate): STOCK Act Disclosures & Alpha | Finance Terminal`,
+    title: `🏛️ ${profile.name} (${profile.party[0]}-${profile.stateDistrict.slice(0, 2)}) Portfolio (${profile.winRatePct}% Win Rate): STOCK Act Disclosures & Alpha | ARX Terminal`,
     description: `Audited portfolio, win rate (${profile.winRatePct}%), annualized alpha (+${profile.annualAlphaPct}%), and recent STOCK Act disclosures for ${profile.name}. Review Legislative Alignment scores and committee oversight conflicts.`,
     openGraph: {
       title: `🏛️ ${profile.name} Congressional Stock Trading Profile (${profile.winRatePct}% Win Rate)`,
       description: `Track securities transactions, committee oversight overlaps, and Legislative Alignment Index for ${profile.name}.`,
       url: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
-      siteName: "Finance Terminal",
+      siteName: "ARX Terminal",
       type: "profile",
     },
     alternates: {
@@ -262,7 +269,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
 }
 
 export default function PoliticianProfilePage({ params }: PageProps) {
-  const profile = POLITICIAN_DATABASE.find(p => p.slug === params.slug.toLowerCase()) || POLITICIAN_DATABASE[0];
+  const profile = POLITICIAN_DATABASE.find(p => p.slug === params.slug.toLowerCase());
+  if (!profile) {
+    notFound();
+  }
 
   const jsonLd = [
     {

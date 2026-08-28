@@ -253,7 +253,7 @@ function CompareContent() {
   const assetB = buildAssetProfile(symbolB, dataB);
 
   return (
-    <main id="main-content" role="main" className="min-h-screen bg-[#070a11] text-slate-100 font-mono flex flex-col pb-20 sm:pb-8">
+    <main id="main-content" role="main" className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] font-mono flex flex-col pb-28 sm:pb-8 transition-colors duration-200">
       <Navbar userRole={activeRole} onRoleChange={handleRoleToggle} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 space-y-6">

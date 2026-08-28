@@ -49,7 +49,7 @@ export default function SmartMoneyDetailModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 font-mono animate-fadeIn"
+      className="fixed inset-0 z-[1200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 font-mono animate-fadeIn"
       onClick={onClose}
     >
       <div

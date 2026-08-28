@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -49,16 +50,16 @@ const STRATEGY_DATABASE: StrategyDefinition[] = [
       {
         symbol: "NVDA",
         name: "NVIDIA Corporation",
-        price: 213.05,
+        price: 128.50,
         changePct: 3.14,
         piotroski: 8,
         roic: "58.4%",
         pegOrShort: "PEG 0.85",
         state: "IN_BUY_ZONE",
         stateBadge: "🟢 IN_BUY_ZONE",
-        entryRange: "$207.80 - $213.05",
-        target1: "$229.80",
-        stopLoss: "$201.35",
+        entryRange: "$124.80 - $128.50",
+        target1: "$142.00",
+        stopLoss: "$118.20",
         thesis: "3-Stage contraction handle resting above 20 EMA with Blackwell datacenter ramp."
       },
       {
@@ -310,16 +311,22 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: PageProps): Metadata {
-  const strategy = STRATEGY_DATABASE.find(s => s.slug === params.type.toLowerCase()) || STRATEGY_DATABASE[0];
+  const strategy = STRATEGY_DATABASE.find(s => s.slug === params.type.toLowerCase());
+  if (!strategy) {
+    return {
+      title: "Trading Strategy Not Found | ARX Terminal",
+      description: "The requested quantitative trading strategy could not be found.",
+    };
+  }
 
   return {
-    title: `🎯 ${strategy.name} Stock Screener & Quantitative Invalidation Levels | Finance Terminal`,
+    title: `🎯 ${strategy.name} Stock Screener & Quantitative Invalidation Levels | ARX Terminal`,
     description: `Screen top ${strategy.name} equities: ${strategy.tagline} Review candidate entry ranges, ATR stop loss targets, and Piotroski F-Scores.`,
     openGraph: {
       title: `${strategy.name} Quantitative Screener Matrix`,
       description: strategy.description,
       url: `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`,
-      siteName: "Finance Terminal",
+      siteName: "ARX Terminal",
       type: "article",
     },
     alternates: {
@@ -329,7 +336,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
 }
 
 export default function StrategyDetailPage({ params }: PageProps) {
-  const strategy = STRATEGY_DATABASE.find(s => s.slug === params.type.toLowerCase()) || STRATEGY_DATABASE[0];
+  const strategy = STRATEGY_DATABASE.find(s => s.slug === params.type.toLowerCase());
+  if (!strategy) {
+    notFound();
+  }
 
   const jsonLd = [
     {

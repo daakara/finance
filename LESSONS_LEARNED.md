@@ -209,3 +209,32 @@ Institutional finance software typically alienates retail users and non-finance 
 6. **Automated Quality Gate**:
    - Enforced via `test_security_hardening_contracts` in `tests/test_nextjs_frontend_structure.py`.
 
+---
+
+## 10. 🛡️ Modal Stacking Layers, Canvas Lifecycle & Dynamic 404 Routing
+
+### 🚨 What Went Wrong
+1. **Modal Stacking Layer Inversion**: Fixed floating bottom navigation docks (`z-[999]`) on mobile screens rendered above interactive dialog modals (`z-50`), blocking `"Save to Portfolio"` and dismiss buttons.
+2. **Duplicate Modal Ownership**: Mounting modal dialogs in both `app/layout.tsx` and header components (`Navbar.tsx`) with duplicate global `window.addEventListener("open-onboarding")` handlers caused dual-modal stacking.
+3. **Canvas Context Re-creation Thrashing**: Triggering `chart.remove()` and `createChart()` inside React `useEffect` on every timeframe button click (`1W`, `1M`, `3M`) led to memory leaks and canvas thrashing.
+4. **Silent Dynamic 404 Fallback Traps**: Fallback queries in dynamic route pages defaulting to index `[0]` (e.g. invalid politician URLs silently loading Nancy Pelosi) misinformed users instead of returning 404s.
+
+### 🛡️ The Preventive Standard
+1. **Z-Index Stacking Hierarchy**:
+   - Sticky Headers: `z-50`
+   - Offline Banners: `z-[60]`
+   - Floating Bottom Docks: `z-[999]`
+   - Interactive Dialog Modals & Backdrops: **`z-[1200]` and above** (Guaranteed to exceed bottom docks).
+2. **Single Modal Ownership**:
+   - Centralize interactive tours and global modals within a single controlled container rather than multiple parallel mounts.
+3. **Canvas Lifecycle De-coupling**:
+   - Instantiate charting canvas strictly once inside `useEffect([], ...)`.
+   - Update data reactively via `seriesRef.current.setData(...)` and `chartRef.current.timeScale().fitContent()`.
+4. **Explicit 404 Boundaries**:
+   - In dynamic Next.js routes (`[slug]`, `[ticker]`, `[type]`), if a record is not found in database lookup, call `notFound()` from `next/navigation`.
+5. **Mobile Safe-Area Padding**:
+   - Every page utilizing fixed mobile navigation must enforce `pb-28 sm:pb-8` bottom padding to guarantee clearance.
+6. **Automated Quality Gate**:
+   - Enforced via `test_frontend_qa_modal_z_index_and_single_onboarding_ownership` in `tests/test_nextjs_frontend_structure.py`.
+
+
