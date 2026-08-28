@@ -112,9 +112,9 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   return (
     <>
       <header role="banner" className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-[1750px] mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-4">
           {/* Left: Brand Logo & Title */}
-          <div className="flex items-center space-x-2 sm:space-x-4 shrink-0 min-w-0">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
             <Link href="/" aria-label="Finance Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
               <div aria-hidden="true" className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-cyan-600 flex items-center justify-center font-mono font-bold text-white shadow-sm group-hover:scale-105 transition-transform text-xs sm:text-sm">
                 FT
@@ -132,12 +132,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               </div>
             </Link>
 
-            {/* Desktop Navigation Links (Visible on 1280px+ viewports to prevent crowding on 1024px tablet/compact displays) */}
-            <nav aria-label="Main Navigation" className="hidden xl:flex items-center space-x-0.5 2xl:space-x-1 font-mono text-xs shrink-0">
+            {/* Desktop Navigation Links (Always visible on all desktop and laptop resolutions >= 1024px) */}
+            <nav aria-label="Main Navigation" className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0">
               <Link
                 href="/"
                 aria-current={pathname === "/" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -146,7 +146,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/screener"
                 aria-current={pathname === "/screener" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -158,7 +158,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/compare"
                 aria-current={pathname === "/compare" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -167,7 +167,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/smart-money"
                 aria-current={pathname === "/smart-money" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -176,7 +176,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/portfolio"
                 aria-current={pathname === "/portfolio" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -185,7 +185,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/guide"
                 aria-current={pathname === "/guide" ? "page" : undefined}
-                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -203,7 +203,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           </div>
 
           {/* Center: Global Omni-Search Bar (Desktop & Mobile - Fluid Adaptive Width) */}
-          <div className="flex-1 min-w-[100px] max-w-[160px] md:max-w-[200px] lg:max-w-[220px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-2 flex items-center justify-center">
+          <div className="flex-1 min-w-[70px] max-w-[120px] sm:max-w-[150px] md:max-w-[170px] lg:max-w-[180px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-1.5 flex items-center justify-center">
             <UniversalOmniSearch />
           </div>
 
