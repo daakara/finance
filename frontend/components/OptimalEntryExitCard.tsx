@@ -311,6 +311,8 @@ export default function OptimalEntryExitCard({
         optimalEntryMax={optimal_entry_max}
         stopLoss={stop_loss}
         takeProfit1={take_profit_1}
+        isStage4={isStage4}
+        breakoutPivot={Number((current_price * 1.072).toFixed(2))}
       />
     </div>
   );

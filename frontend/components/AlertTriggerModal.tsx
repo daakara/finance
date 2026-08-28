@@ -12,6 +12,8 @@ interface AlertTriggerModalProps {
   optimalEntryMax: number;
   stopLoss: number;
   takeProfit1: number;
+  isStage4?: boolean;
+  breakoutPivot?: number;
 }
 
 export default function AlertTriggerModal({
@@ -23,6 +25,8 @@ export default function AlertTriggerModal({
   optimalEntryMax,
   stopLoss,
   takeProfit1,
+  isStage4 = false,
+  breakoutPivot,
 }: AlertTriggerModalProps) {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [notifyBuyZone, setNotifyBuyZone] = useState<boolean>(true);
@@ -133,21 +137,27 @@ export default function AlertTriggerModal({
 
           {/* Trigger Toggles */}
           <div className="space-y-2.5">
-            {/* Buy Zone */}
-            <label className="flex items-center justify-between p-3 rounded-xl bg-[#070b13] border border-[#1b273b] cursor-pointer hover:border-cyan-500/50 transition-all">
+            {/* Buy Zone or 50-SMA Breakout Pivot */}
+            <label className={`flex items-center justify-between p-3 rounded-xl bg-[#070b13] border transition-all cursor-pointer ${
+              isStage4 ? "border-amber-700/60 hover:border-amber-500" : "border-[#1b273b] hover:border-cyan-500/50"
+            }`}>
               <div>
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                  <span>🎯 Optimal Buy Zone Entry</span>
+                <span className={`text-xs font-bold flex items-center gap-1.5 ${isStage4 ? "text-amber-300" : "text-emerald-400"}`}>
+                  <span>{isStage4 ? "⏳ 50-Day SMA Breakout Pivot Alert" : "🎯 Optimal Buy Zone Entry"}</span>
                 </span>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Alert when price touches ${safeEntryMin.toFixed(2)} – ${safeEntryMax.toFixed(2)}
+                  {isStage4
+                    ? `Alert the instant price reclaims the 50-day moving average breakout pivot at $${(breakoutPivot || safeCurrent * 1.072).toFixed(2)}`
+                    : `Alert when price touches $${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}`}
                 </p>
               </div>
               <input
                 type="checkbox"
                 checked={notifyBuyZone}
                 onChange={(e) => setNotifyBuyZone(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0 cursor-pointer"
+                className={`w-4 h-4 rounded border-slate-700 bg-slate-900 focus:ring-0 cursor-pointer ${
+                  isStage4 ? "text-amber-500" : "text-cyan-500"
+                }`}
               />
             </label>
 

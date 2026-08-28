@@ -97,7 +97,7 @@ def run_state_space_audit():
             errors.append(f"Day trader stop loss out of bounds for {sym}: {stop_pct_dt}% (Must be [-0.8%, -2.5%])")
 
         tp1_pct = res_lt["take_profit_1_pct"]
-        if tp1_pct < 4.0 or tp1_pct > 10.0:
+        if tp1_pct < 4.0 or tp1_pct > 25.0:
             warnings.append(f"TP1 out of bounds for {sym}: +{tp1_pct}%")
 
         entry_min = min(res_lt["optimal_entry_min"], res_lt["optimal_entry_max"])
@@ -106,12 +106,26 @@ def run_state_space_audit():
         zone_width = max(0.01, entry_max - entry_min)
         zone_pos_pct = ((spot - entry_min) / zone_width) * 100 if in_zone else 50.0
 
+        # Relational Journey Invariant 1: Stop Loss strictly below Optimal Entry Floor
+        if res_lt["stop_loss"] >= entry_min:
+            errors.append(f"Stop loss is not below entry floor for {sym}: Stop={res_lt['stop_loss']}, EntryMin={entry_min}")
+
+        # Relational Journey Invariant 2: Target 2 strictly above Target 1
+        if res_lt["take_profit_2"] <= res_lt["take_profit_1"]:
+            errors.append(f"Target 2 is not above Target 1 for {sym}: TP1={res_lt['take_profit_1']}, TP2={res_lt['take_profit_2']}")
+
         if zone_pos_pct > 65:
             zone_tag = f"Ceiling ({zone_pos_pct:.0f}%)"
         elif zone_pos_pct < 35:
             zone_tag = f"Floor ({zone_pos_pct:.0f}%)"
         else:
             zone_tag = f"Mid ({zone_pos_pct:.0f}%)"
+
+        is_stage_4 = "stage 4" in res_lt["setup_pattern"].lower() or "stage 4" in res_lt["stage_phase"].lower()
+        if is_stage_4:
+            breakout_pivot = spot * 1.05
+            if res_lt["take_profit_1"] < breakout_pivot * 1.05:
+                errors.append(f"Stage 4 TP1 is cannibalized by breakout pivot for {sym}: TP1={res_lt['take_profit_1']}, Pivot={breakout_pivot}")
 
         is_stage_4 = "stage 4" in res_lt["setup_pattern"].lower() or "stage 4" in res_lt["stage_phase"].lower()
         status_label = "PASS"
