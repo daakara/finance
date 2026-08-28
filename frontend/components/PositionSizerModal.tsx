@@ -101,42 +101,43 @@ export default function PositionSizerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
-      <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 font-sans">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#1b2537] bg-[#0e1422]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono overflow-y-auto">
+      <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 font-sans max-h-[92vh] flex flex-col my-auto">
+        {/* Fixed Header */}
+        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-[#1b2537] bg-[#0e1422] shrink-0">
           <div className="flex items-center space-x-2">
             <span className="text-xl">⚖️</span>
             <div>
-              <h2 className="text-base font-black text-white tracking-tight">
+              <h2 className="text-sm sm:text-base font-black text-white tracking-tight">
                 Institutional Position Sizer & Kelly Risk
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[10px] sm:text-[11px] text-slate-400">
                 Calibrated for <span className="text-cyan-400 font-bold font-mono">{symbol}</span> @ ${safeEntry.toFixed(2)}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all text-sm"
+            aria-label="Close Position Sizer"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-all text-sm cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Stage 4 Capital Protection Advisory */}
-        {isStage4 && (
-          <div className="p-3 bg-amber-950/40 border-b border-amber-800/40 text-amber-300 text-xs font-sans flex items-start gap-2">
-            <span className="text-base leading-none">⚠️</span>
-            <div>
-              <strong className="font-bold block">Stage 4 Markdown Caution:</strong>
-              <span>Capital deployment not recommended until a constructive base forms above the 50-day SMA. Suggested risk defaulted to 0.25% pilot sizing or paper trading.</span>
+        {/* Scrollable Body */}
+        <div className="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
+          {/* Stage 4 Capital Protection Advisory */}
+          {isStage4 && (
+            <div className="p-3 bg-amber-950/40 border border-amber-800/40 rounded-xl text-amber-300 text-xs font-sans flex items-start gap-2">
+              <span className="text-base leading-none">⚠️</span>
+              <div>
+                <strong className="font-bold block">Stage 4 Markdown Caution:</strong>
+                <span>Capital deployment not recommended until a constructive base forms above the 50-day SMA. Suggested risk defaulted to 0.25% pilot sizing or paper trading.</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Inputs Body */}
-        <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] text-slate-400 font-bold block mb-1">
@@ -179,13 +180,13 @@ export default function PositionSizerModal({
           </div>
 
           {/* Quick Risk Buttons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] text-slate-500 font-bold mr-1">Risk Presets:</span>
             {[0.5, 1.0, 1.5, 2.0].map((preset) => (
               <button
                 key={preset}
                 onClick={() => setRiskPct(preset)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
+                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                   riskPct === preset
                     ? "bg-cyan-600 border-cyan-400 text-white"
                     : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
@@ -197,15 +198,15 @@ export default function PositionSizerModal({
           </div>
 
           {/* Sizing Results Card */}
-          <div className="bg-[#070c16] border border-[#1b273b] rounded-xl p-4 space-y-3">
+          <div className="bg-[#070c16] border border-[#1b273b] rounded-xl p-3.5 sm:p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-[#141e30] pb-2">
               <span className="text-xs text-slate-400 font-bold">Recommended Position</span>
-              <span className="text-xl font-black text-cyan-400 tabular-nums">
+              <span className="text-lg sm:text-xl font-black text-cyan-400 tabular-nums">
                 {shares} <span className="text-xs text-slate-400 font-semibold">Shares</span>
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
               <div className="bg-[#0b101b] p-2.5 rounded-lg border border-[#172235]">
                 <span className="text-[10px] text-slate-500 block">CAPITAL ALLOCATED</span>
                 <span className="font-bold text-white tabular-nums">${totalAllocation.toLocaleString()}</span>
@@ -247,20 +248,21 @@ export default function PositionSizerModal({
           )}
         </div>
 
-        {/* Footer with 1-Click Save to Portfolio */}
-        <div className="p-4 border-t border-[#1b2537] bg-[#0e1422] flex flex-wrap items-center justify-between gap-3">
+        {/* Fixed Footer with 1-Click Save to Portfolio */}
+        <div className="p-3.5 sm:p-4 border-t border-[#1b2537] bg-[#0e1422] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={handleSaveToPortfolio}
-            className="px-4 py-2 bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow"
+            className="px-3.5 sm:px-4 py-2 bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow cursor-pointer"
           >
             <span>💼</span>
             <span>Save to My Portfolio</span>
           </button>
 
           <button
+            type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow active:scale-95"
+            className="px-4 sm:px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer"
           >
             Done
           </button>

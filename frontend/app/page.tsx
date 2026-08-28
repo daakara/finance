@@ -279,6 +279,7 @@ function TerminalContent() {
               priceChangePct={data?.priceChangePct24h}
               interval={interval}
               userRole={userRole}
+              onRoleChange={handleRoleChange}
               onIntervalChange={setInterval}
               smartMoneyHeadline={
                 data?.smartMoney?.congressTrades?.[0]

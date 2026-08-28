@@ -70,7 +70,20 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   }, [activeRole, pathname, router]);
 
   useEffect(() => {
-    setActiveRole(userRole);
+    try {
+      const saved = localStorage.getItem("FINANCE_USER_ROLE") as "DAY_TRADER" | "LONG_TERM" | null;
+      if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
+        setActiveRole(saved);
+      } else if (userRole) {
+        setActiveRole(userRole);
+      }
+    } catch {
+      if (userRole) setActiveRole(userRole);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userRole) setActiveRole(userRole);
   }, [userRole]);
 
   useEffect(() => {
@@ -78,7 +91,6 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       const custom = e as CustomEvent<"DAY_TRADER" | "LONG_TERM">;
       if (custom.detail === "DAY_TRADER" || custom.detail === "LONG_TERM") {
         setActiveRole(custom.detail);
-        if (onRoleChange) onRoleChange(custom.detail);
       }
     };
     const handleOnboardingEvent = () => {
@@ -91,7 +103,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       window.removeEventListener("finance:role-change", handleRoleEvent);
       window.removeEventListener("open-onboarding", handleOnboardingEvent);
     };
-  }, [onRoleChange]);
+  }, []);
 
   const handleOpenOnboarding = () => {
     setIsOnboardingOpen(true);
@@ -120,12 +132,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               </div>
             </Link>
 
-            {/* Desktop Navigation Links */}
-            <nav aria-label="Main Navigation" className="hidden lg:flex items-center space-x-1 font-mono text-xs">
+            {/* Desktop Navigation Links (Visible on 1280px+ viewports to prevent crowding on 1024px tablet/compact displays) */}
+            <nav aria-label="Main Navigation" className="hidden xl:flex items-center space-x-0.5 2xl:space-x-1 font-mono text-xs shrink-0">
               <Link
                 href="/"
                 aria-current={pathname === "/" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -134,7 +146,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/screener"
                 aria-current={pathname === "/screener" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -146,7 +158,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/compare"
                 aria-current={pathname === "/compare" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -155,16 +167,16 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/smart-money"
                 aria-current={pathname === "/smart-money" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <span>🏛️ Smart Money</span>
+                <span>🏛️ Insiders</span>
               </Link>
               <Link
                 href="/portfolio"
                 aria-current={pathname === "/portfolio" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -173,7 +185,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/guide"
                 aria-current={pathname === "/guide" ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`px-2 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -183,26 +195,26 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 type="button"
                 onClick={handleOpenOnboarding}
                 aria-label="Open Terminal Setup & Onboarding Tour"
-                className="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
+                className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
               >
                 <span>✨ Tour</span>
               </button>
             </nav>
           </div>
 
-          {/* Center: Global Omni-Search Bar (Desktop & Mobile) */}
-          <div className="flex-1 max-w-xl mx-auto flex items-center justify-center px-1 sm:px-2">
+          {/* Center: Global Omni-Search Bar (Desktop & Mobile - Fluid Adaptive Width) */}
+          <div className="flex-1 min-w-[100px] max-w-[160px] md:max-w-[200px] lg:max-w-[220px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-2 flex items-center justify-center">
             <UniversalOmniSearch />
           </div>
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
-          <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
-            {/* Tour Button (Mobile visible) */}
+          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+            {/* Tour Button (Mobile / Tablet visible) */}
             <button
               type="button"
               onClick={handleOpenOnboarding}
               aria-label="Open Terminal Setup & Onboarding Tour"
-              className="lg:hidden p-1.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[32px] min-w-[32px]"
+              className="2xl:hidden p-1.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[32px] min-w-[32px]"
               title="Terminal Tour & Guide"
             >
               <span>✨</span>
@@ -229,21 +241,25 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             {/* Theme Toggle */}
             <ThemeToggle />
 
-            {/* Trading Horizon Switcher */}
-            <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="bg-[#090d14] p-0.5 sm:p-1 rounded-xl border border-[#243044] flex items-center shadow-inner">
+            {/* Trading Horizon Switcher (Always 100% visible and unclipped across all viewports) */}
+            <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="hidden sm:flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
               <button
                 onClick={() => handleRoleToggle("DAY_TRADER")}
                 role="button"
                 aria-pressed={activeRole === "DAY_TRADER"}
                 aria-label="Switch to Day Trader mode"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+                title="Day Trader Mode (Intraday Momentum & Quick Scalps)"
+                className={`flex items-center space-x-1 px-2 2xl:px-2.5 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
                 <span aria-hidden="true" className="text-xs">⚡</span>
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Day Trade</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                  <span className="hidden 2xl:inline">Day Trade</span>
+                  <span className="2xl:hidden">Day</span>
+                </span>
               </button>
 
               <button
@@ -251,14 +267,18 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 role="button"
                 aria-pressed={activeRole === "LONG_TERM"}
                 aria-label="Switch to Long-Term Investor mode"
-                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 min-h-[32px] rounded-lg text-xs font-mono font-bold transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                title="Long-Term Mode (Value Compounding & Secular Growth)"
+                className={`flex items-center space-x-1 px-2 2xl:px-2.5 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
                 <span aria-hidden="true" className="text-xs">🏛️</span>
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Long Term</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                  <span className="hidden 2xl:inline">Long Term</span>
+                  <span className="2xl:hidden">Long</span>
+                </span>
               </button>
             </div>
           </div>
@@ -349,13 +369,32 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         <Link
           href="/guide"
           aria-current={pathname === "/guide" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
             pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
           }`}
         >
           <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
           <span className="text-[9px] tracking-tight">Guide</span>
         </Link>
+
+        {/* Quick Horizon Toggle on Mobile Dock */}
+        <button
+          type="button"
+          onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
+          aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-w-[46px] min-h-[44px] border ${
+            activeRole === "DAY_TRADER"
+              ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
+              : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
+            {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
+          </span>
+          <span className="text-[8.5px] tracking-tight">
+            {activeRole === "DAY_TRADER" ? "Day" : "Long"}
+          </span>
+        </button>
       </nav>
 
       {/* Onboarding Tour Modal */}

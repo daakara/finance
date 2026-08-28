@@ -14,6 +14,7 @@ import {
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics } from "../../lib/api";
+import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 
 export default function PortfolioPage() {
@@ -30,12 +31,57 @@ export default function PortfolioPage() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
-  // Form State for Adding Position
-  const [newSymbol, setNewSymbol] = useState("NVDA");
-  const [newShares, setNewShares] = useState("10");
-  const [newEntryPrice, setNewEntryPrice] = useState("200.00");
-  const [newStopLoss, setNewStopLoss] = useState("185.00");
-  const [newTarget, setNewTarget] = useState("240.00");
+  // Form State for Adding Position with Real-Time Auto-Population
+  const [newSymbol, setNewSymbol] = useState("SEDG");
+  const [newShares, setNewShares] = useState("75");
+  const [newEntryPrice, setNewEntryPrice] = useState("33.51");
+  const [newStopLoss, setNewStopLoss] = useState("31.16");
+  const [newTarget, setNewTarget] = useState("41.89");
+  const [isResolvingQuote, setIsResolvingQuote] = useState(false);
+  const [resolvedAssetName, setResolvedAssetName] = useState("SolarEdge Technologies");
+  const [resolvedQuotePrice, setResolvedQuotePrice] = useState<number | null>(33.51);
+
+  const populateTickerData = useCallback(async (rawTicker: string) => {
+    const trimmed = rawTicker.trim();
+    const aliasInfo = resolveAssetAlias(trimmed);
+    const symKey = (aliasInfo ? aliasInfo.canonicalTicker : trimmed).toUpperCase();
+    const canonicalName = aliasInfo?.companyName || getCanonicalAssetName(symKey);
+    setResolvedAssetName(canonicalName);
+    setIsResolvingQuote(true);
+
+    try {
+      // 1. Immediate sync lookup from constants
+      const staticMatch = SHARED_FACTOR_SCORES[symKey];
+      let price = staticMatch?.price || 100;
+
+      // 2. Fetch freshest live/fallback analytics
+      try {
+        const analytics = await fetchAssetAnalytics(symKey, "1mo", "1d");
+        if (analytics?.currentPrice && !isNaN(analytics.currentPrice) && analytics.currentPrice > 0) {
+          price = analytics.currentPrice;
+        }
+      } catch (e) {
+        // Fallback to staticMatch
+      }
+
+      setResolvedQuotePrice(price);
+      setNewEntryPrice(price.toFixed(2));
+      setNewStopLoss((price * 0.93).toFixed(2));
+      setNewTarget((price * 1.25).toFixed(2));
+      setNewShares(Math.max(1, Math.round(2500 / price)).toString());
+    } catch (err) {
+      console.warn("Failed to auto-populate ticker data:", err);
+    } finally {
+      setIsResolvingQuote(false);
+    }
+  }, []);
+
+  const handleOpenAddModal = (initialSymbol?: string) => {
+    const target = initialSymbol || newSymbol || "SEDG";
+    setNewSymbol(target);
+    setShowAddModal(true);
+    populateTickerData(target);
+  };
 
   const refreshQuotes = useCallback(async (basePositions: PortfolioPosition[]) => {
     if (basePositions.length === 0) return;
@@ -83,6 +129,15 @@ export default function PortfolioPage() {
     setSummary(calculatePortfolioSummary(loaded));
     refreshQuotes(loaded);
 
+    // Auto-open add modal if ?add=SYMBOL query is present
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const addSym = params.get("add") || params.get("symbol");
+      if (addSym) {
+        handleOpenAddModal(addSym);
+      }
+    }
+
     const handlePurge = () => {
       refreshQuotes(loaded);
     };
@@ -95,7 +150,9 @@ export default function PortfolioPage() {
 
   const handleAddPosition = (e: React.FormEvent) => {
     e.preventDefault();
-    const symUpper = newSymbol.trim().toUpperCase();
+    const trimmedSym = newSymbol.trim().toUpperCase();
+    const aliasInfo = resolveAssetAlias(trimmedSym);
+    const symUpper = (aliasInfo ? aliasInfo.canonicalTicker : trimmedSym).toUpperCase();
     const sharesNum = parseFloat(newShares);
     const entryNum = parseFloat(newEntryPrice);
     const stopNum = newStopLoss ? parseFloat(newStopLoss) : undefined;
@@ -103,12 +160,12 @@ export default function PortfolioPage() {
 
     if (!symUpper || isNaN(sharesNum) || isNaN(entryNum) || sharesNum <= 0) return;
 
-    const matched = SHARED_FACTOR_SCORES[symUpper];
-    const curPrice = matched ? matched.price : entryNum;
+    const authenticName = getCanonicalAssetName(symUpper);
+    const curPrice = resolvedQuotePrice && !isNaN(resolvedQuotePrice) ? resolvedQuotePrice : entryNum;
 
     const newPos: PortfolioPosition = {
       symbol: symUpper,
-      name: `${symUpper} Corporation`,
+      name: authenticName,
       shares: sharesNum,
       entryPrice: entryNum,
       currentPrice: curPrice,
@@ -191,7 +248,7 @@ export default function PortfolioPage() {
             </button>
 
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => handleOpenAddModal()}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <span>➕</span>
@@ -337,87 +394,157 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Add Position Modal */}
+        {/* Add Position Modal (Fluid Adaptive & Real-Time Auto-Populated) */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
-                <h3 className="text-base font-bold text-white">Add Portfolio Holding</h3>
-                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">✕</button>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
+            <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden max-h-[92vh] flex flex-col my-auto text-slate-100">
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between p-4 border-b border-[#1b2434] bg-[#0e1422] shrink-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">💼</span>
+                  <div>
+                    <h3 className="text-base font-bold text-white tracking-tight">Add Portfolio Holding</h3>
+                    <p className="text-[10px] text-slate-400">Live quantitative auto-population enabled</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
 
-              <form onSubmit={handleAddPosition} className="space-y-3 text-xs">
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleAddPosition} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
+                {/* Ticker Input & Quick Chips */}
                 <div>
-                  <label className="block text-slate-400 mb-1">Ticker Symbol</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-slate-300 font-bold">Ticker Symbol</label>
+                    <span className="text-[10px] text-cyan-400 font-mono">
+                      {isResolvingQuote ? "⏳ Syncing Quote..." : `Verified: ${resolvedAssetName}`}
+                    </span>
+                  </div>
                   <input
                     type="text"
                     value={newSymbol}
-                    onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
-                    className="w-full bg-[#090d14] border border-[#243044] rounded-lg p-2 text-white font-bold"
-                    placeholder="e.g. NVDA, AAPL, LNTH"
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setNewSymbol(val);
+                      populateTickerData(val);
+                    }}
+                    className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2.5 text-white font-bold tracking-wider uppercase text-sm focus:outline-none"
+                    placeholder="e.g. SEDG, NVDA, AAPL, FDX"
                     required
                   />
+
+                  {/* Quick Ticker Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <span className="text-[10px] text-slate-500 font-bold mr-0.5">Quick:</span>
+                    {["SEDG", "NVDA", "AAPL", "TSLA", "MSFT", "FDX", "UPS", "DHLGY"].map((sym) => (
+                      <button
+                        type="button"
+                        key={sym}
+                        onClick={() => {
+                          setNewSymbol(sym);
+                          populateTickerData(sym);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          newSymbol.toUpperCase() === sym
+                            ? "bg-cyan-600 border-cyan-400 text-white"
+                            : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                {/* Auto-Populated Live Quote Banner */}
+                <div className="bg-[#090d14] border border-cyan-900/60 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-cyan-400">📡</span>
+                    <div>
+                      <span className="text-[11px] font-bold text-white">
+                        {resolvedAssetName} ({newSymbol})
+                      </span>
+                      <p className="text-[10px] text-slate-400">
+                        Market Price: <span className="text-cyan-300 font-bold tabular-nums">${resolvedQuotePrice?.toFixed(2) || newEntryPrice}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[9px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold uppercase">
+                    Auto-Filled
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-slate-400 mb-1">Shares Count</label>
+                    <label className="block text-slate-300 font-bold mb-1">Shares Count</label>
                     <input
                       type="number"
                       step="any"
+                      min="1"
                       value={newShares}
                       onChange={(e) => setNewShares(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] rounded-lg p-2 text-white"
+                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                       required
                     />
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Sized to ~$2,500</span>
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1">Entry Price ($)</label>
+                    <label className="block text-slate-300 font-bold mb-1">Entry Price ($)</label>
                     <input
                       type="number"
                       step="any"
                       value={newEntryPrice}
                       onChange={(e) => setNewEntryPrice(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] rounded-lg p-2 text-white"
+                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                       required
                     />
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Live market execution</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-slate-400 mb-1">Stop Loss ($)</label>
+                    <label className="block text-rose-300 font-bold mb-1">Stop Loss ($)</label>
                     <input
                       type="number"
                       step="any"
                       value={newStopLoss}
                       onChange={(e) => setNewStopLoss(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] rounded-lg p-2 text-rose-300"
+                      className="w-full bg-[#090d14] border border-rose-950/80 focus:border-rose-500 rounded-lg p-2 text-rose-300 font-bold focus:outline-none"
                     />
+                    <span className="text-[10px] text-rose-400/80 block mt-0.5">-7% Risk Cut Floor</span>
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1">Target Price ($)</label>
+                    <label className="block text-emerald-300 font-bold mb-1">Target Price ($)</label>
                     <input
                       type="number"
                       step="any"
                       value={newTarget}
                       onChange={(e) => setNewTarget(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] rounded-lg p-2 text-emerald-300"
+                      className="w-full bg-[#090d14] border border-emerald-950/80 focus:border-emerald-500 rounded-lg p-2 text-emerald-300 font-bold focus:outline-none"
                     />
+                    <span className="text-[10px] text-emerald-400/80 block mt-0.5">+25% Upside Target (TP1)</span>
                   </div>
                 </div>
 
-                <div className="pt-3 flex items-center justify-end space-x-2 border-t border-[#1b2434]">
+                {/* Fixed Footer with Actions */}
+                <div className="pt-3.5 flex items-center justify-end space-x-2 border-t border-[#1b2434] shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-3 py-1.5 bg-[#162030] text-slate-300 rounded-lg"
+                    className="px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg"
+                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer"
                   >
                     Save Holding
                   </button>

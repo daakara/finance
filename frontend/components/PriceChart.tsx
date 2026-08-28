@@ -11,6 +11,7 @@ interface PriceChartProps {
   priceChangePct?: number;
   interval?: string;
   userRole?: "DAY_TRADER" | "LONG_TERM";
+  onRoleChange?: (role: "DAY_TRADER" | "LONG_TERM") => void;
   onIntervalChange?: (interval: string) => void;
   smartMoneyHeadline?: string;
   catalystHeadline?: string;
@@ -47,6 +48,7 @@ export default function PriceChart({
   priceChangePct = 0,
   interval = "1y_hist",
   userRole = "LONG_TERM",
+  onRoleChange,
   onIntervalChange,
   smartMoneyHeadline,
   catalystHeadline,
@@ -386,6 +388,23 @@ export default function PriceChart({
                 {item.label}
               </button>
             ))}
+
+            {onRoleChange && (
+              <button
+                type="button"
+                onClick={() => onRoleChange(userRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
+                aria-label={`Switch Trading Horizon Mode (currently ${userRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"})`}
+                title={`Click to switch to ${userRole === "DAY_TRADER" ? "Long-Term Macro Investor" : "Day Trader Scalp"} mode`}
+                className={`ml-1 px-2 py-1 min-h-[30px] rounded text-[11px] font-mono font-bold transition-all border flex items-center gap-1 cursor-pointer active:scale-95 ${
+                  userRole === "DAY_TRADER"
+                    ? "bg-amber-950/40 text-amber-300 border-amber-500/50 hover:bg-amber-900/50"
+                    : "bg-cyan-950/40 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/50"
+                }`}
+              >
+                <span>{userRole === "DAY_TRADER" ? "⚡ Day" : "🏛️ Long"}</span>
+                <span className="text-[9px] opacity-75">⇄</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
