@@ -16,15 +16,15 @@ export interface WatchlistDefinition {
 
 export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
   // Mega-Cap Tech & Global Pharma Equities
-  { symbol: "NVO", name: "Novo Nordisk", price: "$138.50", change: "+1.85%", isUp: true, type: "Stock" },
-  { symbol: "LLY", name: "Eli Lilly", price: "$920.40", change: "+2.10%", isUp: true, type: "Stock" },
-  { symbol: "AAPL", name: "Apple Inc.", price: "$309.90", change: "-0.45%", isUp: false, type: "Stock" },
-  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$213.05", change: "+3.14%", isUp: true, type: "Stock" },
-  { symbol: "MSFT", name: "Microsoft Corp.", price: "$491.71", change: "+0.85%", isUp: true, type: "Stock" },
-  { symbol: "GOOGL", name: "Alphabet Inc.", price: "$346.96", change: "+1.40%", isUp: true, type: "Stock" },
-  { symbol: "TSLA", name: "Tesla Inc.", price: "$350.25", change: "+2.15%", isUp: true, type: "Stock" },
-  { symbol: "PLTR", name: "Palantir Tech", price: "$142.80", change: "+4.12%", isUp: true, type: "Stock" },
-  { symbol: "CIEN", name: "Ciena Corp.", price: "$417.00", change: "+2.65%", isUp: true, type: "Stock" },
+  { symbol: "NVO", name: "Novo Nordisk", price: "$136.40", change: "+1.85%", isUp: true, type: "Stock" },
+  { symbol: "LLY", name: "Eli Lilly", price: "$924.50", change: "+2.10%", isUp: true, type: "Stock" },
+  { symbol: "AAPL", name: "Apple Inc.", price: "$226.50", change: "-0.45%", isUp: false, type: "Stock" },
+  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$128.50", change: "+3.14%", isUp: true, type: "Stock" },
+  { symbol: "MSFT", name: "Microsoft Corp.", price: "$418.20", change: "+0.85%", isUp: true, type: "Stock" },
+  { symbol: "GOOGL", name: "Alphabet Inc.", price: "$164.80", change: "+1.40%", isUp: true, type: "Stock" },
+  { symbol: "TSLA", name: "Tesla Inc.", price: "$218.40", change: "+2.15%", isUp: true, type: "Stock" },
+  { symbol: "PLTR", name: "Palantir Tech", price: "$31.20", change: "+4.12%", isUp: true, type: "Stock" },
+  { symbol: "CIEN", name: "Ciena Corp.", price: "$64.20", change: "+2.65%", isUp: true, type: "Stock" },
 
   // Institutional Index, Sector, Commodity & Bond ETFs
   { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },

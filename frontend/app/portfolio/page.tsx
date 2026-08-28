@@ -42,6 +42,8 @@ export default function PortfolioPage() {
     setIsRefreshing(true);
     try {
       const updatedPromises = basePositions.map(async (pos) => {
+        const symKey = pos.symbol.toUpperCase();
+        const matched = SHARED_FACTOR_SCORES[symKey];
         try {
           const res = await fetchAssetAnalytics(pos.symbol, "1mo", "1d");
           if (res && res.currentPrice && !isNaN(res.currentPrice)) {
@@ -52,13 +54,12 @@ export default function PortfolioPage() {
           }
         } catch {
           // Fallback to SHARED_FACTOR_SCORES if API request fails
-          const matched = SHARED_FACTOR_SCORES[pos.symbol.toUpperCase()];
-          if (matched && matched.price) {
-            return {
-              ...pos,
-              currentPrice: matched.price,
-            };
-          }
+        }
+        if (matched && matched.price) {
+          return {
+            ...pos,
+            currentPrice: matched.price,
+          };
         }
         return pos;
       });

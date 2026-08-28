@@ -435,6 +435,90 @@ const ASSET_CATALYSTS: Record<string, { trial: string; phase: string; timeline: 
     timeline: "UK/Europe Market Share Expansion",
     thesis: "Digitally-native, fast-beauty disruptor taking rapid global market share with premium quality-to-price ratio.",
   },
+  "KO": {
+    trial: "Global Volume Growth, Bottling System Refranchising & Direct-Store-Delivery",
+    phase: "Commercial Market Leadership & Margin Expansion",
+    timeline: "Quarterly Unit Volume & Pricing Power Readouts",
+    thesis: "World's preeminent beverage brand portfolio with unmatched global distribution bottling network and pricing power.",
+  },
+  "SBUX": {
+    trial: "Triple Shot Reinvention, Store-Level Throughput & Digital Rewards Expansion",
+    phase: "Operational Turnaround & Unit Economics Acceleration",
+    timeline: "Quarterly Same-Store Sales (Comps) Reporting",
+    thesis: "Premier global specialty coffee brand driving customer throughput with 38,000+ locations and 34M+ active Rewards members.",
+  },
+  "JPM": {
+    trial: "Net Interest Margin (NIM) Optimization & Global Commercial Banking Expansion",
+    phase: "Tier-1 Money-Center Bank Scale",
+    timeline: "Quarterly Net Interest Income & Credit Provision Readouts",
+    thesis: "Fortress balance sheet money-center financial institution dominating corporate investment banking, wealth management, and prime retail deposits.",
+  },
+  "V": {
+    trial: "Cross-Border Travel Volume & Real-Time Direct Settlement (Visa Direct)",
+    phase: "Global Digital Payment Processing Monopoly",
+    timeline: "Quarterly Payment Volume & Value-Added Services Growth",
+    thesis: "Global payments duopoly operating high-margin tollbooth network processing trillions in consumer and commercial transactions.",
+  },
+  "DIS": {
+    trial: "Direct-to-Consumer (DTC) Streaming Profitability & Experiences Park Expansion",
+    phase: "DTC Margin Expansion & Cruise Fleet Scaling",
+    timeline: "Quarterly Disney+ Subscriber ARPU & Park Operating Income",
+    thesis: "Iconic intellectual property portfolio, premier global theme parks, and expanding direct-to-consumer streaming margins.",
+  },
+  "COST": {
+    trial: "Membership Warehouse Global Expansion & Digital E-Commerce Fulfillment",
+    phase: "Global Club Format Scale",
+    timeline: "Quarterly Net Sales & Membership Fee Renewal Rates",
+    thesis: "Unrivaled warehouse club member loyalty with 92%+ renewal rates, negative working capital cycle, and massive bulk volume purchasing power.",
+  },
+  "WMT": {
+    trial: "Walmart+ High-Margin Marketplace & Automated Supply Chain Fulfillment",
+    phase: "Omnichannel Retail Modernization",
+    timeline: "Quarterly Global E-Commerce & Retail Media (Walmart Connect) Ramp",
+    thesis: "World's largest omnichannel retailer combining massive physical store density with rapidly expanding high-margin digital advertising.",
+  },
+  "AMD": {
+    trial: "Instinct MI350/MI400 AI Accelerator Rack Scaling & EPYC Server Dominance",
+    phase: "Hyperscale AI Accelerator Deliveries",
+    timeline: "Continuous FY26/27 Data Center Shipments",
+    thesis: "High-performance compute architectures challenging datacenter AI accelerators and server CPU market share.",
+  },
+  "ARM": {
+    trial: "Armv9 Compute Subsystems (CSS) & Neoverse Enterprise Server Adoption",
+    phase: "Data Center & Automotive Licensing",
+    timeline: "FY26 Royalty Rate Escalation Window",
+    thesis: "Ubiquitous CPU instruction set architecture with expanding royalty rates per chip across mobile, auto, and hyperscale AI servers.",
+  },
+  "SMCI": {
+    trial: "Direct Liquid Cooling (DLC) Hyperscale AI Server Cluster Integration",
+    phase: "High-Density Liquid Cooled Deployment",
+    timeline: "Continuous Rack-Scale Datacenter Shipments",
+    thesis: "Modular server architecture with engineering speed-to-market advantage in high-density liquid-cooled AI cluster deployments.",
+  },
+  "COIN": {
+    trial: "Base L2 Layer-2 On-Chain Transaction Scaling & Institutional Custody Expansion",
+    phase: "Institutional Infrastructure Scaling",
+    timeline: "Continuous On-Chain Settlement Volume Readouts",
+    thesis: "Leading US regulated digital asset gateway, institutional ETF custodian, and expanding Layer-2 blockchain transaction ecosystem.",
+  },
+  "VRT": {
+    trial: "Liquid Cooling & High-Density Datacenter Thermal Power Infrastructure",
+    phase: "Hyperscale Data Center Buildout",
+    timeline: "FY26 Power & Thermal Management Deliveries",
+    thesis: "Dominant pure-play provider of critical digital infrastructure, liquid cooling, and power management for AI data centers.",
+  },
+  "ISRG": {
+    trial: "da Vinci 5 Next-Gen Robotic Surgical System Global Hospital Placements",
+    phase: "Commercial System Placement & Procedure Ramp",
+    timeline: "Quarterly Procedure Volume & Installed Base Growth",
+    thesis: "Robotic-assisted minimally invasive surgical monopoly with high-margin recurring instrument and accessory revenue streams.",
+  },
+  "KLAC": {
+    trial: "Process Control & Optical Wafer Inspection for Advanced 2nm/GAA Nodes",
+    phase: "Sub-2nm Foundry Tool Shipments",
+    timeline: "Continuous Semiconductor Node Equipment Ramps",
+    thesis: "Global monopoly in semiconductor process diagnostic inspection and metrology essential for advanced wafer fabrication yields.",
+  },
   "DUOL": {
     trial: "Duolingo Max Generative AI Subscription Tiers",
     phase: "Global Commercial Rollout",
@@ -550,10 +634,10 @@ export function generateFallbackAnalytics(
   }
 
   const assetCat = ASSET_CATALYSTS[upper] || {
-    trial: "Next-Gen Product Cycle & AI Architecture",
-    phase: "Production & Enterprise Scaling",
-    timeline: "Quarterly Earnings & Developer Conferences",
-    thesis: `${upper} demonstrating strong institutional accumulation and robust balance sheet factors.`,
+    trial: "Commercial Execution & Operating Margin Expansion",
+    phase: "Market Scaling & Product Line Optimization",
+    timeline: "Quarterly Earnings & Capital Allocation Guidance",
+    thesis: `${upper} demonstrating solid balance sheet quality, strong operational execution, and consistent institutional accumulation.`,
   };
 
   return {

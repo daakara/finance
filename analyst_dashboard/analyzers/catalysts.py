@@ -47,6 +47,66 @@ ASSET_CATALYST_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             {"year": 2031, "revenue_billions": 11.5, "net_margin_pct": 38.0, "projected_eps": 1.95, "implied_pe": 40.0, "implied_target": 78.00}
         ]
     },
+    "AAPL": {
+        "company_name": "Apple Inc.",
+        "sector": "Consumer Electronics & Digital Services",
+        "primary_drug_trial": "Apple Intelligence On-Device AI & M5 Silicon Architecture",
+        "trial_phase": "Global iOS Rollout & Enterprise Services Monetization",
+        "trial_readout_timeline": "Fall Product Cycle & Developer Conferences",
+        "efficacy_summary": "High-margin recurring services monetization across 2.2B active installed devices and custom neural engine silicon.",
+        "competitive_edge": "Hardware-software vertical integration, privacy-first on-device compute moats, and high customer retention.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Fall iPhone Product Cycle with Native Apple Intelligence Features", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Services ARPU Acceleration & App Store Enterprise Subscriptions", "impact": "High Positive"},
+            {"date": "2027", "event": "M5 Architecture Ultra-Thin Form Factor Mac Rollout", "impact": "Positive"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 395.0, "net_margin_pct": 26.5, "projected_eps": 6.85, "implied_pe": 33.0, "implied_target": 226.05},
+            {"year": 2027, "revenue_billions": 445.0, "net_margin_pct": 28.0, "projected_eps": 8.40, "implied_pe": 30.0, "implied_target": 252.00},
+            {"year": 2029, "revenue_billions": 510.0, "net_margin_pct": 29.5, "projected_eps": 10.20, "implied_pe": 28.0, "implied_target": 285.60},
+            {"year": 2031, "revenue_billions": 580.0, "net_margin_pct": 30.5, "projected_eps": 12.50, "implied_pe": 26.0, "implied_target": 325.00}
+        ]
+    },
+    "KO": {
+        "company_name": "The Coca-Cola Company",
+        "sector": "Consumer Defensive / Beverages",
+        "primary_drug_trial": "Global Volume Growth, Bottling System Refranchising & Direct-Store-Delivery",
+        "trial_phase": "Commercial Market Leadership & Margin Expansion",
+        "trial_readout_timeline": "Quarterly Global Unit Case Volume Readouts",
+        "efficacy_summary": "World's preeminent beverage brand portfolio with unmatched global distribution bottling network, pricing power, and dividend stability.",
+        "competitive_edge": "200+ master bottler network agreements, retail shelf-space monopoly, and strong brand pricing inelasticity.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Global Unit Case Volume & Concentrates Net Sales Readout", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Emerging Market Ready-to-Drink (RTD) Alcohol & Zero-Sugar Expansion", "impact": "Positive"},
+            {"date": "2027", "event": "Annual Dividend Aristocrat Payout Increase", "impact": "High Strategic"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 47.2, "net_margin_pct": 24.5, "projected_eps": 2.88, "implied_pe": 24.0, "implied_target": 69.12},
+            {"year": 2027, "revenue_billions": 52.0, "net_margin_pct": 25.2, "projected_eps": 3.25, "implied_pe": 23.0, "implied_target": 74.75},
+            {"year": 2029, "revenue_billions": 57.5, "net_margin_pct": 26.0, "projected_eps": 3.70, "implied_pe": 22.0, "implied_target": 81.40},
+            {"year": 2031, "revenue_billions": 63.5, "net_margin_pct": 26.5, "projected_eps": 4.25, "implied_pe": 21.0, "implied_target": 89.25}
+        ]
+    },
+    "SBUX": {
+        "company_name": "Starbucks Corporation",
+        "sector": "Consumer Cyclical / Specialty Retail & Restaurants",
+        "primary_drug_trial": "Triple Shot Reinvention, Store-Level Throughput & Digital Rewards Expansion",
+        "trial_phase": "Operational Turnaround & Unit Economics Acceleration",
+        "trial_readout_timeline": "Quarterly Same-Store Sales (Comps) Reporting",
+        "efficacy_summary": "Premier global specialty coffee brand driving customer throughput with 38,000+ locations and 34M+ active Rewards members.",
+        "competitive_edge": "Siren Craft System barista workflow acceleration, mobile order & pay ecosystem, and prime global real estate footprint.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "US Same-Store Sales (Comps) & Store Throughput Acceleration Report", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "China JV Strategic Partnership & Store Format Modernization", "impact": "High Positive"},
+            {"date": "2027", "event": "Global Siren Craft System Full Equipment Rollout", "impact": "Transformational"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 38.5, "net_margin_pct": 11.5, "projected_eps": 3.80, "implied_pe": 25.0, "implied_target": 95.00},
+            {"year": 2027, "revenue_billions": 43.0, "net_margin_pct": 13.0, "projected_eps": 4.85, "implied_pe": 23.0, "implied_target": 111.55},
+            {"year": 2029, "revenue_billions": 48.5, "net_margin_pct": 14.2, "projected_eps": 6.10, "implied_pe": 21.0, "implied_target": 128.10},
+            {"year": 2031, "revenue_billions": 55.0, "net_margin_pct": 15.0, "projected_eps": 7.40, "implied_pe": 20.0, "implied_target": 148.00}
+        ]
+    },
     "NVO": {
         "company_name": "Novo Nordisk A/S",
         "sector": "Pharmaceuticals & Biotechnology",
@@ -96,7 +156,14 @@ ASSET_CATALYST_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
 class CatalystEngine:
     """Analyze and generate upcoming product catalysts, clinical trials, and multi-year valuation trajectories."""
 
-    def get_asset_catalyst_report(self, symbol: str, current_price: float = 100.0) -> Dict[str, Any]:
+    def get_asset_catalyst_report(
+        self,
+        symbol: str,
+        current_price: float = 100.0,
+        sector: str = "",
+        industry: str = "",
+        company_name: str = ""
+    ) -> Dict[str, Any]:
         upper = symbol.upper().replace("-USD", "").strip()
 
         if upper in ASSET_CATALYST_KNOWLEDGE:
@@ -105,20 +172,71 @@ class CatalystEngine:
             data["current_price"] = current_price
             return data
 
-        # Generic quantitative catalyst generation for other stocks/ETFs
+        # Sector & Industry Context-Aware Dynamic Catalyst Synthesis
+        clean_name = company_name or f"{upper} Corporation"
+        sec_lower = sector.lower()
+        ind_lower = industry.lower()
+
+        if any(w in sec_lower or w in ind_lower for w in ["beverage", "drink", "food", "tobacco", "staple", "consumer defensive"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Consumer Defensive / Staples",
+                "primary_drug_trial": "Global Volume Growth, Direct-Store-Delivery & Margin Expansion",
+                "trial_phase": "Commercial Market Distribution Scaling",
+                "trial_readout_timeline": "Quarterly Unit Volume & Pricing Power Readouts",
+                "efficacy_summary": f"High operational stability, resilient brand pricing power, and consistent cash dividend conversion for {clean_name}.",
+                "competitive_edge": "Established global retail shelf distribution, supply chain logistics, and high customer brand loyalty.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Unit Volume & Price/Mix Net Sales Readout", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Emerging Market Distribution & Product Portfolio Expansion", "impact": "Positive"},
+                    {"date": "2027", "event": "Annual Capital Return & Dividend Policy Reaffirmation", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.45, 1), "net_margin_pct": 22.0, "projected_eps": round(current_price * 0.045, 2), "implied_pe": 23.0, "implied_target": round(current_price * 1.08, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.52, 1), "net_margin_pct": 23.0, "projected_eps": round(current_price * 0.055, 2), "implied_pe": 22.0, "implied_target": round(current_price * 1.22, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.60, 1), "net_margin_pct": 24.0, "projected_eps": round(current_price * 0.068, 2), "implied_pe": 21.0, "implied_target": round(current_price * 1.42, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.70, 1), "net_margin_pct": 25.0, "projected_eps": round(current_price * 0.082, 2), "implied_pe": 20.0, "implied_target": round(current_price * 1.64, 2)}
+                ]
+            }
+
+        if any(w in sec_lower or w in ind_lower for w in ["restaurant", "coffee", "retail", "consumer cyclical", "apparel"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Consumer Discretionary / Retail & Restaurants",
+                "primary_drug_trial": "Same-Store Sales (Comps), Store-Level Throughput & Loyalty Expansion",
+                "trial_phase": "Unit Economics & Digital Membership Acceleration",
+                "trial_readout_timeline": "Quarterly Global Comparable Sales Readouts",
+                "efficacy_summary": f"High recurring customer transaction frequency, digital rewards growth, and operational store efficiency for {clean_name}.",
+                "competitive_edge": "High-frequency consumer brand affinity, digital ordering ecosystem, and prime retail location footprint.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Same-Store Sales (Comps) & Store Throughput Readout", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "International Market Expansion & Store Format Modernization", "impact": "High Positive"},
+                    {"date": "2027", "event": "Digital App & Loyalty Tier Feature Modernization", "impact": "Positive"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.38, 1), "net_margin_pct": 14.0, "projected_eps": round(current_price * 0.042, 2), "implied_pe": 24.0, "implied_target": round(current_price * 1.10, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.45, 1), "net_margin_pct": 15.5, "projected_eps": round(current_price * 0.054, 2), "implied_pe": 22.0, "implied_target": round(current_price * 1.25, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.53, 1), "net_margin_pct": 16.5, "projected_eps": round(current_price * 0.068, 2), "implied_pe": 20.0, "implied_target": round(current_price * 1.45, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.62, 1), "net_margin_pct": 17.5, "projected_eps": round(current_price * 0.085, 2), "implied_pe": 19.0, "implied_target": round(current_price * 1.70, 2)}
+                ]
+            }
+
+        # Generic quantitative catalyst generation for tech and multi-asset stocks
         return {
             "symbol": upper,
-            "company_name": f"{upper} Corporation",
-            "sector": "Multi-Asset Technology / Growth",
-            "primary_drug_trial": "Next-Gen Product Cycle & AI Architecture",
-            "trial_phase": "Production & Enterprise Scaling",
-            "trial_readout_timeline": "Quarterly Earnings & Developer Conferences",
-            "efficacy_summary": "High operational leverage and accelerating free cash flow conversion.",
-            "competitive_edge": "Ecosystem network effects and high switching costs.",
+            "company_name": clean_name,
+            "sector": sector or "Multi-Asset Technology / Growth",
+            "primary_drug_trial": "Next-Gen Commercial Product Cycle & Operating Margin Expansion",
+            "trial_phase": "Production & Enterprise Market Scaling",
+            "trial_readout_timeline": "Quarterly Earnings & Capital Allocation Guidance",
+            "efficacy_summary": f"Strong operational execution, revenue compounding, and free cash flow generation for {clean_name}.",
+            "competitive_edge": "Ecosystem network effects, intellectual property moats, and high customer switching costs.",
             "upcoming_milestones": [
-                {"date": "Q3 2026", "event": "Quarterly Earnings & Forward Revenue Guidance", "impact": "Medium-to-High"},
-                {"date": "Q4 2026", "event": "Next-Gen Platform Enterprise Release", "impact": "High Positive"},
-                {"date": "2027", "event": "International Market Expansion", "impact": "Positive"}
+                {"date": "Q3 2026", "event": "Quarterly Earnings & Forward Operating Margin Guidance", "impact": "Medium-to-High"},
+                {"date": "Q4 2026", "event": "Next-Gen Product Line Enterprise Rollout", "impact": "High Positive"},
+                {"date": "2027", "event": "International Market Expansion & TAM Extension", "impact": "Positive"}
             ],
             "multi_year_forecast": [
                 {"year": 2025, "revenue_billions": round(current_price * 0.4, 1), "net_margin_pct": 25.0, "projected_eps": round(current_price * 0.04, 2), "implied_pe": 28.0, "implied_target": round(current_price * 1.12, 2)},

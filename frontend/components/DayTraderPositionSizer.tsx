@@ -10,10 +10,27 @@ interface DayTraderPositionSizerProps {
 }
 
 export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositionSizerProps) {
-  const [accountSize, setAccountSize] = useState<number>(25000);
+  const [accountSize, setAccountSize] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
+      if (saved) {
+        const parsed = Number(saved);
+        if (!isNaN(parsed) && parsed >= 1000) return parsed;
+      }
+    }
+    return 25000;
+  });
   const [riskPct, setRiskPct] = useState<number>(1.0);
   const [tradeDirection, setTradeDirection] = useState<"LONG" | "SHORT">("LONG");
+  const [accountType, setAccountType] = useState<"CASH" | "MARGIN">("CASH");
   const [addedFeedback, setAddedFeedback] = useState<boolean>(false);
+
+  const handleAccountSizeChange = (val: number) => {
+    setAccountSize(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", val.toString());
+    }
+  };
 
   const currentPrice = data.currentPrice || 100.0;
   const metrics = data.analytics?.advanced_metrics || {};
@@ -28,8 +45,15 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const stopDistancePct = Math.max(0.8, Math.min(6.0, mVaR95Pct * 0.65));
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 
-  // Position Sizing Formula: Position Units = Dollar Risk / Stop Distance Dollar
-  const positionUnits = stopDistanceDollar > 0 ? Math.floor(dollarRisk / stopDistanceDollar) : 1;
+  // Unconstrained statistical units based on volatility stop
+  const rawVolatilityUnits = stopDistanceDollar > 0 ? Math.max(1, Math.floor(dollarRisk / stopDistanceDollar)) : 1;
+  // Maximum units constrained by 100% cash buying power
+  const maxCashUnits = Math.max(1, Math.floor(accountSize / currentPrice));
+
+  // In CASH mode, clamp position units to available cash equity
+  const positionUnits = accountType === "CASH" ? Math.min(maxCashUnits, rawVolatilityUnits) : rawVolatilityUnits;
+  const isCappedByCash = accountType === "CASH" && rawVolatilityUnits > maxCashUnits;
+
   const totalPositionValue = positionUnits * currentPrice;
   const leverageRatio = accountSize > 0 ? (totalPositionValue / accountSize).toFixed(1) : "1.0";
 
@@ -94,34 +118,87 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           </p>
         </div>
 
-        {/* Long / Short Toggle */}
-        <div role="radiogroup" aria-label="Trade direction" className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
-          <button
-            role="radio"
-            aria-checked={tradeDirection === "LONG"}
-            onClick={() => setTradeDirection("LONG")}
-            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
-              tradeDirection === "LONG"
-                ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            BUY / LONG
-          </button>
-          <button
-            role="radio"
-            aria-checked={tradeDirection === "SHORT"}
-            onClick={() => setTradeDirection("SHORT")}
-            className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
-              tradeDirection === "SHORT"
-                ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            SELL / SHORT
-          </button>
+        {/* Direction & Account Type Toggles */}
+        <div className="flex items-center gap-2">
+          {/* Account Mode Toggle */}
+          <div role="radiogroup" aria-label="Account leverage mode" className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={accountType === "CASH"}
+              onClick={() => setAccountType("CASH")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] ${
+                accountType === "CASH"
+                  ? "bg-cyan-500 text-slate-950 font-extrabold shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              💵 Cash (1.0x)
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={accountType === "MARGIN"}
+              onClick={() => setAccountType("MARGIN")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] ${
+                accountType === "MARGIN"
+                  ? "bg-purple-500 text-white font-extrabold shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              ⚡ Margin (PDT)
+            </button>
+          </div>
+
+          {/* Long / Short Toggle */}
+          <div role="radiogroup" aria-label="Trade direction" className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+            <button
+              role="radio"
+              aria-checked={tradeDirection === "LONG"}
+              onClick={() => setTradeDirection("LONG")}
+              className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
+                tradeDirection === "LONG"
+                  ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              BUY / LONG
+            </button>
+            <button
+              role="radio"
+              aria-checked={tradeDirection === "SHORT"}
+              onClick={() => setTradeDirection("SHORT")}
+              className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
+                tradeDirection === "SHORT"
+                  ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              SELL / SHORT
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Buying Power / Margin Advisory Banner */}
+      {isCappedByCash && (
+        <div className="bg-cyan-950/40 border border-cyan-700/60 p-2.5 rounded-lg text-xs flex items-center justify-between gap-2 text-cyan-300">
+          <span>🛡️ <strong>Cash Buying Power Cap Active:</strong> Position sized to {positionUnits} units (${totalPositionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}) to stay strictly within 100% cash capital. Unconstrained volatility sizing would require {rawVolatilityUnits} units (${(rawVolatilityUnits * currentPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })}).</span>
+          <button
+            type="button"
+            onClick={() => setAccountType("MARGIN")}
+            className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded shrink-0 cursor-pointer"
+          >
+            Switch to Margin Mode →
+          </button>
+        </div>
+      )}
+
+      {accountType === "MARGIN" && totalPositionValue > accountSize && (
+        <div className="bg-amber-950/50 border border-amber-600/70 p-2.5 rounded-lg text-xs text-amber-300">
+          ⚠️ <strong>Margin Leverage Active ({leverageRatio}x Capital Ratio):</strong> Total position exposure is ${totalPositionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}, exceeding ${accountSize.toLocaleString()} cash equity. Requires ${(totalPositionValue - accountSize).toLocaleString(undefined, { maximumFractionDigits: 0 })} broker margin borrowing. Volatility risk remains strictly clamped to ${dollarRisk.toFixed(0)} ({riskPct}% portfolio risk).
+        </div>
+      )}
 
       {/* Interactive Sliders with Full ARIA Accessibility */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,7 +220,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             aria-valuemax={250000}
             aria-valuenow={accountSize}
             aria-valuetext={`$${accountSize.toLocaleString()}`}
-            onChange={(e) => setAccountSize(Number(e.target.value))}
+            onChange={(e) => handleAccountSizeChange(Number(e.target.value))}
             className="w-full accent-amber-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
           />
           <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">

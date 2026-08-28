@@ -307,7 +307,16 @@ def get_asset_analytics(
 
         # Market Relationship & Contagion Graph
         market_graph = market_graph_engine.get_relationship_graph(symbol=fetch_sym)
-        catalyst_report = catalyst_engine.get_asset_catalyst_report(upper_sym, current_price)
+        sector_name = info.get("sector", "") or ""
+        industry_name = info.get("industry", "") or ""
+        long_name = info.get("longName", "") or info.get("shortName", "") or f"{upper_sym} Corporation"
+        catalyst_report = catalyst_engine.get_asset_catalyst_report(
+            symbol=upper_sym,
+            current_price=current_price,
+            sector=sector_name,
+            industry=industry_name,
+            company_name=long_name,
+        )
 
         # Persist factor scores and catalyst snapshot into SQLite
         try:

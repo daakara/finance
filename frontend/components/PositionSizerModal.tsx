@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
+
 interface PositionSizerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,7 +46,8 @@ export default function PositionSizerModal({
 
   const riskPerShare = Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = accountSize * (riskPct / 100);
-  const shares = Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
+  const rawShares = Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
+  const shares = rawShares;
   const totalAllocation = Number((shares * safeEntry).toFixed(2));
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
   const actualDollarRisk = Number((shares * riskPerShare).toFixed(2));
@@ -57,6 +60,9 @@ export default function PositionSizerModal({
   const fullKelly = Math.max(0, (b * p - q) / b);
   const halfKellyPct = Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
 
+  const matchedItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
+  const authenticName = matchedItem?.name || (symbol === "NVDA" ? "NVIDIA Corporation" : symbol === "AAPL" ? "Apple Inc." : `${symbol || "ASSET"} Corporation`);
+
   const handleSaveToPortfolio = () => {
     try {
       const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");
@@ -65,7 +71,7 @@ export default function PositionSizerModal({
 
       const newPos = {
         symbol: symbol || "ASSET",
-        name: `${symbol || "ASSET"} Corporation`,
+        name: authenticName,
         shares,
         entryPrice: safeEntry,
         currentPrice: safeEntry,

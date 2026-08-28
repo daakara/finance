@@ -139,6 +139,66 @@ function CompareContent() {
 
   const isDayTrader = activeRole === "DAY_TRADER";
 
+  const AUTHENTIC_NAMES: Record<string, string> = {
+    NVDA: "NVIDIA Corporation",
+    AAPL: "Apple Inc.",
+    MSFT: "Microsoft Corporation",
+    TSLA: "Tesla Inc.",
+    PLTR: "Palantir Technologies Inc.",
+    NVO: "Novo Nordisk A/S",
+    LLY: "Eli Lilly & Company",
+    SPY: "SPDR S&P 500 ETF Trust",
+    QQQ: "Invesco QQQ Trust",
+    CPRX: "Catalyst Pharmaceuticals, Inc.",
+    POWI: "Power Integrations, Inc.",
+    LNTH: "Lantheus Holdings, Inc.",
+    KO: "The Coca-Cola Company",
+    SBUX: "Starbucks Corporation",
+    AMZN: "Amazon.com, Inc.",
+    GOOGL: "Alphabet Inc.",
+    AMD: "Advanced Micro Devices, Inc.",
+    ARM: "Arm Holdings plc",
+    SMCI: "Super Micro Computer, Inc.",
+    COIN: "Coinbase Global, Inc.",
+    VRT: "Vertiv Holdings Co",
+    ISRG: "Intuitive Surgical, Inc.",
+    KLAC: "KLA Corporation",
+  };
+
+  const AUTHENTIC_MOATS: Record<string, string> = {
+    NVDA: "Dominant proprietary CUDA computing ecosystem and NVLink interconnect switches establishing near-monopolistic datacenter AI infrastructure moats.",
+    AAPL: "2.2B active installed hardware device ecosystem generating high-margin recurring services and unmatched consumer brand retention.",
+    MSFT: "Mission-critical commercial enterprise cloud infrastructure (Azure) and enterprise productivity software moats.",
+    TSLA: "Vertically integrated EV manufacturing standard and proprietary end-to-end vision neural network autonomous fleet.",
+    PLTR: "Defense-grade ontological operating platform (AIP) with IL6/JWCC security clearances for mission-critical government & commercial deployments.",
+    NVO: "Secular obesity and diabetes therapeutic franchise with accelerating multi-billion manufacturing capacity and oral Amycretin pipelines.",
+    LLY: "Global pharmaceutical market cap leader driving triple-agonist metabolic platforms (Retatrutide) and oral GLP-1 therapies (Orforglipron).",
+    SPY: "Direct cap-weighted diversification across 500 leading US corporations with ultra-liquid derivatives market depth and minimal tracking error.",
+    QQQ: "Concentrated exposure to secular technology innovators with high returns on invested capital and secular earnings compounding.",
+    CPRX: "Orphan drug commercial monopoly (FIRDAPSE) with high operating margins, pristine balance sheet, and long-dated patent exclusivity.",
+    POWI: "High-voltage Gallium Nitride (GaN) power conversion IC standard reducing power dissipation across hyperscale AI servers and EVs.",
+    LNTH: "Commercial diagnostic radiopharmaceutical monopoly with PYLARIFY PSMA-targeted PET imaging for precision oncology.",
+    KO: "World's leading nonalcoholic beverage bottling network with unmatched brand equity, global pricing power, and resilient dividend generation.",
+    SBUX: "Premier global specialty coffee retailer with 38,000+ stores, high-frequency digital rewards membership, and strong store-level unit economics.",
+  };
+
+  const AUTHENTIC_RISKS: Record<string, string> = {
+    NVDA: "Hyperscaler capex digestion cycle, export control restrictions, and silicon supply bottlenecks.",
+    AAPL: "Global smartphone replacement cycle deceleration, regulatory app store fee headwinds, and China market competition.",
+    MSFT: "Enterprise IT budget compression, AI inference capex margin drag, and cloud consumption slowdown.",
+    TSLA: "Automotive gross margin compression from global EV price competition and autonomous regulatory hurdles.",
+    PLTR: "High multiple valuation sensitivity and government contract procurement timing lumpiness.",
+    NVO: "Compounding pharmacy copycat supply, Medicare price negotiations, and manufacturing fill-finish capacity bottlenecks.",
+    LLY: "Payer coverage restrictions, competitive GLP-1 pipeline readouts, and patent expiration timelines.",
+    SPY: "Macroeconomic recessionary downturns, multiple compression, and elevated market concentration in mega-cap tech.",
+    QQQ: "Elevated valuation multiples and interest rate discount rate sensitivity.",
+    CPRX: "Single-product revenue concentration risk and patent challenge litigation outcomes.",
+    POWI: "Consumer electronics cyclicality and silicon carbide replacement technology adoption.",
+    LNTH: "Single-source radioisotope reactor supply disruptions and generic diagnostic imaging competition.",
+    KO: "Foreign exchange currency translation headwinds and consumer discretionary spending shifts away from packaged goods.",
+    SBUX: "Unionization wage inflation, coffee commodity price fluctuations, and international consumer spending softness.",
+  };
+
   // Build dynamic comparison models from live API data with instant static baseline fallbacks
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
     const upperSym = sym.toUpperCase();
@@ -153,7 +213,9 @@ function CompareContent() {
     const price = liveData?.currentPrice ?? staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0);
     const priceChange = liveData?.priceChangePct24h ?? staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5);
 
-    const defaultName = staticItem?.name || (upperSym === "NVO" ? "Novo Nordisk A/S" : upperSym === "LLY" ? "Eli Lilly & Company" : `${upperSym} Corporation`);
+    const defaultName = AUTHENTIC_NAMES[upperSym] || staticItem?.name || `${upperSym} Corporation`;
+    const moatNarrative = liveData?.catalystForecast?.efficacy_summary || AUTHENTIC_MOATS[upperSym] || `${upperSym} demonstrates high operational moats, strong balance sheet factors, and high return on invested capital.`;
+    const primaryRisk = AUTHENTIC_RISKS[upperSym] || "Macro interest rate headwinds, multiple compression risk, and industry competitive dynamics.";
 
     return {
       symbol: upperSym,
@@ -166,8 +228,8 @@ function CompareContent() {
       grossMargin: `${(growth * 0.78).toFixed(1)}%`,
       piotroski: piotroski,
       keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || "Upcoming quarterly earnings & institutional accumulation.",
-      trialEfficacy: "High operational moat with expanding gross profit margins and high return on invested capital.",
-      primaryRisk: "Macro interest rate headwinds and multiple compression risk.",
+      trialEfficacy: moatNarrative,
+      primaryRisk: primaryRisk,
       longTermVerdict: scores?.verdict || "Strong Buy / Core Accumulation",
       atr14: `$${(price * 0.024).toFixed(2)}`,
       rvol: `${(1.5 + Math.abs(priceChange) * 0.3).toFixed(1)}x`,
