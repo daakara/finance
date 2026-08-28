@@ -1,5 +1,4 @@
-"""FastAPI Router for Asset Analytics, Intraday Technicals, Self-Healing Engine & Market Graph."""
-
+import re
 import math
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Response
@@ -35,6 +34,11 @@ history_db = HistoryDatabaseEngine()
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 INFO_CACHE: dict[str, tuple[float, dict]] = {}
 CACHE_TTL_SECONDS = 3600.0
+
+SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-]{1,12}$")
+VALID_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
+VALID_INTERVALS = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
+VALID_ROLES = {"DAY_TRADER", "LONG_TERM"}
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
@@ -153,10 +157,27 @@ def get_asset_analytics(
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
 
+    # Server-Side Input Validation Gate
+    upper_sym = symbol.upper().strip()
+    if not SYMBOL_REGEX.match(upper_sym):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid ticker symbol format '{symbol}'. Tickers must be 1-12 alphanumeric characters (e.g. AAPL, NVDA, BTC, ETH)."
+        )
+
+    clean_period = period.lower().strip() if isinstance(period, str) else "1y"
+    if clean_period not in VALID_PERIODS:
+        clean_period = "1y"
+
+    clean_interval = interval.lower().strip() if isinstance(interval, str) else "1d"
+    if clean_interval not in VALID_INTERVALS:
+        clean_interval = "1d"
+
+    clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
+    if clean_role not in VALID_ROLES:
+        clean_role = "LONG_TERM"
+
     try:
-        clean_period = period if isinstance(period, str) else "1y"
-        clean_interval = interval if isinstance(interval, str) else "1d"
-        upper_sym = symbol.upper().strip()
 
         # Handle crypto ticker format
         fetch_sym = upper_sym

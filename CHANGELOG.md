@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-08-29
+
+### Security & Hardening
+- 🛡️ **API Key Authentication Middleware (`api/middleware/api_key_auth.py`)**: Added constant-time XOR comparison validating `X-API-Key` headers on all protected API routes, blocking unauthorized scraping/curl scripts.
+- 🔒 **Production Error Masking**: Integrated global exception handler in `api/main.py` masking internal traceback paths and database internals on 500 responses in production.
+- 🌐 **Strict CORS & Header Allowlisting**: Replaced wildcard CORS headers with explicit `["Content-Type", "X-API-Key", "Authorization", "Accept", "Origin", "User-Agent"]` and tightened regex to only allow `arxterminal.com` and `finance-xp8.pages.dev`.
+- 🛡️ **Backend Security Headers (HSTS, nosniff, frame protection)**: Added middleware injecting `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Strict-Transport-Security` headers.
+- 📜 **Content-Security-Policy (CSP)**: Added strict CSP in `frontend/public/_headers` restricting script, style, font, connect, and frame-ancestors directives.
+- 🔍 **Server-Side Input Validation Gate**: Enforced `^[A-Z0-9.\-]{1,12}$` ticker regex and allowlists on `period`, `interval`, and `user_role` in `api/routes/analytics.py`.
+- 🧪 **Automated Security Quality Gate**: Added `test_security_hardening_contracts` to `tests/test_nextjs_frontend_structure.py`.
+
+---
+
 ## [1.5.0] - 2026-08-28
 
 ### Added

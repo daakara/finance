@@ -183,3 +183,29 @@ Institutional finance software typically alienates retail users and non-finance 
    - Permanent field reference translating every Wall Street term into intuitive English.
 4. **Automated Quality Gate**:
    - Enforced via `test_brand_tone_and_progressive_clarity_vernacular_engine` in `tests/test_nextjs_frontend_structure.py`.
+
+---
+
+## 9. 🛡️ API Security Hardening, CORS Boundary Isolation & Server-Side Input Gates
+
+### 🚨 What Went Wrong
+1. **Public Documentation & Version Leaks**: In production, default FastAPI interactive `/docs` and `/openapi.json` exposed all internal route parameters, response models, and endpoints.
+2. **Permissive CORS Wildcarding**: `allow_origin_regex` previously matched `https://.*\.pages\.dev`, allowing any third-party Cloudflare Pages deployment to issue cross-origin requests.
+3. **Missing Error Masking**: Unhandled server exceptions could return stack traces revealing local filesystem paths and library dependencies.
+4. **Input Sanitization Gap**: Ticker symbols and query parameters were not strictly pattern-matched before reaching data providers.
+
+### 🛡️ The Preventive Standard
+1. **Constant-Time API Key Authentication (`ApiKeyAuthMiddleware`)**:
+   - Compares client `X-API-Key` against server `ARX_API_KEY` using XOR byte-comparison to eliminate timing attacks.
+2. **Production Error Masking**:
+   - In production (`ENVIRONMENT=production`), global exception handlers return sanitized `{"error": "Internal Server Error", "message": "An unexpected error occurred."}` with internal tracebacks logged only on the server.
+3. **Strict Origin & Header Boundaries**:
+   - Narrow CORS regex strictly to `arxterminal.com` and `finance-xp8.pages.dev`.
+   - Restrict `allow_headers` to explicit whitelist: `["Content-Type", "X-API-Key", "Authorization", "Accept", "Origin", "User-Agent"]`.
+4. **Content-Security-Policy (CSP) Enforcement**:
+   - Declare strict CSP in `frontend/public/_headers` specifying `default-src 'self'`, script, style, font, and connect endpoints.
+5. **Server-Side Regex Gate**:
+   - Validate symbol inputs against `^[A-Z0-9.\-]{1,12}$` and allowlist `period`, `interval`, and `user_role` parameters before processing.
+6. **Automated Quality Gate**:
+   - Enforced via `test_security_hardening_contracts` in `tests/test_nextjs_frontend_structure.py`.
+

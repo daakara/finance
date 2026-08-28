@@ -9,6 +9,15 @@ export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
   : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
 
+// Shared secure request headers — X-API-Key is injected at build time from env var.
+// NEXT_PUBLIC_ARX_API_KEY is safe to be in the bundle; it's a read-only client key,
+// not a secret admin credential. The backend validates it but it does not grant write access.
+const ARX_API_KEY = process.env.NEXT_PUBLIC_ARX_API_KEY || "";
+export const ARX_API_HEADERS: HeadersInit = ARX_API_KEY
+  ? { "Content-Type": "application/json", "X-API-Key": ARX_API_KEY }
+  : { "Content-Type": "application/json" };
+
+
 export interface CandleData {
   time: string | number;
   open: number;
@@ -554,6 +563,7 @@ export async function fetchAssetAnalytics(
   // 1. Fetch live production API with 8000ms timeout
   try {
     const res = await fetch(`${API_BASE_URL}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
+      headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
@@ -596,6 +606,7 @@ export async function fetchAssetAnalytics(
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
   try {
     const res = await fetch(`${API_BASE_URL}/screener?model=${encodeURIComponent(model)}`, {
+      headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
@@ -674,6 +685,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
 export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
   try {
     const res = await fetch(`${API_BASE_URL}/smart-money/overview`, {
+      headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {

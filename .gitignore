@@ -24,8 +24,10 @@ env/
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.*.local
+frontend/.env*
 
 # Cache and temporary files
 cache/
@@ -35,7 +37,7 @@ cache/
 htmlcov/
 *.log
 
-# Sample data (LIVE DATA ONLY - no sample data allowed)
+# Sample data
 **/sample_data/
 **/*sample*.json
 **/sample_gem*.json
@@ -47,12 +49,6 @@ Thumbs.db
 
 # Jupyter Notebook
 .ipynb_checkpoints
-
-# Data files (optional - uncomment if you don't want to track data)
-# *.csv
-# *.xlsx
-# *.parquet
-
 
 # Frontend Next.js build artifacts
 frontend/.next/

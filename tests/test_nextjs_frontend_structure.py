@@ -192,6 +192,47 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             guide_content = f.read()
         self.assertIn("Chapter 8: The No-BS Plain-English Jargon Buster", guide_content)
 
+    def test_security_hardening_contracts(self):
+        """Regression Quality Gate: Ensure API key auth, error masking, CSP, and symbol validation are enforced."""
+        headers_path = os.path.join("frontend", "public", "_headers")
+        main_py_path = os.path.join("api", "main.py")
+        analytics_py_path = os.path.join("api", "routes", "analytics.py")
+        api_ts_path = os.path.join("frontend", "lib", "api.ts")
+
+        # 1. Frontend CSP & Security Headers
+        self.assertTrue(os.path.exists(headers_path))
+        with open(headers_path, "r", encoding="utf-8") as f:
+            headers_content = f.read()
+        self.assertIn("Content-Security-Policy:", headers_content)
+        self.assertIn("default-src 'self'", headers_content)
+        self.assertIn("X-Content-Type-Options: nosniff", headers_content)
+        self.assertIn("X-Frame-Options: DENY", headers_content)
+
+        # 2. Backend Main API Hardening
+        self.assertTrue(os.path.exists(main_py_path))
+        with open(main_py_path, "r", encoding="utf-8") as f:
+            main_content = f.read()
+        self.assertIn("ApiKeyAuthMiddleware", main_content)
+        self.assertIn("global_exception_handler", main_content)
+        self.assertIn("add_security_headers", main_content)
+        self.assertIn("allow_origin_regex", main_content)
+        self.assertNotIn("allow_headers=[\"*\"]", main_content)
+
+        # 3. Analytics Server-Side Input Validation
+        self.assertTrue(os.path.exists(analytics_py_path))
+        with open(analytics_py_path, "r", encoding="utf-8") as f:
+            analytics_content = f.read()
+        self.assertIn("SYMBOL_REGEX", analytics_content)
+        self.assertIn("VALID_PERIODS", analytics_content)
+        self.assertIn("VALID_INTERVALS", analytics_content)
+
+        # 4. Frontend API Client Auth Headers
+        self.assertTrue(os.path.exists(api_ts_path))
+        with open(api_ts_path, "r", encoding="utf-8") as f:
+            api_ts_content = f.read()
+        self.assertIn("ARX_API_HEADERS", api_ts_content)
+        self.assertIn("X-API-Key", api_ts_content)
+
 
 if __name__ == "__main__":
     unittest.main()
