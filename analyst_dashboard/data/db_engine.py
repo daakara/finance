@@ -9,7 +9,8 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.join(os.path.expanduser("~"), ".finance_platform_history.db")
+DATA_DIR = os.getenv("DATA_DIR", os.path.expanduser("~"))
+DB_PATH = os.path.join(DATA_DIR, ".finance_platform_history.db")
 
 
 class HistoryDatabaseEngine:

@@ -12,9 +12,8 @@ try:
 except ImportError:
     pd = None
 
-logger = logging.getLogger(__name__)
-
-DB_PATH = os.path.join(os.path.expanduser("~"), ".finance_market_store.db")
+DATA_DIR = os.getenv("DATA_DIR", os.path.expanduser("~"))
+DB_PATH = os.path.join(DATA_DIR, ".finance_market_store.db")
 
 
 class MarketDatabaseEngine:
