@@ -15,6 +15,8 @@ export interface ExecutionAlertRule {
   optimalEntryMax: number;
   stopLoss: number;
   takeProfit1: number;
+  isStage4?: boolean;
+  breakoutPivotPrice?: number;
   createdAt: number;
 }
 
@@ -170,17 +172,31 @@ export class AlertManager {
       } catch {}
     };
 
-    // 1. Check Buy Zone Entry
-    if (rule.notifyOnBuyZone && entryMax > 0 && entryMin > 0) {
-      if (currentPrice <= entryMax * 1.01 && currentPrice >= entryMin * 0.99) {
-        const key = `${sym}_BUY_ZONE`;
-        if (shouldNotify(key)) {
-          recordCooldown(key);
-          this.playAlertSound("BUY");
-          this.sendDesktopNotification(
-            `🎯 ${sym} in Optimal Buy Zone!`,
-            `Current Spot: $${currentPrice.toFixed(2)} is inside the accumulation target zone ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)}).`
-          );
+    // 1. Check Buy Zone Entry OR Stage 4 Breakout Pivot Reclaim
+    if (rule.notifyOnBuyZone) {
+      if (rule.isStage4 && rule.breakoutPivotPrice && rule.breakoutPivotPrice > 0) {
+        if (currentPrice >= rule.breakoutPivotPrice * 0.998) {
+          const key = `${sym}_STAGE4_BREAKOUT`;
+          if (shouldNotify(key)) {
+            recordCooldown(key);
+            this.playAlertSound("BUY");
+            this.sendDesktopNotification(
+              `⏳ ${sym} 50-Day SMA Breakout Confirmed!`,
+              `Current Spot: $${currentPrice.toFixed(2)} has reclaimed the 50-day moving average breakout pivot ($${rule.breakoutPivotPrice.toFixed(2)})!`
+            );
+          }
+        }
+      } else if (entryMax > 0 && entryMin > 0) {
+        if (currentPrice <= entryMax * 1.01 && currentPrice >= entryMin * 0.99) {
+          const key = `${sym}_BUY_ZONE`;
+          if (shouldNotify(key)) {
+            recordCooldown(key);
+            this.playAlertSound("BUY");
+            this.sendDesktopNotification(
+              `🎯 ${sym} in Optimal Buy Zone!`,
+              `Current Spot: $${currentPrice.toFixed(2)} is inside the accumulation target zone ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)}).`
+            );
+          }
         }
       }
     }

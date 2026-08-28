@@ -273,6 +273,7 @@ export interface OptimalExecutionPlan {
   invalidation_condition: string;
   stage_phase: string;
   vcp_contraction_status: string;
+  breakout_pivot?: number;
   atr_14?: number;
 }
 

@@ -76,6 +76,8 @@ export default function AlertTriggerModal({
       optimalEntryMax: safeEntryMax,
       stopLoss: safeStop,
       takeProfit1: safeTarget,
+      isStage4: isStage4,
+      breakoutPivotPrice: breakoutPivot || safeCurrent * 1.072,
       createdAt: Date.now(),
     };
     AlertManager.saveAlertRule(rule);

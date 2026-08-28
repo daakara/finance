@@ -248,7 +248,7 @@ export default function OptimalEntryExitCard({
           {isStage4 && (
             <div className="mt-2 pt-1.5 border-t border-[#1e293b] flex items-center justify-between text-[11px] text-amber-300">
               <span>🎯 Key Breakout Pivot (50-Day SMA):</span>
-              <strong className="font-mono text-amber-400 font-bold">${(current_price * 1.072).toFixed(2)}</strong>
+              <strong className="font-mono text-amber-400 font-bold">${(executionPlan.breakout_pivot || current_price * 1.072).toFixed(2)}</strong>
             </div>
           )}
         </div>
@@ -312,7 +312,7 @@ export default function OptimalEntryExitCard({
         stopLoss={stop_loss}
         takeProfit1={take_profit_1}
         isStage4={isStage4}
-        breakoutPivot={Number((current_price * 1.072).toFixed(2))}
+        breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
       />
     </div>
   );

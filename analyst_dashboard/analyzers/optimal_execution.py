@@ -156,5 +156,6 @@ class OptimalExecutionEngine:
             "invalidation_condition": invalidation,
             "stage_phase": stage,
             "vcp_contraction_status": vcp,
+            "breakout_pivot": round(breakout_pivot, 2) if is_stage_4_downtrend else None,
             "atr_14": round(atr_14, 2),
         }
