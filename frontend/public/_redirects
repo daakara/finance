@@ -1,0 +1,5 @@
+﻿# Cloudflare Pages Redirects
+# 1. Apex to WWW Canonical Redirects
+https://arxterminal.com/*  https://www.arxterminal.com/:splat  301!
+http://arxterminal.com/*   https://www.arxterminal.com/:splat  301!
+http://www.arxterminal.com/* https://www.arxterminal.com/:splat  301!

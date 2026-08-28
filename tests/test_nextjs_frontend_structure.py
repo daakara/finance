@@ -120,6 +120,34 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("finance:theme-change", chart_content, "PriceChart must listen for finance:theme-change event")
         self.assertIn("isPaperTheme", chart_content, "PriceChart must adapt initial canvas layout to active theme")
 
+    def test_canonical_domain_and_redirects_structure(self):
+        """Regression Quality Gate: Ensure Cloudflare _redirects file and layout script enforce arxterminal.com -> www.arxterminal.com."""
+        redirects_path = os.path.join("frontend", "public", "_redirects")
+        layout_path = os.path.join("frontend", "app", "layout.tsx")
+        sitemap_path = os.path.join("frontend", "public", "sitemap.xml")
+
+        self.assertTrue(os.path.exists(redirects_path), "public/_redirects must exist for Cloudflare Pages")
+        with open(redirects_path, "r", encoding="utf-8") as f:
+            redirects_content = f.read()
+
+        self.assertIn("https://arxterminal.com/*", redirects_content)
+        self.assertIn("https://www.arxterminal.com/:splat", redirects_content)
+        self.assertIn("301!", redirects_content)
+
+        with open(layout_path, "r", encoding="utf-8") as f:
+            layout_content = f.read()
+
+        self.assertIn("https://www.arxterminal.com", layout_content, "layout.tsx metadataBase must use www.arxterminal.com")
+        self.assertIn("host === 'arxterminal.com'", layout_content, "layout.tsx must contain client-side canonical redirect script")
+        self.assertIn("window.location.replace('https://www.arxterminal.com'", layout_content)
+
+        with open(sitemap_path, "r", encoding="utf-8") as f:
+            sitemap_content = f.read()
+
+        self.assertNotIn("https://arxterminal.com/", sitemap_content, "sitemap.xml must not contain non-www URLs")
+        self.assertIn("https://www.arxterminal.com/", sitemap_content)
+
 
 if __name__ == "__main__":
     unittest.main()
+
