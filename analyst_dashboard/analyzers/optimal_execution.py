@@ -104,6 +104,12 @@ class OptimalExecutionEngine:
                 invalidation = "Breakdown below recent reaction lows or persistent selling below 50-day SMA."
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
+            elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
+                setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
+                thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."
+                invalidation = "Break of lower basing support floor or -7.0% stop constraint."
+                stage = "Stage 1 Structural Basing Phase"
+                vcp = "Bottom Contraction in Progress"
             else:
                 setup_name = "Minervini VCP (Volatility Contraction Pattern)"
                 thesis = "Stage 2 advancing base with declining volume on pullbacks and breakout above 50-day pivot."

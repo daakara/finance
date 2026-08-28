@@ -47,6 +47,36 @@ export default function OptimalEntryExitCard({
     setup_pattern?.includes("Correction")
   );
 
+  const entryMin = Math.min(optimal_entry_min, optimal_entry_max);
+  const entryMax = Math.max(optimal_entry_min, optimal_entry_max);
+  const inZone = current_price >= entryMin && current_price <= entryMax;
+  const zoneWidth = Math.max(0.01, entryMax - entryMin);
+  const zonePositionPct = inZone ? ((current_price - entryMin) / zoneWidth) * 100 : 50;
+
+  // Tactical Execution Hint
+  let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
+  if (!isStage4 && inZone) {
+    if (zonePositionPct > 65) {
+      zoneTacticalHint = {
+        label: "⚠️ Near Zone Ceiling",
+        advice: `Spot ($${current_price.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
+        color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
+      };
+    } else if (zonePositionPct < 35) {
+      zoneTacticalHint = {
+        label: "🎯 Near Support Floor",
+        advice: `Spot ($${current_price.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
+        color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
+      };
+    } else {
+      zoneTacticalHint = {
+        label: "✅ Mid-Zone Value Area",
+        advice: `Spot is comfortably centered within the accumulation corridor with favorable 2.5:1+ R:R structure.`,
+        color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
+      };
+    }
+  }
+
   return (
     <div
       className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
@@ -179,6 +209,14 @@ export default function OptimalEntryExitCard({
             ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
           </strong>
         </div>
+
+        {/* Tactical Relative Position Execution Badge */}
+        {zoneTacticalHint && (
+          <div className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
+            <span className="font-bold shrink-0">{zoneTacticalHint.label}:</span>
+            <span className="text-[11px] leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
+          </div>
+        )}
 
         {/* Stop Loss / Invalidation */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-xs">

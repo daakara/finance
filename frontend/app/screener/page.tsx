@@ -92,7 +92,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     VRTX: { price: 482.10, name: "Vertex Pharmaceuticals", roic: 26.0, peg: 0.95, margin: 82.5, rvol: 1.9, short: 2.4 },
     LLY: { price: 924.50, name: "Eli Lilly and Company", roic: 38.2, peg: 1.35, margin: 79.5, rvol: 2.1, short: 1.8 },
     NVO: { price: 136.40, name: "Novo Nordisk A/S", roic: 44.0, peg: 0.88, margin: 84.0, rvol: 2.3, short: 1.5 },
-    DXCM: { price: 78.50, name: "DexCom Inc.", roic: 18.5, peg: 1.20, margin: 64.0, rvol: 2.9, short: 7.2 },
+    DXCM: { price: 89.29, name: "DexCom Inc.", roic: 18.5, peg: 1.20, margin: 64.0, rvol: 2.9, short: 7.2 },
     PODD: { price: 143.41, name: "Insulet Corporation", roic: 21.0, peg: 1.10, margin: 68.0, rvol: 2.2, short: 6.4 },
     ACLS: { price: 84.20, name: "Axcelis Technologies", roic: 27.5, peg: 0.78, margin: 54.0, rvol: 2.6, short: 5.8 },
     POWI: { price: 68.50, name: "Power Integrations", roic: 22.0, peg: 0.85, margin: 56.5, rvol: 1.8, short: 3.2 },

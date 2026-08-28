@@ -57,7 +57,7 @@ CANDIDATE_BASELINES = {
     # Growth Runners
     "CELH": 38.40, "IONQ": 9.20, "RKLB": 7.10, "APP": 86.40,
     # MedTech & Pharma Monopolies
-    "ISRG": 446.50, "VRTX": 482.10, "LLY": 924.50, "NVO": 136.40, "DXCM": 78.50, "PODD": 143.41,
+    "ISRG": 446.50, "VRTX": 482.10, "LLY": 924.50, "NVO": 136.40, "DXCM": 89.29, "PODD": 143.41,
     # Semis & Equipment
     "ON": 72.40, "MPWR": 812.30, "KLAC": 734.50, "LRCX": 792.10, "ASML": 824.60, "AVGO": 158.40,
     # Consumer Compounders

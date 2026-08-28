@@ -189,6 +189,11 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     changePct: -0.95,
     scores: { growthScore: 84, qualityScore: 91, valuationScore: 76, momentumScore: 42, tailRiskScore: 76, compositeFactorScore: 74, verdict: "Stage 4 Correction / Base Building Required", piotroskiFScore: 8 }
   },
+  "DXCM": {
+    price: 89.29,
+    changePct: 1.45,
+    scores: { growthScore: 82, qualityScore: 88, valuationScore: 72, momentumScore: 68, tailRiskScore: 80, compositeFactorScore: 78, verdict: "Stage 1 Bottoming Base / MedTech Re-Accumulation", piotroskiFScore: 8 }
+  },
   "SNPS": {
     price: 464.89,
     changePct: 0.85,
