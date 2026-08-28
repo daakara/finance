@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnalyticsResponse } from "../lib/api";
 import { loadPortfolioPositions, savePortfolioPositions, PortfolioPosition } from "../lib/portfolio";
+import { getCanonicalAssetName } from "../lib/assetRegistry";
 
 interface DayTraderPositionSizerProps {
   symbol: string;
@@ -75,10 +76,11 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
 
     const handleSaveToPortfolio = () => {
+    const symKey = symbol.toUpperCase().replace("-USD", "");
     const existing = loadPortfolioPositions();
     const newPos: PortfolioPosition = {
-      symbol: symbol.toUpperCase().replace("-USD", ""),
-      name: `${symbol.toUpperCase().replace("-USD", "")} Intraday Trade`,
+      symbol: symKey,
+      name: `${getCanonicalAssetName(symKey)} Intraday Trade`,
       shares: positionUnits,
       entryPrice: currentPrice,
       currentPrice: currentPrice,
@@ -88,7 +90,6 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
       assetType: "Stock",
     };
     // Replace if exists, or prepend
-    const symKey = symbol.toUpperCase().replace("-USD", "");
     const updated = [newPos, ...existing.filter((p) => p.symbol !== symKey)];
     savePortfolioPositions(updated);
     setAddedFeedback(true);
@@ -197,6 +198,12 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
       {accountType === "MARGIN" && totalPositionValue > accountSize && (
         <div className="bg-amber-950/50 border border-amber-600/70 p-2.5 rounded-lg text-xs text-amber-300">
           ⚠️ <strong>Margin Leverage Active ({leverageRatio}x Capital Ratio):</strong> Total position exposure is ${totalPositionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}, exceeding ${accountSize.toLocaleString()} cash equity. Requires ${(totalPositionValue - accountSize).toLocaleString(undefined, { maximumFractionDigits: 0 })} broker margin borrowing. Volatility risk remains strictly clamped to ${dollarRisk.toFixed(0)} ({riskPct}% portfolio risk).
+        </div>
+      )}
+
+      {accountType === "MARGIN" && accountSize < 25000 && (
+        <div className="bg-rose-950/50 border border-rose-600/70 p-2.5 rounded-lg text-xs text-rose-300">
+          ⚠️ <strong>FINRA Rule 4210 (PDT) Warning:</strong> Margin day trading requires a minimum equity balance of $25,000. Accounts below $25,000 (${accountSize.toLocaleString()} currently) are legally restricted to 3 day trades per rolling 5 business days unless upgraded to a cash account.
         </div>
       )}
 

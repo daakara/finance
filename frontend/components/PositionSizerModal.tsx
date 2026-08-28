@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
+import { getCanonicalAssetName } from "../lib/assetRegistry";
 
 interface PositionSizerProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export default function PositionSizerModal({
   const halfKellyPct = Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
 
   const matchedItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
-  const authenticName = matchedItem?.name || (symbol === "NVDA" ? "NVIDIA Corporation" : symbol === "AAPL" ? "Apple Inc." : `${symbol || "ASSET"} Corporation`);
+  const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
 
   const handleSaveToPortfolio = () => {
     try {

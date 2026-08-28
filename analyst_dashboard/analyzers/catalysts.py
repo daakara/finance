@@ -223,6 +223,98 @@ class CatalystEngine:
                 ]
             }
 
+        if any(w in sec_lower or w in ind_lower for w in ["reit", "real estate", "property", "lease", "mortgage", "housing"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Real Estate Investment Trusts (REITs)",
+                "primary_drug_trial": "Adjusted Funds From Operations (AFFO) Growth & Portfolio Occupancy",
+                "trial_phase": "Capital Recycling & Net Lease Execution",
+                "trial_readout_timeline": "Quarterly AFFO Payout & Lease Renewal Reporting",
+                "efficacy_summary": f"High-quality commercial real estate portfolio with long-term tenant leases and inflation-hedged dividend cash flows for {clean_name}.",
+                "competitive_edge": "Prime location real estate assets, investment-grade tenant base, and disciplined debt maturity ladder.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly AFFO Per Share & Same-Store NOI Growth Readout", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Strategic Property Acquisition & Capital Recycling Update", "impact": "Positive"},
+                    {"date": "2027", "event": "Annual Dividend Distribution & Lease Renewal Review", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.25, 1), "net_margin_pct": 32.0, "projected_eps": round(current_price * 0.052, 2), "implied_pe": 18.0, "implied_target": round(current_price * 1.06, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.29, 1), "net_margin_pct": 33.5, "projected_eps": round(current_price * 0.060, 2), "implied_pe": 17.5, "implied_target": round(current_price * 1.15, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.34, 1), "net_margin_pct": 34.5, "projected_eps": round(current_price * 0.070, 2), "implied_pe": 17.0, "implied_target": round(current_price * 1.28, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.40, 1), "net_margin_pct": 35.0, "projected_eps": round(current_price * 0.082, 2), "implied_pe": 16.5, "implied_target": round(current_price * 1.42, 2)}
+                ]
+            }
+
+        if any(w in sec_lower or w in ind_lower for w in ["energy", "oil", "gas", "petroleum", "solar", "wind", "utility", "power", "pipeline"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Energy & Utilities",
+                "primary_drug_trial": "Upstream Production Efficiency, LNG Export Expansion & Free Cash Flow Yield",
+                "trial_phase": "Capital Discipline & Infrastructure Utilization",
+                "trial_readout_timeline": "Quarterly Barrel Equivalents & Dividend/Buyback Updates",
+                "efficacy_summary": f"Disciplined capital allocation, low-cost extraction assets, and resilient commodity cash conversion for {clean_name}.",
+                "competitive_edge": "Low breakeven cost per barrel/unit, deep proven reserve base, and integrated midstream export infrastructure.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Upstream Production & Free Cash Flow Realization", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Exploration Drilling Results & Midstream Capacity Ramp", "impact": "Positive"},
+                    {"date": "2027", "event": "Shareholder Capital Return & Base Dividend Escalation", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.50, 1), "net_margin_pct": 18.0, "projected_eps": round(current_price * 0.075, 2), "implied_pe": 12.0, "implied_target": round(current_price * 1.08, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.58, 1), "net_margin_pct": 19.5, "projected_eps": round(current_price * 0.090, 2), "implied_pe": 11.5, "implied_target": round(current_price * 1.20, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.67, 1), "net_margin_pct": 20.5, "projected_eps": round(current_price * 0.110, 2), "implied_pe": 11.0, "implied_target": round(current_price * 1.35, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.78, 1), "net_margin_pct": 21.0, "projected_eps": round(current_price * 0.130, 2), "implied_pe": 10.5, "implied_target": round(current_price * 1.50, 2)}
+                ]
+            }
+
+        if any(w in sec_lower or w in ind_lower for w in ["material", "mining", "gold", "copper", "steel", "chemical", "metal", "lithium"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Materials & Mining",
+                "primary_drug_trial": "All-In Sustaining Cost (AISC) Margin Optimization & Mineral Reserve Life",
+                "trial_phase": "Tier-1 Mine Production & Smelting Operations",
+                "trial_readout_timeline": "Quarterly Ore Grade & Ton Yield Reporting",
+                "efficacy_summary": f"Tier-1 low-cost extraction assets with multi-decade reserve life and strong commodity cycle leverage for {clean_name}.",
+                "competitive_edge": "Low-quartile cost curve positioning, vast proven and probable mineral reserves, and strong balance sheet liquidity.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly All-In Sustaining Cost (AISC) & Production Volume Report", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "New Deposit Feasibility Study & Extraction Permit Readout", "impact": "Positive"},
+                    {"date": "2027", "event": "Processing Facility Expansion & Mill Throughput Optimization", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.42, 1), "net_margin_pct": 16.0, "projected_eps": round(current_price * 0.055, 2), "implied_pe": 15.0, "implied_target": round(current_price * 1.07, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.49, 1), "net_margin_pct": 17.5, "projected_eps": round(current_price * 0.068, 2), "implied_pe": 14.5, "implied_target": round(current_price * 1.18, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.57, 1), "net_margin_pct": 18.5, "projected_eps": round(current_price * 0.082, 2), "implied_pe": 14.0, "implied_target": round(current_price * 1.32, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.66, 1), "net_margin_pct": 19.0, "projected_eps": round(current_price * 0.098, 2), "implied_pe": 13.5, "implied_target": round(current_price * 1.48, 2)}
+                ]
+            }
+
+        if any(w in sec_lower or w in ind_lower for w in ["financial", "bank", "credit", "insurance", "broker", "asset management", "capital markets"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Financial Services",
+                "primary_drug_trial": "Net Interest Margin (NIM) Expansion & Fee Asset Under Management Growth",
+                "trial_phase": "Capital Management & Prime Lending Scale",
+                "trial_readout_timeline": "Quarterly Net Interest Income & Credit Loss Readouts",
+                "efficacy_summary": f"Fortress capital adequacy, diversified institutional fee revenue, and prudent credit underwriting for {clean_name}.",
+                "competitive_edge": "Low-cost core deposit franchise, leading market share across commercial lending, and rigorous risk controls.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Net Interest Income & Tier-1 Capital Ratio Report", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Wealth Management & Fee-Based Asset Inflow Readout", "impact": "Positive"},
+                    {"date": "2027", "event": "Annual Stress Test (CCAR) Approval & Buyback Authorization", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.60, 1), "net_margin_pct": 26.0, "projected_eps": round(current_price * 0.085, 2), "implied_pe": 12.5, "implied_target": round(current_price * 1.09, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.69, 1), "net_margin_pct": 27.5, "projected_eps": round(current_price * 0.102, 2), "implied_pe": 12.0, "implied_target": round(current_price * 1.22, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.79, 1), "net_margin_pct": 28.5, "projected_eps": round(current_price * 0.122, 2), "implied_pe": 11.5, "implied_target": round(current_price * 1.38, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.90, 1), "net_margin_pct": 29.0, "projected_eps": round(current_price * 0.145, 2), "implied_pe": 11.0, "implied_target": round(current_price * 1.55, 2)}
+                ]
+            }
+
         # Generic quantitative catalyst generation for tech and multi-asset stocks
         return {
             "symbol": upper,

@@ -2,6 +2,7 @@
 
 import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "./constants";
 import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandles } from "./marketDatabase";
+import { getCanonicalAssetCatalyst } from "./assetRegistry";
 
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
 export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
@@ -343,190 +344,6 @@ export const SpotPriceRegistry = new Map<string, {
   smartMoney?: any;
 }>();
 
-// Authentic Asset Catalysts for Core & Discovery Tickers
-const ASSET_CATALYSTS: Record<string, { trial: string; phase: string; timeline: string; thesis: string }> = {
-  "LNTH": {
-    trial: "PYLARIFY Imaging Volume & Alzheimer Diagnostic Pipeline",
-    phase: "Commercial / Expansion (Phase 3)",
-    timeline: "Q3 2026 Earnings & Product Roadmap",
-    thesis: "Market leader in diagnostic radiopharmaceuticals and PSMA-targeted PET imaging agents for prostate cancer.",
-  },
-  "CIEN": {
-    trial: "WaveLogic 6 Nano 800G Coherent Optics",
-    phase: "Hyperscale AI Deployment",
-    timeline: "FY26 Optical Interconnect Ramp",
-    thesis: "Niche monopoly in coherent optical networking vital for GPU cluster interconnects and data center scale-out.",
-  },
-  "NVO": {
-    trial: "CagriSema Phase 3 REDEFINE & Oral Amycretin",
-    phase: "Phase 3 Pivotal / Registration",
-    timeline: "Q4 2026 Phase 3 Trial Readouts",
-    thesis: "Secular obesity and diabetes therapeutic franchise with accelerating multi-billion manufacturing capacity.",
-  },
-  "LLY": {
-    trial: "Zepbound Sleep Apnea Label & Orforglipron GLP-1",
-    phase: "Phase 3 Registration & FDA Filing",
-    timeline: "H2 2026 Regulatory Submissions",
-    thesis: "Global pharmaceutical market cap leader driving dual-incretin and triple-agonist metabolic platforms.",
-  },
-  "NVDA": {
-    trial: "Blackwell GB200 NVL72 Rack-Scale Compute",
-    phase: "Mass Production & Hyperscale Delivery",
-    timeline: "Continuous FY26/27 Data Center Shipments",
-    thesis: "Dominant accelerated computing full-stack architecture with CUDA ecosystem standard and hardware moats.",
-  },
-  "AAPL": {
-    trial: "Apple Intelligence On-Device AI Architecture",
-    phase: "Global iOS Rollout & Enterprise Services",
-    timeline: "Fall Product Cycle & Developer Conferences",
-    thesis: "Consumer hardware ecosystem with 2.2B active installed devices and high-margin recurring services growth.",
-  },
-  "MSFT": {
-    trial: "Azure OpenAI Enterprise & Copilot Monetization",
-    phase: "Production Enterprise Scaling",
-    timeline: "Quarterly Cloud Consumption Reporting",
-    thesis: "Commercial enterprise software moat with mission-critical Azure infrastructure and security integrations.",
-  },
-  "PLTR": {
-    trial: "AIP (Artificial Intelligence Platform) Enterprise Bootcamps",
-    phase: "Commercial Acceleration",
-    timeline: "Q3/Q4 2026 Enterprise Expansion",
-    thesis: "Government defense and commercial ontology operating system enabling autonomous business workflows.",
-  },
-  "TSLA": {
-    trial: "Full Self-Driving (FSD) v12.5 & Robotaxi Network",
-    phase: "Commercial Validation & Autonomous Scaling",
-    timeline: "Cybercab Demonstration & Fleet Rollout",
-    thesis: "Next-gen electric vehicle platform and vision-only end-to-end neural network autonomy.",
-  },
-  "CPRX": {
-    trial: "FIRDAPSE Lambert-Eaton Myasthenic Syndrome Expansion",
-    phase: "Commercial Monopoly",
-    timeline: "FY26 Label Expansion Data",
-    thesis: "Rare neurological disease commercial franchise with pristine balance sheet and high cash conversion.",
-  },
-  "ACLS": {
-    trial: "Purion Power SiC Ion Implantation Platform",
-    phase: "Automotive & Industrial Scaling",
-    timeline: "Q4 2026 Semiconductor Equipment Deliveries",
-    thesis: "Specialized monopoly in high-energy ion implantation required for Silicon Carbide electric vehicle inverters.",
-  },
-  "TMDX": {
-    trial: "Organ Care System (OCS) Aviation Logistics Network",
-    phase: "National Clinical Standard of Care",
-    timeline: "Continuous OCS Flight Operations Expansion",
-    thesis: "Disruptive warm perfusion technology revolutionizing heart, lung, and liver transplantation survival rates.",
-  },
-  "POWI": {
-    trial: "GaN (Gallium Nitride) High-Voltage Power Conversion",
-    phase: "Data Center & Automotive Adoption",
-    timeline: "FY26 Server Efficiency Compliance Window",
-    thesis: "Energy-efficient power conversion ICs reducing phantom power loss across EVs, chargers, and servers.",
-  },
-  "MEDP": {
-    trial: "Clinical Biotech Contract Research Acceleration",
-    phase: "Full-Service CRO Operations",
-    timeline: "Continuous RFP Backlog Delivery",
-    thesis: "High return-on-capital contract research organization catering exclusively to emerging biopharma.",
-  },
-  "ELF": {
-    trial: "Global Retail Expansion & Skincare Integration",
-    phase: "International Rollout",
-    timeline: "UK/Europe Market Share Expansion",
-    thesis: "Digitally-native, fast-beauty disruptor taking rapid global market share with premium quality-to-price ratio.",
-  },
-  "KO": {
-    trial: "Global Volume Growth, Bottling System Refranchising & Direct-Store-Delivery",
-    phase: "Commercial Market Leadership & Margin Expansion",
-    timeline: "Quarterly Unit Volume & Pricing Power Readouts",
-    thesis: "World's preeminent beverage brand portfolio with unmatched global distribution bottling network and pricing power.",
-  },
-  "SBUX": {
-    trial: "Triple Shot Reinvention, Store-Level Throughput & Digital Rewards Expansion",
-    phase: "Operational Turnaround & Unit Economics Acceleration",
-    timeline: "Quarterly Same-Store Sales (Comps) Reporting",
-    thesis: "Premier global specialty coffee brand driving customer throughput with 38,000+ locations and 34M+ active Rewards members.",
-  },
-  "JPM": {
-    trial: "Net Interest Margin (NIM) Optimization & Global Commercial Banking Expansion",
-    phase: "Tier-1 Money-Center Bank Scale",
-    timeline: "Quarterly Net Interest Income & Credit Provision Readouts",
-    thesis: "Fortress balance sheet money-center financial institution dominating corporate investment banking, wealth management, and prime retail deposits.",
-  },
-  "V": {
-    trial: "Cross-Border Travel Volume & Real-Time Direct Settlement (Visa Direct)",
-    phase: "Global Digital Payment Processing Monopoly",
-    timeline: "Quarterly Payment Volume & Value-Added Services Growth",
-    thesis: "Global payments duopoly operating high-margin tollbooth network processing trillions in consumer and commercial transactions.",
-  },
-  "DIS": {
-    trial: "Direct-to-Consumer (DTC) Streaming Profitability & Experiences Park Expansion",
-    phase: "DTC Margin Expansion & Cruise Fleet Scaling",
-    timeline: "Quarterly Disney+ Subscriber ARPU & Park Operating Income",
-    thesis: "Iconic intellectual property portfolio, premier global theme parks, and expanding direct-to-consumer streaming margins.",
-  },
-  "COST": {
-    trial: "Membership Warehouse Global Expansion & Digital E-Commerce Fulfillment",
-    phase: "Global Club Format Scale",
-    timeline: "Quarterly Net Sales & Membership Fee Renewal Rates",
-    thesis: "Unrivaled warehouse club member loyalty with 92%+ renewal rates, negative working capital cycle, and massive bulk volume purchasing power.",
-  },
-  "WMT": {
-    trial: "Walmart+ High-Margin Marketplace & Automated Supply Chain Fulfillment",
-    phase: "Omnichannel Retail Modernization",
-    timeline: "Quarterly Global E-Commerce & Retail Media (Walmart Connect) Ramp",
-    thesis: "World's largest omnichannel retailer combining massive physical store density with rapidly expanding high-margin digital advertising.",
-  },
-  "AMD": {
-    trial: "Instinct MI350/MI400 AI Accelerator Rack Scaling & EPYC Server Dominance",
-    phase: "Hyperscale AI Accelerator Deliveries",
-    timeline: "Continuous FY26/27 Data Center Shipments",
-    thesis: "High-performance compute architectures challenging datacenter AI accelerators and server CPU market share.",
-  },
-  "ARM": {
-    trial: "Armv9 Compute Subsystems (CSS) & Neoverse Enterprise Server Adoption",
-    phase: "Data Center & Automotive Licensing",
-    timeline: "FY26 Royalty Rate Escalation Window",
-    thesis: "Ubiquitous CPU instruction set architecture with expanding royalty rates per chip across mobile, auto, and hyperscale AI servers.",
-  },
-  "SMCI": {
-    trial: "Direct Liquid Cooling (DLC) Hyperscale AI Server Cluster Integration",
-    phase: "High-Density Liquid Cooled Deployment",
-    timeline: "Continuous Rack-Scale Datacenter Shipments",
-    thesis: "Modular server architecture with engineering speed-to-market advantage in high-density liquid-cooled AI cluster deployments.",
-  },
-  "COIN": {
-    trial: "Base L2 Layer-2 On-Chain Transaction Scaling & Institutional Custody Expansion",
-    phase: "Institutional Infrastructure Scaling",
-    timeline: "Continuous On-Chain Settlement Volume Readouts",
-    thesis: "Leading US regulated digital asset gateway, institutional ETF custodian, and expanding Layer-2 blockchain transaction ecosystem.",
-  },
-  "VRT": {
-    trial: "Liquid Cooling & High-Density Datacenter Thermal Power Infrastructure",
-    phase: "Hyperscale Data Center Buildout",
-    timeline: "FY26 Power & Thermal Management Deliveries",
-    thesis: "Dominant pure-play provider of critical digital infrastructure, liquid cooling, and power management for AI data centers.",
-  },
-  "ISRG": {
-    trial: "da Vinci 5 Next-Gen Robotic Surgical System Global Hospital Placements",
-    phase: "Commercial System Placement & Procedure Ramp",
-    timeline: "Quarterly Procedure Volume & Installed Base Growth",
-    thesis: "Robotic-assisted minimally invasive surgical monopoly with high-margin recurring instrument and accessory revenue streams.",
-  },
-  "KLAC": {
-    trial: "Process Control & Optical Wafer Inspection for Advanced 2nm/GAA Nodes",
-    phase: "Sub-2nm Foundry Tool Shipments",
-    timeline: "Continuous Semiconductor Node Equipment Ramps",
-    thesis: "Global monopoly in semiconductor process diagnostic inspection and metrology essential for advanced wafer fabrication yields.",
-  },
-  "DUOL": {
-    trial: "Duolingo Max Generative AI Subscription Tiers",
-    phase: "Global Commercial Rollout",
-    timeline: "Continuous AI Course Launch",
-    thesis: "Gamified learning platform with organic user acquisition and accelerating ARPU conversion.",
-  },
-};
-
 // High-Fidelity Multi-Period Horizon & Day-Trader Fallback Generator (<1ms instant execution)
 export function generateFallbackAnalytics(
   symbol: string,
@@ -633,12 +450,7 @@ export function generateFallbackAnalytics(
     }
   }
 
-  const assetCat = ASSET_CATALYSTS[upper] || {
-    trial: "Commercial Execution & Operating Margin Expansion",
-    phase: "Market Scaling & Product Line Optimization",
-    timeline: "Quarterly Earnings & Capital Allocation Guidance",
-    thesis: `${upper} demonstrating solid balance sheet quality, strong operational execution, and consistent institutional accumulation.`,
-  };
+  const assetCat = getCanonicalAssetCatalyst(upper);
 
   return {
     _dataSource: "fallback" as const,
