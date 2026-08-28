@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
@@ -8,12 +8,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Congressional Late-Filer Hall of Shame & STOCK Act Violations",
     description: "Track delayed Congressional stock disclosures, statutory compliance violations, and mathematical staleness decay penalties.",
-    url: "https://finance-xp8.pages.dev/smart-money/late-filers/",
+    url: "https://www.arxterminal.com/smart-money/late-filers/",
     siteName: "Finance Terminal",
     type: "article",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/smart-money/late-filers/",
+    canonical: "https://www.arxterminal.com/smart-money/late-filers/",
   },
 };
 
@@ -24,7 +24,7 @@ export default function LateFilersPage() {
       "@type": "Dataset",
       "name": "Congressional STOCK Act Late Filers Ledger",
       "description": "Comprehensive audit of US Congressional stock transactions disclosed after the statutory 45-day deadline.",
-      "url": "https://finance-xp8.pages.dev/smart-money/late-filers/",
+      "url": "https://www.arxterminal.com/smart-money/late-filers/",
       "creator": {
         "@type": "Organization",
         "name": "Finance Terminal"
@@ -38,19 +38,19 @@ export default function LateFilersPage() {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Smart Money",
-          "item": "https://finance-xp8.pages.dev/smart-money/"
+          "item": "https://www.arxterminal.com/smart-money/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": "Late-Filer Hall of Shame",
-          "item": "https://finance-xp8.pages.dev/smart-money/late-filers/"
+          "item": "https://www.arxterminal.com/smart-money/late-filers/"
         }
       ]
     }

@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Asset & Pipeline Comparison Matrix | Finance Terminal",
     description: "Multi-asset quantitative comparison matrix evaluating valuation, beta, and Sharpe ratios.",
-    url: "https://finance-xp8.pages.dev/compare/",
+    url: "https://www.arxterminal.com/compare/",
     siteName: "Finance Terminal",
     type: "website",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/compare/",
+    canonical: "https://www.arxterminal.com/compare/",
   },
 };
 
@@ -21,7 +21,7 @@ export default function CompareLayout({ children }: { children: React.ReactNode 
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Finance Terminal Comparison Matrix",
-      "url": "https://finance-xp8.pages.dev/compare/",
+      "url": "https://www.arxterminal.com/compare/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
       "description": "Multi-asset head-to-head comparison tool evaluating fundamental ratios, technical momentum, and volatility exposure.",
@@ -35,13 +35,13 @@ export default function CompareLayout({ children }: { children: React.ReactNode 
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Asset Comparison Matrix",
-          "item": "https://finance-xp8.pages.dev/compare/"
+          "item": "https://www.arxterminal.com/compare/"
         }
       ]
     }

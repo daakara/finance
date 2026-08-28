@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Finance Terminal: Quantitative Field Manual & Algorithmic Handbook",
     description: "Master institutional quantitative trading, legislative STOCK Act signals, staleness decay penalties, volatility invalidation ladders, and tail risk management.",
-    url: "https://finance-xp8.pages.dev/guide/",
+    url: "https://www.arxterminal.com/guide/",
     siteName: "Finance Terminal",
     type: "article",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/guide/",
+    canonical: "https://www.arxterminal.com/guide/",
   },
 };
 
@@ -34,7 +34,7 @@ export default function GuidePage() {
         "name": "Finance Terminal",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://finance-xp8.pages.dev/icons/icon-512x512.png"
+          "url": "https://www.arxterminal.com/icons/icon-512x512.png"
         }
       },
       "datePublished": "2026-08-26",
@@ -86,13 +86,13 @@ export default function GuidePage() {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Field Manual & Algorithmic Handbook",
-          "item": "https://finance-xp8.pages.dev/guide/"
+          "item": "https://www.arxterminal.com/guide/"
         }
       ]
     }

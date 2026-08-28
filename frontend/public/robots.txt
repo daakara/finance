@@ -1,4 +1,4 @@
-﻿# robots.txt for Finance Terminal
+# robots.txt for ARX Terminal
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -22,4 +22,4 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-Sitemap: https://finance-xp8.pages.dev/sitemap.xml
+Sitemap: https://www.arxterminal.com/sitemap.xml

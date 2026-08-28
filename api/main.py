@@ -51,6 +51,8 @@ app = FastAPI(
 
 # 1. Strict CORS Whitelist Configuration
 ALLOWED_ORIGINS = [
+    "https://www.arxterminal.com",
+    "https://arxterminal.com",
     "https://finance-xp8.pages.dev",
     "http://localhost:3000",
     "http://localhost:3005",
@@ -67,7 +69,7 @@ if extra_origin and extra_origin not in ALLOWED_ORIGINS:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https://.*\.pages\.dev|https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
+    allow_origin_regex=r"https://(www\.)?arxterminal\.com|https://.*\.pages\.dev|https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],

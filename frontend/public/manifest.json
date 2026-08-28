@@ -1,6 +1,6 @@
-﻿{
-  "name": "Finance Intelligence Platform",
-  "short_name": "FinanceHQ",
+{
+  "name": "ARX Terminal",
+  "short_name": "ARX Terminal",
   "description": "Enterprise multi-asset analytics, quantitative risk & forecasting platform",
   "start_url": "/",
   "display": "standalone",

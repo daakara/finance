@@ -84,12 +84,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
     openGraph: {
       title: `🟢 ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
       description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${factor?.scores.piotroskiFScore || 8}/9), and downside Cornish-Fisher VaR.`,
-      url: `https://finance-xp8.pages.dev/stock/${params.ticker.toLowerCase()}/`,
+      url: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       siteName: "Finance Terminal",
       type: "article",
     },
     alternates: {
-      canonical: `https://finance-xp8.pages.dev/stock/${params.ticker.toLowerCase()}/`,
+      canonical: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
     },
   };
 }
@@ -132,11 +132,11 @@ export default function StockDetailPage({ params }: PageProps) {
       "@type": "FinancialProduct",
       "name": `${name} (${sym})`,
       "description": `Quantitative equity analytics, Minervini VCP levels, and risk modeling for ${name} (${sym}).`,
-      "url": `https://finance-xp8.pages.dev/stock/${params.ticker.toLowerCase()}/`,
+      "url": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       "provider": {
         "@type": "Organization",
         "name": "Finance Terminal",
-        "url": "https://finance-xp8.pages.dev"
+        "url": "https://www.arxterminal.com"
       }
     },
     {
@@ -147,19 +147,19 @@ export default function StockDetailPage({ params }: PageProps) {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Equities & Stocks",
-          "item": "https://finance-xp8.pages.dev/screener/"
+          "item": "https://www.arxterminal.com/screener/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": `${name} (${sym})`,
-          "item": `https://finance-xp8.pages.dev/stock/${params.ticker.toLowerCase()}/`
+          "item": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`
         }
       ]
     }

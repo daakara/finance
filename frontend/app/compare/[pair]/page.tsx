@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
@@ -40,12 +40,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
     openGraph: {
       title: `${nameA} (${match.a}) vs. ${nameB} (${match.b}) Comparison Matrix`,
       description: `Compare valuation, growth CAGR, Piotroski F-Score, and volatility invalidation levels between ${match.a} and ${match.b}.`,
-      url: `https://finance-xp8.pages.dev/compare/${params.pair.toLowerCase()}/`,
+      url: `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
       siteName: "Finance Terminal",
       type: "article",
     },
     alternates: {
-      canonical: `https://finance-xp8.pages.dev/compare/${params.pair.toLowerCase()}/`,
+      canonical: `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
     },
   };
 }
@@ -82,7 +82,7 @@ export default function ComparisonPairPage({ params }: PageProps) {
       "@type": "WebPage",
       "name": `${match.label} - Quantitative Analysis Matrix`,
       "description": `Side-by-side financial comparison between ${symA} and ${symB}.`,
-      "url": `https://finance-xp8.pages.dev/compare/${params.pair.toLowerCase()}/`,
+      "url": `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
     },
     {
       "@context": "https://schema.org",
@@ -92,19 +92,19 @@ export default function ComparisonPairPage({ params }: PageProps) {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Comparison Matrix",
-          "item": "https://finance-xp8.pages.dev/compare/"
+          "item": "https://www.arxterminal.com/compare/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": `${symA} vs. ${symB}`,
-          "item": `https://finance-xp8.pages.dev/compare/${params.pair.toLowerCase()}/`
+          "item": `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`
         }
       ]
     }

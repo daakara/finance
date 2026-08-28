@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ export default function ShareTradeCardButton({
 Spot: $${spotPrice.toFixed(2)} | 🟢 IN_BUY_ZONE ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)})
 🎯 Target 1: $${target1.toFixed(2)} (+2.5x ATR) | 🛑 Stop Loss: $${stopLoss.toFixed(2)}
 Health: ${compositeScore}/100 | Piotroski: ${piotroskiScore}/9
-Analyze on Finance Terminal: https://finance-xp8.pages.dev/stock/${ticker.toLowerCase()}/`;
+Analyze on ARX Terminal: https://www.arxterminal.com/stock/${ticker.toLowerCase()}/`;
 
     try {
       navigator.clipboard.writeText(text);

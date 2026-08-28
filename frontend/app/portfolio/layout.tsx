@@ -7,12 +7,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "My Portfolio & Risk Allocations | Finance Terminal",
     description: "Track your equity holdings, cost basis, unrealized P&L, and downside risk with zero-login private client storage.",
-    url: "https://finance-xp8.pages.dev/portfolio/",
+    url: "https://www.arxterminal.com/portfolio/",
     siteName: "Finance Terminal",
     type: "website",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/portfolio/",
+    canonical: "https://www.arxterminal.com/portfolio/",
   },
 };
 
@@ -22,7 +22,7 @@ export default function PortfolioLayout({ children }: { children: React.ReactNod
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Finance Terminal Portfolio Tracker",
-      "url": "https://finance-xp8.pages.dev/portfolio/",
+      "url": "https://www.arxterminal.com/portfolio/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
       "description": "Zero-login private portfolio and risk allocation engine calculating real-time profit and loss and volatility exposure.",
@@ -40,13 +40,13 @@ export default function PortfolioLayout({ children }: { children: React.ReactNod
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Private Portfolio & Risk Allocations",
-          "item": "https://finance-xp8.pages.dev/portfolio/"
+          "item": "https://www.arxterminal.com/portfolio/"
         }
       ]
     }

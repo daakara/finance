@@ -318,12 +318,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
     openGraph: {
       title: `${strategy.name} Quantitative Screener Matrix`,
       description: strategy.description,
-      url: `https://finance-xp8.pages.dev/strategy/${params.type.toLowerCase()}/`,
+      url: `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`,
       siteName: "Finance Terminal",
       type: "article",
     },
     alternates: {
-      canonical: `https://finance-xp8.pages.dev/strategy/${params.type.toLowerCase()}/`,
+      canonical: `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`,
     },
   };
 }
@@ -337,7 +337,7 @@ export default function StrategyDetailPage({ params }: PageProps) {
       "@type": "Dataset",
       "name": `${strategy.name} Screener Candidates`,
       "description": strategy.description,
-      "url": `https://finance-xp8.pages.dev/strategy/${params.type.toLowerCase()}/`,
+      "url": `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`,
       "creator": {
         "@type": "Organization",
         "name": "Finance Terminal"
@@ -351,19 +351,19 @@ export default function StrategyDetailPage({ params }: PageProps) {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Quantitative Screeners",
-          "item": "https://finance-xp8.pages.dev/screener/"
+          "item": "https://www.arxterminal.com/screener/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": strategy.name,
-          "item": `https://finance-xp8.pages.dev/strategy/${params.type.toLowerCase()}/`
+          "item": `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`
         }
       ]
     }

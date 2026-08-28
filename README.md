@@ -2,7 +2,7 @@
 
 A professional-grade, institutional financial intelligence platform featuring real-time Congressional STOCK Act tracking, Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, and Cornish-Fisher Modified Value-at-Risk modeling.
 
-**Live Deployment**: [https://finance-xp8.pages.dev/](https://finance-xp8.pages.dev/)
+**Live Deployment**: [https://www.arxterminal.com/](https://www.arxterminal.com/)
 
 ![Next.js](https://img.shields.io/badge/next.js-14.2-black.svg)
 ![React](https://img.shields.io/badge/react-18-cyan.svg)
@@ -241,7 +241,7 @@ python -m pytest tests/
 ## 🚀 Production Cloudflare & Railway Deployment
 
 ### 🌐 Cloudflare Pages (Frontend Edge)
-- **Live URL**: [https://finance-xp8.pages.dev/](https://finance-xp8.pages.dev/)
+- **Live URL**: [https://www.arxterminal.com/](https://www.arxterminal.com/)
 - **Build Command**: `cd frontend && npm install && npm run build`
 - **Output Directory**: `frontend/out`
 - **SSG Target**: 77 Pre-rendered static pages with zero client-side latency.

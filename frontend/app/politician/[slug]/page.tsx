@@ -251,12 +251,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
     openGraph: {
       title: `🏛️ ${profile.name} Congressional Stock Trading Profile (${profile.winRatePct}% Win Rate)`,
       description: `Track securities transactions, committee oversight overlaps, and Legislative Alignment Index for ${profile.name}.`,
-      url: `https://finance-xp8.pages.dev/politician/${params.slug.toLowerCase()}/`,
+      url: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
       siteName: "Finance Terminal",
       type: "profile",
     },
     alternates: {
-      canonical: `https://finance-xp8.pages.dev/politician/${params.slug.toLowerCase()}/`,
+      canonical: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
     },
   };
 }
@@ -273,7 +273,7 @@ export default function PoliticianProfilePage({ params }: PageProps) {
         "name": profile.name,
         "jobTitle": `Member of the US ${profile.chamber}`,
         "description": `${profile.name} is a ${profile.party} representing ${profile.stateDistrict} in the United States ${profile.chamber}.`,
-        "url": `https://finance-xp8.pages.dev/politician/${params.slug.toLowerCase()}/`,
+        "url": `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
       }
     },
     {
@@ -284,19 +284,19 @@ export default function PoliticianProfilePage({ params }: PageProps) {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Smart Money & Congressional Disclosures",
-          "item": "https://finance-xp8.pages.dev/smart-money/"
+          "item": "https://www.arxterminal.com/smart-money/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": profile.name,
-          "item": `https://finance-xp8.pages.dev/politician/${params.slug.toLowerCase()}/`
+          "item": `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`
         }
       ]
     }

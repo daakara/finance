@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Congressional STOCK Act & Smart Money Scanner | Finance Terminal",
     description: "Track US Congress stock trades and institutional smart money flow in real time.",
-    url: "https://finance-xp8.pages.dev/smart-money/",
+    url: "https://www.arxterminal.com/smart-money/",
     siteName: "Finance Terminal",
     type: "website",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/smart-money/",
+    canonical: "https://www.arxterminal.com/smart-money/",
   },
 };
 
@@ -21,7 +21,7 @@ export default function SmartMoneyLayout({ children }: { children: React.ReactNo
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Finance Terminal Smart Money Scanner",
-      "url": "https://finance-xp8.pages.dev/smart-money/",
+      "url": "https://www.arxterminal.com/smart-money/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
       "description": "Real-time tracker for US Congressional STOCK Act disclosures, Legislative Alignment Index (0-100), and unusual options market flow.",
@@ -65,13 +65,13 @@ export default function SmartMoneyLayout({ children }: { children: React.ReactNo
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Smart Money & Congressional Trades",
-          "item": "https://finance-xp8.pages.dev/smart-money/"
+          "item": "https://www.arxterminal.com/smart-money/"
         }
       ]
     }

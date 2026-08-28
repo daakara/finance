@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "High-Alpha Hidden Gems Screener | Finance Terminal",
     description: "Screen high-alpha small and mid-cap equities with asymmetric risk-reward profiles and VCP setups.",
-    url: "https://finance-xp8.pages.dev/screener/",
+    url: "https://www.arxterminal.com/screener/",
     siteName: "Finance Terminal",
     type: "website",
   },
   alternates: {
-    canonical: "https://finance-xp8.pages.dev/screener/",
+    canonical: "https://www.arxterminal.com/screener/",
   },
 };
 
@@ -21,7 +21,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Finance Terminal Gems Screener",
-      "url": "https://finance-xp8.pages.dev/screener/",
+      "url": "https://www.arxterminal.com/screener/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
       "description": "Algorithmic small and mid-cap equity screener filtering for volatility contraction patterns, 4 ATR execution states, and institutional accumulation.",
@@ -32,7 +32,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
       "@type": "Dataset",
       "name": "Quantitative High-Alpha Equity Screener Dataset",
       "description": "Daily updated universe of asymmetric small and mid-cap equities with quantitative factor models and ATR invalidation levels.",
-      "url": "https://finance-xp8.pages.dev/screener/",
+      "url": "https://www.arxterminal.com/screener/",
       "license": "https://creativecommons.org/licenses/by/4.0/",
       "creator": {
         "@type": "Organization",
@@ -47,13 +47,13 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Quantitative Stock Screener",
-          "item": "https://finance-xp8.pages.dev/screener/"
+          "item": "https://www.arxterminal.com/screener/"
         }
       ]
     }

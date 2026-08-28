@@ -193,12 +193,12 @@ export function generateMetadata({ params }: PageProps): Metadata {
     openGraph: {
       title: `${committee.name} Congressional Stock Trading Hub`,
       description: committee.jurisdictionSummary,
-      url: `https://finance-xp8.pages.dev/committee/${params.slug.toLowerCase()}/`,
+      url: `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
       siteName: "Finance Terminal",
       type: "article",
     },
     alternates: {
-      canonical: `https://finance-xp8.pages.dev/committee/${params.slug.toLowerCase()}/`,
+      canonical: `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
     },
   };
 }
@@ -212,7 +212,7 @@ export default function CommitteeHubPage({ params }: PageProps) {
       "@type": "Dataset",
       "name": `${committee.name} Stock Disclosures`,
       "description": committee.jurisdictionSummary,
-      "url": `https://finance-xp8.pages.dev/committee/${params.slug.toLowerCase()}/`,
+      "url": `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
       "creator": {
         "@type": "Organization",
         "name": "Finance Terminal"
@@ -226,19 +226,19 @@ export default function CommitteeHubPage({ params }: PageProps) {
           "@type": "ListItem",
           "position": 1,
           "name": "Finance Terminal",
-          "item": "https://finance-xp8.pages.dev/"
+          "item": "https://www.arxterminal.com/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Smart Money & Congressional Disclosures",
-          "item": "https://finance-xp8.pages.dev/smart-money/"
+          "item": "https://www.arxterminal.com/smart-money/"
         },
         {
           "@type": "ListItem",
           "position": 3,
           "name": committee.name,
-          "item": `https://finance-xp8.pages.dev/committee/${params.slug.toLowerCase()}/`
+          "item": `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`
         }
       ]
     }

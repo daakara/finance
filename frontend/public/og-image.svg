@@ -1,4 +1,4 @@
-﻿<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#070a10"/>
@@ -97,6 +97,6 @@
   </g>
 
   <!-- Footer Branding -->
-  <text x="80" y="585" font-family="monospace" font-size="13" fill="#64748b">https://finance-xp8.pages.dev</text>
+  <text x="80" y="585" font-family="monospace" font-size="13" fill="#64748b">https://www.arxterminal.com</text>
   <text x="1120" y="585" font-family="monospace" font-size="13" fill="#64748b" text-anchor="end">Open-Access Quantitative Platform</text>
 </svg>

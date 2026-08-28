@@ -7,10 +7,10 @@ import MatomoTracker from "../components/MatomoTracker";
 import OnboardingModal from "../components/OnboardingModal";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://finance-xp8.pages.dev"),
+  metadataBase: new URL("https://www.arxterminal.com"),
   title: {
-    default: "Finance Terminal | Quantitative Intelligence, STOCK Act & Risk Platform",
-    template: "%s | Finance Terminal",
+    default: "ARX Terminal | Quantitative Intelligence, STOCK Act & Risk Platform",
+    template: "%s | ARX Terminal",
   },
   description:
     "Institutional-grade quantitative terminal featuring real-time Congressional STOCK Act disclosures, Mark Minervini VCP algorithmic entry points, and Cornish-Fisher downside risk modeling.",
@@ -18,24 +18,24 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FinanceHQ",
+    title: "ARX Terminal",
   },
   icons: {
     icon: "/icons/favicon-32x32.png",
     apple: "/icons/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Finance Terminal | Quantitative Intelligence & Congressional STOCK Act Platform",
+    title: "ARX Terminal | Quantitative Intelligence & Congressional STOCK Act Platform",
     description:
       "Master institutional trading with real-time STOCK Act disclosures, Minervini VCP setups, 20 EMA pullbacks, and Cornish-Fisher VaR risk modeling.",
-    url: "https://finance-xp8.pages.dev",
-    siteName: "Finance Terminal",
+    url: "https://www.arxterminal.com",
+    siteName: "ARX Terminal",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Finance Terminal Institutional Analytics & Congressional STOCK Act Scanner",
+        alt: "ARX Terminal Institutional Analytics & Congressional STOCK Act Scanner",
       },
     ],
     locale: "en_US",
@@ -43,11 +43,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Finance Terminal | Quantitative Intelligence & Congressional STOCK Act Scanner",
+    title: "ARX Terminal | Quantitative Intelligence & Congressional STOCK Act Scanner",
     description:
       "Institutional market analytics, Nancy Pelosi STOCK Act disclosures, and algorithmic risk ladders.",
     images: ["/og-image.png"],
-    creator: "@FinanceTerminal",
+    creator: "@ARXTerminal",
   },
 };
 
@@ -62,11 +62,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Finance Terminal",
-    "url": "https://finance-xp8.pages.dev/",
+    "name": "ARX Terminal",
+    "url": "https://www.arxterminal.com/",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://finance-xp8.pages.dev/?symbol={search_term_string}",
+      "target": "https://www.arxterminal.com/?symbol={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   };
