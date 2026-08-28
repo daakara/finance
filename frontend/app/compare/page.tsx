@@ -239,7 +239,7 @@ function CompareContent() {
           </div>
         </div>
 
-        {/* SEO Curated Presets Bar */}
+        {/* Curated Battleground Matchups Bar */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
@@ -247,9 +247,10 @@ function CompareContent() {
             </span>
             <Link
               href={`/compare/${symbolA.toLowerCase()}-vs-${symbolB.toLowerCase()}`}
-              className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+              className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline flex items-center gap-1 transition-colors"
             >
-              View Dedicated SEO Page ({symbolA} vs {symbolB}) →
+              <span>📑</span>
+              <span>Open Full Research Dossier ({symbolA} vs {symbolB}) →</span>
             </Link>
           </div>
           <div className="flex flex-wrap items-center gap-2">
