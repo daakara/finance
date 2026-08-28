@@ -61,7 +61,7 @@ CANDIDATE_BASELINES = {
     # Semis & Equipment
     "ON": 72.40, "MPWR": 812.30, "KLAC": 734.50, "LRCX": 792.10, "ASML": 824.60, "AVGO": 158.40,
     # Consumer Compounders
-    "DECK": 942.10, "LULU": 264.50, "ONON": 44.20, "MNST": 50.80, "ULTA": 368.40,
+    "DECK": 86.33, "LULU": 264.50, "ONON": 44.20, "MNST": 50.80, "ULTA": 368.40,
     # Power, Industrials & Infrastructure
     "VRT": 88.40, "ETN": 312.50, "PWR": 268.10, "GEV": 224.60, "FIX": 346.20, "EME": 382.40,
     # Enterprise Cloud & EDA
@@ -146,7 +146,11 @@ def run_screener_get(
         atr_14 = execution.get("atr_14", round(current_price * 0.025, 2))
 
         # Pure Mathematical Execution State Determination
-        if current_price < stop_loss:
+        if execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
+            execution_status = "WAITING_PULLBACK"
+            status_label = "⏳ Awaiting Base Formation"
+            status_color = "cyan"
+        elif current_price < stop_loss:
             execution_status = "STOPPED_OUT"
             status_label = "🛑 Below Stop Loss"
             status_color = "rose"

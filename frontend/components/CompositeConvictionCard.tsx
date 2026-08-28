@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo } from "react";
 import { AnalyticsResponse } from "../lib/api";
@@ -33,7 +33,15 @@ export default function CompositeConvictionCard({
     const stopLoss = exec?.stop_loss || 0;
     const pattern = exec?.setup_pattern || "";
 
-    if (pattern.includes("Breakout") || pattern.includes("Stage") || pattern.includes("Pullback")) {
+    if (pattern.includes("Correction") || pattern.includes("Stage 4") || exec?.stage_phase?.includes("Stage 4")) {
+      score -= 10;
+      reasons.push({
+        label: "Technical Setup",
+        detail: "Stage 4 Correction / Markdown Phase. Require constructive base consolidation above support before initiating entries.",
+        status: "warning",
+        icon: "⚠️",
+      });
+    } else if (pattern.includes("Breakout") || pattern.includes("Stage 2") || pattern.includes("Pullback") || pattern.includes("VCP")) {
       score += 15;
       reasons.push({
         label: "Technical Setup",

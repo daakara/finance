@@ -179,6 +179,11 @@ export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: nu
     changePct: 3.20,
     scores: { growthScore: 94, qualityScore: 88, valuationScore: 70, momentumScore: 92, tailRiskScore: 80, compositeFactorScore: 86, verdict: "Disruptive Rule Breaker", piotroskiFScore: 8 }
   },
+  "DECK": {
+    price: 86.33,
+    changePct: -1.25,
+    scores: { growthScore: 82, qualityScore: 94, valuationScore: 80, momentumScore: 45, tailRiskScore: 78, compositeFactorScore: 76, verdict: "Stage 4 Correction / Base Building Required", piotroskiFScore: 8 }
+  },
   "VRT": {
     price: 114.20,
     changePct: 2.85,

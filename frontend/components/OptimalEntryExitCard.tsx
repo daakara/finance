@@ -63,10 +63,12 @@ export default function OptimalEntryExitCard({
           <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             {isDayTrader
               ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
+              : setup_pattern?.includes("Stage 4")
+              ? "Stage 4 Correction & Volatility-Constrained Risk Boundaries"
               : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 leading-normal break-words max-w-full">
               <span>📡</span> Live Algorithmic Execution Ladder (Minervini VCP + 14-ATR Corridor)
             </span>
           </div>

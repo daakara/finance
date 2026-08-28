@@ -57,22 +57,28 @@ class OptimalExecutionEngine:
         tr3 = (low - prev_close).abs()
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
         atr_14 = float(tr.rolling(14, min_periods=1).mean().iloc[-1])
+        # 1. Volatility (ATR-14) with strict sanity bounds to prevent stock-split distortion
         if math.isnan(atr_14) or atr_14 <= 0:
             atr_14 = current_price * 0.025
+        # Clamp ATR between 1.5% and 5.5% of spot price
+        atr_14 = min(current_price * 0.055, max(current_price * 0.015, atr_14))
 
         # 2. Moving Averages
         ema_20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
         sma_50 = float(close.rolling(50, min_periods=5).mean().iloc[-1])
+        is_stage_4_downtrend = (current_price < sma_50 * 0.98)
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
             # Day trader pullback zone: centered around 20 EMA / VWAP anchor with intraday ATR band
             pivot = 0.6 * ema_20 + 0.4 * current_price
-            entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.990), 2)
-            entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.008), 2)
-            stop_loss = round(entry_min - (1.25 * atr_14), 2)
-            take_profit_1 = round(current_price + (1.75 * atr_14), 2)
-            take_profit_2 = round(current_price + (3.0 * atr_14), 2)
+            entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.992), 2)
+            entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.005), 2)
+            raw_stop = entry_min - (1.25 * atr_14)
+            # Strictly cap Day Trader risk between -1.0% and -2.2%
+            stop_loss = round(max(current_price * 0.978, min(current_price * 0.990, raw_stop)), 2)
+            take_profit_1 = round(min(current_price * 1.040, max(current_price * 1.018, current_price + (1.75 * atr_14))), 2)
+            take_profit_2 = round(min(current_price * 1.075, max(current_price * 1.035, current_price + (3.0 * atr_14))), 2)
             setup_name = "Raschke 20 EMA Pullback & VWAP Re-test"
             thesis = "Look for bid defense around 20 EMA with tight 1.25x ATR stop loss below low-of-day."
             invalidation = "Break of 1.25x 5m ATR below low of the current session."
@@ -80,21 +86,30 @@ class OptimalExecutionEngine:
             vcp = "Tightening 5m Compression"
         else:
             # Swing / Long-term accumulation zone: structural support floor and breakout resistance corridor
-            # Base pivot combines 20 EMA and structural price consolidation
             base_pivot = 0.5 * ema_20 + 0.5 * current_price
-            pullback_support = max(sma_50 if sma_50 < current_price else current_price * 0.95, base_pivot - (0.75 * atr_14))
-            breakout_ceiling = max(current_price * 1.018, base_pivot + (0.5 * atr_14))
+            pullback_support = max(current_price * 0.95, min(sma_50, base_pivot - (0.75 * atr_14)))
+            breakout_ceiling = max(current_price * 1.015, base_pivot + (0.5 * atr_14))
             
             entry_min = round(min(pullback_support, current_price * 0.975), 2)
-            entry_max = round(min(breakout_ceiling, current_price + (1.2 * atr_14)), 2)
-            stop_loss = round(entry_min - (1.5 * atr_14), 2)
-            take_profit_1 = round(current_price + (2.5 * atr_14), 2)
-            take_profit_2 = round(current_price + (4.5 * atr_14), 2)
-            setup_name = "Minervini VCP (Volatility Contraction Pattern)"
-            thesis = "Stage 2 advancing base with declining volume on pullbacks and breakout above 50-day pivot."
-            invalidation = "Weekly close below 50-day moving average or -7.5% stop constraint."
-            stage = "Stage 2 Advancing Growth Phase"
-            vcp = "VCP 3-Stage Compression Confirmed"
+            entry_max = round(min(breakout_ceiling, current_price + (1.0 * atr_14)), 2)
+            raw_stop = entry_min - (1.5 * atr_14)
+            # Strictly cap Swing risk between -3.5% and -7.0% (never allowing catastrophic 30%+ stops)
+            stop_loss = round(max(current_price * 0.930, min(current_price * 0.965, raw_stop)), 2)
+            take_profit_1 = round(min(current_price * 1.095, max(current_price * 1.048, current_price + (2.5 * atr_14))), 2)
+            take_profit_2 = round(min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14))), 2)
+
+            if is_stage_4_downtrend:
+                setup_name = "Stage 4 Correction / Base Building Required"
+                thesis = "Asset is in a multi-period correction below 50-day moving average. Require constructive base formation and volume dry-up before initiating entries."
+                invalidation = "Breakdown below recent reaction lows or persistent selling below 50-day SMA."
+                stage = "Stage 4 Markdown (Awaiting New Base)"
+                vcp = "Base Consolidation in Progress"
+            else:
+                setup_name = "Minervini VCP (Volatility Contraction Pattern)"
+                thesis = "Stage 2 advancing base with declining volume on pullbacks and breakout above 50-day pivot."
+                invalidation = "Weekly close below 50-day moving average or -7.0% stop constraint."
+                stage = "Stage 2 Advancing Growth Phase"
+                vcp = "VCP 3-Stage Compression Confirmed"
 
         stop_loss = max(0.01, stop_loss)
         # Calculate risk and reward relative to optimal entry range for asymmetric execution

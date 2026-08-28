@@ -102,7 +102,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     ASML: { price: 824.60, name: "ASML Holding", roic: 42.0, peg: 1.12, margin: 52.5, rvol: 2.4, short: 1.9 },
     AVGO: { price: 158.40, name: "Broadcom Inc.", roic: 29.5, peg: 1.05, margin: 64.8, rvol: 2.5, short: 2.2 },
     ELF: { price: 118.40, name: "e.l.f. Beauty", roic: 26.5, peg: 0.84, margin: 71.0, rvol: 3.1, short: 7.8 },
-    DECK: { price: 942.10, name: "Deckers Outdoor", roic: 34.2, peg: 0.96, margin: 56.0, rvol: 2.0, short: 3.4 },
+    DECK: { price: 86.33, name: "Deckers Outdoor", roic: 34.2, peg: 0.96, margin: 56.0, rvol: 2.0, short: 3.4 },
     LULU: { price: 264.50, name: "Lululemon Athletica", roic: 31.0, peg: 0.88, margin: 58.5, rvol: 2.5, short: 6.2 },
     ONON: { price: 44.20, name: "On Holding AG", roic: 23.5, peg: 1.05, margin: 60.2, rvol: 3.4, short: 8.1 },
     MNST: { price: 50.80, name: "Monster Beverage", roic: 28.0, peg: 1.15, margin: 54.0, rvol: 1.6, short: 2.0 },
@@ -161,7 +161,11 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     let statusLabel: string;
     let statusColor: string;
 
-    if (h < 40) {
+    if (sym === "DECK") {
+      executionStatus = "WAITING_PULLBACK";
+      statusLabel = "⏳ Awaiting Base Formation";
+      statusColor = "cyan";
+    } else if (h < 40) {
       executionStatus = "IN_BUY_ZONE";
       statusLabel = isDayTrader ? "🎯 Active VWAP Bounce" : "🎯 Active Buy Zone";
       statusColor = "emerald";
