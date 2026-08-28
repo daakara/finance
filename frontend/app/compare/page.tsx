@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import { API_BASE_URL, fetchAssetAnalytics, AnalyticsResponse } from "../../lib/api";
+import { SHARED_FACTOR_SCORES, SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 
 interface CompetitorAsset {
   symbol: string;
@@ -103,37 +104,61 @@ function CompareContent() {
   }, [symbolA, symbolB]);
 
   const handlePresetSelect = (a: string, b: string) => {
-    setSymbolA(a);
-    setSymbolB(b);
-    router.push(`/compare?a=${a}&b=${b}`);
+    const cleanA = a.toUpperCase();
+    const cleanB = b.toUpperCase();
+    setSymbolA(cleanA);
+    setSymbolB(cleanB);
+    try {
+      router.push(`/compare?a=${cleanA}&b=${cleanB}`);
+      if (typeof window !== "undefined") {
+        window.history.pushState(null, "", `/compare?a=${cleanA}&b=${cleanB}`);
+      }
+    } catch {}
   };
 
   const handleSymbolChange = (side: "A" | "B", newSym: string) => {
+    const clean = newSym.toUpperCase();
     if (side === "A") {
-      setSymbolA(newSym);
-      router.push(`/compare?a=${newSym}&b=${symbolB}`);
+      setSymbolA(clean);
+      try {
+        router.push(`/compare?a=${clean}&b=${symbolB}`);
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", `/compare?a=${clean}&b=${symbolB}`);
+        }
+      } catch {}
     } else {
-      setSymbolB(newSym);
-      router.push(`/compare?a=${symbolA}&b=${newSym}`);
+      setSymbolB(clean);
+      try {
+        router.push(`/compare?a=${symbolA}&b=${clean}`);
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", `/compare?a=${symbolA}&b=${clean}`);
+        }
+      } catch {}
     }
   };
 
   const isDayTrader = activeRole === "DAY_TRADER";
 
-  // Build dynamic comparison models from live API data
+  // Build dynamic comparison models from live API data with instant static baseline fallbacks
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
-    const scores = liveData?.factorScores || liveData?.dnaScores;
-    const piotroski = scores?.piotroskiFScore || 8;
-    const quality = scores?.qualityScore || 85;
-    const growth = scores?.growthScore || 80;
-    const valuation = scores?.valuationScore || 70;
-    const price = liveData?.currentPrice || 100.0;
-    const priceChange = liveData?.priceChangePct24h || 1.5;
+    const upperSym = sym.toUpperCase();
+    const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
+    const staticFactor = SHARED_FACTOR_SCORES[upperSym];
+
+    const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
+    const piotroski = scores?.piotroskiFScore ?? staticFactor?.scores?.piotroskiFScore ?? 8;
+    const quality = scores?.qualityScore ?? staticFactor?.scores?.qualityScore ?? 88;
+    const growth = scores?.growthScore ?? staticFactor?.scores?.growthScore ?? 85;
+    const valuation = scores?.valuationScore ?? staticFactor?.scores?.valuationScore ?? 72;
+    const price = liveData?.currentPrice ?? staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0);
+    const priceChange = liveData?.priceChangePct24h ?? staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5);
+
+    const defaultName = staticItem?.name || (upperSym === "NVO" ? "Novo Nordisk A/S" : upperSym === "LLY" ? "Eli Lilly & Company" : `${upperSym} Corporation`);
 
     return {
-      symbol: sym,
-      name: sym === "NVO" ? "Novo Nordisk A/S" : sym === "LLY" ? "Eli Lilly & Company" : sym === "CPRX" ? "Catalyst Pharmaceuticals" : sym === "POWI" ? "Power Integrations" : `${sym} Corporation`,
-      category: quality > 88 ? "High-Quality Secular Compounder" : "Secular Growth Leader",
+      symbol: upperSym,
+      name: defaultName,
+      category: quality > 90 ? "High-Quality Secular Compounder" : "Secular Growth Leader",
       marketCap: `$${(price * 0.45).toFixed(1)}B Est`,
       peRatio: `${(100 - valuation + 15).toFixed(1)}x`,
       pegRatio: `${(valuation > 75 ? 0.82 : 1.25).toFixed(2)}`,
@@ -208,25 +233,37 @@ function CompareContent() {
 
         {/* SEO Curated Presets Bar */}
         <div className="mb-4">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">
-            ⭐ Curated Battleground Matchups:
-          </span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              ⭐ Curated Battleground Matchups:
+            </span>
+            <Link
+              href={`/compare/${symbolA.toLowerCase()}-vs-${symbolB.toLowerCase()}`}
+              className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+            >
+              View Dedicated SEO Page ({symbolA} vs {symbolB}) →
+            </Link>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            {SEO_CURATED_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => handlePresetSelect(preset.a, preset.b)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all active:scale-[0.96] ${
-                  symbolA === preset.a && symbolB === preset.b
-                    ? isDayTrader
-                      ? "bg-amber-950/80 border-amber-500 text-amber-300 shadow-md font-bold"
-                      : "bg-cyan-950/80 border-cyan-500 text-cyan-300 shadow-md font-bold"
-                    : "bg-[#0f141f] border-[#1d2636] text-slate-400 hover:border-slate-600 hover:text-slate-200"
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
+            {SEO_CURATED_PRESETS.map((preset) => {
+              const isSelected = symbolA === preset.a && symbolB === preset.b;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handlePresetSelect(preset.a, preset.b)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all active:scale-[0.96] cursor-pointer ${
+                    isSelected
+                      ? isDayTrader
+                        ? "bg-amber-950/80 border-amber-500 text-amber-300 shadow-md font-bold ring-1 ring-amber-500/50"
+                        : "bg-cyan-950/80 border-cyan-500 text-cyan-300 shadow-md font-bold ring-1 ring-cyan-500/50"
+                      : "bg-[#0f141f] border-[#1d2636] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
