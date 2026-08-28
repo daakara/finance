@@ -1,4 +1,4 @@
-﻿"""High-Performance Market Data Fetcher & Failover Pipeline (EODHD & Financial APIs)."""
+"""High-Performance Market Data Fetcher & Failover Pipeline (EODHD & Financial APIs)."""
 
 import os
 import logging
@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_EODHD_KEY = os.getenv("EODHD_API_KEY", "6a8ead85d934a0.85775671")
+DEFAULT_EODHD_KEY = os.getenv("EODHD_API_KEY", "")
 
 class EODHDMarketFetcher:
     """Institutional real-time quote, intraday tape, and EOD historical candlestick fetcher."""
@@ -20,6 +20,9 @@ class EODHDMarketFetcher:
 
     def fetch_realtime_quote(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Fetch live ticker snapshot including bid/ask, VWAP proxy, and 24h change."""
+        if not self.api_key:
+            return None
+
         upper = symbol.upper().strip()
         ticker_code = f"{upper}.US" if not upper.endswith(".US") and "-" not in upper else upper
         if "-" in upper:  # Crypto (e.g. BTC-USD -> BTC-USD.CC)
@@ -41,6 +44,9 @@ class EODHDMarketFetcher:
 
     def fetch_historical_candles(self, symbol: str, period_days: int = 365) -> Optional[pd.DataFrame]:
         """Fetch EOD historical OHLCV candles as a clean Pandas DataFrame."""
+        if not self.api_key:
+            return None
+
         upper = symbol.upper().strip()
         ticker_code = f"{upper}.US" if not upper.endswith(".US") and "-" not in upper else upper
         if "-" in upper:
@@ -60,7 +66,8 @@ class EODHDMarketFetcher:
                 rows = resp.json()
                 if isinstance(rows, list) and len(rows) > 0:
                     df = pd.DataFrame(rows)
-                    df["Date"] = pd.to_datetime(df["date"])
+                    df["Date"] = pd.to_datetime(df["date"], errors="coerce")
+                    df = df.dropna(subset=["Date"])
                     df = df.set_index("Date")
                     df = df.rename(columns={
                         "open": "Open",

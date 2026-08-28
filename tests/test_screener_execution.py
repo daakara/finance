@@ -53,7 +53,7 @@ def test_screener_differential_subsets():
     """Differential Test: Verify that every filter returns a distinct, non-empty, mathematically valid subset."""
     resp = Response()
     
-    all_data = run_screener_get(resp, filter_type="all")
+    all_data = run_screener_get(filter_type="all")
     all_candidates = all_data.get("candidates", [])
     all_syms = set(c["symbol"] for c in all_candidates)
     assert len(all_candidates) == len(DEFAULT_CANDIDATES), "All filter must return the full universe"
@@ -69,7 +69,7 @@ def test_screener_differential_subsets():
     ]
 
     for filter_name, validator in filters:
-        data = run_screener_get(resp, filter_type=filter_name)
+        data = run_screener_get(filter_type=filter_name)
         candidates = data.get("candidates", [])
         syms = set(c["symbol"] for c in candidates)
 
@@ -87,10 +87,8 @@ def test_screener_differential_subsets():
 
 def test_screener_disjoint_execution_states():
     """Verify that execution state categories are mutually exclusive (disjoint)."""
-    resp = Response()
-    
-    buy_zone_data = run_screener_get(resp, filter_type="in_buy_zone")
-    tp_target_data = run_screener_get(resp, filter_type="approaching_target")
+    buy_zone_data = run_screener_get(filter_type="in_buy_zone")
+    tp_target_data = run_screener_get(filter_type="approaching_target")
     
     buy_zone_syms = set(c["symbol"] for c in buy_zone_data.get("candidates", []))
     tp_target_syms = set(c["symbol"] for c in tp_target_data.get("candidates", []))
@@ -103,7 +101,7 @@ def test_screener_disjoint_execution_states():
 def test_screener_candidate_data_integrity():
     """Verify all candidate fields meet strict institutional boundary invariants."""
     resp = Response()
-    all_data = run_screener_get(resp, filter_type="all")
+    all_data = run_screener_get(filter_type="all")
     
     for c in all_data.get("candidates", []):
         sym = c["symbol"]

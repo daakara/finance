@@ -1,11 +1,11 @@
-﻿"""Tests for EODHD Market Data Fetcher & Failover Pipeline."""
+"""Tests for EODHD Market Data Fetcher & Failover Pipeline."""
 
 from unittest.mock import patch, MagicMock
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 import pandas as pd
 
 def test_eodhd_fetcher_realtime_quote():
-    fetcher = EODHDMarketFetcher()
+    fetcher = EODHDMarketFetcher(api_key="mock_test_key")
     mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.json.return_value = {"code": "AAPL.US", "close": 310.50, "volume": 50000000}
@@ -17,9 +17,10 @@ def test_eodhd_fetcher_realtime_quote():
         assert quote["close"] == 310.50
 
 def test_eodhd_fetcher_historical_candles():
-    fetcher = EODHDMarketFetcher()
+    fetcher = EODHDMarketFetcher(api_key="mock_test_key")
+    dates = pd.date_range("2026-01-01", periods=60).strftime("%Y-%m-%d")
     mock_rows = [
-        {"date": f"2026-01-{i+1:02d}", "open": 300+i, "high": 305+i, "low": 298+i, "close": 302+i, "volume": 1000000}
+        {"date": dates[i], "open": 300+i, "high": 305+i, "low": 298+i, "close": 302+i, "volume": 1000000}
         for i in range(60)
     ]
     mock_resp = MagicMock()

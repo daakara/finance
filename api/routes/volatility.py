@@ -1,5 +1,4 @@
-"""FastAPI Router for GARCH Volatility and ARIMA Price Forecasting."""
-
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 import pandas as pd
 
@@ -14,11 +13,12 @@ forecaster = VolatilityForecaster()
 @router.get("/{symbol}")
 def get_volatility_forecast(
     symbol: str,
-    response: Response,
     horizon: int = Query(30, ge=5, le=90, description="Forecast horizon in days"),
+    response: Optional[Response] = None,
 ):
     """Generate multi-model GARCH volatility forecasts and ARIMA price forecasts."""
-    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
     try:
         stock_data = pipeline.fetch_stock_data(symbol, period="1y")
         price_df = stock_data.get("price_data", pd.DataFrame())

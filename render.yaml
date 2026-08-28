@@ -7,8 +7,16 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: ENVIRONMENT
+        value: production
       - key: DISABLE_SSL_VERIFY
         value: "false"
       - key: FRED_API_KEY
-        value: 70089dccee2c5a687260428851534996
+        sync: false
+      - key: ARX_API_KEY
+        sync: false
+      - key: EODHD_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
 

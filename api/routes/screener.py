@@ -75,9 +75,10 @@ class ScreenerRequest(BaseModel):
 
 
 @router.post("/run")
-def run_screener(response: Response, request: ScreenerRequest = None):
+def run_screener(request: ScreenerRequest = None, response: Optional[Response] = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
-    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     role = request.user_role if request and request.user_role else "LONG_TERM"
     default_pool = DAY_TRADER_CANDIDATES if role == "DAY_TRADER" else LONG_TERM_CANDIDATES
     tickers = (request.tickers if request and request.tickers else default_pool)
@@ -95,13 +96,14 @@ run_screener_post = run_screener
 
 @router.get("/run")
 def run_screener_get(
-    response: Response,
     filter_type: str = "all",
     user_role: str = "LONG_TERM",
     custom_tickers: Optional[str] = None,
+    response: Optional[Response] = None,
 ):
     """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
-    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
     
     is_day_trader = (user_role == "DAY_TRADER")
 

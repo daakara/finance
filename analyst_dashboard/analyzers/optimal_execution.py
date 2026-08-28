@@ -124,7 +124,15 @@ class OptimalExecutionEngine:
                 stage = "Stage 2 Advancing Growth Phase"
                 vcp = "VCP 3-Stage Compression Confirmed"
 
+        # Enforce strict mathematical ordering invariant across all scenarios:
+        # stop_loss < entry_min <= entry_max < take_profit_1 < take_profit_2
+        entry_min = round(entry_min, 2)
+        entry_max = round(max(entry_min, entry_max), 2)
+        stop_loss = round(min(stop_loss, entry_min - max(0.01, 0.15 * atr_14)), 2)
         stop_loss = max(0.01, stop_loss)
+        take_profit_1 = round(max(take_profit_1, entry_max + max(0.01, 0.5 * atr_14)), 2)
+        take_profit_2 = round(max(take_profit_2, take_profit_1 + max(0.01, 0.5 * atr_14)), 2)
+
         # Calculate risk and reward relative to optimal entry range for asymmetric execution
         risk_per_share = max(0.5 * atr_14, current_price - stop_loss)
         reward_per_share = max(0.01, take_profit_1 - current_price)

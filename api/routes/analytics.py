@@ -149,13 +149,14 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
 @router.get("/{symbol}")
 def get_asset_analytics(
     symbol: str,
-    response: Response,
     period: str = Query("1y", description="Data period (1d, 5d, 1mo, 1y, 2y, 5y)"),
     interval: str = Query("1d", description="Intraday candle interval (1m, 5m, 15m, 1h, 1d)"),
     user_role: str = Query("LONG_TERM", description="Trading Horizon lens (DAY_TRADER or LONG_TERM)"),
+    response: Response = None,
 ):
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
-    response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
 
     # Server-Side Input Validation Gate
     upper_sym = symbol.upper().strip()

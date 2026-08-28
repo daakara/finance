@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔍 **Server-Side Input Validation Gate**: Enforced `^[A-Z0-9.\-]{1,12}$` ticker regex and allowlists on `period`, `interval`, and `user_role` in `api/routes/analytics.py`.
 - 🧪 **Automated Security Quality Gate**: Added `test_security_hardening_contracts` to `tests/test_nextjs_frontend_structure.py`.
 
+### Architecture & System Hygiene
+- 🛡️ **Defensive Route Signatures**: Made `response: Optional[Response] = None` across `analytics.py`, `screener.py`, `smart_money.py`, and `volatility.py` with defensive `hasattr(response, "headers")` checking.
+- 🔑 **Token & Secret Hygiene**: Removed hardcoded fallback keys from `eodhd_fetcher.py` and configured `render.yaml` with `sync: false` environment variable references.
+- 📐 **Stop-Loss Invariant Enforcement**: Enforced strict mathematical ordering invariant (`stop_loss < entry_min <= entry_max < take_profit_1 < take_profit_2`) in `OptimalExecutionEngine`.
+- 🧪 **Test Suite Normalization**: Fixed date overflow in `test_eodhd_fetcher.py` using `pd.date_range` and normalized `test_screener_execution.py`.
+- 📝 **Modernized Configuration Template**: Updated `.env.example` with current production variables (`ARX_API_KEY`, `REDIS_URL`, `FRED_API_KEY`, `EODHD_API_KEY`, `ENVIRONMENT`, `ALLOWED_ORIGIN`).
+
 ---
 
 ## [1.5.0] - 2026-08-28
