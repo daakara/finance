@@ -81,6 +81,15 @@ export default function PortfolioPage() {
     setPositions(loaded);
     setSummary(calculatePortfolioSummary(loaded));
     refreshQuotes(loaded);
+
+    const handlePurge = () => {
+      refreshQuotes(loaded);
+    };
+
+    window.addEventListener("finance:cache-purge", handlePurge);
+    return () => {
+      window.removeEventListener("finance:cache-purge", handlePurge);
+    };
   }, [refreshQuotes]);
 
   const handleAddPosition = (e: React.FormEvent) => {

@@ -16,6 +16,23 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   const pathname = usePathname();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isPurging, setIsPurging] = useState<boolean>(false);
+  const [purgeToast, setPurgeToast] = useState<boolean>(false);
+
+  const handlePurgeCache = () => {
+    setIsPurging(true);
+    try {
+      localStorage.removeItem("FINANCE_MARKET_SNAPSHOTS_V1");
+      sessionStorage.clear();
+      window.dispatchEvent(new CustomEvent("finance:cache-purge"));
+      setPurgeToast(true);
+      setTimeout(() => setPurgeToast(false), 3000);
+    } catch (err) {
+      console.warn("Failed to purge client cache:", err);
+    } finally {
+      setTimeout(() => setIsPurging(false), 600);
+    }
+  };
 
   useEffect(() => {
     setActiveRole(userRole);
@@ -162,6 +179,24 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <span>✨</span>
             </button>
 
+            {/* Purge Cache & Refresh Live Feeds Button */}
+            <button
+              type="button"
+              onClick={handlePurgeCache}
+              aria-label="Purge Local Cache & Re-sync Live Feeds"
+              title="Purge Local Cache & Force Live Quote Refresh"
+              className={`p-1.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[32px] min-w-[32px] active:scale-90 ${
+                isPurging ? "animate-spin text-cyan-400 border-cyan-500" : ""
+              }`}
+            >
+              <svg aria-hidden="true" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+            </button>
+
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -201,7 +236,19 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         </div>
       </header>
 
-            {/* Floating Bottom Navigation Dock for Mobile Devices */}
+      {/* Cache Purge Notification Toast */}
+      {purgeToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-16 right-4 z-[1000] bg-cyan-950/95 border border-cyan-500 text-cyan-200 px-3.5 py-2 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 animate-fadeIn"
+        >
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span>⚡ Local cache purged — Live quotes re-synced!</span>
+        </div>
+      )}
+
+      {/* Floating Bottom Navigation Dock for Mobile Devices */}
       <nav
         role="navigation"
         aria-label="Mobile Navigation Dock"

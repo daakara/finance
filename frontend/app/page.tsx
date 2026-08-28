@@ -162,8 +162,16 @@ function TerminalContent() {
 
     loadData();
 
+    const handlePurge = () => {
+      cacheRef.current.clear();
+      loadData();
+    };
+
+    window.addEventListener("finance:cache-purge", handlePurge);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("finance:cache-purge", handlePurge);
     };
   }, [selectedSymbol, interval]);
 

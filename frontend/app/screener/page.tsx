@@ -353,6 +353,15 @@ export default function ScreenerPage() {
   // Fetch Live Screener Data when activeRole changes
   useEffect(() => {
     executeScreenerFetch(activeRole, activeCustomQuery);
+
+    const handlePurge = () => {
+      executeScreenerFetch(activeRole, activeCustomQuery);
+    };
+
+    window.addEventListener("finance:cache-purge", handlePurge);
+    return () => {
+      window.removeEventListener("finance:cache-purge", handlePurge);
+    };
   }, [activeRole, activeCustomQuery]);
 
   // Background Live Quote Synchronization to guarantee 100% price parity with Terminal

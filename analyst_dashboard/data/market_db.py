@@ -281,3 +281,21 @@ class MarketDatabaseEngine:
         except Exception as e:
             logger.error(f"Error retrieving catalyst for {symbol}: {e}")
             return None
+
+    def purge_stale_data(self, max_factor_age_hours: int = 24) -> int:
+        """Purge records older than specified TTL from local store to prevent stale data retention."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    DELETE FROM asset_factor_snapshots
+                    WHERE updated_at < datetime('now', ?)
+                """, (f"-{max_factor_age_hours} hours",))
+                purged_count = cursor.rowcount
+                conn.commit()
+                logger.info(f"Purged {purged_count} stale factor snapshots older than {max_factor_age_hours}h.")
+                return purged_count
+        except Exception as e:
+            logger.error(f"Error purging stale database records: {e}")
+            return 0
+
