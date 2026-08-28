@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
 import { prefetchAssetAnalytics } from "../lib/api";
+import { resolveAssetAlias } from "../lib/assetRegistry";
 
 export default function UniversalOmniSearch() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function UniversalOmniSearch() {
   }, [isOpen]);
 
   const cleanQ = query.trim().toUpperCase();
+  const aliasMatch = resolveAssetAlias(cleanQ);
 
   // Search matching presets + allow arbitrary ticker execution
   const matchingPresets = SHARED_WATCHLIST_ITEMS.filter((item) => {
@@ -45,7 +47,8 @@ export default function UniversalOmniSearch() {
     return (
       item.symbol.toUpperCase().includes(cleanQ) ||
       item.name.toUpperCase().includes(cleanQ) ||
-      item.type.toUpperCase().includes(cleanQ)
+      item.type.toUpperCase().includes(cleanQ) ||
+      (aliasMatch && item.symbol.toUpperCase() === aliasMatch.canonicalTicker.toUpperCase())
     );
   }).slice(0, 8);
 
@@ -63,7 +66,11 @@ export default function UniversalOmniSearch() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cleanQ) {
-      handleSelectTicker(cleanQ);
+      if (aliasMatch) {
+        handleSelectTicker(aliasMatch.canonicalTicker);
+      } else {
+        handleSelectTicker(cleanQ);
+      }
     }
   };
 
@@ -159,8 +166,35 @@ export default function UniversalOmniSearch() {
             </form>
 
             {/* Live Matches / Direct Submission */}
-            <div className="overflow-y-auto space-y-1.5 flex-1 pr-1" role="listbox">
-              {cleanQ && (
+            <div className="overflow-y-auto space-y-2 flex-1 pr-1" role="listbox">
+              {/* 💡 Intelligent Did You Mean Recommendation Card */}
+              {aliasMatch && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectTicker(aliasMatch.canonicalTicker)}
+                  className="w-full text-left p-3 rounded-xl bg-cyan-950/60 border-2 border-cyan-400 hover:bg-cyan-900/60 flex items-center justify-between transition-all group cursor-pointer shadow-lg animate-fadeIn focus-visible:ring-2 focus-visible:ring-cyan-300"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-cyan-400 text-slate-950 px-2.5 py-1 rounded text-xs font-black tracking-wider shadow-sm">
+                      {aliasMatch.canonicalTicker}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-cyan-200 flex items-center gap-1.5">
+                        <span>💡 Did you mean:</span>
+                        <span className="text-white underline decoration-cyan-400">{aliasMatch.companyName}</span>
+                      </div>
+                      <div className="text-[10px] text-cyan-300/80 font-mono mt-0.5">
+                        {aliasMatch.description || `Official Exchange Ticker: ${aliasMatch.canonicalTicker}`}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-cyan-300 group-hover:translate-x-1 transition-transform shrink-0 ml-2">
+                    Select {aliasMatch.canonicalTicker} ↵
+                  </span>
+                </button>
+              )}
+
+              {cleanQ && !aliasMatch && (
                 <button
                   type="button"
                   onClick={() => handleSelectTicker(cleanQ)}

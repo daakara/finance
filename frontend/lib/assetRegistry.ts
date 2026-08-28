@@ -476,3 +476,67 @@ export function getCanonicalAssetCatalyst(
     thesis: `${cleanName} demonstrates solid balance sheet quality, strong operational execution, and consistent institutional accumulation.`,
   };
 }
+
+export interface AssetAliasInfo {
+  canonicalTicker: string;
+  companyName: string;
+  description?: string;
+  peerSuggestion?: string;
+}
+
+export const ASSET_ALIAS_MAP: Record<string, AssetAliasInfo> = {
+  // Logistics & Freight
+  FEDEX: { canonicalTicker: "FDX", companyName: "FedEx Corporation", peerSuggestion: "UPS", description: "NYSE: FDX ($285.00)" },
+  DHL: { canonicalTicker: "DHLGY", companyName: "DHL Group (Deutsche Post ADR)", peerSuggestion: "FDX", description: "OTC ADR: DHLGY / ETR: DHL ($42.50)" },
+  "DEUTSCHE POST": { canonicalTicker: "DHLGY", companyName: "DHL Group (Deutsche Post ADR)", peerSuggestion: "FDX", description: "OTC ADR: DHLGY ($42.50)" },
+
+  // Big Tech & AI
+  GOOGLE: { canonicalTicker: "GOOGL", companyName: "Alphabet Inc.", peerSuggestion: "MSFT", description: "NASDAQ: GOOGL ($164.80)" },
+  ALPHABET: { canonicalTicker: "GOOGL", companyName: "Alphabet Inc.", peerSuggestion: "META", description: "NASDAQ: GOOGL ($164.80)" },
+  APPLE: { canonicalTicker: "AAPL", companyName: "Apple Inc.", peerSuggestion: "MSFT", description: "NASDAQ: AAPL ($224.20)" },
+  MICROSOFT: { canonicalTicker: "MSFT", companyName: "Microsoft Corporation", peerSuggestion: "AAPL", description: "NASDAQ: MSFT ($418.20)" },
+  AMAZON: { canonicalTicker: "AMZN", companyName: "Amazon.com, Inc.", peerSuggestion: "WMT", description: "NASDAQ: AMZN ($178.50)" },
+  TESLA: { canonicalTicker: "TSLA", companyName: "Tesla, Inc.", peerSuggestion: "PLTR", description: "NASDAQ: TSLA ($218.40)" },
+  FACEBOOK: { canonicalTicker: "META", companyName: "Meta Platforms, Inc.", peerSuggestion: "GOOGL", description: "NASDAQ: META ($512.40)" },
+  "META PLATFORMS": { canonicalTicker: "META", companyName: "Meta Platforms, Inc.", peerSuggestion: "GOOGL", description: "NASDAQ: META ($512.40)" },
+  NVIDIA: { canonicalTicker: "NVDA", companyName: "NVIDIA Corporation", peerSuggestion: "AMD", description: "NASDAQ: NVDA ($128.50)" },
+  PALANTIR: { canonicalTicker: "PLTR", companyName: "Palantir Technologies Inc.", peerSuggestion: "NVDA", description: "NYSE: PLTR ($31.20)" },
+  CROWDSTRIKE: { canonicalTicker: "CRWD", companyName: "CrowdStrike Holdings", peerSuggestion: "PANW", description: "NASDAQ: CRWD ($272.50)" },
+
+  // Consumer & Retail
+  "COCA COLA": { canonicalTicker: "KO", companyName: "The Coca-Cola Company", peerSuggestion: "SBUX", description: "NYSE: KO ($68.50)" },
+  COCACOLA: { canonicalTicker: "KO", companyName: "The Coca-Cola Company", peerSuggestion: "SBUX", description: "NYSE: KO ($68.50)" },
+  COKE: { canonicalTicker: "KO", companyName: "The Coca-Cola Company", peerSuggestion: "SBUX", description: "NYSE: KO ($68.50)" },
+  STARBUCKS: { canonicalTicker: "SBUX", companyName: "Starbucks Corporation", peerSuggestion: "KO", description: "NASDAQ: SBUX ($94.20)" },
+  WALMART: { canonicalTicker: "WMT", companyName: "Walmart Inc.", peerSuggestion: "COST", description: "NYSE: WMT ($68.10)" },
+  COSTCO: { canonicalTicker: "COST", companyName: "Costco Wholesale Corporation", peerSuggestion: "WMT", description: "NASDAQ: COST ($880.00)" },
+  DISNEY: { canonicalTicker: "DIS", companyName: "The Walt Disney Company", peerSuggestion: "NFLX", description: "NYSE: DIS ($92.50)" },
+  BERKSHIRE: { canonicalTicker: "JPM", companyName: "Berkshire Hathaway / Tier-1 Financial", peerSuggestion: "JPM", description: "NYSE: JPM / Financial Benchmark" },
+
+  // Pharma & Healthcare
+  NOVO: { canonicalTicker: "NVO", companyName: "Novo Nordisk A/S", peerSuggestion: "LLY", description: "NYSE: NVO ($136.40)" },
+  "NOVO NORDISK": { canonicalTicker: "NVO", companyName: "Novo Nordisk A/S", peerSuggestion: "LLY", description: "NYSE: NVO ($136.40)" },
+  LILLY: { canonicalTicker: "LLY", companyName: "Eli Lilly & Company", peerSuggestion: "NVO", description: "NYSE: LLY ($924.50)" },
+  "ELI LILLY": { canonicalTicker: "LLY", companyName: "Eli Lilly & Company", peerSuggestion: "NVO", description: "NYSE: LLY ($924.50)" },
+
+  // Typos & Rebrands
+  FB: { canonicalTicker: "META", companyName: "Meta Platforms (Formerly Facebook)", peerSuggestion: "GOOGL", description: "Ticker changed to META ($512.40)" },
+  APPL: { canonicalTicker: "AAPL", companyName: "Apple Inc. (Typo for AAPL)", peerSuggestion: "MSFT", description: "NASDAQ: AAPL ($224.20)" },
+  NVDIA: { canonicalTicker: "NVDA", companyName: "NVIDIA Corp. (Typo for NVDA)", peerSuggestion: "AMD", description: "NASDAQ: NVDA ($128.50)" },
+  TSL: { canonicalTicker: "TSLA", companyName: "Tesla, Inc. (Typo for TSLA)", peerSuggestion: "PLTR", description: "NASDAQ: TSLA ($218.40)" },
+};
+
+/** Resolves any brand name, spoken query, or common typo to the canonical exchange ticker */
+export function resolveAssetAlias(query: string): AssetAliasInfo | undefined {
+  if (!query) return undefined;
+  const clean = query.trim().toUpperCase();
+  if (ASSET_ALIAS_MAP[clean]) {
+    return ASSET_ALIAS_MAP[clean];
+  }
+  const stripped = clean.replace(/[^A-Z0-9]/g, "");
+  if (ASSET_ALIAS_MAP[stripped]) {
+    return ASSET_ALIAS_MAP[stripped];
+  }
+  return undefined;
+}
+

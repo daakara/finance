@@ -20,6 +20,7 @@ import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
+import { resolveAssetAlias } from "../lib/assetRegistry";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
@@ -77,6 +78,20 @@ function TerminalContent() {
       window.history.replaceState({}, "", url.toString());
     }
   }, [selectedSymbol]);
+
+  const handleSelectSymbol = useCallback((newSym: string) => {
+    const clean = newSym.trim().toUpperCase();
+    if (!clean) return;
+    setSelectedSymbol(clean);
+    trackSymbolSearch(clean, "OmniSearch");
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("symbol", clean);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
+  const aliasRecommendation = resolveAssetAlias(selectedSymbol);
 
   useEffect(() => {
     const saved = localStorage.getItem("FINANCE_USER_ROLE");
@@ -212,7 +227,46 @@ function TerminalContent() {
               </div>
             )}
 
-            {data?._dataSource === 'fallback' && (
+            {/* 💡 Intelligent Did You Mean Ticker Recommendation Banner */}
+            {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
+              <div className="mb-3 p-3 rounded-xl bg-[#141b29] border-2 border-cyan-500/80 text-xs font-mono text-cyan-200 shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">💡</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white uppercase tracking-wide">Unlisted Search Query: &quot;{selectedSymbol}&quot;</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/80">Company / Brand Match</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      &quot;{selectedSymbol}&quot; is a company brand, not an official exchange ticker. Did you mean to analyze:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSymbol(aliasRecommendation.canonicalTicker)}
+                    className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-md cursor-pointer"
+                  >
+                    <span>🚀 Switch to {aliasRecommendation.canonicalTicker}</span>
+                    <span className="hidden sm:inline font-semibold text-slate-900">({aliasRecommendation.companyName})</span>
+                    <span>→</span>
+                  </button>
+                  {aliasRecommendation.peerSuggestion && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSymbol(aliasRecommendation.peerSuggestion!)}
+                      className="px-2.5 py-1.5 rounded-lg bg-[#1a2538] hover:bg-[#23324d] text-slate-200 border border-[#2e405e] text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Compare {aliasRecommendation.peerSuggestion}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {data?._dataSource === 'fallback' && (!aliasRecommendation || aliasRecommendation.canonicalTicker.toUpperCase() === selectedSymbol.toUpperCase()) && (
               <div className="mb-2 p-2 rounded-lg bg-amber-950/30 border border-amber-800/40 text-[11px] font-mono text-amber-300 flex items-center justify-between">
                 <span>⚠️ Note: Operating in offline fallback simulation mode — live institutional feeds will auto-resume upon backend handshake.</span>
               </div>
