@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-08-29
+
+### Cross-Component State Synchronicity & Contradiction Immunity Test Suite
+- 🧪 **Automated Cross-Component Test Suite (`tests/test_cross_component_state_synchronicity.py`)**: Implemented automated CI verification testing dynamic state propagation across all interactive modals (`PreFlightChecklistModal`, `PositionSizerModal`, `AlertTriggerModal`, `OptimalEntryExitCard`) ensuring zero hardcoded boolean placeholders or contradiction blindspots exist (55/55 tests passing).
+- 🛡️ **Multi-Modal Stage 4 Alignment**: Enforced that `isStage4` strictly down-sizes position risk ($0.25\%$), converts alert triggers to the 50-day breakout pivot, and blocks pre-flight clearance until base completion.
+
+---
+
 ## [2.3.0] - 2026-08-29
 
 ### Dynamic Stage 4 & Buy Zone Coupling in Pre-Flight Trade Clearance Gate
