@@ -31,6 +31,20 @@ class HiddenGemsScreener:
     """
 
     KNOWN_GEMS_DATA = {
+        "NVDA": {
+            "company_name": "NVIDIA Corporation",
+            "market_cap": "$3.1T",
+            "lynch_peg": 0.82,
+            "greenblatt_roic": 48.5,
+            "disruptive_growth": 54.0,
+            "gross_margin": 75.0,
+            "piotroski_f": 8,
+            "altman_z": 9.8,
+            "expert_model": "Disruptive Rule Breaker",
+            "thesis": "Dominant AI accelerator architecture with full-stack CUDA ecosystem and Blackwell GPU rack-scale demand.",
+            "catalyst": "Blackwell production ramp and sovereign AI datacenter appropriations.",
+            "risk_level": "Low-to-Medium Risk",
+        },
         "CPRX": {
             "company_name": "Catalyst Pharmaceuticals",
             "market_cap": "$2.4B",
@@ -199,11 +213,11 @@ class HiddenGemsScreener:
             is_decelerating_growth = gem_data.get("disruptive_growth", 20.0) < 10.0
             
             lynch_score = min(98, max(45, int(95 - (gem_data["lynch_peg"] - 0.70) * 80)))
-            greenblatt_score = min(99, max(50, int(60 + (gem_data["greenblatt_roic"] - 20) * 1.2)))
+            greenblatt_score = min(99, max(50, int(65 + (gem_data["greenblatt_roic"] - 15) * 1.4)))
             
             # Growth Score reflects authentic multi-year top-line deceleration
             base_growth = gem_data["disruptive_growth"]
-            growth_score = min(98, max(40, int(45 + base_growth * 0.8 + (gem_data["gross_margin"] - 50) * 0.3)))
+            growth_score = min(98, max(40, int(50 + base_growth * 0.9 + (gem_data["gross_margin"] - 50) * 0.3)))
             
             if is_decelerating_growth:
                 growth_score = min(58, growth_score)

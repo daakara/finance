@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-08-29
+
+### Quantitative Methodology Guardian (`quant-guardian`) & Domain Invariant Test Suite
+- 🧠 **Registered Subagent & Skill (`quant-guardian`)**: Created and registered the specialized Quantitative Finance & Investment Domain Guardian subagent with permanent skill definition at `C:\Users\akara\.gemini\config\skills\quant-guardian\SKILL.md`.
+- 📐 **Global Quantitative Invariant Rule (`quant-invariants.md`)**: Enforced mandatory growth floors, anti-value-trap checks, Minervini Stage 4/Stage 2 discipline, and econometric VaR monotonicity across all workspace sessions.
+- 🧪 **Financial Domain Semantic Test Suite (`tests/test_financial_domain_invariants.py`)**: Built automated CI test suite asserting that low P/E / low PEG assets with declining comps (e.g., `ULTA`, `LULU`) can never pass as high-growth compounders, and verifying monotonic price sequence constraints ($\text{Stop Loss} < \text{Entry} < \text{Target 1} < \text{Target 2}$) and $\text{Reward:Risk} \ge 1.80:1$ across all execution engines (51/51 tests passing).
+
+---
+
 ## [2.1.0] - 2026-08-29
 
 ### Quantitative Screener Growth Floor & Value Trap Re-Classification
