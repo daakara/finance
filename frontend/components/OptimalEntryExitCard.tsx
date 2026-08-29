@@ -5,6 +5,7 @@ import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
+import PreFlightChecklistModal from "./PreFlightChecklistModal";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -23,6 +24,7 @@ export default function OptimalEntryExitCard({
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
+  const [isChecklistOpen, setIsChecklistOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
 
   useEffect(() => {
@@ -304,9 +306,18 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 📜 Deep Dive Provenance, Position Sizer & Alerts Triggers */}
+      {/* 📜 Deep Dive Provenance, Position Sizer, Pre-Flight & Alerts Triggers */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsChecklistOpen(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow"
+          >
+            <span>✈️</span>
+            <span>Pre-Flight Checklist</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsSizerOpen(true)}
@@ -332,6 +343,18 @@ export default function OptimalEntryExitCard({
           userRole={userRole}
         />
       </div>
+
+      <PreFlightChecklistModal
+        isOpen={isChecklistOpen}
+        onClose={() => setIsChecklistOpen(false)}
+        symbol={symbol}
+        currentPrice={current_price}
+        stopLoss={stop_loss}
+        takeProfit1={take_profit_1}
+        riskRewardRatio={risk_reward_ratio}
+        setupPattern={setup_pattern}
+        isDayTrader={isDayTrader}
+      />
 
       <PositionSizerModal
         isOpen={isSizerOpen}

@@ -338,6 +338,41 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("price: 31.20", catalog_content)
         self.assertNotIn("price: 142.80", catalog_content)
 
+    def test_decision_intelligence_suite_contracts(self):
+        """Regression Quality Gate: Ensure Pre-Flight Checklist, Smart Money Divergence, Historical Edge, and Stress Simulator exist."""
+        preflight_path = os.path.join("frontend", "components", "PreFlightChecklistModal.tsx")
+        divergence_path = os.path.join("frontend", "components", "SmartMoneyDivergenceRadar.tsx")
+        historical_path = os.path.join("frontend", "components", "HistoricalEdgeScorecard.tsx")
+        stress_path = os.path.join("frontend", "components", "MacroStressTestSimulator.tsx")
+        smart_page_path = os.path.join("frontend", "app", "smart-money", "page.tsx")
+        portfolio_page_path = os.path.join("frontend", "app", "portfolio", "page.tsx")
+        strategy_page_path = os.path.join("frontend", "app", "strategy", "[type]", "page.tsx")
+        optimal_card_path = os.path.join("frontend", "components", "OptimalEntryExitCard.tsx")
+
+        for p in [preflight_path, divergence_path, historical_path, stress_path]:
+            self.assertTrue(os.path.exists(p), f"Missing decision intelligence component: {p}")
+
+        # Optimal Entry Card must trigger Pre-Flight Checklist
+        with open(optimal_card_path, "r", encoding="utf-8") as f:
+            optimal_content = f.read()
+        self.assertIn("PreFlightChecklistModal", optimal_content)
+        self.assertIn("Pre-Flight Checklist", optimal_content)
+
+        # Smart Money page must render SmartMoneyDivergenceRadar
+        with open(smart_page_path, "r", encoding="utf-8") as f:
+            smart_content = f.read()
+        self.assertIn("SmartMoneyDivergenceRadar", smart_content)
+
+        # Portfolio page must render MacroStressTestSimulator
+        with open(portfolio_page_path, "r", encoding="utf-8") as f:
+            port_content = f.read()
+        self.assertIn("MacroStressTestSimulator", port_content)
+
+        # Strategy page must render HistoricalEdgeScorecard
+        with open(strategy_page_path, "r", encoding="utf-8") as f:
+            strat_content = f.read()
+        self.assertIn("HistoricalEdgeScorecard", strat_content)
+
 
 if __name__ == "__main__":
     unittest.main()

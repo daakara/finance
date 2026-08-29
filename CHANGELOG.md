@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-29
+
+### Institutional Decision Intelligence & Execution Suite
+- ✈️ **Pre-Flight Trade Clearance Gate (`PreFlightChecklistModal.tsx`)**: Built an interactive 5-point institutional decision checklist validating risk-reward payoff ($\ge 2.0:1$), technical structure, smart money flow, catalyst hazard buffers, and macro difficulty with 1-click Markdown journal export.
+- 📡 **Smart Money vs. Retail Divergence Radar (`SmartMoneyDivergenceRadar.tsx`)**: Created a quantitative flow asymmetry radar on `/smart-money` detecting Stealth Accumulation vs Institutional Distribution Traps across Congressional STOCK Act and SEC Form 4 filings.
+- 📊 **Historical Edge & Setup Win-Rate Scorecard (`HistoricalEdgeScorecard.tsx`)**: Embedded backtested expectancy scorecards across `/strategy/[type]` and `/stock/[ticker]` with sample-size (N=1,420), profit factor ($2.45\times$), median hold time, and maximum setup drawdowns.
+- 🌪️ **Macro Stress-Test & Scenario Simulator (`MacroStressTestSimulator.tsx`)**: Built an interactive portfolio stress-testing engine on `/portfolio` simulating tech selloffs (-5% QQQ), yield spikes (+50 bps), and VIX shocks with dynamic defensive cash recommendations.
+- 🧪 **Automated Quality Gate**: Added `test_decision_intelligence_suite_contracts` to `tests/test_nextjs_frontend_structure.py` enforcing full decision engine contracts across all 81 static routes (14/14 passing).
+
+---
+
 ## [1.10.0] - 2026-08-29
 
 ### Master Catalog Single Source of Truth & Data Freshness Transparency

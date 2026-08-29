@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
+import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
 
 interface PageProps {
@@ -374,6 +375,11 @@ export default function StockDetailPage({ params }: PageProps) {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* 📊 QUANTITATIVE BACKTESTED EDGE & SETUP WIN-RATE SCORECARD */}
+        <section aria-label="Quantitative Historical Edge Scorecard">
+          <HistoricalEdgeScorecard strategySlug="minervini-vcp" symbol={sym} />
         </section>
 
         {/* Head-to-Head Comparison Links */}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import SmartMoneyDetailModal from "../../components/SmartMoneyDetailModal";
 import DataSourceBadge from "../../components/DataSourceBadge";
+import SmartMoneyDivergenceRadar from "../../components/SmartMoneyDivergenceRadar";
 import {
   fetchSmartMoneyOverview,
   SmartMoneyOverview,
@@ -256,6 +257,11 @@ function SmartMoneyContent() {
               </Link>
             ))}
           </div>
+        </section>
+
+        {/* 📡 SMART MONEY VS RETAIL DIVERGENCE RADAR */}
+        <section aria-label="Smart Money vs Retail Divergence Radar">
+          <SmartMoneyDivergenceRadar />
         </section>
 
         {/* 🎛️ 3-WAY REGULATORY FEED SUB-VIEW SELECTOR */}

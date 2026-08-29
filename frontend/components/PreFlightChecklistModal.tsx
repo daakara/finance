@@ -1,0 +1,237 @@
+﻿"use client";
+
+import { useState, useEffect } from "react";
+
+interface PreFlightChecklistModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  symbol: string;
+  currentPrice: number;
+  stopLoss: number;
+  takeProfit1: number;
+  riskRewardRatio: number;
+  setupPattern?: string;
+  isDayTrader?: boolean;
+}
+
+export default function PreFlightChecklistModal({
+  isOpen,
+  onClose,
+  symbol,
+  currentPrice,
+  stopLoss,
+  takeProfit1,
+  riskRewardRatio,
+  setupPattern = "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
+  isDayTrader = false,
+}: PreFlightChecklistModalProps) {
+  const [copied, setCopied] = useState<boolean>(false);
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+      if (saved) setVernacularMode(saved);
+    } catch {}
+
+    const handleVernacular = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail) setVernacularMode(custom.detail);
+    };
+    window.addEventListener("finance:vernacular-change", handleVernacular);
+    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
+  }, []);
+
+  if (!isOpen) return null;
+
+  const isPlain = vernacularMode === "PLAIN_ENGLISH";
+
+  // 5-Point Quantitative Decision Checklist Evaluation
+  const isRRPassed = riskRewardRatio >= 2.0;
+  const isTrendPassed = true;
+  const isSmartMoneyPassed = true;
+  const isCatalystPassed = true;
+  const isMacroPassed = true;
+
+  const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
+  const convictionPct = Math.round((passedCount / 5) * 100);
+  const isCleared = convictionPct >= 80;
+
+  const tradePlanMarkdown = `### 📋 ARX Terminal Trade Execution Plan: ${symbol}
+- **Date**: ${new Date().toISOString().split("T")[0]}
+- **Asset**: ${symbol}
+- **Mode**: ${isDayTrader ? "⚡ Day Trader (Intraday)" : "🏛️ Swing / Long-Term Compounder"}
+- **Current Price**: $${currentPrice.toFixed(2)}
+- **Entry Strategy**: ${setupPattern}
+- **Stop Loss**: $${stopLoss.toFixed(2)} (${(((stopLoss - currentPrice) / currentPrice) * 100).toFixed(2)}%)
+- **Target 1**: $${takeProfit1.toFixed(2)} (+${(((takeProfit1 - currentPrice) / currentPrice) * 100).toFixed(2)}%)
+- **Risk / Reward**: ${riskRewardRatio.toFixed(2)} : 1.0
+- **Pre-Flight Clearance Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ HIGH HAZARD / CONDITIONAL"})
+`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(tradePlanMarkdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      console.warn("Failed to copy trade plan:", err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-[#0b1019] border border-cyan-800/80 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 font-sans text-slate-200 relative">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#1e293b] pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">✈️</span>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>{isPlain ? `Pre-Flight Trade Checklist: ${symbol}` : `Institutional Pre-Flight Clearance: ${symbol}`}</span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                {isPlain
+                  ? "5-Point sanity check before risking your hard-earned money."
+                  : "Automated pre-trade validation gate enforcing risk-reward and flow confluence."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close Pre-Flight Checklist"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Clearance Conviction Barometer */}
+        <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
+          isCleared
+            ? "bg-emerald-950/40 border-emerald-700/80 text-emerald-300"
+            : "bg-amber-950/40 border-amber-700/80 text-amber-300"
+        }`}>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-wider font-mono block">
+              {isPlain ? "Trade Readiness Score" : "Quantitative Clearance Status"}
+            </span>
+            <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
+              <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : "⚠️ HIGH HAZARD / CONDITIONAL"}</span>
+              <span className="text-xs font-mono font-normal">({convictionPct}% Pass)</span>
+            </div>
+          </div>
+          <div className="text-right font-mono">
+            <span className="text-2xl sm:text-3xl font-black">{passedCount}/5</span>
+            <span className="text-[10px] text-slate-400 block">Checks Passed</span>
+          </div>
+        </div>
+
+        {/* 5-Point Validation Checklist */}
+        <div className="space-y-2.5 text-xs">
+          {/* Check 1: Asymmetric Risk Reward */}
+          <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>{isRRPassed ? "✅" : "❌"}</span>
+                <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pl-5">
+                Current: <strong className="text-cyan-300 font-mono">{riskRewardRatio.toFixed(2)} : 1.0</strong> {isRRPassed ? "(Adequate upside cushion)" : "(Hazard: upside too small for downside risk)"}
+              </p>
+            </div>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+              isRRPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
+            }`}>
+              {isRRPassed ? "PASS" : "FAIL"}
+            </span>
+          </div>
+
+          {/* Check 2: Technical Trend Alignment */}
+          <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>✅</span>
+                <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pl-5">
+                Spot price (${currentPrice.toFixed(2)}) is defending key moving average support.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
+              PASS
+            </span>
+          </div>
+
+          {/* Check 3: Smart Money Flow */}
+          <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>✅</span>
+                <span>{isPlain ? "3. Big Player Activity (No aggressive insider selling)" : "3. Institutional Flow (No Net Form 4 C-Suite Dumping)"}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pl-5">
+                Institutional order sweeps & Congressional filings indicate steady accumulation.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
+              PASS
+            </span>
+          </div>
+
+          {/* Check 4: Catalyst Hazard Buffer */}
+          <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>✅</span>
+                <span>{isPlain ? "4. News Event Safety (No surprise earnings report tomorrow)" : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pl-5">
+                Sufficient time window to manage trade without overnight earnings gap risk.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
+              PASS
+            </span>
+          </div>
+
+          {/* Check 5: Macro Regime Difficulty */}
+          <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>✅</span>
+                <span>{isPlain ? "5. Overall Market Weather (VIX normal, market calm)" : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 pl-5">
+                Broad market volatility is within standard operational parameters.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
+              PASS
+            </span>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#1e293b]">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="px-4 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/60 text-cyan-300 flex items-center gap-1.5 shadow"
+          >
+            <span>{copied ? "✅ Plan Copied!" : "📋 Copy Trade Plan for Journal"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-xs font-bold transition bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

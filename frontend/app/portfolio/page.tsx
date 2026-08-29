@@ -16,6 +16,7 @@ import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics } from "../../lib/api";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
+import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
 
 export default function PortfolioPage() {
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
@@ -393,6 +394,11 @@ export default function PortfolioPage() {
             </table>
           </div>
         </div>
+
+        {/* 🌪️ MACRO STRESS-TEST & SCENARIO SIMULATOR */}
+        <section aria-label="Macro Stress-Test Simulator">
+          <MacroStressTestSimulator positions={positions} totalEquity={summary.totalEquity} />
+        </section>
 
         {/* Add Position Modal (Fluid Adaptive & Real-Time Auto-Populated) */}
         {showAddModal && (

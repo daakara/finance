@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
+import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
 
 interface PageProps {
   params: {
@@ -423,6 +424,11 @@ export default function StrategyDetailPage({ params }: PageProps) {
             {strategy.description}
           </p>
         </header>
+
+        {/* 📊 QUANTITATIVE BACKTESTED EDGE & WIN-RATE SCORECARD */}
+        <section aria-label="Quantitative Historical Edge Scorecard">
+          <HistoricalEdgeScorecard strategySlug={params.type} />
+        </section>
 
         {/* 1-Click Interactive CTA */}
         <section className="bg-gradient-to-r from-emerald-950/40 via-[#0b1019] to-cyan-950/40 p-5 rounded-2xl border border-emerald-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
