@@ -321,6 +321,23 @@ class TestNextJsFrontendStructure(unittest.TestCase):
                 page_content = f.read()
             self.assertIn(".replace(/</g, \"\\\\u003c\")", page_content, f"Missing JSON-LD sanitation in {page_file}")
 
+    def test_master_catalog_single_source_of_truth_parity(self):
+        """Regression Quality Gate: Ensure frontend/lib/masterCatalog.ts exists and maintains price and fundamental parity."""
+        catalog_path = os.path.join("frontend", "lib", "masterCatalog.ts")
+        self.assertTrue(os.path.exists(catalog_path), "Missing masterCatalog.ts SSOT file")
+
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            catalog_content = f.read()
+
+        # Core anchor assets must be present in master catalog
+        for sym in ["NVDA", "AAPL", "MSFT", "PLTR", "NVO", "LLY", "TSLA", "SPY", "QQQ", "SMH", "CPRX", "MEDP", "TMDX"]:
+            self.assertIn(f"{sym}:", catalog_content, f"Missing {sym} in masterCatalog.ts")
+
+        # PLTR baseline price parity check
+        self.assertIn("PLTR:", catalog_content)
+        self.assertIn("price: 31.20", catalog_content)
+        self.assertNotIn("price: 142.80", catalog_content)
+
 
 if __name__ == "__main__":
     unittest.main()

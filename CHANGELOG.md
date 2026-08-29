@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-08-29
+
+### Master Catalog Single Source of Truth & Data Freshness Transparency
+- 🏛️ **Master Asset Catalog (`frontend/lib/masterCatalog.ts`)**: Established unified single source of truth consolidating static baseline profiles, authentic fundamental metrics, execution price boundaries, and risk parameters across all 81 pre-rendered routes.
+- 📡 **Feed Freshness Indicator (`FeedFreshnessIndicator.tsx`)**: Added real-time freshness transparency component distinguishing live streaming exchange feeds from deterministic baseline fallback estimates.
+- 🧪 **Automated Parity Quality Gate**: Added `test_master_catalog_single_source_of_truth_parity` to `tests/test_nextjs_frontend_structure.py` enforcing strict price, ROIC, and PE consistency across the entire workspace (13/13 passing).
+
+---
+
 ## [1.9.0] - 2026-08-29
 
 ### Vernacular Language Engine Expansion
