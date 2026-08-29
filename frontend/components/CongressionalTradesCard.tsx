@@ -41,6 +41,8 @@ export default function CongressionalTradesCard({
   }, []);
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const cleanSym = symbol.toUpperCase().replace("-USD", "");
+  const isCrypto = ["BTC", "ETH", "SOL"].includes(cleanSym) || symbol.toUpperCase().includes("BTC") || symbol.toUpperCase().includes("ETH") || symbol.toUpperCase().includes("SOL");
 
   const filteredCongressTrades = congressTrades.filter((t) => {
     if (timeframe === "ALL") return true;
@@ -55,6 +57,194 @@ export default function CongressionalTradesCard({
     if (timeframe === "1Y") return diffDays <= 365;
     return true;
   });
+
+  // Specialized Crypto Institutional & Regulatory Intelligence View
+  if (isCrypto) {
+    const cryptoMetadata = {
+      BTC: {
+        name: "Bitcoin",
+        category: "Decentralized Digital Commodity",
+        regStatus: "CFTC Non-Security Commodity (SEC Approved Spot ETFs)",
+        etfs: [
+          { ticker: "IBIT", name: "BlackRock iShares Bitcoin Trust", fee: "0.25%" },
+          { ticker: "FBTC", name: "Fidelity Wise Origin Bitcoin Fund", fee: "0.25%" },
+          { ticker: "ARKB", name: "ARK 21Shares Bitcoin ETF", fee: "0.21%" },
+        ],
+        bills: [
+          { name: "BITCOIN Act of 2024 (S.4912)", desc: "US Strategic Bitcoin Reserve Bill (Sen. Cynthia Lummis)" },
+          { name: "FIT21 Act (H.R. 4763)", desc: "Commodity regulatory clarity under CFTC jurisdiction (Passed House)" },
+        ],
+        proxies: [
+          { symbol: "MSTR", name: "MicroStrategy", reason: "Largest corporate Bitcoin treasury (>226k BTC)" },
+          { symbol: "COIN", name: "Coinbase Global", reason: "Primary custodian for 8 of 11 US spot ETFs" },
+        ],
+      },
+      ETH: {
+        name: "Ethereum",
+        category: "Layer-1 Decentralized Protocol",
+        regStatus: "CFTC Commodity / Non-Security (SEC Approved Spot ETFs)",
+        etfs: [
+          { ticker: "ETHA", name: "iShares Ethereum Trust", fee: "0.25%" },
+          { ticker: "FETH", name: "Fidelity Ethereum Fund", fee: "0.25%" },
+          { ticker: "ETHE", name: "Grayscale Ethereum Trust", fee: "2.50%" },
+        ],
+        bills: [
+          { name: "FIT21 Act (H.R. 4763)", desc: "Smart contract network decentralization thresholds" },
+          { name: "SAB 121 Custody Relief", desc: "Bank custody accounting rule reform (Bipartisan CRA)" },
+        ],
+        proxies: [
+          { symbol: "COIN", name: "Coinbase Global", reason: "Primary staking & institutional custody partner" },
+          { symbol: "NVDA", name: "NVIDIA Corp", reason: "Hardware backbone for decentralized compute" },
+        ],
+      },
+      SOL: {
+        name: "Solana",
+        category: "High-Throughput PoS Smart Contract Network",
+        regStatus: "L1 Digital Commodity (Pending Spot ETF S-1 Filings)",
+        etfs: [
+          { ticker: "GSOL", name: "Grayscale Solana Trust", fee: "2.50%" },
+          { ticker: "VSOL (Pending)", name: "VanEck Solana Trust S-1", fee: "TBD" },
+          { ticker: "21SOL (Pending)", name: "21Shares Solana ETF S-1", fee: "TBD" },
+        ],
+        bills: [
+          { name: "FIT21 Act (H.R. 4763)", desc: "De-facto decentralization metrics for Layer-1 networks" },
+        ],
+        proxies: [
+          { symbol: "COIN", name: "Coinbase Global", reason: "Institutional staking and liquidity gateway" },
+        ],
+      },
+    }[cleanSym as "BTC" | "ETH" | "SOL"] || {
+      name: symbol,
+      category: "Digital Asset Protocol",
+      regStatus: "Cryptographic Commodity / Protocol",
+      etfs: [{ ticker: "IBIT", name: "BlackRock Spot Bitcoin ETF", fee: "0.25%" }],
+      bills: [{ name: "FIT21 Act", desc: "Digital Asset Regulatory Framework" }],
+      proxies: [{ symbol: "COIN", name: "Coinbase Global", reason: "Crypto Market Leader" }],
+    };
+
+    return (
+      <div className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono transition-colors ${
+        isDayTrader ? "border-amber-900/40" : "border-[#243044]"
+      }`}>
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                <span>
+                  {isPlain
+                    ? `🏛️ ${cryptoMetadata.name} Institutional & Regulatory Money Flow`
+                    : `🏛️ ${cryptoMetadata.name} Institutional Asset Classification & Regulatory Structure`}
+                </span>
+              </h3>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 font-sans">
+              {isPlain
+                ? "Decentralized crypto protocols have no corporate CEO filing SEC Form 4. Here is how Wall Street, Spot ETFs, and US Congress actually move billions into this asset."
+                : "Decentralized digital commodities have no corporate executives filing SEC Form 4 insider disclosures. Institutional capital allocation routes through regulated Spot ETFs and public corporate proxies."}
+            </p>
+          </div>
+
+          <span className="text-[10px] px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold uppercase">
+            {cryptoMetadata.category}
+          </span>
+        </div>
+
+        {/* Regulatory & Congressional Landscape */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-2">
+            <div className="flex items-center justify-between">
+              <strong className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <span>⚖️</span>
+                <span>{isPlain ? "US Legal & Regulatory Status" : "Regulatory Classification (SEC / CFTC)"}</span>
+              </strong>
+              <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800 font-bold">
+                COMMODITY
+              </span>
+            </div>
+            <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+              {cryptoMetadata.regStatus}
+            </p>
+          </div>
+
+          <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-2">
+            <strong className="text-purple-300 font-bold flex items-center gap-1.5">
+              <span>🏛️</span>
+              <span>{isPlain ? "Active US Congressional Bills" : "Legislative Jurisdictions & Bills"}</span>
+            </strong>
+            <ul className="text-[11px] text-slate-300 font-sans space-y-1">
+              {cryptoMetadata.bills.map((b, idx) => (
+                <li key={idx} className="flex flex-col">
+                  <span className="text-cyan-300 font-semibold">{b.name}</span>
+                  <span className="text-slate-400 text-[10px]">{b.desc}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Spot ETF Vehicles */}
+        <div className="bg-[#090d14] p-3.5 rounded-xl border border-[#1b2434] space-y-2.5">
+          <div className="flex items-center justify-between">
+            <strong className="text-amber-300 text-xs font-bold flex items-center gap-1.5">
+              <span>💼</span>
+              <span>{isPlain ? "Wall Street Spot ETF Vehicles (Institutional Accumulation)" : "Institutional Spot ETP Inflow & Custody Vehicles"}</span>
+            </strong>
+            <span className="text-[10px] text-slate-400 font-mono">Regulated Under SEC 1933 Act</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            {cryptoMetadata.etfs.map((etf) => (
+              <div key={etf.ticker} className="bg-[#05080e] p-2.5 rounded-lg border border-[#162030] space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-cyan-400 font-bold font-mono">{etf.ticker}</span>
+                  <span className="text-[10px] text-slate-400">Expense: {etf.fee}</span>
+                </div>
+                <p className="text-[10px] text-slate-300 font-sans leading-tight">{etf.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 1-Click Corporate Treasury & Insider Proxies */}
+        <div className="bg-[#0b1019] p-4 rounded-xl border border-cyan-900/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <strong className="text-slate-100 text-xs font-bold flex items-center gap-1.5">
+              <span>🔍</span>
+              <span>
+                {isPlain
+                  ? "Track Corporate Insiders & Congress on Public Crypto Stocks:"
+                  : "Track Executive Form 4 Insiders & STOCK Act Disclosures on Public Crypto Proxies:"}
+              </span>
+            </strong>
+            <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800 font-mono">
+              1-CLICK INSPECTION
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {cryptoMetadata.proxies.map((proxy) => (
+              <div
+                key={proxy.symbol}
+                onClick={() => onSelectSymbol && onSelectSymbol(proxy.symbol)}
+                className="flex items-center justify-between p-3 rounded-lg bg-[#06090f] hover:bg-[#162030] border border-[#1b2434] hover:border-cyan-500/50 transition-all cursor-pointer group"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white group-hover:text-cyan-300">{proxy.symbol}</span>
+                    <span className="text-[10px] text-slate-400 font-sans">{proxy.name}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-sans mt-0.5">{proxy.reason}</p>
+                </div>
+                <button className="px-2 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded text-[10px] font-bold shrink-0">
+                  Inspect Insiders →
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -120,28 +310,28 @@ export default function CongressionalTradesCard({
                 ? "text-amber-400 bg-amber-950/60 border-amber-800/80"
                 : "text-purple-400 bg-purple-950/60 border-purple-800/80"
             }`}>
-              {isDayTrader ? "⚡ Real-Time Tape" : `🏛️ ${timeframe === "ALL" ? "All History" : `${timeframe} Flow`}`}
+              {isDayTrader ? `${optionsFlow.length} Sweeps` : `${filteredCongressTrades.length} Trades`}
             </span>
           </div>
         </div>
 
-        {/* Content Rendering based on Horizon */}
+        {/* Content Table / Card list */}
         {isDayTrader ? (
-          /* Day Trader: Options Flow Sweeps Table */
+          /* Day Trader: Options Flow Table */
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse font-sans">
               <thead>
-                <tr className="border-b border-[#1b2434] text-slate-400 text-[10px] uppercase">
+                <tr className="border-b border-[#1b2434] text-slate-400 font-mono text-[11px]">
                   <th className="pb-2 font-semibold">Time</th>
                   <th className="pb-2 font-semibold">Type</th>
                   <th className="pb-2 font-semibold">Strike / Exp</th>
                   <th className="pb-2 font-semibold text-right">Premium</th>
-                  <th className="pb-2 font-semibold text-right">Vol/OI</th>
+                  <th className="pb-2 font-semibold text-right">Vol / OI</th>
                   <th className="pb-2 font-semibold text-right">Sentiment</th>
                   <th className="pb-2 font-semibold text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#162032]">
+              <tbody className="divide-y divide-[#162030]">
                 {optionsFlow.length > 0 ? (
                   optionsFlow.map((flow, i) => (
                     <tr

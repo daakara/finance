@@ -4,6 +4,7 @@ import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
+import { getMasterAsset, getAllMasterTickers } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -60,6 +61,7 @@ const ASSET_NARRATIVES: Record<string, { sectorMoat: string; upcomingCatalyst: s
 };
 
 export function generateStaticParams() {
+  const masterTickers = getAllMasterTickers().map(t => ({ ticker: t.toLowerCase() }));
   const stockSymbols = SHARED_WATCHLIST_ITEMS.map((item) => ({
     ticker: item.symbol.toLowerCase(),
   }));
@@ -67,24 +69,31 @@ export function generateStaticParams() {
     ticker: sym.toLowerCase(),
   }));
   
-  const unique = Array.from(new Set([...stockSymbols.map(s => s.ticker), ...additionalSymbols.map(s => s.ticker)]));
+  const unique = Array.from(new Set([
+    ...masterTickers.map(s => s.ticker),
+    ...stockSymbols.map(s => s.ticker),
+    ...additionalSymbols.map(s => s.ticker)
+  ]));
   return unique.map(ticker => ({ ticker }));
 }
 
 export function generateMetadata({ params }: PageProps): Metadata {
-  const sym = params.ticker.toUpperCase();
+  const sym = params.ticker.toUpperCase().replace("-USD", "");
+  const master = getMasterAsset(params.ticker);
   const watchlist = SHARED_WATCHLIST_ITEMS.find((item) => item.symbol.toUpperCase() === sym);
   const factor = SHARED_FACTOR_SCORES[sym];
   
-  const name = watchlist?.name || sym;
-  const price = factor ? `$${factor.price.toFixed(2)}` : watchlist?.price || "Market Price";
+  const name = master?.name || watchlist?.name || sym;
+  const price = master ? `$${master.price.toFixed(2)}` : (factor ? `$${factor.price.toFixed(2)}` : watchlist?.price || "Market Price");
+  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 85;
+  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
   
   return {
-    title: `🟢 IN_BUY_ZONE: ${name} (${sym}) at ${price} • Minervini VCP Targets & Pelosi STOCK Act | ARX Terminal`,
-    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${factor?.scores.compositeFactorScore || 85}/100), and Congressional STOCK Act disclosures.`,
+    title: `🟢 ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`,
+    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${compositeScore}/100), and Congressional STOCK Act disclosures.`,
     openGraph: {
       title: `🟢 ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
-      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${factor?.scores.piotroskiFScore || 8}/9), and downside Cornish-Fisher VaR.`,
+      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${piotroskiScore}/9), and downside Cornish-Fisher VaR.`,
       url: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "article",
@@ -96,36 +105,37 @@ export function generateMetadata({ params }: PageProps): Metadata {
 }
 
 export default function StockDetailPage({ params }: PageProps) {
-  const sym = params.ticker.toUpperCase();
+  const sym = params.ticker.toUpperCase().replace("-USD", "");
+  const master = getMasterAsset(params.ticker);
   const watchlist = SHARED_WATCHLIST_ITEMS.find((item) => item.symbol.toUpperCase() === sym);
   const factor = SHARED_FACTOR_SCORES[sym];
   const narrative = ASSET_NARRATIVES[sym] || {
-    sectorMoat: `${sym} is an institutional equity tracked across fundamental balance sheet quality, momentum volatility, and macroeconomic regime sensitivity.`,
-    upcomingCatalyst: "Quarterly earnings report, institutional 13F hedge fund rebalancing, and industry conference presentations.",
-    politicalAngle: "Public Law 112-105 STOCK Act surveillance across US House and Senate disclosures."
+    sectorMoat: master?.moatSummary || `${sym} is an institutional equity tracked across fundamental balance sheet quality, momentum volatility, and macroeconomic regime sensitivity.`,
+    upcomingCatalyst: master?.upcomingCatalyst || "Quarterly earnings report, institutional 13F hedge fund rebalancing, and industry conference presentations.",
+    politicalAngle: master?.thesis || "Public Law 112-105 STOCK Act surveillance across US House and Senate disclosures."
   };
 
-  const name = watchlist?.name || `${sym} Equity`;
-  const spotPrice = factor ? factor.price : (parseFloat(watchlist?.price?.replace(/[^0-9.]/g, "") || "100.00"));
-  const changePct = factor ? factor.changePct : (parseFloat(watchlist?.change?.replace(/[%+]/g, "") || "1.5"));
+  const name = master?.name || watchlist?.name || `${sym} Equity`;
+  const spotPrice = master ? master.price : (factor ? factor.price : (parseFloat(watchlist?.price?.replace(/[^0-9.]/g, "") || "100.00")));
+  const changePct = master ? master.changePct : (factor ? factor.changePct : (parseFloat(watchlist?.change?.replace(/[%+]/g, "") || "1.5")));
   const isPositive = changePct >= 0;
 
   // Minervini execution levels
-  const atr14 = +(spotPrice * 0.032).toFixed(2);
+  const atr14 = master?.atr14 ? master.atr14 : +(spotPrice * 0.032).toFixed(2);
   const stopLoss = +(spotPrice - 1.25 * atr14).toFixed(2);
   const entryMin = +(spotPrice - 0.5 * atr14).toFixed(2);
   const entryMax = spotPrice;
   const target1 = +(spotPrice + 2.5 * atr14).toFixed(2);
   const target2 = +(spotPrice + 4.5 * atr14).toFixed(2);
 
-  const compositeScore = factor?.scores.compositeFactorScore ?? 84;
-  const piotroskiScore = factor?.scores.piotroskiFScore ?? 8;
-  const growthScore = factor?.scores.growthScore ?? 86;
-  const qualityScore = factor?.scores.qualityScore ?? 90;
-  const valuationScore = factor?.scores.valuationScore ?? 72;
-  const momentumScore = factor?.scores.momentumScore ?? 85;
-  const tailRiskScore = factor?.scores.tailRiskScore ?? 80;
-  const verdict = factor?.scores.verdict ?? "Strong Quantitative Compounder";
+  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 84;
+  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
+  const growthScore = master?.growthScore ?? factor?.scores.growthScore ?? 86;
+  const qualityScore = master?.qualityScore ?? factor?.scores.qualityScore ?? 90;
+  const valuationScore = master?.valuationScore ?? factor?.scores.valuationScore ?? 72;
+  const momentumScore = master?.momentumScore ?? factor?.scores.momentumScore ?? 85;
+  const tailRiskScore = master?.tailRiskScore ?? factor?.scores.tailRiskScore ?? 80;
+  const verdict = master?.verdict ?? factor?.scores.verdict ?? "Strong Quantitative Compounder";
 
   const jsonLd = [
     {

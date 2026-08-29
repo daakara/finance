@@ -176,6 +176,69 @@ export default function GuideContent() {
               : "On mobile viewports (<1024px), the terminal dynamically inverts DOM order (order-1 lg:order-2) so the active ticker hero, price, timeframe controls, and candlestick chart appear at the focal top. The Watchlist sidebar collapses into an intuitive accordion with horizontally scrollable filter pills (overflow-x-auto no-scrollbar) and auto-collapses upon selecting a ticker."}
           </p>
         </div>
+
+        {/* 4-Tier Asset Universe & Architecture Scope */}
+        <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3 text-xs">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+              <span>🌐 {isPlain ? "Asset Coverage: Pre-Built High-Conviction Stocks vs. Search Any Ticker" : "4-Tier Asset Architecture: Static Edge Pre-Rendering vs. Dynamic Execution"}</span>
+            </h3>
+            <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 font-mono">
+              ARCHITECTURE SCOPE
+            </span>
+          </div>
+          <p className="text-slate-300 font-sans leading-relaxed">
+            {isPlain
+              ? "Why does the terminal highlight a focused group of stocks, and can you search your own favorites? Here is how our 4-tier engine works:"
+              : "To maintain sub-10ms edge delivery while providing open-universe flexibility, the platform operates a 4-tier hierarchical asset pipeline:"}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1">
+              <div className="flex items-center justify-between">
+                <strong className="text-white font-mono text-xs">{isPlain ? "1. Master Catalog (38 Core Assets)" : "1. Master Catalog (38 Assets)"}</strong>
+                <span className="text-[9px] bg-[#162030] text-amber-300 px-1.5 py-0.2 rounded font-mono">HYBRID</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans">
+                {isPlain
+                  ? "Pre-audited high-conviction companies (NVDA, LLY, PLTR, CPRX, etc.) with verified balance sheets and live spot price hydration."
+                  : "Single Source of Truth for verified fundamental ratios (ROIC, Gross Margin, PEG, Piotroski) with real-time price store hydration."}
+              </p>
+            </div>
+            <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1">
+              <div className="flex items-center justify-between">
+                <strong className="text-white font-mono text-xs">{isPlain ? "2. Multi-Factor Screener (35 Assets)" : "2. Multi-Factor Screener (35 Assets)"}</strong>
+                <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.2 rounded font-mono">100% DYNAMIC</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans">
+                {isPlain
+                  ? "Dynamically scans and calculates buy zones, stop losses, and multi-bagger criteria on every refresh."
+                  : "Live execution engine calculating ATR corridors, Peter Lynch GARP, Greenblatt Magic Formula, and Rule Breaker criteria on the fly."}
+              </p>
+            </div>
+            <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1">
+              <div className="flex items-center justify-between">
+                <strong className="text-white font-mono text-xs">{isPlain ? "3. Pre-Rendered Pages (94 Static Routes)" : "3. Pre-Rendered Pages (94 Static Routes)"}</strong>
+                <span className="text-[9px] bg-[#162030] text-cyan-300 px-1.5 py-0.2 rounded font-mono">HYBRID (SSG)</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans">
+                {isPlain
+                  ? "Dedicated landing pages pre-compiled for instant <10ms loading speed, social previews, and Google search indexing."
+                  : "Next.js static site generation (SSG) with Schema.org JSON-LD and OpenGraph metadata delivering zero-latency edge delivery."}
+              </p>
+            </div>
+            <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1">
+              <div className="flex items-center justify-between">
+                <strong className="text-white font-mono text-xs">{isPlain ? "4. Universal Omnisearch (Unlimited)" : "4. Universal Omnisearch (Unlimited)"}</strong>
+                <span className="text-[9px] bg-purple-950 text-purple-300 px-1.5 py-0.2 rounded font-mono">100% DYNAMIC</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans">
+                {isPlain
+                  ? "Type ANY ticker (e.g. COIN, AMD, DIS, BTC) into the search bar (press '/') to pull live charts and calculate buy zones on demand."
+                  : "Live on-demand query engine generating dynamic Minervini VCP levels, ATR ladders, and trade execution plans for any US equity or crypto pair."}
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* CHAPTER 2: INTERACTIVE DUAL-HORIZON CANDLESTICK & INDICATOR ENGINE */}

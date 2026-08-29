@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-08-29
+
+### Master Catalog Expansion, Crypto Proxy Intelligence & Pre-Rendered Route SSG Consolidation
+- 📚 **Master Catalog SSOT Expansion (`lib/masterCatalog.ts`)**: Expanded `MASTER_ASSET_CATALOG` to 38 high-conviction and screener assets (adding `POWI`, `ACLS`, `ELF`, `VRT`, `ISRG`, `VRTX`, `COIN`, `MSTR`, `CRWD`, `ANET`, `ARM`, `AMD`, `DECK`, `ON`, `MPWR`, `KLAC`, `LRCX`, `BTC-USD`, `ETH-USD`, `SOL-USD`).
+- ⚡ **SSG Static Pre-Rendering Consolidation (`app/stock/[ticker]/page.tsx`)**: Refactored `generateStaticParams()` to derive static parameters directly from `getAllMasterTickers()`, expanding pre-compiled static routes from 81 $\rightarrow$ **94 total routes** with instant $<10\text{ms}$ edge delivery.
+- 🎯 **Evergreen High-CTR SEO Metadata**: Upgraded static `<title>` generation from hardcoded `IN_BUY_ZONE` assumptions to evergreen high-CTR format (`🟢 ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`).
+- 🏛️ **Crypto Institutional & Regulatory Intelligence Card (`components/CongressionalTradesCard.tsx`)**: Polymorphically renders US CFTC/SEC regulatory status, active Congressional bills (FIT21, Strategic Bitcoin Reserve Bill), Spot ETF vehicles (IBIT, FBTC, ETHA), and 1-click corporate insider proxies (COIN, MSTR, NVDA) when viewing crypto assets.
+- 🌐 **4-Tier Asset Architecture Documentation (`components/GuideContent.tsx`)**: Formally documented the 4-tier pipeline (Master Catalog, Multi-Factor Screener, Pre-Rendered Pages, and Universal Omnisearch) with dynamic vs. static breakdowns in Chapter 1 of the Guide.
+
+---
+
 ## [2.11.0] - 2026-08-29
 
 ### Dynamic Dual-Vernacular Guide Engine (Plain English ⚡ vs. Pro Quant 🏛️)

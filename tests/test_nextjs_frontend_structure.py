@@ -441,6 +441,34 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         privacy_modal_path = os.path.join("frontend", "components", "PrivacySettingsModal.tsx")
         self.assertTrue(os.path.exists(privacy_modal_path), "Missing PrivacySettingsModal.tsx")
 
+    def test_master_catalog_consolidation_and_static_pages(self):
+        """Quality Gate: Verify Master Catalog SSOT expansion (>=35 assets) and static page unification."""
+        catalog_path = os.path.join("frontend", "lib", "masterCatalog.ts")
+        stock_page_path = os.path.join("frontend", "app", "stock", "[ticker]", "page.tsx")
+        trades_card_path = os.path.join("frontend", "components", "CongressionalTradesCard.tsx")
+
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            catalog_content = f.read()
+        self.assertIn("MASTER_ASSET_CATALOG", catalog_content)
+        self.assertIn("POWI:", catalog_content)
+        self.assertIn("ACLS:", catalog_content)
+        self.assertIn("ELF:", catalog_content)
+        self.assertIn("VRT:", catalog_content)
+        self.assertIn("COIN:", catalog_content)
+        self.assertIn("MSTR:", catalog_content)
+        self.assertIn("getAllMasterTickers", catalog_content)
+
+        with open(stock_page_path, "r", encoding="utf-8") as f:
+            stock_page_content = f.read()
+        self.assertIn("getAllMasterTickers", stock_page_content)
+        self.assertIn("getMasterAsset", stock_page_content)
+        self.assertIn("Trading Blueprint • Minervini VCP Levels", stock_page_content)
+
+        with open(trades_card_path, "r", encoding="utf-8") as f:
+            trades_content = f.read()
+        self.assertIn("isCrypto", trades_content)
+        self.assertIn("Institutional & Regulatory Money Flow", trades_content)
+
 
 if __name__ == "__main__":
     unittest.main()
