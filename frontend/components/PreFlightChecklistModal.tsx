@@ -61,19 +61,36 @@ export default function PreFlightChecklistModal({
   if (!isOpen) return null;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
-  const cleanSym = symbol.toUpperCase().replace("-USD", "");
+  const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
 
+  // Defensive Numeric Guards
+  const safePrice = (typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0) ? currentPrice : (catalogItem?.price || 100);
+  const safeStop = (typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0) ? stopLoss : (safePrice * 0.95);
+  const safeTarget = (typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0) ? takeProfit1 : (safePrice * 1.10);
+  const safeRR = (typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0) ? riskRewardRatio : 2.5;
+  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin)) ? optimalEntryMin : (safePrice * 0.98);
+  const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax)) ? optimalEntryMax : safePrice;
+  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot)) ? breakoutPivot : (safePrice * 1.072);
+  const safeVix = (typeof vix === "number" && !isNaN(vix)) ? vix : 15.4;
+
+  const stopLossPct = safePrice > 0 ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "-5.00";
+  const target1Pct = safePrice > 0 ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "+10.00";
+
   // Dynamic 5-Point Quantitative Decision Checklist Evaluation
-  const isRRPassed = riskRewardRatio >= 2.0;
+  const isRRPassed = safeRR >= 2.0;
   
   // Check 2: Technical Trend Alignment & Stage Discipline
-  const isExtendedAboveZone = Boolean(optimalEntryMax && currentPrice > optimalEntryMax * 1.02);
+  const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
   const isTrendPassed = !isStage4 && !isExtendedAboveZone;
   
   // Check 3: Smart Money Flow & Distribution Traps
   const isDistributionTrapResolved = isDistributionTrap ?? Boolean(
-    catalogItem && (catalogItem.shortFloat > 12.0 || catalogItem.verdict.toLowerCase().includes("turnaround") || catalogItem.qualityScore < 60)
+    catalogItem && (
+      (Number(catalogItem.shortFloat) || 0) > 12.0 ||
+      String(catalogItem.verdict || "").toLowerCase().includes("turnaround") ||
+      (Number(catalogItem.qualityScore) || 100) < 60
+    )
   );
   const isSmartMoneyPassed = !isDistributionTrapResolved;
 
@@ -81,7 +98,7 @@ export default function PreFlightChecklistModal({
   const isCatalystPassed = !hasImminentEarnings;
 
   // Check 5: Macro Regime Guard
-  const isMacroPassed = typeof vix === "number" ? vix < 26.0 : true;
+  const isMacroPassed = safeVix < 26.0;
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = Math.round((passedCount / 5) * 100);
@@ -89,7 +106,11 @@ export default function PreFlightChecklistModal({
 
   useEffect(() => {
     if (isOpen) {
-      trackPreFlightOutcome(symbol, passedCount, isCleared);
+      try {
+        trackPreFlightOutcome(symbol, passedCount, isCleared);
+      } catch (err) {
+        console.warn("Analytics error in PreFlightChecklistModal:", err);
+      }
     }
   }, [isOpen, symbol, passedCount, isCleared]);
 
@@ -97,11 +118,11 @@ export default function PreFlightChecklistModal({
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol}
 - **Mode**: ${isDayTrader ? "⚡ Day Trader (Intraday)" : "🏛️ Swing / Long-Term Compounder"}
-- **Current Price**: $${currentPrice.toFixed(2)}
-- **Entry Strategy**: ${setupPattern}
-- **Stop Loss**: $${stopLoss.toFixed(2)} (${(((stopLoss - currentPrice) / currentPrice) * 100).toFixed(2)}%)
-- **Target 1**: $${takeProfit1.toFixed(2)} (+${(((takeProfit1 - currentPrice) / currentPrice) * 100).toFixed(2)}%)
-- **Risk / Reward**: ${riskRewardRatio.toFixed(2)} : 1.0
+- **Current Price**: $${safePrice.toFixed(2)}
+- **Entry Strategy**: ${setupPattern || "Minervini VCP Pattern"}
+- **Stop Loss**: $${safeStop.toFixed(2)} (${stopLossPct}%)
+- **Target 1**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
+- **Risk / Reward**: ${safeRR.toFixed(2)} : 1.0
 - **Pre-Flight Clearance Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"})
 `;
 
@@ -175,7 +196,7 @@ export default function PreFlightChecklistModal({
                 <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
               </div>
               <p className="text-[11px] text-slate-400 pl-5">
-                Current: <strong className="text-cyan-300 font-mono">{riskRewardRatio.toFixed(2)} : 1.0</strong> {isRRPassed ? "(Adequate upside cushion)" : "(Hazard: upside too small for downside risk)"}
+                Current: <strong className="text-cyan-300 font-mono">{safeRR.toFixed(2)} : 1.0</strong> {isRRPassed ? "(Adequate upside cushion)" : "(Hazard: upside too small for downside risk)"}
               </p>
             </div>
             <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
@@ -195,14 +216,14 @@ export default function PreFlightChecklistModal({
               <p className="text-[11px] text-slate-400 pl-5">
                 {isStage4
                   ? (isPlain
-                      ? `⚠️ Watchlist Only: Spot price ($${currentPrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-                      : `Stage 4 correction structure: Spot ($${currentPrice.toFixed(2)}) requires 50-day breakout pivot above $${(breakoutPivot || currentPrice * 1.072).toFixed(2)}.`)
+                      ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+                      : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot above $${safePivot.toFixed(2)}.`)
                   : (isExtendedAboveZone
                       ? (isPlain
-                          ? `⚠️ Extended: Price is above ideal buy zone ($${optimalEntryMin?.toFixed(2)} - $${optimalEntryMax?.toFixed(2)}). Wait for pullback.`
+                          ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
                           : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
                       : (isPlain
-                          ? `Spot price ($${currentPrice.toFixed(2)}) is inside the verified buying range defending key support.`
+                          ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
                           : `Defending key moving average support (20 EMA / 50 SMA).`))}
               </p>
             </div>
@@ -276,8 +297,8 @@ export default function PreFlightChecklistModal({
                       ? "Broad market volatility is within standard operational parameters."
                       : "Macro Guard: Normal volatility regime.")
                   : (isPlain
-                      ? `⚠️ High Volatility: Market VIX (${vix?.toFixed(1) || "28+"}) indicates elevated systemic turbulence.`
-                      : `⚠️ Elevated Macro Risk: VIX (${vix?.toFixed(1) || "28+"}) exceeds 26.0 threshold.`)}
+                      ? `⚠️ High Volatility: Market VIX (${safeVix.toFixed(1)}) indicates elevated systemic turbulence.`
+                      : `⚠️ Elevated Macro Risk: VIX (${safeVix.toFixed(1)}) exceeds 26.0 threshold.`)}
               </p>
             </div>
             <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
