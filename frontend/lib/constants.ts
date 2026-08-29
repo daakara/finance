@@ -18,7 +18,7 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
   // Mega-Cap Tech & Global Pharma Equities
   { symbol: "NVO", name: "Novo Nordisk", price: "$136.40", change: "+1.85%", isUp: true, type: "Stock" },
   { symbol: "LLY", name: "Eli Lilly", price: "$924.50", change: "+2.10%", isUp: true, type: "Stock" },
-  { symbol: "AAPL", name: "Apple Inc.", price: "$226.50", change: "-0.45%", isUp: false, type: "Stock" },
+  { symbol: "AAPL", name: "Apple Inc.", price: "$319.64", change: "+2.62%", isUp: true, type: "Stock" },
   { symbol: "NVDA", name: "NVIDIA Corp.", price: "$128.50", change: "+3.14%", isUp: true, type: "Stock" },
   { symbol: "MSFT", name: "Microsoft Corp.", price: "$418.20", change: "+0.85%", isUp: true, type: "Stock" },
   { symbol: "GOOGL", name: "Alphabet Inc.", price: "$164.80", change: "+1.40%", isUp: true, type: "Stock" },
@@ -44,8 +44,8 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
 
 export const SHARED_FACTOR_SCORES: Record<string, { price: number; changePct: number; scores: AssetFactorScores }> = {
   "AAPL": {
-    price: 226.50,
-    changePct: -0.45,
+    price: 319.64,
+    changePct: 2.62,
     scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Buy / Core Hold", piotroskiFScore: 8 }
   },
   "NVDA": {

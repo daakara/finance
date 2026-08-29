@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ARX Terminal Master Asset Catalog (Single Source of Truth)
  * 
  * Consolidates all static baseline asset profiles, authentic fundamental metrics,
@@ -72,8 +72,8 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   AAPL: {
     symbol: "AAPL",
     name: "Apple Inc.",
-    price: 226.50,
-    changePct: -0.45,
+    price: 319.64,
+    changePct: 2.62,
     type: "Stock",
     sector: "Technology",
     category: "Consumer Hardware & Services Ecosystem",

@@ -133,7 +133,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     SMCI: { price: 43.60, name: "Super Micro Computer", roic: 22.4, peg: 0.72, margin: 52.0, rvol: 4.2, short: 14.8 },
     AMD: { price: 146.20, name: "Advanced Micro Devices", roic: 19.5, peg: 1.18, margin: 52.5, rvol: 2.4, short: 3.2 },
     META: { price: 512.40, name: "Meta Platforms", roic: 32.0, peg: 0.88, margin: 81.5, rvol: 2.1, short: 1.6 },
-    AAPL: { price: 226.50, name: "Apple Inc.", roic: 45.0, peg: 1.30, margin: 56.0, rvol: 1.7, short: 1.4 },
+    AAPL: { price: 319.64, name: "Apple Inc.", roic: 45.0, peg: 1.30, margin: 56.0, rvol: 1.7, short: 1.4 },
     MSFT: { price: 418.20, name: "Microsoft Corp.", roic: 36.0, peg: 1.22, margin: 69.5, rvol: 1.8, short: 1.2 },
     AMZN: { price: 178.60, name: "Amazon.com Inc.", roic: 22.0, peg: 1.15, margin: 58.0, rvol: 2.0, short: 1.5 },
     CRWD: { price: 272.50, name: "CrowdStrike Holdings", roic: 24.5, peg: 1.20, margin: 76.0, rvol: 3.2, short: 6.4 },
