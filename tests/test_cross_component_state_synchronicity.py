@@ -1,4 +1,4 @@
-﻿"""Automated Multi-Component State Synchronicity & Contradiction Test Suite.
+"""Automated Multi-Component State Synchronicity & Contradiction Test Suite.
 Validates that across all modals, cards, screeners, and execution planners,
 derived states (Stage 4, Buy Zones, Risk:Reward, Distribution Traps)
 are strictly synchronized with ZERO hardcoded placeholder blindspots.
@@ -30,7 +30,11 @@ class TestCrossComponentStateSynchronicity(unittest.TestCase):
         # Must evaluate Check 2 dynamically based on isStage4 and boundaries
         self.assertIn("!isStage4", content, "Check 2 must evaluate !isStage4")
         self.assertNotIn("const isTrendPassed = true;", content, "Check 2 cannot have hardcoded static true placeholder")
+        self.assertNotIn("const isSmartMoneyPassed = true;", content, "Check 3 cannot have hardcoded static true placeholder")
+        self.assertNotIn("const isCatalystPassed = true;", content, "Check 4 cannot have hardcoded static true placeholder")
+        self.assertNotIn("const isMacroPassed = true;", content, "Check 5 cannot have hardcoded static true placeholder")
         self.assertIn("STAGE 4 WAIT", content, "Check 2 must render Stage 4 Wait status when isStage4 is true")
+        self.assertIn("isDistributionTrapResolved", content, "Check 3 must dynamically resolve distribution trap status")
 
     def test_optimal_entry_exit_card_passes_stage4_to_modals(self):
         """Invariant: OptimalEntryExitCard must propagate isStage4 and boundary props to

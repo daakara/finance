@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-08-29
+
+### Zero Static Placeholders Across All Pre-Flight Checklist Validation Gates
+- 🛑 **100% Dynamic Pre-Flight Verification (`PreFlightChecklistModal.tsx`)**: Completely purged all remaining static boolean placeholders (`isSmartMoneyPassed = true`, `isCatalystPassed = true`, `isMacroPassed = true`).
+- 📡 **Smart Money & Distribution Trap Coupling**: Check 3 dynamically resolves against `MASTER_ASSET_CATALOG` quality scores, short float ratios ($>12\%$), and Form 4 C-Suite selling flags.
+- ⚡ **Binary Catalyst & Macro VIX Guard**: Checks 4 & 5 dynamically evaluate binary event hazard windows ($<48\text{h}$) and broad market volatility ($VIX \ge 26.0$).
+- 🧪 **Zero-Placeholder CI Assertions (`test_cross_component_state_synchronicity.py`)**: Added automated AST/code-level checks guaranteeing zero hardcoded static boolean assignments exist in decision modals (55/55 tests passing).
+
+---
+
 ## [2.4.0] - 2026-08-29
 
 ### Cross-Component State Synchronicity & Contradiction Immunity Test Suite

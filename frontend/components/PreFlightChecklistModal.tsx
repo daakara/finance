@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
 
 interface PreFlightChecklistModalProps {
   isOpen: boolean;
@@ -16,6 +17,9 @@ interface PreFlightChecklistModalProps {
   optimalEntryMin?: number;
   optimalEntryMax?: number;
   breakoutPivot?: number;
+  isDistributionTrap?: boolean;
+  hasImminentEarnings?: boolean;
+  vix?: number;
 }
 
 export default function PreFlightChecklistModal({
@@ -32,6 +36,9 @@ export default function PreFlightChecklistModal({
   optimalEntryMin,
   optimalEntryMax,
   breakoutPivot,
+  isDistributionTrap,
+  hasImminentEarnings = false,
+  vix = 15.4,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -53,6 +60,8 @@ export default function PreFlightChecklistModal({
   if (!isOpen) return null;
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const cleanSym = symbol.toUpperCase().replace("-USD", "");
+  const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
 
   // Dynamic 5-Point Quantitative Decision Checklist Evaluation
   const isRRPassed = riskRewardRatio >= 2.0;
@@ -61,13 +70,21 @@ export default function PreFlightChecklistModal({
   const isExtendedAboveZone = Boolean(optimalEntryMax && currentPrice > optimalEntryMax * 1.02);
   const isTrendPassed = !isStage4 && !isExtendedAboveZone;
   
-  const isSmartMoneyPassed = true;
-  const isCatalystPassed = true;
-  const isMacroPassed = true;
+  // Check 3: Smart Money Flow & Distribution Traps
+  const isDistributionTrapResolved = isDistributionTrap ?? Boolean(
+    catalogItem && (catalogItem.shortFloat > 12.0 || catalogItem.verdict.toLowerCase().includes("turnaround") || catalogItem.qualityScore < 60)
+  );
+  const isSmartMoneyPassed = !isDistributionTrapResolved;
+
+  // Check 4: Catalyst Hazard Buffer
+  const isCatalystPassed = !hasImminentEarnings;
+
+  // Check 5: Macro Regime Guard
+  const isMacroPassed = typeof vix === "number" ? vix < 26.0 : true;
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = Math.round((passedCount / 5) * 100);
-  const isCleared = convictionPct >= 80 && !isStage4;
+  const isCleared = convictionPct >= 80 && !isStage4 && isSmartMoneyPassed;
 
   const tradePlanMarkdown = `### 📋 ARX Terminal Trade Execution Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -130,7 +147,7 @@ export default function PreFlightChecklistModal({
               {isPlain ? "Trade Readiness Score" : "Quantitative Clearance Status"}
             </span>
             <div className="text-base sm:text-lg font-extrabold flex items-center gap-1.5">
-              <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : "⚠️ HIGH HAZARD / CONDITIONAL"}</span>
+              <span>{isCleared ? "🟢 CLEARED TO EXECUTE" : "⚠️ CONDITIONAL / NOT CLEARED"}</span>
               <span className="text-xs font-mono font-normal">({convictionPct}% Pass)</span>
             </div>
           </div>
@@ -194,15 +211,23 @@ export default function PreFlightChecklistModal({
           <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                <span>✅</span>
+                <span>{isSmartMoneyPassed ? "✅" : "❌"}</span>
                 <span>{isPlain ? "3. Big Player Activity (No aggressive insider selling)" : "3. Institutional Flow (No Net Form 4 C-Suite Dumping)"}</span>
               </div>
               <p className="text-[11px] text-slate-400 pl-5">
-                Institutional order sweeps & Congressional filings indicate steady accumulation.
+                {isSmartMoneyPassed
+                  ? (isPlain
+                      ? "Institutional order sweeps & Congressional filings indicate steady accumulation."
+                      : "Institutional Flow: Positive net accumulation detected.")
+                  : (isPlain
+                      ? "⚠️ Warning: Heavy corporate insider selling / distribution trap detected."
+                      : "⚠️ Institutional Distribution Trap: Net Form 4 C-Suite selling / elevated short interest.")}
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
-              PASS
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+              isSmartMoneyPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
+            }`}>
+              {isSmartMoneyPassed ? "PASS" : "DISTRIBUTION"}
             </span>
           </div>
 
@@ -210,15 +235,23 @@ export default function PreFlightChecklistModal({
           <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                <span>✅</span>
+                <span>{isCatalystPassed ? "✅" : "⚠️"}</span>
                 <span>{isPlain ? "4. News Event Safety (No surprise earnings report tomorrow)" : "4. Catalyst Hazard Buffer (>7 Days to Binary Earnings)"}</span>
               </div>
               <p className="text-[11px] text-slate-400 pl-5">
-                Sufficient time window to manage trade without overnight earnings gap risk.
+                {isCatalystPassed
+                  ? (isPlain
+                      ? "Sufficient time window to manage trade without overnight earnings gap risk."
+                      : "Catalyst Buffer: Clean window (>7 days to binary catalyst).")
+                  : (isPlain
+                      ? "⚠️ High Risk: Imminent binary earnings announcement / major FDA event within 48 hours."
+                      : "⚠️ Imminent Binary Event: Overnight gap risk exceeds standard stop constraint.")}
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
-              PASS
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+              isCatalystPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
+            }`}>
+              {isCatalystPassed ? "PASS" : "HAZARD"}
             </span>
           </div>
 
@@ -226,15 +259,23 @@ export default function PreFlightChecklistModal({
           <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                <span>✅</span>
+                <span>{isMacroPassed ? "✅" : "⚠️"}</span>
                 <span>{isPlain ? "5. Overall Market Weather (VIX normal, market calm)" : "5. Macro Regime Guard (VIX Volatility Guardrails Safe)"}</span>
               </div>
               <p className="text-[11px] text-slate-400 pl-5">
-                Broad market volatility is within standard operational parameters.
+                {isMacroPassed
+                  ? (isPlain
+                      ? "Broad market volatility is within standard operational parameters."
+                      : "Macro Guard: Normal volatility regime.")
+                  : (isPlain
+                      ? `⚠️ High Volatility: Market VIX (${vix?.toFixed(1) || "28+"}) indicates elevated systemic turbulence.`
+                      : `⚠️ Elevated Macro Risk: VIX (${vix?.toFixed(1) || "28+"}) exceeds 26.0 threshold.`)}
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
-              PASS
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+              isMacroPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
+            }`}>
+              {isMacroPassed ? "PASS" : "HIGH VIX"}
             </span>
           </div>
         </div>
