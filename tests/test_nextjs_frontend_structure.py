@@ -373,6 +373,19 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             strat_content = f.read()
         self.assertIn("HistoricalEdgeScorecard", strat_content)
 
+    def test_last_captured_live_snapshot_persistence(self):
+        """Regression Quality Gate: Ensure browser database and api client anchor fallbacks to last captured live snapshot."""
+        api_path = os.path.join("frontend", "lib", "api.ts")
+        db_path = os.path.join("frontend", "lib", "marketDatabase.ts")
+
+        with open(api_path, "r", encoding="utf-8") as f:
+            api_content = f.read()
+        with open(db_path, "r", encoding="utf-8") as f:
+            db_content = f.read()
+        self.assertIn("persisted?.currentPrice", api_content)
+        self.assertIn("persisted?.priceChangePct24h", api_content)
+        self.assertIn("getAllPersistedMarketSnapshots", db_content)
+
 
 if __name__ == "__main__":
     unittest.main()

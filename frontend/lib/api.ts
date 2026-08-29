@@ -351,7 +351,29 @@ export const SpotPriceRegistry = new Map<string, {
   technicals?: any;
   catalyst?: any;
   smartMoney?: any;
+  lastUpdated?: number;
 }>();
+
+// Auto-hydrate in-memory SpotPriceRegistry on client load from localStorage
+if (typeof window !== "undefined") {
+  try {
+    const indexStr = localStorage.getItem("finance_market_db_index");
+    const index: string[] = indexStr ? JSON.parse(indexStr) : [];
+    for (const sym of index) {
+      const snap = getPersistedMarketSnapshot(sym);
+      if (snap && snap.currentPrice) {
+        SpotPriceRegistry.set(sym, {
+          price: snap.currentPrice,
+          changePct: snap.priceChangePct24h,
+          technicals: snap.technicals,
+          catalyst: snap.catalyst,
+          smartMoney: snap.smartMoney,
+          lastUpdated: snap.lastUpdated,
+        });
+      }
+    }
+  } catch {}
+}
 
 // High-Fidelity Multi-Period Horizon & Day-Trader Fallback Generator (<1ms instant execution)
 export function generateFallbackAnalytics(
@@ -364,10 +386,13 @@ export function generateFallbackAnalytics(
   const upper = symbol.toUpperCase().replace("-USD", "");
   const matched = SHARED_FACTOR_SCORES[upper] || SHARED_FACTOR_SCORES["AAPL"];
   const registered = SpotPriceRegistry.get(upper);
+  const persisted = getPersistedMarketSnapshot(upper);
 
-  // Always anchor to: 1) explicit override, 2) live registry price, 3) static factor score
-  const basePrice = overridePrice || registered?.price || matched.price;
-  const baseChangePct = overrideChangePct !== undefined ? overrideChangePct : (registered?.changePct ?? matched.changePct);
+  // Always anchor to: 1) explicit override, 2) in-memory registry, 3) last captured live snapshot from browser DB, 4) static factor score
+  const basePrice = overridePrice || registered?.price || persisted?.currentPrice || matched.price;
+  const baseChangePct = overrideChangePct !== undefined
+    ? overrideChangePct
+    : (registered?.changePct ?? persisted?.priceChangePct24h ?? matched.changePct);
   const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h" || interval === "30m";
 
   // Horizon-aware numPoints and time step (stepMs) so each period spans the correct calendar window
@@ -404,7 +429,6 @@ export function generateFallbackAnalytics(
   };
   const expectedTotalPctChange = (horizonChangeMultiplier[hKey] || (isIntraday ? 0.8 : 28.4)) * (baseChangePct >= 0 ? 1 : -0.7);
 
-  const persisted = getPersistedMarketSnapshot(upper);
   let generatedCandles: CandleData[] = [];
 
   if (persisted && persisted.dailyCandles && persisted.dailyCandles.length > 0) {

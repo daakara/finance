@@ -30,16 +30,19 @@ export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): 
     return;
   }
   const upper = symbol.toUpperCase().replace("-USD", "");
+  const prior = getPersistedMarketSnapshot(upper);
+
+  const isDaily = data.interval === "1d" || data.interval === "1y_hist" || !data.interval;
   const record: PersistedMarketRecord = {
     symbol: upper,
     lastUpdated: Date.now(),
     currentPrice: data.currentPrice,
     priceChangePct24h: data.priceChangePct24h,
-    dailyCandles: data.interval === "1d" || data.interval === "1y_hist" ? data.candles : [],
-    technicals: data.technicals,
-    factorScores: data.factorScores,
-    catalyst: data.catalystForecast,
-    smartMoney: data.smartMoney,
+    dailyCandles: isDaily ? data.candles : (prior?.dailyCandles || []),
+    technicals: data.technicals || prior?.technicals,
+    factorScores: data.factorScores || prior?.factorScores,
+    catalyst: data.catalystForecast || prior?.catalyst,
+    smartMoney: data.smartMoney || prior?.smartMoney,
   };
 
   try {
@@ -52,6 +55,27 @@ export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): 
     }
   } catch (err) {
     console.warn("Storage quota exceeded when persisting market snapshot:", err);
+  }
+}
+
+/**
+ * Retrieve all persisted market snapshots across tracked assets.
+ */
+export function getAllPersistedMarketSnapshots(): Record<string, PersistedMarketRecord> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  try {
+    const indexStr = localStorage.getItem(DB_INDEX_KEY);
+    const index: string[] = indexStr ? JSON.parse(indexStr) : [];
+    const results: Record<string, PersistedMarketRecord> = {};
+    for (const sym of index) {
+      const snap = getPersistedMarketSnapshot(sym);
+      if (snap) results[sym] = snap;
+    }
+    return results;
+  } catch {
+    return {};
   }
 }
 
