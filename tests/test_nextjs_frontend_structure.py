@@ -394,21 +394,23 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         alert_path = os.path.join("frontend", "components", "AlertTriggerModal.tsx")
         stress_path = os.path.join("frontend", "components", "MacroStressTestSimulator.tsx")
 
-        # 1. Layout initialization (Tag Manager container + _paq Tracker with siteId 3)
+        # 1. Layout initialization (Tag Manager container + _paq Tracker with siteId 3 + GDPR Cookieless Exemption)
         with open(layout_path, "r", encoding="utf-8") as f:
             layout_content = f.read()
         self.assertIn("container_tK4RnlSN.js", layout_content)
+        self.assertIn("disableCookies", layout_content, "Must disable cookies for GDPR/CNIL consent exemption")
+        self.assertIn("setDoNotTrack", layout_content, "Must honor DNT signals")
         self.assertIn("setTrackerUrl", layout_content)
         self.assertIn("setSiteId", layout_content)
         self.assertIn("<MatomoTracker />", layout_content)
 
-        # 2. SPA Route Tracker
+        # 2. SPA Route Tracker (No persistent localStorage setUserId to comply with ePrivacy Art 5(3))
         with open(tracker_path, "r", encoding="utf-8") as f:
             tracker_content = f.read()
         self.assertIn("trackPageView", tracker_content)
-        self.assertIn("setUserId", tracker_content)
+        self.assertNotIn("setUserId", tracker_content, "Cannot set persistent localStorage userId in cookieless exemption mode")
 
-        # 3. User Journey Helper functions
+        # 3. User Journey Helper functions & GDPR Opt-Out
         with open(matomo_lib_path, "r", encoding="utf-8") as f:
             matomo_content = f.read()
         self.assertIn("trackPreFlightOutcome", matomo_content)
@@ -418,8 +420,9 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("trackMacroShockSimulation", matomo_content)
         self.assertIn("trackFavoriteToggle", matomo_content)
         self.assertIn("trackScreenerSelection", matomo_content)
+        self.assertIn("toggleMatomoOptOut", matomo_content, "Must provide one-click opt-out for GDPR Article 21")
 
-        # 4. Modals & Simulators wire tracking calls
+        # 4. Modals & Simulators wire tracking calls & Privacy Settings modal exists
         with open(preflight_path, "r", encoding="utf-8") as f:
             self.assertIn("trackPreFlightOutcome", f.read())
         with open(sizer_path, "r", encoding="utf-8") as f:
@@ -428,6 +431,9 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             self.assertIn("trackAlertSet", f.read())
         with open(stress_path, "r", encoding="utf-8") as f:
             self.assertIn("trackMacroShockSimulation", f.read())
+
+        privacy_modal_path = os.path.join("frontend", "components", "PrivacySettingsModal.tsx")
+        self.assertTrue(os.path.exists(privacy_modal_path), "Missing PrivacySettingsModal.tsx")
 
 
 if __name__ == "__main__":

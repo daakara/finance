@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-08-29
+
+### Full GDPR & ePrivacy Cookieless Exemption Compliance Suite
+- 🛡️ **Zero-Cookie Exemption Mode (`layout.tsx`)**: Enforced `_paq.push(['disableCookies'])` and `_paq.push(['setDoNotTrack', true])` ensuring zero tracking cookies are written and DNT signals are strictly respected.
+- 🛑 **ePrivacy Article 5(3) Compliance (`MatomoTracker.tsx`)**: Removed persistent `localStorage` User ID (`setUserId`) from client-side tracking, adhering strictly to EU/CNIL consent-exemption standards.
+- ⚙️ **One-Click Privacy & Opt-Out Modal (`PrivacySettingsModal.tsx` & `Navbar.tsx`)**: Added a user-facing Privacy Settings modal allowing traders to inspect data principles and execute a one-click opt-out (`_paq.push(['optUserOut'])`).
+- 🧪 **Automated Privacy CI Verification (`tests/test_nextjs_frontend_structure.py`)**: Added automated regression checks ensuring cookieless directives and privacy modals remain wired (56/56 tests passing).
+
+---
+
 ## [2.7.0] - 2026-08-29
 
 ### Privacy-First Matomo Analytics & Comprehensive User Journey Telemetry Suite

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { getAnonymousUserId } from "../lib/portfolio";
 
 declare global {
   interface Window {
@@ -16,14 +15,12 @@ export default function MatomoTracker() {
   const searchParams = useSearchParams();
   const previousUrlRef = useRef<string>("");
 
-  // SPA Route Change & User Journey Path Tracking for Matomo Tag Manager & Analytics
+  // SPA Route Change & User Journey Path Tracking for Matomo Tag Manager & Analytics (Cookieless CNIL Exemption)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     window._paq = window._paq || [];
     window._mtm = window._mtm || [];
-    const anonId = getAnonymousUserId();
-    window._paq.push(["setUserId", anonId]);
     const fullUrl = window.location.pathname + window.location.search;
 
     if (previousUrlRef.current && previousUrlRef.current !== fullUrl) {

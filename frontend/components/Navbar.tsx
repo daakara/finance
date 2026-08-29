@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
+import PrivacySettingsModal from "./PrivacySettingsModal";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -18,6 +19,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
@@ -225,6 +227,15 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
               >
                 <span>✨ Tour</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrivacyOpen(true)}
+                aria-label="Open Privacy & Analytics Settings"
+                className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer text-xs"
+                title="GDPR Privacy & Data Telemetry Settings"
+              >
+                <span>🛡️ Privacy</span>
               </button>
             </nav>
           </div>
@@ -469,6 +480,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       <OnboardingTourModal
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
+      />
+
+      {/* GDPR Privacy & Analytics Settings Modal */}
+      <PrivacySettingsModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
       />
 
       {/* Pro-Trader Keyboard Shortcuts Modal */}

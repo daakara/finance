@@ -121,3 +121,31 @@ export function trackVernacularSwitch(mode: "PLAIN_ENGLISH" | "PRO_QUANT") {
 export function trackScreenerSelection(presetName: string, resultsCount: number) {
   trackMatomoEvent("Screener", "Apply Screener Preset", `${presetName} (${resultsCount} gems)`, resultsCount);
 }
+
+/**
+ * One-Click Analytics Opt-Out & Forget for GDPR Article 21 Compliance
+ */
+export function toggleMatomoOptOut(optOut: boolean) {
+  if (typeof window !== "undefined") {
+    window._paq = window._paq || [];
+    if (optOut) {
+      window._paq.push(["optUserOut"]);
+    } else {
+      window._paq.push(["forgetUserOptOut"]);
+    }
+  }
+}
+
+/**
+ * Check if the user is currently opted out of analytics
+ */
+export function isMatomoUserOptedOut(): boolean {
+  if (typeof window !== "undefined" && window._paq) {
+    let isOptedOut = false;
+    window._paq.push([function(this: any) {
+      isOptedOut = this.isUserOptedOut();
+    }]);
+    return isOptedOut;
+  }
+  return false;
+}

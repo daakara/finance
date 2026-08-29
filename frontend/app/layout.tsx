@@ -98,6 +98,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               var _paq = window._paq = window._paq || [];
+              _paq.push(['disableCookies']);
+              _paq.push(['setDoNotTrack', true]);
               _paq.push(['enableLinkTracking']);
               _paq.push(['setTrackerUrl', 'https://data.fpldna.com/matomo/matomo.php']);
               _paq.push(['setSiteId', '3']);
