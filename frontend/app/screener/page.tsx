@@ -8,6 +8,7 @@ import AlertTriggerModal from "../../components/AlertTriggerModal";
 import DataSourceBadge from "../../components/DataSourceBadge";
 import { API_BASE_URL } from "../../lib/api";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
+import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { trackScreenerSelection, trackMatomoEvent } from "../../lib/matomo";
 import {
   getCanonicalAssetName,
@@ -338,42 +339,63 @@ export default function ScreenerPage() {
       if (res.ok) {
         const data = await res.json();
         if (data && Array.isArray(data.candidates) && data.candidates.length > 0) {
-          const liveGems: GemCandidate[] = data.candidates.map((c: any) => ({
-            symbol: c.symbol,
-            companyName: c.companyName || c.symbol,
-            currentPrice: c.currentPrice || 100.0,
-            gemScore: c.gemScore || 88,
-            expertArchetype: c.expertArchetype || (role === "DAY_TRADER" ? "High-Beta Momentum Leader" : "Peter Lynch & Greenblatt GARP"),
-            roic: c.roic || "28.5%",
-            pegRatio: c.pegRatio || "0.85",
-            grossMargin: c.grossMargin || "65.0%",
-            thesis: c.thesis || "High return on capital with strong free cash flows and clean balance sheet.",
-            atr14: c.atr14 || `$${((c.currentPrice || 100) * 0.025).toFixed(2)}`,
-            rvol: c.rvol || "2.1x",
-            shortFloat: c.shortFloat || "6.8%",
-            dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
-            catalyst: c.catalyst || "Upcoming product cycle expansion and institutional accumulation.",
-            riskLevel: role === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || "Low-to-Medium Risk"),
-            executionStatus: c.executionStatus || "IN_BUY_ZONE",
-            statusLabel: c.statusLabel || "🎯 Active Buy Zone",
-            statusColor: c.statusColor || "emerald",
-            optimalEntryMin: c.optimalEntryMin || Number(((c.currentPrice || 100) * 0.975).toFixed(2)),
-            optimalEntryMax: c.optimalEntryMax || Number(((c.currentPrice || 100) * 0.995).toFixed(2)),
-            stopLoss: c.stopLoss || Number(((c.currentPrice || 100) * 0.955).toFixed(2)),
-            stopLossPct: c.stopLossPct || -4.5,
-            takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.045).toFixed(2)),
-            takeProfit1Pct: c.takeProfit1Pct || 4.5,
-            takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.095).toFixed(2)),
-            takeProfit2Pct: c.takeProfit2Pct || 9.5,
-            riskRewardRatio: c.riskRewardRatio || 2.85,
-            setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
-            entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",
-            confluenceScore: c.confluenceScore || 85,
-            confluenceRating: c.confluenceRating || "⭐ HIGH CONFLUENCE",
-            confluenceBadgeColor: c.confluenceBadgeColor || "emerald",
-            confluenceReasons: c.confluenceReasons || [],
-            confluenceWarnings: c.confluenceWarnings || [],
-          }));
+          const liveGems: GemCandidate[] = data.candidates.map((c: any) => {
+            const masterMeta = MASTER_ASSET_CATALOG[c.symbol as keyof typeof MASTER_ASSET_CATALOG];
+            const sym = c.symbol;
+            let archetype = c.expertArchetype;
+            if (!archetype || archetype === "Peter Lynch & Greenblatt GARP") {
+              if (role === "DAY_TRADER") {
+                archetype = (masterMeta?.shortFloat || 5) > 8 ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
+              } else if (sym === "ULTA" || sym === "LULU") {
+                archetype = "Deep Value & Capital Return (Decelerating Comp Watch)";
+              } else if ((masterMeta?.peg || 1.1) <= 1.05) {
+                archetype = "Peter Lynch GARP Compounder";
+              } else if ((masterMeta?.roic || 20) >= 28.0) {
+                archetype = "Joel Greenblatt Magic Formula";
+              } else if ((masterMeta?.grossMargin || 50) >= 65.0) {
+                archetype = "David Gardner Rule Breaker";
+              } else {
+                archetype = "Quality Compounder";
+              }
+            }
+
+            return {
+              symbol: c.symbol,
+              companyName: c.companyName || masterMeta?.name || c.symbol,
+              currentPrice: c.currentPrice || masterMeta?.price || 100.0,
+              gemScore: c.gemScore || 88,
+              expertArchetype: archetype,
+              roic: c.roic || (masterMeta ? `${masterMeta.roic}%` : "28.5%"),
+              pegRatio: c.pegRatio || (masterMeta ? `${masterMeta.peg}` : "0.85"),
+              grossMargin: c.grossMargin || (masterMeta ? `${masterMeta.grossMargin}%` : "65.0%"),
+              thesis: c.thesis || masterMeta?.thesis || "High return on capital with strong free cash flows.",
+              atr14: c.atr14 || `$${((c.currentPrice || 100) * 0.025).toFixed(2)}`,
+              rvol: c.rvol || `${masterMeta?.rvol || 2.1}x`,
+              shortFloat: c.shortFloat || `${masterMeta?.shortFloat || 6.8}%`,
+              dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend-following above 5m VWAP with clear risk-defined support.",
+              catalyst: c.catalyst || masterMeta?.upcomingCatalyst || "Upcoming product cycle expansion and institutional accumulation.",
+              riskLevel: role === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || "Low-to-Medium Risk"),
+              executionStatus: c.executionStatus || "IN_BUY_ZONE",
+              statusLabel: c.statusLabel || "🎯 Active Buy Zone",
+              statusColor: c.statusColor || "emerald",
+              optimalEntryMin: c.optimalEntryMin || Number(((c.currentPrice || 100) * 0.975).toFixed(2)),
+              optimalEntryMax: c.optimalEntryMax || Number(((c.currentPrice || 100) * 0.995).toFixed(2)),
+              stopLoss: c.stopLoss || Number(((c.currentPrice || 100) * 0.955).toFixed(2)),
+              stopLossPct: c.stopLossPct || -4.5,
+              takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.045).toFixed(2)),
+              takeProfit1Pct: c.takeProfit1Pct || 4.5,
+              takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.095).toFixed(2)),
+              takeProfit2Pct: c.takeProfit2Pct || 9.5,
+              riskRewardRatio: c.riskRewardRatio || 2.85,
+              setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
+              entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",
+              confluenceScore: c.confluenceScore || 85,
+              confluenceRating: c.confluenceRating || "⭐ HIGH CONFLUENCE",
+              confluenceBadgeColor: c.confluenceBadgeColor || "emerald",
+              confluenceReasons: c.confluenceReasons || [],
+              confluenceWarnings: c.confluenceWarnings || [],
+            };
+          });
           setGems(liveGems);
           setDataSource("live");
           return;
@@ -609,18 +631,22 @@ export default function ScreenerPage() {
     if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
     if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
     if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
-    if (filterId === "high_rr") return (gem.riskRewardRatio || 0) >= 2.0;
+    if (filterId === "high_rr") {
+      // Asymmetric plan geometry (>= 2.0:1) AND Actionable buy zone proximity (In buy zone or spot <= optimalEntryMax * 1.02)
+      const isActionable = gem.executionStatus === "IN_BUY_ZONE" || (gem.currentPrice || 0) <= (gem.optimalEntryMax || gem.currentPrice || 0) * 1.02;
+      return (gem.riskRewardRatio || 0) >= 2.0 && isActionable;
+    }
     if (filterId === "high_rvol") return parseNum(gem.rvol) >= 2.5;
     if (filterId === "squeeze") return parseNum(gem.shortFloat) >= 6.0;
     if (filterId === "lynch") {
       const peg = parseNum(gem.pegRatio);
-      return (peg > 0 && peg <= 1.0) || hasArchetype(gem, "Lynch");
+      return (peg > 0 && peg <= 1.05) || hasArchetype(gem, "Lynch") || hasArchetype(gem, "GARP");
     }
     if (filterId === "greenblatt") {
-      return parseNum(gem.roic) >= 20.0 || hasArchetype(gem, "Greenblatt") || hasArchetype(gem, "Magic");
+      return parseNum(gem.roic) >= 28.0 || hasArchetype(gem, "Greenblatt") || hasArchetype(gem, "Magic");
     }
     if (filterId === "rule_breakers") {
-      return parseNum(gem.grossMargin) >= 60.0 || hasArchetype(gem, "Rule Breakers") || hasArchetype(gem, "Disruptive");
+      return parseNum(gem.grossMargin) >= 65.0 || hasArchetype(gem, "Rule Breakers") || hasArchetype(gem, "Disruptive");
     }
     return true;
   };

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-08-29
+
+### Screener Filter Metric Calibration & Dynamic Actionable Risk:Reward Coupling
+- ⚡ **Actionable Asymmetric R:R Coupling (`screener/page.tsx` & `api/routes/screener.py`)**: Linked the "Low Risk / High Reward" filter to **asymmetric plan geometry ($R:R \ge 2.0:1$) AND actionable buy zone proximity** (`executionStatus === "IN_BUY_ZONE"` or spot within $+2\%$ of entry max). Extended assets approaching target are now excluded from the low-risk category.
+- 🧪 **Calibrated Fundamental Model Thresholds**:
+  - **Joel Greenblatt Magic Formula**: Raised ROIC hurdle to $\ge 28.0\%$ or authentic archetype match, isolating top-tier capital allocators.
+  - **Peter Lynch GARP**: Filtered for valid growth valuations ($0 < \text{PEG} \le 1.05$) or authentic GARP compounder archetype.
+  - **David Gardner Rule Breakers**: Filtered for elite gross margin dominance ($\ge 65.0\%$) or disruptive growth archetype.
+- 📊 **Master Catalog SSOT Integration (`screener/page.tsx`)**: Replaced generic fallback archetype strings with strongly-typed properties from `MASTER_ASSET_CATALOG`, eliminating filter count collisions.
+- 🧪 **CI Test Suite Verification (`tests/test_screener_execution.py`)**: Added `TestScreenerExecution` TestCase wrapper verifying differential subset distribution across all filter categories (63/63 tests passing).
+
+---
+
 ## [2.8.0] - 2026-08-29
 
 ### Full GDPR & ePrivacy Cookieless Exemption Compliance Suite

@@ -247,7 +247,10 @@ def run_screener_get(
     elif filter_type in ["approaching_target", "orb_breakout"]:
         filtered = [c for c in mapped_candidates if c["executionStatus"] == "APPROACHING_TARGET"]
     elif filter_type == "high_rr":
-        filtered = [c for c in mapped_candidates if c["riskRewardRatio"] >= 2.0]
+        filtered = [
+            c for c in mapped_candidates
+            if c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or c["currentPrice"] <= c.get("optimalEntryMax", c["currentPrice"]) * 1.02)
+        ]
     elif filter_type == "high_confluence":
         filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0]
     elif filter_type == "high_rvol":
@@ -255,11 +258,11 @@ def run_screener_get(
     elif filter_type == "squeeze":
         filtered = [c for c in mapped_candidates if float(c["shortFloat"].replace("%", "")) >= 6.0]
     elif filter_type == "lynch":
-        filtered = [c for c in mapped_candidates if float(c["pegRatio"]) <= 1.0 or "Lynch" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if (0 < float(c["pegRatio"]) <= 1.05) or "Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"]]
     elif filter_type == "greenblatt":
-        filtered = [c for c in mapped_candidates if float(c["roic"].replace("%", "")) >= 20.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if float(c["roic"].replace("%", "")) >= 28.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]]
     elif filter_type == "rule_breakers":
-        filtered = [c for c in mapped_candidates if float(c["grossMargin"].replace("%", "")) >= 60.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if float(c["grossMargin"].replace("%", "")) >= 65.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]]
     else:
         filtered = mapped_candidates
 

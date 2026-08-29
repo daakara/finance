@@ -62,10 +62,10 @@ def test_screener_differential_subsets():
         ("high_confluence", lambda c: c["confluenceScore"] >= 80.0),
         ("in_buy_zone", lambda c: c["executionStatus"] == "IN_BUY_ZONE"),
         ("approaching_target", lambda c: c["executionStatus"] == "APPROACHING_TARGET"),
-        ("high_rr", lambda c: c["riskRewardRatio"] >= 2.0),
-        ("lynch", lambda c: float(c["pegRatio"]) <= 1.0 or "Lynch" in c["expertArchetype"]),
-        ("greenblatt", lambda c: float(c["roic"].replace("%", "")) >= 20.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]),
-        ("rule_breakers", lambda c: float(c["grossMargin"].replace("%", "")) >= 60.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]),
+        ("high_rr", lambda c: c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or c["currentPrice"] <= c.get("optimalEntryMax", c["currentPrice"]) * 1.02)),
+        ("lynch", lambda c: (0 < float(c["pegRatio"]) <= 1.05) or "Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"]),
+        ("greenblatt", lambda c: float(c["roic"].replace("%", "")) >= 28.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]),
+        ("rule_breakers", lambda c: float(c["grossMargin"].replace("%", "")) >= 65.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]),
     ]
 
     for filter_name, validator in filters:
@@ -153,13 +153,32 @@ def test_screener_cloudflare_cache_control_headers():
     assert resp.headers.get("Cloudflare-CDN-Cache-Control") == "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
 
 
+import unittest
+
+class TestScreenerExecution(unittest.TestCase):
+    def test_optimal_execution_levels(self):
+        test_optimal_execution_levels()
+
+    def test_screener_differential_subsets(self):
+        test_screener_differential_subsets()
+
+    def test_screener_disjoint_execution_states(self):
+        test_screener_disjoint_execution_states()
+
+    def test_screener_candidate_data_integrity(self):
+        test_screener_candidate_data_integrity()
+
+    def test_screener_dual_horizon_distinct_universes(self):
+        test_screener_dual_horizon_distinct_universes()
+
+    def test_screener_custom_tickers_on_demand(self):
+        test_screener_custom_tickers_on_demand()
+
+    def test_screener_cloudflare_cache_control_headers(self):
+        test_screener_cloudflare_cache_control_headers()
+
+
 if __name__ == "__main__":
-    test_optimal_execution_levels()
-    test_screener_differential_subsets()
-    test_screener_disjoint_execution_states()
-    test_screener_candidate_data_integrity()
-    test_screener_dual_horizon_distinct_universes()
-    test_screener_custom_tickers_on_demand()
-    test_screener_cloudflare_cache_control_headers()
-    print("[PASS] ALL SCREENER EXECUTION & DIFFERENTIAL TESTS PASSED SUCCESSFULLY")
+    unittest.main()
+
 
