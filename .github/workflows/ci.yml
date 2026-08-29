@@ -1,4 +1,4 @@
-﻿name: CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -100,9 +100,9 @@ jobs:
     
     - name: Check for syntax errors
       run: |
-        python -m py_compile app.py
         python -m py_compile api/main.py
-        python -m py_compile analyst_dashboard/visualizers/gem_dashboard.py
+        python -m py_compile analyst_dashboard/analyzers/gem_screener.py
+        python -m py_compile analyst_dashboard/analyzers/optimal_execution.py
 
     - name: Frontend Build Verification
       run: |
