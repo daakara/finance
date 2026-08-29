@@ -4,7 +4,19 @@ import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN
 import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandles } from "./marketDatabase";
 import { getCanonicalAssetCatalyst } from "./assetRegistry";
 
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
+
+export function getApiBaseUrl(): string {
+  // In production browser environments on the canonical domain, route through Cloudflare edge proxy to shield origin
+  if (typeof window !== "undefined" && window.location.hostname.includes("arxterminal.com")) {
+    return "/api/backend";
+  }
+  return RAW_API_URL.endsWith("/api/v1")
+    ? RAW_API_URL
+    : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
+}
+
 export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
   : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
@@ -586,7 +598,8 @@ export async function fetchAssetAnalytics(
   
   // 1. Fetch live production API with 8000ms timeout
   try {
-    const res = await fetch(`${API_BASE_URL}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
@@ -629,7 +642,8 @@ export async function fetchAssetAnalytics(
 
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/screener?model=${encodeURIComponent(model)}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/screener?model=${encodeURIComponent(model)}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
@@ -708,7 +722,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
 
 export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
   try {
-    const res = await fetch(`${API_BASE_URL}/smart-money/overview`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/smart-money/overview`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });

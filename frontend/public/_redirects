@@ -8,3 +8,7 @@ http://www.arxterminal.com/* https://www.arxterminal.com/:splat  301!
 https://finance-xp8.pages.dev/* https://www.arxterminal.com/:splat 301!
 http://finance-xp8.pages.dev/*  https://www.arxterminal.com/:splat 301!
 
+# 3. Secure Cloudflare Edge API Proxy (Shields Backend Origin URLs)
+/api/backend/*  https://web-production-e370b.up.railway.app/api/v1/:splat  200
+
+
