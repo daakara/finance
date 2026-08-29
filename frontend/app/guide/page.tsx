@@ -46,6 +46,14 @@ export default function GuidePage() {
       "mainEntity": [
         {
           "@type": "Question",
+          "name": "How many assets does the terminal track, and how does the 4-tier pipeline work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The terminal operates a 4-tier pipeline: Tier 1 is the Master Catalog (38 high-conviction fundamental baselines), Tier 2 is the Multi-Factor Screener (35 dynamic assets), Tier 3 is Pre-Rendered Static Pages (94 pre-compiled edge routes for <10ms loading), and Tier 4 is Universal Omnisearch (unlimited real-time on-demand queries for any US equity or crypto asset)."
+          }
+        },
+        {
+          "@type": "Question",
           "name": "What is the 5-point Pre-Flight Clearance Gate?",
           "acceptedAnswer": {
             "@type": "Answer",
