@@ -79,13 +79,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const price = factor ? `$${factor.price.toFixed(2)}` : watchlist?.price || "Market Price";
   
   return {
-    title: `🟢 IN_BUY_ZONE: ${name} (${sym}) at ${price} • Minervini VCP Targets & Pelosi STOCK Act | Finance Terminal`,
+    title: `🟢 IN_BUY_ZONE: ${name} (${sym}) at ${price} • Minervini VCP Targets & Pelosi STOCK Act | ARX Terminal`,
     description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${factor?.scores.compositeFactorScore || 85}/100), and Congressional STOCK Act disclosures.`,
     openGraph: {
       title: `🟢 ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
       description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${factor?.scores.piotroskiFScore || 8}/9), and downside Cornish-Fisher VaR.`,
       url: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
-      siteName: "Finance Terminal",
+      siteName: "ARX Terminal",
       type: "article",
     },
     alternates: {
@@ -135,7 +135,7 @@ export default function StockDetailPage({ params }: PageProps) {
       "url": `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       "provider": {
         "@type": "Organization",
-        "name": "Finance Terminal",
+        "name": "ARX Terminal",
         "url": "https://www.arxterminal.com"
       }
     },
@@ -146,7 +146,7 @@ export default function StockDetailPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

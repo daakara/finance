@@ -65,16 +65,16 @@ const STRATEGY_DATABASE: StrategyDefinition[] = [
       {
         symbol: "PLTR",
         name: "Palantir Technologies",
-        price: 142.80,
+        price: 31.20,
         changePct: 4.12,
         piotroski: 8,
         roic: "32.1%",
         pegOrShort: "PEG 1.10",
         state: "IN_BUY_ZONE",
         stateBadge: "🟢 IN_BUY_ZONE",
-        entryRange: "$138.20 - $142.80",
-        target1: "$154.20",
-        stopLoss: "$134.50",
+        entryRange: "$29.80 - $31.20",
+        target1: "$35.50",
+        stopLoss: "$28.40",
         thesis: "High-density institutional accumulation handle following TITAN contract award."
       },
       {
@@ -110,16 +110,16 @@ const STRATEGY_DATABASE: StrategyDefinition[] = [
       {
         symbol: "CPRX",
         name: "Catalyst Pharmaceuticals",
-        price: 21.40,
+        price: 23.40,
         changePct: 1.90,
         piotroski: 9,
         roic: "42.8%",
         pegOrShort: "P/E 9.4x",
         state: "IN_BUY_ZONE",
         stateBadge: "🟢 IN_BUY_ZONE",
-        entryRange: "$20.80 - $21.40",
-        target1: "$23.80",
-        stopLoss: "$19.85",
+        entryRange: "$22.50 - $23.40",
+        target1: "$26.50",
+        stopLoss: "$21.60",
         thesis: "Orphan disease franchise with 88%+ gross margins and pristine 9/9 Piotroski balance sheet."
       },
       {
@@ -140,16 +140,16 @@ const STRATEGY_DATABASE: StrategyDefinition[] = [
       {
         symbol: "MEDP",
         name: "Medpace Holdings",
-        price: 395.10,
+        price: 342.10,
         changePct: 1.45,
         piotroski: 9,
         roic: "34.2%",
         pegOrShort: "P/E 19.8x",
         state: "IN_BUY_ZONE",
         stateBadge: "🟢 IN_BUY_ZONE",
-        entryRange: "$384.00 - $395.10",
-        target1: "$432.00",
-        stopLoss: "$368.50",
+        entryRange: "$332.00 - $342.10",
+        target1: "$385.00",
+        stopLoss: "$315.00",
         thesis: "Full-service clinical CRO compounder with zero long-term debt."
       }
     ]
@@ -290,16 +290,16 @@ const STRATEGY_DATABASE: StrategyDefinition[] = [
       {
         symbol: "TMDX",
         name: "TransMedics Group",
-        price: 128.50,
+        price: 92.60,
         changePct: 3.15,
         piotroski: 8,
         roic: "27.8%",
         pegOrShort: "Gross 68%",
         state: "IN_BUY_ZONE",
         stateBadge: "🟢 IN_BUY_ZONE",
-        entryRange: "$124.00 - $128.50",
-        target1: "$144.00",
-        stopLoss: "$118.20",
+        entryRange: "$89.50 - $92.60",
+        target1: "$104.00",
+        stopLoss: "$85.20",
         thesis: "Organ Care System (OCS) warm-perfusion donor organ transport monopoly."
       }
     ]
