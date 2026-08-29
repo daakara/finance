@@ -469,8 +469,28 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("isCrypto", trades_content)
         self.assertIn("Institutional & Regulatory Money Flow", trades_content)
 
+    def test_high_density_smart_money_dataset_integrity(self):
+        """Quality Gate: Verify high-density smart money dataset in frontend/lib/api.ts."""
+        api_path = os.path.join("frontend", "lib", "api.ts")
+        with open(api_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Must have >= 30 congressional trades, >= 10 SEC insider filings, and >= 10 options sweeps
+        self.assertIn('"congress_trades": [', content)
+        self.assertIn('"sec_insider_trades": [', content)
+        self.assertIn('"options_flow": [', content)
+
+        # Check key institutional figures
+        self.assertIn("Dan Crenshaw", content)
+        self.assertIn("Tommy Tuberville", content)
+        self.assertIn("Nancy Pelosi", content)
+        self.assertIn("Jensen Huang", content)
+        self.assertIn("Alexander Karp", content)
+        self.assertIn("Satya Nadella", content)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
