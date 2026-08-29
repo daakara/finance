@@ -1,4 +1,4 @@
-﻿"""Hidden Gems Screener Engine powered by Legendary Investors: Peter Lynch, Joel Greenblatt & Disruptive Innovation."""
+"""Hidden Gems Screener Engine powered by Legendary Investors: Peter Lynch, Joel Greenblatt & Disruptive Innovation."""
 
 from typing import List, Dict, Any
 from dataclasses import dataclass
@@ -143,6 +143,34 @@ class HiddenGemsScreener:
             "catalyst": "Duolingo Max GenAI monetization and enterprise English test global adoption.",
             "risk_level": "Medium Risk",
         },
+        "ULTA": {
+            "company_name": "Ulta Beauty Inc.",
+            "market_cap": "$17.4B",
+            "lynch_peg": 0.79,
+            "greenblatt_roic": 35.5,
+            "disruptive_growth": 3.5,
+            "gross_margin": 52.8,
+            "piotroski_f": 7,
+            "altman_z": 5.4,
+            "expert_model": "Deep Value & Capital Return (Decelerating Comp Watch)",
+            "thesis": "High-ROIC specialty beauty retailer trading at compressed multiple (13.5x P/E), but facing post-COVID same-store sales normalization and Sephora competitive headwinds.",
+            "catalyst": "Targeted share repurchases, prestige beauty sales inflection, and Berkshire Hathaway value sponsorship.",
+            "risk_level": "High Turnaround Risk",
+        },
+        "LULU": {
+            "company_name": "Lululemon Athletica",
+            "market_cap": "$32.8B",
+            "lynch_peg": 0.88,
+            "greenblatt_roic": 31.0,
+            "disruptive_growth": 6.8,
+            "gross_margin": 58.5,
+            "piotroski_f": 7,
+            "altman_z": 6.2,
+            "expert_model": "Deep Value & Brand Mean-Reversion",
+            "thesis": "Premium athletic apparel leader experiencing North American consumer deceleration, but maintaining high ROIC and international expansion runway.",
+            "catalyst": "Breezethrough product cycle relaunch and China expansion acceleration.",
+            "risk_level": "High Turnaround Risk",
+        },
     }
     def __init__(self, criteria: GemCriteria = None):
         self.criteria = criteria or GemCriteria()
@@ -168,10 +196,24 @@ class HiddenGemsScreener:
                 },
             )
 
-            lynch_score = min(98, max(50, int(95 - (gem_data["lynch_peg"] - 0.70) * 80)))
+            is_decelerating_growth = gem_data.get("disruptive_growth", 20.0) < 10.0
+            
+            lynch_score = min(98, max(45, int(95 - (gem_data["lynch_peg"] - 0.70) * 80)))
             greenblatt_score = min(99, max(50, int(60 + (gem_data["greenblatt_roic"] - 20) * 1.2)))
-            growth_score = min(98, max(50, int(55 + gem_data["disruptive_growth"] * 0.5 + (gem_data["gross_margin"] - 50) * 0.3)))
-            composite = round(lynch_score * 0.35 + greenblatt_score * 0.35 + growth_score * 0.30, 1)
+            
+            # Growth Score reflects authentic multi-year top-line deceleration
+            base_growth = gem_data["disruptive_growth"]
+            growth_score = min(98, max(40, int(45 + base_growth * 0.8 + (gem_data["gross_margin"] - 50) * 0.3)))
+            
+            if is_decelerating_growth:
+                growth_score = min(58, growth_score)
+                composite = round(lynch_score * 0.30 + greenblatt_score * 0.35 + growth_score * 0.35, 1)
+            else:
+                composite = round(lynch_score * 0.35 + greenblatt_score * 0.35 + growth_score * 0.30, 1)
+
+            verdict = "Strong Buy / Core Accumulation" if composite >= 82 else (
+                "Deep Value / Turnaround Watch" if is_decelerating_growth else "Favorable Multi-Strategy Buy"
+            )
 
             results.append({
                 "ticker": ticker.upper(),
@@ -183,11 +225,11 @@ class HiddenGemsScreener:
                 "peg_ratio": gem_data["lynch_peg"],
                 "roic_pct": gem_data["greenblatt_roic"],
                 "gross_margin_pct": gem_data["gross_margin"],
-                "risk_rating": "Low-to-Medium Risk" if composite >= 82 else "Moderate Risk",
+                "risk_rating": gem_data.get("risk_level", "Low-to-Medium Risk" if composite >= 82 else "Moderate Risk"),
                 "investment_thesis": gem_data["thesis"],
                 "primary_catalyst": gem_data["catalyst"],
-                "factor_verdict": "Strong Buy / Core Accumulation" if composite >= 82 else "Favorable Multi-Strategy Buy",
-                "dna_verdict": "Strong Buy / Core Accumulation" if composite >= 82 else "Favorable Multi-Strategy Buy",
+                "factor_verdict": verdict,
+                "dna_verdict": verdict,
             })
 
         return sorted(results, key=lambda x: x["composite_score"], reverse=True)

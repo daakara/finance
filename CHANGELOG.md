@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-29
+
+### Quantitative Screener Growth Floor & Value Trap Re-Classification
+- 🔍 **Quantitative Growth Floor Engine (`gem_screener.py`)**: Added authentic revenue CAGR verification preventing decelerating/negative-growth stocks from scoring as high-growth compounders solely due to depressed P/E or historical ROIC.
+- ⚠️ **Stage 4 Turnaround Warnings (`screener/page.tsx`)**: Re-classified `ULTA` and `LULU` from high-growth GARP into a dedicated `Deep Value & Capital Return (Decelerating Comp Watch)` archetype with active Stage 4 turnaround warnings, growth penalties, and 200 EMA resistance alerts.
+- 🏛️ **Master Catalog Parity (`masterCatalog.ts`)**: Embedded comprehensive turnaround profiles for `ULTA` ($368.40) and `LULU` ($264.50) maintaining 100% SSOT consistency across all 81 static pre-rendered routes.
+
+---
+
 ## [2.0.0] - 2026-08-29
 
 ### Institutional Decision Intelligence & Execution Suite

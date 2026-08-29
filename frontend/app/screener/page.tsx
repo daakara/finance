@@ -173,10 +173,14 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     let statusLabel: string;
     let statusColor: string;
 
-    if (sym === "DECK" || sym === "PODD" || sym === "MNST") {
+    const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST" || sym === "ULTA" || sym === "LULU";
+
+    if (isStage4Candidate) {
       executionStatus = "WAITING_PULLBACK";
-      statusLabel = "⏳ Awaiting Base Formation";
-      statusColor = "cyan";
+      statusLabel = sym === "ULTA" || sym === "LULU" 
+        ? "⚠️ Stage 4 Turnaround Watch" 
+        : "⏳ Awaiting Base Formation";
+      statusColor = sym === "ULTA" || sym === "LULU" ? "amber" : "cyan";
     } else if (h < 40) {
       executionStatus = "IN_BUY_ZONE";
       statusLabel = isDayTrader ? "🎯 Active VWAP Bounce" : "🎯 Active Buy Zone";
@@ -205,26 +209,35 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const takeProfit2Pct = 15.5;
     const riskRewardRatio = Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2));
 
-    const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST";
     const rawConfluence = Math.min(96, Math.max(72, 75 + (h % 22)));
-    const confluenceScore = isStage4Candidate ? Math.min(74, rawConfluence) : rawConfluence;
-    const confluenceRating = confluenceScore >= 85 ? "⭐ HIGH CONFLUENCE" : "MODERATE CONFLUENCE";
-    const confluenceBadgeColor = confluenceScore >= 85 ? "emerald" : "cyan";
+    const confluenceScore = isStage4Candidate ? Math.min(68, rawConfluence) : rawConfluence;
+    const confluenceRating = isStage4Candidate ? "⚠️ TURNAROUND WATCH" : (confluenceScore >= 85 ? "⭐ HIGH CONFLUENCE" : "MODERATE CONFLUENCE");
+    const confluenceBadgeColor = isStage4Candidate ? "amber" : (confluenceScore >= 85 ? "emerald" : "cyan");
 
     let archetype = "Peter Lynch & Greenblatt GARP";
     if (isDayTrader) {
       archetype = base.short > 8.0 ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
     } else {
-      if (base.peg <= 1.0) archetype = "Peter Lynch GARP Compounder";
-      else if (base.roic >= 25.0) archetype = "Joel Greenblatt Magic Formula";
-      else if (base.margin >= 65.0) archetype = "David Gardner Rule Breaker";
+      if (sym === "ULTA" || sym === "LULU") {
+        archetype = "Deep Value & Capital Return (Decelerating Comp Watch)";
+      } else if (base.peg <= 1.0) {
+        archetype = "Peter Lynch GARP Compounder";
+      } else if (base.roic >= 25.0) {
+        archetype = "Joel Greenblatt Magic Formula";
+      } else if (base.margin >= 65.0) {
+        archetype = "David Gardner Rule Breaker";
+      }
     }
+
+    const confluenceWarnings = (sym === "ULTA" || sym === "LULU") 
+      ? ["Negative 1Y/3Y momentum trend", "Prestige beauty comp deceleration", "Trading below 200-day EMA"]
+      : (isStage4Candidate ? ["Awaiting Stage 1 base completion"] : []);
 
     return {
       symbol: sym,
       companyName: base.name,
       currentPrice: price,
-      gemScore: 82 + (h % 16),
+      gemScore: isStage4Candidate ? Math.min(74, 76 + (h % 10)) : 82 + (h % 16),
       expertArchetype: archetype,
       roic: `${base.roic}%`,
       pegRatio: `${base.peg}`,
@@ -234,10 +247,10 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       shortFloat: `${base.short}%`,
       dayTraderSetup: isDayTrader
         ? "Intraday momentum trend-following above 5m VWAP anchor with defined ATR risk."
-        : "Stage 2 accumulation breakout above 50-day pivot.",
+        : (isStage4Candidate ? "Stage 4 consolidation — awaiting base formation and comp stabilization." : "Stage 2 accumulation breakout above 50-day pivot."),
       thesis: canonicalMoat || `${base.name} demonstrates ${base.roic}% ROIC with ${base.margin}% gross margins.`,
       catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || "Upcoming product cycle expansion and institutional accumulation.",
-      riskLevel: isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk",
+      riskLevel: (sym === "ULTA" || sym === "LULU") ? "High Turnaround Risk" : (isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk"),
       executionStatus,
       statusLabel,
       statusColor,
@@ -250,13 +263,13 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       takeProfit2,
       takeProfit2Pct,
       riskRewardRatio: Math.max(1.85, riskRewardRatio),
-      setupPattern: "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
-      entryThesis: "Stage 2 accumulation breakout above 50-day pivot.",
+      setupPattern: isStage4Candidate ? "Stage 4 Mean-Reversion Base" : "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
+      entryThesis: isStage4Candidate ? "Awaiting Stage 1 base completion before new entry." : "Stage 2 accumulation breakout above 50-day pivot.",
       confluenceScore,
       confluenceRating,
       confluenceBadgeColor,
-      confluenceReasons: ["Above 20 EMA / 50 SMA support", "Institutional accumulation surge"],
-      confluenceWarnings: [],
+      confluenceReasons: isStage4Candidate ? ["Compressed valuation multiple", "High historical ROIC"] : ["Above 20 EMA / 50 SMA support", "Institutional accumulation surge"],
+      confluenceWarnings,
     };
   });
 }
