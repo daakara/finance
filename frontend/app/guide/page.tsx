@@ -5,10 +5,10 @@ import Navbar from "../../components/Navbar";
 export const metadata: Metadata = {
   title: "Quantitative Terminal Field Manual & Algorithmic Handbook",
   description:
-    "Institutional manual detailing Congressional STOCK Act tracking, Legislative Alignment Index (0-100), Mark Minervini VCP algorithmic entry points, Linda Raschke 20 EMA pullbacks, Cornish-Fisher Modified VaR, and Self-Healing Forecast Audits.",
+    "Institutional manual detailing Decision Intelligence Suites (Pre-Flight Gate, Smart Money Radar, Edge Scorecard, Macro Stress Testing), Congressional STOCK Act tracking, Legislative Alignment Index (0-100), Mark Minervini VCP entry points, Cornish-Fisher Modified VaR, and Self-Healing Forecast Audits.",
   openGraph: {
     title: "Finance Terminal: Quantitative Field Manual & Algorithmic Handbook",
-    description: "Master institutional quantitative trading, legislative STOCK Act signals, staleness decay penalties, volatility invalidation ladders, and tail risk management.",
+    description: "Master institutional quantitative trading, 5-point Pre-Flight execution gates, Smart Money order flow forensics, macro stress testing, staleness decay penalties, and tail risk management.",
     url: "https://www.arxterminal.com/guide/",
     siteName: "Finance Terminal",
     type: "article",
@@ -24,7 +24,7 @@ export default function GuidePage() {
       "@context": "https://schema.org",
       "@type": "TechArticle",
       "headline": "Quantitative Terminal Field Manual & Algorithmic Handbook",
-      "description": "Comprehensive guide to Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
+      "description": "Comprehensive guide to Decision Intelligence Suites, Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
       "author": {
         "@type": "Organization",
         "name": "Finance Terminal Quantitative Intelligence"
@@ -38,12 +38,36 @@ export default function GuidePage() {
         }
       },
       "datePublished": "2026-08-26",
-      "dateModified": "2026-08-27"
+      "dateModified": "2026-08-29"
     },
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the 5-point Pre-Flight Clearance Gate?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Pre-Flight Checklist is a strict quantitative risk gate evaluating: 1) Trend & Moving Averages / Key Support (20 EMA & 50 EMA alignment), 2) Minervini Volatility Contraction Pattern (VCP base structure), 3) Institutional Smart Money & Short Squeeze Ratio, 4) Binary Catalyst Proximity (48h earnings/FDA hazard buffer), and 5) Macro Volatility Guard (VIX < 26.0)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the Smart Money Divergence Radar identify stealth accumulation vs distribution traps?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The radar compares price trend direction against institutional order flow (dark pool ATS block prints, C-suite Form 4 buys, and STOCK Act disclosures). Price consolidation during high institutional accumulation signals a high-conviction breakout setup, whereas price spikes during net insider distribution flag dangerous distribution traps."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the Macro Stress Test Simulator?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Macro Stress Test simulates hypothetical systemic shocks (e.g. QQQ Tech Selloff -5%, Treasury Yield Surge +50bps, VIX Spike to 35) across your portfolio using covariance Beta weighting, projecting total portfolio drawdown and recommending exact defensive cash reserves."
+          }
+        },
         {
           "@type": "Question",
           "name": "What is the Congressional STOCK Act filing deadline?",
@@ -115,13 +139,13 @@ export default function GuidePage() {
             <span className="px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-[11px] font-bold">
               INSTITUTIONAL QUANTITATIVE FIELD MANUAL
             </span>
-            <span className="text-slate-500 text-xs">• Version 2.5 Specification</span>
+            <span className="text-slate-500 text-xs">• Version 2.9.0 Specification</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
             Quantitative Platform Blueprint & Execution Handbook
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-            A comprehensive, mathematically rigorous reference manual for professional traders, quantitative analysts, and fundamental investors. Learn the formulas, invalidation rules, statutory insider metrics, legislative alignment algorithms, and portfolio risk equations powering this terminal.
+            A comprehensive, mathematically rigorous reference manual for professional traders, quantitative analysts, and fundamental investors. Learn the formulas, invalidation rules, statutory insider metrics, legislative alignment algorithms, Decision Intelligence risk gates, and portfolio equations powering this terminal.
           </p>
 
           {/* Quick Jump Navigation */}
@@ -139,7 +163,11 @@ export default function GuidePage() {
             <span className="text-slate-600">•</span>
             <a href="#chapter-5" className="text-purple-400 hover:underline">Ch 6: Risk & Self-Healing VaR</a>
             <span className="text-slate-600">•</span>
-            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 7: Multi-Source Synthesis & FRED</a>
+            <a href="#chapter-6" className="text-cyan-400 hover:underline font-bold">Ch 7: Multi-Source Synthesis</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-8" className="text-emerald-400 hover:underline font-bold">Ch 8: Plain-English Buster</a>
+            <span className="text-slate-600">•</span>
+            <a href="#chapter-9" className="text-amber-400 hover:underline font-bold">Ch 9: Decision Intelligence Suite</a>
           </div>
         </header>
 
@@ -372,24 +400,41 @@ export default function GuidePage() {
           {/* Screener Quantitative Filter Engine */}
           <div className="bg-[#0b1019] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
             <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span>🔍 4. Screener Numerical Filter Thresholds</span>
+              <span>🔍 4. Screener Numerical Filter Thresholds (Calibrated Specification)</span>
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 block uppercase">Momentum</span>
-                <strong className="text-cyan-400 font-mono">RVOL &ge; 2.5x</strong>
+            <p className="text-xs text-slate-300 font-sans leading-relaxed">
+              Every filter executes against pre-audited fundamental models and real-time execution states, eliminating false positives:
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-cyan-400 font-bold block uppercase">⚡ Asymmetric Actionability</span>
+                <strong className="text-white font-mono text-xs">R:R &ge; 2.0:1 &amp; In Buy Zone</strong>
+                <p className="text-[10px] text-slate-400 font-sans">Restricted to setups currently within &le;+2% of accumulation floor.</p>
               </div>
-              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 block uppercase">Short Squeeze</span>
-                <strong className="text-amber-400 font-mono">Short Float &ge; 6%</strong>
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-emerald-400 font-bold block uppercase">🧪 Joel Greenblatt Quality</span>
+                <strong className="text-white font-mono text-xs">ROIC &ge; 28.0%</strong>
+                <p className="text-[10px] text-slate-400 font-sans">Top-decile return on invested capital with high operating margins.</p>
               </div>
-              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 block uppercase">Quality Moat</span>
-                <strong className="text-emerald-400 font-mono">ROIC &ge; 20%</strong>
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-purple-400 font-bold block uppercase">📈 Peter Lynch GARP</span>
+                <strong className="text-white font-mono text-xs">0 &lt; PEG &le; 1.05</strong>
+                <p className="text-[10px] text-slate-400 font-sans">High earnings expansion at reasonable valuation multiples.</p>
               </div>
-              <div className="bg-[#090d14] p-2.5 rounded border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 block uppercase">Value Growth</span>
-                <strong className="text-purple-400 font-mono">PEG &le; 1.0</strong>
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-amber-400 font-bold block uppercase">🔥 Category Disruptors</span>
+                <strong className="text-white font-mono text-xs">Gross Margin &ge; 65.0%</strong>
+                <p className="text-[10px] text-slate-400 font-sans">David Gardner Rule Breakers with durable pricing power moats.</p>
+              </div>
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-cyan-400 font-bold block uppercase">🚀 Momentum Flow</span>
+                <strong className="text-white font-mono text-xs">RVOL &ge; 2.5x</strong>
+                <p className="text-[10px] text-slate-400 font-sans">Institutional volume surges exceeding 250% of 20-day baseline.</p>
+              </div>
+              <div className="bg-[#090d14] p-3 rounded-lg border border-[#1b2434] space-y-1">
+                <span className="text-[10px] text-rose-400 font-bold block uppercase">💥 Short Squeeze</span>
+                <strong className="text-white font-mono text-xs">Short Float &ge; 6.0%</strong>
+                <p className="text-[10px] text-slate-400 font-sans">Elevated borrowing rates with rapid upward squeeze pressure.</p>
               </div>
             </div>
           </div>
@@ -706,6 +751,109 @@ export default function GuidePage() {
           </div>
         </section>
 
+        {/* CHAPTER 9: THE 4 DECISION INTELLIGENCE ENGINES, DUAL VERNACULAR & EDGE ARCHITECTURE */}
+        <section id="chapter-9" className="space-y-4">
+          <div className="flex items-center space-x-2 border-b border-[#243044] pb-2">
+            <span className="text-lg sm:text-xl">🧠</span>
+            <h2 className="text-lg sm:text-xl font-bold text-amber-400 tracking-tight">
+              Chapter 9: The 4 Decision Intelligence Engines, Dual Vernacular &amp; Edge Architecture
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            To bridge the gap between quantitative calculation and real-world execution, the terminal features a dedicated Decision Intelligence Suite that acts as an institutional co-pilot before you risk real capital:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+            {/* 1. Pre-Flight Checklist */}
+            <div className="bg-[#111722] p-4 rounded-xl border border-cyan-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-cyan-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>✈️</span>
+                  <span>1. 5-Point Pre-Flight Clearance Gate</span>
+                </strong>
+                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700">EXECUTION GATE</span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                A non-negotiable checklist that must achieve 5/5 passes before clearing execution:
+              </p>
+              <ul className="text-[11px] text-slate-400 font-sans space-y-1 list-disc pl-4">
+                <li><strong>Trend &amp; Moving Averages:</strong> Spot holding above 20 EMA and 50-day pivot.</li>
+                <li><strong>Minervini VCP Base:</strong> Tight contraction volatility with defined support.</li>
+                <li><strong>Smart Money Asymmetry:</strong> Clean institutional backing without insider distribution traps.</li>
+                <li><strong>Binary Catalyst Buffer:</strong> Zero major earnings/FDA hazard events within 48 hours.</li>
+                <li><strong>Macro Volatility Floor:</strong> Broad market VIX index strictly below 26.0.</li>
+              </ul>
+            </div>
+
+            {/* 2. Smart Money Divergence Radar */}
+            <div className="bg-[#111722] p-4 rounded-xl border border-amber-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-amber-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>📡</span>
+                  <span>2. Smart Money Divergence Radar</span>
+                </strong>
+                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-700">ORDER FLOW FORENSICS</span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Detects decoupling between retail price direction and dark pool block flow:
+              </p>
+              <ul className="text-[11px] text-slate-400 font-sans space-y-1 list-disc pl-4">
+                <li><strong>Stealth Accumulation:</strong> Sideways consolidation while dark pool volume &amp; C-suite Form 4 buys surge (Explosive breakout probability).</li>
+                <li><strong>Distribution Trap:</strong> New price highs on negative institutional flow &amp; C-suite selling (Exhaustion &amp; sharp reversal risk).</li>
+              </ul>
+            </div>
+
+            {/* 3. Historical Edge Scorecard */}
+            <div className="bg-[#111722] p-4 rounded-xl border border-emerald-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-emerald-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>📊</span>
+                  <span>3. Historical Edge Scorecard</span>
+                </strong>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-700">BACKTEST VERIFICATION</span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Audits empirical performance across 5 proven quantitative archetypes (Minervini VCP, Magic Formula, Peter Lynch GARP, Rule Breakers, and Turnaround Watch), reporting backtested win rates (&gt;65%), profit factor (&ge;2.0), and sample size ($N$).
+              </p>
+            </div>
+
+            {/* 4. Macro Stress Test Simulator */}
+            <div className="bg-[#111722] p-4 rounded-xl border border-purple-800/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <strong className="text-purple-300 text-sm font-bold flex items-center gap-1.5 font-mono">
+                  <span>🌪️</span>
+                  <span>4. Macro Stress Test Simulator</span>
+                </strong>
+                <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-700">PORTFOLIO SHOCK</span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                Simulates systemic stress events (Tech Selloff -5%, Yield Surge +50bps, VIX Spike 35) across your positions using covariance Beta weighting, projecting total portfolio drawdown and recommending exact defensive cash reserves.
+              </p>
+            </div>
+          </div>
+
+          {/* Dual Vernacular & Privacy Infrastructure Callout */}
+          <div className="bg-[#090d14] p-4 sm:p-5 rounded-xl border border-[#1e293b] space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>⚡ Platform Infrastructure: Dual Vernacular &amp; Edge Security</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1.5">
+                <strong className="text-emerald-400 block font-mono">Dual-Vernacular Mode Switcher</strong>
+                <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                  Toggle between <strong>Plain English Mode</strong> (clear, punchy explanations) and <strong>Pro Quant Mode</strong> (institutional Greek formulas and econometric terminology) instantly across all cards via the top navigation bar.
+                </p>
+              </div>
+              <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1.5">
+                <strong className="text-cyan-400 block font-mono">Cloudflare Edge SWR &amp; Cookieless Privacy</strong>
+                <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                  Engineered with RFC 5861 <code>stale-while-revalidate</code> edge caching delivering &lt;10ms query responses, coupled with 100% cookieless, privacy-first GDPR compliance and Do Not Track (DNT) enforcement.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Footer Navigation */}
         <footer className="border-t border-[#243044] pt-6 flex flex-wrap items-center justify-between gap-4">
           <Link
@@ -715,7 +863,7 @@ export default function GuidePage() {
             ← Return to ARX Terminal
           </Link>
           <div className="text-xs text-slate-500">
-            Grounded in SEC EDGAR, Capitol Hill STOCK Act & Federal Reserve FRED Data
+            Grounded in SEC EDGAR, Capitol Hill STOCK Act &amp; Federal Reserve FRED Data
           </div>
         </footer>
       </main>

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-08-29
+
+### Field Manual & Quantitative Guide Modernization (v2.9.0 Specification)
+- 🧠 **Chapter 9: The 4 Decision Intelligence Engines (`guide/page.tsx`)**: Added comprehensive operational manual for the 5-point Pre-Flight Clearance Gate, Smart Money Divergence Radar, Historical Edge Scorecard, and Macro Stress Test Simulator.
+- 💬 **Platform Infrastructure & Dual-Vernacular Documentation**: Documented the live Dual-Vernacular mode switcher (`PLAIN_ENGLISH` vs `PRO_QUANT`), Cloudflare RFC 5861 edge SWR shield, and privacy-first GDPR cookieless architecture.
+- 📐 **Calibrated Screener Threshold Synchronization**: Synchronized Chapter 3 with calibrated numerical filters ($\text{ROIC} \ge 28\%$, $\text{Margin} \ge 65\%$, $\text{PEG} \le 1.05$, and Actionable Buy Zone $R:R \ge 2.0:1$).
+- 🌐 **Expanded Schema.org Structured Data**: Added rich FAQ entities for Google search indexing covering Pre-Flight clearance, Smart Money divergence forensics, and macro stress testing.
+
+---
+
 ## [2.9.0] - 2026-08-29
 
 ### Screener Filter Metric Calibration & Dynamic Actionable Risk:Reward Coupling
