@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-08-29
+
+### Privacy-First Matomo Analytics & Comprehensive User Journey Telemetry Suite
+- 📊 **Matomo Tag Manager & `_paq` Dual Tracker (`layout.tsx`)**: Explicitly initialized the official Matomo endpoint (`https://data.fpldna.com/matomo/matomo.php`, `idsite=3`) with MTM container (`container_tK4RnlSN.js`) for privacy-first, zero-cookie analytical compliance.
+- 🎯 **Full User Journey Telemetry Suite (`frontend/lib/matomo.ts`)**: Implemented telemetry tracking functions for the entire trader workflow:
+  - ✈️ **Pre-Flight Decision Gates**: Tracks execution clearance outcomes (`Cleared` vs `Conditional`) and trade plan journal clipboard copies.
+  - 📐 **Position Sizing & Half-Kelly**: Tracks risk allocation adjustments, share calculations, and portfolio additions.
+  - 🔔 **Execution & Breakout Alerts**: Tracks pullback buy zone alerts and Stage 4 breakout pivot triggers.
+  - 🌪️ **Macro Stress Shocks**: Tracks portfolio what-if shocks (`QQQ -5%`, `Yield +50bps`, `VIX 35`) and cash reserve recommendations.
+  - ⭐ **Watchlist & Screener Journeys**: Tracks favorite asset toggles, screener preset filtering, ticker list copies, and CSV data exports.
+- 🧪 **Automated Analytics CI Verification (`tests/test_nextjs_frontend_structure.py`)**: Added automated regression checks ensuring all telemetry hooks and tracking containers remain permanently wired across releases (56/56 tests passing).
+
+---
+
 ## [2.6.0] - 2026-08-29
 
 ### Cloudflare Edge SWR Shield, Stale-If-Error Fallback & Server Boot Pre-Warming

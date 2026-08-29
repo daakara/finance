@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
+import { trackPreFlightOutcome, trackTradePlanCopied } from "../lib/matomo";
 
 interface PreFlightChecklistModalProps {
   isOpen: boolean;
@@ -86,6 +87,12 @@ export default function PreFlightChecklistModal({
   const convictionPct = Math.round((passedCount / 5) * 100);
   const isCleared = convictionPct >= 80 && !isStage4 && isSmartMoneyPassed;
 
+  useEffect(() => {
+    if (isOpen) {
+      trackPreFlightOutcome(symbol, passedCount, isCleared);
+    }
+  }, [isOpen, symbol, passedCount, isCleared]);
+
   const tradePlanMarkdown = `### 📋 ARX Terminal Trade Execution Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol}
@@ -102,6 +109,7 @@ export default function PreFlightChecklistModal({
     try {
       await navigator.clipboard.writeText(tradePlanMarkdown);
       setCopied(true);
+      trackTradePlanCopied(symbol, setupPattern);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
       console.warn("Failed to copy trade plan:", err);

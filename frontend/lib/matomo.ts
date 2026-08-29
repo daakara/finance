@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * Matomo Privacy-First Analytics Engine for Single Page Applications (Next.js App Router).
@@ -15,7 +15,7 @@ declare global {
  * Custom Matomo Event Tracking Helper
  */
 export function trackMatomoEvent(
-  category: "User Journey" | "Terminal Interaction" | "Smart Money" | "Screener" | "Risk Engine",
+  category: "User Journey" | "Terminal Interaction" | "Smart Money" | "Screener" | "Risk Engine" | "Decision Intelligence",
   action: string,
   name?: string,
   value?: number
@@ -46,7 +46,7 @@ export function trackRoleSwitch(role: "DAY_TRADER" | "LONG_TERM") {
 /**
  * Track Asset Searches & Symbol Changes
  */
-export function trackSymbolSearch(symbol: string, source: "OmniSearch" | "Watchlist" | "Compare") {
+export function trackSymbolSearch(symbol: string, source: "OmniSearch" | "Watchlist" | "Compare" | "Screener" | "Chip") {
   trackMatomoEvent("Terminal Interaction", "Select Symbol", `${symbol} (via ${source})`);
 }
 
@@ -55,4 +55,69 @@ export function trackSymbolSearch(symbol: string, source: "OmniSearch" | "Watchl
  */
 export function trackProvenanceInspection(symbol: string, source: string) {
   trackMatomoEvent("Smart Money", "Inspect Source Provenance", `${symbol} - ${source}`);
+}
+
+/**
+ * Track Pre-Flight Trade Clearance Gate Outcomes
+ */
+export function trackPreFlightOutcome(symbol: string, passedCount: number, isCleared: boolean) {
+  trackMatomoEvent(
+    "Decision Intelligence",
+    isCleared ? "Pre-Flight Clearance Passed" : "Pre-Flight Clearance Conditional",
+    `${symbol} (${passedCount}/5 Checks)`,
+    passedCount
+  );
+}
+
+/**
+ * Track Trade Plan Export / Clipboard Copy
+ */
+export function trackTradePlanCopied(symbol: string, setupPattern: string) {
+  trackMatomoEvent("Decision Intelligence", "Copy Trade Plan for Journal", `${symbol} (${setupPattern})`);
+}
+
+/**
+ * Track Position Sizing Calculations
+ */
+export function trackPositionSizer(symbol: string, riskPct: number, shares: number) {
+  trackMatomoEvent("Risk Engine", "Calculate Position Size", `${symbol} @ ${riskPct}% risk (${shares} shares)`, shares);
+}
+
+/**
+ * Track Price Alerts & Breakout Pivot Triggers
+ */
+export function trackAlertSet(symbol: string, targetPrice: number, isStage4: boolean) {
+  trackMatomoEvent(
+    "Decision Intelligence",
+    isStage4 ? "Set Stage 4 Breakout Pivot Alert" : "Set Pullback Buy Zone Alert",
+    `${symbol} @ $${targetPrice.toFixed(2)}`
+  );
+}
+
+/**
+ * Track Macro Stress Test Simulations
+ */
+export function trackMacroShockSimulation(scenarioName: string, impactPct: number) {
+  trackMatomoEvent("Risk Engine", "Run Macro Stress Shock", `${scenarioName} (${impactPct.toFixed(2)}% loss)`, Math.round(Math.abs(impactPct)));
+}
+
+/**
+ * Track Watchlist Favorite Starring / Unstarring
+ */
+export function trackFavoriteToggle(symbol: string, isFavorited: boolean) {
+  trackMatomoEvent("User Journey", isFavorited ? "Star Favorite Asset" : "Unstar Favorite Asset", symbol);
+}
+
+/**
+ * Track Dual-Vernacular Mode Switches (Plain English vs Pro Quant)
+ */
+export function trackVernacularSwitch(mode: "PLAIN_ENGLISH" | "PRO_QUANT") {
+  trackMatomoEvent("User Journey", "Switch Vernacular Mode", mode);
+}
+
+/**
+ * Track Screener Filter & Preset Selections
+ */
+export function trackScreenerSelection(presetName: string, resultsCount: number) {
+  trackMatomoEvent("Screener", "Apply Screener Preset", `${presetName} (${resultsCount} gems)`, resultsCount);
 }

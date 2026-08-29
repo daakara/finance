@@ -92,11 +92,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        {/* Matomo Tag Manager */}
+        {/* Matomo Tag Manager & Privacy-First Analytics Engine */}
         <script
           type="text/javascript"
           dangerouslySetInnerHTML={{
             __html: `
+              var _paq = window._paq = window._paq || [];
+              _paq.push(['enableLinkTracking']);
+              _paq.push(['setTrackerUrl', 'https://data.fpldna.com/matomo/matomo.php']);
+              _paq.push(['setSiteId', '3']);
               var _mtm = window._mtm = window._mtm || [];
               _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
               (function() {

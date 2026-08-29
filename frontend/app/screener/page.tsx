@@ -8,6 +8,7 @@ import AlertTriggerModal from "../../components/AlertTriggerModal";
 import DataSourceBadge from "../../components/DataSourceBadge";
 import { API_BASE_URL } from "../../lib/api";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
+import { trackScreenerSelection, trackMatomoEvent } from "../../lib/matomo";
 import {
   getCanonicalAssetName,
   getCanonicalAssetMoat,
@@ -499,6 +500,7 @@ export default function ScreenerPage() {
       const symbols = displayGems.map((g) => g.symbol).join(", ");
       navigator.clipboard.writeText(symbols);
       setCopyToast(true);
+      trackMatomoEvent("Screener", "Copy Screener Tickers", `Count: ${displayGems.length}`);
       setTimeout(() => setCopyToast(false), 2500);
     } catch (err) {
       console.warn("Could not copy tickers:", err);
@@ -507,6 +509,7 @@ export default function ScreenerPage() {
 
   const handleExportScreenerCsv = () => {
     if (typeof window === "undefined" || displayGems.length === 0) return;
+    trackMatomoEvent("Screener", "Export Screener CSV", `Filter: ${selectedFilter} (${displayGems.length} rows)`);
     const headers = [
       "Symbol",
       "Company Name",

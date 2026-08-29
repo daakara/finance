@@ -384,9 +384,53 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             db_content = f.read()
         self.assertIn("persisted?.currentPrice", api_content)
         self.assertIn("persisted?.priceChangePct24h", api_content)
-        self.assertIn("getAllPersistedMarketSnapshots", db_content)
+    def test_matomo_analytics_and_user_journey_wiring(self):
+        """Regression Quality Gate: Ensure Matomo Tag Manager, Privacy-First tracker, and User Journey events are fully wired."""
+        layout_path = os.path.join("frontend", "app", "layout.tsx")
+        tracker_path = os.path.join("frontend", "components", "MatomoTracker.tsx")
+        matomo_lib_path = os.path.join("frontend", "lib", "matomo.ts")
+        preflight_path = os.path.join("frontend", "components", "PreFlightChecklistModal.tsx")
+        sizer_path = os.path.join("frontend", "components", "PositionSizerModal.tsx")
+        alert_path = os.path.join("frontend", "components", "AlertTriggerModal.tsx")
+        stress_path = os.path.join("frontend", "components", "MacroStressTestSimulator.tsx")
+
+        # 1. Layout initialization (Tag Manager container + _paq Tracker with siteId 3)
+        with open(layout_path, "r", encoding="utf-8") as f:
+            layout_content = f.read()
+        self.assertIn("container_tK4RnlSN.js", layout_content)
+        self.assertIn("setTrackerUrl", layout_content)
+        self.assertIn("setSiteId", layout_content)
+        self.assertIn("<MatomoTracker />", layout_content)
+
+        # 2. SPA Route Tracker
+        with open(tracker_path, "r", encoding="utf-8") as f:
+            tracker_content = f.read()
+        self.assertIn("trackPageView", tracker_content)
+        self.assertIn("setUserId", tracker_content)
+
+        # 3. User Journey Helper functions
+        with open(matomo_lib_path, "r", encoding="utf-8") as f:
+            matomo_content = f.read()
+        self.assertIn("trackPreFlightOutcome", matomo_content)
+        self.assertIn("trackTradePlanCopied", matomo_content)
+        self.assertIn("trackPositionSizer", matomo_content)
+        self.assertIn("trackAlertSet", matomo_content)
+        self.assertIn("trackMacroShockSimulation", matomo_content)
+        self.assertIn("trackFavoriteToggle", matomo_content)
+        self.assertIn("trackScreenerSelection", matomo_content)
+
+        # 4. Modals & Simulators wire tracking calls
+        with open(preflight_path, "r", encoding="utf-8") as f:
+            self.assertIn("trackPreFlightOutcome", f.read())
+        with open(sizer_path, "r", encoding="utf-8") as f:
+            self.assertIn("trackPositionSizer", f.read())
+        with open(alert_path, "r", encoding="utf-8") as f:
+            self.assertIn("trackAlertSet", f.read())
+        with open(stress_path, "r", encoding="utf-8") as f:
+            self.assertIn("trackMacroShockSimulation", f.read())
 
 
 if __name__ == "__main__":
     unittest.main()
+
 

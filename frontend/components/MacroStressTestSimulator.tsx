@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { PortfolioPosition } from "../lib/portfolio";
+import { trackMacroShockSimulation } from "../lib/matomo";
 
 interface MacroStressTestSimulatorProps {
   positions: PortfolioPosition[];
@@ -52,6 +53,10 @@ export default function MacroStressTestSimulator({
     shockTitle = "Black-Swan Volatility Spike (VIX -> 35)";
     shockDescription = "Simulates non-normal Cornish-Fisher fat-tail liquidation across institutional equities.";
   }
+
+  useEffect(() => {
+    trackMacroShockSimulation(shockTitle, shockMagnitudePct);
+  }, [selectedPreset, shockMagnitudePct]);
 
   const effectiveEquity = totalEquity > 0 ? totalEquity : 25000;
   const dollarImpact = (effectiveEquity * (shockMagnitudePct / 100));

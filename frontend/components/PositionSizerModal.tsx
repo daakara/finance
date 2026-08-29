@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
 import { getCanonicalAssetName } from "../lib/assetRegistry";
+import { trackPositionSizer } from "../lib/matomo";
 
 interface PositionSizerProps {
   isOpen: boolean;
@@ -93,6 +94,7 @@ export default function PositionSizerModal({
 
       localStorage.setItem("FINANCE_USER_PORTFOLIO", JSON.stringify(updated));
       setSavedToast(true);
+      trackPositionSizer(symbol, riskPct, shares);
       setTimeout(() => setSavedToast(false), 3500);
       window.dispatchEvent(new Event("storage"));
     } catch (err) {

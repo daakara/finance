@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertManager, ExecutionAlertRule } from "../lib/alertManager";
+import { trackAlertSet } from "../lib/matomo";
 
 interface AlertTriggerModalProps {
   isOpen: boolean;
@@ -82,6 +83,7 @@ export default function AlertTriggerModal({
     };
     AlertManager.saveAlertRule(rule);
     setIsSaved(true);
+    trackAlertSet(symbol, isStage4 ? (breakoutPivot || safeCurrent * 1.072) : safeEntryMin, isStage4);
     AlertManager.playAlertSound("BUY");
     onClose();
   };
