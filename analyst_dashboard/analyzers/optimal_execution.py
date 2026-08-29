@@ -77,11 +77,17 @@ class OptimalExecutionEngine:
             pivot = 0.6 * ema_20 + 0.4 * current_price
             entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.992), 2)
             entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.005), 2)
+            if entry_min > entry_max:
+                entry_min, entry_max = entry_max, entry_min
             raw_stop = entry_min - (1.25 * atr_14)
-            # Strictly cap Day Trader risk between -1.0% and -2.2%
-            stop_loss = round(max(current_price * 0.978, min(current_price * 0.990, raw_stop)), 2)
+            # Strictly cap Day Trader risk while guaranteeing stop_loss < entry_min
+            stop_loss = round(min(entry_min - 0.05, max(current_price * 0.978, min(current_price * 0.990, raw_stop))), 2)
+            if stop_loss >= entry_min:
+                stop_loss = round(entry_min - max(0.10, 0.5 * atr_14), 2)
             take_profit_1 = round(min(current_price * 1.040, max(current_price * 1.018, current_price + (1.75 * atr_14))), 2)
-            take_profit_2 = round(min(current_price * 1.075, max(current_price * 1.035, current_price + (3.0 * atr_14))), 2)
+            if take_profit_1 <= entry_max:
+                take_profit_1 = round(max(entry_max + 0.10, current_price * 1.018), 2)
+            take_profit_2 = round(max(take_profit_1 + 0.10, min(current_price * 1.075, max(current_price * 1.035, current_price + (3.0 * atr_14)))), 2)
             setup_name = "Raschke 20 EMA Pullback & VWAP Re-test"
             thesis = "Look for bid defense around 20 EMA with tight 1.25x ATR stop loss below low-of-day."
             invalidation = "Break of 1.25x 5m ATR below low of the current session."
@@ -95,11 +101,17 @@ class OptimalExecutionEngine:
             
             entry_min = round(min(pullback_support, current_price * 0.975), 2)
             entry_max = round(min(breakout_ceiling, current_price + (1.0 * atr_14)), 2)
+            if entry_min > entry_max:
+                entry_min, entry_max = entry_max, entry_min
             raw_stop = entry_min - (1.5 * atr_14)
-            # Strictly cap Swing risk between -3.5% and -7.0% (never allowing catastrophic 30%+ stops)
-            stop_loss = round(max(current_price * 0.930, min(current_price * 0.965, raw_stop)), 2)
+            # Strictly cap Swing risk while guaranteeing stop_loss < entry_min
+            stop_loss = round(min(entry_min - 0.10, max(current_price * 0.930, min(current_price * 0.965, raw_stop))), 2)
+            if stop_loss >= entry_min:
+                stop_loss = round(entry_min - max(0.25, 0.75 * atr_14), 2)
             take_profit_1 = round(min(current_price * 1.095, max(current_price * 1.048, current_price + (2.5 * atr_14))), 2)
-            take_profit_2 = round(min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14))), 2)
+            if take_profit_1 <= entry_max:
+                take_profit_1 = round(max(entry_max + 0.25, current_price * 1.048), 2)
+            take_profit_2 = round(max(take_profit_1 + 0.25, min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14)))), 2)
 
             if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"
@@ -182,10 +194,7 @@ class OptimalExecutionEngine:
         spot = plan["current_price"]
         entry_min = plan["optimal_entry_min"]
 
-        # 1. Stop loss strictly below entry floor and bounded
-        if plan["stop_loss"] >= entry_min:
-            plan["stop_loss"] = round(entry_min * 0.985, 2)
-
+        # 1. Stop loss percentage clamping and strict floor guarantee
         raw_stop_pct = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
         if user_role == "DAY_TRADER":
             plan["stop_loss_pct"] = max(-2.2, min(-0.9, raw_stop_pct))
@@ -193,6 +202,10 @@ class OptimalExecutionEngine:
         else:
             plan["stop_loss_pct"] = max(-7.0, min(-3.5, raw_stop_pct))
             plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), 2)
+
+        if plan["stop_loss"] >= entry_min:
+            plan["stop_loss"] = round(entry_min - max(0.05, spot * 0.005), 2)
+            plan["stop_loss_pct"] = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
 
         # 2. Target 1 & 2 bounds and progression
         raw_tp1_pct = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)

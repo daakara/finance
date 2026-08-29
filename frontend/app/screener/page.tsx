@@ -272,6 +272,7 @@ export default function ScreenerPage() {
   const [customTickerInput, setCustomTickerInput] = useState<string>("");
   const [activeCustomQuery, setActiveCustomQuery] = useState<string>("");
   const [copyToast, setCopyToast] = useState<boolean>(false);
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
 
   useEffect(() => {
     const savedRole = localStorage.getItem("FINANCE_USER_ROLE");
@@ -287,6 +288,17 @@ export default function ScreenerPage() {
       setActiveCustomQuery(savedQuery);
       setCustomTickerInput(savedQuery);
     }
+    const savedV = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+    if (savedV) {
+      setVernacularMode(savedV);
+    }
+
+    const handleVernacular = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail) setVernacularMode(custom.detail);
+    };
+    window.addEventListener("finance:vernacular-change", handleVernacular);
+    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
   }, []);
 
   const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
@@ -532,7 +544,32 @@ export default function ScreenerPage() {
   };
 
   const isDayTrader = activeRole === "DAY_TRADER";
-  const activeTabs = isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS;
+  const isPlain = vernacularMode === "PLAIN_ENGLISH";
+
+  const plainLongTermTabs = [
+    { id: "all", label: "🏛️ All Quality Stocks", desc: "Solid, Profitable Long-Term Businesses", badge: "Universe" },
+    { id: "high_confluence", label: "⭐ Top Consensus Picks", desc: "Top Picks Supported by Multiple Financial Models (≥ 80%)", badge: "Top Ranked" },
+    { id: "in_buy_zone", label: "🎯 Great Price to Buy", desc: "Currently in an optimal buying price range", badge: "Actionable" },
+    { id: "approaching_target", label: "🚀 Near Profit Goal", desc: "Stock is reaching its calculated profit targets", badge: "Take Gains" },
+    { id: "high_rr", label: "⚡ Low Risk / High Reward", desc: "High upside potential with tight downside safety (≥ 2.0:1)", badge: "Asymmetric" },
+    { id: "lynch", label: "📈 Bargain Growth (Peter Lynch)", desc: "Fast-growing companies at reasonable valuations", badge: "Value" },
+    { id: "greenblatt", label: "🧪 High Return on Capital (Joel Greenblatt)", desc: "Generates high cash returns per dollar invested", badge: "Quality" },
+    { id: "rule_breakers", label: "🔥 Category Disruptors", desc: "Industry leaders with wide competitive advantages and high margins", badge: "High Growth" },
+  ];
+
+  const plainDayTraderTabs = [
+    { id: "all", label: "⚡ All Active Movers", desc: "Fast-Moving Intraday Leaders", badge: "Active" },
+    { id: "high_confluence", label: "⭐ High Conviction Setup", desc: "Strong Technical Momentum & Heavy Buying Flow", badge: "Top Flow" },
+    { id: "in_buy_zone", label: "🎯 Healthy Dip to Buy", desc: "Pullback holding support on moving averages", badge: "Dip Buy" },
+    { id: "approaching_target", label: "🚀 Breakout in Progress", desc: "Pushing into new session highs with momentum", badge: "Breakout" },
+    { id: "high_rr", label: "⚡ Best Profit vs Risk", desc: "Tight safety stop with strong scalp targets", badge: "Tight Risk" },
+    { id: "high_rvol", label: "🔥 Heavy Trading Volume", desc: "Volume surge: institutional trading active", badge: "Surge" },
+    { id: "squeeze", label: "💥 Short Squeeze Candidates", desc: "High short interest with rapid upward pressure", badge: "Squeeze" },
+  ];
+
+  const activeTabs = isPlain
+    ? (isDayTrader ? plainDayTraderTabs : plainLongTermTabs)
+    : (isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS);
 
   const parseNum = (val: any): number => {
     if (val === null || val === undefined) return 0;

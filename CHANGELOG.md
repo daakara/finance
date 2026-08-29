@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-08-29
+
+### Vernacular Language Engine Expansion
+- 🎯 **Execution Ladder Plain English (`OptimalEntryExitCard.tsx`)**: Extended `ARX_VERNACULAR_MODE` listening to translate complex Minervini VCP, Volatility Contraction, Invalidation Conditions, and Risk:Reward ratios into intuitive Plain English labels (*Safe Buy & Sell Plan*, *Profit Goals 1 & 2*, *Best Buying Price Range*, *Safety Exit Floor*).
+- 💎 **Screener Filters & Criteria Translation (`screener/page.tsx`)**: Dynamically adapted filter category names and descriptions in Plain English mode (*All Quality Stocks*, *Top Consensus Picks*, *Great Price to Buy*, *Bargain Growth*, *High Return on Capital*).
+- 🧪 **Automated Quality Gate**: Expanded `test_brand_tone_and_progressive_clarity_vernacular_engine` in `tests/test_nextjs_frontend_structure.py` to enforce vernacular contracts across `OptimalEntryExitCard` and `screener/page.tsx` (12/12 passing).
+
+---
+
 ## [1.8.0] - 2026-08-29
 
 ### Security & UX Hardening Suite

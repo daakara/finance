@@ -6,7 +6,7 @@ from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
 from analyst_dashboard.data.capitol_trades_fetcher import CapitolTradesFetcher
 
-SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-]{1,12}$")
+SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-_]{1,16}$")
 
 router = APIRouter()
 smart_money_engine = SmartMoneyEngine()
@@ -28,7 +28,7 @@ def _validate_symbol(sym: Optional[str]) -> Optional[str]:
 
 
 @router.get("/overview")
-def get_smart_money_overview(response: Optional[Response] = None):
+def get_smart_money_overview(response: Response = None):
     """Get market-wide congressional disclosures and unusual options flow overview."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"

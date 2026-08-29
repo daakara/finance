@@ -10,7 +10,7 @@ from analyst_dashboard.analyzers.volatility_forecaster import VolatilityForecast
 
 logger = logging.getLogger(__name__)
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
-SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-]{1,12}$")
+SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-_]{1,16}$")
 
 router = APIRouter()
 pipeline = MultiAssetDataPipeline()
@@ -21,7 +21,7 @@ forecaster = VolatilityForecaster()
 def get_volatility_forecast(
     symbol: str,
     horizon: int = Query(30, ge=5, le=90, description="Forecast horizon in days"),
-    response: Optional[Response] = None,
+    response: Response = None,
 ):
     """Generate multi-model GARCH volatility forecasts and ARIMA price forecasts."""
     if response is not None and hasattr(response, "headers"):

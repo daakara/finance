@@ -192,6 +192,21 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             guide_content = f.read()
         self.assertIn("Chapter 8: The No-BS Plain-English Jargon Buster", guide_content)
 
+        # Optimal Entry Exit Card & Screener Vernacular Hooks
+        entry_card_path = os.path.join("frontend", "components", "OptimalEntryExitCard.tsx")
+        screener_path = os.path.join("frontend", "app", "screener", "page.tsx")
+
+        with open(entry_card_path, "r", encoding="utf-8") as f:
+            entry_content = f.read()
+        self.assertIn("finance:vernacular-change", entry_content)
+        self.assertIn("Safe Buy & Sell Plan", entry_content)
+
+        with open(screener_path, "r", encoding="utf-8") as f:
+            screener_content = f.read()
+        self.assertIn("finance:vernacular-change", screener_content)
+        self.assertIn("plainLongTermTabs", screener_content)
+        self.assertIn("All Quality Stocks", screener_content)
+
     def test_security_hardening_contracts(self):
         """Regression Quality Gate: Ensure API key auth, error masking, CSP, and symbol validation are enforced."""
         headers_path = os.path.join("frontend", "public", "_headers")

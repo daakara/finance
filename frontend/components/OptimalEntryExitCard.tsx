@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { OptimalExecutionPlan } from "../lib/api";
 import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
@@ -23,6 +23,22 @@ export default function OptimalEntryExitCard({
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
+  const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+      if (saved) setVernacularMode(saved);
+    }
+    const handleVernacular = (e: Event) => {
+      const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
+      if (custom.detail) setVernacularMode(custom.detail);
+    };
+    window.addEventListener("finance:vernacular-change", handleVernacular);
+    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
+  }, []);
+
+  const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
   if (!executionPlan) return null;
 
@@ -105,11 +121,13 @@ export default function OptimalEntryExitCard({
               } animate-pulse`}
             ></span>
             <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              <span>🎯 {symbol} Optimal Execution Ladder</span>
+              <span>{isPlain ? `🎯 ${symbol} Safe Buy & Sell Plan` : `🎯 ${symbol} Optimal Execution Ladder`}</span>
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-0.5 font-normal">
-            {isDayTrader
+            {isPlain
+              ? "Calculated price ranges for smart accumulation, profit milestones, and loss protection."
+              : isDayTrader
               ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
               : setup_pattern?.includes("Stage 4")
               ? "Stage 4 Correction & Volatility-Constrained Risk Boundaries"
@@ -117,20 +135,20 @@ export default function OptimalEntryExitCard({
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
             <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono text-[10px]">
-              <span>📡</span> Minervini VCP + 14-ATR
+              <span>📡</span> {isPlain ? "Volatility Math Guard" : "Minervini VCP + 14-ATR"}
             </span>
             {hasSmartMoneyConfluence && (
               <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 inline-flex items-center gap-1 font-mono text-[10px]" title="Smart Money Confluence: Institutional call sweeps or congressional purchases detected on this asset.">
-                <span>🏛️</span> Smart Money Inflow (+15% Buffer)
+                <span>🏛️</span> {isPlain ? "Big Player Buying (+15% Buffer)" : "Smart Money Inflow (+15% Buffer)"}
               </span>
             )}
             {isAdverseMacro && (
               <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700/80 inline-flex items-center gap-1 font-mono text-[10px]" title="Elevated macro market volatility (VIX > 20). Defensive sizing active.">
-                <span>⚠️</span> Macro Buffer Active
+                <span>⚠️</span> {isPlain ? "High Market Swings (Defensive)" : "Macro Buffer Active"}
               </span>
             )}
             <span className="hidden sm:inline text-slate-500">•</span>
-            <span className="text-slate-400 text-[11px]">Volatility-anchored risk limits</span>
+            <span className="text-slate-400 text-[11px]">{isPlain ? "Automatic risk boundaries" : "Volatility-anchored risk limits"}</span>
           </div>
         </div>
 
@@ -138,7 +156,7 @@ export default function OptimalEntryExitCard({
         <div className="flex items-center space-x-2">
           <div className="bg-[#090d14] px-3 py-1 rounded-lg border border-[#243044] text-right" title={isStage4 ? "Post-Breakout Pivot Expected Reward-to-Risk Ratio" : "Reward-to-Risk ratio: Potential gain to TP1 relative to maximum risk at Stop Loss"}>
             <span className="text-[9px] text-slate-500 block uppercase font-bold font-mono">
-              {isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
+              {isPlain ? "Profit : Risk" : isStage4 ? "Post-Pivot R:R" : "Reward : Risk"}
             </span>
             <span className={`text-sm font-extrabold font-mono tabular-nums ${isStage4 ? "text-amber-400" : "text-emerald-400"}`}>
               {risk_reward_ratio} : 1.0
@@ -166,15 +184,15 @@ export default function OptimalEntryExitCard({
       {/* Interactive Execution Price Ladder */}
       <div className="space-y-2 bg-[#090d14] p-3.5 rounded-xl border border-[#1e293b]">
         <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider flex items-center justify-between">
-          <span>Mathematical Execution Ladder</span>
+          <span>{isPlain ? "Recommended Price Ladder" : "Mathematical Execution Ladder"}</span>
           <span className="text-slate-400">Current Spot: ${current_price.toFixed(2)}</span>
         </div>
 
         {/* Take Profit 2 */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-emerald-400 font-bold">🟢 TARGET 2 (Extended Runner)</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">• Major Resistance / +3.5x ATR</span>
+            <span className="text-emerald-400 font-bold">{isPlain ? "🟢 PROFIT GOAL 2 (Extended Gains)" : "🟢 TARGET 2 (Extended Runner)"}</span>
+            <span className="text-[10px] text-slate-400 hidden sm:inline">{isPlain ? "• Strong Resistance Level" : "• Major Resistance / +3.5x ATR"}</span>
           </div>
           <div className="text-right">
             <strong className="text-emerald-400 text-sm font-bold tabular-nums">
@@ -189,8 +207,8 @@ export default function OptimalEntryExitCard({
         {/* Take Profit 1 */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-800/30 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-emerald-400 font-bold">🟢 TARGET 1 (Take Profit / Scale)</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">• Prior Swing High / +2.0x ATR</span>
+            <span className="text-emerald-400 font-bold">{isPlain ? "🟢 PROFIT GOAL 1 (Sell Half Here)" : "🟢 TARGET 1 (Take Profit / Scale)"}</span>
+            <span className="text-[10px] text-slate-400 hidden sm:inline">{isPlain ? "• First Target / Lock In Profits" : "• Prior Swing High / +2.0x ATR"}</span>
           </div>
           <div className="text-right">
             <strong className="text-emerald-400 text-sm font-bold tabular-nums">
@@ -223,10 +241,12 @@ export default function OptimalEntryExitCard({
         }`}>
           <div className="flex items-center space-x-2">
             <span className={isStage4 ? "text-amber-400 font-bold" : "text-cyan-400 font-bold"}>
-              {isStage4 ? "⏳ PROSPECTIVE BASE CORRIDOR (AWAITING PIVOT)" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE"}
+              {isStage4 
+                ? (isPlain ? "⏳ WATCHLIST ONLY (WAIT FOR BOUNCE)" : "⏳ PROSPECTIVE BASE CORRIDOR (AWAITING PIVOT)")
+                : (isPlain ? "🔵 BEST BUYING PRICE RANGE (Accumulation Area)" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE")}
             </span>
             <span className="text-[10px] text-slate-400 hidden sm:inline">
-              {isStage4 ? "• 50-Day SMA Reclaim Required" : "• 20 EMA & Value Area Pullback"}
+              {isStage4 ? "• Needs 50-Day Rebound" : (isPlain ? "• Best Price vs Risk Corridor" : "• 20 EMA & Value Area Pullback")}
             </span>
           </div>
           <strong className={`text-sm font-bold font-mono tabular-nums ${isStage4 ? "text-amber-300" : "text-cyan-300"}`}>
@@ -245,8 +265,8 @@ export default function OptimalEntryExitCard({
         {/* Stop Loss / Invalidation */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-rose-400 font-bold">🛑 HARD STOP-LOSS / INVALIDATION</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">• -1.5x ATR Volatility Cut Floor</span>
+            <span className="text-rose-400 font-bold">{isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION"}</span>
+            <span className="text-[10px] text-slate-400 hidden sm:inline">{isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor"}</span>
           </div>
           <div className="text-right">
             <strong className="text-rose-400 text-sm font-bold font-mono tabular-nums">
@@ -263,7 +283,7 @@ export default function OptimalEntryExitCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
           <span className="text-[10px] text-cyan-400 block uppercase font-bold font-mono">
-            Setup Pattern & Stage Analysis
+            {isPlain ? "Chart Pattern & Setup Analysis" : "Setup Pattern & Stage Analysis"}
           </span>
           <div className="font-bold text-slate-200">{setup_pattern}</div>
           <div className="text-[11px] text-slate-400">{entry_thesis}</div>
@@ -277,7 +297,7 @@ export default function OptimalEntryExitCard({
 
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#1e293b] space-y-1">
           <span className="text-[10px] text-rose-400 block uppercase font-bold font-mono">
-            Strict Invalidation & Exit Condition
+            {isPlain ? "Why & When To Exit (Rule)" : "Strict Invalidation & Exit Condition"}
           </span>
           <div className="font-bold text-slate-200">{stage_phase}</div>
           <div className="text-[11px] text-slate-400">{invalidation_condition}</div>

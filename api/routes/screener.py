@@ -36,8 +36,8 @@ LONG_TERM_CANDIDATES = [
     "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
     # Clean Tech, Power Infrastructure & Industrials
     "VRT", "ETN", "PWR", "GEV", "FIX", "EME",
-    # Disruptive Cloud & EDA Infrastructure
-    "ANET", "NOW", "SNPS", "CDNS",
+    # Disruptive Cloud, EdTech & EDA Infrastructure
+    "DUOL", "ANET", "NOW", "SNPS", "CDNS",
 ]
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
@@ -75,7 +75,7 @@ class ScreenerRequest(BaseModel):
 
 
 @router.post("/run")
-def run_screener(request: ScreenerRequest = None, response: Optional[Response] = None):
+def run_screener(request: ScreenerRequest = None, response: Response = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
@@ -96,10 +96,10 @@ run_screener_post = run_screener
 
 @router.get("/run")
 def run_screener_get(
+    response: Response = None,
     filter_type: str = "all",
     user_role: str = "LONG_TERM",
     custom_tickers: Optional[str] = None,
-    response: Optional[Response] = None,
 ):
     """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
     if response is not None and hasattr(response, "headers"):
