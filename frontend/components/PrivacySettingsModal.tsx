@@ -119,7 +119,7 @@ export default function PrivacySettingsModal({
         {/* Footer */}
         <div className="flex items-center justify-between pt-2 border-t border-[#1e293b] text-xs">
           <span className="text-slate-500 font-mono text-[10px]">
-            Server: Self-Hosted Matomo (data.fpldna.com)
+            Engine: Self-Hosted Matomo (EU-Isolated & Cookieless)
           </span>
           <button
             type="button"
