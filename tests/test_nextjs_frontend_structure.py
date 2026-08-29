@@ -188,9 +188,15 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("BS Detector", factor_content)
         self.assertIn("finance:vernacular-change", factor_content)
 
+        guide_content_comp = os.path.join("frontend", "components", "GuideContent.tsx")
+        with open(guide_content_comp, "r", encoding="utf-8") as f:
+            guide_comp_text = f.read()
+        self.assertIn("Chapter 8: The No-BS Plain-English Jargon Buster", guide_comp_text)
+        self.assertIn("finance:vernacular-change", guide_comp_text)
+
         with open(guide_path, "r", encoding="utf-8") as f:
             guide_content = f.read()
-        self.assertIn("Chapter 8: The No-BS Plain-English Jargon Buster", guide_content)
+        self.assertIn("GuideContent", guide_content)
 
         # Optimal Entry Exit Card & Screener Vernacular Hooks
         entry_card_path = os.path.join("frontend", "components", "OptimalEntryExitCard.tsx")

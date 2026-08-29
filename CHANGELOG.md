@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-08-29
+
+### Dynamic Dual-Vernacular Guide Engine (Plain English ⚡ vs. Pro Quant 🏛️)
+- 💬 **Dynamic Client Re-rendering (`components/GuideContent.tsx`)**: The entire Guide page is now dynamically reactive to the `Plain English` / `Pro Quant` toggle in the navigation bar via custom event listening (`finance:vernacular-change`) and `localStorage` persistence.
+- ⚡ **100% Plain English Mode**: Automatically transforms all headlines, descriptions, position sizing math, 4 trade execution zones, politician tracking, and 4 trade co-pilots into friendly, intuitive, conversational English.
+- 🏛️ **100% Pro Quant Mode**: Displays exact mathematical equations (Cornish-Fisher polynomial expansion, Z-scores, Sortino denominators, Kupiec POF tests), statutory citations (Public Law 112-105 STOCK Act), and institutional econometric boundaries.
+- 🌐 **Preserved SEO Rich Snippets (`app/guide/page.tsx`)**: Retained server-rendered Schema.org `TechArticle`, `FAQPage`, and `BreadcrumbList` structured data for search engine discovery.
+
+---
+
 ## [2.10.0] - 2026-08-29
 
 ### Field Manual & Quantitative Guide Modernization (v2.9.0 Specification)
