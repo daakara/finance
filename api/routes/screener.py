@@ -78,7 +78,9 @@ class ScreenerRequest(BaseModel):
 def run_screener(request: ScreenerRequest = None, response: Response = None):
     """Run the Hidden Gems Discovery Screener against Peter Lynch GARP and Greenblatt Magic Formula criteria."""
     if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     role = request.user_role if request and request.user_role else "LONG_TERM"
     default_pool = DAY_TRADER_CANDIDATES if role == "DAY_TRADER" else LONG_TERM_CANDIDATES
     tickers = (request.tickers if request and request.tickers else default_pool)
@@ -103,7 +105,9 @@ def run_screener_get(
 ):
     """GET endpoint supporting live screener execution, archetype filtering, and on-demand custom ticker scanning."""
     if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=900"
+        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     
     is_day_trader = (user_role == "DAY_TRADER")
 

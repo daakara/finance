@@ -156,7 +156,9 @@ def get_asset_analytics(
 ):
     """Fetch live market data, calculate intraday technicals, Cornish-Fisher risk, Self-Healing Audit & Market Graph."""
     if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+        response.headers["Cache-Control"] = "public, max-age=15, s-maxage=60, stale-while-revalidate=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=60, stale-while-revalidate=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=60, stale-while-revalidate=86400"
 
     # Server-Side Input Validation Gate
     upper_sym = symbol.upper().strip()

@@ -31,7 +31,9 @@ def _validate_symbol(sym: Optional[str]) -> Optional[str]:
 def get_smart_money_overview(response: Response = None):
     """Get market-wide congressional disclosures and unusual options flow overview."""
     if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
     overview = smart_money_engine.get_smart_money_overview()
     overview["regulatory_sources"] = {
         "sec_edgar": "Official SEC Form 4 & 10-K Public API",
@@ -42,8 +44,12 @@ def get_smart_money_overview(response: Response = None):
 
 
 @router.get("/congress")
-def get_congress_trades(symbol: Optional[str] = None):
+def get_congress_trades(symbol: Optional[str] = None, response: Response = None):
     """Get Capitol Hill stock disclosures, optionally filtered by symbol."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
     return {
         "trades": smart_money_engine.get_congressional_trades(valid_sym),
@@ -52,15 +58,23 @@ def get_congress_trades(symbol: Optional[str] = None):
 
 
 @router.get("/options-flow")
-def get_options_flow(symbol: Optional[str] = None):
+def get_options_flow(symbol: Optional[str] = None, response: Response = None):
     """Get institutional options sweeps and dark pool blocks, optionally filtered by symbol."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
     return {"flow": smart_money_engine.get_options_flow(valid_sym)}
 
 
 @router.get("/sec-filings/{symbol}")
-def get_sec_filings(symbol: str):
+def get_sec_filings(symbol: str, response: Response = None):
     """Fetch official SEC EDGAR 10-K, 10-Q, 8-K, and Form 4 insider filings."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=120, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
     return {
         "symbol": valid_sym,
@@ -69,10 +83,14 @@ def get_sec_filings(symbol: str):
 
 
 @router.get("/finra-darkpool/{symbol}")
-def get_finra_darkpool(symbol: str):
+def get_finra_darkpool(symbol: str, response: Response = None):
     """Fetch official FINRA Alternative Trading System (ATS) dark pool shares & short volumes."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=120, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
     return {
         "symbol": valid_sym,
-        "metrics": finra_fetcher.get_ats_metrics(valid_sym),
+        "darkpool": finra_fetcher.get_darkpool_activity(valid_sym),
     }

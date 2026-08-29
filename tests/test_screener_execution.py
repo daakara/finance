@@ -143,6 +143,16 @@ def test_screener_custom_tickers_on_demand():
         assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
 
 
+def test_screener_cloudflare_cache_control_headers():
+    """Verify that screener endpoints output Cloudflare edge SWR and stale-if-error headers."""
+    resp = Response()
+    run_screener_get(resp, filter_type="all")
+    assert "Cache-Control" in resp.headers
+    assert "stale-while-revalidate=86400" in resp.headers["Cache-Control"]
+    assert "stale-if-error=86400" in resp.headers["Cache-Control"]
+    assert resp.headers.get("Cloudflare-CDN-Cache-Control") == "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
+
+
 if __name__ == "__main__":
     test_optimal_execution_levels()
     test_screener_differential_subsets()
@@ -150,5 +160,6 @@ if __name__ == "__main__":
     test_screener_candidate_data_integrity()
     test_screener_dual_horizon_distinct_universes()
     test_screener_custom_tickers_on_demand()
+    test_screener_cloudflare_cache_control_headers()
     print("[PASS] ALL SCREENER EXECUTION & DIFFERENTIAL TESTS PASSED SUCCESSFULLY")
 

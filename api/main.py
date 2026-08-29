@@ -133,7 +133,29 @@ app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management
 app.include_router(smart_money.router, prefix="/api/v1/smart-money", tags=["Smart Money & Flow"])
 
 
+@app.on_event("startup")
+async def startup_prewarm_universe():
+    """Asynchronously pre-warm core universe cache on server boot to eliminate cold-start latency."""
+    import asyncio
+    import threading
+    
+    def _prewarm():
+        try:
+            logger.info("Initializing background universe pre-warming...")
+            # Pre-warm Screener core universe
+            screener.run_screener(None)
+            logger.info("Background universe pre-warming completed successfully.")
+        except Exception as e:
+            logger.warning(f"Background pre-warming deferred: {e}")
+
+    thread = threading.Thread(target=_prewarm, daemon=True)
+    thread.start()
+
+
 @app.get("/health", tags=["Health"])
-def health_check():
-    """Service health check endpoint."""
+def health_check(response: Response = None):
+    """Service health check endpoint with Cloudflare edge bypass."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return {"status": "online"}
+

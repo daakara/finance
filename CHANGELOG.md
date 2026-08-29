@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-08-29
+
+### Cloudflare Edge SWR Shield, Stale-If-Error Fallback & Server Boot Pre-Warming
+- ⚡ **Cloudflare Edge SWR & Stale-If-Error Directives (`api/routes/`)**: Configured RFC 5861 `Cache-Control`, `CDN-Cache-Control`, and `Cloudflare-CDN-Cache-Control` (`max-age=15..60, s-maxage=60..300, stale-while-revalidate=86400, stale-if-error=86400`) across `analytics.py`, `screener.py`, and `smart_money.py`, delivering $<10\text{ms}$ edge cache delivery and shielding upstream data providers from rate limits.
+- 🚀 **Server Boot Universe Pre-Warming (`api/main.py`)**: Added background startup pre-warming thread initializing the core 60-ticker universe into in-memory `INFO_CACHE` on boot, eliminating first-request cold-start latency.
+- 🛡️ **Cloudflare Pages Headers Hardening (`frontend/public/_headers`)**: Added explicit immutable caching for static Next.js chunks (`/_next/static/*`) and edge proxy rules for API routes.
+- 🧪 **Automated Cache Header CI Test (`tests/test_screener_execution.py`)**: Added automated unit test validating that screener endpoints output full SWR and `stale-if-error` headers (55/55 tests passing).
+
+---
+
 ## [2.5.0] - 2026-08-29
 
 ### Zero Static Placeholders Across All Pre-Flight Checklist Validation Gates
