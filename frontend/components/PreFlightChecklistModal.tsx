@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 
@@ -12,6 +12,10 @@ interface PreFlightChecklistModalProps {
   riskRewardRatio: number;
   setupPattern?: string;
   isDayTrader?: boolean;
+  isStage4?: boolean;
+  optimalEntryMin?: number;
+  optimalEntryMax?: number;
+  breakoutPivot?: number;
 }
 
 export default function PreFlightChecklistModal({
@@ -24,6 +28,10 @@ export default function PreFlightChecklistModal({
   riskRewardRatio,
   setupPattern = "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
   isDayTrader = false,
+  isStage4 = false,
+  optimalEntryMin,
+  optimalEntryMax,
+  breakoutPivot,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -46,16 +54,20 @@ export default function PreFlightChecklistModal({
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
-  // 5-Point Quantitative Decision Checklist Evaluation
+  // Dynamic 5-Point Quantitative Decision Checklist Evaluation
   const isRRPassed = riskRewardRatio >= 2.0;
-  const isTrendPassed = true;
+  
+  // Check 2: Technical Trend Alignment & Stage Discipline
+  const isExtendedAboveZone = Boolean(optimalEntryMax && currentPrice > optimalEntryMax * 1.02);
+  const isTrendPassed = !isStage4 && !isExtendedAboveZone;
+  
   const isSmartMoneyPassed = true;
   const isCatalystPassed = true;
   const isMacroPassed = true;
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = Math.round((passedCount / 5) * 100);
-  const isCleared = convictionPct >= 80;
+  const isCleared = convictionPct >= 80 && !isStage4;
 
   const tradePlanMarkdown = `### 📋 ARX Terminal Trade Execution Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -66,7 +78,7 @@ export default function PreFlightChecklistModal({
 - **Stop Loss**: $${stopLoss.toFixed(2)} (${(((stopLoss - currentPrice) / currentPrice) * 100).toFixed(2)}%)
 - **Target 1**: $${takeProfit1.toFixed(2)} (+${(((takeProfit1 - currentPrice) / currentPrice) * 100).toFixed(2)}%)
 - **Risk / Reward**: ${riskRewardRatio.toFixed(2)} : 1.0
-- **Pre-Flight Clearance Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ HIGH HAZARD / CONDITIONAL"})
+- **Pre-Flight Clearance Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"})
 `;
 
   const handleCopy = async () => {
@@ -148,19 +160,33 @@ export default function PreFlightChecklistModal({
             </span>
           </div>
 
-          {/* Check 2: Technical Trend Alignment */}
+          {/* Check 2: Technical Trend Alignment & Stage Discipline */}
           <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
             <div className="space-y-0.5">
               <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                <span>✅</span>
+                <span>{isTrendPassed ? "✅" : (isStage4 ? "⏳" : "⚠️")}</span>
                 <span>{isPlain ? "2. Trend & Moving Averages (Price in upward corridor)" : "2. Technical Structure (Above 20 EMA / 50 SMA Pivot)"}</span>
               </div>
               <p className="text-[11px] text-slate-400 pl-5">
-                Spot price (${currentPrice.toFixed(2)}) is defending key moving average support.
+                {isStage4
+                  ? (isPlain
+                      ? `⚠️ Watchlist Only: Spot price ($${currentPrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
+                      : `Stage 4 correction structure: Spot ($${currentPrice.toFixed(2)}) requires 50-day breakout pivot above $${(breakoutPivot || currentPrice * 1.072).toFixed(2)}.`)
+                  : (isExtendedAboveZone
+                      ? (isPlain
+                          ? `⚠️ Extended: Price is above ideal buy zone ($${optimalEntryMin?.toFixed(2)} - $${optimalEntryMax?.toFixed(2)}). Wait for pullback.`
+                          : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
+                      : (isPlain
+                          ? `Spot price ($${currentPrice.toFixed(2)}) is inside the verified buying range defending key support.`
+                          : `Defending key moving average support (20 EMA / 50 SMA).`))}
               </p>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-950 text-emerald-300 border-emerald-800 shrink-0">
-              PASS
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
+              isTrendPassed 
+                ? "bg-emerald-950 text-emerald-300 border-emerald-800" 
+                : (isStage4 ? "bg-amber-950 text-amber-300 border-amber-800" : "bg-rose-950 text-rose-300 border-rose-800")
+            }`}>
+              {isTrendPassed ? "PASS" : (isStage4 ? "STAGE 4 WAIT" : "CHASING")}
             </span>
           </div>
 

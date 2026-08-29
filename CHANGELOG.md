@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-08-29
+
+### Dynamic Stage 4 & Buy Zone Coupling in Pre-Flight Trade Clearance Gate
+- 🛑 **Pre-Flight Trend & Stage Gate (`PreFlightChecklistModal.tsx`)**: Eliminated the static pass blindspot by dynamically wiring Check 2 ("Trend & Moving Averages / Buy Zone Corridor") directly to `isStage4`, `optimalEntryMin`, and `optimalEntryMax`.
+- ⚠️ **Stage 4 Invalidation Discipline**: When an asset is in a Stage 4 correction or awaiting a 50-day base breakout (e.g. `LRCX`), Check 2 automatically triggers `❌ / ⏳ STAGE 4 WAIT`, and the overall trade readiness score shifts to `⚠️ CONDITIONAL / AWAIT BASE CLEARANCE (4/5 Passed)` and blocks clearance to execute.
+- 🎯 **Extended Price / Chasing Protection**: Added automatic chase warnings if spot price trades above the verified accumulation ceiling ($>+2\%$ above `optimalEntryMax`).
+
+---
+
 ## [2.2.0] - 2026-08-29
 
 ### Quantitative Methodology Guardian (`quant-guardian`) & Domain Invariant Test Suite

@@ -354,6 +354,10 @@ export default function OptimalEntryExitCard({
         riskRewardRatio={risk_reward_ratio}
         setupPattern={setup_pattern}
         isDayTrader={isDayTrader}
+        isStage4={isStage4}
+        optimalEntryMin={optimal_entry_min}
+        optimalEntryMax={optimal_entry_max}
+        breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
       />
 
       <PositionSizerModal
