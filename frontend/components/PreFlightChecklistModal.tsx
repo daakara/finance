@@ -47,7 +47,7 @@ export default function PreFlightChecklistModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  // Consolidated effect â€” active only while modal is open.
+  // Consolidated effect — active only while modal is open.
   // Handles: localStorage read, vernacular listener, Escape key, Tab focus trap.
   useEffect(() => {
     if (!isOpen) return;
@@ -116,13 +116,15 @@ export default function PreFlightChecklistModal({
   const stopLossPct = safePrice > 0 ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "-5.00";
   const target1Pct = safePrice > 0 ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "+10.00";
 
-  // Dynamic 5-Point Quantitative Decision Checklist Evaluation
+  // ── 5-Point Quantitative Decision Checklist ──────────────────────────────
+
+  // Check 1: Asymmetric Risk-Reward
   const isRRPassed = safeRR >= 2.0;
-  
+
   // Check 2: Technical Trend Alignment & Stage Discipline
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
   const isTrendPassed = !isStage4 && !isExtendedAboveZone;
-  
+
   // Check 3: Smart Money Flow & Distribution Traps
   // distributionTrapActive = true means a trap EXISTS (bad). Naming is unambiguous.
   const distributionTrapActive = isDistributionTrap ?? Boolean(
@@ -145,34 +147,34 @@ export default function PreFlightChecklistModal({
   const convictionPct = Math.round((passedCount / 5) * 100);
   const isCleared = convictionPct >= 80 && !isStage4 && isSmartMoneyPassed;
 
-  // Analytics â€” inline try/catch, no useEffect needed (stable values within a single open session)
+  // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
     trackPreFlightOutcome(symbol, passedCount, isCleared);
   } catch (err) {
     console.warn("Analytics error in PreFlightChecklistModal:", err);
   }
 
-  // Trade plan markdown â€” differentiated by vernacularMode
+  // Trade plan markdown — differentiated by vernacularMode
   const tradePlanMarkdown = isPlain
-    ? `### ðŸ“‹ ARX Terminal Trade Plan: ${symbol}
+    ? `### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
-- **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "âš¡ Day Trader" : "ðŸ›ï¸ Swing / Long-Term Compounder"}
+- **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "⚡ Day Trader" : "🏛️ Swing / Long-Term Compounder"}
 - **Current Price**: $${safePrice.toFixed(2)}
-- **Buy Zone**: $${safeEntryMin.toFixed(2)} â€“ $${safeEntryMax.toFixed(2)}
+- **Buy Zone**: $${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}
 - **Stop Loss**: $${safeStop.toFixed(2)} (${stopLossPct}%)
 - **Profit Goal 1**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
-- **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "ðŸŸ¢ CLEARED" : "âš ï¸ NOT CLEARED â€” wait for better setup"})
+- **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
 `
-    : `### ðŸ“‹ ARX Institutional Execution Brief: ${symbol}
+    : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
-- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: $${safeEntryMin.toFixed(2)}â€“$${safeEntryMax.toFixed(2)}
+- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: $${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}
 - **Hard Stop / Invalidation**: $${safeStop.toFixed(2)} (${stopLossPct}%)
 - **Target 1 (TP1)**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
 - **Risk/Reward**: ${safeRR.toFixed(2)} : 1.0
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
-- **Pre-Flight Clearance**: ${convictionPct}% â€” ${isCleared ? "ðŸŸ¢ CLEARED FOR EXECUTION" : "âš ï¸ CONDITIONAL / AWAIT BASE CLEARANCE"}
+- **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
 - **VIX Regime**: ${safeVix.toFixed(1)} | **Distribution Trap**: ${distributionTrapActive ? "DETECTED" : "CLEAR"} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
 `;
 
@@ -198,10 +200,10 @@ export default function PreFlightChecklistModal({
         ref={modalRef}
         className="bg-[#0b1019] border border-cyan-800/80 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl font-sans text-slate-200 relative flex flex-col max-h-[90vh]"
       >
-        {/* Header â€” pinned */}
+        {/* Header — pinned */}
         <div className="flex items-center justify-between border-b border-[#1e293b] pb-3.5 shrink-0">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">âœˆï¸</span>
+            <span className="text-xl">✈️</span>
             <div>
               <h2 id="preflight-title" className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 <span>{isPlain ? `Pre-Flight Trade Checklist: ${symbol}` : `Institutional Pre-Flight Clearance: ${symbol}`}</span>
