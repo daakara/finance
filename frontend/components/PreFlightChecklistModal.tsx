@@ -155,6 +155,9 @@ export default function PreFlightChecklistModal({
   }
 
   // Trade plan markdown — differentiated by vernacularMode
+  const safeTarget2 = safePrice > 0 ? Number((safeTarget * 1.12).toFixed(2)) : Number((safePrice * 1.25).toFixed(2));
+  const target2Pct = safePrice > 0 ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "+22.00";
+
   const tradePlanMarkdown = isPlain
     ? `### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
@@ -162,7 +165,9 @@ export default function PreFlightChecklistModal({
 - **Current Price**: $${safePrice.toFixed(2)}
 - **Buy Zone**: $${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}
 - **Stop Loss**: $${safeStop.toFixed(2)} (${stopLossPct}%)
-- **Profit Goal 1**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
+- **Profit Goal 1 (TP1)**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
+- **Profit Goal 2 (TP2 Runner)**: $${safeTarget2.toFixed(2)} (+${target2Pct}%)
+- **Tactical Rule (Risk-Free Transition)**: When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a risk-free trade.
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
 - **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
 `
@@ -172,6 +177,8 @@ export default function PreFlightChecklistModal({
 - **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: $${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}
 - **Hard Stop / Invalidation**: $${safeStop.toFixed(2)} (${stopLossPct}%)
 - **Target 1 (TP1)**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
+- **Target 2 (TP2 Runner)**: $${safeTarget2.toFixed(2)} (+${target2Pct}%)
+- **Execution Rule (Risk-Free Ratchet)**: Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure zero-risk runner convexity.
 - **Risk/Reward**: ${safeRR.toFixed(2)} : 1.0
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}

@@ -6,6 +6,7 @@ import InsightProvenanceModal from "./InsightProvenanceModal";
 import PositionSizerModal from "./PositionSizerModal";
 import AlertTriggerModal from "./AlertTriggerModal";
 import PreFlightChecklistModal from "./PreFlightChecklistModal";
+import { addPortfolioPosition } from "../lib/portfolio";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -26,6 +27,7 @@ export default function OptimalEntryExitCard({
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
   const [isChecklistOpen, setIsChecklistOpen] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const [logStatus, setLogStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -146,6 +148,20 @@ export default function OptimalEntryExitCard({
     // Distribution trap = more bearish options + net congressional selling
     return bearishOptions > bullishOptions && netSelling > netBuying;
   })();
+
+  const handleLogToPortfolio = () => {
+    const res = addPortfolioPosition({
+      symbol,
+      name: symbol,
+      shares: Math.max(1, Math.round(2500 / (current_price || 100))),
+      entryPrice: current_price,
+      currentPrice: current_price,
+      targetPrice: take_profit_1,
+      stopLossPrice: stop_loss,
+    });
+    setLogStatus(res.message);
+    setTimeout(() => setLogStatus(null), 3000);
+  };
 
   return (
     <div
@@ -304,6 +320,22 @@ export default function OptimalEntryExitCard({
           </div>
         )}
 
+        {/* Tactical Trade Management & Risk-Free Ratchet Rule */}
+        <div className="p-2.5 rounded-lg bg-[#0e1626] border border-cyan-900/50 text-xs space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-bold text-cyan-300">
+            <span className="flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>{isPlain ? "Multi-Stage Profit Rule:" : "Tactical Execution & Ratchet Rule:"}</span>
+            </span>
+            <span className="text-[10px] text-emerald-400 font-mono">Risk-Free Runner</span>
+          </div>
+          <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+            {isPlain
+              ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to purchase price ($${current_price.toFixed(2)}) for a completely risk-free hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
+              : `Scale 0.50x tranche at TP1 ($${take_profit_1.toFixed(2)}). Immediately ratchet hard stop to cost basis ($${current_price.toFixed(2)}) to lock in net positive expectancy and allow remaining runner to compound to TP2 ($${take_profit_2.toFixed(2)}).`}
+          </p>
+        </div>
+
         {/* Stop Loss / Invalidation */}
         <div className="flex items-center justify-between p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-xs">
           <div className="flex items-center space-x-2">
@@ -346,7 +378,7 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 📜 Deep Dive Provenance, Position Sizer, Pre-Flight & Alerts Triggers */}
+      {/* 📜 Deep Dive Provenance, Position Sizer, Pre-Flight, Alerts & Portfolio Triggers */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -374,6 +406,15 @@ export default function OptimalEntryExitCard({
           >
             <span>🔔</span>
             <span>Set Trigger Alert</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogToPortfolio}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/50 text-indigo-300 flex items-center gap-1.5 shadow"
+          >
+            <span>💼</span>
+            <span>{logStatus ? logStatus : (isPlain ? "Add to Paper Portfolio" : "Log Plan to Portfolio")}</span>
           </button>
         </div>
 

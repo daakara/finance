@@ -139,13 +139,22 @@ export default function PortfolioPage() {
       }
     }
 
+    const handlePortfolioUpdate = () => {
+      const refreshed = loadPortfolioPositions();
+      setPositions(refreshed);
+      setSummary(calculatePortfolioSummary(refreshed));
+      refreshQuotes(refreshed);
+    };
+
     const handlePurge = () => {
       refreshQuotes(loaded);
     };
 
     window.addEventListener("finance:cache-purge", handlePurge);
+    window.addEventListener("finance:portfolio-updated", handlePortfolioUpdate);
     return () => {
       window.removeEventListener("finance:cache-purge", handlePurge);
+      window.removeEventListener("finance:portfolio-updated", handlePortfolioUpdate);
     };
   }, [refreshQuotes]);
 

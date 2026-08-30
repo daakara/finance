@@ -102,6 +102,59 @@ export function savePortfolioPositions(positions: PortfolioPosition[]): void {
   }
 }
 
+export function addPortfolioPosition(pos: {
+  symbol: string;
+  name: string;
+  shares?: number;
+  entryPrice: number;
+  currentPrice: number;
+  targetPrice?: number;
+  stopLossPrice?: number;
+  assetType?: "Stock" | "ETF" | "Crypto";
+}): { success: boolean; isDuplicate: boolean; message: string } {
+  if (typeof window === "undefined") return { success: false, isDuplicate: false, message: "Window undefined" };
+  try {
+    const existing = loadPortfolioPositions();
+    const symUpper = (pos.symbol || "").toUpperCase().trim();
+    const existingIdx = existing.findIndex((p) => p.symbol.toUpperCase() === symUpper);
+
+    if (existingIdx >= 0) {
+      return {
+        success: false,
+        isDuplicate: true,
+        message: `${symUpper} is already in your Paper Portfolio`,
+      };
+    }
+
+    const calculatedShares = (pos.shares && pos.shares > 0)
+      ? pos.shares
+      : Math.max(1, Math.round(2500 / (pos.entryPrice || 100)));
+
+    const newPos: PortfolioPosition = {
+      symbol: symUpper,
+      name: pos.name || symUpper,
+      shares: calculatedShares,
+      entryPrice: pos.entryPrice,
+      currentPrice: pos.currentPrice || pos.entryPrice,
+      targetPrice: pos.targetPrice,
+      stopLossPrice: pos.stopLossPrice,
+      addedAt: new Date().toISOString().split("T")[0],
+      assetType: pos.assetType || (symUpper.includes("-USD") || ["BTC", "ETH", "SOL"].includes(symUpper) ? "Crypto" : "Stock"),
+    };
+
+    savePortfolioPositions([newPos, ...existing]);
+    window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
+    return {
+      success: true,
+      isDuplicate: false,
+      message: `Added ${symUpper} to Paper Portfolio!`,
+    };
+  } catch (err) {
+    console.error("Failed to add portfolio position:", err);
+    return { success: false, isDuplicate: false, message: "Failed to save position" };
+  }
+}
+
 export function calculatePortfolioSummary(positions: PortfolioPosition[]): PortfolioSummary {
   let totalEquity = 0;
   let totalCost = 0;
