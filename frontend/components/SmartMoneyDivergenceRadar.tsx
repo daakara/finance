@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -176,21 +176,23 @@ export default function SmartMoneyDivergenceRadar() {
           const isTrap = asset.divergenceType === "DISTRIBUTION_TRAP";
 
           return (
-            <div
+            <Link
               key={asset.symbol}
-              className={`p-4 rounded-xl border transition-all hover:border-cyan-500/60 bg-[#111722] space-y-3 ${
+              href={`/?symbol=${asset.symbol}`}
+              aria-label={`Analyze ${asset.symbol} (${asset.name}): ${isStealth ? (isPlain ? "Quiet Accumulation" : "Stealth Accumulation") : isTrap ? (isPlain ? "Hype Trap" : "Distribution Trap") : (isPlain ? "Balanced Inflow" : "Convergent Inflow")}`}
+              className={`p-4 rounded-xl border transition-all duration-150 active:scale-[0.98] active:bg-[#0e1522] hover:border-cyan-500/80 bg-[#111722] space-y-3 block group cursor-pointer ${
                 isStealth
-                  ? "border-emerald-800/60 shadow-[0_0_12px_rgba(16,185,129,0.08)]"
+                  ? "border-emerald-800/60 shadow-[0_0_12px_rgba(16,185,129,0.08)] hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]"
                   : isTrap
-                  ? "border-rose-800/60 shadow-[0_0_12px_rgba(244,63,94,0.08)]"
-                  : "border-[#243044]"
+                  ? "border-rose-800/60 shadow-[0_0_12px_rgba(244,63,94,0.08)] hover:shadow-[0_0_16px_rgba(244,63,94,0.2)]"
+                  : "border-[#243044] hover:shadow-[0_0_16px_rgba(6,182,212,0.15)]"
               }`}
             >
               {/* Asset Header */}
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <strong className="text-base font-black text-white font-mono">{asset.symbol}</strong>
+                    <strong className="text-base font-black text-white font-mono group-hover:text-cyan-400 transition-colors">{asset.symbol}</strong>
                     <span className="text-xs text-slate-400 truncate max-w-[120px]">{asset.name}</span>
                   </div>
                   <div className="text-xs font-mono font-bold text-slate-300">
@@ -244,23 +246,20 @@ export default function SmartMoneyDivergenceRadar() {
               </div>
 
               {/* Description & Signal */}
-              <p className="text-[11px] text-slate-300 leading-relaxed font-sans bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b]">
+              <p className="text-[11px] text-slate-300 leading-relaxed font-sans bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b] group-hover:border-cyan-900/60 transition-colors">
                 {asset.signalDescription}
               </p>
 
               {/* Footer CTA */}
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[#1e293b]">
-                <span className="text-[10px] text-slate-400 truncate max-w-[170px]" title={asset.keyInsider}>
+                <span className="text-[10px] text-slate-400 truncate max-w-[150px] sm:max-w-[170px]" title={asset.keyInsider}>
                   🏛️ {asset.keyInsider}
                 </span>
-                <Link
-                  href={`/?symbol=${asset.symbol}`}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold font-mono hover:underline flex items-center gap-1"
-                >
-                  Analyze ➔
-                </Link>
+                <span className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-cyan-500/10 border-cyan-500/40 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 group-hover:border-cyan-400 transition-colors flex items-center gap-1 shrink-0">
+                  Analyze <span className="group-hover:translate-x-0.5 transition-transform">➔</span>
+                </span>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
