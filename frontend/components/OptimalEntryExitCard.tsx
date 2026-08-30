@@ -107,6 +107,46 @@ export default function OptimalEntryExitCard({
     macroRegime?.vix && Number(macroRegime.vix) > 20
   );
 
+  // ── Pre-Flight real data derivation ─────────────────────────────────────
+  // VIX proxy: FredMacroData doesn't expose VIX directly; macroRiskMultiplier
+  // encodes macro stress (1.0 = neutral, >1.1 = elevated). Map to VIX-equivalent:
+  // multiplier 1.0 → VIX~15, 1.1 → VIX~20, 1.2 → VIX~26, 1.25+ → VIX~32
+  const derivedVix = macroRegime?.macroRiskMultiplier
+    ? Math.round((Number(macroRegime.macroRiskMultiplier) - 1.0) * 130 + 15)
+    : 15;
+
+  // hasImminentEarnings: true if any catalyst event is of Earnings category
+  // and its expectedDate is within 7 days from today
+  const derivedHasImminentEarnings = (() => {
+    const catalysts = (executionPlan as any)?.catalystForecast?.catalysts;
+    if (!Array.isArray(catalysts)) return false;
+    const now = Date.now();
+    return catalysts.some((c: any) => {
+      if (!c?.expectedDate) return false;
+      const diff = (new Date(c.expectedDate).getTime() - now) / 86400000;
+      return diff >= 0 && diff <= 7 && (c.category === "Earnings" || c.category === "FDA" || c.volatilityImpact === "Very High");
+    });
+  })();
+
+  // isDistributionTrap: true if net smart money is bearish on this asset
+  const derivedIsDistributionTrap = (() => {
+    if (!smartMoney) return undefined; // let modal use catalog heuristic
+    const bearishOptions = (smartMoney.optionsFlow || []).filter((f: any) =>
+      f.sentiment === "Bearish" || f.type?.includes("PUT")
+    ).length;
+    const bullishOptions = (smartMoney.optionsFlow || []).filter((f: any) =>
+      f.sentiment === "Bullish" || f.type?.includes("CALL")
+    ).length;
+    const netSelling = (smartMoney.congressTrades || []).filter((t: any) =>
+      t.tx_type === "Sale" || t.transaction_type?.toLowerCase().includes("sale")
+    ).length;
+    const netBuying = (smartMoney.congressTrades || []).filter((t: any) =>
+      t.tx_type === "Purchase" || t.transaction_type?.toLowerCase().includes("purchase")
+    ).length;
+    // Distribution trap = more bearish options + net congressional selling
+    return bearishOptions > bullishOptions && netSelling > netBuying;
+  })();
+
   return (
     <div
       className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
@@ -358,6 +398,9 @@ export default function OptimalEntryExitCard({
         optimalEntryMin={optimal_entry_min}
         optimalEntryMax={optimal_entry_max}
         breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
+        vix={derivedVix}
+        hasImminentEarnings={derivedHasImminentEarnings}
+        isDistributionTrap={derivedIsDistributionTrap}
       />
 
       <PositionSizerModal
