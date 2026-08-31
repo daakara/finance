@@ -209,7 +209,7 @@ function TerminalContent() {
         {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
-          <div className="min-h-[380px] sm:min-h-[420px]">
+          <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
             {data && (
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-[10px] font-mono">
                 <div className="flex items-center gap-2">
@@ -229,7 +229,11 @@ function TerminalContent() {
             )}
 
             {/* 🎯 Weekly High-Confluence Alpha Spotlight (Auto-folded on dedicated ticker search) */}
-            <WeeklyConfluenceSpotlight defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"} />
+            <WeeklyConfluenceSpotlight
+              defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
+              onSelectSymbol={handleSelectSymbol}
+              selectedSymbol={selectedSymbol}
+            />
 
             {/* 💡 Intelligent Did You Mean Ticker Recommendation Banner */}
             {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (

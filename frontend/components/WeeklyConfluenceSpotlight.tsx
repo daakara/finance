@@ -28,9 +28,15 @@ interface ConfluenceCandidate {
 
 interface WeeklyConfluenceSpotlightProps {
   defaultCollapsed?: boolean;
+  onSelectSymbol?: (symbol: string) => void;
+  selectedSymbol?: string;
 }
 
-export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: WeeklyConfluenceSpotlightProps) {
+export default function WeeklyConfluenceSpotlight({
+  defaultCollapsed = false,
+  onSelectSymbol,
+  selectedSymbol,
+}: WeeklyConfluenceSpotlightProps) {
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
@@ -247,6 +253,21 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
     setTimeout(() => setLoggedSymbol(null), 3000);
   };
 
+  const handleCardClick = (e: React.MouseEvent, symbol: string) => {
+    if (onSelectSymbol) {
+      e.preventDefault();
+      onSelectSymbol(symbol);
+    }
+    // Auto-collapse spotlight on mobile/click so active asset details render above the fold
+    setIsCollapsed(true);
+    if (typeof window !== "undefined") {
+      const target = document.getElementById("market-workspace-chart") || document.getElementById("main-content");
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+
   return (
     <section className="bg-[#0d121c] border border-[#1e293b] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 mb-6 transition-all">
       {/* Header Bar */}
@@ -309,6 +330,48 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
         </div>
       </div>
 
+      {/* Compact Quick-Switcher Ribbon when Collapsed */}
+      {isCollapsed && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#1b2434]/60">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-mono text-slate-400 font-bold flex items-center gap-1">
+              <span>{isDayTrader ? "⚡" : "🎯"}</span>
+              <span>Top Plays:</span>
+            </span>
+            {topCandidates.map((cand, idx) => {
+              const isSelected = selectedSymbol?.toUpperCase() === cand.entry.symbol.toUpperCase();
+              return (
+                <button
+                  key={cand.entry.symbol}
+                  type="button"
+                  onClick={(e) => handleCardClick(e, cand.entry.symbol)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 active:scale-95 ${
+                    isSelected
+                      ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                      : "bg-[#111722] border-[#243044] text-slate-300 hover:border-cyan-500/60 hover:text-white"
+                  }`}
+                  aria-label={`Select ${cand.entry.symbol}`}
+                >
+                  <span className="text-[9px] text-slate-400 font-normal">#{idx + 1}</span>
+                  <span className="font-extrabold">{cand.entry.symbol}</span>
+                  <span className={`text-[10px] tabular-nums ${cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    ${cand.livePrice.toFixed(2)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(false)}
+            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold"
+          >
+            <span>View Full Setups</span>
+            <span>▼</span>
+          </button>
+        </div>
+      )}
+
       {/* 3-Card Responsive Grid */}
       {!isCollapsed && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
@@ -319,6 +382,7 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
               <Link
                 key={cand.entry.symbol}
                 href={`/?symbol=${cand.entry.symbol}`}
+                onClick={(e) => handleCardClick(e, cand.entry.symbol)}
                 aria-label={`Analyze ${cand.entry.symbol} (${cand.entry.name})`}
                 className={`p-4 rounded-xl border transition-all duration-150 active:scale-[0.98] active:bg-[#0e1522] bg-[#111722] space-y-3 block group cursor-pointer ${
                   isRank1
