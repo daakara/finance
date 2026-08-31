@@ -146,7 +146,7 @@ class EnhancedTechnicalAnalyzer:
                 return "Moderate Trend"
             else:
                 return "Weak/Sideways"
-        except:
+        except Exception as e:
             return "Unknown"
     
     def _analyze_volume_confirmation(self, tech_data: pd.DataFrame) -> str:
@@ -168,7 +168,7 @@ class EnhancedTechnicalAnalyzer:
                 return "Volume Divergence Warning"
             else:
                 return "Normal Volume"
-        except:
+        except Exception as e:
             return "Unknown"
     
     def _calculate_signal_confluence(self, signals: Dict[str, str]) -> int:

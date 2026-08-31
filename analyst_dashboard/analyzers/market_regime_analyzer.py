@@ -325,7 +325,7 @@ class MarketRegimeAnalyzer:
                 return "Low_Risk_Stable"
             else:
                 return "High_Risk_Volatile"
-        except:
+        except Exception as e:
             return "Unknown"
     
     def _calculate_avg_regime_duration(self, regime_list: List[str], regime: str) -> float:
@@ -346,7 +346,7 @@ class MarketRegimeAnalyzer:
                 durations.append(current_duration)
             
             return np.mean(durations) if durations else 0
-        except:
+        except Exception as e:
             return 0
 
     def _calculate_regime_max_drawdown(self, returns: pd.Series) -> float:
@@ -356,6 +356,6 @@ class MarketRegimeAnalyzer:
             rolling_max = cumulative.expanding().max()
             drawdowns = (cumulative - rolling_max) / rolling_max
             return float(drawdowns.min() * 100) if not drawdowns.empty else 0.0
-        except:
+        except Exception as e:
             return 0.0
 

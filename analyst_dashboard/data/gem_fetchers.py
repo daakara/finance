@@ -298,7 +298,7 @@ class MultiAssetDataPipeline:
                     info = {}
                     try:
                         info = ticker_obj.info or {}
-                    except:
+                    except Exception as e:
                         logger.debug(f"Could not fetch info for {ticker}")
                     
                     # Financial data
@@ -318,7 +318,7 @@ class MultiAssetDataPipeline:
                             cashflow_df = ticker_obj.cashflow
                             if not cashflow_df.empty:
                                 financials['cash_flow'] = cashflow_df.to_dict()
-                    except:
+                    except Exception as e:
                         logger.debug(f"Could not fetch financials for {ticker}")
                     
                     return {

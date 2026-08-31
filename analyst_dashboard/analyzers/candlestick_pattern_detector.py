@@ -481,7 +481,7 @@ class CandlestickPatternDetector:
                 return False
             recent_closes = price_data['Close'].iloc[index-period:index+1]
             return recent_closes.iloc[-1] > recent_closes.iloc[0]
-        except:
+        except Exception as e:
             return False
     
     def _is_downtrend(self, price_data: pd.DataFrame, index: int, period: int = 5) -> bool:
@@ -491,7 +491,7 @@ class CandlestickPatternDetector:
                 return False
             recent_closes = price_data['Close'].iloc[index-period:index+1]
             return recent_closes.iloc[-1] < recent_closes.iloc[0]
-        except:
+        except Exception as e:
             return False
     
     def _get_strength_from_reliability(self, reliability: float) -> str:

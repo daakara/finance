@@ -341,7 +341,7 @@ class SustainabilityAnalyzer:
                 # Lower risk suggests better independence
                 return max(0, min(1, 1 - (board_risk / 10)))
             return None
-        except:
+        except Exception as e:
             return None
     
     def _estimate_renewable_energy_usage(self, info: Dict[str, Any]) -> Optional[float]:
@@ -357,7 +357,7 @@ class SustainabilityAnalyzer:
                 return 0.30
             
             return None
-        except:
+        except Exception as e:
             return None
     
     def _identify_impact_alignment(self, ticker: str, info: Dict[str, Any]) -> tuple:
@@ -408,7 +408,7 @@ class SustainabilityAnalyzer:
             else:
                 return f"Multi-impact opportunity: {', '.join(impacts[:-1])}, and {impacts[-1]}."
                 
-        except:
+        except Exception as e:
             return "Sustainability alignment under evaluation."
     
     def _extract_sustainability_initiatives(self, info: Dict[str, Any]) -> List[str]:
@@ -432,7 +432,7 @@ class SustainabilityAnalyzer:
             
             return initiatives
             
-        except:
+        except Exception as e:
             return []
     
     def _identify_environmental_risks(self, info: Dict[str, Any]) -> List[str]:
@@ -455,7 +455,7 @@ class SustainabilityAnalyzer:
             if any(kw in sector for kw in ['oil', 'mining', 'chemical']):
                 risks.append("Industry with inherent environmental challenges")
                 
-        except:
+        except Exception as e:
             pass
         
         return risks if risks else ["No significant environmental risks identified"]
@@ -469,7 +469,7 @@ class SustainabilityAnalyzer:
             if social_risk and social_risk > 7:
                 risks.append("Elevated social risk indicators")
                 
-        except:
+        except Exception as e:
             pass
         
         return risks if risks else ["No significant social risks identified"]
@@ -491,7 +491,7 @@ class SustainabilityAnalyzer:
             if compensation_risk and compensation_risk > 7:
                 risks.append("Executive compensation alignment concerns")
                 
-        except:
+        except Exception as e:
             pass
         
         return risks if risks else ["No significant governance risks identified"]
@@ -524,5 +524,5 @@ class SustainabilityAnalyzer:
             
             return min(base_premium, 1.30)  # Cap at 30% premium
             
-        except:
+        except Exception as e:
             return 1.0

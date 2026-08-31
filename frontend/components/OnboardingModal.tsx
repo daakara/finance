@@ -39,9 +39,6 @@ export default function OnboardingModal() {
     setIsOpen(false);
     trackMatomoEvent("User Journey", "Complete Onboarding", selectedStyle);
     window.dispatchEvent(new CustomEvent("finance:role-change", { detail: selectedStyle }));
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
   }, [selectedStyle]);
 
   const handleSkip = useCallback(() => {

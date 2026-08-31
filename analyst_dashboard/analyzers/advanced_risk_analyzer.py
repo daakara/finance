@@ -287,7 +287,7 @@ class AdvancedRiskAnalyzer:
             drawdowns = (cumulative - rolling_max) / rolling_max
             pain_index = abs(drawdowns.mean())
             return pain_index
-        except:
+        except Exception as e:
             return 0
     
     def _calculate_max_drawdown(self, returns: pd.Series) -> float:
@@ -297,7 +297,7 @@ class AdvancedRiskAnalyzer:
             rolling_max = cumulative.expanding().max()
             drawdowns = (cumulative - rolling_max) / rolling_max
             return drawdowns.min()
-        except:
+        except Exception as e:
             return 0
     
     def generate_risk_insights(self, risk_analysis: Dict[str, Any]) -> List[str]:
