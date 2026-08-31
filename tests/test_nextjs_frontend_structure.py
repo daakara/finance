@@ -339,10 +339,12 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         for sym in ["NVDA", "AAPL", "MSFT", "PLTR", "NVO", "LLY", "TSLA", "SPY", "QQQ", "SMH", "CPRX", "MEDP", "TMDX"]:
             self.assertIn(f"{sym}:", catalog_content, f"Missing {sym} in masterCatalog.ts")
 
-        # PLTR baseline price parity check
+        # Zero Static Price Invariant: Invariant fundamental properties present, static prices strictly purged
         self.assertIn("PLTR:", catalog_content)
-        self.assertIn("price: 31.20", catalog_content)
-        self.assertNotIn("price: 142.80", catalog_content)
+        self.assertIn("piotroski: 8", catalog_content)
+        self.assertIn("roic: 23.0", catalog_content)
+        self.assertNotIn("price: ", catalog_content)
+        self.assertNotIn("changePct: ", catalog_content)
 
     def test_decision_intelligence_suite_contracts(self):
         """Regression Quality Gate: Ensure Pre-Flight Checklist, Smart Money Divergence, Historical Edge, and Stress Simulator exist."""

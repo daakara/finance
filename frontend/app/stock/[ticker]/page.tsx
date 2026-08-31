@@ -84,7 +84,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const factor = SHARED_FACTOR_SCORES[sym];
   
   const name = master?.name || watchlist?.name || sym;
-  const price = master ? `$${master.price.toFixed(2)}` : (factor ? `$${factor.price.toFixed(2)}` : watchlist?.price || "Market Price");
+  const price = watchlist?.price || "Market Price";
   const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 85;
   const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
   
@@ -116,8 +116,8 @@ export default function StockDetailPage({ params }: PageProps) {
   };
 
   const name = master?.name || watchlist?.name || `${sym} Equity`;
-  const spotPrice = master ? master.price : (factor ? factor.price : (parseFloat(watchlist?.price?.replace(/[^0-9.]/g, "") || "100.00")));
-  const changePct = master ? master.changePct : (factor ? factor.changePct : (parseFloat(watchlist?.change?.replace(/[%+]/g, "") || "1.5")));
+  const spotPrice = parseFloat(watchlist?.price?.replace(/[^0-9.]/g, "") || "100.00");
+  const changePct = parseFloat(watchlist?.change?.replace(/[%+]/g, "") || "1.5");
   const isPositive = changePct >= 0;
 
   // Minervini execution levels

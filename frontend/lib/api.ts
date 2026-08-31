@@ -443,12 +443,10 @@ export function generateFallbackAnalytics(
   const basePrice = overridePrice ||
     registeredValidPrice ||
     persistedValidPrice ||
-    catalogEntry?.price ||
-    (SHARED_FACTOR_SCORES[upper]?.price) ||
     deterministicDefaultPrice;
   const baseChangePct = overrideChangePct !== undefined
     ? overrideChangePct
-    : (registered?.changePct ?? persisted?.priceChangePct24h ?? matched.changePct);
+    : (registered?.changePct ?? persisted?.priceChangePct24h ?? 0.0);
   const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h" || interval === "30m";
 
   // Horizon-aware numPoints and time step (stepMs) so each period spans the correct calendar window
@@ -1042,7 +1040,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
   const candidates: GemCandidate[] = catalogEntries.map(([ticker, asset]) => {
     const reg = SpotPriceRegistry.get(ticker);
     const snap = getPersistedMarketSnapshot(ticker, true);
-    const livePrice = reg?.price || snap?.currentPrice || asset.price;
+    const livePrice = reg?.price || snap?.currentPrice || 100.0;
 
     return {
       ticker,

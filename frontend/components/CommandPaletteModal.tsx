@@ -57,12 +57,12 @@ export default function CommandPaletteModal({
         ? reg.price
         : (snap?.currentPrice && snap.currentPrice > 0)
         ? snap.currentPrice
-        : asset.price;
+        : undefined;
       const effectiveChange = (reg?.changePct !== undefined)
         ? reg.changePct
         : (snap?.priceChangePct24h !== undefined)
         ? snap.priceChangePct24h
-        : asset.changePct;
+        : undefined;
 
       items.push({
         id: `asset-${asset.symbol}`,

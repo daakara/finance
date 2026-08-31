@@ -104,7 +104,7 @@ export default function PreFlightChecklistModal({
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
 
   // Defensive Numeric Guards
-  const safePrice = (typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0) ? currentPrice : (catalogItem?.price || 100);
+  const safePrice = (typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0) ? currentPrice : 100;
   const safeStop = (typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0) ? stopLoss : (safePrice * 0.95);
   const safeTarget = (typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0) ? takeProfit1 : (safePrice * 1.10);
   const safeRR = (typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0) ? riskRewardRatio : 2.5;

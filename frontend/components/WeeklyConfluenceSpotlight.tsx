@@ -10,6 +10,8 @@ import MiniSparkline from "./MiniSparkline";
 
 interface ConfluenceCandidate {
   entry: MasterAssetEntry;
+  livePrice: number;
+  liveChangePct: number;
   convictionScore: number;
   setupBadge: string;
   setupBadgePlain: string;
@@ -125,16 +127,15 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
         ? live.price
         : (snap?.currentPrice && snap.currentPrice > 0)
         ? snap.currentPrice
-        : asset.price;
+        : 100.0;
 
       const effectiveChange = (live?.changePct !== undefined)
         ? live.changePct
         : (snap?.priceChangePct24h !== undefined)
         ? snap.priceChangePct24h
-        : asset.changePct;
+        : 0.0;
 
-      const atrScale = asset.price > 0 ? (effectivePrice / asset.price) : 1;
-      const currentAtr = Math.max(0.2, asset.atr14 * atrScale);
+      const currentAtr = Math.max(0.2, asset.atr14);
       const atrPct = effectivePrice > 0 ? (currentAtr / effectivePrice) : 0.02;
 
       let compositeScore = 80;
@@ -205,14 +206,10 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
       const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
       const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
 
-      const updatedEntry: MasterAssetEntry = {
-        ...asset,
-        price: effectivePrice,
-        changePct: effectiveChange,
-      };
-
       return {
-        entry: updatedEntry,
+        entry: asset,
+        livePrice: effectivePrice,
+        liveChangePct: effectiveChange,
         convictionScore: Math.min(99, compositeScore),
         setupBadge,
         setupBadgePlain,
@@ -239,9 +236,9 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
     const res = addPortfolioPosition({
       symbol: cand.entry.symbol,
       name: cand.entry.name,
-      shares: Math.max(1, Math.round(2500 / cand.entry.price)),
-      entryPrice: cand.entry.price,
-      currentPrice: cand.entry.price,
+      shares: Math.max(1, Math.round(2500 / cand.livePrice)),
+      entryPrice: cand.livePrice,
+      currentPrice: cand.livePrice,
       targetPrice: cand.target1Price,
       stopLossPrice: cand.stopPrice,
     });
@@ -347,9 +344,9 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
                         </span>
                       </div>
                       <div className="text-xs font-mono font-bold text-slate-300 tabular-nums">
-                        ${cand.entry.price.toFixed(2)}{" "}
-                        <span className={cand.entry.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                          ({cand.entry.changePct >= 0 ? "+" : ""}{cand.entry.changePct}%)
+                        ${cand.livePrice.toFixed(2)}{" "}
+                        <span className={cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                          ({cand.liveChangePct >= 0 ? "+" : ""}{cand.liveChangePct}%)
                         </span>
                       </div>
                     </div>
@@ -357,8 +354,8 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
 
                   <div className="flex items-center gap-2 shrink-0">
                     <MiniSparkline
-                      basePrice={cand.entry.price}
-                      changePct={cand.entry.changePct}
+                      basePrice={cand.livePrice}
+                      changePct={cand.liveChangePct}
                       width={48}
                       height={20}
                       className="hidden sm:inline-block"

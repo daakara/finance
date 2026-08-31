@@ -42,12 +42,11 @@ export default function RealTimeAlertEngine() {
         const upper = alert.symbol.toUpperCase();
         const reg = SpotPriceRegistry.get(upper);
         const snap = getPersistedMarketSnapshot(upper);
-        const asset = MASTER_ASSET_CATALOG[upper];
         const livePrice = (reg?.price && reg.price > 0)
           ? reg.price
           : (snap?.currentPrice && snap.currentPrice > 0)
           ? snap.currentPrice
-          : (asset ? asset.price : alert.createdPrice);
+          : alert.createdPrice;
 
         let isTriggered = false;
         let msg = "";

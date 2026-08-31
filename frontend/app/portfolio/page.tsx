@@ -65,7 +65,6 @@ export default function PortfolioPage() {
         const snap = getPersistedMarketSnapshot(symKey);
         if (reg?.price) price = reg.price;
         else if (snap?.currentPrice) price = snap.currentPrice;
-        else if (MASTER_ASSET_CATALOG[symKey]?.price) price = MASTER_ASSET_CATALOG[symKey].price;
       }
 
       setResolvedQuotePrice(price);

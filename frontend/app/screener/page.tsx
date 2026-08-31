@@ -365,7 +365,7 @@ export default function ScreenerPage() {
             return {
               symbol: c.symbol,
               companyName: c.companyName || masterMeta?.name || c.symbol,
-              currentPrice: c.currentPrice || masterMeta?.price || 100.0,
+              currentPrice: c.currentPrice || 100.0,
               gemScore: c.gemScore || 88,
               expertArchetype: archetype,
               roic: c.roic || (masterMeta ? `${masterMeta.roic}%` : "28.5%"),
@@ -458,7 +458,7 @@ export default function ScreenerPage() {
           ? reg.price
           : (snap?.currentPrice && snap.currentPrice > 0)
           ? snap.currentPrice
-          : MASTER_ASSET_CATALOG[upper]?.price;
+          : undefined;
 
         if (effectivePrice && Math.abs(effectivePrice - (gem.currentPrice || 0)) > 0.05) {
           quoteMap.set(gem.symbol, effectivePrice);

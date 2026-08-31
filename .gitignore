@@ -37,7 +37,13 @@ cache/
 htmlcov/
 *.log
 
-# Sample data
+# Sample data & databases
+data/
+*.csv
+*.xlsx
+*.db
+*.sqlite
+*.sqlite3
 **/sample_data/
 **/*sample*.json
 **/sample_gem*.json

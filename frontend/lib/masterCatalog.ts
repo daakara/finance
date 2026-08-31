@@ -9,8 +9,6 @@
 export interface MasterAssetEntry {
   symbol: string;
   name: string;
-  price: number;
-  changePct: number;
   type: "Stock" | "ETF" | "Crypto";
   sector: string;
   category: string;
@@ -42,8 +40,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   NVDA: {
     symbol: "NVDA",
     name: "NVIDIA Corporation",
-    price: 128.50,
-    changePct: 3.14,
     type: "Stock",
     sector: "Technology",
     category: "AI Datacenter Monopoly",
@@ -72,8 +68,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   AAPL: {
     symbol: "AAPL",
     name: "Apple Inc.",
-    price: 319.64,
-    changePct: 2.62,
     type: "Stock",
     sector: "Technology",
     category: "Consumer Hardware & Services Ecosystem",
@@ -102,8 +96,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   MSFT: {
     symbol: "MSFT",
     name: "Microsoft Corporation",
-    price: 418.20,
-    changePct: 0.85,
     type: "Stock",
     sector: "Technology",
     category: "Enterprise Cloud & Enterprise AI",
@@ -132,8 +124,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   GOOGL: {
     symbol: "GOOGL",
     name: "Alphabet Inc.",
-    price: 164.80,
-    changePct: 1.40,
     type: "Stock",
     sector: "Communication Services",
     category: "Search & Cloud Infrastructure",
@@ -162,8 +152,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   TSLA: {
     symbol: "TSLA",
     name: "Tesla Inc.",
-    price: 218.40,
-    changePct: 2.15,
     type: "Stock",
     sector: "Consumer Cyclical",
     category: "Autonomous Robotics & EV Fleet",
@@ -192,8 +180,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   PLTR: {
     symbol: "PLTR",
     name: "Palantir Technologies",
-    price: 31.20,
-    changePct: 4.12,
     type: "Stock",
     sector: "Technology",
     category: "Defense & Enterprise AI Operating System",
@@ -222,8 +208,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   NVO: {
     symbol: "NVO",
     name: "Novo Nordisk A/S",
-    price: 45.31,
-    changePct: -3.18,
     type: "Stock",
     sector: "Healthcare",
     category: "GLP-1 Incretin & Metabolic Duopoly",
@@ -252,8 +236,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   LLY: {
     symbol: "LLY",
     name: "Eli Lilly and Company",
-    price: 924.50,
-    changePct: 2.10,
     type: "Stock",
     sector: "Healthcare",
     category: "Metabolic, Oncology & Immunology Leader",
@@ -282,8 +264,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   LNTH: {
     symbol: "LNTH",
     name: "Lantheus Holdings",
-    price: 100.78,
-    changePct: -4.09,
     type: "Stock",
     sector: "Healthcare",
     category: "Radiopharmaceutical & PET Oncology Monopolist",
@@ -312,8 +292,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   CPRX: {
     symbol: "CPRX",
     name: "Catalyst Pharmaceuticals",
-    price: 31.49,
-    changePct: 0.00,
     type: "Stock",
     sector: "Healthcare",
     category: "Rare Neurological Commercial Monopoly",
@@ -342,8 +320,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   MEDP: {
     symbol: "MEDP",
     name: "Medpace Holdings",
-    price: 342.10,
-    changePct: 1.45,
     type: "Stock",
     sector: "Healthcare",
     category: "Clinical Research Organization",
@@ -372,8 +348,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   TMDX: {
     symbol: "TMDX",
     name: "TransMedics Group",
-    price: 92.60,
-    changePct: 3.15,
     type: "Stock",
     sector: "Healthcare",
     category: "Organ Perfusion Technology",
@@ -402,8 +376,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   VRT: {
     symbol: "VRT",
     name: "Vertiv Holdings",
-    price: 114.20,
-    changePct: 2.85,
     type: "Stock",
     sector: "Industrials",
     category: "AI Datacenter Power & Liquid Cooling",
@@ -432,8 +404,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   DUOL: {
     symbol: "DUOL",
     name: "Duolingo Inc.",
-    price: 312.80,
-    changePct: 3.20,
     type: "Stock",
     sector: "Technology",
     category: "EdTech AI & Learning Platform",
@@ -462,8 +432,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   SMCI: {
     symbol: "SMCI",
     name: "Super Micro Computer",
-    price: 48.20,
-    changePct: 5.40,
     type: "Stock",
     sector: "Technology",
     category: "Accelerated Server Architecture",
@@ -492,8 +460,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ULTA: {
     symbol: "ULTA",
     name: "Ulta Beauty Inc.",
-    price: 368.40,
-    changePct: 0.85,
     type: "Stock",
     sector: "Consumer Cyclical",
     category: "Specialty Retail & Beauty (Stage 4 Turnaround)",
@@ -522,8 +488,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   LULU: {
     symbol: "LULU",
     name: "Lululemon Athletica",
-    price: 264.50,
-    changePct: -0.45,
     type: "Stock",
     sector: "Consumer Cyclical",
     category: "Athletic Apparel & Technical Gear (Stage 4 Turnaround)",
@@ -552,8 +516,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   CELH: {
     symbol: "CELH",
     name: "Celsius Holdings",
-    price: 36.80,
-    changePct: 3.85,
     type: "Stock",
     sector: "Consumer Defensive",
     category: "Functional Energy Beverages",
@@ -583,8 +545,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   SPY: {
     symbol: "SPY",
     name: "SPDR S&P 500 ETF Trust",
-    price: 765.91,
-    changePct: 0.65,
     type: "ETF",
     sector: "Index",
     category: "US Large-Cap Core Equity Benchmark",
@@ -613,8 +573,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   QQQ: {
     symbol: "QQQ",
     name: "Invesco QQQ Trust",
-    price: 710.72,
-    changePct: 1.10,
     type: "ETF",
     sector: "Index",
     category: "Nasdaq-100 Large-Cap Growth Benchmark",
@@ -643,8 +601,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   SMH: {
     symbol: "SMH",
     name: "VanEck Semiconductor ETF",
-    price: 288.40,
-    changePct: 2.45,
     type: "ETF",
     sector: "Semiconductors",
     category: "Global Semiconductor Industry",
@@ -674,8 +630,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   POWI: {
     symbol: "POWI",
     name: "Power Integrations Inc.",
-    price: 68.50,
-    changePct: 1.45,
     type: "Stock",
     sector: "Semiconductors",
     category: "GaN & High-Voltage Power Conversion",
@@ -704,8 +658,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ACLS: {
     symbol: "ACLS",
     name: "Axcelis Technologies",
-    price: 84.20,
-    changePct: 2.10,
     type: "Stock",
     sector: "Semiconductors",
     category: "SiC Ion Implantation Capital Equipment",
@@ -734,8 +686,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ELF: {
     symbol: "ELF",
     name: "e.l.f. Beauty Inc.",
-    price: 118.40,
-    changePct: 2.85,
     type: "Stock",
     sector: "Consumer Cyclical",
     category: "Digitally-Native Beauty & Cosmetics",
@@ -764,8 +714,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ISRG: {
     symbol: "ISRG",
     name: "Intuitive Surgical",
-    price: 446.50,
-    changePct: 1.65,
     type: "Stock",
     sector: "Healthcare",
     category: "Robotic-Assisted Surgery Monopoly",
@@ -794,8 +742,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   VRTX: {
     symbol: "VRTX",
     name: "Vertex Pharmaceuticals",
-    price: 482.10,
-    changePct: 1.20,
     type: "Stock",
     sector: "Healthcare",
     category: "Cystic Fibrosis Monopoly & Gene Editing",
@@ -824,8 +770,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   COIN: {
     symbol: "COIN",
     name: "Coinbase Global Inc.",
-    price: 212.30,
-    changePct: 4.85,
     type: "Stock",
     sector: "Financial Services",
     category: "Institutional Crypto Custody & Exchange",
@@ -854,8 +798,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   MSTR: {
     symbol: "MSTR",
     name: "MicroStrategy Inc.",
-    price: 134.20,
-    changePct: 6.40,
     type: "Stock",
     sector: "Technology",
     category: "Corporate Bitcoin Treasury & AI BI",
@@ -884,8 +826,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   CRWD: {
     symbol: "CRWD",
     name: "CrowdStrike Holdings",
-    price: 272.50,
-    changePct: 2.65,
     type: "Stock",
     sector: "Technology",
     category: "Cloud Cybersecurity & Falcon Platform",
@@ -914,8 +854,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ANET: {
     symbol: "ANET",
     name: "Arista Networks",
-    price: 324.50,
-    changePct: 2.15,
     type: "Stock",
     sector: "Technology",
     category: "Hyperscale AI Cloud Networking",
@@ -944,8 +882,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ARM: {
     symbol: "ARM",
     name: "Arm Holdings plc",
-    price: 134.80,
-    changePct: 3.80,
     type: "Stock",
     sector: "Technology",
     category: "Compute Architecture IP & Licensing",
@@ -974,8 +910,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   AMD: {
     symbol: "AMD",
     name: "Advanced Micro Devices",
-    price: 146.20,
-    changePct: 2.90,
     type: "Stock",
     sector: "Technology",
     category: "Datacenter AI Accelerators & x86 CPUs",
@@ -1004,8 +938,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   DECK: {
     symbol: "DECK",
     name: "Deckers Outdoor Corp.",
-    price: 86.33,
-    changePct: 1.80,
     type: "Stock",
     sector: "Consumer Cyclical",
     category: "Performance Footwear (HOKA & UGG)",
@@ -1034,8 +966,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   ON: {
     symbol: "ON",
     name: "ON Semiconductor Corp.",
-    price: 72.40,
-    changePct: 1.95,
     type: "Stock",
     sector: "Semiconductors",
     category: "Silicon Carbide & Automotive Power",
@@ -1064,8 +994,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   MPWR: {
     symbol: "MPWR",
     name: "Monolithic Power Systems",
-    price: 812.30,
-    changePct: 2.40,
     type: "Stock",
     sector: "Semiconductors",
     category: "High-Efficiency Datacenter Power ICs",
@@ -1094,8 +1022,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   KLAC: {
     symbol: "KLAC",
     name: "KLA Corporation",
-    price: 734.50,
-    changePct: 2.10,
     type: "Stock",
     sector: "Semiconductors",
     category: "Process Control & Yield Inspection",
@@ -1124,8 +1050,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   LRCX: {
     symbol: "LRCX",
     name: "Lam Research Corporation",
-    price: 792.10,
-    changePct: 2.30,
     type: "Stock",
     sector: "Semiconductors",
     category: "Atomic-Scale Etch & Deposition Systems",
@@ -1155,8 +1079,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   "BTC-USD": {
     symbol: "BTC-USD",
     name: "Bitcoin",
-    price: 78213.00,
-    changePct: 2.80,
     type: "Crypto",
     sector: "Digital Assets",
     category: "Decentralized Digital Commodity",
@@ -1185,8 +1107,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   "ETH-USD": {
     symbol: "ETH-USD",
     name: "Ethereum",
-    price: 2438.00,
-    changePct: 1.65,
     type: "Crypto",
     sector: "Digital Assets",
     category: "Decentralized Smart Contract Platform",
@@ -1215,8 +1135,6 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   "SOL-USD": {
     symbol: "SOL-USD",
     name: "Solana",
-    price: 96.73,
-    changePct: 0.24,
     type: "Crypto",
     sector: "Digital Assets",
     category: "High-Throughput PoS Execution Layer",
@@ -1251,11 +1169,6 @@ export function getMasterAsset(symbol: string): MasterAssetEntry | undefined {
   if (!symbol) return undefined;
   const clean = symbol.toUpperCase().replace("-USD", "").trim();
   return MASTER_ASSET_CATALOG[clean];
-}
-
-export function getMasterPrice(symbol: string, fallback: number = 100.0): number {
-  const asset = getMasterAsset(symbol);
-  return asset ? asset.price : fallback;
 }
 
 export function getAllMasterTickers(): string[] {
