@@ -285,6 +285,28 @@ function TerminalContent() {
               userRole={userRole}
               onRoleChange={handleRoleChange}
               onIntervalChange={setInterval}
+              tradeMarkers={
+                [
+                  ...(data?.smartMoney?.congressTrades?.map((ct) => ({
+                    date: ct.transaction_date || (ct as any).date || ct.filing_date,
+                    label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
+                    type: "CONGRESS" as const,
+                    amount: ct.amount_range,
+                  })) || []),
+                  ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
+                    date: st.filingDate || st.date || st.filing_date,
+                    label: `💼 ${st.insiderRole || "Insider"} Buy`,
+                    type: "INSIDER" as const,
+                    amount: st.transactionValue || st.shares,
+                  })) || []),
+                  ...(data?.smartMoney?.optionsFlow?.map((op) => ({
+                    date: (op as any).date || (op as any).timestamp || "2026-04-01",
+                    label: `⚡ ${op.type || "Call Sweep"}`,
+                    type: "OPTIONS" as const,
+                    amount: op.premium,
+                  })) || []),
+                ].filter((m) => m.date)
+              }
               smartMoneyHeadline={
                 data?.smartMoney?.congressTrades?.[0]
                   ? `${data.smartMoney.congressTrades[0].politician.split(" ")[0]} ${data.smartMoney.congressTrades[0].amount_range}`

@@ -16,6 +16,12 @@ interface PriceChartProps {
   smartMoneyHeadline?: string;
   catalystHeadline?: string;
   loading?: boolean;
+  tradeMarkers?: Array<{
+    date: string;
+    label: string;
+    type?: "CONGRESS" | "INSIDER" | "OPTIONS";
+    amount?: string;
+  }>;
   technicals?: {
     vwap?: number | null;
     rsi_14?: number;
@@ -53,6 +59,7 @@ export default function PriceChart({
   smartMoneyHeadline,
   catalystHeadline,
   loading = false,
+  tradeMarkers,
   technicals,
 }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -270,6 +277,66 @@ export default function PriceChart({
           overlayLineSeriesRef.current.setData(maPoints);
         }
 
+        // Attach Deep Trade Timestamp Markers (Congressional Trades, SEC Form 4, Options Sweeps)
+        if (candlestickSeriesRef.current) {
+          if (tradeMarkers && tradeMarkers.length > 0) {
+            const markers: any[] = [];
+            const candleTimes = uniqueCandles.map((c) => c.time);
+
+            tradeMarkers.forEach((tm) => {
+              if (!tm.date) return;
+              const targetDateStr = tm.date.split("T")[0];
+
+              // Find matching candle time
+              let matchedTime = candleTimes.find((ct) => {
+                if (typeof ct === "string") return ct === targetDateStr;
+                return false;
+              });
+
+              // If not exact match, find closest past candle within 14 days
+              if (!matchedTime && candleTimes.length > 0) {
+                const targetMs = new Date(targetDateStr).getTime();
+                let closest = candleTimes[0];
+                let minDiff = Infinity;
+                for (const ct of candleTimes) {
+                  const ctMs = typeof ct === "number" ? (ct > 20000000000 ? ct : ct * 1000) : new Date(ct).getTime();
+                  const diff = Math.abs(ctMs - targetMs);
+                  if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = ct;
+                  }
+                }
+                if (minDiff <= 14 * 24 * 60 * 60 * 1000) {
+                  matchedTime = closest;
+                }
+              }
+
+              if (matchedTime) {
+                const isCongress = tm.type === "CONGRESS";
+                const isOptions = tm.type === "OPTIONS";
+                markers.push({
+                  time: matchedTime,
+                  position: isCongress ? "aboveBar" : "belowBar",
+                  color: isCongress ? "#06b6d4" : isOptions ? "#f59e0b" : "#10b981",
+                  shape: isCongress ? "arrowDown" : "arrowUp",
+                  text: `${tm.label}${tm.amount ? ` (${tm.amount})` : ""}`,
+                });
+              }
+            });
+
+            // Sort markers by timestamp ascending (required by Lightweight Charts)
+            markers.sort((a, b) => {
+              const tA = typeof a.time === "number" ? a.time : new Date(a.time).getTime();
+              const tB = typeof b.time === "number" ? b.time : new Date(b.time).getTime();
+              return tA - tB;
+            });
+
+            candlestickSeriesRef.current.setMarkers(markers);
+          } else {
+            candlestickSeriesRef.current.setMarkers([]);
+          }
+        }
+
         // Refresh chart view and auto-fit timeScale immediately
         if (chartRef.current) {
           chartRef.current.timeScale().fitContent();
@@ -278,7 +345,7 @@ export default function PriceChart({
     } catch (err) {
       console.warn("Error rendering chart series:", err);
     }
-  }, [candles, isIntraday, interval]);
+  }, [candles, isIntraday, interval, tradeMarkers]);
 
   // Calculate dynamic period return based on the active candle dataset
   let dynamicPeriodReturn = priceChangePct;

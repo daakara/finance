@@ -8,6 +8,7 @@ import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
 import PrivacySettingsModal from "./PrivacySettingsModal";
 import CommandPaletteModal from "./CommandPaletteModal";
+import RealTimeAlertEngine from "./RealTimeAlertEngine";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -578,6 +579,9 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
       />
+
+      {/* 🔔 Real-Time Price Level Alert Notification Engine */}
+      <RealTimeAlertEngine />
     </>
   );
 }
