@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 
@@ -27,29 +27,34 @@ export default function FeedFreshnessIndicator({
   }, [lastSync]);
 
   const isLive = source === "live";
+  const isCached = source === "cached";
 
   return (
     <div
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono border transition-all ${
         isLive
           ? "bg-emerald-950/60 border-emerald-700/60 text-emerald-300"
+          : isCached
+          ? "bg-cyan-950/60 border-cyan-700/60 text-cyan-300"
           : "bg-amber-950/60 border-amber-700/60 text-amber-300"
       } ${className}`}
       title={
         isLive
-          ? "Connected to live FastAPI quantitative analytics pipeline"
-          : "Operating on pre-rendered resilience catalog baseline"
+          ? "Connected to live FastAPI quantitative analytics pipeline & direct exchange feeds."
+          : isCached
+          ? "Validated snapshot from local database within 15-minute freshness window."
+          : "Operating in resilient offline mode — live feeds will reconnect automatically."
       }
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
-          isLive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+          isLive ? "bg-emerald-400 animate-pulse" : isCached ? "bg-cyan-400" : "bg-amber-400"
         }`}
       />
       <span className="font-bold">
-        {isLive ? "REAL-TIME FEED" : "BASELINE CATALOG"}
+        {isLive ? "REAL-TIME EXCHANGE" : isCached ? "VERIFIED CACHE (<15M)" : "RECONNECTING"}
       </span>
-      <span className="text-slate-400">• {isLive ? timeAgo : "Resilience Mode"}</span>
+      <span className="text-slate-400">• {isLive ? timeAgo : isCached ? "Fresh" : "Offline"}</span>
     </div>
   );
 }

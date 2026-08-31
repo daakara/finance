@@ -9,6 +9,7 @@ import { SHARED_FACTOR_SCORES } from "./constants";
 
 const DB_STORAGE_PREFIX = "finance_market_db_v1_";
 const DB_INDEX_KEY = "finance_market_db_index";
+export const SNAPSHOT_TTL_MS = 15 * 60 * 1000; // 15-minute strict live data freshness window
 
 export interface PersistedMarketRecord {
   symbol: string;
@@ -20,6 +21,23 @@ export interface PersistedMarketRecord {
   factorScores: any;
   catalyst: any;
   smartMoney: any;
+  isStale?: boolean;
+}
+
+/**
+ * Check if a symbol's persisted snapshot is within the 15-minute freshness window.
+ */
+export function isSnapshotFresh(symbol: string): boolean {
+  if (typeof window === "undefined") return false;
+  const upper = symbol.toUpperCase().replace("-USD", "");
+  try {
+    const raw = localStorage.getItem(`${DB_STORAGE_PREFIX}${upper}`);
+    if (!raw) return false;
+    const record = JSON.parse(raw) as PersistedMarketRecord;
+    return (Date.now() - record.lastUpdated) < SNAPSHOT_TTL_MS;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -30,7 +48,7 @@ export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): 
     return;
   }
   const upper = symbol.toUpperCase().replace("-USD", "");
-  const prior = getPersistedMarketSnapshot(upper);
+  const prior = getPersistedMarketSnapshot(upper, true);
 
   const isDaily = data.interval === "1d" || data.interval === "1y_hist" || !data.interval;
   const record: PersistedMarketRecord = {
@@ -61,7 +79,7 @@ export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): 
 /**
  * Retrieve all persisted market snapshots across tracked assets.
  */
-export function getAllPersistedMarketSnapshots(): Record<string, PersistedMarketRecord> {
+export function getAllPersistedMarketSnapshots(allowStale: boolean = false): Record<string, PersistedMarketRecord> {
   if (typeof window === "undefined") {
     return {};
   }
@@ -70,7 +88,7 @@ export function getAllPersistedMarketSnapshots(): Record<string, PersistedMarket
     const index: string[] = indexStr ? JSON.parse(indexStr) : [];
     const results: Record<string, PersistedMarketRecord> = {};
     for (const sym of index) {
-      const snap = getPersistedMarketSnapshot(sym);
+      const snap = getPersistedMarketSnapshot(sym, allowStale);
       if (snap) results[sym] = snap;
     }
     return results;
@@ -80,9 +98,9 @@ export function getAllPersistedMarketSnapshots(): Record<string, PersistedMarket
 }
 
 /**
- * Retrieve a persisted market snapshot from local storage.
+ * Retrieve a persisted market snapshot from local storage with strict TTL enforcement.
  */
-export function getPersistedMarketSnapshot(symbol: string): PersistedMarketRecord | null {
+export function getPersistedMarketSnapshot(symbol: string, allowStale: boolean = false): PersistedMarketRecord | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -92,11 +110,21 @@ export function getPersistedMarketSnapshot(symbol: string): PersistedMarketRecor
     if (!raw) return null;
     const record = JSON.parse(raw) as PersistedMarketRecord;
     
-    // Self-healing check: Discard poisoned legacy fallback snapshots where un-cataloged stocks got stuck at Apple's $319.64
+    // Self-healing check 1: Discard poisoned legacy fallback snapshots where un-cataloged stocks got stuck at Apple's $319.64
     if (upper !== "AAPL" && Math.abs(record.currentPrice - 319.64) < 0.01) {
       localStorage.removeItem(`${DB_STORAGE_PREFIX}${upper}`);
       return null;
     }
+
+    // Self-healing check 2: Strict 15-minute TTL invalidation
+    const ageMs = Date.now() - record.lastUpdated;
+    if (ageMs > SNAPSHOT_TTL_MS) {
+      if (!allowStale) {
+        return null; // Force live re-fetch
+      }
+      record.isStale = true;
+    }
+
     return record;
   } catch {
     return null;

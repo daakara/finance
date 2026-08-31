@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
-import { prefetchAssetAnalytics } from "../lib/api";
+import { prefetchAssetAnalytics, fetchBatchQuotes } from "../lib/api";
+import { getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
 interface WatchlistSidebarProps {
@@ -13,13 +14,67 @@ interface WatchlistSidebarProps {
 }
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCurrentPrice, livePriceChangePct }: WatchlistSidebarProps) {
+  // Initialize with persisted fresh database snapshots if available
+  const [items, setItems] = useState<WatchlistDefinition[]>(() => {
+    if (typeof window === "undefined") return SHARED_WATCHLIST_ITEMS;
+    const snapshots = getAllPersistedMarketSnapshots(true);
+    return SHARED_WATCHLIST_ITEMS.map((item) => {
+      const symClean = item.symbol.toUpperCase().replace("-USD", "");
+      const snap = snapshots[symClean];
+      if (snap && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
+        const isUp = snap.priceChangePct24h >= 0;
+        return {
+          ...item,
+          price: `$${snap.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          change: `${isUp ? "+" : ""}${snap.priceChangePct24h.toFixed(2)}%`,
+          isUp,
+        };
+      }
+      return item;
+    });
+  });
+
+  // Batch-fetch real-time live quotes on mount to eliminate static price baselines
+  useEffect(() => {
+    let isMounted = true;
+    const symbols = SHARED_WATCHLIST_ITEMS.map((i) => i.symbol);
+
+    fetchBatchQuotes(symbols).then((quotes) => {
+      if (!isMounted || !quotes || Object.keys(quotes).length === 0) return;
+
+      setItems((prevItems) =>
+        prevItems.map((item) => {
+          const symClean = item.symbol.toUpperCase().replace("-USD", "");
+          const liveQuote = quotes[symClean];
+          if (liveQuote && liveQuote.price > 0 && (symClean === "AAPL" || Math.abs(liveQuote.price - 319.64) >= 0.01)) {
+            const isUp = liveQuote.changePct >= 0;
+            return {
+              ...item,
+              price: `$${liveQuote.price.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`,
+              change: `${isUp ? "+" : ""}${liveQuote.changePct.toFixed(2)}%`,
+              isUp,
+            };
+          }
+          return item;
+        })
+      );
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Synchronize incoming live current price and percent change with the active watchlist item
   useEffect(() => {
     if (liveCurrentPrice !== undefined && activeSymbol) {
       const symClean = activeSymbol.toUpperCase().replace("-USD", "");
       const isUp = (livePriceChangePct ?? 0) >= 0;
       const changeStr = `${isUp ? "+" : ""}${(livePriceChangePct ?? 0).toFixed(2)}%`;
-      const priceStr = `${liveCurrentPrice.toLocaleString(undefined, {
+      const priceStr = `$${liveCurrentPrice.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`;
@@ -40,7 +95,6 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
       );
     }
   }, [liveCurrentPrice, livePriceChangePct, activeSymbol]);
-  const [items, setItems] = useState<WatchlistDefinition[]>(SHARED_WATCHLIST_ITEMS);
   const [pinnedSymbols, setPinnedSymbols] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);

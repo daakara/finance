@@ -51,18 +51,16 @@ export default function PortfolioPage() {
     setIsResolvingQuote(true);
 
     try {
-      // 1. Immediate sync lookup from constants
-      const staticMatch = SHARED_FACTOR_SCORES[symKey];
-      let price = staticMatch?.price || 100;
-
-      // 2. Fetch freshest live/fallback analytics
+      // 1. Fetch freshest live exchange analytics
+      let price = 100.0;
       try {
         const analytics = await fetchAssetAnalytics(symKey, "1mo", "1d");
         if (analytics?.currentPrice && !isNaN(analytics.currentPrice) && analytics.currentPrice > 0) {
           price = analytics.currentPrice;
         }
       } catch (e) {
-        // Fallback to staticMatch
+        const staticMatch = SHARED_FACTOR_SCORES[symKey];
+        if (staticMatch?.price) price = staticMatch.price;
       }
 
       setResolvedQuotePrice(price);
@@ -89,24 +87,16 @@ export default function PortfolioPage() {
     setIsRefreshing(true);
     try {
       const updatedPromises = basePositions.map(async (pos) => {
-        const symKey = pos.symbol.toUpperCase();
-        const matched = SHARED_FACTOR_SCORES[symKey];
         try {
           const res = await fetchAssetAnalytics(pos.symbol, "1mo", "1d");
-          if (res && res.currentPrice && !isNaN(res.currentPrice)) {
+          if (res && res.currentPrice && !isNaN(res.currentPrice) && res.currentPrice > 0) {
             return {
               ...pos,
               currentPrice: res.currentPrice,
             };
           }
         } catch {
-          // Fallback to SHARED_FACTOR_SCORES if API request fails
-        }
-        if (matched && matched.price) {
-          return {
-            ...pos,
-            currentPrice: matched.price,
-          };
+          // Keep existing verified position price
         }
         return pos;
       });

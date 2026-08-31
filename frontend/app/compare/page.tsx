@@ -194,12 +194,17 @@ function CompareContent() {
   // Build authentic comparison models from live API data with domain-accurate fundamentals
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
     const upperSym = sym.toUpperCase();
-    const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
-    const staticFactor = SHARED_FACTOR_SCORES[upperSym];
     const registered = AUTHENTIC_FUNDAMENTALS[upperSym];
+    const staticFactor = SHARED_FACTOR_SCORES[upperSym];
+    const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
 
-    const price = liveData?.currentPrice ?? staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0);
-    const priceChange = liveData?.priceChangePct24h ?? staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5);
+    const price = (liveData && liveData.currentPrice > 0)
+      ? liveData.currentPrice
+      : (staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0));
+
+    const priceChange = (liveData && !isNaN(liveData.priceChangePct24h))
+      ? liveData.priceChangePct24h
+      : (staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5));
 
     const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
     const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? staticFactor?.scores?.piotroskiFScore ?? 8;

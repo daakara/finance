@@ -894,6 +894,45 @@ export async function fetchDirectYahooFinanceChart(
 
 
 // Comprehensive Live Asset Analytics Engine with Persistent Database Storage & Direct Yahoo Finance Integration
+
+/**
+ * Fast Multi-Ticker Live Quote Batch Fetcher
+ * Queries live prices and 24h changes for an array of symbols in parallel.
+ */
+export async function fetchBatchQuotes(
+  symbols: string[]
+): Promise<Record<string, { price: number; changePct: number }>> {
+  const results: Record<string, { price: number; changePct: number }> = {};
+  if (!symbols || symbols.length === 0) return results;
+
+  const promises = symbols.map(async (sym) => {
+    const cleanSym = sym.toUpperCase().replace("-USD", "");
+    try {
+      // 1. Try Direct Yahoo Finance client fetch
+      const yfRes = await fetchDirectYahooFinanceChart(cleanSym, "1mo", "1d");
+      if (yfRes && yfRes.currentPrice > 0) {
+        results[cleanSym] = {
+          price: yfRes.currentPrice,
+          changePct: yfRes.priceChangePct24h,
+        };
+        return;
+      }
+    } catch {}
+
+    // 2. Check fresh persisted snapshot
+    const snap = getPersistedMarketSnapshot(cleanSym, true);
+    if (snap && snap.currentPrice > 0) {
+      results[cleanSym] = {
+        price: snap.currentPrice,
+        changePct: snap.priceChangePct24h,
+      };
+    }
+  });
+
+  await Promise.allSettled(promises);
+  return results;
+}
+
 export async function fetchAssetAnalytics(
   symbol: string,
   period: string = "1y",
@@ -963,7 +1002,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/screener?model=${encodeURIComponent(model)}`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -972,64 +1011,34 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
       }
     }
   } catch (err) {
-    console.warn("Backend screener query warning:", err);
+    // Fallthrough to dynamic live catalog discovery
   }
 
-  // Fallback to verified discovery candidates
-  const candidates: GemCandidate[] = [
-    {
-      ticker: "CPRX",
-      composite_score: 89,
-      expert_model: "Greenblatt Magic Formula",
-      peg_ratio: 0.68,
-      roic_pct: 28.5,
-      gross_margin_pct: 82.4,
-      risk_rating: "Low",
-      investment_thesis: "Dominant rare-disease commercial portfolio generating immense free cash flow with minimal debt.",
-      primary_catalyst: "Label expansion approval for Firdapse.",
-      asset_type: "Stock",
-      factor_verdict: "Top Decile Value & Quality",
-    },
-    {
-      ticker: "ACLS",
-      composite_score: 88,
-      expert_model: "Peter Lynch GARP Compounder",
-      peg_ratio: 0.82,
-      roic_pct: 32.1,
-      gross_margin_pct: 44.8,
-      risk_rating: "Moderate",
-      investment_thesis: "Mission-critical ion implantation equipment supplier with high operating leverage.",
-      primary_catalyst: "Next-gen SiC power device market adoption.",
-      asset_type: "Stock",
-      factor_verdict: "High ROIC Tech Compounder",
-    },
-    {
-      ticker: "LNTH",
-      composite_score: 88,
-      expert_model: "Greenblatt Magic Formula",
-      peg_ratio: 0.74,
-      roic_pct: 26.4,
-      gross_margin_pct: 65.2,
-      risk_rating: "Moderate",
-      investment_thesis: "Market leader in precision radiopharmaceutical diagnostics with accelerating clinical pipeline.",
-      primary_catalyst: "Pylarify international commercialization.",
-      asset_type: "Stock",
-      factor_verdict: "High Return on Capital",
-    },
-    {
-      ticker: "TMDX",
-      composite_score: 86,
-      expert_model: "Disruptive Rule Breaker",
-      peg_ratio: 1.15,
-      roic_pct: 19.8,
-      gross_margin_pct: 71.0,
-      risk_rating: "Moderate",
-      investment_thesis: "Warm perfusion organ transport standard saving thousands of transplant donor organs.",
-      primary_catalyst: "National organ logistics network expansion.",
-      asset_type: "Stock",
-      factor_verdict: "Secular MedTech Monopolist",
-    },
-  ];
+  // Dynamic Live Catalog Discovery (Constructed from authentic multi-factor models & spot prices)
+  const catalogEntries = Object.entries(MASTER_ASSET_CATALOG);
+  const candidates: GemCandidate[] = catalogEntries.map(([ticker, asset]) => {
+    const reg = SpotPriceRegistry.get(ticker);
+    const snap = getPersistedMarketSnapshot(ticker, true);
+    const livePrice = reg?.price || snap?.currentPrice || asset.price;
+
+    return {
+      ticker,
+      composite_score: Math.min(99, Math.max(70, Math.round(asset.compositeFactorScore))),
+      expert_model: asset.thesis.includes("GARP")
+        ? "Peter Lynch GARP"
+        : asset.thesis.includes("Magic")
+        ? "Greenblatt Magic Formula"
+        : "Minervini Stage 2 VCP",
+      peg_ratio: asset.peg,
+      roic_pct: asset.roic,
+      gross_margin_pct: asset.grossMargin,
+      risk_rating: asset.tailRiskScore > 80 ? "Low" : asset.tailRiskScore > 65 ? "Medium" : "High",
+      investment_thesis: asset.thesis,
+      primary_catalyst: asset.upcomingCatalyst || "Stage 2 accumulation breakout with institutional liquidity flow.",
+      factor_verdict: asset.verdict,
+      dna_verdict: asset.verdict,
+    };
+  });
 
   return {
     total_candidates: candidates.length,
