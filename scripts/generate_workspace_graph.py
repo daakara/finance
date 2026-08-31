@@ -55,6 +55,11 @@ def parse_python_file(filepath):
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ''
                 imports.add(module)
+                for alias in node.names:
+                    if module:
+                        imports.add(f"{module}.{alias.name}")
+                    else:
+                        imports.add(alias.name)
             elif isinstance(node, ast.FunctionDef):
                 functions.append(node.name)
                 for dec in node.decorator_list:

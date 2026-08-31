@@ -2,14 +2,14 @@
 
 Generated: `2026-08-31T22:30:00Z`  
 Workspace: `daakara/finance`  
-Total Active Modules: **141** | Total Dependency Edges: **184**
+Total Active Modules: **128** | Total Dependency Edges: **188**
 
 ---
 
 ## 1. Executive Summary & Topology Health
 
 - **Headless Decoupling**: Clean boundary between FastAPI backend (`api/`, `analyst_dashboard/`) and Next.js 14 App Router (`frontend/app/`, `frontend/components/`).
-- **Zero Orphaned Code**: All 141 active modules have verified dependency connections.
+- **Zero Orphaned Code**: All 128 active modules have verified dependency connections.
 - **Unified Reactive Bus**: All client pricing surfaces route through `SpotPriceRegistry` and browser database snapshots.
 
 ---
@@ -20,12 +20,12 @@ These modules form the foundational backbone of the platform. Any breaking chang
 
 | Module Path | Layer | Inbound Consumers | Lines of Code | Role |
 | :--- | :--- | :---: | :---: | :--- |
-| `frontend/lib/api.ts` | Frontend: State & Bus | **26** | 3345 | Core Hub |
+| `frontend/lib/api.ts` | Frontend: State & Bus | **25** | 3345 | Core Hub |
 | `frontend/components/Navbar.tsx` | Frontend: UI Component | **12** | 583 | Core Hub |
 | `frontend/lib/constants.ts` | Frontend: Utility & SSOT | **11** | 191 | Core Hub |
-| `frontend/lib/matomo.ts` | Frontend: Utility & SSOT | **10** | 151 | Core Hub |
 | `frontend/lib/marketDatabase.ts` | Frontend: State & Bus | **9** | 205 | Core Hub |
 | `frontend/lib/masterCatalog.ts` | Frontend: Utility & SSOT | **9** | 1176 | Core Hub |
+| `frontend/lib/matomo.ts` | Frontend: Utility & SSOT | **9** | 151 | Core Hub |
 | `frontend/lib/assetRegistry.ts` | Frontend: Utility & SSOT | **8** | 542 | Core Hub |
 | `frontend/lib/portfolio.ts` | Frontend: Utility & SSOT | **6** | 228 | Core Hub |
 | `analyst_dashboard/analyzers/optimal_execution.py` | Backend: Quant Engine | **5** | 234 | Core Hub |
@@ -39,18 +39,18 @@ These modules form the foundational backbone of the platform. Any breaking chang
 
 ### Backend: API Core (4 modules)
 - `api/__init__.py` (1 lines, in=0, out=0)
-- `api/main.py` (161 lines, in=1, out=4)
+- `api/main.py` (161 lines, in=1, out=10)
 - `api/middleware/api_key_auth.py` (77 lines, in=1, out=0)
 - `api/middleware/rate_limiter.py` (112 lines, in=1, out=0)
 
 ### Backend: API Route (7 modules)
 - `api/routes/__init__.py` (1 lines, in=0, out=0)
-- `api/routes/analytics.py` (420 lines, in=1, out=12)
-- `api/routes/cache.py` (31 lines, in=0, out=0)
-- `api/routes/regimes.py` (65 lines, in=0, out=0)
-- `api/routes/screener.py` (296 lines, in=2, out=4)
-- `api/routes/smart_money.py` (96 lines, in=0, out=5)
-- `api/routes/volatility.py` (60 lines, in=0, out=3)
+- `api/routes/analytics.py` (420 lines, in=2, out=12)
+- `api/routes/cache.py` (31 lines, in=1, out=0)
+- `api/routes/regimes.py` (65 lines, in=1, out=0)
+- `api/routes/screener.py` (296 lines, in=3, out=4)
+- `api/routes/smart_money.py` (96 lines, in=1, out=5)
+- `api/routes/volatility.py` (60 lines, in=1, out=3)
 
 ### Backend: Data Layer (8 modules)
 - `analyst_dashboard/data/capitol_trades_fetcher.py` (24 lines, in=1, out=0)
@@ -62,21 +62,19 @@ These modules form the foundational backbone of the platform. Any breaking chang
 - `analyst_dashboard/data/market_db.py` (302 lines, in=4, out=0)
 - `analyst_dashboard/data/sec_edgar_fetcher.py` (80 lines, in=1, out=0)
 
-### Backend: Quant Engine (20 modules)
+### Backend: Quant Engine (12 modules)
 - `analyst_dashboard/analyzers/__init__.py` (1 lines, in=0, out=0)
 - `analyst_dashboard/analyzers/advanced_risk_analyzer.py` (348 lines, in=1, out=1)
-- `analyst_dashboard/analyzers/candlestick_pattern_detector.py` (553 lines, in=0, out=0)
 - `analyst_dashboard/analyzers/catalysts.py` (339 lines, in=1, out=0)
-- `analyst_dashboard/analyzers/chart_pattern_recognizer.py` (822 lines, in=0, out=0)
 - `analyst_dashboard/analyzers/confluence_engine.py` (158 lines, in=2, out=0)
-- `analyst_dashboard/analyzers/enhanced_technical_analyzer.py` (199 lines, in=0, out=0)
-- `analyst_dashboard/analyzers/financial_analyzer.py` (301 lines, in=0, out=0)
-- *...and 12 more modules*
+- `analyst_dashboard/analyzers/gem_screener.py` (262 lines, in=4, out=0)
+- `analyst_dashboard/analyzers/market_graph.py` (79 lines, in=1, out=0)
+- `analyst_dashboard/analyzers/market_regime_analyzer.py` (361 lines, in=1, out=0)
+- `analyst_dashboard/analyzers/optimal_execution.py` (234 lines, in=5, out=0)
+- *...and 4 more modules*
 
-### Configuration & Root (3 modules)
+### Configuration & Root (1 modules)
 - `analyst_dashboard/__init__.py` (2 lines, in=0, out=0)
-- `analyst_dashboard/core/__init__.py` (1 lines, in=0, out=0)
-- `analyst_dashboard/core/asset_data_manager.py` (154 lines, in=0, out=0)
 
 ### Frontend: App Layout (5 modules)
 - `frontend/app/compare/layout.tsx` (56 lines, in=0, out=0)
@@ -97,10 +95,10 @@ These modules form the foundational backbone of the platform. Any breaking chang
 - *...and 4 more modules*
 
 ### Frontend: State & Bus (2 modules)
-- `frontend/lib/api.ts` (3345 lines, in=26, out=5)
+- `frontend/lib/api.ts` (3345 lines, in=25, out=5)
 - `frontend/lib/marketDatabase.ts` (205 lines, in=9, out=2)
 
-### Frontend: UI Component (41 modules)
+### Frontend: UI Component (38 modules)
 - `frontend/components/AlertTriggerModal.tsx` (258 lines, in=2, out=2)
 - `frontend/components/ArxLogo.tsx` (148 lines, in=1, out=0)
 - `frontend/components/AssetFactorRadar.tsx` (151 lines, in=1, out=2)
@@ -109,7 +107,7 @@ These modules form the foundational backbone of the platform. Any breaking chang
 - `frontend/components/CompositeConvictionCard.tsx` (252 lines, in=1, out=2)
 - `frontend/components/CongressionalTradesCard.tsx` (487 lines, in=1, out=2)
 - `frontend/components/DataSourceBadge.tsx` (39 lines, in=4, out=0)
-- *...and 33 more modules*
+- *...and 30 more modules*
 
 ### Frontend: Utility & SSOT (7 modules)
 - `frontend/lib/alertManager.ts` (251 lines, in=1, out=0)
@@ -117,7 +115,7 @@ These modules form the foundational backbone of the platform. Any breaking chang
 - `frontend/lib/constants.ts` (191 lines, in=11, out=1)
 - `frontend/lib/institutionalFeeds.ts` (137 lines, in=3, out=0)
 - `frontend/lib/masterCatalog.ts` (1176 lines, in=9, out=0)
-- `frontend/lib/matomo.ts` (151 lines, in=10, out=0)
+- `frontend/lib/matomo.ts` (151 lines, in=9, out=0)
 - `frontend/lib/portfolio.ts` (228 lines, in=6, out=0)
 
 ### Test Suite (32 modules)

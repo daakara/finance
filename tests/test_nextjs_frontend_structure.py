@@ -262,7 +262,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         tour_modal_path = os.path.join("frontend", "components", "OnboardingTourModal.tsx")
         layout_path = os.path.join("frontend", "app", "layout.tsx")
         politician_path = os.path.join("frontend", "app", "politician", "[slug]", "page.tsx")
-        tv_chart_path = os.path.join("frontend", "components", "TradingViewChart.tsx")
+        tv_chart_path = os.path.join("frontend", "components", "PriceChart.tsx")
 
         # 1. Modal Z-Index Supremacy (z-[1200] exceeds mobile dock z-[999])
         for path in [pos_modal_path, alert_modal_path, smart_modal_path, tour_modal_path]:
@@ -286,7 +286,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         # 4. Canvas Lifecycle De-coupling
         with open(tv_chart_path, "r", encoding="utf-8") as f:
             tv_content = f.read()
-        self.assertIn("seriesRef.current.setData", tv_content)
+        self.assertIn("candlestickSeriesRef.current.setData", tv_content)
 
     def test_security_guardian_and_ux_architect_contracts(self):
         """Regression Quality Gate: Ensure .dockerignore, hmac compare, route symbol regex, and JSON-LD sanitation."""
