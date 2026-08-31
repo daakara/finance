@@ -1,8 +1,8 @@
 @echo off
-REM Startup script for both Financial Platform applications
+REM Startup script for ARX Terminal (FastAPI Backend + Next.js Frontend)
 
 echo ==================================
-echo 🚀 Starting Financial Applications
+echo 🚀 Starting ARX Terminal Platform
 echo ==================================
 echo.
 
@@ -13,28 +13,25 @@ set REQUESTS_CA_BUNDLE=.venv\Lib\site-packages\certifi\cacert.pem
 echo ✅ SSL certificates configured
 echo.
 
-REM Start Main Financial Platform
-echo 🎯 Starting Main Financial Platform on port 8501...
-start "Main Financial Platform" .venv\Scripts\python.exe -m streamlit run app.py --server.port 8501
+REM 1. Start FastAPI Backend Microservice
+echo ⚙️ Starting FastAPI Backend on port 8000...
+start "ARX Backend API" .venv\Scripts\python.exe -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 timeout /t 3 /nobreak > nul
 
-REM Start Hidden Gems Scanner
-echo 💎 Starting Hidden Gems Scanner on port 8502...
-start "Hidden Gems Scanner" .venv\Scripts\python.exe -m streamlit run analyst_dashboard\visualizers\gem_dashboard.py --server.port 8502
-
-timeout /t 3 /nobreak > nul
+REM 2. Start Next.js Frontend Development Server
+echo 🖥️ Starting Next.js 14 Frontend on port 3000...
+start "ARX Frontend" cmd /c "cd frontend && npm run dev"
 
 echo.
 echo ==================================
-echo ✅ Both Applications Started!
+echo ✅ ARX Terminal Services Launched!
 echo ==================================
 echo.
-echo 📊 Main Financial Platform:  http://localhost:8501
-echo 💎 Hidden Gems Scanner:      http://localhost:8502
+echo 🖥️ Frontend Dashboard: http://localhost:3000
+echo ⚙️ FastAPI Swagger:   http://localhost:8000/docs
 echo.
-echo Both applications are running in separate windows
-echo Close the terminal windows to stop the applications
+echo Both services are running in separate terminal windows.
 echo ==================================
 echo.
 

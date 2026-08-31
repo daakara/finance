@@ -6,6 +6,12 @@ import { prefetchAssetAnalytics, fetchBatchQuotes } from "../lib/api";
 import { getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
+interface WatchlistItemDisplay extends WatchlistDefinition {
+  price?: string;
+  change?: string;
+  isUp?: boolean;
+}
+
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
@@ -15,7 +21,7 @@ interface WatchlistSidebarProps {
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCurrentPrice, livePriceChangePct }: WatchlistSidebarProps) {
   // Initialize with persisted fresh database snapshots if available
-  const [items, setItems] = useState<WatchlistDefinition[]>(() => {
+  const [items, setItems] = useState<WatchlistItemDisplay[]>(() => {
     if (typeof window === "undefined") return SHARED_WATCHLIST_ITEMS;
     const snapshots = getAllPersistedMarketSnapshots(true);
     return SHARED_WATCHLIST_ITEMS.map((item) => {
@@ -185,15 +191,11 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
     e.preventDefault();
     if (cleanQuery) {
       onSelectSymbol(cleanQuery);
-      // Automatically add to list if not already present
       const alreadyInList = items.some((i) => i.symbol.toUpperCase() === cleanQuery);
       if (!alreadyInList) {
-        const newItem: WatchlistDefinition = {
+        const newItem: WatchlistItemDisplay = {
           symbol: cleanQuery,
           name: `${cleanQuery} Custom Asset`,
-          price: "$---",
-          change: "0.00%",
-          isUp: true,
           type: "Stock",
         };
         const updatedItems = [newItem, ...items];
@@ -369,27 +371,35 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
 
                 {/* Inline Mini Sparkline */}
                 <div className="hidden sm:block shrink-0 px-1">
-                  <MiniSparkline
-                    basePrice={parseFloat(item.price.replace(/[^0-9.]/g, "")) || 100}
-                    changePct={parseFloat(item.change.replace(/[^0-9.-]/g, "")) || 0}
-                    isPositive={item.isUp}
-                    width={42}
-                    height={18}
-                  />
+                  {item.price ? (
+                    <MiniSparkline
+                      basePrice={parseFloat(item.price.replace(/[^0-9.]/g, "")) || 100}
+                      changePct={parseFloat(item.change?.replace(/[^0-9.-]/g, "") || "0") || 0}
+                      isPositive={item.isUp ?? true}
+                      width={42}
+                      height={18}
+                    />
+                  ) : (
+                    <div className="w-[42px] h-[18px] bg-[#162030] rounded animate-pulse" />
+                  )}
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-xs font-bold text-slate-200 tabular-nums">{item.price}</div>
-                  <div
-                    title="24-Hour Daily Return relative to previous close"
-                    aria-label={`24-hour change: ${item.change}`}
-                    className={`text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5 ${
-                      item.isUp ? "text-emerald-400" : "text-rose-400"
-                    }`}
-                  >
-                    <span>{item.change}</span>
-                    <span className="text-[8px] opacity-70 font-normal">24H</span>
+                  <div className="text-xs font-bold text-slate-200 tabular-nums">
+                    {item.price || <span className="text-slate-500 font-mono text-[11px] animate-pulse">--.--</span>}
                   </div>
+                  {item.change ? (
+                    <div
+                      title="24-Hour Daily Return relative to previous close"
+                      aria-label={`24-hour change: ${item.change}`}
+                      className={`text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5 ${
+                        item.isUp ? "text-emerald-400" : "text-rose-400"
+                      }`}
+                    >
+                      <span>{item.change}</span>
+                      <span className="text-[8px] opacity-70 font-normal">24H</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );

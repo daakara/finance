@@ -8,38 +8,35 @@ import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from
 export interface WatchlistDefinition {
   symbol: string;
   name: string;
-  price: string;
-  change: string;
-  isUp: boolean;
   type: "Stock" | "ETF" | "Crypto";
 }
 
 export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
   // Mega-Cap Tech & Global Pharma Equities
-  { symbol: "NVO", name: "Novo Nordisk", price: "$136.40", change: "+1.85%", isUp: true, type: "Stock" },
-  { symbol: "LLY", name: "Eli Lilly", price: "$924.50", change: "+2.10%", isUp: true, type: "Stock" },
-  { symbol: "AAPL", name: "Apple Inc.", price: "$319.64", change: "+2.62%", isUp: true, type: "Stock" },
-  { symbol: "NVDA", name: "NVIDIA Corp.", price: "$128.50", change: "+3.14%", isUp: true, type: "Stock" },
-  { symbol: "MSFT", name: "Microsoft Corp.", price: "$418.20", change: "+0.85%", isUp: true, type: "Stock" },
-  { symbol: "GOOGL", name: "Alphabet Inc.", price: "$164.80", change: "+1.40%", isUp: true, type: "Stock" },
-  { symbol: "TSLA", name: "Tesla Inc.", price: "$218.40", change: "+2.15%", isUp: true, type: "Stock" },
-  { symbol: "PLTR", name: "Palantir Tech", price: "$31.20", change: "+4.12%", isUp: true, type: "Stock" },
-  { symbol: "CIEN", name: "Ciena Corp.", price: "$64.20", change: "+2.65%", isUp: true, type: "Stock" },
+  { symbol: "NVO", name: "Novo Nordisk", type: "Stock" },
+  { symbol: "LLY", name: "Eli Lilly", type: "Stock" },
+  { symbol: "AAPL", name: "Apple Inc.", type: "Stock" },
+  { symbol: "NVDA", name: "NVIDIA Corp.", type: "Stock" },
+  { symbol: "MSFT", name: "Microsoft Corp.", type: "Stock" },
+  { symbol: "GOOGL", name: "Alphabet Inc.", type: "Stock" },
+  { symbol: "TSLA", name: "Tesla Inc.", type: "Stock" },
+  { symbol: "PLTR", name: "Palantir Tech", type: "Stock" },
+  { symbol: "CIEN", name: "Ciena Corp.", type: "Stock" },
 
   // Institutional Index, Sector, Commodity & Bond ETFs
-  { symbol: "SPY", name: "S&P 500 ETF", price: "$765.91", change: "+0.65%", isUp: true, type: "ETF" },
-  { symbol: "QQQ", name: "Invesco QQQ", price: "$710.72", change: "+1.10%", isUp: true, type: "ETF" },
-  { symbol: "SMH", name: "VanEck Semi ETF", price: "$288.40", change: "+2.45%", isUp: true, type: "ETF" },
-  { symbol: "XLK", name: "Tech Select SPDR", price: "$246.15", change: "+1.30%", isUp: true, type: "ETF" },
-  { symbol: "IWM", name: "Russell 2000 ETF", price: "$224.50", change: "+0.95%", isUp: true, type: "ETF" },
-  { symbol: "GLD", name: "SPDR Gold Shares", price: "$264.20", change: "+0.40%", isUp: true, type: "ETF" },
-  { symbol: "TLT", name: "20+ Yr Treasury", price: "$88.65", change: "-0.30%", isUp: false, type: "ETF" },
-  { symbol: "XLE", name: "Energy Select ETF", price: "$86.10", change: "+1.05%", isUp: true, type: "ETF" },
+  { symbol: "SPY", name: "S&P 500 ETF", type: "ETF" },
+  { symbol: "QQQ", name: "Invesco QQQ", type: "ETF" },
+  { symbol: "SMH", name: "VanEck Semi ETF", type: "ETF" },
+  { symbol: "XLK", name: "Tech Select SPDR", type: "ETF" },
+  { symbol: "IWM", name: "Russell 2000 ETF", type: "ETF" },
+  { symbol: "GLD", name: "SPDR Gold Shares", type: "ETF" },
+  { symbol: "TLT", name: "20+ Yr Treasury", type: "ETF" },
+  { symbol: "XLE", name: "Energy Select ETF", type: "ETF" },
 
   // Digital Assets / Crypto
-  { symbol: "BTC-USD", name: "Bitcoin", price: "$78,213.00", change: "+2.80%", isUp: true, type: "Crypto" },
-  { symbol: "ETH-USD", name: "Ethereum", price: "$2,438.00", change: "+1.65%", isUp: true, type: "Crypto" },
-  { symbol: "SOL-USD", name: "Solana", price: "$96.73", change: "+0.24%", isUp: true, type: "Crypto" },
+  { symbol: "BTC-USD", name: "Bitcoin", type: "Crypto" },
+  { symbol: "ETH-USD", name: "Ethereum", type: "Crypto" },
+  { symbol: "SOL-USD", name: "Solana", type: "Crypto" },
 ];
 
 export const SHARED_FACTOR_SCORES: Record<string, { scores: AssetFactorScores }> = {

@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
-import { prefetchAssetAnalytics } from "../lib/api";
+import { prefetchAssetAnalytics, SpotPriceRegistry } from "../lib/api";
 import { resolveAssetAlias } from "../lib/assetRegistry";
+import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 
 export default function UniversalOmniSearch() {
   const router = useRouter();
@@ -218,31 +219,43 @@ export default function UniversalOmniSearch() {
                 <span className="text-cyan-400">Instant Load</span>
               </div>
 
-              {matchingPresets.map((item) => (
-                <button
-                  key={item.symbol}
-                  type="button"
-                  onClick={() => handleSelectTicker(item.symbol)}
-                  onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
-                  className="w-full text-left p-2.5 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-[#1e2a3c] hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-[#111722] px-2.5 py-1 rounded text-xs font-black text-white group-hover:text-cyan-300 border border-[#243044]">
-                      {item.symbol}
+              {matchingPresets.map((item) => {
+                const reg = SpotPriceRegistry.get(item.symbol);
+                const snap = getPersistedMarketSnapshot(item.symbol);
+                const price = reg?.price || snap?.currentPrice;
+                const change = reg?.changePct ?? snap?.priceChangePct24h;
+                const isUp = (change ?? 0) >= 0;
+
+                return (
+                  <button
+                    key={item.symbol}
+                    type="button"
+                    onClick={() => handleSelectTicker(item.symbol)}
+                    onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
+                    className="w-full text-left p-2.5 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-[#1e2a3c] hover:border-cyan-400 flex items-center justify-between transition-colors group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-[#111722] px-2.5 py-1 rounded text-xs font-black text-white group-hover:text-cyan-300 border border-[#243044]">
+                        {item.symbol}
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-100">{item.name}</div>
+                        <div className="text-[10px] text-slate-400">{item.type}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-100">{item.name}</div>
-                      <div className="text-[10px] text-slate-400">{item.type}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-200">{item.price}</div>
-                    <div className={`text-[10px] font-semibold ${item.isUp ? "text-emerald-400" : "text-rose-400"}`}>
-                      {item.change}
-                    </div>
-                  </div>
-                </button>
-              ))}
+                    {price ? (
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-slate-200 tabular-nums">${price.toFixed(2)}</div>
+                        {change !== undefined && (
+                          <div className={`text-[10px] font-semibold tabular-nums ${isUp ? "text-emerald-400" : "text-rose-400"}`}>
+                            {isUp ? "+" : ""}{change.toFixed(2)}%
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Keyboard Footer */}

@@ -207,7 +207,7 @@ function CompareContent() {
       ? reg.price
       : (snap?.currentPrice && snap.currentPrice > 0)
       ? snap.currentPrice
-      : (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0);
+      : 100.0;
 
     const priceChange = (liveData && !isNaN(liveData.priceChangePct24h))
       ? liveData.priceChangePct24h
@@ -215,7 +215,7 @@ function CompareContent() {
       ? reg.changePct
       : (snap?.priceChangePct24h !== undefined)
       ? snap.priceChangePct24h
-      : (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 0.0);
+      : 0.0;
 
     const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
     const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? staticFactor?.scores?.piotroskiFScore ?? 8;

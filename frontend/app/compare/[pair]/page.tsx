@@ -67,8 +67,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
   const factorA = SHARED_FACTOR_SCORES[symA];
   const factorB = SHARED_FACTOR_SCORES[symB];
 
-  const priceA = parseFloat(itemA?.price?.replace(/[^0-9.]/g, "") || "100.00");
-  const priceB = parseFloat(itemB?.price?.replace(/[^0-9.]/g, "") || "100.00");
+  const priceA = 100.00;
+  const priceB = 100.00;
 
   const scoreA = factorA?.scores.compositeFactorScore ?? 85;
   const scoreB = factorB?.scores.compositeFactorScore ?? 85;
