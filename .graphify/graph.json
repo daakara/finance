@@ -1,0 +1,4076 @@
+{
+  "meta": {
+    "workspace": "daakara/finance",
+    "totalNodes": 141,
+    "totalEdges": 184,
+    "timestamp": "2026-08-31T22:30:00Z"
+  },
+  "nodes": [
+    {
+      "id": "api/main.py",
+      "label": "main.py",
+      "path": "api/main.py",
+      "type": "Backend: API Core",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "fastapi.middleware.cors",
+        "api.middleware.rate_limiter",
+        "os",
+        "fastapi.responses",
+        "asyncio",
+        "analyst_dashboard.data.market_db",
+        "api.middleware.api_key_auth",
+        "api.routes",
+        "threading",
+        "contextlib",
+        "yfinance",
+        "fastapi"
+      ],
+      "routes": [
+        "GET /health"
+      ],
+      "classes": [],
+      "functions": [
+        "health_check",
+        "_prewarm"
+      ],
+      "lines": 161,
+      "sizeBytes": 6409,
+      "inDegree": 1,
+      "outDegree": 4
+    },
+    {
+      "id": "api/__init__.py",
+      "label": "__init__.py",
+      "path": "api/__init__.py",
+      "type": "Backend: API Core",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 1,
+      "sizeBytes": 1,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "api/middleware/api_key_auth.py",
+      "label": "api_key_auth.py",
+      "path": "api/middleware/api_key_auth.py",
+      "type": "Backend: API Core",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "os",
+        "starlette.middleware.base",
+        "starlette.responses",
+        "hmac",
+        "fastapi"
+      ],
+      "routes": [],
+      "classes": [
+        "ApiKeyAuthMiddleware"
+      ],
+      "functions": [
+        "_secure_compare"
+      ],
+      "lines": 77,
+      "sizeBytes": 2658,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "api/middleware/rate_limiter.py",
+      "label": "rate_limiter.py",
+      "path": "api/middleware/rate_limiter.py",
+      "type": "Backend: API Core",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 112,
+      "sizeBytes": 4847,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "api/routes/analytics.py",
+      "label": "analytics.py",
+      "path": "api/routes/analytics.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [
+        "analyst_dashboard.analyzers.optimal_execution",
+        "analyst_dashboard.data.fred_fetcher",
+        "analyst_dashboard.analyzers.market_graph",
+        "analyst_dashboard.analyzers.trader_archetypes",
+        "analyst_dashboard.analyzers.catalysts",
+        "analyst_dashboard.analyzers.smart_money",
+        "re",
+        "analyst_dashboard.data.market_db",
+        "analyst_dashboard.analyzers.advanced_risk_analyzer",
+        "analyst_dashboard.analyzers.self_healing_engine",
+        "analyst_dashboard.data.db_engine",
+        "math",
+        "analyst_dashboard.data.eodhd_fetcher",
+        "yfinance",
+        "pandas",
+        "numpy",
+        "fastapi",
+        "datetime"
+      ],
+      "routes": [
+        "GET /{symbol}"
+      ],
+      "classes": [],
+      "functions": [
+        "calculate_piotroski_f_score",
+        "compute_intraday_technicals",
+        "get_asset_analytics",
+        "is_valid_ohlcv"
+      ],
+      "lines": 420,
+      "sizeBytes": 17873,
+      "inDegree": 1,
+      "outDegree": 12
+    },
+    {
+      "id": "api/routes/cache.py",
+      "label": "cache.py",
+      "path": "api/routes/cache.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 31,
+      "sizeBytes": 879,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "api/routes/regimes.py",
+      "label": "regimes.py",
+      "path": "api/routes/regimes.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 65,
+      "sizeBytes": 2549,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "api/routes/screener.py",
+      "label": "screener.py",
+      "path": "api/routes/screener.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [
+        "analyst_dashboard.analyzers.optimal_execution",
+        "pydantic",
+        "analyst_dashboard.data.market_db",
+        "typing",
+        "analyst_dashboard.analyzers.gem_screener",
+        "pandas",
+        "fastapi",
+        "analyst_dashboard.analyzers.confluence_engine"
+      ],
+      "routes": [
+        "POST /run",
+        "GET /run",
+        "GET /position-size"
+      ],
+      "classes": [
+        "ScreenerRequest"
+      ],
+      "functions": [
+        "run_screener",
+        "run_screener_get",
+        "calculate_trade_position_size"
+      ],
+      "lines": 296,
+      "sizeBytes": 14297,
+      "inDegree": 2,
+      "outDegree": 4
+    },
+    {
+      "id": "api/routes/smart_money.py",
+      "label": "smart_money.py",
+      "path": "api/routes/smart_money.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [
+        "analyst_dashboard.data.sec_edgar_fetcher",
+        "re",
+        "typing",
+        "analyst_dashboard.data.finra_fetcher",
+        "fastapi",
+        "analyst_dashboard.analyzers.smart_money",
+        "analyst_dashboard.data.capitol_trades_fetcher"
+      ],
+      "routes": [
+        "GET /overview",
+        "GET /congress",
+        "GET /options-flow",
+        "GET /sec-filings/{symbol}",
+        "GET /finra-darkpool/{symbol}"
+      ],
+      "classes": [],
+      "functions": [
+        "_validate_symbol",
+        "get_smart_money_overview",
+        "get_congress_trades",
+        "get_options_flow",
+        "get_sec_filings",
+        "get_finra_darkpool"
+      ],
+      "lines": 96,
+      "sizeBytes": 5034,
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "id": "api/routes/volatility.py",
+      "label": "volatility.py",
+      "path": "api/routes/volatility.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "re",
+        "typing",
+        "analyst_dashboard.analyzers.volatility_forecaster",
+        "fastapi",
+        "analyst_dashboard.data.gem_fetchers",
+        "pandas",
+        "os"
+      ],
+      "routes": [
+        "GET /{symbol}"
+      ],
+      "classes": [],
+      "functions": [
+        "get_volatility_forecast"
+      ],
+      "lines": 60,
+      "sizeBytes": 2211,
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "id": "api/routes/__init__.py",
+      "label": "__init__.py",
+      "path": "api/routes/__init__.py",
+      "type": "Backend: API Route",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 1,
+      "sizeBytes": 1,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/__init__.py",
+      "label": "__init__.py",
+      "path": "analyst_dashboard/__init__.py",
+      "type": "Configuration & Root",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 2,
+      "sizeBytes": 95,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/advanced_risk_analyzer.py",
+      "label": "advanced_risk_analyzer.py",
+      "path": "analyst_dashboard/analyzers/advanced_risk_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "scipy.stats",
+        "typing",
+        "pandas",
+        "numpy",
+        "analyst_dashboard.analyzers.market_regime_analyzer"
+      ],
+      "routes": [],
+      "classes": [
+        "AdvancedRiskAnalyzer"
+      ],
+      "functions": [
+        "analyze_comprehensive_risk",
+        "_calculate_advanced_risk_metrics",
+        "_analyze_tail_risk",
+        "_analyze_drawdowns",
+        "_detect_market_regimes",
+        "_calculate_pain_index",
+        "_calculate_max_drawdown",
+        "generate_risk_insights"
+      ],
+      "lines": 348,
+      "sizeBytes": 16911,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "analyst_dashboard/analyzers/candlestick_pattern_detector.py",
+      "label": "candlestick_pattern_detector.py",
+      "path": "analyst_dashboard/analyzers/candlestick_pattern_detector.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "dataclasses",
+        "typing",
+        "pandas",
+        "numpy"
+      ],
+      "routes": [],
+      "classes": [
+        "CandlestickPattern",
+        "CandlestickPatternDetector"
+      ],
+      "functions": [
+        "__init__",
+        "detect_all_patterns",
+        "_detect_single_candlestick_patterns",
+        "_detect_multi_candlestick_patterns",
+        "_calculate_pattern_reliability",
+        "_is_uptrend",
+        "_is_downtrend",
+        "_get_strength_from_reliability",
+        "_generate_pattern_insights"
+      ],
+      "lines": 553,
+      "sizeBytes": 30127,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/catalysts.py",
+      "label": "catalysts.py",
+      "path": "analyst_dashboard/analyzers/catalysts.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "datetime",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "CatalystEngine"
+      ],
+      "functions": [
+        "get_asset_catalyst_report"
+      ],
+      "lines": 339,
+      "sizeBytes": 30031,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/chart_pattern_recognizer.py",
+      "label": "chart_pattern_recognizer.py",
+      "path": "analyst_dashboard/analyzers/chart_pattern_recognizer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "dataclasses",
+        "typing",
+        "scipy",
+        "scipy.signal",
+        "pandas",
+        "numpy"
+      ],
+      "routes": [],
+      "classes": [
+        "ChartPattern",
+        "ChartPatternRecognizer"
+      ],
+      "functions": [
+        "__init__",
+        "detect_all_patterns",
+        "_find_peaks_and_troughs",
+        "_detect_reversal_patterns",
+        "_detect_continuation_patterns",
+        "_detect_triangle_patterns",
+        "_calculate_pattern_confidence",
+        "_calculate_support_resistance",
+        "_group_similar_levels",
+        "_analyze_trend_context",
+        "_get_strength_from_confidence",
+        "_generate_pattern_insights"
+      ],
+      "lines": 822,
+      "sizeBytes": 42128,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/confluence_engine.py",
+      "label": "confluence_engine.py",
+      "path": "analyst_dashboard/analyzers/confluence_engine.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "math",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "ConfluenceEngine"
+      ],
+      "functions": [
+        "calculate_confluence",
+        "calculate_position_size"
+      ],
+      "lines": 158,
+      "sizeBytes": 6670,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/enhanced_technical_analyzer.py",
+      "label": "enhanced_technical_analyzer.py",
+      "path": "analyst_dashboard/analyzers/enhanced_technical_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "pandas",
+        "numpy",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "EnhancedTechnicalAnalyzer"
+      ],
+      "functions": [
+        "calculate_advanced_indicators",
+        "generate_advanced_signals",
+        "_calculate_stochastic_rsi",
+        "_calculate_williams_r",
+        "_calculate_cci",
+        "_calculate_adx",
+        "_analyze_trend_strength",
+        "_analyze_volume_confirmation",
+        "_calculate_signal_confluence"
+      ],
+      "lines": 199,
+      "sizeBytes": 7807,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/financial_analyzer.py",
+      "label": "financial_analyzer.py",
+      "path": "analyst_dashboard/analyzers/financial_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "pandas",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "FinancialMetricsAnalyzer"
+      ],
+      "functions": [
+        "analyze_financials",
+        "extract_key_metrics",
+        "calculate_financial_ratios",
+        "analyze_valuation_metrics",
+        "calculate_health_score"
+      ],
+      "lines": 301,
+      "sizeBytes": 12389,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/gem_screener.py",
+      "label": "gem_screener.py",
+      "path": "analyst_dashboard/analyzers/gem_screener.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "dataclasses",
+        "numpy",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "GemCriteria",
+        "GemScore",
+        "HiddenGemsScreener"
+      ],
+      "functions": [
+        "__init__",
+        "evaluate_candidates",
+        "screen_universe",
+        "calculate_composite_score"
+      ],
+      "lines": 262,
+      "sizeBytes": 12167,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/historical_patterns.py",
+      "label": "historical_patterns.py",
+      "path": "analyst_dashboard/analyzers/historical_patterns.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "dataclasses",
+        "sklearn.preprocessing",
+        "typing",
+        "warnings",
+        "scipy",
+        "sklearn.metrics.pairwise",
+        "yfinance",
+        "pandas",
+        "numpy",
+        "datetime"
+      ],
+      "routes": [],
+      "classes": [
+        "HistoricalPattern",
+        "HistoricalPatternAnalyzer"
+      ],
+      "functions": [
+        "__init__",
+        "_build_pattern_database",
+        "find_similar_patterns",
+        "_extract_pattern_features",
+        "_extract_historical_features",
+        "_calculate_pattern_similarity",
+        "_identify_key_similarities",
+        "_identify_pattern_differences",
+        "analyze_pattern_replication_probability",
+        "get_pattern_insights",
+        "_generate_pattern_summary",
+        "_generate_actionable_insights"
+      ],
+      "lines": 815,
+      "sizeBytes": 38385,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/market_graph.py",
+      "label": "market_graph.py",
+      "path": "analyst_dashboard/analyzers/market_graph.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 79,
+      "sizeBytes": 5383,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/market_regime_analyzer.py",
+      "label": "market_regime_analyzer.py",
+      "path": "analyst_dashboard/analyzers/market_regime_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "numpy",
+        "sklearn.preprocessing",
+        "typing",
+        "pandas",
+        "sklearn.mixture"
+      ],
+      "routes": [],
+      "classes": [
+        "MarketRegimeAnalyzer"
+      ],
+      "functions": [
+        "__init__",
+        "analyze_market_regimes",
+        "_detect_statistical_regimes",
+        "_detect_volatility_regimes",
+        "_detect_trend_regimes",
+        "_analyze_market_cycle_position",
+        "_prepare_regime_features",
+        "_generate_regime_recommendations",
+        "_classify_regime_type",
+        "_calculate_avg_regime_duration",
+        "_calculate_regime_max_drawdown"
+      ],
+      "lines": 361,
+      "sizeBytes": 17485,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/multi_timeframe_analyzer.py",
+      "label": "multi_timeframe_analyzer.py",
+      "path": "analyst_dashboard/analyzers/multi_timeframe_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "typing",
+        "yfinance",
+        "pandas",
+        "numpy",
+        "datetime"
+      ],
+      "routes": [],
+      "classes": [
+        "MultiTimeframeAnalyzer"
+      ],
+      "functions": [
+        "__init__",
+        "analyze_multi_timeframe",
+        "_fetch_timeframe_data",
+        "_analyze_single_timeframe",
+        "_calculate_timeframe_indicators",
+        "_analyze_trend",
+        "_analyze_momentum",
+        "_generate_timeframe_signals",
+        "_calculate_timeframe_confidence",
+        "_calculate_alignment_scores",
+        "_generate_confluence_signals",
+        "_create_analysis_summary",
+        "_assess_risk_level",
+        "_calculate_slope",
+        "get_timeframe_summary"
+      ],
+      "lines": 527,
+      "sizeBytes": 21896,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/optimal_execution.py",
+      "label": "optimal_execution.py",
+      "path": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "pandas",
+        "numpy",
+        "math",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "OptimalExecutionEngine"
+      ],
+      "functions": [
+        "calculate_trade_levels",
+        "_enforce_execution_invariants"
+      ],
+      "lines": 234,
+      "sizeBytes": 13952,
+      "inDegree": 5,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/self_healing_engine.py",
+      "label": "self_healing_engine.py",
+      "path": "analyst_dashboard/analyzers/self_healing_engine.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 88,
+      "sizeBytes": 3730,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/smart_money.py",
+      "label": "smart_money.py",
+      "path": "analyst_dashboard/analyzers/smart_money.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "SmartMoneyEngine"
+      ],
+      "functions": [
+        "calculate_legislative_alignment",
+        "compute_filing_staleness",
+        "enrich_trade",
+        "get_congressional_trades",
+        "get_sec_insider_trades",
+        "get_options_flow",
+        "get_smart_money_overview"
+      ],
+      "lines": 2044,
+      "sizeBytes": 84878,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/sustainability_analyzer.py",
+      "label": "sustainability_analyzer.py",
+      "path": "analyst_dashboard/analyzers/sustainability_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "dataclasses",
+        "typing",
+        "yfinance",
+        "pandas",
+        "numpy"
+      ],
+      "routes": [],
+      "classes": [
+        "SustainabilityScore",
+        "SustainabilityAnalyzer"
+      ],
+      "functions": [
+        "__post_init__",
+        "__init__",
+        "analyze_sustainability",
+        "_calculate_environmental_score",
+        "_calculate_social_score",
+        "_calculate_governance_score",
+        "_calculate_controversy_score",
+        "_calculate_board_independence",
+        "_estimate_renewable_energy_usage",
+        "_identify_impact_alignment",
+        "_generate_impact_thesis",
+        "_extract_sustainability_initiatives",
+        "_identify_environmental_risks",
+        "_identify_social_risks",
+        "_identify_governance_risks",
+        "calculate_impact_premium"
+      ],
+      "lines": 528,
+      "sizeBytes": 21155,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/technical_analyzer.py",
+      "label": "technical_analyzer.py",
+      "path": "analyst_dashboard/analyzers/technical_analyzer.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "pandas",
+        "numpy",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "TechnicalAnalysisProcessor"
+      ],
+      "functions": [
+        "analyze_technical_data",
+        "calculate_technical_indicators",
+        "generate_trading_signals",
+        "_calculate_signal_confluence",
+        "analyze_trends",
+        "_calculate_rsi",
+        "_calculate_stochastic",
+        "_calculate_atr",
+        "_calculate_stochastic_rsi",
+        "_calculate_williams_r",
+        "_calculate_cci",
+        "_calculate_adx",
+        "_calculate_mfi",
+        "_calculate_chaikin_money_flow",
+        "_calculate_roc",
+        "_calculate_parabolic_sar"
+      ],
+      "lines": 539,
+      "sizeBytes": 22833,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/trader_archetypes.py",
+      "label": "trader_archetypes.py",
+      "path": "analyst_dashboard/analyzers/trader_archetypes.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 246,
+      "sizeBytes": 13614,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/volatility_forecaster.py",
+      "label": "volatility_forecaster.py",
+      "path": "analyst_dashboard/analyzers/volatility_forecaster.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "dataclasses",
+        "arch",
+        "typing",
+        "warnings",
+        "statsmodels.tsa.arima.model",
+        "pandas",
+        "numpy"
+      ],
+      "routes": [],
+      "classes": [
+        "VolatilityForecast",
+        "VolatilityForecaster"
+      ],
+      "functions": [
+        "__init__",
+        "generate_volatility_forecast",
+        "_calculate_current_volatility_metrics",
+        "_fit_garch_model",
+        "_fit_egarch_model",
+        "_fit_gjr_garch_model",
+        "_historical_volatility_forecast",
+        "_ewma_volatility_forecast",
+        "_analyze_volatility_regimes",
+        "_calculate_regime_transitions",
+        "_calculate_regime_persistence",
+        "_analyze_volatility_clustering",
+        "_create_ensemble_forecast",
+        "_create_fallback_forecast",
+        "_calculate_volatility_percentile",
+        "_generate_forecast_insights",
+        "_calculate_out_of_sample_metrics",
+        "_generate_arima_price_forecast"
+      ],
+      "lines": 756,
+      "sizeBytes": 34861,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/analyzers/__init__.py",
+      "label": "__init__.py",
+      "path": "analyst_dashboard/analyzers/__init__.py",
+      "type": "Backend: Quant Engine",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 1,
+      "sizeBytes": 30,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/core/asset_data_manager.py",
+      "label": "asset_data_manager.py",
+      "path": "analyst_dashboard/core/asset_data_manager.py",
+      "type": "Configuration & Root",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "data.fetchers",
+        "typing",
+        "analysis.technical",
+        "analysis.crypto",
+        "analysis.fundamental",
+        "pandas",
+        "analysis.etf"
+      ],
+      "routes": [],
+      "classes": [
+        "AssetDataManager"
+      ],
+      "functions": [
+        "get_asset_data",
+        "_get_stock_data",
+        "_get_etf_data",
+        "_get_crypto_data",
+        "get_multiple_assets_data",
+        "fetch_stock_data",
+        "fetch_stock_info",
+        "fetch_etf_data",
+        "fetch_etf_info",
+        "fetch_crypto_data",
+        "fetch_crypto_info"
+      ],
+      "lines": 154,
+      "sizeBytes": 6495,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/core/__init__.py",
+      "label": "__init__.py",
+      "path": "analyst_dashboard/core/__init__.py",
+      "type": "Configuration & Root",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 1,
+      "sizeBytes": 26,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/capitol_trades_fetcher.py",
+      "label": "capitol_trades_fetcher.py",
+      "path": "analyst_dashboard/data/capitol_trades_fetcher.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 24,
+      "sizeBytes": 960,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/db_engine.py",
+      "label": "db_engine.py",
+      "path": "analyst_dashboard/data/db_engine.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "json",
+        "sqlite3",
+        "typing",
+        "os",
+        "datetime"
+      ],
+      "routes": [],
+      "classes": [
+        "HistoryDatabaseEngine"
+      ],
+      "functions": [
+        "__init__",
+        "_init_tables",
+        "log_screening_result",
+        "log_forecast_performance",
+        "log_trade_recommendation",
+        "get_setup_accuracy_summary"
+      ],
+      "lines": 157,
+      "sizeBytes": 7535,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/eodhd_fetcher.py",
+      "label": "eodhd_fetcher.py",
+      "path": "analyst_dashboard/data/eodhd_fetcher.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "requests",
+        "typing",
+        "pandas",
+        "os"
+      ],
+      "routes": [],
+      "classes": [
+        "EODHDMarketFetcher"
+      ],
+      "functions": [
+        "__init__",
+        "fetch_realtime_quote",
+        "fetch_historical_candles"
+      ],
+      "lines": 83,
+      "sizeBytes": 3055,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/finra_fetcher.py",
+      "label": "finra_fetcher.py",
+      "path": "analyst_dashboard/data/finra_fetcher.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 91,
+      "sizeBytes": 3626,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/fred_fetcher.py",
+      "label": "fred_fetcher.py",
+      "path": "analyst_dashboard/data/fred_fetcher.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "requests",
+        "os",
+        "typing"
+      ],
+      "routes": [],
+      "classes": [
+        "FredMacroFetcher"
+      ],
+      "functions": [
+        "__init__",
+        "fetch_latest_observation",
+        "get_macro_indicators"
+      ],
+      "lines": 99,
+      "sizeBytes": 4176,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/gem_fetchers.py",
+      "label": "gem_fetchers.py",
+      "path": "analyst_dashboard/data/gem_fetchers.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 794,
+      "sizeBytes": 31253,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/market_db.py",
+      "label": "market_db.py",
+      "path": "analyst_dashboard/data/market_db.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [
+        "logging",
+        "json",
+        "sqlite3",
+        "typing",
+        "pandas",
+        "os",
+        "datetime"
+      ],
+      "routes": [],
+      "classes": [
+        "MarketDatabaseEngine"
+      ],
+      "functions": [
+        "__init__",
+        "_get_connection",
+        "_init_schema",
+        "save_daily_candles",
+        "get_daily_candles",
+        "get_latest_price",
+        "save_factor_snapshot",
+        "get_factor_snapshot",
+        "save_catalyst",
+        "get_catalyst",
+        "purge_stale_data"
+      ],
+      "lines": 302,
+      "sizeBytes": 14089,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "analyst_dashboard/data/sec_edgar_fetcher.py",
+      "label": "sec_edgar_fetcher.py",
+      "path": "analyst_dashboard/data/sec_edgar_fetcher.py",
+      "type": "Backend: Data Layer",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 80,
+      "sizeBytes": 3155,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/app/layout.tsx",
+      "label": "layout.tsx",
+      "path": "frontend/app/layout.tsx",
+      "type": "Frontend: App Layout",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "next",
+        "../components/MatomoTracker",
+        "../components/OfflineStatusBanner",
+        "../components/ServiceWorkerRegister"
+      ],
+      "exports": [
+        "metadata",
+        "viewport",
+        "RootLayout"
+      ],
+      "lines": 144,
+      "sizeBytes": 5246,
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "id": "frontend/app/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "../components/PriceChart",
+        "../lib/institutionalFeeds",
+        "../lib/api",
+        "../components/InstitutionalFeeds",
+        "../lib/matomo",
+        "../components/CongressionalTradesCard",
+        "../components/DayTraderPositionSizer",
+        "../components/RiskMetricsCard",
+        "next/navigation",
+        "../components/SelfHealingAccuracyCard",
+        "../lib/assetRegistry",
+        "../components/Navbar",
+        "../components/WeeklyConfluenceSpotlight",
+        "../components/CatalystForecastCard",
+        "../components/TraderArchetypesCard",
+        "../components/MarketGraphCard",
+        "react",
+        "../components/WatchlistSidebar",
+        "../components/OptimalEntryExitCard",
+        "../components/DataSourceBadge",
+        "../components/AssetFactorRadar",
+        "../components/CompositeConvictionCard"
+      ],
+      "exports": [
+        "TerminalPage"
+      ],
+      "lines": 474,
+      "sizeBytes": 22508,
+      "inDegree": 0,
+      "outDegree": 20
+    },
+    {
+      "id": "frontend/app/committee/[slug]/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/committee/[slug]/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "next/link",
+        "next",
+        "../../../components/Navbar",
+        "next/navigation"
+      ],
+      "exports": [
+        "generateStaticParams",
+        "generateMetadata",
+        "CommitteeHubPage"
+      ],
+      "lines": 441,
+      "sizeBytes": 19236,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/app/compare/layout.tsx",
+      "label": "layout.tsx",
+      "path": "frontend/app/compare/layout.tsx",
+      "type": "Frontend: App Layout",
+      "language": "TypeScript/React",
+      "imports": [
+        "next"
+      ],
+      "exports": [
+        "metadata",
+        "CompareLayout"
+      ],
+      "lines": 56,
+      "sizeBytes": 1938,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/app/compare/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/compare/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../../components/Navbar",
+        "../../lib/api",
+        "../../lib/assetRegistry",
+        "../../lib/constants",
+        "../../components/DataSourceBadge",
+        "../../lib/marketDatabase",
+        "../../lib/masterCatalog",
+        "next/navigation",
+        "next/link"
+      ],
+      "exports": [
+        "CompetitorAsset",
+        "ComparePage"
+      ],
+      "lines": 760,
+      "sizeBytes": 43233,
+      "inDegree": 0,
+      "outDegree": 7
+    },
+    {
+      "id": "frontend/app/compare/[pair]/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/compare/[pair]/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "../../../lib/constants",
+        "next/link",
+        "next",
+        "../../../components/Navbar"
+      ],
+      "exports": [
+        "generateStaticParams",
+        "generateMetadata",
+        "ComparisonPairPage"
+      ],
+      "lines": 251,
+      "sizeBytes": 11981,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/app/guide/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/guide/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "../../components/Navbar",
+        "../../components/GuideContent",
+        "next"
+      ],
+      "exports": [
+        "metadata",
+        "GuidePage"
+      ],
+      "lines": 146,
+      "sizeBytes": 7119,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/app/politician/[slug]/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/politician/[slug]/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "next/link",
+        "next",
+        "../../../components/Navbar",
+        "next/navigation"
+      ],
+      "exports": [
+        "generateStaticParams",
+        "generateMetadata",
+        "PoliticianProfilePage"
+      ],
+      "lines": 499,
+      "sizeBytes": 19739,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/app/portfolio/layout.tsx",
+      "label": "layout.tsx",
+      "path": "frontend/app/portfolio/layout.tsx",
+      "type": "Frontend: App Layout",
+      "language": "TypeScript/React",
+      "imports": [
+        "next"
+      ],
+      "exports": [
+        "metadata",
+        "PortfolioLayout"
+      ],
+      "lines": 64,
+      "sizeBytes": 2083,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/app/portfolio/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/portfolio/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../../components/Navbar",
+        "../../lib/api",
+        "../../lib/assetRegistry",
+        "../../components/MacroStressTestSimulator",
+        "../../lib/constants",
+        "../../lib/matomo",
+        "../../lib/marketDatabase",
+        "../../lib/masterCatalog",
+        "../../lib/portfolio",
+        "next/link"
+      ],
+      "exports": [
+        "PortfolioPage"
+      ],
+      "lines": 568,
+      "sizeBytes": 27712,
+      "inDegree": 0,
+      "outDegree": 9
+    },
+    {
+      "id": "frontend/app/screener/layout.tsx",
+      "label": "layout.tsx",
+      "path": "frontend/app/screener/layout.tsx",
+      "type": "Frontend: App Layout",
+      "language": "TypeScript/React",
+      "imports": [
+        "next"
+      ],
+      "exports": [
+        "metadata",
+        "ScreenerLayout"
+      ],
+      "lines": 68,
+      "sizeBytes": 2504,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/app/screener/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/screener/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../../components/Navbar",
+        "../../components/AlertTriggerModal",
+        "../../lib/api",
+        "../../lib/assetRegistry",
+        "../../components/PositionSizerModal",
+        "../../lib/constants",
+        "../../components/DataSourceBadge",
+        "../../lib/marketDatabase",
+        "../../lib/matomo",
+        "../../lib/masterCatalog",
+        "../../lib/portfolio",
+        "next/link"
+      ],
+      "exports": [
+        "ScreenerPage"
+      ],
+      "lines": 1167,
+      "sizeBytes": 62039,
+      "inDegree": 0,
+      "outDegree": 11
+    },
+    {
+      "id": "frontend/app/smart-money/layout.tsx",
+      "label": "layout.tsx",
+      "path": "frontend/app/smart-money/layout.tsx",
+      "type": "Frontend: App Layout",
+      "language": "TypeScript/React",
+      "imports": [
+        "next"
+      ],
+      "exports": [
+        "metadata",
+        "SmartMoneyLayout"
+      ],
+      "lines": 86,
+      "sizeBytes": 3390,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/app/smart-money/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/smart-money/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../../components/Navbar",
+        "../../lib/api",
+        "../../components/DataSourceBadge",
+        "../../components/SmartMoneyDivergenceRadar",
+        "next/link",
+        "../../components/SmartMoneyDetailModal"
+      ],
+      "exports": [
+        "SmartMoneyPage"
+      ],
+      "lines": 716,
+      "sizeBytes": 36105,
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "id": "frontend/app/smart-money/late-filers/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/smart-money/late-filers/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "next/link",
+        "next",
+        "../../../components/Navbar"
+      ],
+      "exports": [
+        "metadata",
+        "LateFilersPage"
+      ],
+      "lines": 240,
+      "sizeBytes": 11534,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/app/stock/[ticker]/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/stock/[ticker]/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "../../../components/ShareTradeCardButton",
+        "next",
+        "../../../components/HistoricalEdgeScorecard",
+        "../../../lib/constants",
+        "../../../components/Navbar",
+        "../../../lib/masterCatalog",
+        "next/link"
+      ],
+      "exports": [
+        "generateStaticParams",
+        "generateMetadata",
+        "StockDetailPage"
+      ],
+      "lines": 437,
+      "sizeBytes": 22881,
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "id": "frontend/app/strategy/[type]/page.tsx",
+      "label": "page.tsx",
+      "path": "frontend/app/strategy/[type]/page.tsx",
+      "type": "Frontend: App Page",
+      "language": "TypeScript/React",
+      "imports": [
+        "next",
+        "../../../components/HistoricalEdgeScorecard",
+        "../../../components/Navbar",
+        "next/navigation",
+        "next/link"
+      ],
+      "exports": [
+        "generateStaticParams",
+        "generateMetadata",
+        "StrategyDetailPage"
+      ],
+      "lines": 548,
+      "sizeBytes": 21995,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/AlertTriggerModal.tsx",
+      "label": "AlertTriggerModal.tsx",
+      "path": "frontend/components/AlertTriggerModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/alertManager",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "AlertTriggerModal"
+      ],
+      "lines": 258,
+      "sizeBytes": 10680,
+      "inDegree": 2,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/ArxLogo.tsx",
+      "label": "ArxLogo.tsx",
+      "path": "frontend/components/ArxLogo.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "ArxLogo"
+      ],
+      "lines": 148,
+      "sizeBytes": 4368,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/AssetFactorRadar.tsx",
+      "label": "AssetFactorRadar.tsx",
+      "path": "frontend/components/AssetFactorRadar.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/constants"
+      ],
+      "exports": [
+        "AssetFactorRadar"
+      ],
+      "lines": 151,
+      "sizeBytes": 8461,
+      "inDegree": 1,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/CatalystForecastCard.tsx",
+      "label": "CatalystForecastCard.tsx",
+      "path": "frontend/components/CatalystForecastCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api"
+      ],
+      "exports": [
+        "CatalystForecastCard"
+      ],
+      "lines": 116,
+      "sizeBytes": 5947,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/CommandPaletteModal.tsx",
+      "label": "CommandPaletteModal.tsx",
+      "path": "frontend/components/CommandPaletteModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/marketDatabase",
+        "../lib/masterCatalog",
+        "./MiniSparkline",
+        "next/navigation"
+      ],
+      "exports": [
+        "CommandPaletteModal"
+      ],
+      "lines": 388,
+      "sizeBytes": 14227,
+      "inDegree": 1,
+      "outDegree": 4
+    },
+    {
+      "id": "frontend/components/CompositeConvictionCard.tsx",
+      "label": "CompositeConvictionCard.tsx",
+      "path": "frontend/components/CompositeConvictionCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/institutionalFeeds"
+      ],
+      "exports": [
+        "CompositeConvictionCard"
+      ],
+      "lines": 252,
+      "sizeBytes": 10796,
+      "inDegree": 1,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/CongressionalTradesCard.tsx",
+      "label": "CongressionalTradesCard.tsx",
+      "path": "frontend/components/CongressionalTradesCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "./SmartMoneyDetailModal"
+      ],
+      "exports": [
+        "CongressionalTradesCard"
+      ],
+      "lines": 487,
+      "sizeBytes": 25131,
+      "inDegree": 1,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/DataSourceBadge.tsx",
+      "label": "DataSourceBadge.tsx",
+      "path": "frontend/components/DataSourceBadge.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "DataSourceBadge"
+      ],
+      "lines": 39,
+      "sizeBytes": 1233,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/DayTraderPositionSizer.tsx",
+      "label": "DayTraderPositionSizer.tsx",
+      "path": "frontend/components/DayTraderPositionSizer.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/assetRegistry",
+        "../lib/portfolio"
+      ],
+      "exports": [
+        "DayTraderPositionSizer"
+      ],
+      "lines": 351,
+      "sizeBytes": 18933,
+      "inDegree": 1,
+      "outDegree": 3
+    },
+    {
+      "id": "frontend/components/FeedFreshnessIndicator.tsx",
+      "label": "FeedFreshnessIndicator.tsx",
+      "path": "frontend/components/FeedFreshnessIndicator.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "FeedFreshnessIndicator"
+      ],
+      "lines": 60,
+      "sizeBytes": 2045,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/GuideContent.tsx",
+      "label": "GuideContent.tsx",
+      "path": "frontend/components/GuideContent.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "next/link"
+      ],
+      "exports": [
+        "GuideContent"
+      ],
+      "lines": 816,
+      "sizeBytes": 60874,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/HistoricalEdgeScorecard.tsx",
+      "label": "HistoricalEdgeScorecard.tsx",
+      "path": "frontend/components/HistoricalEdgeScorecard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "HistoricalEdgeScorecard"
+      ],
+      "lines": 158,
+      "sizeBytes": 6440,
+      "inDegree": 2,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/InsightProvenanceModal.tsx",
+      "label": "InsightProvenanceModal.tsx",
+      "path": "frontend/components/InsightProvenanceModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react"
+      ],
+      "exports": [
+        "InsightProvenanceModal"
+      ],
+      "lines": 188,
+      "sizeBytes": 9942,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/InstitutionalFeeds.tsx",
+      "label": "InstitutionalFeeds.tsx",
+      "path": "frontend/components/InstitutionalFeeds.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/institutionalFeeds"
+      ],
+      "exports": [
+        "InstitutionalFeeds"
+      ],
+      "lines": 193,
+      "sizeBytes": 9134,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/MacroStressTestSimulator.tsx",
+      "label": "MacroStressTestSimulator.tsx",
+      "path": "frontend/components/MacroStressTestSimulator.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/matomo",
+        "../lib/portfolio"
+      ],
+      "exports": [
+        "MacroStressTestSimulator"
+      ],
+      "lines": 202,
+      "sizeBytes": 9619,
+      "inDegree": 1,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/MarketGraphCard.tsx",
+      "label": "MarketGraphCard.tsx",
+      "path": "frontend/components/MarketGraphCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api"
+      ],
+      "exports": [
+        "MarketGraphCard"
+      ],
+      "lines": 146,
+      "sizeBytes": 7871,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/MatomoTracker.tsx",
+      "label": "MatomoTracker.tsx",
+      "path": "frontend/components/MatomoTracker.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "next/navigation"
+      ],
+      "exports": [
+        "MatomoTracker"
+      ],
+      "lines": 49,
+      "sizeBytes": 1515,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/MiniSparkline.tsx",
+      "label": "MiniSparkline.tsx",
+      "path": "frontend/components/MiniSparkline.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "MiniSparkline"
+      ],
+      "lines": 96,
+      "sizeBytes": 3074,
+      "inDegree": 3,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/Navbar.tsx",
+      "label": "Navbar.tsx",
+      "path": "frontend/components/Navbar.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "./ArxLogo",
+        "./RealTimeAlertEngine",
+        "./CommandPaletteModal",
+        "./UniversalOmniSearch",
+        "./ThemeToggle",
+        "./PrivacySettingsModal",
+        "next/navigation",
+        "./OnboardingTourModal",
+        "next/link"
+      ],
+      "exports": [
+        "Navbar"
+      ],
+      "lines": 583,
+      "sizeBytes": 30195,
+      "inDegree": 12,
+      "outDegree": 7
+    },
+    {
+      "id": "frontend/components/OfflineStatusBanner.tsx",
+      "label": "OfflineStatusBanner.tsx",
+      "path": "frontend/components/OfflineStatusBanner.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "OfflineStatusBanner"
+      ],
+      "lines": 48,
+      "sizeBytes": 1611,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/OnboardingModal.tsx",
+      "label": "OnboardingModal.tsx",
+      "path": "frontend/components/OnboardingModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "OnboardingModal"
+      ],
+      "lines": 222,
+      "sizeBytes": 10222,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/OnboardingTourModal.tsx",
+      "label": "OnboardingTourModal.tsx",
+      "path": "frontend/components/OnboardingTourModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "OnboardingTourModal"
+      ],
+      "lines": 161,
+      "sizeBytes": 6414,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/OptimalEntryExitCard.tsx",
+      "label": "OptimalEntryExitCard.tsx",
+      "path": "frontend/components/OptimalEntryExitCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "./PreFlightChecklistModal",
+        "./InsightProvenanceModal",
+        "../lib/portfolio",
+        "./AlertTriggerModal",
+        "./PositionSizerModal",
+        "./TradeExecutionStepper"
+      ],
+      "exports": [
+        "OptimalEntryExitCard"
+      ],
+      "lines": 483,
+      "sizeBytes": 23938,
+      "inDegree": 1,
+      "outDegree": 7
+    },
+    {
+      "id": "frontend/components/PositionSizerModal.tsx",
+      "label": "PositionSizerModal.tsx",
+      "path": "frontend/components/PositionSizerModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/constants",
+        "../lib/assetRegistry",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "PositionSizerModal"
+      ],
+      "lines": 275,
+      "sizeBytes": 12803,
+      "inDegree": 2,
+      "outDegree": 3
+    },
+    {
+      "id": "frontend/components/PreFlightChecklistModal.tsx",
+      "label": "PreFlightChecklistModal.tsx",
+      "path": "frontend/components/PreFlightChecklistModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/masterCatalog",
+        "react",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "PreFlightChecklistModal"
+      ],
+      "lines": 394,
+      "sizeBytes": 20794,
+      "inDegree": 1,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/components/PriceChart.tsx",
+      "label": "PriceChart.tsx",
+      "path": "frontend/components/PriceChart.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "lightweight-charts"
+      ],
+      "exports": [
+        "PriceChart"
+      ],
+      "lines": 503,
+      "sizeBytes": 21055,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/PrivacySettingsModal.tsx",
+      "label": "PrivacySettingsModal.tsx",
+      "path": "frontend/components/PrivacySettingsModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "PrivacySettingsModal"
+      ],
+      "lines": 135,
+      "sizeBytes": 5455,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/RealTimeAlertEngine.tsx",
+      "label": "RealTimeAlertEngine.tsx",
+      "path": "frontend/components/RealTimeAlertEngine.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/marketDatabase",
+        "../lib/masterCatalog",
+        "next/navigation"
+      ],
+      "exports": [
+        "PriceAlert",
+        "RealTimeAlertEngine"
+      ],
+      "lines": 163,
+      "sizeBytes": 6020,
+      "inDegree": 1,
+      "outDegree": 3
+    },
+    {
+      "id": "frontend/components/RiskMetricsCard.tsx",
+      "label": "RiskMetricsCard.tsx",
+      "path": "frontend/components/RiskMetricsCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react"
+      ],
+      "exports": [
+        "RiskMetricsCard"
+      ],
+      "lines": 170,
+      "sizeBytes": 9122,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/SelfHealingAccuracyCard.tsx",
+      "label": "SelfHealingAccuracyCard.tsx",
+      "path": "frontend/components/SelfHealingAccuracyCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api"
+      ],
+      "exports": [
+        "SelfHealingAccuracyCard"
+      ],
+      "lines": 98,
+      "sizeBytes": 5042,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/ServiceWorkerRegister.tsx",
+      "label": "ServiceWorkerRegister.tsx",
+      "path": "frontend/components/ServiceWorkerRegister.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "ServiceWorkerRegister"
+      ],
+      "lines": 32,
+      "sizeBytes": 874,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/ShareTradeCardButton.tsx",
+      "label": "ShareTradeCardButton.tsx",
+      "path": "frontend/components/ShareTradeCardButton.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "ShareTradeCardButton"
+      ],
+      "lines": 57,
+      "sizeBytes": 1653,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/SmartMoneyDetailModal.tsx",
+      "label": "SmartMoneyDetailModal.tsx",
+      "path": "frontend/components/SmartMoneyDetailModal.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "next/navigation"
+      ],
+      "exports": [
+        "SmartMoneyDetailModal"
+      ],
+      "lines": 278,
+      "sizeBytes": 13539,
+      "inDegree": 2,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/SmartMoneyDivergenceRadar.tsx",
+      "label": "SmartMoneyDivergenceRadar.tsx",
+      "path": "frontend/components/SmartMoneyDivergenceRadar.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "next/link"
+      ],
+      "exports": [
+        "SmartMoneyDivergenceRadar"
+      ],
+      "lines": 268,
+      "sizeBytes": 12268,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/ThemeToggle.tsx",
+      "label": "ThemeToggle.tsx",
+      "path": "frontend/components/ThemeToggle.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react",
+        "../lib/matomo"
+      ],
+      "exports": [
+        "ThemeToggle"
+      ],
+      "lines": 47,
+      "sizeBytes": 1789,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/TradeExecutionStepper.tsx",
+      "label": "TradeExecutionStepper.tsx",
+      "path": "frontend/components/TradeExecutionStepper.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "TradeExecutionStepper"
+      ],
+      "lines": 192,
+      "sizeBytes": 6503,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/components/TraderArchetypesCard.tsx",
+      "label": "TraderArchetypesCard.tsx",
+      "path": "frontend/components/TraderArchetypesCard.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api"
+      ],
+      "exports": [
+        "TraderArchetypesCard"
+      ],
+      "lines": 145,
+      "sizeBytes": 6796,
+      "inDegree": 1,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/TradingViewChart.tsx",
+      "label": "TradingViewChart.tsx",
+      "path": "frontend/components/TradingViewChart.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "lightweight-charts"
+      ],
+      "exports": [
+        "TradingViewChart"
+      ],
+      "lines": 142,
+      "sizeBytes": 5056,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/components/UniversalOmniSearch.tsx",
+      "label": "UniversalOmniSearch.tsx",
+      "path": "frontend/components/UniversalOmniSearch.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/assetRegistry",
+        "../lib/marketDatabase",
+        "next/navigation",
+        "../lib/constants"
+      ],
+      "exports": [
+        "UniversalOmniSearch"
+      ],
+      "lines": 271,
+      "sizeBytes": 13572,
+      "inDegree": 1,
+      "outDegree": 4
+    },
+    {
+      "id": "frontend/components/WatchlistSidebar.tsx",
+      "label": "WatchlistSidebar.tsx",
+      "path": "frontend/components/WatchlistSidebar.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/marketDatabase",
+        "./MiniSparkline",
+        "../lib/constants"
+      ],
+      "exports": [
+        "WatchlistSidebar"
+      ],
+      "lines": 411,
+      "sizeBytes": 16558,
+      "inDegree": 1,
+      "outDegree": 4
+    },
+    {
+      "id": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "label": "WeeklyConfluenceSpotlight.tsx",
+      "path": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "type": "Frontend: UI Component",
+      "language": "TypeScript/React",
+      "imports": [
+        "../lib/api",
+        "react",
+        "../lib/marketDatabase",
+        "../lib/masterCatalog",
+        "./MiniSparkline",
+        "../lib/portfolio",
+        "next/link"
+      ],
+      "exports": [
+        "WeeklyConfluenceSpotlight"
+      ],
+      "lines": 428,
+      "sizeBytes": 19913,
+      "inDegree": 1,
+      "outDegree": 5
+    },
+    {
+      "id": "frontend/lib/alertManager.ts",
+      "label": "alertManager.ts",
+      "path": "frontend/lib/alertManager.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "ExecutionAlertRule",
+        "AlertManager"
+      ],
+      "lines": 251,
+      "sizeBytes": 8229,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/lib/api.ts",
+      "label": "api.ts",
+      "path": "frontend/lib/api.ts",
+      "type": "Frontend: State & Bus",
+      "language": "TypeScript/React",
+      "imports": [
+        "./marketDatabase",
+        "./assetRegistry",
+        "./masterCatalog",
+        "./constants"
+      ],
+      "exports": [
+        "getApiBaseUrl",
+        "API_BASE_URL",
+        "ARX_API_HEADERS",
+        "CandleData",
+        "TechnicalIndicators",
+        "AssetFactorScores",
+        "AssetDNAScores",
+        "MacroDifficultyRating",
+        "ExpectedReturnForecast",
+        "TraderArchetypeItem",
+        "TraderArchetypeConsensus",
+        "SelfHealingAudit",
+        "MarketGraphNode",
+        "MarketGraphData",
+        "MarketGraphReport",
+        "CatalystMilestone",
+        "MultiYearForecastItem",
+        "CatalystEvent",
+        "CatalystForecastData",
+        "CongressTradeDetails",
+        "CongressTradeItem",
+        "OptionsFlowDetails",
+        "OptionsFlowItem",
+        "SecInsiderTradeItem",
+        "SmartMoneyOverview",
+        "OptimalExecutionPlan",
+        "AnalyticsResponse",
+        "GemCandidate",
+        "ScreenerResponse",
+        "SpotPriceRegistry",
+        "generateFallbackAnalytics",
+        "prefetchAssetAnalytics"
+      ],
+      "lines": 3345,
+      "sizeBytes": 123741,
+      "inDegree": 26,
+      "outDegree": 5
+    },
+    {
+      "id": "frontend/lib/assetRegistry.ts",
+      "label": "assetRegistry.ts",
+      "path": "frontend/lib/assetRegistry.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "AssetCatalystProfile",
+        "CANONICAL_ASSET_NAMES",
+        "CANONICAL_ASSET_MOATS",
+        "CANONICAL_ASSET_RISKS",
+        "CANONICAL_ASSET_CATALYSTS",
+        "getCanonicalAssetName",
+        "getCanonicalAssetMoat",
+        "getCanonicalAssetRisk",
+        "getCanonicalAssetCatalyst",
+        "AssetAliasInfo",
+        "ASSET_ALIAS_MAP",
+        "resolveAssetAlias"
+      ],
+      "lines": 542,
+      "sizeBytes": 33418,
+      "inDegree": 8,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/lib/constants.ts",
+      "label": "constants.ts",
+      "path": "frontend/lib/constants.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [
+        "./api"
+      ],
+      "exports": [
+        "WatchlistDefinition",
+        "SHARED_WATCHLIST_ITEMS",
+        "SHARED_FACTOR_SCORES",
+        "DEFAULT_MACRO_DIFFICULTY",
+        "DEFAULT_EXPECTED_RETURN"
+      ],
+      "lines": 191,
+      "sizeBytes": 11567,
+      "inDegree": 11,
+      "outDegree": 1
+    },
+    {
+      "id": "frontend/lib/institutionalFeeds.ts",
+      "label": "institutionalFeeds.ts",
+      "path": "frontend/lib/institutionalFeeds.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "FredMacroData",
+        "SecForm4Trade",
+        "CURRENT_FRED_MACRO_SNAPSHOT",
+        "LIVE_SEC_EDGAR_FORM4_TRADES"
+      ],
+      "lines": 137,
+      "sizeBytes": 4711,
+      "inDegree": 3,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/lib/marketDatabase.ts",
+      "label": "marketDatabase.ts",
+      "path": "frontend/lib/marketDatabase.ts",
+      "type": "Frontend: State & Bus",
+      "language": "TypeScript/React",
+      "imports": [
+        "./constants",
+        "./api"
+      ],
+      "exports": [
+        "SNAPSHOT_TTL_MS",
+        "PersistedMarketRecord",
+        "isSnapshotFresh",
+        "persistMarketSnapshot",
+        "getAllPersistedMarketSnapshots",
+        "getPersistedMarketSnapshot",
+        "slicePersistedCandles"
+      ],
+      "lines": 205,
+      "sizeBytes": 7094,
+      "inDegree": 9,
+      "outDegree": 2
+    },
+    {
+      "id": "frontend/lib/masterCatalog.ts",
+      "label": "masterCatalog.ts",
+      "path": "frontend/lib/masterCatalog.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "MasterAssetEntry",
+        "MASTER_ASSET_CATALOG",
+        "getMasterAsset",
+        "getAllMasterTickers"
+      ],
+      "lines": 1176,
+      "sizeBytes": 36272,
+      "inDegree": 9,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/lib/matomo.ts",
+      "label": "matomo.ts",
+      "path": "frontend/lib/matomo.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "trackMatomoEvent",
+        "trackWorkspaceSwitch",
+        "trackRoleSwitch",
+        "trackSymbolSearch",
+        "trackProvenanceInspection",
+        "trackPreFlightOutcome",
+        "trackTradePlanCopied",
+        "trackPositionSizer",
+        "trackAlertSet",
+        "trackMacroShockSimulation",
+        "trackFavoriteToggle",
+        "trackVernacularSwitch",
+        "trackScreenerSelection",
+        "toggleMatomoOptOut",
+        "isMatomoUserOptedOut"
+      ],
+      "lines": 151,
+      "sizeBytes": 4645,
+      "inDegree": 10,
+      "outDegree": 0
+    },
+    {
+      "id": "frontend/lib/portfolio.ts",
+      "label": "portfolio.ts",
+      "path": "frontend/lib/portfolio.ts",
+      "type": "Frontend: Utility & SSOT",
+      "language": "TypeScript/React",
+      "imports": [],
+      "exports": [
+        "PortfolioPosition",
+        "PortfolioSummary",
+        "getAnonymousUserId",
+        "loadPortfolioPositions",
+        "savePortfolioPositions",
+        "addPortfolioPosition",
+        "calculatePortfolioSummary",
+        "exportPortfolioToCsv"
+      ],
+      "lines": 228,
+      "sizeBytes": 6686,
+      "inDegree": 6,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_catalysts_and_comparison.py",
+      "label": "test_catalysts_and_comparison.py",
+      "path": "tests/test_catalysts_and_comparison.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 54,
+      "sizeBytes": 2243,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_category_b_analytics.py",
+      "label": "test_category_b_analytics.py",
+      "path": "tests/test_category_b_analytics.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 48,
+      "sizeBytes": 1983,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_category_c_analytics.py",
+      "label": "test_category_c_analytics.py",
+      "path": "tests/test_category_c_analytics.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 45,
+      "sizeBytes": 1809,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_config_security.py",
+      "label": "test_config_security.py",
+      "path": "tests/test_config_security.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "ssl_config",
+        "config",
+        "unittest",
+        "os",
+        "ssl"
+      ],
+      "routes": [],
+      "classes": [
+        "TestSecurityConfiguration"
+      ],
+      "functions": [
+        "test_ssl_environment_variables_not_disabled",
+        "test_create_ssl_context_enforces_verification",
+        "test_create_session_with_retries_has_verification_enabled",
+        "test_config_defaults"
+      ],
+      "lines": 37,
+      "sizeBytes": 1361,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_confluence_engine.py",
+      "label": "test_confluence_engine.py",
+      "path": "tests/test_confluence_engine.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "sys",
+        "os",
+        "analyst_dashboard.analyzers.confluence_engine"
+      ],
+      "routes": [],
+      "classes": [],
+      "functions": [
+        "test_confluence_scoring",
+        "test_position_sizing_math",
+        "test_confluence_score_bounds",
+        "test_position_sizing_zero_division_guard",
+        "test_position_sizing_kelly_capping"
+      ],
+      "lines": 121,
+      "sizeBytes": 4517,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_cross_component_state_synchronicity.py",
+      "label": "test_cross_component_state_synchronicity.py",
+      "path": "tests/test_cross_component_state_synchronicity.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "os",
+        "re",
+        "unittest"
+      ],
+      "routes": [],
+      "classes": [
+        "TestCrossComponentStateSynchronicity"
+      ],
+      "functions": [
+        "test_preflight_modal_dynamic_stage4_wiring",
+        "test_optimal_entry_exit_card_passes_stage4_to_modals",
+        "test_position_sizer_stage4_risk_mitigation",
+        "test_alert_trigger_modal_breakout_pivot_target"
+      ],
+      "lines": 88,
+      "sizeBytes": 5119,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_cross_route_semantic_parity.py",
+      "label": "test_cross_route_semantic_parity.py",
+      "path": "tests/test_cross_route_semantic_parity.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 102,
+      "sizeBytes": 4604,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_data_fetchers.py",
+      "label": "test_data_fetchers.py",
+      "path": "tests/test_data_fetchers.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 53,
+      "sizeBytes": 2077,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_day_trader_features.py",
+      "label": "test_day_trader_features.py",
+      "path": "tests/test_day_trader_features.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 44,
+      "sizeBytes": 1552,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_eodhd_fetcher.py",
+      "label": "test_eodhd_fetcher.py",
+      "path": "tests/test_eodhd_fetcher.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "pandas",
+        "analyst_dashboard.data.eodhd_fetcher",
+        "unittest.mock"
+      ],
+      "routes": [],
+      "classes": [],
+      "functions": [
+        "test_eodhd_fetcher_realtime_quote",
+        "test_eodhd_fetcher_historical_candles"
+      ],
+      "lines": 35,
+      "sizeBytes": 1333,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_financial_domain_invariants.py",
+      "label": "test_financial_domain_invariants.py",
+      "path": "tests/test_financial_domain_invariants.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "analyst_dashboard.analyzers.optimal_execution",
+        "json",
+        "unittest",
+        "analyst_dashboard.analyzers.gem_screener",
+        "os"
+      ],
+      "routes": [],
+      "classes": [
+        "TestFinancialDomainInvariants"
+      ],
+      "functions": [
+        "setUp",
+        "test_value_trap_anti_pattern_invariants",
+        "test_optimal_execution_ladder_mathematical_bounds",
+        "test_master_catalog_turnaround_integrity",
+        "test_piotroski_score_bounding_invariant"
+      ],
+      "lines": 93,
+      "sizeBytes": 4968,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "tests/test_fred_macro_fetcher.py",
+      "label": "test_fred_macro_fetcher.py",
+      "path": "tests/test_fred_macro_fetcher.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 32,
+      "sizeBytes": 1146,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_full_app_audit.py",
+      "label": "test_full_app_audit.py",
+      "path": "tests/test_full_app_audit.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 86,
+      "sizeBytes": 3612,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_gem_screener.py",
+      "label": "test_gem_screener.py",
+      "path": "tests/test_gem_screener.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "unittest",
+        "analyst_dashboard.analyzers.gem_screener"
+      ],
+      "routes": [],
+      "classes": [
+        "TestGemScreener"
+      ],
+      "functions": [
+        "setUp",
+        "test_screener_initialization",
+        "test_custom_criteria",
+        "test_empty_universe_screening",
+        "test_screener_methods_exist"
+      ],
+      "lines": 45,
+      "sizeBytes": 1569,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_hidden_gems_expert_engine.py",
+      "label": "test_hidden_gems_expert_engine.py",
+      "path": "tests/test_hidden_gems_expert_engine.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "api.routes.screener",
+        "pytest",
+        "analyst_dashboard.analyzers.gem_screener"
+      ],
+      "routes": [],
+      "classes": [],
+      "functions": [
+        "test_hidden_gems_screener_scoring",
+        "test_screener_api_endpoint"
+      ],
+      "lines": 28,
+      "sizeBytes": 899,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "tests/test_market_db.py",
+      "label": "test_market_db.py",
+      "path": "tests/test_market_db.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "sys",
+        "tempfile",
+        "gc",
+        "analyst_dashboard.data.market_db",
+        "os"
+      ],
+      "routes": [],
+      "classes": [],
+      "functions": [
+        "test_market_database_lifecycle"
+      ],
+      "lines": 84,
+      "sizeBytes": 2906,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_model_calibration.py",
+      "label": "test_model_calibration.py",
+      "path": "tests/test_model_calibration.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 46,
+      "sizeBytes": 1776,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_monkey_navigation_and_components.py",
+      "label": "test_monkey_navigation_and_components.py",
+      "path": "tests/test_monkey_navigation_and_components.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 75,
+      "sizeBytes": 2927,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_nextjs_frontend_structure.py",
+      "label": "test_nextjs_frontend_structure.py",
+      "path": "tests/test_nextjs_frontend_structure.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "os",
+        "json",
+        "unittest",
+        "re"
+      ],
+      "routes": [],
+      "classes": [
+        "TestNextJsFrontendStructure"
+      ],
+      "functions": [
+        "test_package_json_dependencies",
+        "test_app_routes_exist",
+        "test_terminal_deep_link_query_param_binding",
+        "test_cross_page_links_match_destination_parameters",
+        "test_dual_horizon_lens_implementation_on_all_views",
+        "test_chart_timeframe_state_and_api_contract",
+        "test_light_paper_theme_compliance",
+        "test_canonical_domain_and_redirects_structure",
+        "test_brand_tone_and_progressive_clarity_vernacular_engine",
+        "test_security_hardening_contracts",
+        "test_frontend_qa_modal_z_index_and_single_onboarding_ownership",
+        "test_security_guardian_and_ux_architect_contracts",
+        "test_master_catalog_single_source_of_truth_parity",
+        "test_decision_intelligence_suite_contracts",
+        "test_last_captured_live_snapshot_persistence",
+        "test_matomo_analytics_and_user_journey_wiring",
+        "test_master_catalog_consolidation_and_static_pages",
+        "test_high_density_smart_money_dataset_integrity"
+      ],
+      "lines": 498,
+      "sizeBytes": 27451,
+      "inDegree": 4,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_optimal_execution.py",
+      "label": "test_optimal_execution.py",
+      "path": "tests/test_optimal_execution.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "pandas",
+        "numpy",
+        "analyst_dashboard.analyzers.optimal_execution"
+      ],
+      "routes": [],
+      "classes": [],
+      "functions": [
+        "test_optimal_execution_engine_fallback",
+        "test_optimal_execution_engine_long_term",
+        "test_optimal_execution_engine_day_trader"
+      ],
+      "lines": 47,
+      "sizeBytes": 2001,
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "id": "tests/test_phase1_config.py",
+      "label": "test_phase1_config.py",
+      "path": "tests/test_phase1_config.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "unittest",
+        "config"
+      ],
+      "routes": [],
+      "classes": [
+        "TestPhase1ConfigValidation"
+      ],
+      "functions": [
+        "test_app_settings_types_and_defaults",
+        "test_config_class_exports"
+      ],
+      "lines": 28,
+      "sizeBytes": 1054,
+      "inDegree": 1,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_phases_2_3_4.py",
+      "label": "test_phases_2_3_4.py",
+      "path": "tests/test_phases_2_3_4.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 42,
+      "sizeBytes": 1500,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_rate_limiter.py",
+      "label": "test_rate_limiter.py",
+      "path": "tests/test_rate_limiter.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 20,
+      "sizeBytes": 675,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_regulatory_data_feeds.py",
+      "label": "test_regulatory_data_feeds.py",
+      "path": "tests/test_regulatory_data_feeds.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 53,
+      "sizeBytes": 2128,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_screener_execution.py",
+      "label": "test_screener_execution.py",
+      "path": "tests/test_screener_execution.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "analyst_dashboard.analyzers.optimal_execution",
+        "sys",
+        "api.routes.screener",
+        "unittest",
+        "fastapi",
+        "pandas",
+        "os"
+      ],
+      "routes": [],
+      "classes": [
+        "TestScreenerExecution"
+      ],
+      "functions": [
+        "test_optimal_execution_levels",
+        "test_screener_differential_subsets",
+        "test_screener_disjoint_execution_states",
+        "test_screener_candidate_data_integrity",
+        "test_screener_dual_horizon_distinct_universes",
+        "test_screener_custom_tickers_on_demand",
+        "test_screener_cloudflare_cache_control_headers",
+        "test_optimal_execution_levels",
+        "test_screener_differential_subsets",
+        "test_screener_disjoint_execution_states",
+        "test_screener_candidate_data_integrity",
+        "test_screener_dual_horizon_distinct_universes",
+        "test_screener_custom_tickers_on_demand",
+        "test_screener_cloudflare_cache_control_headers"
+      ],
+      "lines": 184,
+      "sizeBytes": 8813,
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "id": "tests/test_self_healing_and_graph.py",
+      "label": "test_self_healing_and_graph.py",
+      "path": "tests/test_self_healing_and_graph.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 46,
+      "sizeBytes": 1546,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_smart_money_api.py",
+      "label": "test_smart_money_api.py",
+      "path": "tests/test_smart_money_api.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 32,
+      "sizeBytes": 1215,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_smart_money_legislative.py",
+      "label": "test_smart_money_legislative.py",
+      "path": "tests/test_smart_money_legislative.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 128,
+      "sizeBytes": 5563,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_state_parity.py",
+      "label": "test_state_parity.py",
+      "path": "tests/test_state_parity.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 61,
+      "sizeBytes": 2997,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_target_architecture_api.py",
+      "label": "test_target_architecture_api.py",
+      "path": "tests/test_target_architecture_api.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 40,
+      "sizeBytes": 1524,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_technical_analysis.py",
+      "label": "test_technical_analysis.py",
+      "path": "tests/test_technical_analysis.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [
+        "pandas",
+        "numpy",
+        "datetime",
+        "unittest"
+      ],
+      "routes": [],
+      "classes": [
+        "TestTechnicalAnalysis"
+      ],
+      "functions": [
+        "setUp",
+        "test_data_validation",
+        "test_moving_average_calculation",
+        "test_volatility_calculation"
+      ],
+      "lines": 47,
+      "sizeBytes": 1762,
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "id": "tests/test_trader_archetypes.py",
+      "label": "test_trader_archetypes.py",
+      "path": "tests/test_trader_archetypes.py",
+      "type": "Test Suite",
+      "language": "Python",
+      "imports": [],
+      "routes": [],
+      "classes": [],
+      "functions": [],
+      "lines": 44,
+      "sizeBytes": 1547,
+      "inDegree": 0,
+      "outDegree": 0
+    }
+  ],
+  "edges": [
+    {
+      "source": "api/main.py",
+      "target": "api/middleware/rate_limiter.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/main.py",
+      "target": "analyst_dashboard/data/market_db.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/main.py",
+      "target": "api/middleware/api_key_auth.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/main.py",
+      "target": "api/routes/analytics.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/data/fred_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/market_graph.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/trader_archetypes.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/catalysts.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/smart_money.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "tests/test_nextjs_frontend_structure.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/data/market_db.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/advanced_risk_analyzer.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/analyzers/self_healing_engine.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/data/db_engine.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/analytics.py",
+      "target": "analyst_dashboard/data/eodhd_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/screener.py",
+      "target": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/screener.py",
+      "target": "analyst_dashboard/data/market_db.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/screener.py",
+      "target": "analyst_dashboard/analyzers/gem_screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/screener.py",
+      "target": "analyst_dashboard/analyzers/confluence_engine.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/smart_money.py",
+      "target": "analyst_dashboard/data/sec_edgar_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/smart_money.py",
+      "target": "tests/test_nextjs_frontend_structure.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/smart_money.py",
+      "target": "analyst_dashboard/data/finra_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/smart_money.py",
+      "target": "analyst_dashboard/analyzers/smart_money.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/smart_money.py",
+      "target": "analyst_dashboard/data/capitol_trades_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/volatility.py",
+      "target": "tests/test_nextjs_frontend_structure.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/volatility.py",
+      "target": "analyst_dashboard/analyzers/volatility_forecaster.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "api/routes/volatility.py",
+      "target": "analyst_dashboard/data/gem_fetchers.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "analyst_dashboard/analyzers/advanced_risk_analyzer.py",
+      "target": "analyst_dashboard/analyzers/market_regime_analyzer.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/layout.tsx",
+      "target": "frontend/components/MatomoTracker.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/layout.tsx",
+      "target": "frontend/components/OfflineStatusBanner.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/layout.tsx",
+      "target": "frontend/components/ServiceWorkerRegister.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/PriceChart.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/lib/institutionalFeeds.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/InstitutionalFeeds.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/CongressionalTradesCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/DayTraderPositionSizer.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/RiskMetricsCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/SelfHealingAccuracyCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/CatalystForecastCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/TraderArchetypesCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/MarketGraphCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/WatchlistSidebar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/OptimalEntryExitCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/DataSourceBadge.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/AssetFactorRadar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/page.tsx",
+      "target": "frontend/components/CompositeConvictionCard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/committee/[slug]/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/components/DataSourceBadge.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/page.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/[pair]/page.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/compare/[pair]/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/guide/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/guide/page.tsx",
+      "target": "frontend/components/GuideContent.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/politician/[slug]/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/components/MacroStressTestSimulator.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/portfolio/page.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/components/AlertTriggerModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/components/PositionSizerModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/components/DataSourceBadge.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/screener/page.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/page.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/page.tsx",
+      "target": "frontend/components/DataSourceBadge.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/page.tsx",
+      "target": "frontend/components/SmartMoneyDivergenceRadar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/page.tsx",
+      "target": "frontend/components/SmartMoneyDetailModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/smart-money/late-filers/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/stock/[ticker]/page.tsx",
+      "target": "frontend/components/ShareTradeCardButton.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/stock/[ticker]/page.tsx",
+      "target": "frontend/components/HistoricalEdgeScorecard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/stock/[ticker]/page.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/stock/[ticker]/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/stock/[ticker]/page.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/strategy/[type]/page.tsx",
+      "target": "frontend/components/HistoricalEdgeScorecard.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/app/strategy/[type]/page.tsx",
+      "target": "frontend/components/Navbar.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/AlertTriggerModal.tsx",
+      "target": "frontend/lib/alertManager.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/AlertTriggerModal.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/AssetFactorRadar.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/AssetFactorRadar.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CatalystForecastCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CommandPaletteModal.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CommandPaletteModal.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CommandPaletteModal.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CommandPaletteModal.tsx",
+      "target": "frontend/components/MiniSparkline.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CompositeConvictionCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CompositeConvictionCard.tsx",
+      "target": "frontend/lib/institutionalFeeds.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CongressionalTradesCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/CongressionalTradesCard.tsx",
+      "target": "frontend/components/SmartMoneyDetailModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/DayTraderPositionSizer.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/DayTraderPositionSizer.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/DayTraderPositionSizer.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/InsightProvenanceModal.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/InstitutionalFeeds.tsx",
+      "target": "frontend/lib/institutionalFeeds.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/MacroStressTestSimulator.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/MacroStressTestSimulator.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/MarketGraphCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/ArxLogo.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/RealTimeAlertEngine.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/CommandPaletteModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/UniversalOmniSearch.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/ThemeToggle.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/PrivacySettingsModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/Navbar.tsx",
+      "target": "frontend/components/OnboardingTourModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OnboardingModal.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/components/PreFlightChecklistModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/components/InsightProvenanceModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/components/AlertTriggerModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/components/PositionSizerModal.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/OptimalEntryExitCard.tsx",
+      "target": "frontend/components/TradeExecutionStepper.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PositionSizerModal.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PositionSizerModal.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PositionSizerModal.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PreFlightChecklistModal.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PreFlightChecklistModal.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PriceChart.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/PrivacySettingsModal.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/RealTimeAlertEngine.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/RealTimeAlertEngine.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/RealTimeAlertEngine.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/RiskMetricsCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/SelfHealingAccuracyCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/SmartMoneyDetailModal.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/ThemeToggle.tsx",
+      "target": "frontend/lib/matomo.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/TraderArchetypesCard.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/TradingViewChart.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/UniversalOmniSearch.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/UniversalOmniSearch.tsx",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/UniversalOmniSearch.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/UniversalOmniSearch.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WatchlistSidebar.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WatchlistSidebar.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WatchlistSidebar.tsx",
+      "target": "frontend/components/MiniSparkline.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WatchlistSidebar.tsx",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "target": "frontend/components/MiniSparkline.tsx",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/components/WeeklyConfluenceSpotlight.tsx",
+      "target": "frontend/lib/portfolio.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/api.ts",
+      "target": "frontend/lib/marketDatabase.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/api.ts",
+      "target": "frontend/lib/assetRegistry.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/api.ts",
+      "target": "frontend/lib/masterCatalog.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/api.ts",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/constants.ts",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/marketDatabase.ts",
+      "target": "frontend/lib/constants.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/marketDatabase.ts",
+      "target": "frontend/lib/api.ts",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_config_security.py",
+      "target": "tests/test_phase1_config.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_confluence_engine.py",
+      "target": "analyst_dashboard/analyzers/confluence_engine.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_cross_component_state_synchronicity.py",
+      "target": "tests/test_nextjs_frontend_structure.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_eodhd_fetcher.py",
+      "target": "analyst_dashboard/data/eodhd_fetcher.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_financial_domain_invariants.py",
+      "target": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_financial_domain_invariants.py",
+      "target": "analyst_dashboard/analyzers/gem_screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_gem_screener.py",
+      "target": "analyst_dashboard/analyzers/gem_screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_hidden_gems_expert_engine.py",
+      "target": "api/routes/screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_hidden_gems_expert_engine.py",
+      "target": "analyst_dashboard/analyzers/gem_screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_market_db.py",
+      "target": "analyst_dashboard/data/market_db.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_optimal_execution.py",
+      "target": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_screener_execution.py",
+      "target": "analyst_dashboard/analyzers/optimal_execution.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "tests/test_screener_execution.py",
+      "target": "api/routes/screener.py",
+      "type": "IMPORTS"
+    },
+    {
+      "source": "frontend/lib/api.ts",
+      "target": "api/main.py",
+      "type": "HTTP_REST_API"
+    }
+  ]
+}
