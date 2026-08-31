@@ -125,6 +125,20 @@ export function getPersistedMarketSnapshot(symbol: string, allowStale: boolean =
       record.isStale = true;
     }
 
+    // Self-healing check 3: Discard flatlined/corrupt datasets (e.g. 5 identical flat bars from upstream Yahoo glitch)
+    if (record.dailyCandles && record.dailyCandles.length > 0) {
+      let minL = Infinity;
+      let maxH = -Infinity;
+      for (const c of record.dailyCandles) {
+        if (c.low < minL) minL = c.low;
+        if (c.high > maxH) maxH = c.high;
+      }
+      if (record.dailyCandles.length < 15 || (maxH - minL) < 0.01) {
+        localStorage.removeItem(`${DB_STORAGE_PREFIX}${upper}`);
+        return null;
+      }
+    }
+
     return record;
   } catch {
     return null;

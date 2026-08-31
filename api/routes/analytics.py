@@ -198,18 +198,27 @@ def get_asset_analytics(
         ticker_obj = yf.Ticker(fetch_sym)
         hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
-        if hist.empty and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
-            ticker_obj = yf.Ticker(f"{upper_sym}-USD")
-            hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+        def is_valid_ohlcv(df: pd.DataFrame) -> bool:
+            if df is None or df.empty or len(df) < (3 if clean_interval in ["1m", "5m", "15m", "1h"] else 15):
+                return False
+            low_min = float(df["Low"].min()) if "Low" in df else float(df["Close"].min())
+            high_max = float(df["High"].max()) if "High" in df else float(df["Close"].max())
+            return (high_max - low_min) >= 0.01
 
-        if hist.empty:
+        if not is_valid_ohlcv(hist) and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
+            ticker_obj = yf.Ticker(f"{upper_sym}-USD")
+            crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+            if is_valid_ohlcv(crypto_hist):
+                hist = crypto_hist
+
+        if not is_valid_ohlcv(hist):
             eodhd_df = eodhd_fetcher.fetch_historical_candles(upper_sym)
-            if eodhd_df is not None and not eodhd_df.empty:
+            if eodhd_df is not None and is_valid_ohlcv(eodhd_df):
                 hist = eodhd_df
             else:
                 # Check persistent database for historical daily candles
                 db_candles = market_db.get_daily_candles(upper_sym, limit=252)
-                if db_candles:
+                if db_candles and len(db_candles) >= 15:
                     hist_data = []
                     for c in db_candles:
                         hist_data.append({
@@ -221,7 +230,7 @@ def get_asset_analytics(
                         })
                     hist = pd.DataFrame(hist_data, index=pd.to_datetime([c["time"] for c in db_candles]))
                 else:
-                    raise HTTPException(status_code=404, detail=f"No live price data found for symbol {symbol}")
+                    raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
 
         # Automatically persist daily candles into SQLite store
         if clean_interval == "1d" and not hist.empty:

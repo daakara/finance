@@ -720,7 +720,20 @@ export async function fetchDirectYahooFinanceChart(
         }
       }
 
-      if (candles.length === 0) continue;
+      // Quality Gate: Require minimum candle bars and non-zero price variance
+      const minRequiredBars = isIntraday ? 5 : (period === "1mo" ? 8 : 15);
+      if (candles.length < minRequiredBars) continue;
+
+      let minP = Infinity;
+      let maxP = -Infinity;
+      for (const c of candles) {
+        if (c.low < minP) minP = c.low;
+        if (c.high > maxP) maxP = c.high;
+      }
+      // If dataset has virtually 0 price variance across bars, it is an upstream data outage/flatline
+      if ((maxP - minP) < 0.01) {
+        continue;
+      }
 
       const currentPrice = Number((meta.regularMarketPrice ?? candles[candles.length - 1].close).toFixed(2));
       const prevClose = Number((meta.chartPreviousClose ?? meta.previousClose ?? candles[0].open).toFixed(2));
@@ -951,25 +964,35 @@ export async function fetchAssetAnalytics(
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.candles && data.candles.length > 0) {
-        // Save live price and metadata to in-memory registry
-        SpotPriceRegistry.set(upper, {
-          price: data.currentPrice,
-          changePct: data.priceChangePct24h,
-          technicals: data.technicals,
-          catalyst: data.catalystForecast,
-          smartMoney: data.smartMoney,
-          lastUpdated: Date.now(),
-        });
+      if (data && data.candles && data.candles.length >= 10) {
+        let minP = Infinity;
+        let maxP = -Infinity;
+        for (const c of data.candles) {
+          if (c.low < minP) minP = c.low;
+          if (c.high > maxP) maxP = c.high;
+        }
+        const isHealthy = (maxP - minP) >= 0.01;
 
-        // Persist full market snapshot to client-side database storage
-        persistMarketSnapshot(upper, data);
+        if (isHealthy) {
+          // Save live price and metadata to in-memory registry
+          SpotPriceRegistry.set(upper, {
+            price: data.currentPrice,
+            changePct: data.priceChangePct24h,
+            technicals: data.technicals,
+            catalyst: data.catalystForecast,
+            smartMoney: data.smartMoney,
+            lastUpdated: Date.now(),
+          });
 
-        return {
-          ...data,
-          _dataSource: "live" as const,
-          factorScores: data.factorScores || data.dnaScores,
-        };
+          // Persist full market snapshot to client-side database storage
+          persistMarketSnapshot(upper, data);
+
+          return {
+            ...data,
+            _dataSource: "live" as const,
+            factorScores: data.factorScores || data.dnaScores,
+          };
+        }
       }
     }
   } catch (err) {
