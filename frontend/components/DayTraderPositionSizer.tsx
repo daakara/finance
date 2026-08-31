@@ -297,7 +297,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
       </div>
 
       {/* 💡 Plain-English Sizing Takeaway */}
-      <div className="bg-[#090d14] border-l-4 border-amber-500 p-3 rounded-r-xl border-t border-b border-r border-[#243044] text-xs font-sans text-slate-200 leading-relaxed">
+      <div className="bg-[#090d14] border border-amber-500/30 p-3 rounded-xl text-xs font-sans text-slate-200 leading-relaxed shadow-sm">
         🛡️ <strong>The Math Made Simple:</strong> If you buy <strong>{positionUnits} shares</strong> at <strong>${currentPrice.toFixed(2)}</strong> and the trade goes wrong, hitting your stop at <strong>${stopPrice.toFixed(2)}</strong>, you lose exactly <strong>${dollarRisk.toFixed(0)} ({riskPct}% of account)</strong>. Your profit targets are <strong>+${(dollarRisk * 1.5).toFixed(0)}</strong> / <strong>+${(dollarRisk * 2.0).toFixed(0)}</strong>. You survive to fight another day.
       </div>
 

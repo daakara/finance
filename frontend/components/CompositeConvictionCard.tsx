@@ -205,7 +205,7 @@ export default function CompositeConvictionCard({
       </div>
 
       {/* 💡 The Bottom Line Callout Box */}
-      <div className="bg-[#090d14] border-l-4 border-cyan-500 p-3 sm:p-3.5 rounded-r-xl border-t border-b border-r border-[#243044] flex items-start gap-2.5">
+      <div className="bg-[#090d14] border border-cyan-500/30 p-3 sm:p-3.5 rounded-xl flex items-start gap-2.5 shadow-sm">
         <span className="text-base sm:text-lg shrink-0 select-none">🎯</span>
         <div className="space-y-0.5 min-w-0">
           <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block font-mono">
