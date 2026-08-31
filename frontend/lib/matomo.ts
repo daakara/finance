@@ -12,6 +12,23 @@ declare global {
 }
 
 /**
+ * High-Value Conversion Funnel Goals in Matomo.
+ * Mapped to Matomo Goal IDs for conversion rate and ROI tracking.
+ */
+export const MATOMO_GOALS = {
+  ONBOARDING_COMPLETED: 1,      // User finished 4-slide institutional orientation
+  PREFLIGHT_CLEARED: 2,         // User validated 5/5 trade sanity checks
+  TRADE_PLAN_COPIED: 3,         // User copied Markdown execution plan for trade journal
+  PORTFOLIO_POSITION_ADDED: 4,  // User logged trade into private browser storage
+  PRICE_ALERT_CREATED: 5,       // User configured breakout pivot or pullback alert
+  MACRO_STRESS_SIMULATED: 6,    // User ran beta-weighted market crash stress test
+  STOCK_COMPARISON_RUN: 7,      // User executed head-to-head competitor factor analysis
+  SCREENER_FILTER_APPLIED: 8,   // User filtered Peter Lynch/Magic Formula/GARP gems
+} as const;
+
+export type MatomoGoalId = typeof MATOMO_GOALS[keyof typeof MATOMO_GOALS];
+
+/**
  * Custom Matomo Event Tracking Helper
  */
 export function trackMatomoEvent(
@@ -27,6 +44,27 @@ export function trackMatomoEvent(
       console.log(`[Matomo Event] Category: ${category} | Action: ${action} | Name: ${name || "-"}`);
     }
   }
+}
+
+/**
+ * Matomo Goal Conversion Tracker
+ */
+export function trackMatomoGoal(goalId: MatomoGoalId | number, customRevenue?: number) {
+  if (typeof window !== "undefined") {
+    window._paq = window._paq || [];
+    window._paq.push(["trackGoal", goalId, customRevenue]);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Matomo Goal] Goal ID: ${goalId}${customRevenue ? ` | Revenue: $${customRevenue}` : ""}`);
+    }
+  }
+}
+
+/**
+ * Track Onboarding Tour Completion (Goal 1)
+ */
+export function trackOnboardingCompleted(slideTitle?: string) {
+  trackMatomoEvent("User Journey", "Complete Onboarding", slideTitle || "Orientation Tour");
+  trackMatomoGoal(MATOMO_GOALS.ONBOARDING_COMPLETED);
 }
 
 /**
@@ -58,7 +96,7 @@ export function trackProvenanceInspection(symbol: string, source: string) {
 }
 
 /**
- * Track Pre-Flight Trade Clearance Gate Outcomes
+ * Track Pre-Flight Trade Clearance Gate Outcomes (Goal 2 on Cleared)
  */
 export function trackPreFlightOutcome(symbol: string, passedCount: number, isCleared: boolean) {
   trackMatomoEvent(
@@ -67,24 +105,33 @@ export function trackPreFlightOutcome(symbol: string, passedCount: number, isCle
     `${symbol} (${passedCount}/5 Checks)`,
     passedCount
   );
+  if (isCleared) {
+    trackMatomoGoal(MATOMO_GOALS.PREFLIGHT_CLEARED);
+  }
 }
 
 /**
- * Track Trade Plan Export / Clipboard Copy
+ * Track Trade Plan Export / Clipboard Copy (Goal 3)
  */
 export function trackTradePlanCopied(symbol: string, setupPattern: string) {
   trackMatomoEvent("Decision Intelligence", "Copy Trade Plan for Journal", `${symbol} (${setupPattern})`);
+  trackMatomoGoal(MATOMO_GOALS.TRADE_PLAN_COPIED);
 }
 
 /**
- * Track Position Sizing Calculations
+ * Track Position Sizing Calculations & Portfolio Position Adds (Goal 4)
  */
 export function trackPositionSizer(symbol: string, riskPct: number, shares: number) {
   trackMatomoEvent("Risk Engine", "Calculate Position Size", `${symbol} @ ${riskPct}% risk (${shares} shares)`, shares);
 }
 
+export function trackPortfolioPositionAdded(symbol: string, positionValue?: number) {
+  trackMatomoEvent("User Journey", "Add Portfolio Position", symbol, positionValue ? Math.round(positionValue) : undefined);
+  trackMatomoGoal(MATOMO_GOALS.PORTFOLIO_POSITION_ADDED, positionValue ? Math.round(positionValue) : undefined);
+}
+
 /**
- * Track Price Alerts & Breakout Pivot Triggers
+ * Track Price Alerts & Breakout Pivot Triggers (Goal 5)
  */
 export function trackAlertSet(symbol: string, targetPrice: number, isStage4: boolean) {
   trackMatomoEvent(
@@ -92,13 +139,23 @@ export function trackAlertSet(symbol: string, targetPrice: number, isStage4: boo
     isStage4 ? "Set Stage 4 Breakout Pivot Alert" : "Set Pullback Buy Zone Alert",
     `${symbol} @ $${targetPrice.toFixed(2)}`
   );
+  trackMatomoGoal(MATOMO_GOALS.PRICE_ALERT_CREATED);
 }
 
 /**
- * Track Macro Stress Test Simulations
+ * Track Macro Stress Test Simulations (Goal 6)
  */
 export function trackMacroShockSimulation(scenarioName: string, impactPct: number) {
   trackMatomoEvent("Risk Engine", "Run Macro Stress Shock", `${scenarioName} (${impactPct.toFixed(2)}% loss)`, Math.round(Math.abs(impactPct)));
+  trackMatomoGoal(MATOMO_GOALS.MACRO_STRESS_SIMULATED, Math.round(Math.abs(impactPct)));
+}
+
+/**
+ * Track Head-to-Head Asset Comparisons (Goal 7)
+ */
+export function trackComparisonRun(symbolA: string, symbolB: string) {
+  trackMatomoEvent("Terminal Interaction", "Compare Assets", `${symbolA} vs ${symbolB}`);
+  trackMatomoGoal(MATOMO_GOALS.STOCK_COMPARISON_RUN);
 }
 
 /**
@@ -116,10 +173,11 @@ export function trackVernacularSwitch(mode: "PLAIN_ENGLISH" | "PRO_QUANT") {
 }
 
 /**
- * Track Screener Filter & Preset Selections
+ * Track Screener Filter & Preset Selections (Goal 8)
  */
 export function trackScreenerSelection(presetName: string, resultsCount: number) {
   trackMatomoEvent("Screener", "Apply Screener Preset", `${presetName} (${resultsCount} gems)`, resultsCount);
+  trackMatomoGoal(MATOMO_GOALS.SCREENER_FILTER_APPLIED, resultsCount);
 }
 
 /**

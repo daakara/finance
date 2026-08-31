@@ -6,6 +6,8 @@
  * position sizing metrics, and anonymous user journey attribution.
  */
 
+import { trackPortfolioPositionAdded } from "./matomo";
+
 export interface PortfolioPosition {
   symbol: string;
   name: string;
@@ -144,6 +146,7 @@ export function addPortfolioPosition(pos: {
 
     savePortfolioPositions([newPos, ...existing]);
     window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
+    trackPortfolioPositionAdded(symUpper, newPos.shares * newPos.entryPrice);
     return {
       success: true,
       isDuplicate: false,

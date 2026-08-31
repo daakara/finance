@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { trackOnboardingCompleted } from "../lib/matomo";
 
 interface OnboardingTourModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
       try {
         localStorage.setItem("FINANCE_ONBOARDING_COMPLETED", "true");
       } catch {}
+      trackOnboardingCompleted(slide.title);
       onClose();
     } else {
       setCurrentSlide(prev => prev + 1);

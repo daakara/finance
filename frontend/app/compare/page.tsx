@@ -10,6 +10,7 @@ import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
 import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { SHARED_FACTOR_SCORES, SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 import { getCanonicalAssetName, getCanonicalAssetMoat, getCanonicalAssetRisk } from "../../lib/assetRegistry";
+import { trackComparisonRun } from "../../lib/matomo";
 
 export interface CompetitorAsset {
   symbol: string;
@@ -144,6 +145,7 @@ function CompareContent() {
         if (isMounted) {
           setDataA(resA);
           setDataB(resB);
+          trackComparisonRun(symbolA, symbolB);
         }
       } catch (err) {
         console.warn("Live comparison fetch warning:", err);
