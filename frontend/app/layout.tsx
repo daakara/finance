@@ -20,8 +20,12 @@ export const metadata: Metadata = {
     title: "ARX Terminal",
   },
   icons: {
-    icon: "/icons/favicon-32x32.png",
-    apple: "/icons/apple-touch-icon.png",
+    icon: [
+      { url: "/icon.png" },
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "ARX Terminal | Quantitative Intelligence & Congressional STOCK Act Platform",
