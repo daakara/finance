@@ -162,17 +162,14 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           {/* Left: Brand Logo & Title */}
           <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
             <Link href="/" aria-label="ARX Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
-              <div aria-hidden="true" className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-cyan-600 flex items-center justify-center font-mono font-bold text-white shadow-sm group-hover:scale-105 transition-transform text-xs sm:text-sm">
+              <div aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-mono font-bold text-white shadow-sm group-hover:scale-105 transition-transform text-xs sm:text-sm">
                 ARX
               </div>
-              <div className="min-w-0">
-                <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base hidden xl:block leading-none">
-                  ARX TERMINAL
+              <div className="min-w-0 hidden sm:block">
+                <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base block leading-none">
+                  TERMINAL
                 </span>
-                <span className="font-bold tracking-tight text-white font-mono text-xs xl:hidden block leading-none">
-                  ARX
-                </span>
-                <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block">
+                <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block mt-0.5">
                   No-BS Market Intel
                 </span>
               </div>
