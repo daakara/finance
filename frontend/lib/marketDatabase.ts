@@ -90,7 +90,14 @@ export function getPersistedMarketSnapshot(symbol: string): PersistedMarketRecor
   try {
     const raw = localStorage.getItem(`${DB_STORAGE_PREFIX}${upper}`);
     if (!raw) return null;
-    return JSON.parse(raw) as PersistedMarketRecord;
+    const record = JSON.parse(raw) as PersistedMarketRecord;
+    
+    // Self-healing check: Discard poisoned legacy fallback snapshots where un-cataloged stocks got stuck at Apple's $319.64
+    if (upper !== "AAPL" && Math.abs(record.currentPrice - 319.64) < 0.01) {
+      localStorage.removeItem(`${DB_STORAGE_PREFIX}${upper}`);
+      return null;
+    }
+    return record;
   } catch {
     return null;
   }
