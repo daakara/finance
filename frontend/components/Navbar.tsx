@@ -9,6 +9,7 @@ import OnboardingTourModal from "./OnboardingTourModal";
 import PrivacySettingsModal from "./PrivacySettingsModal";
 import CommandPaletteModal from "./CommandPaletteModal";
 import RealTimeAlertEngine from "./RealTimeAlertEngine";
+import ArxLogo from "./ArxLogo";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -162,12 +163,10 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           {/* Left: Brand Logo & Title */}
           <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
             <Link href="/" aria-label="ARX Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
-              <div aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-mono font-bold text-white shadow-sm group-hover:scale-105 transition-transform text-xs sm:text-sm">
-                ARX
-              </div>
+              <ArxLogo size="sm" variant="badge" />
               <div className="min-w-0 hidden sm:block">
                 <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base block leading-none">
-                  TERMINAL
+                  ARX TERMINAL
                 </span>
                 <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block mt-0.5">
                   No-BS Market Intel
