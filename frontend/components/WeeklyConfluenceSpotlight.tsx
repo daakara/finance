@@ -30,6 +30,7 @@ interface WeeklyConfluenceSpotlightProps {
 
 export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: WeeklyConfluenceSpotlightProps) {
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
+  const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
   const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePct: number }>>({});
@@ -71,6 +72,9 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
       const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
       if (saved) setVernacularMode(saved);
 
+      const savedRole = localStorage.getItem("FINANCE_USER_ROLE") as "DAY_TRADER" | "LONG_TERM" | null;
+      if (savedRole) setUserRole(savedRole);
+
       const handleStorage = () => refreshLocalQuotes();
       window.addEventListener("storage", handleStorage);
       return () => window.removeEventListener("storage", handleStorage);
@@ -82,94 +86,151 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
       const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
       if (custom.detail) setVernacularMode(custom.detail);
     };
+    const handleRole = (e: Event) => {
+      const custom = e as CustomEvent<"DAY_TRADER" | "LONG_TERM">;
+      if (custom.detail) setUserRole(custom.detail);
+    };
     window.addEventListener("finance:vernacular-change", handleVernacular);
-    return () => window.removeEventListener("finance:vernacular-change", handleVernacular);
+    window.addEventListener("finance:role-change", handleRole);
+    return () => {
+      window.removeEventListener("finance:vernacular-change", handleVernacular);
+      window.removeEventListener("finance:role-change", handleRole);
+    };
   }, []);
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
+  const isDayTrader = userRole === "DAY_TRADER";
 
-  // Dynamically compute the Top 3 High-Confluence Plays from master catalog anchored to live spot prices
+  // Dynamically compute the Top 3 High-Confluence Plays based on active Horizon (Day Trader vs Long Term)
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
     const all = Object.values(MASTER_ASSET_CATALOG);
     
-    const scored = all
-      .filter((a) => a.type === "Stock" && a.piotroski >= 7 && a.atr14 > 0)
-      .map((asset) => {
-        // Resolve authentic live exchange spot price
-        const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
-        const snap = getPersistedMarketSnapshot(asset.symbol);
-        const effectivePrice = (live?.price && live.price > 0)
-          ? live.price
-          : (snap?.currentPrice && snap.currentPrice > 0)
-          ? snap.currentPrice
-          : asset.price;
+    // 1. Dual-Horizon Pre-Filter
+    const eligible = all.filter((a) => {
+      if (a.type !== "Stock" || !a.atr14 || a.atr14 <= 0) return false;
+      if (isDayTrader) {
+        // Day Trader: Filter for high Relative Volume (RVOL >= 1.3) or elevated Momentum (>=70)
+        return a.rvol >= 1.3 || a.momentumScore >= 70;
+      } else {
+        // Long Term: Filter for pristine solvency (Piotroski >= 7) and positive ROIC
+        return a.piotroski >= 7 && a.roic > 0;
+      }
+    });
 
-        const effectiveChange = (live?.changePct !== undefined)
-          ? live.changePct
-          : (snap?.priceChangePct24h !== undefined)
-          ? snap.priceChangePct24h
-          : asset.changePct;
+    const scored = eligible.map((asset) => {
+      // Resolve authentic live exchange spot price
+      const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
+      const snap = getPersistedMarketSnapshot(asset.symbol);
+      const effectivePrice = (live?.price && live.price > 0)
+        ? live.price
+        : (snap?.currentPrice && snap.currentPrice > 0)
+        ? snap.currentPrice
+        : asset.price;
 
-        // Multi-Factor Quantitative Confluence Scoring
+      const effectiveChange = (live?.changePct !== undefined)
+        ? live.changePct
+        : (snap?.priceChangePct24h !== undefined)
+        ? snap.priceChangePct24h
+        : asset.changePct;
+
+      const atrScale = asset.price > 0 ? (effectivePrice / asset.price) : 1;
+      const currentAtr = Math.max(0.2, asset.atr14 * atrScale);
+      const atrPct = effectivePrice > 0 ? (currentAtr / effectivePrice) : 0.02;
+
+      let compositeScore = 80;
+      let stopVal = effectivePrice - currentAtr * 1.4;
+      let target1Val = effectivePrice + currentAtr * 2.2;
+      let target2Val = effectivePrice + currentAtr * 3.8;
+      let setupBadge = "INSTITUTIONAL ACCUMULATION";
+      let setupBadgePlain = "Smart Money Buying";
+
+      if (isDayTrader) {
+        // ── ⚡ DAY TRADER QUANTITATIVE SCORING SIEVE ─────────────────────────
+        const rvolScore = Math.min(35, (asset.rvol / 2.6) * 35); // Max 35 pts
+        const momentumScore = Math.min(35, (asset.momentumScore / 100) * 35); // Max 35 pts
+        const volatilityBonus = atrPct >= 0.022 ? 15 : 8; // Max 15 pts
+        const squeezeBonus = asset.shortFloat >= 5.0 ? 15 : asset.shortFloat >= 2.5 ? 10 : 5; // Max 15 pts
+
+        compositeScore = Math.round(rvolScore + momentumScore + volatilityBonus + squeezeBonus);
+
+        // Tight Intraday/Swing Monotonic Execution Ladder (1.0x ATR Stop, 1.8x ATR TP1, 3.2x ATR TP2)
+        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.0);
+        target1Val = effectivePrice + currentAtr * 1.8;
+        target2Val = effectivePrice + currentAtr * 3.2;
+
+        setupBadge = asset.rvol >= 2.4
+          ? "⚡ HIGH-RVOL EXPLOSION"
+          : asset.shortFloat >= 5.5
+          ? "🔥 SHORT SQUEEZE PRESSURE"
+          : "🚀 STAGE 2 BREAKOUT";
+
+        setupBadgePlain = asset.rvol >= 2.4
+          ? "Surging Trading Volume"
+          : asset.shortFloat >= 5.5
+          ? "Squeeze Pressure Building"
+          : "Fast-Moving Momentum";
+      } else {
+        // ── 🏛️ LONG-TERM COMPOUNDER SCORING SIEVE ────────────────────────────
         const piotroskiWeight = (asset.piotroski / 9) * 30; // Max 30 pts
         const factorWeight = (asset.compositeFactorScore / 100) * 35; // Max 35 pts
         const pegBonus = asset.peg > 0 && asset.peg <= 1.2 ? 15 : 5; // Max 15 pts
         const roicBonus = asset.roic >= 20 ? 15 : asset.roic >= 12 ? 10 : 5; // Max 15 pts
-        const momBonus = Math.min(10, Math.max(0, asset.momentumScore / 10)); // Max 10 pts
-        
-        const compositeScore = Math.round(piotroskiWeight + factorWeight + pegBonus + roicBonus + momBonus);
-        
-        // Exact Risk-Defined Boundaries (Monotonic Ladder anchored to effectivePrice)
-        // Scaled ATR to current price ratio
-        const atrScale = asset.price > 0 ? (effectivePrice / asset.price) : 1;
-        const currentAtr = Math.max(0.2, asset.atr14 * atrScale);
-        
-        const stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.4);
-        const target1Val = effectivePrice + currentAtr * 2.2;
-        const target2Val = effectivePrice + currentAtr * 3.8;
-        
-        const riskDelta = effectivePrice - stopVal;
-        const rewardDelta = target1Val - effectivePrice;
-        const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.4";
+        const momBonus = Math.min(5, Math.max(0, asset.momentumScore / 20)); // Max 5 pts
 
-        const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
-        const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
-        const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+        compositeScore = Math.round(piotroskiWeight + factorWeight + pegBonus + roicBonus + momBonus);
 
-        const updatedEntry: MasterAssetEntry = {
-          ...asset,
-          price: effectivePrice,
-          changePct: effectiveChange,
-        };
+        // Structural Swing/Position Ladder (1.4x ATR Stop, 2.2x ATR TP1, 3.8x ATR TP2)
+        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.4);
+        target1Val = effectivePrice + currentAtr * 2.2;
+        target2Val = effectivePrice + currentAtr * 3.8;
 
-        return {
-          entry: updatedEntry,
-          convictionScore: Math.min(99, compositeScore),
-          setupBadge: asset.category.includes("Monopoly")
-            ? "STAGE 2 VCP BREAKOUT"
-            : asset.piotroski === 9
-            ? "PERFECT 9/9 PIOTROSKI"
-            : "INSTITUTIONAL ACCUMULATION",
-          setupBadgePlain: asset.category.includes("Monopoly")
-            ? "High-Momentum Breakout"
-            : asset.piotroski === 9
-            ? "Rock-Solid Balance Sheet"
-            : "Smart Money Buying",
-          catalystSummary: asset.upcomingCatalyst || asset.thesis,
-          catalystSummaryPlain: asset.moatSummary || asset.thesis,
-          stopPrice: Number(stopVal.toFixed(2)),
-          stopLossPct: stopPct,
-          target1Price: Number(target1Val.toFixed(2)),
-          target1Pct: t1Pct,
-          target2Price: Number(target2Val.toFixed(2)),
-          target2Pct: t2Pct,
-          rewardRiskRatio: rr,
-        };
-      })
-      .sort((a, b) => b.convictionScore - a.convictionScore);
+        setupBadge = asset.piotroski === 9
+          ? "🏛️ PERFECT 9/9 PIOTROSKI"
+          : asset.roic >= 25
+          ? "💎 CAPITAL COMPOUNDER"
+          : "🛡️ SECULAR MOAT LEADER";
+
+        setupBadgePlain = asset.piotroski === 9
+          ? "Rock-Solid Balance Sheet"
+          : asset.roic >= 25
+          ? "High Profit Engine"
+          : "Dominant Market Leader";
+      }
+      
+      const riskDelta = effectivePrice - stopVal;
+      const rewardDelta = target1Val - effectivePrice;
+      const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.2";
+
+      const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
+      const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+      const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+
+      const updatedEntry: MasterAssetEntry = {
+        ...asset,
+        price: effectivePrice,
+        changePct: effectiveChange,
+      };
+
+      return {
+        entry: updatedEntry,
+        convictionScore: Math.min(99, compositeScore),
+        setupBadge,
+        setupBadgePlain,
+        catalystSummary: asset.upcomingCatalyst || asset.thesis,
+        catalystSummaryPlain: asset.moatSummary || asset.thesis,
+        stopPrice: Number(stopVal.toFixed(2)),
+        stopLossPct: stopPct,
+        target1Price: Number(target1Val.toFixed(2)),
+        target1Pct: t1Pct,
+        target2Price: Number(target2Val.toFixed(2)),
+        target2Pct: t2Pct,
+        rewardRiskRatio: rr,
+      };
+    })
+    .sort((a, b) => b.convictionScore - a.convictionScore);
 
     return scored.slice(0, 3);
-  }, [liveQuotes]);
+  }, [liveQuotes, isDayTrader]);
 
   const handleQuickLog = (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();
@@ -194,20 +255,40 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-sm shadow-inner">
-            🎯
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
+            isDayTrader
+              ? "bg-amber-500/10 border border-amber-500/30 text-amber-400"
+              : "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+          }`}>
+            {isDayTrader ? "⚡" : "🎯"}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight flex items-center gap-2">
-                <span>{isPlain ? "Top 3 High-Confluence Plays of the Week" : "Weekly Alpha Spotlight: Top 3 High-Confluence Setups"}</span>
+                <span>
+                  {isDayTrader
+                    ? isPlain
+                      ? "Top 3 Day Trader Momentum Plays"
+                      : "Day Trader Confluence: Top 3 High-RVOL Setups"
+                    : isPlain
+                    ? "Top 3 High-Confluence Plays of the Week"
+                    : "Weekly Alpha Spotlight: Top 3 High-Confluence Setups"}
+                </span>
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950/80 border border-cyan-700 text-cyan-300 hidden sm:inline-block">
-                LIVE CONFLUENCE RANKER
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border hidden sm:inline-block ${
+                isDayTrader
+                  ? "bg-amber-950/80 border-amber-700 text-amber-300"
+                  : "bg-cyan-950/80 border-cyan-700 text-cyan-300"
+              }`}>
+                {isDayTrader ? "⚡ DAY TRADER SIEVE" : "🏛️ LONG-TERM SIEVE"}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              {isPlain
+              {isDayTrader
+                ? isPlain
+                  ? "Filtered for fast-moving stocks with heavy trading volume and tight safety stops."
+                  : "Intraday & swing sieve: RVOL >= 1.3 + ATR/Price >= 2.0% + Minervini Stage 2 + R:R >= 1.8:1."
+                : isPlain
                 ? "Strictly filtered by balance sheet health, insider flow, and minimum 2.0:1 profit-to-risk ratio."
                 : "Multi-factor quantitative sieve: Minervini Stage 2 + Piotroski F-Score >= 7 + SEC Form 4 Inflow + Risk/Reward >= 2.0:1."}
             </p>
