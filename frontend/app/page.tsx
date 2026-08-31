@@ -228,8 +228,8 @@ function TerminalContent() {
               </div>
             )}
 
-            {/* 🎯 Weekly High-Confluence Alpha Spotlight */}
-            <WeeklyConfluenceSpotlight />
+            {/* 🎯 Weekly High-Confluence Alpha Spotlight (Auto-folded on dedicated ticker search) */}
+            <WeeklyConfluenceSpotlight defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"} />
 
             {/* 💡 Intelligent Did You Mean Ticker Recommendation Banner */}
             {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (

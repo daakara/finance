@@ -132,6 +132,22 @@ export default function CommandPaletteModal({
       },
     });
 
+    items.push({
+      id: "action-toggle-density",
+      category: "ACTION",
+      title: "Toggle Data Density Mode (Compact ⚡ ⇄ Comfortable 🖥️)",
+      subtitle: "Switch between ultra-dense command center layout and spacious cards",
+      badge: "Density",
+      icon: "🎚️",
+      action: () => {
+        const currentDensity = localStorage.getItem("ARX_DENSITY_MODE") || "COMFORTABLE";
+        const nextDensity = currentDensity === "COMPACT" ? "COMFORTABLE" : "COMPACT";
+        localStorage.setItem("ARX_DENSITY_MODE", nextDensity);
+        window.dispatchEvent(new CustomEvent("finance:density-change", { detail: nextDensity }));
+        onClose();
+      },
+    });
+
     // 4. Navigation Hubs
     items.push({
       id: "nav-screener",

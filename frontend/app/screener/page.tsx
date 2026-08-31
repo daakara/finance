@@ -773,44 +773,107 @@ export default function ScreenerPage() {
           </div>
         </div>
 
-        {/* Execution & Archetype Filter Tabs - 4-Column Balanced Grid */}
-        <div role="tablist" aria-label="Screener Filter Tabs" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {activeTabs.map((tab) => {
-            const isActive = selectedFilter === tab.id;
-            const count = getTabCount(tab.id);
-            return (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => handleSelectFilter(tab.id)}
-                className={`p-3.5 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
-                  isActive
-                    ? isDayTrader
-                      ? "bg-[#21190c] border-amber-500 shadow-md shadow-amber-950/40"
-                      : "bg-[#111c2e] border-cyan-500 shadow-md shadow-cyan-950/40"
-                    : "bg-[#0c1017] border-[#1b2434] hover:bg-[#111722] hover:border-[#2b3a52]"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`text-xs font-black ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
-                      {tab.label}
+        {/* Execution & Archetype Filter Clusters */}
+        <div className="space-y-4 mb-6">
+          {/* Cluster 1: Actionable Execution Status */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                🎯 Cluster 1: Execution Levels & Asymmetry
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                (Price action, buy zones, and calculated profit milestones)
+              </span>
+            </div>
+            <div role="tablist" aria-label="Execution Filter Tabs" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+              {activeTabs.slice(0, isDayTrader ? 5 : 5).map((tab) => {
+                const isActive = selectedFilter === tab.id;
+                const count = getTabCount(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => handleSelectFilter(tab.id)}
+                    className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
+                      isActive
+                        ? isDayTrader
+                          ? "bg-[#21190c] border-amber-500 shadow-md shadow-amber-950/40"
+                          : "bg-[#111c2e] border-cyan-500 shadow-md shadow-cyan-950/40"
+                        : "bg-[#0c1017] border-[#1b2434] hover:bg-[#111722] hover:border-[#2b3a52]"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-xs font-black truncate ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
+                          {tab.label}
+                        </span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.2 rounded shrink-0 font-mono tabular-nums ${
+                          isActive ? (isDayTrader ? "bg-amber-400 text-slate-950" : "bg-cyan-400 text-slate-950") : "bg-[#1b2639] text-slate-300"
+                        }`}>
+                          {count}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed font-sans line-clamp-2">{tab.desc}</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-[#1e293b] text-slate-300 self-start mt-2">
+                      {tab.badge}
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded shrink-0 ${
-                      isActive ? (isDayTrader ? "bg-amber-400 text-slate-950" : "bg-cyan-400 text-slate-950") : "bg-[#1b2639] text-slate-300"
-                    }`}>
-                      {count}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Cluster 2: Multi-Factor Quant Archetypes */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                🏛️ Cluster 2: Multi-Factor Expert Archetypes
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                (Balance sheet quality, Peter Lynch GARP, and Joel Greenblatt ROIC)
+              </span>
+            </div>
+            <div role="tablist" aria-label="Quant Archetype Filter Tabs" className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {activeTabs.slice(isDayTrader ? 5 : 5).map((tab) => {
+                const isActive = selectedFilter === tab.id;
+                const count = getTabCount(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => handleSelectFilter(tab.id)}
+                    className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex flex-col justify-between ${
+                      isActive
+                        ? isDayTrader
+                          ? "bg-[#21190c] border-amber-500 shadow-md shadow-amber-950/40"
+                          : "bg-[#111c2e] border-cyan-500 shadow-md shadow-cyan-950/40"
+                        : "bg-[#0c1017] border-[#1b2434] hover:bg-[#111722] hover:border-[#2b3a52]"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-xs font-black truncate ${isActive ? (isDayTrader ? "text-amber-400" : "text-cyan-400") : "text-slate-200"}`}>
+                          {tab.label}
+                        </span>
+                        <span className={`text-[10px] font-black px-1.5 py-0.2 rounded shrink-0 font-mono tabular-nums ${
+                          isActive ? (isDayTrader ? "bg-amber-400 text-slate-950" : "bg-cyan-400 text-slate-950") : "bg-[#1b2639] text-slate-300"
+                        }`}>
+                          {count}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed font-sans line-clamp-2">{tab.desc}</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-[#1e293b] text-slate-300 self-start mt-2">
+                      {tab.badge}
                     </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed font-sans">{tab.desc}</p>
-                </div>
-                <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-[#1e293b] text-slate-300 self-start mt-3">
-                  {tab.badge}
-                </span>
-              </button>
-            );
-          })}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Loading Skeleton */}

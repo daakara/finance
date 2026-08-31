@@ -22,10 +22,18 @@ interface ConfluenceCandidate {
   rewardRiskRatio: string;
 }
 
-export default function WeeklyConfluenceSpotlight() {
+interface WeeklyConfluenceSpotlightProps {
+  defaultCollapsed?: boolean;
+}
+
+export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: WeeklyConfluenceSpotlightProps) {
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
+
+  useEffect(() => {
+    setIsCollapsed(defaultCollapsed);
+  }, [defaultCollapsed]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
