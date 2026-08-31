@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
 import { prefetchAssetAnalytics } from "../lib/api";
+import MiniSparkline from "./MiniSparkline";
 
 interface WatchlistSidebarProps {
   activeSymbol: string;
@@ -306,10 +307,21 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
                         {item.type}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-400 truncate max-w-[110px]">
+                    <div className="text-[11px] text-slate-400 truncate max-w-[90px] sm:max-w-[100px]">
                       {item.name}
                     </div>
                   </div>
+                </div>
+
+                {/* Inline Mini Sparkline */}
+                <div className="hidden sm:block shrink-0 px-1">
+                  <MiniSparkline
+                    basePrice={parseFloat(item.price.replace(/[^0-9.]/g, "")) || 100}
+                    changePct={parseFloat(item.change.replace(/[^0-9.-]/g, "")) || 0}
+                    isPositive={item.isUp}
+                    width={42}
+                    height={18}
+                  />
                 </div>
 
                 <div className="text-right shrink-0">

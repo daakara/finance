@@ -7,6 +7,7 @@ import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
 import PrivacySettingsModal from "./PrivacySettingsModal";
+import CommandPaletteModal from "./CommandPaletteModal";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -23,6 +24,21 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      } else if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKey);
+    return () => window.removeEventListener("keydown", handleGlobalKey);
+  }, []);
 
   const handlePurgeCache = () => {
     setIsPurging(true);
@@ -240,9 +256,19 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             </nav>
           </div>
 
-          {/* Center: Global Omni-Search Bar (Desktop & Mobile - Fluid Adaptive Width) */}
-          <div className="flex-1 min-w-[70px] max-w-[120px] sm:max-w-[150px] md:max-w-[170px] lg:max-w-[180px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-1.5 flex items-center justify-center">
+          {/* Center: Global Omni-Search Bar & Cmd+K Quick Button */}
+          <div className="flex-1 min-w-[70px] max-w-[120px] sm:max-w-[170px] md:max-w-[200px] lg:max-w-[220px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-1.5 flex items-center justify-center gap-1.5">
             <UniversalOmniSearch />
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              aria-label="Open Command Palette (Cmd+K)"
+              className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg border border-[#243044] bg-[#070a10] text-[11px] font-mono text-slate-400 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors shadow-inner shrink-0"
+              title="Open Command Palette (Cmd+K or /)"
+            >
+              <span>⚡</span>
+              <kbd className="text-[10px] text-cyan-400 font-bold">⌘K</kbd>
+            </button>
           </div>
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
@@ -546,6 +572,12 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           </div>
         </div>
       )}
+
+      {/* ⚡ Global Cmd+K Omnisearch & Action Palette Modal */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
     </>
   );
 }

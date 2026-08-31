@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
 import { addPortfolioPosition } from "../lib/portfolio";
+import MiniSparkline from "./MiniSparkline";
 
 interface ConfluenceCandidate {
   entry: MasterAssetEntry;
@@ -202,13 +203,22 @@ export default function WeeklyConfluenceSpotlight() {
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="text-[9px] font-mono text-slate-400 block uppercase font-bold">
-                      {isPlain ? "Confluence Score" : "Conviction Index"}
-                    </span>
-                    <span className="text-sm font-extrabold font-mono text-cyan-300 tabular-nums">
-                      {cand.convictionScore}/100
-                    </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <MiniSparkline
+                      basePrice={cand.entry.price}
+                      changePct={cand.entry.changePct}
+                      width={48}
+                      height={20}
+                      className="hidden sm:inline-block"
+                    />
+                    <div className="text-right">
+                      <span className="text-[9px] font-mono text-slate-400 block uppercase font-bold">
+                        {isPlain ? "Confluence Score" : "Conviction Index"}
+                      </span>
+                      <span className="text-sm font-extrabold font-mono text-cyan-300 tabular-nums">
+                        {cand.convictionScore}/100
+                      </span>
+                    </div>
                   </div>
                 </div>
 
