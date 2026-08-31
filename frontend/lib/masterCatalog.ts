@@ -222,8 +222,8 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   NVO: {
     symbol: "NVO",
     name: "Novo Nordisk A/S",
-    price: 136.40,
-    changePct: 1.85,
+    price: 45.31,
+    changePct: -3.18,
     type: "Stock",
     sector: "Healthcare",
     category: "GLP-1 Incretin & Metabolic Duopoly",
@@ -312,8 +312,8 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
   CPRX: {
     symbol: "CPRX",
     name: "Catalyst Pharmaceuticals",
-    price: 23.40,
-    changePct: 1.90,
+    price: 31.49,
+    changePct: 0.00,
     type: "Stock",
     sector: "Healthcare",
     category: "Rare Neurological Commercial Monopoly",

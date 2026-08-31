@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
 import { addPortfolioPosition } from "../lib/portfolio";
+import { SpotPriceRegistry, fetchBatchQuotes } from "../lib/api";
+import { getPersistedMarketSnapshot, getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
 interface ConfluenceCandidate {
@@ -30,16 +32,52 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePct: number }>>({});
 
   useEffect(() => {
     setIsCollapsed(defaultCollapsed);
   }, [defaultCollapsed]);
 
+  // Hydrate initial live quotes from persisted client database and registry
+  const refreshLocalQuotes = useCallback(() => {
+    const snapshots = getAllPersistedMarketSnapshots(true);
+    const initial: Record<string, { price: number; changePct: number }> = {};
+    for (const [sym, snap] of Object.entries(snapshots)) {
+      if (snap.currentPrice && snap.currentPrice > 0) {
+        initial[sym] = { price: snap.currentPrice, changePct: snap.priceChangePct24h };
+      }
+    }
+    for (const sym of Object.keys(MASTER_ASSET_CATALOG)) {
+      const reg = SpotPriceRegistry.get(sym);
+      if (reg && reg.price > 0) {
+        initial[sym] = { price: reg.price, changePct: reg.changePct };
+      }
+    }
+    setLiveQuotes((prev) => ({ ...prev, ...initial }));
+  }, []);
+
   useEffect(() => {
+    refreshLocalQuotes();
+
+    // Fetch batch live exchange quotes for top candidate tickers on mount
+    const candidateSymbols = Object.keys(MASTER_ASSET_CATALOG);
+    fetchBatchQuotes(candidateSymbols).then((batch) => {
+      if (batch && Object.keys(batch).length > 0) {
+        setLiveQuotes((prev) => ({ ...prev, ...batch }));
+      }
+    }).catch(() => {});
+
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
       if (saved) setVernacularMode(saved);
+
+      const handleStorage = () => refreshLocalQuotes();
+      window.addEventListener("storage", handleStorage);
+      return () => window.removeEventListener("storage", handleStorage);
     }
+  }, [refreshLocalQuotes]);
+
+  useEffect(() => {
     const handleVernacular = (e: Event) => {
       const custom = e as CustomEvent<"PLAIN_ENGLISH" | "PRO_QUANT">;
       if (custom.detail) setVernacularMode(custom.detail);
@@ -50,13 +88,28 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
-  // Dynamically compute the Top 3 High-Confluence Plays from master catalog
+  // Dynamically compute the Top 3 High-Confluence Plays from master catalog anchored to live spot prices
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
     const all = Object.values(MASTER_ASSET_CATALOG);
     
     const scored = all
-      .filter((a) => a.type === "Stock" && a.price > 10 && a.piotroski >= 7 && a.atr14 > 0)
+      .filter((a) => a.type === "Stock" && a.piotroski >= 7 && a.atr14 > 0)
       .map((asset) => {
+        // Resolve authentic live exchange spot price
+        const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
+        const snap = getPersistedMarketSnapshot(asset.symbol);
+        const effectivePrice = (live?.price && live.price > 0)
+          ? live.price
+          : (snap?.currentPrice && snap.currentPrice > 0)
+          ? snap.currentPrice
+          : asset.price;
+
+        const effectiveChange = (live?.changePct !== undefined)
+          ? live.changePct
+          : (snap?.priceChangePct24h !== undefined)
+          ? snap.priceChangePct24h
+          : asset.changePct;
+
         // Multi-Factor Quantitative Confluence Scoring
         const piotroskiWeight = (asset.piotroski / 9) * 30; // Max 30 pts
         const factorWeight = (asset.compositeFactorScore / 100) * 35; // Max 35 pts
@@ -66,21 +119,31 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
         
         const compositeScore = Math.round(piotroskiWeight + factorWeight + pegBonus + roicBonus + momBonus);
         
-        // Exact Risk-Defined Boundaries (Monotonic Ladder)
-        const stopVal = Math.max(0.01, asset.price - asset.atr14 * 1.4);
-        const target1Val = asset.price + asset.atr14 * 2.2;
-        const target2Val = asset.price + asset.atr14 * 3.8;
+        // Exact Risk-Defined Boundaries (Monotonic Ladder anchored to effectivePrice)
+        // Scaled ATR to current price ratio
+        const atrScale = asset.price > 0 ? (effectivePrice / asset.price) : 1;
+        const currentAtr = Math.max(0.2, asset.atr14 * atrScale);
         
-        const riskDelta = asset.price - stopVal;
-        const rewardDelta = target1Val - asset.price;
+        const stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.4);
+        const target1Val = effectivePrice + currentAtr * 2.2;
+        const target2Val = effectivePrice + currentAtr * 3.8;
+        
+        const riskDelta = effectivePrice - stopVal;
+        const rewardDelta = target1Val - effectivePrice;
         const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.4";
 
-        const stopPct = (((asset.price - stopVal) / asset.price) * 100).toFixed(1);
-        const t1Pct = (((target1Val - asset.price) / asset.price) * 100).toFixed(1);
-        const t2Pct = (((target2Val - asset.price) / asset.price) * 100).toFixed(1);
+        const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
+        const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+        const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+
+        const updatedEntry: MasterAssetEntry = {
+          ...asset,
+          price: effectivePrice,
+          changePct: effectiveChange,
+        };
 
         return {
-          entry: asset,
+          entry: updatedEntry,
           convictionScore: Math.min(99, compositeScore),
           setupBadge: asset.category.includes("Monopoly")
             ? "STAGE 2 VCP BREAKOUT"
@@ -106,7 +169,7 @@ export default function WeeklyConfluenceSpotlight({ defaultCollapsed = false }: 
       .sort((a, b) => b.convictionScore - a.convictionScore);
 
     return scored.slice(0, 3);
-  }, []);
+  }, [liveQuotes]);
 
   const handleQuickLog = (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();
