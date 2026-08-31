@@ -16,6 +16,7 @@ import {
   getCanonicalAssetRisk,
   getCanonicalAssetCatalyst,
 } from "../../lib/assetRegistry";
+import { addPortfolioPosition } from "../../lib/portfolio";
 
 interface GemCandidate {
   symbol: string;
@@ -287,6 +288,7 @@ export default function ScreenerPage() {
   const [customTickerInput, setCustomTickerInput] = useState<string>("");
   const [activeCustomQuery, setActiveCustomQuery] = useState<string>("");
   const [copyToast, setCopyToast] = useState<boolean>(false);
+  const [loggedGemSymbol, setLoggedGemSymbol] = useState<string | null>(null);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
 
   useEffect(() => {
@@ -1022,6 +1024,28 @@ export default function ScreenerPage() {
                       >
                         <span>🔔</span>
                         <span>Alert</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const res = addPortfolioPosition({
+                            symbol: gem.symbol,
+                            name: gem.companyName,
+                            shares: Math.max(1, Math.round(2500 / (gem.currentPrice || 100))),
+                            entryPrice: gem.currentPrice || 100,
+                            currentPrice: gem.currentPrice || 100,
+                            targetPrice: gem.takeProfit1,
+                            stopLossPrice: gem.stopLoss,
+                          });
+                          setLoggedGemSymbol(`${gem.symbol}: ${res.isDuplicate ? "Already In Portfolio" : "Logged!"}`);
+                          setTimeout(() => setLoggedGemSymbol(null), 3000);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300 flex items-center gap-1 shadow"
+                        title="Log directly to Paper Portfolio"
+                      >
+                        <span>💼</span>
+                        <span>{loggedGemSymbol && loggedGemSymbol.startsWith(gem.symbol) ? loggedGemSymbol.split(":")[1] : "Log"}</span>
                       </button>
                     </div>
 

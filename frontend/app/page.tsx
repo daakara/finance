@@ -18,6 +18,7 @@ import { FredMacroData, SecForm4Trade, fetchFredMacroRegime, fetchSecForm4Inside
 import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
+import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
@@ -226,6 +227,9 @@ function TerminalContent() {
                 </div>
               </div>
             )}
+
+            {/* 🎯 Weekly High-Confluence Alpha Spotlight */}
+            <WeeklyConfluenceSpotlight />
 
             {/* 💡 Intelligent Did You Mean Ticker Recommendation Banner */}
             {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
