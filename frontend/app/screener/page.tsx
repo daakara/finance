@@ -6,7 +6,8 @@ import Navbar from "../../components/Navbar";
 import PositionSizerModal from "../../components/PositionSizerModal";
 import AlertTriggerModal from "../../components/AlertTriggerModal";
 import DataSourceBadge from "../../components/DataSourceBadge";
-import { API_BASE_URL } from "../../lib/api";
+import { API_BASE_URL, SpotPriceRegistry } from "../../lib/api";
+import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { trackScreenerSelection, trackMatomoEvent } from "../../lib/matomo";
@@ -450,9 +451,17 @@ export default function ScreenerPage() {
       const quoteMap = new Map<string, number>();
 
       for (const gem of gems) {
-        const factorData = SHARED_FACTOR_SCORES[gem.symbol.toUpperCase()];
-        if (factorData && factorData.price && Math.abs(factorData.price - (gem.currentPrice || 0)) > 0.05) {
-          quoteMap.set(gem.symbol, factorData.price);
+        const upper = gem.symbol.toUpperCase();
+        const reg = SpotPriceRegistry.get(upper);
+        const snap = getPersistedMarketSnapshot(upper);
+        const effectivePrice = (reg?.price && reg.price > 0)
+          ? reg.price
+          : (snap?.currentPrice && snap.currentPrice > 0)
+          ? snap.currentPrice
+          : MASTER_ASSET_CATALOG[upper]?.price;
+
+        if (effectivePrice && Math.abs(effectivePrice - (gem.currentPrice || 0)) > 0.05) {
+          quoteMap.set(gem.symbol, effectivePrice);
         }
       }
 

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
+import { SpotPriceRegistry } from "../lib/api";
+import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
 interface CommandItem {
@@ -49,6 +51,19 @@ export default function CommandPaletteModal({
 
     // 1. Assets from Master Catalog
     Object.values(MASTER_ASSET_CATALOG).forEach((asset) => {
+      const reg = SpotPriceRegistry.get(asset.symbol);
+      const snap = getPersistedMarketSnapshot(asset.symbol);
+      const effectivePrice = (reg?.price && reg.price > 0)
+        ? reg.price
+        : (snap?.currentPrice && snap.currentPrice > 0)
+        ? snap.currentPrice
+        : asset.price;
+      const effectiveChange = (reg?.changePct !== undefined)
+        ? reg.changePct
+        : (snap?.priceChangePct24h !== undefined)
+        ? snap.priceChangePct24h
+        : asset.changePct;
+
       items.push({
         id: `asset-${asset.symbol}`,
         category: "ASSET",
@@ -56,8 +71,8 @@ export default function CommandPaletteModal({
         subtitle: `${asset.name} • ${asset.sector} (${asset.category})`,
         badge: `${asset.piotroski}/9 Piotroski`,
         icon: "📈",
-        price: asset.price,
-        changePct: asset.changePct,
+        price: effectivePrice,
+        changePct: effectiveChange,
         action: () => {
           if (onSelectSymbol) {
             onSelectSymbol(asset.symbol);

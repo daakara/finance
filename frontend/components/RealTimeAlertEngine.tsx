@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
+import { SpotPriceRegistry } from "../lib/api";
+import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 
 export interface PriceAlert {
   id: string;
@@ -23,8 +25,10 @@ export default function RealTimeAlertEngine() {
   const [activeNotification, setActiveNotification] = useState<PriceAlert | null>(null);
   const router = useRouter();
 
-  // Periodic alert condition evaluation against master catalog & live memory
+  // Evaluate alerts against live market price
   const evaluateAlerts = useCallback(() => {
+    if (typeof window === "undefined") return;
+
     try {
       const stored = localStorage.getItem("FINANCE_PRICE_ALERTS");
       if (!stored) return;
@@ -35,8 +39,15 @@ export default function RealTimeAlertEngine() {
       for (const alert of alerts) {
         if (alert.triggered) continue;
 
-        const asset = MASTER_ASSET_CATALOG[alert.symbol.toUpperCase()];
-        const livePrice = asset ? asset.price : alert.createdPrice;
+        const upper = alert.symbol.toUpperCase();
+        const reg = SpotPriceRegistry.get(upper);
+        const snap = getPersistedMarketSnapshot(upper);
+        const asset = MASTER_ASSET_CATALOG[upper];
+        const livePrice = (reg?.price && reg.price > 0)
+          ? reg.price
+          : (snap?.currentPrice && snap.currentPrice > 0)
+          ? snap.currentPrice
+          : (asset ? asset.price : alert.createdPrice);
 
         let isTriggered = false;
         let msg = "";

@@ -5,7 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import DataSourceBadge from "../../components/DataSourceBadge";
-import { API_BASE_URL, fetchAssetAnalytics, AnalyticsResponse } from "../../lib/api";
+import { API_BASE_URL, fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../../lib/api";
+import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
+import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { SHARED_FACTOR_SCORES, SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 import { getCanonicalAssetName, getCanonicalAssetMoat, getCanonicalAssetRisk } from "../../lib/assetRegistry";
 
@@ -197,14 +199,23 @@ function CompareContent() {
     const registered = AUTHENTIC_FUNDAMENTALS[upperSym];
     const staticFactor = SHARED_FACTOR_SCORES[upperSym];
     const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
-
+    const reg = SpotPriceRegistry.get(upperSym);
+    const snap = getPersistedMarketSnapshot(upperSym);
     const price = (liveData && liveData.currentPrice > 0)
       ? liveData.currentPrice
-      : (staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0));
+      : (reg?.price && reg.price > 0)
+      ? reg.price
+      : (snap?.currentPrice && snap.currentPrice > 0)
+      ? snap.currentPrice
+      : (MASTER_ASSET_CATALOG[upperSym]?.price ?? staticFactor?.price ?? (staticItem ? parseFloat(staticItem.price.replace(/[^0-9.]/g, "")) : 100.0));
 
     const priceChange = (liveData && !isNaN(liveData.priceChangePct24h))
       ? liveData.priceChangePct24h
-      : (staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5));
+      : (reg?.changePct !== undefined)
+      ? reg.changePct
+      : (snap?.priceChangePct24h !== undefined)
+      ? snap.priceChangePct24h
+      : (MASTER_ASSET_CATALOG[upperSym]?.changePct ?? staticFactor?.changePct ?? (staticItem ? parseFloat(staticItem.change.replace(/[^0-9.-]/g, "")) : 1.5));
 
     const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
     const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? staticFactor?.scores?.piotroskiFScore ?? 8;

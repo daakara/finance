@@ -13,7 +13,9 @@ import {
   exportPortfolioToCsv,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
-import { fetchAssetAnalytics } from "../../lib/api";
+import { fetchAssetAnalytics, SpotPriceRegistry } from "../../lib/api";
+import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
+import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
@@ -59,8 +61,11 @@ export default function PortfolioPage() {
           price = analytics.currentPrice;
         }
       } catch (e) {
-        const staticMatch = SHARED_FACTOR_SCORES[symKey];
-        if (staticMatch?.price) price = staticMatch.price;
+        const reg = SpotPriceRegistry.get(symKey);
+        const snap = getPersistedMarketSnapshot(symKey);
+        if (reg?.price) price = reg.price;
+        else if (snap?.currentPrice) price = snap.currentPrice;
+        else if (MASTER_ASSET_CATALOG[symKey]?.price) price = MASTER_ASSET_CATALOG[symKey].price;
       }
 
       setResolvedQuotePrice(price);
