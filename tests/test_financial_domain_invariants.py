@@ -189,10 +189,46 @@ class TestFinancialDomainInvariants(unittest.TestCase):
         self.assertIn("Foreign ADR", smart_pillar["detail"])
         self.assertIn("BaFin", smart_pillar["detail"])
 
+    def test_smci_hardware_odm_persona_heuristics(self):
+        """Financial Domain Invariant: Hardware server integrators (SMCI) must not claim high pricing power or software margins."""
+        from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
+        taa = TraderArchetypeAnalyzer()
+        res = taa.analyze_asset(
+            symbol="SMCI",
+            info={"sector": "Technology", "industry": "Computer Hardware"},
+            price_df=None,
+            risk_metrics={},
+            macro_indicators={},
+            factor_scores={"qualityScore": 78, "valuationScore": 74, "growthScore": 88, "momentumScore": 84, "piotroskiFScore": 6},
+        )
+        buffett = next((a for a in res["archetypes"] if "Buffett" in a["name"]), None)
+        self.assertIsNotNone(buffett)
+        self.assertIn("Commodity", buffett["status"])
+        self.assertIn("thin gross margins", buffett["thesis"])
+        self.assertLessEqual(buffett["alignmentScore"], 62)
+
+        gardner = next((a for a in res["archetypes"] if "Gardner" in a["name"]), None)
+        self.assertIsNotNone(gardner)
+        self.assertNotIn("High gross margin", gardner["thesis"], "SMCI must not claim high gross margin")
+        self.assertIn("liquid cooling", gardner["thesis"])
+
+    def test_smci_supply_chain_market_graph(self):
+        """Financial Domain Invariant: SMCI market graph must return specific tier-1 suppliers and datacenter customers."""
+        from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
+        mge = MarketGraphEngine()
+        res = mge.get_relationship_graph("SMCI")
+        upstream_names = [u["name"] for u in res["topology"]["upstream"]]
+        downstream_names = [d["name"] for d in res["topology"]["downstream"]]
+
+        self.assertTrue(any("NVIDIA" in name for name in upstream_names), f"NVIDIA must be upstream of SMCI: {upstream_names}")
+        self.assertTrue(any("CoolIT" in name or "Liquid" in name for name in upstream_names))
+        self.assertTrue(any("xAI" in name or "CoreWeave" in name for name in downstream_names), f"xAI/CoreWeave must be downstream of SMCI: {downstream_names}")
+
 
 if __name__ == "__main__":
     import numpy as np
     unittest.main()
 else:
     import numpy as np
+
 

@@ -1,4 +1,4 @@
-﻿"""Elite Trader Strategy Models & Smart-Money Quantitative Analysis Engine."""
+"""Elite Trader Strategy Models & Smart-Money Quantitative Analysis Engine."""
 
 from typing import Dict, Any, List
 import pandas as pd
@@ -119,6 +119,19 @@ class TraderArchetypeAnalyzer:
         raw_piotroski = factor_scores.get("piotroskiFScore")
         piotroski = raw_piotroski if raw_piotroski is not None else 8
 
+        # Hardware Server Integrator & Low Gross-Margin ODM check (e.g. SMCI, DELL, HPE)
+        is_hardware_odm = sym in {"SMCI", "DELL", "HPE", "FLEX", "CLS", "JBL", "WST"}
+        if is_hardware_odm:
+            score = min(62, max(42, int(quality * 0.30 + valuation * 0.35 + (piotroski * 10) * 0.15)))
+            return {
+                "name": "Warren Buffett (Value & Moat)",
+                "archetype": "High Cash Flow & Wide Moats",
+                "alignmentScore": score,
+                "status": "Competitive Commodity Risk",
+                "thesis": "Capital-intensive server hardware integration with thin gross margins (~11-14%) and customer concentration risk.",
+                "catalyst": "Prefers wide-moat pricing power and tollbooth businesses over cyclical hardware assembly.",
+            }
+
         score = min(96, max(40, int(quality * 0.45 + valuation * 0.35 + (piotroski * 10) * 0.20)))
         if sym in ["AAPL", "BAC", "KO", "AXP", "OXY", "SPY", "QQQ"]:
             score = max(score, 90)
@@ -234,6 +247,17 @@ class TraderArchetypeAnalyzer:
         growth = factor_scores.get("growthScore", 75)
         momentum = factor_scores.get("momentumScore", 70)
         score = min(95, max(40, int(growth * 0.65 + momentum * 0.35)))
+
+        is_hardware_odm = sym_clean in {"SMCI", "DELL", "HPE", "VRT", "CIEN", "FLEX", "CLS", "JBL"}
+        if is_hardware_odm:
+            return {
+                "name": "David Gardner (Motley Fool Rule Breakers)",
+                "archetype": "First-Mover Disruptors & Hyper-Growth",
+                "alignmentScore": score,
+                "status": "AI Hardware Supercycle",
+                "thesis": "High-velocity AI datacenter rack deployment and direct liquid cooling integration expanding market share.",
+                "catalyst": "Hyperscaler liquid-cooled GPU cluster buildouts and modular compute architecture adoption.",
+            }
 
         return {
             "name": "David Gardner (Motley Fool Rule Breakers)",
