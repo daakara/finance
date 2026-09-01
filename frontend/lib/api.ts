@@ -311,6 +311,32 @@ export interface OptimalExecutionPlan {
   atr_14?: number;
 }
 
+export interface ConfluencePillar {
+  pillar: string;
+  label: string;
+  plainLabel: string;
+  score: number;
+  status: "positive" | "neutral" | "warning";
+  detail: string;
+  plainDetail: string;
+  icon: string;
+}
+
+export interface ConfluenceData {
+  symbol: string;
+  confluenceScore: number;
+  confluenceRating: string;
+  plainRating: string;
+  confluenceBadge: string;
+  plainBadge: string;
+  badgeColor: string;
+  bottomLine: string;
+  pillars: ConfluencePillar[];
+  positivesCount: number;
+  warningsCount: number;
+  warnings?: string[];
+}
+
 export interface AnalyticsResponse {
   _dataSource?: "live" | "fallback";
   symbol: string;
@@ -329,6 +355,7 @@ export interface AnalyticsResponse {
   marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
   optimalExecution?: OptimalExecutionPlan;
+  confluence?: ConfluenceData;
   smartMoney?: {
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];

@@ -17,6 +17,7 @@ from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -28,6 +29,7 @@ catalyst_engine = CatalystEngine()
 smart_money_engine = SmartMoneyEngine()
 eodhd_fetcher = EODHDMarketFetcher()
 optimal_execution_engine = OptimalExecutionEngine()
+confluence_engine = ConfluenceEngine()
 market_db = MarketDatabaseEngine()
 history_db = HistoryDatabaseEngine()
 
@@ -385,6 +387,38 @@ def get_asset_analytics(
         except Exception:
             pass
 
+        # Smart Money Feeds
+        congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
+        options_flow = smart_money_engine.get_options_flow(upper_sym) or []
+        has_congress_buy = any("BUY" in (t.get("transaction_type", "") or "").upper() for t in congress_trades)
+        has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
+
+        # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
+        confluence_output = confluence_engine.calculate_confluence(
+            symbol=upper_sym,
+            technical_data={
+                **technicals,
+                **optimal_execution_plan,
+                "current_price": current_price,
+            },
+            smart_money_data={
+                "has_insider_buy": False,
+                "insider_value_usd": 0.0,
+                "insider_name": "",
+                "has_congress_buy": has_congress_buy,
+                "has_options_flow": has_options_flow,
+            },
+            fundamental_data={
+                **factor_scores,
+                "piotroski_f": piotroski,
+            },
+            catalyst_data=catalyst_report,
+            macro_data={
+                "yield_curve_10y2y": macro_difficulty.get("yield_curve_10y2y", 0.25) if isinstance(macro_difficulty, dict) else 0.25,
+                "credit_spread": macro_difficulty.get("high_yield_credit_spread", 3.5) if isinstance(macro_difficulty, dict) else 3.5,
+            },
+        )
+
         return {
             "symbol": upper_sym,
             "period": clean_period,
@@ -403,9 +437,10 @@ def get_asset_analytics(
             "optimalExecution": optimal_execution_plan,
             "catalystForecast": catalyst_report,
             "smartMoney": {
-                "congressTrades": smart_money_engine.get_congressional_trades(upper_sym),
-                "optionsFlow": smart_money_engine.get_options_flow(upper_sym),
+                "congressTrades": congress_trades,
+                "optionsFlow": options_flow,
             },
+            "confluence": confluence_output,
             "analytics": risk_output,
         }
 

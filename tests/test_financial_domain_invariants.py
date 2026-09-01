@@ -88,6 +88,55 @@ class TestFinancialDomainInvariants(unittest.TestCase):
             self.assertGreaterEqual(f_score, 0, f"{ticker} Piotroski score cannot be negative")
             self.assertLessEqual(f_score, 9, f"{ticker} Piotroski score cannot exceed 9")
 
+    def test_confluence_engine_ssot_and_cross_asset_variance(self):
+        """Financial Domain Invariant: Confluence Engine must generate diverse, dynamic scores
+        (standard deviation > 5.0) and never output identical static rubber-stamp scores across diverse assets.
+        """
+        from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+        ce = ConfluenceEngine()
+
+        sample_cases = [
+            ("NVDA", {"rsi_14": 62.0, "setup_pattern": "Stage 2 Breakout", "risk_reward_ratio": 2.6}, {"qualityScore": 92.0, "growthScore": 95.0, "valuationScore": 65.0, "piotroski_f": 8}),
+            ("ARWR", {"rsi_14": 33.6, "setup_pattern": "Stage 4 Correction", "risk_reward_ratio": 1.9}, {"qualityScore": 55.0, "growthScore": 60.0, "valuationScore": 50.0, "piotroski_f": 4}),
+            ("KO", {"rsi_14": 48.0, "setup_pattern": "Consolidation", "risk_reward_ratio": 2.1}, {"qualityScore": 80.0, "growthScore": 65.0, "valuationScore": 75.0, "piotroski_f": 7}),
+            ("PLTR", {"rsi_14": 68.0, "setup_pattern": "Stage 2 VCP", "risk_reward_ratio": 2.8}, {"qualityScore": 88.0, "growthScore": 90.0, "valuationScore": 55.0, "piotroski_f": 8}),
+        ]
+
+        scores = []
+        for sym, tech, fund in sample_cases:
+            res = ce.calculate_confluence(
+                symbol=sym,
+                technical_data=tech,
+                fundamental_data=fund,
+            )
+            self.assertIn("confluenceScore", res)
+            self.assertIn("pillars", res)
+            self.assertEqual(len(res["pillars"]), 4, "Must contain all 4 quantitative pillars")
+            scores.append(res["confluenceScore"])
+
+        # Assert variance: scores must not all be the same number
+        self.assertGreater(len(set(scores)), 2, f"Confluence scores must vary across assets: {scores}")
+        score_std = float(np.std(scores))
+        self.assertGreater(score_std, 5.0, f"Confluence scores must exhibit real variance (std: {score_std:.2f})")
+
+    def test_biotech_catalyst_domain_isolation(self):
+        """Financial Domain Invariant: Clinical Biotech assets must NEVER output hardware/chip enterprise boilerplate."""
+        from analyst_dashboard.analyzers.catalysts import CatalystEngine
+        engine = CatalystEngine()
+
+        arwr_report = engine.get_asset_catalyst_report("ARWR", 82.39)
+        self.assertIn("Plozasiran", arwr_report["primary_drug_trial"], "ARWR must have Plozasiran clinical trial")
+        self.assertIn("RNAi", arwr_report["sector"], "ARWR sector must be RNAi Biotech")
+        self.assertNotIn("Enterprise Market", arwr_report["primary_drug_trial"], "Biotech must not have Enterprise Market boilerplate")
+
+        # Unknown biotech fallback check
+        generic_biotech = engine.get_asset_catalyst_report("UNKNOWN_BIO", 20.0, sector="Biotechnology", industry="Biotechnology")
+        self.assertIn("Clinical Pipeline", generic_biotech["primary_drug_trial"])
+        self.assertNotIn("Operating Margin Expansion (Production & Enterprise Market Scaling)", generic_biotech["primary_drug_trial"])
+
 
 if __name__ == "__main__":
+    import numpy as np
     unittest.main()
+else:
+    import numpy as np

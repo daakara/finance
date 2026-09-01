@@ -40,9 +40,44 @@ export default function CompositeConvictionCard({
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
-  // Compute 4-Factor Institutional Synthesis Score (0 to 100)
+  // Pure View Lens Projection: Consume Canonical Backend Confluence (Single Source of Truth)
   const synthesis = useMemo(() => {
-    let score = 50;
+    // 1. SSOT: Direct projection of canonical backend confluence engine
+    if (data?.confluence) {
+      const conf = data.confluence;
+      const score = Math.round(conf.confluenceScore);
+      const verdictTitle = isPlain ? conf.plainRating || conf.confluenceRating : conf.confluenceRating;
+      const confluenceBadge = isPlain ? conf.plainBadge || conf.confluenceBadge : conf.confluenceBadge;
+      const bottomLineText = conf.bottomLine;
+      const verdictColor =
+        conf.badgeColor === "emerald"
+          ? "text-emerald-400"
+          : conf.badgeColor === "rose"
+          ? "text-rose-400"
+          : conf.badgeColor === "amber"
+          ? "text-amber-400"
+          : "text-cyan-400";
+
+      const reasons = (conf.pillars || []).map((p) => ({
+        label: p.label,
+        plainLabel: p.plainLabel,
+        detail: p.detail,
+        plainDetail: p.plainDetail,
+        status: p.status,
+        icon: p.icon,
+      }));
+
+      return {
+        score,
+        verdictTitle,
+        verdictColor,
+        confluenceBadge,
+        bottomLineText,
+        reasons,
+      };
+    }
+
+    // 2. Fallback Projection if data.confluence is not yet loaded
     const reasons: {
       label: string;
       plainLabel: string;
@@ -52,121 +87,202 @@ export default function CompositeConvictionCard({
       icon: string;
     }[] = [];
 
-    // 1. Technical Price Momentum & Volatility
     const exec = data?.optimalExecution;
     const currentPrice = data?.currentPrice || exec?.current_price || 0;
     const stopLoss = exec?.stop_loss || 0;
     const pattern = exec?.setup_pattern || "";
+    const stage = exec?.stage_phase || "";
+    const rsi = data?.technicals?.rsi_14 ?? 50.0;
+    const rr = exec?.risk_reward_ratio ? parseFloat(String(exec.risk_reward_ratio)) : 2.0;
 
-    if (pattern.includes("Correction") || pattern.includes("Stage 4") || exec?.stage_phase?.includes("Stage 4")) {
-      score -= 10;
-      reasons.push({
-        label: "Technical Setup",
-        plainLabel: "Chart Structure",
-        detail: "Stage 4 Correction / Markdown Phase. Require constructive base consolidation above support before initiating entries.",
-        plainDetail: "Price is falling knife mode. Wait for it to build a floor before putting money in.",
-        status: "warning",
-        icon: "⚠️",
-      });
-    } else if (pattern.includes("Breakout") || pattern.includes("Stage 2") || pattern.includes("Pullback") || pattern.includes("VCP")) {
-      score += 15;
-      reasons.push({
-        label: "Technical Setup",
-        plainLabel: "Chart Structure",
-        detail: `${exec?.stage_phase || "Institutional Accumulation"} consolidating near key support levels.`,
-        plainDetail: "Coiled spring setup. Buyers are stepping in at key moving averages with tightening volume.",
-        status: "positive",
-        icon: "📈",
-      });
+    let techScore = 55;
+    let techStatus: "positive" | "neutral" | "warning" = "neutral";
+    let techDetail = "";
+    let techPlainDetail = "";
+
+    if (pattern.includes("Correction") || pattern.includes("Stage 4") || stage.includes("Stage 4")) {
+      techScore = 30;
+      techStatus = "warning";
+      techDetail = "Stage 4 Correction / Markdown Phase. Price trading below declining moving averages. Await constructive base.";
+      techPlainDetail = "Falling knife structure. Price is breaking down — wait for buyers to build a solid floor.";
+    } else if (pattern.includes("Breakout") || pattern.includes("Stage 2") || pattern.includes("VCP") || pattern.includes("Pullback")) {
+      techScore = rr >= 2.5 ? 88 : rr >= 2.0 ? 80 : 72;
+      if (rsi >= 42 && rsi <= 65) techScore += 5;
+      if (rsi > 75) techScore -= 10;
+      techStatus = "positive";
+      techDetail = `${stage || "Stage 2 Accumulation"} with ${rr.toFixed(1)}:1 R:R structure. RSI at ${rsi.toFixed(1)}.`;
+      techPlainDetail = `Coiled spring setup: Buyers defending key levels with healthy ${rsi.toFixed(1)} RSI momentum.`;
     } else {
-      score += 5;
-      reasons.push({
-        label: "Technical Setup",
-        plainLabel: "Chart Structure",
-        detail: "Neutral momentum consolidation range. Awaiting directional breakout.",
-        plainDetail: "Trading in a sideways tunnel. No clear breakout yet — let the market pick a direction.",
-        status: "neutral",
-        icon: "📊",
-      });
+      techScore = (rsi > 45 && rsi < 58) ? 58 : 50;
+      techStatus = "neutral";
+      techDetail = `Sideways range consolidation (RSI ${rsi.toFixed(1)}). Awaiting clear volume breakout catalyst.`;
+      techPlainDetail = `Trading inside a sideways channel. No clear direction yet — letting the market decide.`;
     }
 
-    // 2. Corporate Insiders (SEC Form 4)
+    reasons.push({
+      label: "Technical Structure",
+      plainLabel: "Chart Structure",
+      detail: techDetail,
+      plainDetail: techPlainDetail,
+      status: techStatus,
+      icon: techStatus === "positive" ? "📈" : techStatus === "warning" ? "⚠️" : "📊",
+    });
+
+    const factors = data?.factorScores;
+    const piotroski = factors?.piotroskiFScore ?? 7;
+    const qualityScore = factors?.qualityScore ?? (piotroski >= 8 ? 85 : piotroski >= 6 ? 72 : 50);
+    const growthScore = factors?.growthScore ?? 70;
+    const valScore = factors?.valuationScore ?? 65;
+
+    let fundScore = Math.round(0.45 * qualityScore + 0.30 * growthScore + 0.25 * valScore);
+    let fundStatus: "positive" | "neutral" | "warning" = "neutral";
+    let fundDetail = "";
+    let fundPlainDetail = "";
+
+    if (piotroski >= 8 || qualityScore >= 82) {
+      fundStatus = "positive";
+      fundDetail = `Pristine solvency: Piotroski F-Score ${piotroski}/9, Quality Factor ${qualityScore}/100. Fortress balance sheet.`;
+      fundPlainDetail = `Rock-solid financials: Top-tier ${piotroski}/9 balance sheet health with strong profitability.`;
+    } else if (piotroski <= 4 || qualityScore < 45) {
+      fundStatus = "warning";
+      fundDetail = `Elevated balance sheet leverage: Piotroski F-Score ${piotroski}/9. Vulnerable to credit tightening.`;
+      fundPlainDetail = `Weaker financial health (${piotroski}/9 score). Carries higher debt or thinning profit margins.`;
+    } else {
+      fundStatus = "neutral";
+      fundDetail = `Moderate solvency: Piotroski F-Score ${piotroski}/9, Quality Factor ${qualityScore}/100. Stable fundamentals.`;
+      fundPlainDetail = `Healthy average company financials (${piotroski}/9 score). Stable without immediate solvency risks.`;
+    }
+
+    reasons.push({
+      label: "Fundamental Solvency",
+      plainLabel: "Company Health",
+      detail: fundDetail,
+      plainDetail: fundPlainDetail,
+      status: fundStatus,
+      icon: "🏢",
+    });
+
+    const congressTrades = data?.smartMoney?.congressTrades || [];
+    const optionsFlow = data?.smartMoney?.optionsFlow || [];
+    const hasCongressBuy = congressTrades.some(c => (c.transaction_type || "").toLowerCase().includes("buy"));
+    const hasBullishOptions = optionsFlow.some(o => (o.type || "").toLowerCase().includes("call"));
+
+    let smartMoneyScore = 50;
+    let smartStatus: "positive" | "neutral" | "warning" = "neutral";
+    let smartDetail = "";
+    let smartPlainDetail = "";
+
     if (matchedInsider && matchedInsider.isSignificantBuy) {
-      score += 18;
-      reasons.push({
-        label: "Corporate Insiders",
-        plainLabel: "Insider Buying",
-        detail: `${matchedInsider.insiderName} (${matchedInsider.insiderRole}) purchased $${(matchedInsider.totalValueUsd / 1000000).toFixed(1)}M USD on open market.`,
-        plainDetail: `Company insiders put real skin in the game: $${(matchedInsider.totalValueUsd / 1000000).toFixed(1)}M bought with their own money.`,
-        status: "positive",
-        icon: "🏢",
-      });
+      smartMoneyScore = 90;
+      smartStatus = "positive";
+      smartDetail = `${matchedInsider.insiderName} (${matchedInsider.insiderRole}) purchased $${(matchedInsider.totalValueUsd / 1000000).toFixed(1)}M on open market.`;
+      smartPlainDetail = `C-Suite insider skin in the game: $${(matchedInsider.totalValueUsd / 1000000).toFixed(1)}M purchased directly with own capital.`;
+    } else if (hasCongressBuy) {
+      smartMoneyScore = 80;
+      smartStatus = "positive";
+      smartDetail = `Congressional STOCK Act disclosure: Capitol Hill committee member buy filing active.`;
+      smartPlainDetail = `Congress buy reported: Lawmaker disclosed an open-market purchase in this sector.`;
+    } else if (hasBullishOptions) {
+      smartMoneyScore = 70;
+      smartStatus = "positive";
+      smartDetail = `Unusual institutional options flow: High-volume call sweeps detected in smart money order books.`;
+      smartPlainDetail = `Big money call options detected: Institutional traders betting on upside momentum.`;
     } else {
-      reasons.push({
-        label: "Corporate Insiders",
-        plainLabel: "Insider Buying",
-        detail: "No high-conviction C-Suite open-market purchases filed on SEC EDGAR in last 30 days.",
-        plainDetail: "No recent big boss insider purchases filed with the SEC this month.",
-        status: "neutral",
-        icon: "🏢",
-      });
+      smartMoneyScore = 50;
+      smartStatus = "neutral";
+      smartDetail = "No high-conviction C-Suite open-market purchases filed on SEC EDGAR in the last 30 days.";
+      smartPlainDetail = "No recent big boss insider purchases filed with the SEC this month.";
     }
 
-    // 3. Macroeconomic Regime (FRED)
-    if (macro && macro.macroRiskMultiplier >= 1.0) {
-      score += 12;
-      reasons.push({
-        label: "Macro Regime",
-        plainLabel: "Market Tailwinds",
-        detail: `FRED 10Y-2Y Yield Curve is positive (+${macro.yieldCurve10Y2Y.toFixed(2)}%) and high-yield spreads are tight (${macro.highYieldCreditSpread.toFixed(2)}%). Supportive liquidity.`,
-        plainDetail: "Interest rate curves and credit markets look healthy. Green light for broader market liquidity.",
-        status: "positive",
-        icon: "🏛️",
-      });
+    reasons.push({
+      label: "Corporate Insiders & Flow",
+      plainLabel: "Smart Money Flow",
+      detail: smartDetail,
+      plainDetail: smartPlainDetail,
+      status: smartStatus,
+      icon: "🏛️",
+    });
+
+    let macroScore = 60;
+    let macroStatus: "positive" | "neutral" | "warning" = "neutral";
+    let macroDetail = "";
+    let macroPlainDetail = "";
+
+    const riskPct = (stopLoss > 0 && currentPrice > 0)
+      ? Math.abs(((currentPrice - stopLoss) / currentPrice) * 100)
+      : 5.0;
+
+    const isYieldPositive = (macro?.yieldCurve10Y2Y ?? 0.2) >= 0;
+    const isCreditTight = (macro?.highYieldCreditSpread ?? 3.5) < 4.2;
+
+    if (isYieldPositive && isCreditTight && riskPct <= 7.5) {
+      macroScore = 85;
+      macroStatus = "positive";
+      macroDetail = `FRED 10Y-2Y yield curve positive (+${macro?.yieldCurve10Y2Y?.toFixed(2) || "0.25"}%), credit spreads tight. Stop floor at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% risk budget).`;
+      macroPlainDetail = `Macro green light: Credit markets healthy. Clear exit floor set at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% risk).`;
+    } else if (!isYieldPositive || riskPct > 12.0) {
+      macroScore = 38;
+      macroStatus = "warning";
+      macroDetail = `Macro risk elevated or wide stop-loss requirement (${riskPct.toFixed(1)}% risk). Recommend defensive capital allocation.`;
+      macroPlainDetail = `Macro warning flags or large downside distance (${riskPct.toFixed(1)}% risk). Size down carefully.`;
     } else {
-      score -= 8;
-      reasons.push({
-        label: "Macro Regime",
-        plainLabel: "Market Tailwinds",
-        detail: "Yield curve inversion or elevated credit spreads warrant defensive position sizing.",
-        plainDetail: "Macro warning flags waving. Keep position sizes reasonable and don't over-leverage.",
-        status: "warning",
-        icon: "⚠️",
-      });
+      macroScore = 60;
+      macroStatus = "neutral";
+      macroDetail = `Neutral macro backdrop with defined stop protection floor at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% risk).`;
+      macroPlainDetail = `Stable economic background with safety exit floor set at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% risk).`;
     }
 
-    // 4. Downside Protection Floor
-    if (stopLoss > 0 && currentPrice > 0) {
-      const riskPct = Math.abs(((currentPrice - stopLoss) / currentPrice) * 100);
-      reasons.push({
-        label: "Risk Boundary",
-        plainLabel: "Safety Trapdoor",
-        detail: `Stop-loss protection anchored at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% max risk budget).`,
-        plainDetail: `Exit rule clearly defined at $${stopLoss.toFixed(2)} (${riskPct.toFixed(1)}% risk). If it breaks this floor, we fold immediately.`,
-        status: "positive",
-        icon: "🛡️",
-      });
+    reasons.push({
+      label: "Macro Regime & Safety Floor",
+      plainLabel: "Market Tailwinds & Stop",
+      detail: macroDetail,
+      plainDetail: macroPlainDetail,
+      status: macroStatus,
+      icon: macroStatus === "positive" ? "🛡️" : macroStatus === "warning" ? "⚠️" : "⚖️",
+    });
+
+    const finalScore = Math.min(96, Math.max(22, Math.round(
+      0.25 * techScore +
+      0.25 * fundScore +
+      0.25 * smartMoneyScore +
+      0.25 * macroScore
+    )));
+
+    const positiveCount = reasons.filter(r => r.status === "positive").length;
+    const warningCount = reasons.filter(r => r.status === "warning").length;
+
+    let confluenceBadge = isPlain ? `${positiveCount}/4 Positive Signals` : `${positiveCount}-Feed Confluence`;
+    if (positiveCount === 4) {
+      confluenceBadge = isPlain ? "4/4 High Conviction" : "4-Pillar Confluence (Pristine)";
+    } else if (positiveCount === 3) {
+      confluenceBadge = isPlain ? "3/4 Strong Alignment" : "3-Feed Confluence (Selective)";
+    } else if (warningCount >= 2) {
+      confluenceBadge = isPlain ? "⚠️ Mixed / Caution" : "Multi-Feed Divergence (Risk-Off)";
     }
 
-    const finalScore = Math.min(96, Math.max(25, score));
-    let verdictTitle = isPlain ? "💡 SOLID ACCUMULATION SETUP" : "MODERATE ACCUMULATION CONVICTION";
+    let verdictTitle = isPlain ? "💡 SOLID ACCUMULATION SETUP" : "CONSTRUCTIVE ACCUMULATION CONVICTION";
     let verdictColor = "text-cyan-400";
-    let bottomLineText = `Solid core business with orderly price action. Don't chase green candles; accumulate near support at $${(currentPrice * 0.98).toFixed(2)} with a disciplined stop loss.`;
+    let bottomLineText = `Disciplined trade structure with ${positiveCount}/4 supporting pillars. Favorable risk floor near $${stopLoss.toFixed(2)}. Don't chase green candles; execute inside buy zones.`;
 
     if (finalScore >= 80) {
       verdictTitle = isPlain ? "🟢 GREEN LIGHT: HIGH CONVICTION" : "HIGH-CONVICTION INSTITUTIONAL ALIGNMENT";
       verdictColor = "text-emerald-400";
-      bottomLineText = `Smart money, solid technicals, and macro tailwinds are aligned. Favorable risk-to-reward ratio for initiating or compounding positions.`;
-    } else if (finalScore < 50) {
-      verdictTitle = isPlain ? "🔴 RED LIGHT: WAIT FOR DUST TO SETTLE" : "DEFENSIVE / RISK-OFF SIZING REQUIRED";
+      bottomLineText = `Strong multi-factor alignment (${positiveCount}/4 pillars positive): Technicals, balance sheet quality, and smart money flow are synchronised.`;
+    } else if (finalScore <= 48 || warningCount >= 2) {
+      verdictTitle = isPlain ? "🔴 RED LIGHT: WAIT FOR DUST TO SETTLE" : "DEFENSIVE / CAPITAL PRESERVATION MODE";
       verdictColor = "text-rose-400";
-      bottomLineText = `Too much technical turbulence or lack of insider backing. Sit on your hands or size down significantly until a clear base forms.`;
+      bottomLineText = `Technical turbulence or weak balance sheet metrics detected (${warningCount} warning flags). Preserve cash and wait for a proper accumulation base to form.`;
+    } else if (finalScore < 65) {
+      verdictTitle = isPlain ? "🟡 SELECTIVE ENTRY: WAIT FOR TRIGGER" : "SELECTIVE / RANGE-BOUND MOMENTUM";
+      verdictColor = "text-amber-400";
+      bottomLineText = `Mixed signal environment (${positiveCount} positive, ${warningCount} warning). Take half-position sizing and honor stops tightly.`;
     }
 
     return {
       score: finalScore,
       verdictTitle,
       verdictColor,
+      confluenceBadge,
       bottomLineText,
       reasons,
     };
@@ -195,7 +311,7 @@ export default function CompositeConvictionCard({
               {isPlain ? "Setup Score" : "Synthesis Score"}
             </span>
             <span className="text-xs text-slate-300 font-medium">
-              {isPlain ? "4-Signal Check" : "4-Feed Confluence"}
+              {synthesis.confluenceBadge}
             </span>
           </div>
           <div className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${synthesis.verdictColor}`}>
