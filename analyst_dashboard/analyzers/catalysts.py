@@ -310,6 +310,26 @@ ASSET_CATALYST_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             {"year": 2029, "revenue_billions": 94.0, "net_margin_pct": 35.0, "projected_eps": 32.80, "implied_pe": 38.0, "implied_target": 1246.40},
             {"year": 2031, "revenue_billions": 125.0, "net_margin_pct": 36.5, "projected_eps": 44.50, "implied_pe": 32.0, "implied_target": 1424.00}
         ]
+    },
+    "IREN": {
+        "company_name": "IREN (Iris Energy Limited)",
+        "sector": "Technology / AI Data Centers & Bitcoin Infrastructure",
+        "primary_drug_trial": "AI Cloud GPU Cluster Deployments (NVIDIA H100/H200/Blackwell), Megawatt (MW) Power Scaling & Bitcoin Fleet Hash Rate Efficiency",
+        "trial_phase": "HPC Power Interconnection & AI Cloud Capacity Scaling",
+        "trial_readout_timeline": "Monthly Operating & Hash Rate Updates + Quarterly AI Cloud ARR Readouts",
+        "efficacy_summary": "Next-generation hyperscale data center infrastructure powered by 100% renewable energy, delivering high-density GPU hosting and low-cost Bitcoin mining fleet operations.",
+        "competitive_edge": "Secured multi-gigawatt power pipeline (e.g. 1.4GW Childress, TX site), low all-in electricity power costs, proprietary liquid cooling, and Tier 1 GPU colocation architecture.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Childress 500MW Substation Energization & AI Cloud GPU Cluster Scaling", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Fleet Hash Rate Expansion to 30+ EH/s & NVIDIA Blackwell Infrastructure Deployment", "impact": "High Positive"},
+            {"date": "2027", "event": "Enterprise Hyperscaler Multi-Year AI Compute Hosting Contracts", "impact": "Transformational"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 0.48, "net_margin_pct": 35.0, "projected_eps": 1.80, "implied_pe": 25.0, "implied_target": 45.00},
+            {"year": 2027, "revenue_billions": 0.95, "net_margin_pct": 38.0, "projected_eps": 3.50, "implied_pe": 22.0, "implied_target": 77.00},
+            {"year": 2029, "revenue_billions": 1.65, "net_margin_pct": 40.0, "projected_eps": 6.20, "implied_pe": 20.0, "implied_target": 124.00},
+            {"year": 2031, "revenue_billions": 2.50, "net_margin_pct": 42.0, "projected_eps": 9.80, "implied_pe": 18.0, "implied_target": 176.40}
+        ]
     }
 }
 
@@ -578,8 +598,32 @@ class CatalystEngine:
                 ]
             }
 
-        # 10. Materials, Mining, Chemicals & Commodities
-        if any(w in sec_lower or w in ind_lower for w in ["material", "mining", "gold", "copper", "steel", "chemical", "metal", "lithium", "aluminum", "paper"]):
+        # 10. AI Hyperscale Cloud Data Centers, High-Performance Compute (HPC) & Bitcoin Mining Infrastructure
+        if upper in {"IREN", "MARA", "RIOT", "CLSK", "CORZ", "WULF", "CIFR", "MSTR", "COIN", "HUT", "BTBT", "BITF"} or any(w in sec_lower or w in ind_lower for w in ["bitcoin", "crypto", "digital asset", "blockchain", "hash rate", "exahash", "hpc", "gpu cloud", "iris energy"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Technology / AI Cloud & Digital Infrastructure",
+                "primary_drug_trial": "AI Cloud GPU Cluster Deployment (NVIDIA H100/Blackwell), Megawatt (MW) Data Center Power Capacity & Bitcoin Hash Rate (EH/s) Fleet Efficiency",
+                "trial_phase": "Hyperscale AI Cloud Fleet Buildout & Interconnection Capacity Scaling",
+                "trial_readout_timeline": "Monthly Operating & Hash Rate Updates + Quarterly AI Cloud ARR Readouts",
+                "efficacy_summary": f"Next-generation hyperscale compute infrastructure powered by low-cost renewable energy, delivering high-density GPU hosting and resilient fleet mining margins for {clean_name}.",
+                "competitive_edge": "Secured multi-gigawatt power interconnection pipeline, proprietary liquid-cooling architecture, Tier-1 GPU colocation contracts, and low-quartile electricity cost structure.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Hyperscale Substation Energization & AI Cloud GPU Cluster Scaling", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Fleet Hash Rate Expansion Milestone (EH/s) & Enterprise Cloud ARR Acceleration", "impact": "High Positive"},
+                    {"date": "2027", "event": "Multi-Year Enterprise Hyperscaler AI Compute Hosting Contracts", "impact": "Transformational"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.32, 1), "net_margin_pct": 32.0, "projected_eps": round(current_price * 0.052, 2), "implied_pe": 24.0, "implied_target": round(current_price * 1.15, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.48, 1), "net_margin_pct": 36.0, "projected_eps": round(current_price * 0.088, 2), "implied_pe": 22.0, "implied_target": round(current_price * 1.48, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.72, 1), "net_margin_pct": 38.5, "projected_eps": round(current_price * 0.140, 2), "implied_pe": 20.0, "implied_target": round(current_price * 2.10, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 1.05, 1), "net_margin_pct": 40.0, "projected_eps": round(current_price * 0.220, 2), "implied_pe": 18.0, "implied_target": round(current_price * 2.95, 2)}
+                ]
+            }
+
+        # 11. Materials, Physical Mining, Chemicals & Commodities
+        if any(w in sec_lower or w in ind_lower for w in ["material", "gold", "copper", "steel", "chemical", "metal", "lithium", "aluminum", "paper", "mineral", "ore", "smelting", "timber"]) or (("mining" in sec_lower or "mining" in ind_lower) and not any(c in ind_lower for c in ["bitcoin", "crypto", "digital"])):
             return {
                 "symbol": upper,
                 "company_name": clean_name,

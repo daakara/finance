@@ -159,7 +159,18 @@ class TestFinancialDomainInvariants(unittest.TestCase):
         self.assertIn("F-35", lmt_report["primary_drug_trial"])
         self.assertIn("Defense", lmt_report["sector"])
 
-        # 5. Unknown Logistics Company Fallback
+        # 5. IREN (AI Data Centers & Bitcoin Infrastructure)
+        iren_report = engine.get_asset_catalyst_report("IREN", 36.85)
+        self.assertIn("AI Cloud GPU Cluster", iren_report["primary_drug_trial"])
+        self.assertIn("Bitcoin", iren_report["primary_drug_trial"])
+        self.assertNotIn("Net Interest Margin", iren_report["primary_drug_trial"], "IREN must not get commercial banking catalyst")
+
+        # 6. Unknown Bitcoin Miner / AI HPC Fallback (GICS Capital Markets overlap)
+        generic_miner = engine.get_asset_catalyst_report("MINER1", 15.0, sector="Financials", industry="Capital Markets - Bitcoin Mining")
+        self.assertIn("AI Cloud GPU Cluster", generic_miner["primary_drug_trial"])
+        self.assertNotIn("Net Interest Margin", generic_miner["primary_drug_trial"])
+
+        # 7. Unknown Logistics Company Fallback
         unknown_cargo = engine.get_asset_catalyst_report("CARGO1", 50.0, sector="Industrials", industry="Freight & Logistics Services")
         self.assertIn("Freight Rate Yields", unknown_cargo["primary_drug_trial"])
 

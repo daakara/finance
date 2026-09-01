@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
+import { MASTER_ASSET_CATALOG, MasterAssetEntry, CATALOG_BASELINE_PRICES } from "../lib/masterCatalog";
 import { addPortfolioPosition } from "../lib/portfolio";
 import { SpotPriceRegistry, fetchBatchQuotes } from "../lib/api";
 import { getPersistedMarketSnapshot, getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
@@ -129,11 +129,12 @@ export default function WeeklyConfluenceSpotlight({
       // Resolve authentic live exchange spot price
       const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
       const snap = getPersistedMarketSnapshot(asset.symbol);
+      const fallbackPrice = CATALOG_BASELINE_PRICES[asset.symbol] || 50.0;
       const effectivePrice = (live?.price && live.price > 0)
         ? live.price
         : (snap?.currentPrice && snap.currentPrice > 0)
         ? snap.currentPrice
-        : 100.0;
+        : fallbackPrice;
 
       const effectiveChange = (live?.changePct !== undefined)
         ? live.changePct
