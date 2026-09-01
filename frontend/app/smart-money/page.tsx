@@ -6,6 +6,7 @@ import Navbar from "../../components/Navbar";
 import SmartMoneyDetailModal from "../../components/SmartMoneyDetailModal";
 import DataSourceBadge from "../../components/DataSourceBadge";
 import SmartMoneyDivergenceRadar from "../../components/SmartMoneyDivergenceRadar";
+import SmartMoneySsrShell from "../../components/SmartMoneySsrShell";
 import {
   fetchSmartMoneyOverview,
   SmartMoneyOverview,
@@ -709,7 +710,7 @@ function SmartMoneyContent() {
 
 export default function SmartMoneyPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#070a10] text-slate-100 flex items-center justify-center font-mono">Loading Smart Money Hub...</div>}>
+    <Suspense fallback={<SmartMoneySsrShell />}>
       <SmartMoneyContent />
     </Suspense>
   );

@@ -11,6 +11,7 @@ import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { SHARED_FACTOR_SCORES, SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 import { getCanonicalAssetName, getCanonicalAssetMoat, getCanonicalAssetRisk } from "../../lib/assetRegistry";
 import { trackComparisonRun } from "../../lib/matomo";
+import CompareSsrShell from "../../components/CompareSsrShell";
 
 export interface CompetitorAsset {
   symbol: string;
@@ -755,7 +756,7 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#070a11] text-white p-6 font-mono">Loading Comparison Engine...</div>}>
+    <Suspense fallback={<CompareSsrShell />}>
       <CompareContent />
     </Suspense>
   );

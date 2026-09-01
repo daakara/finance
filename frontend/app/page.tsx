@@ -22,6 +22,7 @@ import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
+import TerminalSsrShell from "../components/TerminalSsrShell";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
@@ -471,7 +472,7 @@ function TerminalContent() {
 
 export default function TerminalPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#070a10] text-slate-100 flex items-center justify-center font-mono">Loading Terminal...</div>}>
+    <Suspense fallback={<TerminalSsrShell />}>
       <TerminalContent />
     </Suspense>
   );
