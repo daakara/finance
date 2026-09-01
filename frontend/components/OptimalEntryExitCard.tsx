@@ -96,7 +96,7 @@ export default function OptimalEntryExitCard({
     } else {
       zoneTacticalHint = {
         label: "✅ Mid-Zone Value Area",
-        advice: `Spot is comfortably centered within the accumulation corridor with favorable 2.5:1+ R:R structure.`,
+        advice: `Spot is comfortably centered within the accumulation corridor with favorable ${risk_reward_ratio}:1 R:R structure.`,
         color: "text-cyan-300 border-cyan-900/60 bg-cyan-950/40",
       };
     }

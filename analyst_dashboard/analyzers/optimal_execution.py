@@ -145,17 +145,18 @@ class OptimalExecutionEngine:
         take_profit_1 = round(max(take_profit_1, entry_max + max(0.01, 0.5 * atr_14)), 2)
         take_profit_2 = round(max(take_profit_2, take_profit_1 + max(0.01, 0.5 * atr_14)), 2)
 
-        # Calculate risk and reward relative to optimal entry range for asymmetric execution
-        risk_per_share = max(0.5 * atr_14, current_price - stop_loss)
-        reward_per_share = max(0.01, take_profit_1 - current_price)
-        raw_rr = reward_per_share / max(0.01, risk_per_share)
+        # Calculate multi-stage blended reward (50% at TP1 + 50% at TP2) for institutional execution
+        risk_per_share = max(0.01, current_price - stop_loss)
+        tp1_reward = max(0.01, take_profit_1 - current_price)
+        tp2_reward = max(0.01, take_profit_2 - current_price)
+        blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
         
-        # In Buy Zone / Consolidation setups, R:R is high (>2.0:1) but bounded to realistic swing ceilings
-        rr_ratio = round(min(3.85, max(1.35, raw_rr)), 2)
-        if user_role == "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.01):
-            rr_ratio = min(3.85, max(2.1, rr_ratio))
-        elif user_role == "LONG_TERM" and (entry_min <= current_price <= entry_max * 1.015):
-            rr_ratio = min(3.85, max(2.25, rr_ratio))
+        blended_rr = round(blended_reward / risk_per_share, 2)
+        max_rr = round(tp2_reward / risk_per_share, 2)
+        tp1_rr = round(tp1_reward / risk_per_share, 2)
+        
+        # Enforce realistic bounds
+        rr_ratio = round(min(5.0, max(1.10, blended_rr)), 2)
 
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":

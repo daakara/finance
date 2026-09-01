@@ -134,9 +134,54 @@ class TestFinancialDomainInvariants(unittest.TestCase):
         self.assertIn("Clinical Pipeline", generic_biotech["primary_drug_trial"])
         self.assertNotIn("Operating Margin Expansion (Production & Enterprise Market Scaling)", generic_biotech["primary_drug_trial"])
 
+    def test_multi_industry_catalyst_taxonomy(self):
+        """Financial Domain Invariant: Multi-industry assets must receive authentic domain catalysts."""
+        from analyst_dashboard.analyzers.catalysts import CatalystEngine
+        engine = CatalystEngine()
+
+        # 1. DHLGY (Logistics & Freight)
+        dhl_report = engine.get_asset_catalyst_report("DHLGY", 31.96)
+        self.assertIn("Freight Rate Yields", dhl_report["primary_drug_trial"])
+        self.assertIn("Logistics", dhl_report["sector"])
+
+        # 2. XOM (Energy)
+        xom_report = engine.get_asset_catalyst_report("XOM", 118.50)
+        self.assertIn("Permian", xom_report["primary_drug_trial"])
+        self.assertIn("Energy", xom_report["sector"])
+
+        # 3. JPM (Banking)
+        jpm_report = engine.get_asset_catalyst_report("JPM", 215.00)
+        self.assertIn("Net Interest Income", jpm_report["primary_drug_trial"])
+        self.assertIn("Financial", jpm_report["sector"])
+
+        # 4. LMT (Aerospace & Defense)
+        lmt_report = engine.get_asset_catalyst_report("LMT", 450.00)
+        self.assertIn("F-35", lmt_report["primary_drug_trial"])
+        self.assertIn("Defense", lmt_report["sector"])
+
+        # 5. Unknown Logistics Company Fallback
+        unknown_cargo = engine.get_asset_catalyst_report("CARGO1", 50.0, sector="Industrials", industry="Freight & Logistics Services")
+        self.assertIn("Freight Rate Yields", unknown_cargo["primary_drug_trial"])
+
+    def test_foreign_adr_smart_money_governance(self):
+        """Financial Domain Invariant: Foreign ADRs must recognize international regulatory filings (e.g. BaFin/FCA)."""
+        from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+        ce = ConfluenceEngine()
+
+        res_dhl = ce.calculate_confluence(
+            symbol="DHLGY",
+            technical_data={"rsi_14": 51.5, "setup_pattern": "Minervini VCP", "risk_reward_ratio": 2.25},
+            fundamental_data={"qualityScore": 75.0, "piotroski_f": 6},
+        )
+        smart_pillar = next((p for p in res_dhl["pillars"] if p["pillar"] == "SMART_MONEY_FLOW"), None)
+        self.assertIsNotNone(smart_pillar)
+        self.assertIn("Foreign ADR", smart_pillar["detail"])
+        self.assertIn("BaFin", smart_pillar["detail"])
+
 
 if __name__ == "__main__":
     import numpy as np
     unittest.main()
 else:
     import numpy as np
+

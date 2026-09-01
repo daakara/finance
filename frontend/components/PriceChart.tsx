@@ -369,6 +369,16 @@ export default function PriceChart({
                 {/* Left: Symbol & Live Tabular Price */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <h1 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h1>
+          {(() => {
+            const clean = symbol.toUpperCase().replace("-USD", "");
+            const isAdr = (clean.length === 5 && (clean.endsWith("Y") || clean.endsWith("F"))) || ["DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY", "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY"].includes(clean);
+            if (!isAdr) return null;
+            return (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/80 font-mono" title="American Depositary Receipt (Foreign Private Issuer)">
+                ADR (Foreign Issuer)
+              </span>
+            );
+          })()}
           {currentPrice && (
             <span aria-label={`Current price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
               ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

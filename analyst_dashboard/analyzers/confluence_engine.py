@@ -85,8 +85,21 @@ class ConfluenceEngine:
         # ── 3. SMART MONEY & REGULATORY FILINGS (Weight: 25%) ────────────────
         smart_score = 50.0
         smart_status = "neutral"
-        smart_detail = "No high-conviction C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
-        smart_plain = "No recent major C-suite insider purchases filed with the SEC this month."
+        
+        # Check if Foreign Private Issuer / ADR (American Depositary Receipt)
+        known_foreign_adrs = {
+            "DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY",
+            "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY", "NPSNY", "ADDYY",
+            "BAYRY", "DDAIF", "VWAGY", "BMWYY", "RHHBY", "SAN", "BBVA", "ING", "BNPQY", "CRH"
+        }
+        is_foreign_adr = (len(clean_sym) == 5 and clean_sym.endswith(("Y", "F"))) or clean_sym in known_foreign_adrs
+
+        if is_foreign_adr:
+            smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
+            smart_plain = "Foreign Company (ADR): Executive trades are reported to European/overseas regulators rather than the US SEC."
+        else:
+            smart_detail = "No high-conviction C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
+            smart_plain = "No recent major C-suite insider purchases filed with the SEC this month."
 
         if smart_money_data:
             has_insider_buy = smart_money_data.get("has_insider_buy", False)
@@ -113,8 +126,12 @@ class ConfluenceEngine:
             else:
                 smart_score = 50.0
                 smart_status = "neutral"
-                smart_detail = "No major C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
-                smart_plain = "No recent big boss insider purchases filed with the SEC this month."
+                if is_foreign_adr:
+                    smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
+                    smart_plain = "Foreign Company (ADR): Executive trades are reported to European/overseas regulators rather than the US SEC."
+                else:
+                    smart_detail = "No major C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
+                    smart_plain = "No recent big boss insider purchases filed with the SEC this month."
 
         # ── 4. MACRO REGIME & DOWNSIDE SAFETY FLOOR (Weight: 25%) ────────────
         macro_score = 60.0

@@ -170,6 +170,106 @@ ASSET_CATALYST_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             {"year": 2031, "revenue_billions": 3.30, "net_margin_pct": 39.0, "projected_eps": 16.50, "implied_pe": 13.0, "implied_target": 214.50}
         ]
     },
+    "DHLGY": {
+        "company_name": "Deutsche Post DHL Group ADR",
+        "sector": "Industrials / Global Freight & Logistics Network",
+        "primary_drug_trial": "Global Freight Rate Yields, E-Commerce Parcel Pricing & Supply Chain Margin Optimization",
+        "trial_phase": "Global Express Leadership & B2B Freight Recovery",
+        "trial_readout_timeline": "Quarterly Ocean/Air Freight Volume & German Parcel Readouts",
+        "efficacy_summary": "World's preeminent logistics and express cargo network operating across 220+ countries, with leading market share in international time-definite delivery.",
+        "competitive_edge": "Unmatched global air/ocean freight fleet, automated sorting hubs, and disciplined dynamic fuel/rate surcharge mechanisms.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Quarterly Global Air & Ocean Freight Volume & Yield Realization", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Peak Holiday E-Commerce Parcel Surcharge & Cross-Border Delivery Report", "impact": "High Positive"},
+            {"date": "2027", "event": "Post-Restructuring B2B Supply Chain Operating Margin Expansion", "impact": "Transformational"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 84.5, "net_margin_pct": 5.8, "projected_eps": 3.85, "implied_pe": 12.0, "implied_target": 35.50},
+            {"year": 2027, "revenue_billions": 92.0, "net_margin_pct": 6.5, "projected_eps": 4.60, "implied_pe": 11.5, "implied_target": 40.25},
+            {"year": 2029, "revenue_billions": 100.0, "net_margin_pct": 7.0, "projected_eps": 5.40, "implied_pe": 11.0, "implied_target": 45.60},
+            {"year": 2031, "revenue_billions": 109.0, "net_margin_pct": 7.4, "projected_eps": 6.25, "implied_pe": 10.5, "implied_target": 51.20}
+        ]
+    },
+    "XOM": {
+        "company_name": "Exxon Mobil Corporation",
+        "sector": "Energy / Integrated Oil & Gas",
+        "primary_drug_trial": "Permian Basin Pioneer Integration, Guyana Offshore FPSO Scale & Refining Margins",
+        "trial_phase": "Upstream Production Acceleration & Capital Discipline",
+        "trial_readout_timeline": "Quarterly Upstream Barrel Production & Free Cash Flow Realization",
+        "efficacy_summary": "World-class low-breakeven upstream deepwater Guyana and Permian assets with integrated refining and chemical cash flow stability.",
+        "competitive_edge": "<$35/bbl breakeven inventory, Pioneer natural resources operational synergies, and pristine balance sheet liquidity.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Quarterly Guyana Yellowtail / Uaru FPSO Production Milestone", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Pioneer Permian Acreage Synergy Realization ($2B+ Annual Run Rate)", "impact": "High Positive"},
+            {"date": "2027", "event": "Annual Dividend Aristocrat Payout Escalation & Buyback Tranche", "impact": "Strategic"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 355.0, "net_margin_pct": 11.0, "projected_eps": 8.90, "implied_pe": 13.5, "implied_target": 120.15},
+            {"year": 2027, "revenue_billions": 385.0, "net_margin_pct": 12.0, "projected_eps": 10.80, "implied_pe": 13.0, "implied_target": 140.40},
+            {"year": 2029, "revenue_billions": 415.0, "net_margin_pct": 12.8, "projected_eps": 12.90, "implied_pe": 12.5, "implied_target": 161.25},
+            {"year": 2031, "revenue_billions": 445.0, "net_margin_pct": 13.2, "projected_eps": 15.10, "implied_pe": 12.0, "implied_target": 181.20}
+        ]
+    },
+    "JPM": {
+        "company_name": "JPMorgan Chase & Co.",
+        "sector": "Financial Services / Commercial & Investment Banking",
+        "primary_drug_trial": "Net Interest Income (NII) Resilience, Wealth Inflows & Global Corporate Banking",
+        "trial_phase": "Fortress Balance Sheet Scale & Market Share Expansion",
+        "trial_readout_timeline": "Quarterly Net Interest Margin & Credit Loss Readouts",
+        "efficacy_summary": "Preeminent global banking franchise with fortress Tier-1 capital adequacy, diversified investment banking pipeline, and dominant market share.",
+        "competitive_edge": "Vast low-cost deposit base, market-leading corporate financing franchise, and annual technology investment scale ($17B+).",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Quarterly Net Interest Income & Investment Banking Fee Recovery Report", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "Asset & Wealth Management Net New Inflow Report", "impact": "Positive"},
+            {"date": "2027", "event": "Federal Reserve CCAR Comprehensive Capital Analysis & Buyback Authorization", "impact": "Strategic"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 168.0, "net_margin_pct": 31.0, "projected_eps": 18.20, "implied_pe": 12.5, "implied_target": 227.50},
+            {"year": 2027, "revenue_billions": 182.0, "net_margin_pct": 32.5, "projected_eps": 21.50, "implied_pe": 12.0, "implied_target": 258.00},
+            {"year": 2029, "revenue_billions": 198.0, "net_margin_pct": 33.5, "projected_eps": 24.80, "implied_pe": 11.5, "implied_target": 285.20},
+            {"year": 2031, "revenue_billions": 215.0, "net_margin_pct": 34.0, "projected_eps": 28.50, "implied_pe": 11.0, "implied_target": 313.50}
+        ]
+    },
+    "LMT": {
+        "company_name": "Lockheed Martin Corporation",
+        "sector": "Aerospace & Defense / Tactical Systems",
+        "primary_drug_trial": "F-35 Lightning II Production Ramp, PAC-3 Missile Defense & Hypersonics",
+        "trial_phase": "Multi-Year DoD Procurement & NATO Partner Backlog Conversion",
+        "trial_readout_timeline": "Quarterly Program Delivery & Defense Backlog Reporting",
+        "efficacy_summary": "Premier aerospace and defense prime contractor holding multi-billion-dollar backlog for 5th-generation stealth fighters and precision munitions.",
+        "competitive_edge": "Sole-source provider on critical US and allied strategic defense programs with multi-decade sustainment contracts.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "US Defense Appropriations Bill (NDAA) Multi-Year Procurement Appropriations", "impact": "High Strategic"},
+            {"date": "Q4 2026", "event": "F-35 Tech Refresh-3 (TR-3) Full Capability Deployment Milestone", "impact": "High Positive"},
+            {"date": "2027", "event": "PAC-3 Missile Interceptor Annual Production Capacity Scale to 650 Units", "impact": "Positive"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 71.5, "net_margin_pct": 9.5, "projected_eps": 28.50, "implied_pe": 18.0, "implied_target": 513.00},
+            {"year": 2027, "revenue_billions": 77.0, "net_margin_pct": 10.2, "projected_eps": 33.00, "implied_pe": 17.5, "implied_target": 577.50},
+            {"year": 2029, "revenue_billions": 83.5, "net_margin_pct": 10.8, "projected_eps": 38.20, "implied_pe": 17.0, "implied_target": 649.40},
+            {"year": 2031, "revenue_billions": 90.0, "net_margin_pct": 11.2, "projected_eps": 43.80, "implied_pe": 16.5, "implied_target": 722.70}
+        ]
+    },
+    "COST": {
+        "company_name": "Costco Wholesale Corporation",
+        "sector": "Consumer Defensive / Hypermarkets & Wholesale Clubs",
+        "primary_drug_trial": "Membership Renewal Rate Dominance, E-Commerce Integration & Global Warehouse Expansion",
+        "trial_phase": "Global Unit Expansion & Membership Retention",
+        "trial_readout_timeline": "Monthly Comparable Sales (Comps) & Membership Fee Income",
+        "efficacy_summary": "World-leading wholesale subscription model with >92% North American membership renewal and unmatched bulk purchasing leverage.",
+        "competitive_edge": "Negative working capital cycle, high inventory velocity, Kirkland Signature private-label margin moat, and customer trust.",
+        "upcoming_milestones": [
+            {"date": "Q3 2026", "event": "Monthly Comparable Sales (Comps) & Global Membership Fee Income Readout", "impact": "High Positive"},
+            {"date": "Q4 2026", "event": "International Warehouse Expansion (Asia / Europe 30-Unit Buildout)", "impact": "Positive"},
+            {"date": "2027", "event": "Special Dividend Capital Return Tranche", "impact": "Strategic"}
+        ],
+        "multi_year_forecast": [
+            {"year": 2025, "revenue_billions": 255.0, "net_margin_pct": 2.8, "projected_eps": 16.80, "implied_pe": 48.0, "implied_target": 806.40},
+            {"year": 2027, "revenue_billions": 282.0, "net_margin_pct": 3.0, "projected_eps": 20.20, "implied_pe": 44.0, "implied_target": 888.80},
+            {"year": 2029, "revenue_billions": 312.0, "net_margin_pct": 3.2, "projected_eps": 24.50, "implied_pe": 40.0, "implied_target": 980.00},
+            {"year": 2031, "revenue_billions": 345.0, "net_margin_pct": 3.3, "projected_eps": 29.20, "implied_pe": 36.0, "implied_target": 1051.20}
+        ]
+    },
     "CIEN": {
         "company_name": "Ciena Corporation",
         "sector": "Optical Networking & AI Interconnect Infrastructure",
@@ -262,8 +362,80 @@ class CatalystEngine:
                 ]
             }
 
-        # 2. Semiconductors, Hardware & AI Infrastructure
-        if any(w in sec_lower or w in ind_lower for w in ["semiconductor", "chip", "hardware", "networking", "optical", "server", "telecom"]):
+        # 1. Logistics, Freight, Courier, Delivery, Shipping & Transportation
+        if any(w in sec_lower or w in ind_lower for w in ["logistics", "freight", "transport", "shipping", "parcel", "courier", "delivery", "railroad", "airline", "cargo", "marine"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Industrials / Freight & Logistics Network",
+                "primary_drug_trial": "Global Freight Rate Yields, Fleet Utilization & B2B Supply Chain Margin Optimization",
+                "trial_phase": "Global Network Route Density & Dynamic Surcharge Execution",
+                "trial_readout_timeline": "Quarterly Ocean/Air Freight Volume & Ton-Mile Readouts",
+                "efficacy_summary": f"World-class multimodal cargo distribution, high automated sorting throughput, and disciplined fuel/capacity surcharges for {clean_name}.",
+                "competitive_edge": "Established intermodal hubs, multi-continental fleet network, and high barriers to entry in global freight routing.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Freight Volume & Net Ton-Mile Yield Report", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Peak E-Commerce Volume Surcharge & Cross-Border Delivery Update", "impact": "High Positive"},
+                    {"date": "2027", "event": "Automated Fleet Modernization & Route Optimization Efficiency Gains", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.45, 1), "net_margin_pct": 7.5, "projected_eps": round(current_price * 0.055, 2), "implied_pe": 14.0, "implied_target": round(current_price * 1.08, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.52, 1), "net_margin_pct": 8.2, "projected_eps": round(current_price * 0.068, 2), "implied_pe": 13.5, "implied_target": round(current_price * 1.20, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.60, 1), "net_margin_pct": 8.8, "projected_eps": round(current_price * 0.082, 2), "implied_pe": 13.0, "implied_target": round(current_price * 1.35, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.68, 1), "net_margin_pct": 9.2, "projected_eps": round(current_price * 0.098, 2), "implied_pe": 12.5, "implied_target": round(current_price * 1.50, 2)}
+                ]
+            }
+
+        # 2. Aerospace, Defense Prime Contractors & Heavy Machinery
+        if any(w in sec_lower or w in ind_lower for w in ["defense", "aerospace", "machinery", "industrial equipment", "conglomerate", "military", "aviation", "weapon"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Aerospace & Defense / Industrial Systems",
+                "primary_drug_trial": "DoD Strategic Program Procurement, Defense Backlog Conversion & Delivery Milestones",
+                "trial_phase": "Multi-Year Government Contract Procurement & Backlog Ramp",
+                "trial_readout_timeline": "Quarterly Defense Appropriations & Program Delivery Readouts",
+                "efficacy_summary": f"Critical prime contractor capabilities, multi-year sovereign defense order backlogs, and high-margin sustainment contracts for {clean_name}.",
+                "competitive_edge": "Sole-source government defense credentials, classified R&D clearance, and long-term fleet maintenance programs.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Defense Appropriations Bill (NDAA) Multi-Year Procurement Review", "impact": "High Strategic"},
+                    {"date": "Q4 2026", "event": "Strategic Program Milestone & Delivery Acceleration Report", "impact": "High Positive"},
+                    {"date": "2027", "event": "Allied Sovereign Defense Partner Order Backlog Conversion", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.40, 1), "net_margin_pct": 10.5, "projected_eps": round(current_price * 0.052, 2), "implied_pe": 18.0, "implied_target": round(current_price * 1.10, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.46, 1), "net_margin_pct": 11.2, "projected_eps": round(current_price * 0.065, 2), "implied_pe": 17.5, "implied_target": round(current_price * 1.25, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.53, 1), "net_margin_pct": 11.8, "projected_eps": round(current_price * 0.080, 2), "implied_pe": 17.0, "implied_target": round(current_price * 1.42, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.61, 1), "net_margin_pct": 12.2, "projected_eps": round(current_price * 0.098, 2), "implied_pe": 16.5, "implied_target": round(current_price * 1.62, 2)}
+                ]
+            }
+
+        # 3. Healthcare, Medical Devices, Diagnostics & Health Providers
+        if any(w in sec_lower or w in ind_lower for w in ["medical device", "diagnostics", "hospital", "managed care", "health services", "surgical", "healthcare"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Healthcare & Medical Technologies",
+                "primary_drug_trial": "FDA 510(k) Clearances, Procedure Volume Acceleration & Commercial Payer Coverage",
+                "trial_phase": "Hospital System Rollout & Clinical Procedure Scale",
+                "trial_readout_timeline": "Quarterly Surgical Procedure Volume & Commercial Adoption Readouts",
+                "efficacy_summary": f"Proprietary medical technology, high procedure utilization rates, and expanding private/Medicare reimbursement coverage for {clean_name}.",
+                "competitive_edge": "Surgeon training switching costs, proprietary patented instruments, and broad hospital purchasing agreements.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Procedure Volume & Recurring Consumables Growth", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Next-Gen Medical Device FDA / CE Mark Regulatory Submission", "impact": "High Strategic"},
+                    {"date": "2027", "event": "International Hospital Adoption & Reimbursement Rate Expansion", "impact": "Positive"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.30, 1), "net_margin_pct": 20.0, "projected_eps": round(current_price * 0.045, 2), "implied_pe": 26.0, "implied_target": round(current_price * 1.12, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.38, 1), "net_margin_pct": 22.5, "projected_eps": round(current_price * 0.062, 2), "implied_pe": 24.0, "implied_target": round(current_price * 1.35, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.48, 1), "net_margin_pct": 24.5, "projected_eps": round(current_price * 0.082, 2), "implied_pe": 22.0, "implied_target": round(current_price * 1.65, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.60, 1), "net_margin_pct": 26.0, "projected_eps": round(current_price * 0.110, 2), "implied_pe": 20.0, "implied_target": round(current_price * 2.05, 2)}
+                ]
+            }
+
+        # 4. Semiconductors, Hardware & Advanced Optics
+        if any(w in sec_lower or w in ind_lower for w in ["semiconductor", "chip", "hardware", "networking", "optical", "server", "equipment", "wafer"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
@@ -286,7 +458,7 @@ class CatalystEngine:
                 ]
             }
 
-        # 3. Enterprise Software, Cloud & Cybersecurity
+        # 5. Enterprise Software, Cloud & Cybersecurity
         if any(w in sec_lower or w in ind_lower for w in ["software", "cloud", "security", "saas", "cyber", "internet", "database", "ai"]):
             return {
                 "symbol": upper,
@@ -310,12 +482,13 @@ class CatalystEngine:
                 ]
             }
 
-        if any(w in sec_lower or w in ind_lower for w in ["beverage", "drink", "food", "tobacco", "staple", "consumer defensive"]):
+        # 6. Consumer Staples, Food, Beverage & Supermarkets
+        if any(w in sec_lower or w in ind_lower for w in ["beverage", "drink", "food", "tobacco", "staple", "consumer defensive", "supermarket", "grocery"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
                 "sector": sector or "Consumer Defensive / Staples",
-                "primary_drug_trial": "Global Volume Growth, Direct-Store-Delivery & Margin Expansion",
+                "primary_drug_trial": "Global Volume Growth, Direct-Store-Delivery & Pricing Power Expansion",
                 "trial_phase": "Commercial Market Distribution Scaling",
                 "trial_readout_timeline": "Quarterly Unit Volume & Pricing Power Readouts",
                 "efficacy_summary": f"High operational stability, resilient brand pricing power, and consistent cash dividend conversion for {clean_name}.",
@@ -333,12 +506,13 @@ class CatalystEngine:
                 ]
             }
 
-        if any(w in sec_lower or w in ind_lower for w in ["restaurant", "coffee", "retail", "consumer cyclical", "apparel"]):
+        # 7. Consumer Discretionary, Luxury, Retail, Restaurants & Auto/EV
+        if any(w in sec_lower or w in ind_lower for w in ["restaurant", "coffee", "retail", "consumer cyclical", "apparel", "auto", "vehicle", "luxury", "hotel", "travel", "leisure"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
-                "sector": sector or "Consumer Discretionary / Retail & Restaurants",
-                "primary_drug_trial": "Same-Store Sales (Comps), Store-Level Throughput & Loyalty Expansion",
+                "sector": sector or "Consumer Discretionary / Retail & Services",
+                "primary_drug_trial": "Same-Store Sales (Comps), Store-Level Throughput & Direct-to-Consumer (DTC) Mix",
                 "trial_phase": "Unit Economics & Digital Membership Acceleration",
                 "trial_readout_timeline": "Quarterly Global Comparable Sales Readouts",
                 "efficacy_summary": f"High recurring customer transaction frequency, digital rewards growth, and operational store efficiency for {clean_name}.",
@@ -356,6 +530,7 @@ class CatalystEngine:
                 ]
             }
 
+        # 8. Real Estate, Industrial Logistics & Data Center REITs
         if any(w in sec_lower or w in ind_lower for w in ["reit", "real estate", "property", "lease", "mortgage", "housing"]):
             return {
                 "symbol": upper,
@@ -379,7 +554,8 @@ class CatalystEngine:
                 ]
             }
 
-        if any(w in sec_lower or w in ind_lower for w in ["energy", "oil", "gas", "petroleum", "solar", "wind", "utility", "power", "pipeline"]):
+        # 9. Energy, Oil & Gas, Refining & Clean Utilities
+        if any(w in sec_lower or w in ind_lower for w in ["energy", "oil", "gas", "petroleum", "solar", "wind", "utility", "power", "pipeline", "refining", "e&p"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
@@ -402,7 +578,8 @@ class CatalystEngine:
                 ]
             }
 
-        if any(w in sec_lower or w in ind_lower for w in ["material", "mining", "gold", "copper", "steel", "chemical", "metal", "lithium"]):
+        # 10. Materials, Mining, Chemicals & Commodities
+        if any(w in sec_lower or w in ind_lower for w in ["material", "mining", "gold", "copper", "steel", "chemical", "metal", "lithium", "aluminum", "paper"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
@@ -425,7 +602,8 @@ class CatalystEngine:
                 ]
             }
 
-        if any(w in sec_lower or w in ind_lower for w in ["financial", "bank", "credit", "insurance", "broker", "asset management", "capital markets"]):
+        # 11. Financials, Commercial Banking, Payments & Asset Management
+        if any(w in sec_lower or w in ind_lower for w in ["financial", "bank", "credit", "insurance", "broker", "asset management", "capital markets", "payment", "wealth", "fintech"]):
             return {
                 "symbol": upper,
                 "company_name": clean_name,
@@ -448,20 +626,44 @@ class CatalystEngine:
                 ]
             }
 
-        # Generic quantitative catalyst generation for tech and multi-asset stocks
+        # 12. Telecommunications, Media, Entertainment & Gaming
+        if any(w in sec_lower or w in ind_lower for w in ["telecom", "media", "entertainment", "cable", "streaming", "broadcasting", "gaming"]):
+            return {
+                "symbol": upper,
+                "company_name": clean_name,
+                "sector": sector or "Communication Services / Media & Telecom",
+                "primary_drug_trial": "Direct-to-Consumer (DTC) Streaming ARPU, Postpaid Subscriber Net Adds & Content Monetization",
+                "trial_phase": "Subscriber Monetization & Content Production Discipline",
+                "trial_readout_timeline": "Quarterly Postpaid Subscriber Adds & Streaming ARPU Reporting",
+                "efficacy_summary": f"Strong proprietary content library, resilient subscriber retention, and expanding direct-to-consumer advertising monetization for {clean_name}.",
+                "competitive_edge": "Iconic media franchises, nationwide 5G/fiber network infrastructure, and high recurring subscriber billing.",
+                "upcoming_milestones": [
+                    {"date": "Q3 2026", "event": "Quarterly Direct-to-Consumer (DTC) Streaming Operating Profit Milestone", "impact": "High Positive"},
+                    {"date": "Q4 2026", "event": "Postpaid Wireless & Broadband Subscriber Net Add Acceleration", "impact": "Positive"},
+                    {"date": "2027", "event": "Global Content Franchise Distribution & Ad-Tier Expansion", "impact": "Strategic"}
+                ],
+                "multi_year_forecast": [
+                    {"year": 2025, "revenue_billions": round(current_price * 0.40, 1), "net_margin_pct": 15.0, "projected_eps": round(current_price * 0.048, 2), "implied_pe": 16.0, "implied_target": round(current_price * 1.08, 2)},
+                    {"year": 2027, "revenue_billions": round(current_price * 0.46, 1), "net_margin_pct": 16.5, "projected_eps": round(current_price * 0.060, 2), "implied_pe": 15.5, "implied_target": round(current_price * 1.20, 2)},
+                    {"year": 2029, "revenue_billions": round(current_price * 0.54, 1), "net_margin_pct": 17.5, "projected_eps": round(current_price * 0.075, 2), "implied_pe": 15.0, "implied_target": round(current_price * 1.36, 2)},
+                    {"year": 2031, "revenue_billions": round(current_price * 0.62, 1), "net_margin_pct": 18.0, "projected_eps": round(current_price * 0.092, 2), "implied_pe": 14.5, "implied_target": round(current_price * 1.55, 2)}
+                ]
+            }
+
+        # Generic quantitative catalyst generation for multi-asset stocks
         return {
             "symbol": upper,
             "company_name": clean_name,
-            "sector": sector or "Multi-Asset Technology / Growth",
-            "primary_drug_trial": "Next-Gen Commercial Product Cycle & Operating Margin Expansion",
-            "trial_phase": "Production & Enterprise Market Scaling",
+            "sector": sector or "Multi-Asset Equities",
+            "primary_drug_trial": "Commercial Operating Margin Expansion & Free Cash Flow Compounding",
+            "trial_phase": "Operational Execution & Market Scale",
             "trial_readout_timeline": "Quarterly Earnings & Capital Allocation Guidance",
             "efficacy_summary": f"Strong operational execution, revenue compounding, and free cash flow generation for {clean_name}.",
-            "competitive_edge": "Ecosystem network effects, intellectual property moats, and high customer switching costs.",
+            "competitive_edge": "Ecosystem network effects, operational efficiency, and high customer switching costs.",
             "upcoming_milestones": [
                 {"date": "Q3 2026", "event": "Quarterly Earnings & Forward Operating Margin Guidance", "impact": "Medium-to-High"},
-                {"date": "Q4 2026", "event": "Next-Gen Product Line Enterprise Rollout", "impact": "High Positive"},
-                {"date": "2027", "event": "International Market Expansion & TAM Extension", "impact": "Positive"}
+                {"date": "Q4 2026", "event": "Core Business Line Expansion & Volume Growth", "impact": "High Positive"},
+                {"date": "2027", "event": "International Market Expansion & Capital Return Program", "impact": "Positive"}
             ],
             "multi_year_forecast": [
                 {"year": 2025, "revenue_billions": round(current_price * 0.4, 1), "net_margin_pct": 25.0, "projected_eps": round(current_price * 0.04, 2), "implied_pe": 28.0, "implied_target": round(current_price * 1.12, 2)},
