@@ -102,8 +102,10 @@ jobs:
 
     - name: Enforce Data Integrity Policy
       run: |
-        if grep -r "_generate_sample" --include="*.py" data/ analyst_dashboard/ --exclude-dir=tests; then
-          echo "ERROR: Rogue sample data generator found in production code!"
+        FOUND=$(grep -rn "_generate_sample" --include="*.py" analyst_dashboard/ api/ engines/ analysis/ utils/ --exclude-dir=tests 2>/dev/null || true)
+        if [ -n "$FOUND" ]; then
+          echo "ERROR: Rogue sample data generator found in production code:"
+          echo "$FOUND"
           exit 1
         else
           echo "✅ Data integrity verified: Zero synthetic generation in production paths"
