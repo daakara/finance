@@ -222,6 +222,7 @@ function TerminalContent() {
             changePct={data?.priceChangePct24h || 0}
             setupScore={60}
             candles={data?.candles}
+            dataSource={data?._dataSource}
           />
 
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}

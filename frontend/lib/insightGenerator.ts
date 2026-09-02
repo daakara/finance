@@ -20,23 +20,25 @@ export function generateQuantitativeInsight(
   horizon: TimeHorizon = "SWING",
   ownership: OwnershipState = "NOT_OWNED",
   ownershipSource: OwnershipSource = "USER_DECLARED",
-  candles?: CandleData[]
+  candles?: CandleData[],
+  dataSource?: "live" | "fallback"
 ): QuantitativeInsight {
   const safePrice = currentPrice > 0 ? currentPrice : 100;
+  const isFallbackFeed = dataSource === "fallback";
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
-  // SMA50 requires at least 50 valid closed daily sessions. No subset averaging mislabeled as 50D SMA.
+  // SMA50 requires at least 50 valid closed daily sessions. Synthetic fallback candles are NEVER treated as market evidence.
   let calculatedSma50: number | null = null;
   let calculatedEma20: number | null = null;
 
-  if (candles && candles.length >= 50) {
+  if (candles && candles.length >= 50 && !isFallbackFeed) {
     const smaSlice = candles.slice(-50);
     const smaSum = smaSlice.reduce((sum, c) => sum + c.close, 0);
     calculatedSma50 = Number((smaSum / 50).toFixed(2));
   }
 
   // EMA20 requires at least 20 valid trading sessions for burn-in
-  if (candles && candles.length >= 20) {
+  if (candles && candles.length >= 20 && !isFallbackFeed) {
     const k = 2 / (20 + 1);
     let currentEma = candles[0].close;
     for (let i = 1; i < candles.length; i++) {
@@ -372,13 +374,13 @@ export function generateQuantitativeInsight(
       rsi: isStage4 ? 36.3 : 62.4,
       ema20,
       sma50,
-      atr: catAsset?.atr14 ?? Number((safePrice * 0.019).toFixed(2)),
-      rvol: catAsset?.rvol ?? (isStage4 ? 0.87 : 1.64),
-      beta: catAsset?.beta ?? 1.18,
-      marketCap: catAsset?.marketCap ?? "$5.45B",
-      peRatio: catAsset?.fwdPe ?? 22.1,
+      atr: catAsset?.atr14,
+      rvol: catAsset?.rvol,
+      beta: catAsset?.beta,
+      marketCap: catAsset?.marketCap || "N/A",
+      peRatio: catAsset?.fwdPe,
       roic: catAsset?.roic,
-      debtToEquity: Number(debtEquityDisplay),
+      debtToEquity: catAsset !== undefined ? Number(debtEquityDisplay) : undefined,
       vcpStage: isStage4 ? undefined : 3,
       relativeStrengthScore: isStage4 ? 62 : 94,
       var95Pct: 3.2,

@@ -59,17 +59,23 @@ export default function AdvancedTerminalView({
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">ATR (14D)</span>
-          <span className="text-sm font-black text-amber-300">${adv.atr.toFixed(2)}</span>
+          <span className="text-sm font-black text-amber-300">
+            {adv.atr !== undefined ? `$${adv.atr.toFixed(2)}` : "N/A"}
+          </span>
         </div>
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">RVOL</span>
-          <span className="text-sm font-black text-emerald-300">{adv.rvol.toFixed(2)}×</span>
+          <span className="text-sm font-black text-emerald-300">
+            {adv.rvol !== undefined ? `${adv.rvol.toFixed(2)}×` : "N/A"}
+          </span>
         </div>
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">BETA (SPY)</span>
-          <span className="text-sm font-black text-slate-200">{adv.beta.toFixed(2)}</span>
+          <span className="text-sm font-black text-slate-200">
+            {adv.beta !== undefined ? adv.beta.toFixed(2) : "N/A"}
+          </span>
         </div>
       </div>
 
@@ -132,12 +138,14 @@ export default function AdvancedTerminalView({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
               <span className="text-[10px] text-slate-500 block">MARKET CAP</span>
-              <span className="text-xs font-bold text-white mt-0.5 block">{adv.marketCap}</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">{adv.marketCap || "N/A"}</span>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
               <span className="text-[10px] text-slate-500 block">PE RATIO (TTM)</span>
-              <span className="text-xs font-bold text-white mt-0.5 block">{adv.peRatio.toFixed(1)}×</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">
+                {adv.peRatio !== undefined ? `${adv.peRatio.toFixed(1)}×` : "N/A"}
+              </span>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
@@ -149,7 +157,9 @@ export default function AdvancedTerminalView({
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
               <span className="text-[10px] text-slate-500 block">DEBT / EQUITY</span>
-              <span className="text-xs font-bold text-white mt-0.5 block">{adv.debtToEquity.toFixed(2)}</span>
+              <span className="text-xs font-bold text-white mt-0.5 block">
+                {adv.debtToEquity !== undefined ? adv.debtToEquity.toFixed(2) : "N/A"}
+              </span>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">

@@ -145,10 +145,15 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
     atr_14 = tr.rolling(window=14, min_periods=1).mean()
     latest_atr_14 = float(atr_14.iloc[-1]) if not atr_14.empty and not pd.isna(atr_14.iloc[-1]) else None
 
+    # 5. 50-period Simple Moving Average (SMA) - requires >= 50 closed bars
+    sma_50 = close.rolling(window=50).mean()
+    latest_sma_50 = float(sma_50.iloc[-1]) if len(close) >= 50 and not sma_50.empty and not pd.isna(sma_50.iloc[-1]) else None
+
     return {
         "vwap": round(latest_vwap, 2) if latest_vwap else None,
         "rsi_14": round(latest_rsi, 1) if latest_rsi else 50.0,
         "ema_20": round(latest_ema_20, 2) if latest_ema_20 else None,
+        "sma_50": round(latest_sma_50, 2) if latest_sma_50 else None,
         "atr_14": round(latest_atr_14, 2) if latest_atr_14 else None,
     }
 

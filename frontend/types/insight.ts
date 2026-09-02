@@ -188,13 +188,13 @@ export interface QuantitativeInsight {
     rsi: number;
     ema20?: number;
     sma50?: number;
-    atr: number;
-    rvol: number;
-    beta: number;
+    atr?: number;
+    rvol?: number;
+    beta?: number;
     marketCap: string;
-    peRatio: number;
+    peRatio?: number;
     roic?: number;
-    debtToEquity: number;
+    debtToEquity?: number;
     nextEarningsDate?: string;
     vcpStage?: number;
     relativeStrengthScore?: number;

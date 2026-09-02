@@ -22,6 +22,7 @@ interface AdaptiveTerminalProps {
   setupScore?: number;
   isStage4?: boolean;
   candles?: CandleData[];
+  dataSource?: "live" | "fallback";
 }
 
 export default function AdaptiveTerminal({
@@ -32,6 +33,7 @@ export default function AdaptiveTerminal({
   setupScore = 60,
   isStage4,
   candles,
+  dataSource,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -80,7 +82,8 @@ export default function AdaptiveTerminal({
     timeHorizon,
     ownership,
     "USER_DECLARED",
-    candles
+    candles,
+    dataSource
   );
 
   return (
