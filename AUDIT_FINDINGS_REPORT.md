@@ -201,6 +201,8 @@ During our iterative CI monitoring, two specific pre-production regressions were
 - [`1287e95`](https://github.com/daakara/finance/commit/1287e95): Targeted tracked python packages in CI data integrity gate
 - [`2bd7690`](https://github.com/daakara/finance/commit/2bd7690): Eliminate card header text overflow with compact score pill and min-w-0 layout
 - [`a966944`](https://github.com/daakara/finance/commit/a966944): Enable micro-wallet equity bounds down to $1 with auto-adaptive fractional precision
+- [`dcb8e5d`](https://github.com/daakara/finance/commit/dcb8e5d): Render total account net worth with active stock holdings and cash reserves breakdown
+- [`fa265af`](https://github.com/daakara/finance/commit/fa265af): ARX Adaptive Terminal Architecture (Guided · Standard · Advanced), Intent-First Home Hero, and Goal-Driven Screener
 
 ---
 
