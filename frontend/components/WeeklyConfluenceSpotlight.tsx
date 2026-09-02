@@ -397,24 +397,24 @@ export default function WeeklyConfluenceSpotlight({
                     : "border-[#243044] hover:border-cyan-500/60 hover:shadow-[0_0_12px_rgba(6,182,212,0.08)]"
                 }`}
               >
-                {/* Card Header: Rank Badge, Ticker & Price */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-black text-xs ${
+                {/* Card Header: Rank Badge, Ticker & Price + Compact Score Pill */}
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-black text-xs shrink-0 ${
                       isRank1 ? "bg-cyan-500 text-slate-950 font-bold" : "bg-slate-800 text-slate-300"
                     }`}>
                       #{idx + 1}
                     </span>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <strong className="text-base font-black text-white font-mono group-hover:text-cyan-400 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <strong className="text-base font-black text-white font-mono group-hover:text-cyan-400 transition-colors shrink-0">
                           {cand.entry.symbol}
                         </strong>
-                        <span className="text-[11px] text-slate-400 truncate max-w-[100px] sm:max-w-[120px]">
+                        <span className="text-[11px] text-slate-400 truncate max-w-[80px] sm:max-w-[105px]" title={cand.entry.name}>
                           {cand.entry.name}
                         </span>
                       </div>
-                      <div className="text-xs font-mono font-bold text-slate-300 tabular-nums">
+                      <div className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate">
                         ${cand.livePrice.toFixed(2)}{" "}
                         <span className={cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
                           ({cand.liveChangePct >= 0 ? "+" : ""}{cand.liveChangePct}%)
@@ -423,47 +423,48 @@ export default function WeeklyConfluenceSpotlight({
                     </div>
                   </div>
 
+                  {/* Sparkline & Compact Score Pill */}
                   <div className="flex items-center gap-2 shrink-0">
                     <MiniSparkline
                       basePrice={cand.livePrice}
                       changePct={cand.liveChangePct}
-                      width={48}
-                      height={20}
+                      width={40}
+                      height={18}
                       className="hidden sm:inline-block"
                     />
-                    <div className="text-right">
-                      <span className="text-[9px] font-mono text-slate-400 block uppercase font-bold">
-                        {isPlain ? "Confluence Score" : "Conviction Index"}
+                    <div className="px-2 py-0.5 rounded-md bg-[#090d14] border border-cyan-800/50 text-right">
+                      <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold tracking-wider leading-none">
+                        SCORE
                       </span>
-                      <span className="text-sm font-extrabold font-mono text-cyan-300 tabular-nums">
-                        {cand.convictionScore}/100
+                      <span className="text-xs font-black font-mono text-cyan-300 tabular-nums leading-none">
+                        {cand.convictionScore}<span className="text-[9px] text-cyan-500/70 font-normal">/100</span>
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Setup Badge */}
-                <div className="flex items-center justify-between text-[10px] font-mono font-extrabold">
-                  <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300">
+                <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-extrabold min-w-0">
+                  <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300 truncate max-w-[165px]" title={isPlain ? cand.setupBadgePlain : cand.setupBadge}>
                     {isPlain ? cand.setupBadgePlain : cand.setupBadge}
                   </span>
-                  <span className="text-emerald-400">
+                  <span className="text-emerald-400 shrink-0 tabular-nums">
                     {cand.rewardRiskRatio} : 1.0 R:R
                   </span>
                 </div>
 
                 {/* Mathematical Execution Price Ladder */}
                 <div className="bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b] space-y-1.5 font-mono text-xs">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-400 font-bold">{isPlain ? "Goal 1 (Sell Half):" : "Take Profit 1 (TP1):"}</span>
-                    <strong className="text-white tabular-nums">
-                      ${cand.target1Price.toFixed(2)} <span className="text-emerald-500 text-[10px]">(+{cand.target1Pct}%)</span>
+                  <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
+                    <span className="text-emerald-400 font-bold truncate">{isPlain ? "Goal 1 (Sell Half):" : "Take Profit 1 (TP1):"}</span>
+                    <strong className="text-white tabular-nums shrink-0">
+                      ${cand.target1Price.toFixed(2)} <span className="text-emerald-500 text-[10px] font-normal">(+{cand.target1Pct}%)</span>
                     </strong>
                   </div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-rose-400 font-bold">{isPlain ? "Safety Exit Stop:" : "Hard Stop Floor:"}</span>
-                    <strong className="text-rose-400 tabular-nums">
-                      ${cand.stopPrice.toFixed(2)} <span className="text-rose-500 text-[10px]">(-{cand.stopLossPct}%)</span>
+                  <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
+                    <span className="text-rose-400 font-bold truncate">{isPlain ? "Safety Exit Stop:" : "Hard Stop Floor:"}</span>
+                    <strong className="text-rose-400 tabular-nums shrink-0">
+                      ${cand.stopPrice.toFixed(2)} <span className="text-rose-500 text-[10px] font-normal">(-{cand.stopLossPct}%)</span>
                     </strong>
                   </div>
                 </div>
