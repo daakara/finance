@@ -540,3 +540,61 @@ export function resolveAssetAlias(query: string): AssetAliasInfo | undefined {
   return undefined;
 }
 
+export interface EtfSectorWeight {
+  sector: string;
+  weightPct: number;
+}
+
+export const CANONICAL_ETF_SECTOR_WEIGHTS: Record<string, EtfSectorWeight[]> = {
+  SPY: [
+    { sector: "Information Technology", weightPct: 31.4 },
+    { sector: "Financials", weightPct: 13.2 },
+    { sector: "Healthcare", weightPct: 11.8 },
+    { sector: "Consumer Discretionary", weightPct: 10.1 },
+    { sector: "Communication Services", weightPct: 9.2 },
+  ],
+  QQQ: [
+    { sector: "Information Technology", weightPct: 50.8 },
+    { sector: "Communication Services", weightPct: 15.6 },
+    { sector: "Consumer Discretionary", weightPct: 13.4 },
+    { sector: "Healthcare", weightPct: 6.2 },
+    { sector: "Consumer Staples", weightPct: 4.1 },
+  ],
+  SMH: [
+    { sector: "Semiconductors & AI Accelerators", weightPct: 78.5 },
+    { sector: "Semiconductor Capital Equipment", weightPct: 16.8 },
+    { sector: "Electronic Components & Foundry", weightPct: 4.7 },
+  ],
+  IWM: [
+    { sector: "Industrials", weightPct: 18.2 },
+    { sector: "Financials", weightPct: 16.9 },
+    { sector: "Healthcare", weightPct: 14.5 },
+    { sector: "Information Technology", weightPct: 13.8 },
+    { sector: "Consumer Discretionary", weightPct: 10.4 },
+  ],
+  XLK: [
+    { sector: "Software & Cloud Services", weightPct: 41.2 },
+    { sector: "Semiconductors & Hardware", weightPct: 38.6 },
+    { sector: "IT Services & Infrastructure", weightPct: 20.2 },
+  ],
+  XLE: [
+    { sector: "Integrated Oil & Gas", weightPct: 42.1 },
+    { sector: "Oil & Gas Exploration & Production", weightPct: 29.8 },
+    { sector: "Oil & Gas Storage & Transportation", weightPct: 14.2 },
+    { sector: "Oil & Gas Refining & Marketing", weightPct: 13.9 },
+  ],
+  GLD: [
+    { sector: "Allocated Gold Bullion (London Vaults)", weightPct: 100.0 },
+  ],
+  TLT: [
+    { sector: "U.S. Treasury 20-30 Year Bonds", weightPct: 100.0 },
+  ],
+};
+
+export function getCanonicalEtfSectorWeights(symbol: string): EtfSectorWeight[] | null {
+  if (!symbol) return null;
+  const sym = symbol.toUpperCase().replace("-USD", "");
+  return CANONICAL_ETF_SECTOR_WEIGHTS[sym] || null;
+}
+
+

@@ -24,6 +24,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const [riskPct, setRiskPct] = useState<number>(1.0);
   const [tradeDirection, setTradeDirection] = useState<"LONG" | "SHORT">("LONG");
   const [accountType, setAccountType] = useState<"CASH" | "MARGIN">("CASH");
+  const [allowFractional, setAllowFractional] = useState<boolean>(false);
   const [addedFeedback, setAddedFeedback] = useState<boolean>(false);
 
   const handleAccountSizeChange = (val: number) => {
@@ -47,15 +48,22 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 
   // Unconstrained statistical units based on volatility stop
-  const rawVolatilityUnits = stopDistanceDollar > 0 ? Math.max(1, Math.floor(dollarRisk / stopDistanceDollar)) : 1;
+  const rawVolatilityUnits = stopDistanceDollar > 0
+    ? allowFractional
+      ? Number((dollarRisk / stopDistanceDollar).toFixed(3))
+      : Math.max(1, Math.floor(dollarRisk / stopDistanceDollar))
+    : 1;
+
   // Maximum units constrained by 100% cash buying power
-  const maxCashUnits = Math.max(1, Math.floor(accountSize / currentPrice));
+  const maxCashUnits = allowFractional
+    ? Number((accountSize / currentPrice).toFixed(3))
+    : Math.max(1, Math.floor(accountSize / currentPrice));
 
   // In CASH mode, clamp position units to available cash equity
   const positionUnits = accountType === "CASH" ? Math.min(maxCashUnits, rawVolatilityUnits) : rawVolatilityUnits;
   const isCappedByCash = accountType === "CASH" && rawVolatilityUnits > maxCashUnits;
 
-  const totalPositionValue = positionUnits * currentPrice;
+  const totalPositionValue = Number((positionUnits * currentPrice).toFixed(2));
   const leverageRatio = accountSize > 0 ? (totalPositionValue / accountSize).toFixed(1) : "1.0";
 
   // Price targets based on Risk-to-Reward multiples
@@ -148,6 +156,22 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
               }`}
             >
               ⚡ Margin (PDT)
+            </button>
+          </div>
+
+          {/* Fractional Units Toggle */}
+          <div className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
+            <button
+              type="button"
+              onClick={() => setAllowFractional(!allowFractional)}
+              className={`px-2 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] flex items-center gap-1 ${
+                allowFractional
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
+                  : "text-slate-500 hover:text-slate-300"
+              }`}
+              title="Toggle fractional share units for high-priced stocks"
+            >
+              <span>{allowFractional ? "🔢 Fractional Units" : "📦 Whole Shares"}</span>
             </button>
           </div>
 

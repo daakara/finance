@@ -38,6 +38,7 @@ export default function PositionSizerModal({
     return 25000;
   });
   const [riskPct, setRiskPct] = useState<number>(isStage4 ? 0.25 : 1.0);
+  const [allowFractional, setAllowFractional] = useState<boolean>(false);
   const [savedToast, setSavedToast] = useState<boolean>(false);
 
   if (!isOpen) return null;
@@ -48,7 +49,9 @@ export default function PositionSizerModal({
 
   const riskPerShare = Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = accountSize * (riskPct / 100);
-  const rawShares = Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
+  const rawShares = allowFractional
+    ? Number((maxDollarRisk / riskPerShare).toFixed(3))
+    : Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
   const shares = rawShares;
   const totalAllocation = Number((shares * safeEntry).toFixed(2));
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
@@ -181,22 +184,36 @@ export default function PositionSizerModal({
             </div>
           </div>
 
-          {/* Quick Risk Buttons */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] text-slate-500 font-bold mr-1">Risk Presets:</span>
-            {[0.5, 1.0, 1.5, 2.0].map((preset) => (
-              <button
-                key={preset}
-                onClick={() => setRiskPct(preset)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
-                  riskPct === preset
-                    ? "bg-cyan-600 border-cyan-400 text-white"
-                    : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {preset}% (${((accountSize * preset) / 100).toFixed(0)})
-              </button>
-            ))}
+          {/* Quick Risk Buttons & Fractional Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-slate-500 font-bold mr-1">Risk Presets:</span>
+              {[0.5, 1.0, 1.5, 2.0].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setRiskPct(preset)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                    riskPct === preset
+                      ? "bg-cyan-600 border-cyan-400 text-white"
+                      : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {preset}% (${((accountSize * preset) / 100).toFixed(0)})
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAllowFractional(!allowFractional)}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                allowFractional
+                  ? "bg-cyan-950 border-cyan-600 text-cyan-300"
+                  : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>{allowFractional ? "🔢 Fractional Units" : "📦 Whole Shares"}</span>
+            </button>
           </div>
 
           {/* Sizing Results Card */}

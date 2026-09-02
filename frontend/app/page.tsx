@@ -222,9 +222,18 @@ function TerminalContent() {
                   )}
                 </div>
 
-                <div className="text-slate-500 flex items-center gap-2">
-                  <span className="hidden md:inline">NYSE/NASDAQ Session State</span>
-                  <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">15m Delayed/EOD</span>
+                <div className="flex items-center gap-2">
+                  {selectedSymbol.toUpperCase().includes("-USD") || ["BTC", "ETH", "SOL"].includes(selectedSymbol.toUpperCase()) ? (
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-[10px] font-mono text-emerald-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>24/7 Digital Asset Market Active</span>
+                    </span>
+                  ) : (
+                    <div className="text-slate-500 flex items-center gap-2">
+                      <span className="hidden md:inline">NYSE/NASDAQ Session State</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">15m Delayed/EOD</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
