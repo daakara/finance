@@ -1339,6 +1339,79 @@ export function getMasterBaselinePrice(symbol: string, fallback: number = 100.0)
   return fallback;
 }
 
+export const CATALOG_BASELINE_CHANGES: Record<string, number> = {
+  NVDA: 2.85,
+  AAPL: 1.42,
+  MSFT: 0.88,
+  GOOGL: -0.45,
+  TSLA: 3.15,
+  PLTR: 4.20,
+  NVO: 1.12,
+  LLY: 2.05,
+  LNTH: 0.65,
+  CPRX: 3.40,
+  MEDP: 1.85,
+  TMDX: 2.30,
+  VRT: 4.10,
+  DUOL: 1.55,
+  SMCI: 5.20,
+  ULTA: -1.25,
+  LULU: -0.80,
+  CELH: 1.75,
+  SPY: 0.62,
+  QQQ: 0.95,
+  SMH: 1.80,
+  POWI: -0.30,
+  ACLS: 1.20,
+  ELF: 2.10,
+  ISRG: 0.75,
+  VRTX: 1.15,
+  COIN: 4.80,
+  MSTR: 6.20,
+  CRWD: 1.90,
+  ANET: 2.45,
+  ARM: 3.10,
+  AMD: 2.25,
+  DECK: 1.40,
+  ON: -0.50,
+  MPWR: 1.65,
+  KLAC: 2.15,
+  LRCX: 1.80,
+  "BTC-USD": 2.40,
+  "ETH-USD": 1.85,
+  "SOL-USD": 3.75,
+  IREN: 4.50,
+  DHLGY: 0.90,
+  XOM: 0.45,
+  JPM: 0.80,
+  LMT: 0.35,
+  COST: 1.10,
+  KO: 0.25,
+  SBUX: -0.40,
+  ARWR: 3.15,
+  CIEN: 1.35,
+};
+
+export function getMasterBaselineQuote(symbol: string): { price: number; changePct: number } {
+  const price = getMasterBaselinePrice(symbol, 100.0);
+  if (!symbol) return { price, changePct: 0.5 };
+  const raw = normalizeCatalogSymbol(symbol);
+  
+  if (CATALOG_BASELINE_CHANGES[raw] !== undefined) {
+    return { price, changePct: CATALOG_BASELINE_CHANGES[raw] };
+  }
+  const withUsd = `${raw}-USD`;
+  if (CATALOG_BASELINE_CHANGES[withUsd] !== undefined) {
+    return { price, changePct: CATALOG_BASELINE_CHANGES[withUsd] };
+  }
+  const withoutUsd = raw.replace(/-USD$/, "");
+  if (CATALOG_BASELINE_CHANGES[withoutUsd] !== undefined) {
+    return { price, changePct: CATALOG_BASELINE_CHANGES[withoutUsd] };
+  }
+  return { price, changePct: 0.85 };
+}
+
 export function getAllMasterTickers(): string[] {
   return Object.keys(MASTER_ASSET_CATALOG);
 }
+

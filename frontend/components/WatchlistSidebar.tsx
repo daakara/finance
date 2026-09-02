@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { SHARED_WATCHLIST_ITEMS, WatchlistDefinition } from "../lib/constants";
 import { prefetchAssetAnalytics, fetchBatchQuotes } from "../lib/api";
 import { getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
+import { getMasterBaselineQuote } from "../lib/masterCatalog";
 import MiniSparkline from "./MiniSparkline";
 
 interface WatchlistItemDisplay extends WatchlistDefinition {
@@ -20,10 +21,9 @@ interface WatchlistSidebarProps {
 }
 
 export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCurrentPrice, livePriceChangePct }: WatchlistSidebarProps) {
-  // Initialize with persisted fresh database snapshots if available
+  // Initialize with persisted fresh database snapshots or SSOT master baseline quotes
   const [items, setItems] = useState<WatchlistItemDisplay[]>(() => {
-    if (typeof window === "undefined") return SHARED_WATCHLIST_ITEMS;
-    const snapshots = getAllPersistedMarketSnapshots(true);
+    const snapshots = typeof window !== "undefined" ? getAllPersistedMarketSnapshots(true) : {};
     return SHARED_WATCHLIST_ITEMS.map((item) => {
       const symClean = item.symbol.toUpperCase().replace("-USD", "");
       const snap = snapshots[symClean];
@@ -36,7 +36,15 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
           isUp,
         };
       }
-      return item;
+      // Guarantee instant sparkline and quote hydration from master catalog
+      const baseline = getMasterBaselineQuote(item.symbol);
+      const isUp = baseline.changePct >= 0;
+      return {
+        ...item,
+        price: `$${baseline.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `${isUp ? "+" : ""}${baseline.changePct.toFixed(2)}%`,
+        isUp,
+      };
     });
   });
 
@@ -301,7 +309,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
         id="watchlist-items-container"
         role="region"
         aria-label="Asset List"
-        className={`space-y-1.5 overflow-y-auto max-h-[480px] pr-1 transition-all ${
+        className={`space-y-1.5 overflow-y-auto max-h-[520px] pr-1.5 [scrollbar-width:thin] [scrollbar-color:#1e293b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#1e293b] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#334155] transition-all ${
           isMobileExpanded ? "block" : "hidden sm:block"
         }`}
       >

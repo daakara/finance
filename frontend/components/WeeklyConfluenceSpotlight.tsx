@@ -270,19 +270,23 @@ export default function WeeklyConfluenceSpotlight({
   };
 
   return (
-    <section className="bg-[#0d121c] border border-[#1e293b] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 mb-6 transition-all">
+    <section className={`bg-[#0d121c] border border-[#1e293b] rounded-2xl shadow-2xl transition-all ${
+      isCollapsed ? "p-3 sm:p-3.5 space-y-2 mb-4" : "p-4 sm:p-5 space-y-4 mb-6"
+    }`}>
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-3.5">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner ${
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${
+        isCollapsed ? "" : "border-b border-[#1b2434] pb-3.5"
+      }`}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shadow-inner shrink-0 ${
             isDayTrader
               ? "bg-amber-500/10 border border-amber-500/30 text-amber-400"
               : "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
           }`}>
             {isDayTrader ? "⚡" : "🎯"}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight flex items-center gap-2">
                 <span>
                   {isDayTrader
@@ -302,19 +306,21 @@ export default function WeeklyConfluenceSpotlight({
                 {isDayTrader ? "⚡ DAY TRADER SIEVE" : "🏛️ LONG-TERM SIEVE"}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {isDayTrader
-                ? isPlain
-                  ? "Filtered for fast-moving stocks with heavy trading volume and tight safety stops."
-                  : "Intraday & swing sieve: RVOL >= 1.3 + ATR/Price >= 2.0% + Minervini Stage 2 + R:R >= 1.8:1."
-                : isPlain
-                ? "Strictly filtered by balance sheet health, insider flow, and minimum 2.0:1 profit-to-risk ratio."
-                : "Multi-factor quantitative sieve: Minervini Stage 2 + Piotroski F-Score >= 7 + SEC Form 4 Inflow + Risk/Reward >= 2.0:1."}
-            </p>
+            {!isCollapsed && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                {isDayTrader
+                  ? isPlain
+                    ? "Filtered for fast-moving stocks with heavy trading volume and tight safety stops."
+                    : "Intraday & swing sieve: RVOL >= 1.3 + ATR/Price >= 2.0% + Minervini Stage 2 + R:R >= 1.85:1."
+                  : isPlain
+                  ? "Strictly filtered by balance sheet health, insider flow, and minimum 1.85:1 profit-to-risk ratio."
+                  : "Multi-factor quantitative sieve: Minervini Stage 2 + Piotroski F-Score >= 7 + SEC Form 4 Inflow + Risk/Reward >= 1.85:1."}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {loggedSymbol && (
             <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-950/80 border border-emerald-700 text-emerald-300 animate-fade-in">
               💼 {loggedSymbol}
@@ -326,14 +332,14 @@ export default function WeeklyConfluenceSpotlight({
             className="text-xs px-2.5 py-1 rounded-md font-mono text-slate-400 hover:text-slate-200 border border-[#243044] hover:bg-[#162030] transition-colors"
             aria-label={isCollapsed ? "Expand Weekly Spotlight" : "Collapse Weekly Spotlight"}
           >
-            {isCollapsed ? "Expand ▼" : "Collapse ▲"}
+            {isCollapsed ? "View Full Setups ▼" : "Collapse ▲"}
           </button>
         </div>
       </div>
 
       {/* Compact Quick-Switcher Ribbon when Collapsed */}
       {isCollapsed && (
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#1b2434]/60">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1b2434]/60">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-mono text-slate-400 font-bold flex items-center gap-1">
               <span>{isDayTrader ? "⚡" : "🎯"}</span>
