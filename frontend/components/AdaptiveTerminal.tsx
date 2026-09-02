@@ -140,12 +140,13 @@ export default function AdaptiveTerminal({
         />
       )}
 
-      {/* Why Score Attribution Modal */}
+      {/* Why Score Attribution Modal with Full Provenance */}
       <WhyInspectModal
         isOpen={isWhyOpen}
         onClose={() => setIsWhyOpen(false)}
         symbol={symbol}
         setupScore={insight.setupScore}
+        terminalState={insight.terminalState}
         items={insight.scoreAttribution.items}
         catalystToIncreaseScore={insight.scoreAttribution.catalystToIncreaseScore}
         whatWouldChangeAssessment={insight.whatWouldChangeAssessment}
