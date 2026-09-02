@@ -147,7 +147,30 @@ During our iterative CI monitoring, two specific pre-production regressions were
 
 ---
 
-## 5. Recent Git Commit Hashes
+## 6. Visual Audit & Container Text Overflow Finding
+
+### 📷 Screenshot Defect Analysis (Spotlight 3-Card Grid)
+- **Defect**: In the expanded **Top 3 High-Confluence Plays of the Week** widget, the header of Card #1 (`NVO`) and Card #2 (`CPRX`) exhibited horizontal text overflow:
+  - `"CONFLUENCE SCORE"` wrapped awkwardly and clipped the score to `95/1...` on Card #1.
+  - On Card #2, the text `"CONFI..."` spilled completely past the right card boundary into the inter-card grid gutter.
+- **Root Cause**:
+  - In a 3-column CSS Grid at 1024px–1366px screen widths (or when the watchlist sidebar is open), each card's inner width is ~280px–330px.
+  - The left flex container (Rank badge + Ticker + Company Name + Spot Price) plus the unshrinkable right container (48px Sparkline + ~95px `"CONFLUENCE SCORE"` text) exceeded the card container width.
+  - The lack of `min-w-0 flex-1` on flex child containers prevented text truncation, pushing the right column past the card boundary.
+- **Why It Was Missed in Previous Audits**:
+  - **Headless & SSR Test Blindness**: Automated unit tests and static Next.js builds verify DOM node presence and string matches, but cannot evaluate browser layout bounding box collisions or pixel wrapping.
+  - **Default Collapsed State**: The spotlight component was initialized in collapsed mode during earlier desktop audits, masking the expanded 3-card grid layout.
+  - **Resolution Specificity**: At 1920x1080 resolution without sidebars, cards are ~450px wide (no overflow); the defect only triggered at intermediate laptop widths (<1366px).
+- **Similar Cases Inspected**:
+  - `AssetFactorRadar.tsx`, `OptimalEntryExitCard.tsx`, `CongressionalTradesCard.tsx`, `DayTraderPositionSizer.tsx`.
+- **Remediation Applied**:
+  - Refactored the score widget into a compact, high-contrast dark badge (`SCORE 95/100`), reducing width footprint by ~50px.
+  - Added `min-w-0 flex-1` and `truncate` to company name and price rows.
+  - Added `min-w-0` and truncation protection across Setup Badges and Take Profit / Stop Loss ladder rows.
+
+---
+
+## 7. Recent Git Commit Hashes
 
 - [`217cc7e`](https://github.com/daakara/finance/commit/217cc7e): SSR fallback shells & crawler discoverability
 - [`0be34c2`](https://github.com/daakara/finance/commit/0be34c2): M1 backend hardening & M2 quant domain invariants
@@ -157,6 +180,7 @@ During our iterative CI monitoring, two specific pre-production regressions were
 - [`2f9c274`](https://github.com/daakara/finance/commit/2f9c274): Consolidated 4-stage unified CI/CD pipeline and edge cache invalidation
 - [`5b55dcf`](https://github.com/daakara/finance/commit/5b55dcf): Resolved property name collision in catalog parity test
 - [`1287e95`](https://github.com/daakara/finance/commit/1287e95): Targeted tracked python packages in CI data integrity gate
+- [`2bd7690`](https://github.com/daakara/finance/commit/2bd7690): Eliminate card header text overflow with compact score pill and min-w-0 layout
 
 ---
 
