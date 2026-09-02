@@ -104,7 +104,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
 
   const agreement = calculateFactorAgreement(domains);
 
-  // 1. Determine Overall Data Eligibility
+  // 1. Determine Overall Data Eligibility and Core Evidence Completeness
   let overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE" = "ELIGIBLE";
   if (agreement.evaluated === 0) {
     overallEligibility = "INELIGIBLE";
@@ -112,9 +112,16 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     overallEligibility = "LIMITED";
   }
 
-  // 2. Derive Overall Evidence Assessment
+  const trendDomain = domains.find((d) => d.domainId === "trend");
+  const healthDomain = domains.find((d) => d.domainId === "health");
+
+  const isTrendAvailable = trendDomain !== undefined && trendDomain.availability === "AVAILABLE" && trendDomain.status !== "UNAVAILABLE";
+  const isHealthAvailable = healthDomain !== undefined && healthDomain.availability === "AVAILABLE" && healthDomain.status !== "UNAVAILABLE";
+  const isCoreEvidenceAvailable = isTrendAvailable && isHealthAvailable && overallEligibility === "ELIGIBLE";
+
+  // 2. Derive Overall Evidence Assessment (Requires full core evidence for FAVORABLE)
   let assessment: Assessment = "MIXED";
-  if (overallEligibility === "INELIGIBLE") {
+  if (overallEligibility === "INELIGIBLE" || !isCoreEvidenceAvailable) {
     assessment = "INSUFFICIENT_EVIDENCE";
   } else if (agreement.favorable >= 3 && agreement.unfavorable === 0) {
     assessment = "FAVORABLE";
@@ -128,23 +135,30 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   const safePrice = currentPrice > 0 ? currentPrice : 100;
   const stopLevel = invalidationPrice ?? Number((safePrice * 0.93).toFixed(2));
   const distancePct = Number((((stopLevel - safePrice) / safePrice) * 100).toFixed(1));
-  const reclaimTarget = reclaimMilestonePrice ?? Number((safePrice * 1.115).toFixed(2));
 
-  // 4. Resolve Contextual Posture (Precedence: Data Ineligible -> Invalidation Breached -> Assessment + Ownership)
-  let posture: DecisionPosture = "WATCH";
-  let uiStateLabel = "Wait for Trigger";
-  let headlineExplanation = "Setup not confirmed yet.";
+  // 4. Resolve Contextual Posture (Precedence: Invalidation Breached -> Missing Evidence -> Assessment + Ownership)
+  let posture: DecisionPosture = "RESEARCH";
+  let uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
+  let headlineExplanation = "Incomplete evidence available to assess setup.";
 
-  if (overallEligibility === "INELIGIBLE") {
-    posture = "RESEARCH";
-    uiStateLabel = "Assessment Unavailable — Data Incomplete";
-    headlineExplanation = "ARX cannot reliably assess this asset due to missing required data observations.";
-  } else if (ownershipState === "OWNED") {
-    if (isInvalidationBreached) {
+  if (isInvalidationBreached) {
+    if (ownershipState === "OWNED") {
       posture = "EXIT_REVIEW";
       uiStateLabel = "Thesis Needs Review";
-      headlineExplanation = `Price breached the setup invalidation level at $${stopLevel} (${distancePct}%).`;
-    } else if (assessment === "UNFAVORABLE") {
+      headlineExplanation = `Price breached the setup invalidation floor at $${stopLevel.toFixed(2)} (${distancePct}%).`;
+    } else {
+      posture = "AVOID";
+      uiStateLabel = "Setup Invalidated";
+      headlineExplanation = `Price has fallen below the setup invalidation floor at $${stopLevel.toFixed(2)}. Risk parameters breached.`;
+    }
+  } else if (!isCoreEvidenceAvailable || overallEligibility !== "ELIGIBLE" || !isTrendAvailable) {
+    posture = "RESEARCH";
+    uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
+    headlineExplanation = !isTrendAvailable
+      ? "Technical trend evidence is unavailable (insufficient historical sessions). Active triggers cannot be confirmed."
+      : "Core fundamental financial evidence is unverified. In-depth due diligence required before evaluating setups.";
+  } else if (ownershipState === "OWNED") {
+    if (assessment === "UNFAVORABLE") {
       posture = "TRIM";
       uiStateLabel = "Consider Trimming";
       headlineExplanation = "Fundamental or technical deterioration indicates increased downside risk.";
@@ -158,8 +172,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       headlineExplanation = "Mixed factors present; monitor support levels closely.";
     }
   } else {
-    // NOT_OWNED or UNKNOWN
-    if (assessment === "FAVORABLE" && !isInvalidationBreached) {
+    // NOT_OWNED or UNKNOWN (Full core evidence verified)
+    if (assessment === "FAVORABLE") {
       posture = "ACQUIRE";
       uiStateLabel = "Actionable Setup";
       headlineExplanation = "Multi-factor confluence confirmed in optimal buy zone.";
@@ -170,7 +184,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     } else {
       posture = "WATCH";
       uiStateLabel = "Wait for Trigger";
-      headlineExplanation = `Price remains below 50-day average ($${reclaimTarget.toFixed(2)}); awaiting base confirmation.`;
+      headlineExplanation = reclaimMilestonePrice !== undefined
+        ? `Awaiting constructive base confirmation and reclaim of $${reclaimMilestonePrice.toFixed(2)}.`
+        : "Awaiting constructive consolidation and volume confirmation before trigger.";
     }
   }
 
@@ -179,7 +195,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     {
       id: "set_alert",
       type: "SET_ALERT",
-      label: `Set Alert for $${reclaimTarget.toFixed(2)}`,
+      label: reclaimMilestonePrice !== undefined ? `Set Alert for $${reclaimMilestonePrice.toFixed(2)}` : "Set Price Alert",
       enabled: overallEligibility !== "INELIGIBLE",
     },
     {
@@ -229,10 +245,26 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
     whatWouldChangeAssessment: posture === "ACQUIRE"
       ? `A daily close below $${stopLevel.toFixed(2)} (${distancePct}%) would invalidate the setup and downgrade posture to AVOID.`
-      : `Reclaiming and holding above $${reclaimTarget.toFixed(2)} (50D SMA) with volume expansion would upgrade posture to ACQUIRE.`,
+      : reclaimMilestonePrice !== undefined
+      ? `Reclaiming and holding above $${reclaimMilestonePrice.toFixed(2)} (50D SMA) with volume expansion would upgrade posture to ACQUIRE.`
+      : "Sufficient historical trading data and constructive base formation required to evaluate potential upgrade.",
     primaryAction: {
-      label: posture === "ACQUIRE" ? "Calculate Position Size" : `Set Alert for $${reclaimTarget.toFixed(2)}`,
-      actionType: posture === "ACQUIRE" ? "SIZE_TRADE" : "SET_ALERT",
+      label: posture === "ACQUIRE"
+        ? "Calculate Position Size"
+        : posture === "EXIT_REVIEW"
+        ? "Review Exit Criteria"
+        : posture === "RESEARCH"
+        ? "Conduct Fundamental Research"
+        : reclaimMilestonePrice !== undefined
+        ? `Set Alert for $${reclaimMilestonePrice.toFixed(2)}`
+        : "Set Price Alert",
+      actionType: posture === "ACQUIRE"
+        ? "SIZE_TRADE"
+        : posture === "EXIT_REVIEW"
+        ? "REVIEW_THESIS"
+        : posture === "RESEARCH"
+        ? "RESEARCH_PROFILE"
+        : "SET_ALERT",
       enabled: overallEligibility !== "INELIGIBLE",
     },
     availableActions,

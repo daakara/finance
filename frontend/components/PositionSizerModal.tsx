@@ -47,26 +47,29 @@ export default function PositionSizerModal({
   const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeEntry * 0.95;
   const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeEntry * 1.10;
 
+  const isSetupInvalid = safeEntry <= safeStop;
   const isMicroAccount = accountSize < safeEntry;
   const isFractionalActive = allowFractional || isMicroAccount;
 
-  const riskPerShare = Math.max(0.01, safeEntry - safeStop);
+  const riskPerShare = isSetupInvalid ? 0 : Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = accountSize * (riskPct / 100);
-  const rawShares = isFractionalActive
-    ? Number((maxDollarRisk / riskPerShare).toFixed(4))
-    : Math.floor(maxDollarRisk / riskPerShare);
-  const shares = rawShares;
+  const rawShares = isSetupInvalid
+    ? 0
+    : isFractionalActive
+    ? Number((maxDollarRisk / (riskPerShare || 1)).toFixed(4))
+    : Math.floor(maxDollarRisk / (riskPerShare || 1));
+  const shares = isSetupInvalid ? 0 : rawShares;
   const totalAllocation = Number((shares * safeEntry).toFixed(2));
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
   const actualDollarRisk = Number((shares * riskPerShare).toFixed(2));
-  const projectedProfit = Number((shares * (safeTarget - safeEntry)).toFixed(2));
+  const projectedProfit = isSetupInvalid ? 0 : Number((shares * (safeTarget - safeEntry)).toFixed(2));
 
   // Half-Kelly calculation
-  const b = Math.max(0.5, (safeTarget - safeEntry) / riskPerShare);
+  const b = isSetupInvalid ? 0 : Math.max(0.5, (safeTarget - safeEntry) / (riskPerShare || 1));
   const p = 0.55;
   const q = 0.45;
-  const fullKelly = Math.max(0, (b * p - q) / b);
-  const halfKellyPct = Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
+  const fullKelly = isSetupInvalid ? 0 : Math.max(0, (b * p - q) / (b || 1));
+  const halfKellyPct = isSetupInvalid ? 0 : Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
 
   const matchedItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
@@ -135,8 +138,21 @@ export default function PositionSizerModal({
 
         {/* Scrollable Body */}
         <div className="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
+          {/* Setup Invalidation Warning Banner */}
+          {isSetupInvalid && (
+            <div className="p-3.5 bg-rose-950/80 border border-rose-600 rounded-xl text-rose-200 text-xs font-sans flex items-start gap-2.5 shadow-lg">
+              <span className="text-xl leading-none">🚨</span>
+              <div className="space-y-1">
+                <strong className="font-bold text-rose-300 block text-sm">Setup Invalidated — Sizing Disabled:</strong>
+                <p className="leading-relaxed text-slate-200">
+                  Current entry price (${safeEntry.toFixed(2)}) is at or below the stop loss floor (${safeStop.toFixed(2)}). Risk geometry is invalid and capital deployment is blocked. Zero shares recommended.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Stage 4 Capital Protection Advisory */}
-          {isStage4 && (
+          {isStage4 && !isSetupInvalid && (
             <div className="p-3 bg-amber-950/40 border border-amber-800/40 rounded-xl text-amber-300 text-xs font-sans flex items-start gap-2">
               <span className="text-base leading-none">⚠️</span>
               <div>
@@ -304,7 +320,11 @@ export default function PositionSizerModal({
           {/* Action Guidance */}
           <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
-            {shares > 0 ? (
+            {isSetupInvalid ? (
+              <span className="text-rose-400 font-bold">
+                Setup Invalidated. Entry price (${safeEntry.toFixed(2)}) is at or below stop loss floor (${safeStop.toFixed(2)}). Position sizing is disabled and zero orders are permitted.
+              </span>
+            ) : shares > 0 ? (
               <>
                 Buy <span className="text-white font-bold">{shares} {shares === 1 ? "share" : "shares"}</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
               </>
@@ -328,11 +348,16 @@ export default function PositionSizerModal({
         <div className="p-3.5 sm:p-4 border-t border-[#1b2537] bg-[#0e1422] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
+            disabled={isSetupInvalid || shares <= 0}
             onClick={handleSaveToPortfolio}
-            className="px-3.5 sm:px-4 py-2 bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow cursor-pointer"
+            className={`px-3.5 sm:px-4 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow ${
+              isSetupInvalid || shares <= 0
+                ? "bg-[#0e1420] border-[#182334] text-slate-600 cursor-not-allowed"
+                : "bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white active:scale-95 cursor-pointer"
+            }`}
           >
             <span>💼</span>
-            <span>Save to My Portfolio</span>
+            <span>{isSetupInvalid ? "Sizing Disabled (Invalid Setup)" : "Save to My Portfolio"}</span>
           </button>
 
           <button

@@ -143,7 +143,7 @@ export interface QuantitativeInsight {
     assessmentDescription: string;
     whyPills: {
       category: "Company Health" | "Price Trend" | "Smart Money" | "Market Outlook";
-      status: "Healthy" | "Weak" | "Neutral" | "Supportive" | "Bearish" | "Caution";
+      status: "Healthy" | "Weak" | "Neutral" | "Supportive" | "Bearish" | "Caution" | "Unavailable";
       description: string;
       sentiment: "positive" | "negative" | "neutral" | "warning";
     }[];
@@ -154,7 +154,7 @@ export interface QuantitativeInsight {
       riskStop: string;
     };
     actionCallout: {
-      action: "WATCH" | "ENTER" | "SCALE_IN" | "TRIM";
+      action: "WATCH" | "ENTER" | "SCALE_IN" | "TRIM" | "RESEARCH" | "AVOID" | "EXIT_REVIEW";
       guidance: string;
     };
   };

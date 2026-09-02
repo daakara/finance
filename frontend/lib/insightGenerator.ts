@@ -287,7 +287,7 @@ export function generateQuantitativeInsight(
     postureLabel: terminalState.uiStateLabel,
     ownership,
     terminalState,
-    verdict: isStage4 ? "WAIT_FOR_TRIGGER" : "ACTIONABLE_BUY_ZONE",
+    verdict: terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER",
     verdictLabel: terminalState.uiStateLabel,
 
     // Tier 1: Human (Guided)
@@ -297,17 +297,23 @@ export function generateQuantitativeInsight(
       whyPills: [
         {
           category: "Company Health",
-          status: "Healthy",
-          description: "Stable financials and strong profitability across core metrics.",
-          sentiment: "positive",
+          status: !isHealthAvailable ? "Unavailable" : (catAsset && catAsset.roic >= 20 ? "Healthy" : "Neutral"),
+          description: !isHealthAvailable
+            ? "Verified SEC financial filings unavailable for this security."
+            : (catAsset && catAsset.roic >= 20
+                ? "Stable financials and strong profitability across core metrics."
+                : "Financial metrics meet baseline criteria without distinct edge."),
+          sentiment: !isHealthAvailable ? "neutral" : (catAsset && catAsset.roic >= 20 ? "positive" : "neutral"),
         },
         {
           category: "Price Trend",
-          status: isStage4 ? "Weak" : "Healthy",
-          description: isStage4
-            ? "Price is below the 50-day moving average and currently falling."
-            : "Price is holding firmly above rising 20 EMA and 50 SMA.",
-          sentiment: isStage4 ? "negative" : "positive",
+          status: !isTrendAvailable ? "Unavailable" : (isStage4 ? "Weak" : "Healthy"),
+          description: !isTrendAvailable
+            ? "Insufficient daily sessions (< 50) to evaluate 50-day moving average trend."
+            : (isStage4
+                ? `Price is below the 50-day moving average ($${(sma50 as number).toFixed(2)}) and currently falling.`
+                : `Price is holding firmly above 50-day moving average ($${(sma50 as number).toFixed(2)}).`),
+          sentiment: !isTrendAvailable ? "neutral" : (isStage4 ? "negative" : "positive"),
         },
         {
           category: "Smart Money",
@@ -331,8 +337,22 @@ export function generateQuantitativeInsight(
         riskStop: `$${stopLoss.toFixed(2)} (-7.0%)`,
       },
       actionCallout: {
-        action: isStage4 ? "WATCH" : "ENTER",
-        guidance: isStage4
+        action: terminalState.posture === "ACQUIRE"
+          ? "ENTER"
+          : terminalState.posture === "RESEARCH"
+          ? "RESEARCH"
+          : terminalState.posture === "AVOID"
+          ? "AVOID"
+          : terminalState.posture === "EXIT_REVIEW"
+          ? "EXIT_REVIEW"
+          : "WATCH",
+        guidance: terminalState.posture === "RESEARCH"
+          ? "Evidence incomplete. Further quantitative research required before taking position."
+          : terminalState.posture === "AVOID"
+          ? "Unfavorable technical trend or fundamental risks present unfavorable risk/reward."
+          : terminalState.posture === "EXIT_REVIEW"
+          ? `Price has fallen below the setup invalidation floor ($${stopLoss.toFixed(2)}). Review position.`
+          : isStage4
           ? (isTrendAvailable
               ? `Watch for a strong reversal and reclaim of $${(sma50 as number).toFixed(2)} with volume. Don't rush—wait for the trigger.`
               : `Trend evidence incomplete. Wait for market structure confirmation.`)

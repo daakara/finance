@@ -199,7 +199,6 @@ function CompareContent() {
   // Build authentic comparison models from live API data with domain-accurate fundamentals
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
     const upperSym = sym.toUpperCase();
-    const registered = AUTHENTIC_FUNDAMENTALS[upperSym];
     const staticFactor = SHARED_FACTOR_SCORES[upperSym];
     const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
     const reg = SpotPriceRegistry.get(upperSym);
@@ -210,61 +209,67 @@ function CompareContent() {
       ? reg.price
       : (snap?.currentPrice && snap.currentPrice > 0)
       ? snap.currentPrice
-      : 100.0;
-
-    const priceChange = (liveData && !isNaN(liveData.priceChangePct24h))
-      ? liveData.priceChangePct24h
-      : (reg?.changePct !== undefined)
-      ? reg.changePct
-      : (snap?.priceChangePct24h !== undefined)
-      ? snap.priceChangePct24h
-      : 0.0;
+      : 0;
+    const registered = AUTHENTIC_FUNDAMENTALS[upperSym] || (MASTER_ASSET_CATALOG[upperSym] ? {
+      category: MASTER_ASSET_CATALOG[upperSym].sector || "Equities",
+      roic: MASTER_ASSET_CATALOG[upperSym].roic,
+      grossMargin: MASTER_ASSET_CATALOG[upperSym].grossMargin,
+      fwdPe: MASTER_ASSET_CATALOG[upperSym].fwdPe,
+      peg: MASTER_ASSET_CATALOG[upperSym].peg,
+      fcfYield: MASTER_ASSET_CATALOG[upperSym].fcfYield,
+      piotroski: MASTER_ASSET_CATALOG[upperSym].piotroski,
+      atr14: MASTER_ASSET_CATALOG[upperSym].atr14,
+      rvol: MASTER_ASSET_CATALOG[upperSym].rvol,
+      beta: MASTER_ASSET_CATALOG[upperSym].beta,
+      marketCap: MASTER_ASSET_CATALOG[upperSym].marketCap,
+    } : undefined);
 
     const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
-    const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? staticFactor?.scores?.piotroskiFScore ?? 8;
-    const roicRaw = registered?.roic ?? 24.0;
-    const grossMarginRaw = registered?.grossMargin ?? (upperSym.includes("SPY") || upperSym.includes("QQQ") ? 0 : 55.0);
-    const fwdPeRaw = registered?.fwdPe ?? 25.0;
-    const pegRaw = registered?.peg ?? 1.15;
-    const fcfYieldRaw = registered?.fcfYield ?? 3.8;
-    const atr14Raw = registered?.atr14 ?? Number((price * 0.024).toFixed(2));
-    const rvolRaw = registered?.rvol ?? Number((1.5 + Math.abs(priceChange) * 0.3).toFixed(1));
-    const betaRaw = registered?.beta ?? Number((0.85 + Math.abs(priceChange) * 0.2).toFixed(2));
+    const hasVerifiedFundamentals = registered !== undefined;
+    const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? 0;
+    const roicRaw = registered?.roic ?? 0;
+    const grossMarginRaw = registered?.grossMargin ?? 0;
+    const fwdPeRaw = registered?.fwdPe ?? 0;
+    const pegRaw = registered?.peg ?? 0;
+    const fcfYieldRaw = registered?.fcfYield ?? 0;
+    const atr14Raw = registered?.atr14 ?? (liveData?.technicals?.atr_14 || 0);
+    const rvolRaw = registered?.rvol ?? 0;
+    const betaRaw = registered?.beta ?? 0;
 
     const defaultName = getCanonicalAssetName(upperSym, staticItem?.name);
-    const moatNarrative = getCanonicalAssetMoat(upperSym) || liveData?.catalystForecast?.efficacy_summary || "Secular competitive moat with high return on invested capital.";
+    const moatNarrative = getCanonicalAssetMoat(upperSym) || liveData?.catalystForecast?.efficacy_summary || "Sector equity tracked across quantitative model dimensions.";
     const primaryRisk = getCanonicalAssetRisk(upperSym);
 
     return {
       symbol: upperSym,
       name: defaultName,
-      category: registered?.category || (roicRaw > 30 ? "High-Quality Secular Compounder" : "Secular Growth Leader"),
-      marketCap: registered?.marketCap || `$${(price * 0.45).toFixed(1)}B Est`,
-      peRatio: `${fwdPeRaw.toFixed(1)}x`,
+      category: registered?.category || "Uncataloged Security",
+      marketCap: registered?.marketCap || "N/A",
+      peRatio: hasVerifiedFundamentals && fwdPeRaw > 0 ? `${fwdPeRaw.toFixed(1)}x` : "N/A",
       peRaw: fwdPeRaw,
-      pegRatio: `${pegRaw.toFixed(2)}`,
+      pegRatio: hasVerifiedFundamentals && pegRaw > 0 ? `${pegRaw.toFixed(2)}` : "N/A",
       pegRaw: pegRaw,
-      roic: `${roicRaw.toFixed(1)}%`,
+      roic: hasVerifiedFundamentals && roicRaw > 0 ? `${roicRaw.toFixed(1)}%` : "N/A",
       roicRaw: roicRaw,
-      grossMargin: grossMarginRaw > 0 ? `${grossMarginRaw.toFixed(1)}%` : "N/A (ETF/Index)",
+      grossMargin: hasVerifiedFundamentals && grossMarginRaw > 0 ? `${grossMarginRaw.toFixed(1)}%` : (upperSym.includes("SPY") || upperSym.includes("QQQ") ? "N/A (ETF/Index)" : "N/A"),
       grossMarginRaw: grossMarginRaw,
-      fcfYield: `${fcfYieldRaw.toFixed(1)}%`,
+      fcfYield: hasVerifiedFundamentals && fcfYieldRaw > 0 ? `${fcfYieldRaw.toFixed(1)}%` : "N/A",
       fcfYieldRaw: fcfYieldRaw,
       piotroski: piotroski,
-      keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || "Upcoming quarterly earnings & institutional accumulation.",
+      keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || (hasVerifiedFundamentals ? "Upcoming quarterly earnings & institutional accumulation." : "Pending SEC filings verification."),
       trialEfficacy: moatNarrative,
       primaryRisk: primaryRisk,
-      longTermVerdict: scores?.verdict || "Strong Accumulation Candidate",
-      atr14: `$${atr14Raw.toFixed(2)}`,
+      longTermVerdict: hasVerifiedFundamentals ? (scores?.verdict || "Quantitative Model Verified") : "Unverified Fundamental Profile (N/A)",
+      atr14: atr14Raw > 0 ? `$${atr14Raw.toFixed(2)}` : "N/A",
       atr14Raw: atr14Raw,
-      rvol: `${rvolRaw.toFixed(1)}x`,
+      rvol: rvolRaw > 0 ? `${rvolRaw.toFixed(1)}x` : "N/A",
       rvolRaw: rvolRaw,
-      intradayBeta: `${betaRaw.toFixed(2)}`,
+      intradayBeta: betaRaw > 0 ? `${betaRaw.toFixed(2)}` : "N/A",
       intradayBetaRaw: betaRaw,
-      liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : "High ($1B+ Daily)",
-      dayTraderSetup: liveData?.optimalExecution?.entry_thesis || "Intraday momentum continuation above 5m VWAP with clear risk-defined stops.",
+      liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : "Standard Liquid ($1B+ Daily)",
+      dayTraderSetup: liveData?.optimalExecution?.entry_thesis || "Intraday momentum tracking with clear risk-defined levels.",
       bestTradingWindow: "9:30 AM - 11:30 AM EST (Peak Volatility Window)",
-      dayTradeVerdict: "Optimal for intraday breakout scalping and VWAP mean reversion.",
+      dayTradeVerdict: hasVerifiedFundamentals ? "Evaluated for quantitative setups." : "Uncataloged setup — manual verification required.",
     };
   };
 

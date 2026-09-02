@@ -2,6 +2,7 @@
 
 import React from "react";
 import { QuantitativeInsight } from "../../types/insight";
+import FinancialDisclaimer from "../FinancialDisclaimer";
 
 interface StandardTerminalViewProps {
   insight: QuantitativeInsight;
@@ -157,6 +158,8 @@ export default function StandardTerminalView({
           </div>
         </div>
       </div>
+
+      <FinancialDisclaimer variant="compact" />
     </div>
   );
 }
