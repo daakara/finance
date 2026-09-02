@@ -12,6 +12,8 @@ import AdvancedTerminalView from "./terminal/AdvancedTerminalView";
 import WhyInspectModal from "./WhyInspectModal";
 import PositionSizerModal from "./PositionSizerModal";
 
+import { CandleData } from "../lib/api";
+
 interface AdaptiveTerminalProps {
   symbol: string;
   companyName?: string;
@@ -19,6 +21,7 @@ interface AdaptiveTerminalProps {
   changePct: number;
   setupScore?: number;
   isStage4?: boolean;
+  candles?: CandleData[];
 }
 
 export default function AdaptiveTerminal({
@@ -27,7 +30,8 @@ export default function AdaptiveTerminal({
   currentPrice,
   changePct,
   setupScore = 60,
-  isStage4 = false,
+  isStage4,
+  candles,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -72,9 +76,11 @@ export default function AdaptiveTerminal({
     currentPrice,
     changePct,
     setupScore,
-    isStage4 ? 4 : 2,
+    isStage4 !== undefined ? (isStage4 ? 4 : 2) : undefined,
     timeHorizon,
-    ownership
+    ownership,
+    "USER_DECLARED",
+    candles
   );
 
   return (

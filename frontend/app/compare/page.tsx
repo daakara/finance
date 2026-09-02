@@ -254,7 +254,7 @@ function CompareContent() {
       keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || "Upcoming quarterly earnings & institutional accumulation.",
       trialEfficacy: moatNarrative,
       primaryRisk: primaryRisk,
-      longTermVerdict: scores?.verdict || "Strong Buy / Core Accumulation",
+      longTermVerdict: scores?.verdict || "Strong Accumulation Candidate",
       atr14: `$${atr14Raw.toFixed(2)}`,
       atr14Raw: atr14Raw,
       rvol: `${rvolRaw.toFixed(1)}x`,

@@ -134,7 +134,7 @@ export interface QuantitativeInsight {
   terminalState: TerminalViewState;
   
   // Legacy verdict for existing components
-  verdict: "WAIT_FOR_TRIGGER" | "STRONG_BUY_ZONE" | "PILOT_BUY" | "AVOID_STAGE_4" | "TAKE_PROFIT";
+  verdict: "WAIT_FOR_TRIGGER" | "STRONG_BUY_ZONE" | "ACTIONABLE_BUY_ZONE" | "PILOT_BUY" | "AVOID_STAGE_4" | "TAKE_PROFIT";
   verdictLabel: string;
   
   // Tier 1: Human Language (Guided)

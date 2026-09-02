@@ -175,8 +175,9 @@ export default function WhyInspectModal({
                               {ev.currentValue} <span className="text-slate-500 font-normal">vs {ev.benchmarkValue}</span>
                             </span>
                             {ev.source && (
-                              <span className="text-[9px] text-slate-500 w-full truncate">
-                                Source: {ev.source} {ev.freshness ? `(${ev.freshness})` : ""}
+                              <span className="text-[9px] text-slate-500 w-full truncate flex items-center justify-between">
+                                <span>Source: {ev.source} {ev.freshness ? `(${ev.freshness === "DELAYED" ? "15m Exchange Delayed" : ev.freshness})` : ""}</span>
+                                {ev.asOf && <span>As of: {ev.asOf}</span>}
                               </span>
                             )}
                           </div>

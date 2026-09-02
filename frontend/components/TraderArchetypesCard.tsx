@@ -10,7 +10,7 @@ interface TraderArchetypesCardProps {
 export default function TraderArchetypesCard({ symbol, traderArchetypes }: TraderArchetypesCardProps) {
   const data = traderArchetypes || {
     consensusScore: 84,
-    verdict: "Strong Buy / Core Accumulation",
+    verdict: "Strong Accumulation Candidate",
     archetypes: [
       {
         name: "Warren Buffett (Value & Moat)",

@@ -33,6 +33,7 @@ export interface MasterAssetEntry {
   moatSummary: string;
   upcomingCatalyst: string;
   thesis: string;
+  secFilingDate?: string;
 }
 
 export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
@@ -63,7 +64,8 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     verdict: "Exceptional Growth Leader",
     moatSummary: "CUDA software ecosystem and proprietary NVLink interconnect architecture create high switching costs for hyperscaler AI training clusters.",
     upcomingCatalyst: "Blackwell Ultra GPU volume ramp, sovereign AI datacenter procurement, and Rubin architecture tape-out.",
-    thesis: "3-Stage contraction handle resting above 20 EMA with Blackwell datacenter ramp."
+    thesis: "3-Stage contraction handle resting above 20 EMA with Blackwell datacenter ramp.",
+    secFilingDate: "2026-08-28"
   },
   AAPL: {
     symbol: "AAPL",
@@ -78,20 +80,21 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     fcfYield: 4.2,
     piotroski: 8,
     atr14: 2.40,
-    rvol: 1.2,
-    shortFloat: 1.4,
-    beta: 0.95,
-    marketCap: "$3,450B",
-    growthScore: 84,
-    qualityScore: 90,
-    valuationScore: 72,
-    momentumScore: 78,
-    tailRiskScore: 82,
+    rvol: 1.6,
+    shortFloat: 0.8,
+    beta: 1.05,
+    marketCap: "$3,420B",
+    growthScore: 78,
+    qualityScore: 94,
+    valuationScore: 65,
+    momentumScore: 82,
+    tailRiskScore: 88,
     compositeFactorScore: 82,
-    verdict: "Strong Buy / Core Hold",
-    moatSummary: "2.2B+ active device ecosystem with privacy-first Apple Intelligence and high-margin services annuity.",
-    upcomingCatalyst: "Apple Intelligence Global Rollout & WWDC Next-Gen Developer Silicon Showcase.",
-    thesis: "High free-cash-flow yield compounder with resilient consumer ecosystem."
+    verdict: "Strong Accumulation Candidate",
+    moatSummary: "2.2 billion active device installed base with high switching costs and high-margin Services ecosystem.",
+    upcomingCatalyst: "Apple Intelligence commercial rollout across iPhone 16 cycle and Services margin expansion.",
+    thesis: "Cash-flow compounder breaking out on multi-year iPhone replacement cycle.",
+    secFilingDate: "2026-08-02"
   },
   MSFT: {
     symbol: "MSFT",
@@ -315,7 +318,8 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     verdict: "Pristine Balance Sheet Compounder",
     moatSummary: "Commercial monopoly on rare neuromuscular treatments with 88%+ gross margins.",
     upcomingCatalyst: "Agamree Duchenne muscular dystrophy international commercial rollout.",
-    thesis: "Orphan disease franchise with 88%+ gross margins and pristine 9/9 Piotroski balance sheet."
+    thesis: "Orphan disease franchise with 88%+ gross margins and pristine 9/9 Piotroski balance sheet.",
+    secFilingDate: "2026-08-08"
   },
   MEDP: {
     symbol: "MEDP",
@@ -512,6 +516,35 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     moatSummary: "Premium athletic apparel brand with pristine balance sheet, facing North American consumer normalization.",
     upcomingCatalyst: "New product line execution, seasonal outerwear launch, and China store growth.",
     thesis: "High-margin athletic lifestyle leader navigating North American comp deceleration."
+  },
+  FIX: {
+    symbol: "FIX",
+    name: "Comfort Systems USA, Inc.",
+    type: "Stock",
+    sector: "Industrials",
+    category: "Mechanical & Modular Datacenter Infrastructure",
+    roic: 28.5,
+    grossMargin: 20.4,
+    fwdPe: 26.2,
+    peg: 1.15,
+    fcfYield: 4.8,
+    piotroski: 8,
+    atr14: 9.80,
+    rvol: 1.8,
+    shortFloat: 2.5,
+    beta: 1.12,
+    marketCap: "$14.5B",
+    growthScore: 91,
+    qualityScore: 88,
+    valuationScore: 72,
+    momentumScore: 92,
+    tailRiskScore: 82,
+    compositeFactorScore: 89,
+    verdict: "Infrastructure Compounder",
+    moatSummary: "Premier national modular mechanical, electrical and HVAC solutions provider with multi-year hyperscaler data center construction backlogs.",
+    upcomingCatalyst: "Hyperscaler data center expansion and modular liquid cooling contract announcements.",
+    thesis: "Stage 2 institutional momentum driven by accelerating hyperscale data center cooling and electrical buildouts.",
+    secFilingDate: "2026-07-26"
   },
   CELH: {
     symbol: "CELH",
@@ -1233,6 +1266,7 @@ export const CATALOG_BASELINE_PRICES: Record<string, number> = {
   LLY: 845.00,
   LNTH: 98.40,
   CPRX: 22.85,
+  FIX: 385.00,
   MEDP: 360.00,
   TMDX: 145.00,
   VRT: 92.50,

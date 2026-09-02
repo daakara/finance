@@ -41,7 +41,7 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
 
 export const SHARED_FACTOR_SCORES: Record<string, { scores: AssetFactorScores }> = {
   "AAPL": {
-    scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Buy / Core Hold", piotroskiFScore: 8 }
+    scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Accumulation Candidate", piotroskiFScore: 8 }
   },
   "NVDA": {
     scores: { growthScore: 96, qualityScore: 95, valuationScore: 68, momentumScore: 94, tailRiskScore: 76, compositeFactorScore: 91, verdict: "Exceptional Growth Leader", piotroskiFScore: 8 }

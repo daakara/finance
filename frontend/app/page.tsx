@@ -221,7 +221,7 @@ function TerminalContent() {
             currentPrice={data?.currentPrice || 100}
             changePct={data?.priceChangePct24h || 0}
             setupScore={60}
-            isStage4={selectedSymbol.toUpperCase() === "FIX" || (data?.currentPrice && data.currentPrice < 100) ? true : false}
+            candles={data?.candles}
           />
 
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
