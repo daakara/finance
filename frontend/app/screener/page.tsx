@@ -1026,7 +1026,12 @@ export default function ScreenerPage() {
                     <div className="flex items-start justify-between gap-2 border-b border-[#162030] pb-3">
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="text-lg font-black text-white">{gem.symbol}</span>
+                          <Link
+                            href={`/?symbol=${gem.symbol}`}
+                            className="text-lg font-black text-white hover:text-cyan-400 transition-colors"
+                          >
+                            {gem.symbol}
+                          </Link>
                           <span className="text-xs font-bold text-slate-300 tabular-nums">
                             ${gem.currentPrice?.toFixed(2)}
                           </span>
@@ -1171,8 +1176,8 @@ export default function ScreenerPage() {
                     </div>
 
                     <Link
-                      href={`/?symbol=${gem.symbol}`}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1 shadow"
+                      href={`/?symbol=${gem.symbol}&fromGoal=${selectedFilter}&fromCount=${displayGems.length}`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-cyan-600/20 hover:bg-cyan-500 hover:text-slate-950 border-cyan-500/50 text-cyan-300 flex items-center gap-1 shadow cursor-pointer"
                     >
                       <span>Analyze in Terminal</span>
                       <span>→</span>

@@ -30,7 +30,7 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
     <div className="bg-[#0b101b] border border-[#1e2a3c] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 font-sans text-slate-100">
       <div className="text-center max-w-xl mx-auto space-y-1">
         <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
-          ARX Quantitative Workspace
+          ARX Objective-Driven Workspace
         </span>
         <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
           What are you looking to do today?
@@ -41,7 +41,7 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card 1: Find Opportunities */}
+        {/* Card 1: Find an investment */}
         <Link
           href="/screener"
           className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
@@ -53,19 +53,24 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
                 Explore →
               </span>
             </div>
-            <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-              Find Opportunities
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Scan high-conviction setups, VCP breakouts, and undervalued compounders.
+            <div>
+              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Find an investment
+              </h3>
+              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
+                &ldquo;Show me stocks worth researching&rdquo;
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed pt-1">
+              Scan high-conviction setups, growing compounders, and undervalued bargains.
             </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block">
+          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
             Goal-Driven Screener
           </span>
         </Link>
 
-        {/* Card 2: Analyse a Stock */}
+        {/* Card 2: Understand a stock */}
         <div
           onClick={() => setIsSearchOpen(true)}
           className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between cursor-pointer"
@@ -77,19 +82,24 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
                 Analyze →
               </span>
             </div>
-            <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-              Analyse a Stock
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Understand why a stock is moving, check confluence signals and risk levels.
+            <div>
+              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Understand a stock
+              </h3>
+              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
+                &ldquo;I have a ticker and want to evaluate it&rdquo;
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed pt-1">
+              Check confluence evidence, thesis health, and downside invalidation levels.
             </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block">
+          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
             Adaptive Terminal Engine
           </span>
         </div>
 
-        {/* Card 3: Check Portfolio Risk */}
+        {/* Card 3: Check my portfolio */}
         <Link
           href="/portfolio"
           className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
@@ -101,20 +111,25 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
                 Review →
               </span>
             </div>
-            <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-              Check Portfolio Risk
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Inspect position allocation, Cornish-Fisher VaR, stop losses, and cash reserves.
+            <div>
+              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Check my portfolio
+              </h3>
+              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
+                &ldquo;Show me where my biggest risks are&rdquo;
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed pt-1">
+              Inspect position concentration, Cornish-Fisher VaR (95%), and cash reserve buffers.
             </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block">
+          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
             Zero-Login Private Storage
           </span>
         </Link>
       </div>
 
-      {/* Quick Search Dropdown Modal */}
+      {/* Quick Search Modal */}
       {isSearchOpen && (
         <form
           onSubmit={handleQuickSearch}

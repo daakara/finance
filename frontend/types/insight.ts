@@ -1,18 +1,44 @@
-// Quantitative Insight Schema & Adaptive Experience Types
+// ARX Quantitative Insight & Contract Types (docs/ux/07_data_to_ui_contract.md)
+
+export type TimeHorizon = "INTRADAY" | "SWING" | "POSITION" | "LONG_TERM";
+export type Assessment = "FAVORABLE" | "MIXED" | "UNFAVORABLE" | "INSUFFICIENT_EVIDENCE";
+export type DecisionPosture = "RESEARCH" | "WATCH" | "ACQUIRE" | "HOLD" | "TRIM" | "EXIT_REVIEW" | "AVOID";
+export type OwnershipState = "NOT_OWNED" | "OWNED" | "UNKNOWN";
 export type ExperienceMode = "GUIDED" | "STANDARD" | "ADVANCED";
 
-export interface InsightMetric {
-  label: string;
-  value: string | number;
-  sentiment?: "positive" | "negative" | "neutral" | "warning";
-  subtext?: string;
+export interface EvidenceItem {
+  metricName: string;
+  currentValue: string | number;
+  benchmarkValue: string | number;
+  source?: string;
+  asOf?: string;
+  freshness?: "REALTIME" | "DAILY_CLOSE" | "QUARTERLY_FILING";
+  significance?: "HIGH" | "MEDIUM" | "LOW";
+  status: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
 }
 
-export interface ScoreAttributionItem {
-  category: string;
-  impact: number; // e.g. +20, -25
-  reason: string;
+export interface FactorAttributionItem {
+  factorId?: string;
+  factorName: "Company Health" | "Price Trend" | "Smart Money Flow" | "Macro Regime" | string;
+  category?: string; // Backward-compatible alias
+  impact: number;    // e.g. +20, -25
+  importanceLevel?: "HIGH" | "MEDIUM" | "LOW";
+  plainEnglishReason: string;
+  reason?: string;   // Backward-compatible alias
   sentiment: "positive" | "negative" | "neutral";
+  evidence?: EvidenceItem[];
+  whatWouldChangeAssessment: string;
+}
+
+// Backward-compatible alias for existing modal props
+export type ScoreAttributionItem = FactorAttributionItem;
+
+export interface ARXAction {
+  id: string;
+  type: "RESEARCH" | "SIZE_POSITION" | "SET_ALERT" | "ADD_WATCHLIST" | "STRESS_TEST" | "REVIEW_THESIS" | "COMPARE";
+  label: string;
+  enabled: boolean;
+  reason?: string;
 }
 
 export interface QuantitativeInsight {
@@ -22,6 +48,15 @@ export interface QuantitativeInsight {
   price: number;
   changePct: number;
   setupScore: number;
+  
+  // Horizon & Posture State
+  horizon: TimeHorizon;
+  assessment: Assessment;
+  posture: DecisionPosture;
+  postureLabel: string;
+  ownership: OwnershipState;
+  
+  // Legacy verdict for existing components
   verdict: "WAIT_FOR_TRIGGER" | "STRONG_BUY_ZONE" | "PILOT_BUY" | "AVOID_STAGE_4" | "TAKE_PROFIT";
   verdictLabel: string;
   
@@ -92,7 +127,12 @@ export interface QuantitativeInsight {
   // Why Score Attribution
   scoreAttribution: {
     finalScore: number;
-    items: ScoreAttributionItem[];
+    items: FactorAttributionItem[];
     catalystToIncreaseScore: string;
   };
+
+  // Downside Risk & Invalidation
+  primaryRiskSummary: string;
+  whatWouldChangeAssessment: string;
+  availableActions: ARXAction[];
 }
