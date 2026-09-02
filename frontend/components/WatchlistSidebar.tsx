@@ -38,11 +38,11 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
       }
       // Guarantee instant sparkline and quote hydration from master catalog
       const baseline = getMasterBaselineQuote(item.symbol);
-      const isUp = baseline.changePct >= 0;
+      const isUp = baseline.pctChange >= 0;
       return {
         ...item,
-        price: `$${baseline.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        change: `${isUp ? "+" : ""}${baseline.changePct.toFixed(2)}%`,
+        price: `$${baseline.spot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        change: `${isUp ? "+" : ""}${baseline.pctChange.toFixed(2)}%`,
         isUp,
       };
     });

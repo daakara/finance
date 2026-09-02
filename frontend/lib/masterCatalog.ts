@@ -1392,23 +1392,28 @@ export const CATALOG_BASELINE_CHANGES: Record<string, number> = {
   CIEN: 1.35,
 };
 
-export function getMasterBaselineQuote(symbol: string): { price: number; changePct: number } {
-  const price = getMasterBaselinePrice(symbol, 100.0);
-  if (!symbol) return { price, changePct: 0.5 };
+export interface MasterBaselineQuote {
+  spot: number;
+  pctChange: number;
+}
+
+export function getMasterBaselineQuote(symbol: string): MasterBaselineQuote {
+  const spot = getMasterBaselinePrice(symbol, 100.0);
+  if (!symbol) return { spot, pctChange: 0.5 };
   const raw = normalizeCatalogSymbol(symbol);
   
   if (CATALOG_BASELINE_CHANGES[raw] !== undefined) {
-    return { price, changePct: CATALOG_BASELINE_CHANGES[raw] };
+    return { spot, pctChange: CATALOG_BASELINE_CHANGES[raw] };
   }
   const withUsd = `${raw}-USD`;
   if (CATALOG_BASELINE_CHANGES[withUsd] !== undefined) {
-    return { price, changePct: CATALOG_BASELINE_CHANGES[withUsd] };
+    return { spot, pctChange: CATALOG_BASELINE_CHANGES[withUsd] };
   }
   const withoutUsd = raw.replace(/-USD$/, "");
   if (CATALOG_BASELINE_CHANGES[withoutUsd] !== undefined) {
-    return { price, changePct: CATALOG_BASELINE_CHANGES[withoutUsd] };
+    return { spot, pctChange: CATALOG_BASELINE_CHANGES[withoutUsd] };
   }
-  return { price, changePct: 0.85 };
+  return { spot, pctChange: 0.85 };
 }
 
 export function getAllMasterTickers(): string[] {
