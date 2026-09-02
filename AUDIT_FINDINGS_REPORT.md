@@ -95,24 +95,36 @@ All identified vulnerabilities, model anomalies, and UI edge cases have been **f
 
 ---
 
-## 3. Automated Quality Gate & Test Verification
+## 3. Automated Quality Gate & CI/CD Pipeline Architecture
 
 ```
-                           VERIFICATION SCORECARD
-                                      │
-     ┌────────────────────────────────┼────────────────────────────────┐
-     ▼                                ▼                                ▼
-🐍 UNIT & DOMAIN TESTS           🥊 ADVERSARIAL CHALLENGES        ⚛️ NEXT.JS STATIC BUILD
-• 74 / 74 PASSED (unittest)      • 14 / 14 PASSED (pytest)       • 98 / 98 Static SSG Pages
-• Ran in 24.82s                  • Ran in 41.85s                 • 0 TypeScript / Lint Errors
-• 100% Invariant Pass Rate       • Stress Vectors Verified       • Semantic SSR Shells Validated
+                          4-STAGE UNIFIED CI/CD PIPELINE
+                                         │
+     ┌───────────────────┬───────────────┴───────────────┬───────────────────┐
+     ▼                   ▼                               ▼                   ▼
+🧪 STAGE 1: TEST     🔍 STAGE 2: LINT & SECURITY    🏗️ STAGE 3: BUILD & SSG    🚀 STAGE 4: DEPLOY & PURGE
+• Python 3.11 & 3.12 • Hard flake8 AST syntax check  • Node 18 + npm caching  • Render backend warm-up
+• 74+ pytest vectors • Bandit AST security check     • 98 Static SSG routes   • Cloudflare edge purge
+• Invariant bounds   • Python bytecode compilation   • Data integrity check   • Triggered on main push
 ```
 
-### Git Commit History:
-- [`217cc7e`](https://github.com/daakara/finance/commit/217cc7e): `feat(seo): implement rich semantic SSR fallback shells for crawlers, eliminating blank loading states`
-- [`0be34c2`](https://github.com/daakara/finance/commit/0be34c2): `feat(quant): integrate M1 backend hardening and M2 quant domain invariant verification with adversarial test harness`
-- [`d1de1c7`](https://github.com/daakara/finance/commit/d1de1c7): `feat(frontend): complete M3 brand parity, spot price hydration, ESLint config, and modal z-index supremacy`
-- [`85da958`](https://github.com/daakara/finance/commit/85da958): `feat(ux): implement fractional share sizing, 24/7 crypto market badge, and ETF sector breakdown widget`
+### CI/CD Consolidation Highlights:
+1. **Eliminated Duplicate Test Execution**: Merged standalone cache purge workflow into the unified downstream `deploy_and_purge_cache` job in `ci.yml`, cutting redundant runner minutes.
+2. **Hard Syntax & AST Quality Gate**: Configured `flake8 --select=E9,F63,F7,F82` to fail builds on Python syntax errors or undefined symbols.
+3. **Explicit Node.js 18 & NPM Caching**: Configured `actions/setup-node@v4` with `cache: 'npm'` and `npm ci` for fast, deterministic static builds.
+4. **Automated Edge Invalidation**: Triggers Render API ping and Cloudflare CDN cache purge automatically upon successful static compilation on `main`.
+
+---
+
+## 4. Git Commit History & Quality Scorecard
+
+### Recent Commit Hashes:
+- [`217cc7e`](https://github.com/daakara/finance/commit/217cc7e): SSR fallback shells & crawler discoverability
+- [`0be34c2`](https://github.com/daakara/finance/commit/0be34c2): M1 backend hardening & M2 quant domain invariants
+- [`d1de1c7`](https://github.com/daakara/finance/commit/d1de1c7): M3 brand parity, spot price hydration, ESLint config, and modal z-index supremacy
+- [`85da958`](https://github.com/daakara/finance/commit/85da958): Fractional share sizing, 24/7 crypto market badge, and ETF sector breakdown widget
+- [`378e21e`](https://github.com/daakara/finance/commit/378e21e): Watchlist baseline sparklines, custom dark scrollbar, and spotlight header polish
+- [`2f9c274`](https://github.com/daakara/finance/commit/2f9c274): Consolidated 4-stage unified CI/CD pipeline and edge cache invalidation
 
 ---
 
