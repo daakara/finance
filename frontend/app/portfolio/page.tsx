@@ -197,11 +197,37 @@ export default function PortfolioPage() {
     trackMatomoEvent("User Journey", "Remove Portfolio Position", symbol);
   };
 
+  const [accountEquity, setAccountEquity] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
+      if (saved) {
+        const parsed = Number(saved);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    return 25000;
+  });
+
+  const handleAccountEquityChange = (val: number) => {
+    const safeVal = Math.max(1, val);
+    setAccountEquity(safeVal);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", safeVal.toString());
+      window.dispatchEvent(new Event("storage"));
+    }
+  };
+
   const handleExportCsv = () => {
     exportPortfolioToCsv(positions);
     trackMatomoEvent("User Journey", "Export Portfolio CSV", `Positions count: ${positions.length}`);
   };
 
+  const effectiveCapital = Math.max(accountEquity, summary.totalCost);
+  const investedEquity = summary.totalEquity;
+  const cashReserves = Math.max(0, effectiveCapital - summary.totalCost);
+  const totalNetWorth = cashReserves + investedEquity;
+  const investedPct = totalNetWorth > 0 ? (investedEquity / totalNetWorth) * 100 : 0;
+  const cashPct = totalNetWorth > 0 ? (cashReserves / totalNetWorth) * 100 : 0;
   const isPositive = summary.totalUnrealizedPnL >= 0;
 
   return (
@@ -264,19 +290,33 @@ export default function PortfolioPage() {
         {/* Portfolio Summary KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Total Portfolio Value</span>
+            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Total Account Net Worth</span>
             <span className="text-xl sm:text-2xl font-extrabold text-white tabular-nums">
-              ${summary.totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[10px] text-slate-500 block mt-1">{summary.positionsCount} Active Holdings</span>
+            <span className="text-[10px] text-slate-400 block mt-1">
+              ${investedEquity.toFixed(2)} Stock + ${cashReserves.toFixed(2)} Cash
+            </span>
           </div>
 
           <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Cost Basis</span>
-            <span className="text-xl sm:text-2xl font-extrabold text-slate-300 tabular-nums">
-              ${summary.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Active Stock Holdings</span>
+            <span className="text-xl sm:text-2xl font-extrabold text-cyan-300 tabular-nums">
+              ${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-[10px] text-slate-500 block mt-1">Principal Capital</span>
+            <span className="text-[10px] text-cyan-500/80 block mt-1 font-bold">
+              {investedPct.toFixed(1)}% Deployed ({summary.positionsCount} {summary.positionsCount === 1 ? "Holding" : "Holdings"})
+            </span>
+          </div>
+
+          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
+            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Available Cash Reserves</span>
+            <span className="text-xl sm:text-2xl font-extrabold text-emerald-300 tabular-nums">
+              ${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10px] text-emerald-500/80 block mt-1 font-bold">
+              {cashPct.toFixed(1)}% Buying Power
+            </span>
           </div>
 
           <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
@@ -288,13 +328,104 @@ export default function PortfolioPage() {
               {isPositive ? `+${summary.totalUnrealizedPnLPct.toFixed(2)}%` : `${summary.totalUnrealizedPnLPct.toFixed(2)}%`} Total Return
             </span>
           </div>
+        </div>
 
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Anonymous Trader ID</span>
-            <span className="text-xs font-bold text-cyan-400 truncate block mt-1">
-              {anonId}
-            </span>
-            <span className="text-[10px] text-slate-500 block mt-1">Attributed Journey Active</span>
+        {/* Interactive Asset & Cash Allocation Visualizer */}
+        <div className="bg-[#0b101b] border border-[#1e2a3c] rounded-xl p-4 shadow-xl space-y-3 font-mono">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">💼</span>
+              <span className="text-xs sm:text-sm font-bold text-white">
+                Account Capital & Risk Allocation Breakdown
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-400">Total Wallet:</span>
+              <div className="flex items-center gap-1 bg-[#06090f] border border-[#24334b] rounded-lg px-2 py-1">
+                <span className="text-xs text-slate-500 font-bold">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="10"
+                  value={accountEquity}
+                  onChange={(e) => handleAccountEquityChange(Number(e.target.value))}
+                  className="w-20 bg-transparent text-xs text-cyan-300 font-bold focus:outline-none"
+                />
+              </div>
+
+              {/* Quick Presets */}
+              <div className="hidden sm:flex items-center gap-1">
+                {[50, 100, 500, 2500, 10000, 25000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleAccountEquityChange(preset)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                      accountEquity === preset
+                        ? "bg-cyan-600 border-cyan-400 text-white"
+                        : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    ${preset >= 1000 ? `${preset / 1000}k` : preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Stack Bar */}
+          <div className="space-y-1.5">
+            <div className="w-full h-3 bg-[#06090f] rounded-full overflow-hidden flex border border-[#1b2537]">
+              {positions.map((pos, idx) => {
+                const posVal = pos.shares * pos.currentPrice;
+                const pct = totalNetWorth > 0 ? (posVal / totalNetWorth) * 100 : 0;
+                const colors = ["bg-cyan-500", "bg-emerald-500", "bg-indigo-500", "bg-amber-500", "bg-purple-500"];
+                const color = colors[idx % colors.length];
+                return (
+                  <div
+                    key={pos.symbol}
+                    style={{ width: `${pct}%` }}
+                    className={`${color} h-full transition-all duration-300`}
+                    title={`${pos.symbol}: $${posVal.toFixed(2)} (${pct.toFixed(1)}%)`}
+                  />
+                );
+              })}
+              <div
+                style={{ width: `${cashPct}%` }}
+                className="bg-slate-700/60 h-full transition-all duration-300"
+                title={`Available Cash: $${cashReserves.toFixed(2)} (${cashPct.toFixed(1)}%)`}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+              <div className="flex items-center gap-3 flex-wrap">
+                {positions.map((pos, idx) => {
+                  const posVal = pos.shares * pos.currentPrice;
+                  const pct = totalNetWorth > 0 ? (posVal / totalNetWorth) * 100 : 0;
+                  const dotColors = ["bg-cyan-400", "bg-emerald-400", "bg-indigo-400", "bg-amber-400", "bg-purple-400"];
+                  const dotColor = dotColors[idx % dotColors.length];
+                  return (
+                    <span key={pos.symbol} className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                      <strong className="text-slate-200">{pos.symbol}:</strong>
+                      <span>${posVal.toFixed(2)} ({pct.toFixed(1)}%)</span>
+                    </span>
+                  );
+                })}
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-slate-500" />
+                  <strong className="text-slate-300">Cash Reserves:</strong>
+                  <span>${cashReserves.toFixed(2)} ({cashPct.toFixed(1)}%)</span>
+                </span>
+              </div>
+
+              <span className="text-slate-500 hidden md:inline">
+                {positions.length > 0
+                  ? `Sized at 1% risk per trade. Preserves $${cashReserves.toFixed(2)} cash balance.`
+                  : "Add positions from the Position Sizer to see live allocation."}
+              </span>
+            </div>
           </div>
         </div>
 
