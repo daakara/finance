@@ -32,12 +32,39 @@ export default function AdaptiveTerminal({
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
   const fromCount = searchParams.get("fromCount");
+  const urlOwnership = searchParams.get("ownership")?.toUpperCase();
 
   const { experienceMode } = useExperienceMode();
   const [isWhyOpen, setIsWhyOpen] = useState(false);
   const [isSizerOpen, setIsSizerOpen] = useState(false);
   const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>("SWING");
-  const [ownership, setOwnership] = useState<OwnershipState>("UNKNOWN");
+
+  const initialOwnership: OwnershipState =
+    urlOwnership === "OWNED" || urlOwnership === "NOT_OWNED"
+      ? (urlOwnership as OwnershipState)
+      : "UNKNOWN";
+
+  const [ownership, setOwnershipState] = useState<OwnershipState>(initialOwnership);
+
+  // Sync ownership if URL parameter updates
+  React.useEffect(() => {
+    if (urlOwnership === "OWNED" || urlOwnership === "NOT_OWNED") {
+      setOwnershipState(urlOwnership as OwnershipState);
+    }
+  }, [urlOwnership]);
+
+  const handleSetOwnership = (newOwnership: OwnershipState) => {
+    setOwnershipState(newOwnership);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (newOwnership === "UNKNOWN") {
+        url.searchParams.delete("ownership");
+      } else {
+        url.searchParams.set("ownership", newOwnership);
+      }
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const insight = generateQuantitativeInsight(
     symbol,
@@ -74,19 +101,19 @@ export default function AdaptiveTerminal({
           </span>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setOwnership("NOT_OWNED")}
+              onClick={() => handleSetOwnership("NOT_OWNED")}
               className="px-2.5 py-1 rounded-lg bg-[#141d2d] hover:bg-cyan-900/60 border border-[#263750] text-cyan-200 font-mono font-bold text-[11px] transition-all cursor-pointer"
             >
               🔍 Considering buying
             </button>
             <button
-              onClick={() => setOwnership("OWNED")}
+              onClick={() => handleSetOwnership("OWNED")}
               className="px-2.5 py-1 rounded-lg bg-[#141d2d] hover:bg-emerald-900/60 border border-[#263750] text-emerald-200 font-mono font-bold text-[11px] transition-all cursor-pointer"
             >
               💼 I already own it
             </button>
             <button
-              onClick={() => setOwnership("NOT_OWNED")}
+              onClick={() => handleSetOwnership("NOT_OWNED")}
               className="px-2 py-1 text-slate-400 hover:text-slate-200 text-[11px] cursor-pointer"
             >
               📊 Just researching

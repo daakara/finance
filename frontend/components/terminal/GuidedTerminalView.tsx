@@ -171,7 +171,10 @@ export default function GuidedTerminalView({
           {steps.map((step, idx) => (
             <button
               key={idx}
+              id={`walkthrough-step-btn-${idx}`}
               onClick={() => setActiveStep(activeStep === idx ? null : idx)}
+              aria-expanded={activeStep === idx}
+              aria-controls={`walkthrough-step-panel-${idx}`}
               className={`p-2 rounded-lg text-left text-xs font-mono border transition-all cursor-pointer ${
                 activeStep === idx
                   ? "bg-cyan-950/80 border-cyan-500 text-cyan-200"
@@ -184,7 +187,12 @@ export default function GuidedTerminalView({
         </div>
 
         {activeStep !== null && (
-          <div className="p-3 bg-[#0d1422] border border-cyan-800/40 rounded-lg text-xs font-sans text-slate-200 animate-fade-in leading-relaxed">
+          <div
+            id={`walkthrough-step-panel-${activeStep}`}
+            role="region"
+            aria-labelledby={`walkthrough-step-btn-${activeStep}`}
+            className="p-3 bg-[#0d1422] border border-cyan-800/40 rounded-lg text-xs font-sans text-slate-200 animate-fade-in leading-relaxed"
+          >
             <strong className="text-cyan-400 font-mono block mb-1">{steps[activeStep].title}</strong>
             <span>{steps[activeStep].text}</span>
           </div>

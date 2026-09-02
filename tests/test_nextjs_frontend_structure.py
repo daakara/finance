@@ -514,9 +514,31 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("deriveAssessmentState", e_content)
         self.assertIn("calculateFactorAgreement", e_content)
 
+    def test_phase6_runtime_remediations(self):
+        """Quality Gate: Verify BUG-01 (ARIA walkthrough state), BUG-02 (ownership URL sync), and BUG-03 (Escape-to-close)."""
+        terminal_path = os.path.join("frontend", "components", "AdaptiveTerminal.tsx")
+        guided_path = os.path.join("frontend", "components", "terminal", "GuidedTerminalView.tsx")
+        why_modal_path = os.path.join("frontend", "components", "WhyInspectModal.tsx")
+
+        with open(terminal_path, "r", encoding="utf-8") as f:
+            t_src = f.read()
+        self.assertIn("urlOwnership = searchParams.get(\"ownership\")", t_src)
+        self.assertIn("handleSetOwnership", t_src)
+        self.assertIn("url.searchParams.set(\"ownership\", newOwnership)", t_src)
+
+        with open(guided_path, "r", encoding="utf-8") as f:
+            g_src = f.read()
+        self.assertIn("aria-expanded={activeStep === idx}", g_src)
+        self.assertIn("aria-controls={`walkthrough-step-panel-${idx}`}", g_src)
+        self.assertIn("role=\"region\"", g_src)
+
+        with open(why_modal_path, "r", encoding="utf-8") as f:
+            w_src = f.read()
+        self.assertIn("e.key === \"Escape\"", w_src)
+        self.assertIn("window.addEventListener(\"keydown\", handleKeyDown)", w_src)
+        self.assertIn("window.removeEventListener(\"keydown\", handleKeyDown)", w_src)
+        self.assertIn("role=\"dialog\"", w_src)
+
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
