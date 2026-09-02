@@ -47,11 +47,14 @@ export default function PositionSizerModal({
   const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeEntry * 0.95;
   const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeEntry * 1.10;
 
+  const isMicroAccount = accountSize < safeEntry;
+  const isFractionalActive = allowFractional || isMicroAccount;
+
   const riskPerShare = Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = accountSize * (riskPct / 100);
-  const rawShares = allowFractional
-    ? Number((maxDollarRisk / riskPerShare).toFixed(3))
-    : Math.max(1, Math.floor(maxDollarRisk / riskPerShare));
+  const rawShares = isFractionalActive
+    ? Number((maxDollarRisk / riskPerShare).toFixed(4))
+    : Math.floor(maxDollarRisk / riskPerShare);
   const shares = rawShares;
   const totalAllocation = Number((shares * safeEntry).toFixed(2));
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
@@ -143,6 +146,22 @@ export default function PositionSizerModal({
             </div>
           )}
 
+          {/* Micro-Wallet Auto-Adaptation Banner */}
+          {isMicroAccount && (
+            <div className="p-2.5 bg-cyan-950/40 border border-cyan-700/50 rounded-xl text-cyan-200 text-xs font-sans flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🎯</span>
+                <div>
+                  <strong className="font-bold text-cyan-300">Fractional Precision Active:</strong>
+                  <span className="text-[11px] text-slate-300 block">Sized for ${accountSize.toLocaleString()} wallet. You are never priced out of high-conviction assets.</span>
+                </div>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-600/60 text-cyan-200 font-mono font-bold shrink-0">
+                0.0001 Precision
+              </span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] text-slate-400 font-bold block mb-1">
@@ -152,9 +171,11 @@ export default function PositionSizerModal({
                 <span className="absolute left-3 top-2 text-xs text-slate-500 font-bold">$</span>
                 <input
                   type="number"
+                  min="1"
+                  step="10"
                   value={accountSize}
                   onChange={(e) => {
-                    const val = Math.max(100, Number(e.target.value));
+                    const val = Math.max(1, Number(e.target.value));
                     setAccountSize(val);
                     if (typeof window !== "undefined") {
                       localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", String(val));
@@ -162,6 +183,29 @@ export default function PositionSizerModal({
                   }}
                   className="w-full bg-[#070b13] border border-[#24334b] rounded-lg pl-7 pr-3 py-1.5 text-xs text-white font-bold focus:border-cyan-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Quick Wallet Presets */}
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                {[50, 100, 500, 2500, 10000, 25000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setAccountSize(preset);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("FINANCE_USER_ACCOUNT_SIZE", String(preset));
+                      }
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                      accountSize === preset
+                        ? "bg-cyan-600 border-cyan-400 text-white"
+                        : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    ${preset >= 1000 ? `${preset / 1000}k` : preset}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -173,7 +217,7 @@ export default function PositionSizerModal({
                 <input
                   type="number"
                   step="0.25"
-                  min="0.25"
+                  min="0.1"
                   max="10"
                   value={riskPct}
                   onChange={(e) => setRiskPct(Math.max(0.1, Math.min(10, Number(e.target.value))))}
@@ -181,38 +225,43 @@ export default function PositionSizerModal({
                 />
                 <span className="absolute right-3 top-2 text-xs text-slate-500 font-bold">%</span>
               </div>
+
+              {/* Risk Presets */}
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                {[0.5, 1.0, 1.5, 2.0].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setRiskPct(preset)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                      riskPct === preset
+                        ? "bg-cyan-600 border-cyan-400 text-white"
+                        : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {preset}%
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Quick Risk Buttons & Fractional Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-slate-500 font-bold mr-1">Risk Presets:</span>
-              {[0.5, 1.0, 1.5, 2.0].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setRiskPct(preset)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
-                    riskPct === preset
-                      ? "bg-cyan-600 border-cyan-400 text-white"
-                      : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {preset}% (${((accountSize * preset) / 100).toFixed(0)})
-                </button>
-              ))}
-            </div>
+          {/* Mode Selector */}
+          <div className="flex items-center justify-between pt-1 border-t border-[#172235]">
+            <span className="text-[10px] text-slate-400 font-mono">
+              Risk Budget: <strong className="text-cyan-300 font-bold">${maxDollarRisk.toFixed(2)}</strong>
+            </span>
 
             <button
               type="button"
               onClick={() => setAllowFractional(!allowFractional)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                allowFractional
+              className={`px-2 py-1 rounded text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                isFractionalActive
                   ? "bg-cyan-950 border-cyan-600 text-cyan-300"
                   : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
               }`}
             >
-              <span>{allowFractional ? "🔢 Fractional Units" : "📦 Whole Shares"}</span>
+              <span>{isFractionalActive ? "🔢 Fractional Units" : "📦 Whole Shares"}</span>
             </button>
           </div>
 
@@ -221,14 +270,14 @@ export default function PositionSizerModal({
             <div className="flex items-center justify-between border-b border-[#141e30] pb-2">
               <span className="text-xs text-slate-400 font-bold">Recommended Position</span>
               <span className="text-lg sm:text-xl font-black text-cyan-400 tabular-nums">
-                {shares} <span className="text-xs text-slate-400 font-semibold">Shares</span>
+                {shares} <span className="text-xs text-slate-400 font-semibold">{shares === 1 ? "Share" : "Shares"}</span>
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs">
               <div className="bg-[#0b101b] p-2.5 rounded-lg border border-[#172235]">
                 <span className="text-[10px] text-slate-500 block">CAPITAL ALLOCATED</span>
-                <span className="font-bold text-white tabular-nums">${totalAllocation.toLocaleString()}</span>
+                <span className="font-bold text-white tabular-nums">${totalAllocation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">({portfolioAllocPct}% of portfolio)</span>
               </div>
 
@@ -255,7 +304,15 @@ export default function PositionSizerModal({
           {/* Action Guidance */}
           <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
-            Buy <span className="text-white font-bold">{shares} shares</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
+            {shares > 0 ? (
+              <>
+                Buy <span className="text-white font-bold">{shares} {shares === 1 ? "share" : "shares"}</span> of {symbol || "asset"} at ${safeEntry.toFixed(2)}. Place GTC Stop-Loss at ${safeStop.toFixed(2)}. Risk is locked at exactly ${actualDollarRisk.toFixed(2)} ({riskPct}% equity constraint).
+              </>
+            ) : (
+              <>
+                Budget of ${maxDollarRisk.toFixed(2)} is less than 1 whole share risk. Switch to <span className="text-cyan-300 font-bold">🔢 Fractional Units</span> to invest with fractional precision.
+              </>
+            )}
           </div>
 
           {/* Success Toast */}

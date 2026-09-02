@@ -47,17 +47,21 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const stopDistancePct = Math.max(0.8, Math.min(6.0, mVaR95Pct * 0.65));
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 
+  // If account size is less than 1 whole share, fractional sizing is active to avoid pricing out micro wallets
+  const isMicroWallet = accountSize < currentPrice;
+  const isFractionalActive = allowFractional || isMicroWallet;
+
   // Unconstrained statistical units based on volatility stop
   const rawVolatilityUnits = stopDistanceDollar > 0
-    ? allowFractional
-      ? Number((dollarRisk / stopDistanceDollar).toFixed(3))
-      : Math.max(1, Math.floor(dollarRisk / stopDistanceDollar))
-    : 1;
+    ? isFractionalActive
+      ? Number((dollarRisk / stopDistanceDollar).toFixed(4))
+      : Math.floor(dollarRisk / stopDistanceDollar)
+    : 0;
 
   // Maximum units constrained by 100% cash buying power
-  const maxCashUnits = allowFractional
-    ? Number((accountSize / currentPrice).toFixed(3))
-    : Math.max(1, Math.floor(accountSize / currentPrice));
+  const maxCashUnits = isFractionalActive
+    ? Number((accountSize / currentPrice).toFixed(4))
+    : Math.floor(accountSize / currentPrice);
 
   // In CASH mode, clamp position units to available cash equity
   const positionUnits = accountType === "CASH" ? Math.min(maxCashUnits, rawVolatilityUnits) : rawVolatilityUnits;
@@ -242,23 +246,34 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           <input
             id="capital-slider"
             type="range"
-            min={1000}
+            min={50}
             max={250000}
-            step={1000}
+            step={50}
             value={accountSize}
             aria-label="Portfolio Capital Amount"
-            aria-valuemin={1000}
+            aria-valuemin={50}
             aria-valuemax={250000}
             aria-valuenow={accountSize}
             aria-valuetext={`$${accountSize.toLocaleString()}`}
             onChange={(e) => handleAccountSizeChange(Number(e.target.value))}
             className="w-full accent-amber-500 cursor-pointer h-2 bg-[#1b2434] rounded-lg focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
           />
-          <div className="flex justify-between text-[10px] text-slate-400 tabular-nums">
-            <span>$1k</span>
-            <span>$50k</span>
-            <span>$100k</span>
-            <span>$250k</span>
+          <div className="flex flex-wrap items-center justify-between gap-1 pt-1">
+            <span className="text-[9px] text-slate-500 font-bold">Presets:</span>
+            {[50, 100, 500, 2500, 10000, 25000].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => handleAccountSizeChange(preset)}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                  accountSize === preset
+                    ? "bg-amber-500 border-amber-400 text-slate-950"
+                    : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                ${preset >= 1000 ? `${preset / 1000}k` : preset}
+              </button>
+            ))}
           </div>
         </div>
 
