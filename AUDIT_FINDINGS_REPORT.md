@@ -170,7 +170,26 @@ During our iterative CI monitoring, two specific pre-production regressions were
 
 ---
 
-## 7. Recent Git Commit Hashes
+## 7. Micro-Wallet Sizing & Fractional Inclusion Audit
+
+### 📷 Screenshot & UX Flaw Analysis (`PositionSizerModal.tsx` & `DayTraderPositionSizer.tsx`)
+- **Defect**: When an investor with a micro-wallet balance (e.g. $60, $25, or $10) opened the Position Sizer:
+  1. The **Account Equity ($)** input clamped strictly to `Math.max(100, ...)` and the slider clamped to `min={1000}`, actively blocking users from typing their real balance ($60).
+  2. In **Whole Shares Mode**, `Math.max(1, Math.floor(...))` artificially forced `1 share` ($189.26 on `ANET`), generating a severe **189.3% portfolio allocation** on a $100 account (or 315% on a $60 account), requiring high-risk margin borrowing while misleadingly claiming "Risk is locked at 0.1%".
+- **Financial Inclusivity & Retail Reality**:
+  - Modern retail investing (Robinhood, Schwab Slices, Fidelity Fractional Shares, Cash App, Interactive Brokers) operates on fractional share execution so investors are **never priced out** of high-conviction tier-1 assets (`MSFT` @ $420, `ANET` @ $189, `NVR` @ $6,000).
+- **Mathematical Sizing Remediation**:
+  - On a **$60.00 wallet** with **1% risk budget** ($0.60 maximum risk) for `ANET` ($189.26 entry, $176.01 stop loss, $13.25 risk/share):
+    - $\text{Exact Fractional Units} = \frac{\$0.60}{\$13.25} = \mathbf{0.0453\text{ shares}}$.
+    - $\text{Capital Invested} = 0.0453 \times \$189.26 = \mathbf{\$8.57}$ (14.3% of wallet, 100% cash funded, zero margin leverage, risk capped at exactly $0.60).
+- **Remediations Implemented**:
+  1. Lowered Account Equity input floor to **$1.00** (`min="1"`) and added quick wallet presets: `[$50, $100, $500, $2.5k, $10k, $25k]`.
+  2. Implemented **Auto-Adaptive Fractional Precision**: When `accountSize < safeEntry`, the system automatically activates fractional calculation (down to 0.0001 precision) and displays a clean indicator banner.
+  3. Eliminated forced 1-share margin distortion: In whole shares mode, if the budget cannot buy 1 full share, `shares = 0` is returned with an actionable one-click prompt to enable Fractional Units.
+
+---
+
+## 8. Recent Git Commit Hashes
 
 - [`217cc7e`](https://github.com/daakara/finance/commit/217cc7e): SSR fallback shells & crawler discoverability
 - [`0be34c2`](https://github.com/daakara/finance/commit/0be34c2): M1 backend hardening & M2 quant domain invariants
@@ -181,6 +200,7 @@ During our iterative CI monitoring, two specific pre-production regressions were
 - [`5b55dcf`](https://github.com/daakara/finance/commit/5b55dcf): Resolved property name collision in catalog parity test
 - [`1287e95`](https://github.com/daakara/finance/commit/1287e95): Targeted tracked python packages in CI data integrity gate
 - [`2bd7690`](https://github.com/daakara/finance/commit/2bd7690): Eliminate card header text overflow with compact score pill and min-w-0 layout
+- [`a966944`](https://github.com/daakara/finance/commit/a966944): Enable micro-wallet equity bounds down to $1 with auto-adaptive fractional precision
 
 ---
 
