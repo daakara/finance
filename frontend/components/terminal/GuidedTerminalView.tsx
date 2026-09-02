@@ -141,10 +141,10 @@ export default function GuidedTerminalView({
             <span className="text-lg">👀</span>
             <div>
               <strong className="text-xs text-white font-bold block">
-                Recommended Action: {insight.human.actionCallout.action}
+                ARX View: {insight.terminalState.uiStateLabel}
               </strong>
               <p className="text-xs text-slate-400 font-sans mt-0.5">
-                {insight.human.actionCallout.guidance}
+                {insight.terminalState.headlineExplanation}
               </p>
             </div>
           </div>
