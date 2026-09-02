@@ -117,7 +117,9 @@ export default function StandardTerminalView({
               </div>
               <div className="flex items-center justify-between pt-1.5">
                 <span className="text-slate-400">50D SMA Floor:</span>
-                <span className="text-cyan-300 font-bold">${kl.sma50.toFixed(2)}</span>
+                <span className="text-cyan-300 font-bold">
+                  {kl.sma50 !== undefined ? `$${kl.sma50.toFixed(2)}` : "N/A"}
+                </span>
               </div>
               <div className="flex items-center justify-between pt-1.5">
                 <span className="text-rose-400">Stop Loss:</span>

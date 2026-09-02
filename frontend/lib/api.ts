@@ -776,11 +776,16 @@ export async function fetchDirectYahooFinanceChart(
       }
       const vwap = cumVol > 0 ? Number((cumVP / cumVol).toFixed(2)) : currentPrice;
 
-      // 20-EMA
-      const slice20 = candles.slice(-20);
-      const ema_20 = slice20.length > 0
-        ? Number((slice20.reduce((acc, c) => acc + c.close, 0) / slice20.length).toFixed(2))
-        : currentPrice;
+      // 20-EMA (Canonical recursive exponential smoothing: alpha = 2 / (20 + 1))
+      let ema_20: number = currentPrice;
+      if (candles.length >= 20) {
+        const k = 2 / (20 + 1);
+        let currentEma = candles[0].close;
+        for (let i = 1; i < candles.length; i++) {
+          currentEma = candles[i].close * k + currentEma * (1 - k);
+        }
+        ema_20 = Number(currentEma.toFixed(2));
+      }
 
       // 14-ATR
       const slice14 = candles.slice(-14);

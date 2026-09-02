@@ -21,7 +21,7 @@ export default function GuidedTerminalView({
     { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. Relative strength score is ${insight.advanced.relativeStrengthScore || 65}/100.` },
     { title: "3. Why does ARX like/caution it?", text: insight.human.reclaimMilestone },
     { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${insight.standard.keyLevels.stopLoss.toFixed(2)}, the setup is invalidated.` },
-    { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of $${insight.standard.keyLevels.sma50.toFixed(2)}. Target 1 is $${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%).` },
+    { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of ${insight.standard.keyLevels.sma50 !== undefined ? `$${insight.standard.keyLevels.sma50.toFixed(2)}` : "key technical levels"}. Target 1 is $${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%).` },
     { title: "6. What should I monitor?", text: `Volume surges, 50-day moving average crossovers, and broader market regime stability.` },
   ];
 

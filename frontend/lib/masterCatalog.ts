@@ -65,7 +65,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     moatSummary: "CUDA software ecosystem and proprietary NVLink interconnect architecture create high switching costs for hyperscaler AI training clusters.",
     upcomingCatalyst: "Blackwell Ultra GPU volume ramp, sovereign AI datacenter procurement, and Rubin architecture tape-out.",
     thesis: "3-Stage contraction handle resting above 20 EMA with Blackwell datacenter ramp.",
-    secFilingDate: "2026-08-28"
+    secFilingDate: "2026-08-26"
   },
   AAPL: {
     symbol: "AAPL",
@@ -319,7 +319,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     moatSummary: "Commercial monopoly on rare neuromuscular treatments with 88%+ gross margins.",
     upcomingCatalyst: "Agamree Duchenne muscular dystrophy international commercial rollout.",
     thesis: "Orphan disease franchise with 88%+ gross margins and pristine 9/9 Piotroski balance sheet.",
-    secFilingDate: "2026-08-08"
+    secFilingDate: "2026-05-11"
   },
   MEDP: {
     symbol: "MEDP",
@@ -544,7 +544,7 @@ export const MASTER_ASSET_CATALOG: Record<string, MasterAssetEntry> = {
     moatSummary: "Premier national modular mechanical, electrical and HVAC solutions provider with multi-year hyperscaler data center construction backlogs.",
     upcomingCatalyst: "Hyperscaler data center expansion and modular liquid cooling contract announcements.",
     thesis: "Stage 2 institutional momentum driven by accelerating hyperscale data center cooling and electrical buildouts.",
-    secFilingDate: "2026-07-26"
+    secFilingDate: "2026-07-23"
   },
   CELH: {
     symbol: "CELH",
@@ -1266,7 +1266,7 @@ export const CATALOG_BASELINE_PRICES: Record<string, number> = {
   LLY: 845.00,
   LNTH: 98.40,
   CPRX: 22.85,
-  FIX: 385.00,
+  FIX: 1560.13,
   MEDP: 360.00,
   TMDX: 145.00,
   VRT: 92.50,

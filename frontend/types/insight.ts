@@ -171,7 +171,7 @@ export interface QuantitativeInsight {
     keyLevels: {
       currentPrice: number;
       watchZone: string;
-      sma50: number;
+      sma50?: number;
       stopLoss: number;
       stopLossPct: number;
       target1: number;
@@ -186,14 +186,14 @@ export interface QuantitativeInsight {
   // Tier 3: Quantitative Data (Advanced)
   advanced: {
     rsi: number;
-    ema20: number;
-    sma50: number;
+    ema20?: number;
+    sma50?: number;
     atr: number;
     rvol: number;
     beta: number;
     marketCap: string;
     peRatio: number;
-    roic: number;
+    roic?: number;
     debtToEquity: number;
     nextEarningsDate?: string;
     vcpStage?: number;

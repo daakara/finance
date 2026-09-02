@@ -24,18 +24,19 @@ export function generateQuantitativeInsight(
 ): QuantitativeInsight {
   const safePrice = currentPrice > 0 ? currentPrice : 100;
 
-  // 1. Real Historical Moving Averages calculation from actual daily candles
+  // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
+  // SMA50 requires at least 50 valid closed daily sessions. No subset averaging mislabeled as 50D SMA.
   let calculatedSma50: number | null = null;
   let calculatedEma20: number | null = null;
 
-  if (candles && candles.length >= 10) {
-    // 50D SMA: Arithmetic mean of up to last 50 closed daily candles
-    const smaWindow = Math.min(candles.length, 50);
-    const smaSlice = candles.slice(-smaWindow);
+  if (candles && candles.length >= 50) {
+    const smaSlice = candles.slice(-50);
     const smaSum = smaSlice.reduce((sum, c) => sum + c.close, 0);
-    calculatedSma50 = Number((smaSum / smaWindow).toFixed(2));
+    calculatedSma50 = Number((smaSum / 50).toFixed(2));
+  }
 
-    // 20D EMA: Exponential smoothing with k = 2 / (20 + 1)
+  // EMA20 requires at least 20 valid trading sessions for burn-in
+  if (candles && candles.length >= 20) {
     const k = 2 / (20 + 1);
     let currentEma = candles[0].close;
     for (let i = 1; i < candles.length; i++) {
@@ -44,93 +45,154 @@ export function generateQuantitativeInsight(
     calculatedEma20 = Number(currentEma.toFixed(2));
   }
 
+  const isTrendAvailable = calculatedSma50 !== null;
+  const sma50 = calculatedSma50 ?? undefined;
+  const ema20 = calculatedEma20 ?? undefined;
+
   // 2. Derive authentic stage from actual price vs 50D SMA (Minervini/Weinstein stage discipline)
   // Stage 4 (Markdown/Correction) if price is below 50D SMA; Stage 2 (Markup) if price is above 50D SMA
   const derivedStage = stage !== undefined
     ? stage
-    : (calculatedSma50 !== null ? (safePrice < calculatedSma50 ? 4 : 2) : 2);
+    : (isTrendAvailable ? (safePrice < (sma50 as number) ? 4 : 2) : 2);
   const isStage4 = derivedStage === 4;
 
-  const sma50 = calculatedSma50 ?? Number((safePrice * (isStage4 ? 1.115 : 0.94)).toFixed(2));
-  const ema20 = calculatedEma20 ?? Number((safePrice * (isStage4 ? 1.074 : 0.97)).toFixed(2));
   const stopLoss = Number((safePrice * 0.93).toFixed(2));
   const target1 = Number((safePrice * 1.204).toFixed(2));
   const target2 = Number((safePrice * 1.293).toFixed(2));
   const profitRisk = Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2));
 
-  // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog
+  // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog (DISC-03, DISC-04)
   const upperSym = symbol.toUpperCase().replace("-USD", "");
   const catAsset = MASTER_ASSET_CATALOG[upperSym];
+  const isHealthAvailable = catAsset !== undefined && catAsset.roic !== undefined;
 
-  const roicDisplay = catAsset?.roic !== undefined ? `${catAsset.roic}%` : "18.4%";
-  const filingDate = catAsset?.secFilingDate || "2026-08-08";
-  const piotroskiScore = catAsset?.piotroski ?? 8;
+  const roicDisplay = isHealthAvailable ? `${catAsset.roic}%` : "N/A";
+  const filingDate = catAsset?.secFilingDate || "Unknown";
+  const piotroskiScore = catAsset?.piotroski ?? 0;
   const debtEquityDisplay = piotroskiScore >= 8 ? "0.28" : "0.75";
 
-  // Build Normalized Domain Assessments
+  // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
-    {
-      domainId: "health",
-      domainName: "Company Health",
-      availability: "AVAILABLE",
-      status: "FAVORABLE",
-      pointImpact: 20,
-      importanceLevel: "HIGH",
-      observation: `ROIC > 15% (${roicDisplay}) and low balance-sheet leverage (Debt/Equity ${debtEquityDisplay}, Piotroski ${piotroskiScore}/9).`,
-      modelRule: "Sound capital efficiency and low leverage contribute +20 points to fundamental score.",
-      evidence: [
-        {
-          metricName: "Return on Invested Capital (ROIC)",
-          currentValue: roicDisplay,
-          benchmarkValue: "10.0% Industry Avg",
-          source: "SEC Form 10-Q Filing",
-          asOf: filingDate,
-          freshness: "QUARTERLY",
-          significance: "HIGH",
-          status: "POSITIVE",
+    // Domain 1: Company Health (Fundamental)
+    isHealthAvailable
+      ? {
+          domainId: "health",
+          domainName: "Company Health",
+          availability: "AVAILABLE",
+          status: catAsset.roic >= 15 ? "FAVORABLE" : catAsset.roic >= 8 ? "MIXED" : "UNFAVORABLE",
+          pointImpact: catAsset.roic >= 15 ? 20 : catAsset.roic >= 8 ? 10 : -15,
+          importanceLevel: "HIGH",
+          observation: `ROIC > 15% (${roicDisplay}) and balance-sheet leverage (Debt/Equity ${debtEquityDisplay}, Piotroski ${piotroskiScore}/9).`,
+          modelRule: "Sound capital efficiency and low leverage contribute +20 points to fundamental score.",
+          evidence: [
+            {
+              metricName: "Return on Invested Capital (ROIC)",
+              currentValue: roicDisplay,
+              benchmarkValue: "10.0% Industry Avg",
+              source: "SEC Form 10-Q Filing",
+              asOf: filingDate,
+              provenance: {
+                source: "SEC EDGAR Form 10-Q",
+                publishedAt: filingDate,
+                observedAt: new Date().toISOString().split("T")[0],
+                freshness: "QUARTERLY",
+              },
+              freshness: "QUARTERLY",
+              significance: "HIGH",
+              status: "POSITIVE",
+            },
+            {
+              metricName: "Debt to Equity Ratio",
+              currentValue: debtEquityDisplay,
+              benchmarkValue: "< 1.5 Target",
+              source: "SEC Form 10-Q Filing",
+              asOf: filingDate,
+              provenance: {
+                source: "SEC EDGAR Form 10-Q",
+                publishedAt: filingDate,
+                observedAt: new Date().toISOString().split("T")[0],
+                freshness: "QUARTERLY",
+              },
+              freshness: "QUARTERLY",
+              significance: "MEDIUM",
+              status: "POSITIVE",
+            },
+          ],
+          whatWouldChangeAssessment: "A deterioration in operating margins below 8% would trigger a health downgrade.",
+        }
+      : {
+          domainId: "health",
+          domainName: "Company Health",
+          availability: "UNAVAILABLE",
+          status: "UNAVAILABLE",
+          pointImpact: 0,
+          importanceLevel: "HIGH",
+          observation: "Official SEC regulatory filings and verified financial statements unavailable for this asset.",
+          modelRule: "Fundamental company health requires verified financial statements; zero points awarded when evidence is unavailable.",
+          evidence: [],
+          whatWouldChangeAssessment: "Publication of audited Form 10-Q or 10-K financial disclosures will unlock fundamental scoring.",
         },
-        {
-          metricName: "Debt to Equity Ratio",
-          currentValue: debtEquityDisplay,
-          benchmarkValue: "< 1.5 Target",
-          source: "SEC Form 10-Q Filing",
-          asOf: filingDate,
-          freshness: "QUARTERLY",
-          significance: "MEDIUM",
-          status: "POSITIVE",
+
+    // Domain 2: Price Trend (Technical)
+    isTrendAvailable
+      ? {
+          domainId: "trend",
+          domainName: "Price Trend",
+          availability: "AVAILABLE",
+          status: isStage4 ? "UNFAVORABLE" : "FAVORABLE",
+          pointImpact: isStage4 ? -25 : 25,
+          importanceLevel: "HIGH",
+          observation: isStage4
+            ? `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${(sma50 as number).toFixed(2)}).`
+            : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${(ema20 as number).toFixed(2)}) and 50 SMA ($${(sma50 as number).toFixed(2)}).`,
+          modelRule: isStage4
+            ? "Price below 50-day SMA deducts 25 points because trend confirmation is absent."
+            : "VCP base contraction above rising moving averages adds +25 points.",
+          evidence: [
+            {
+              metricName: "Price vs 50-Day SMA",
+              currentValue: `$${safePrice.toFixed(2)}`,
+              benchmarkValue: `$${(sma50 as number).toFixed(2)} (50D SMA)`,
+              source: "Market Feed",
+              asOf: "15m Delayed",
+              freshness: "DELAYED",
+              significance: "HIGH",
+              status: isStage4 ? "NEGATIVE" : "POSITIVE",
+            },
+          ],
+          whatWouldChangeAssessment: isStage4
+            ? `Price reclaiming and holding above $${(sma50 as number).toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`
+            : "A daily close below the 20-day EMA would weaken breakout strength.",
+        }
+      : {
+          domainId: "trend",
+          domainName: "Price Trend",
+          availability: "UNAVAILABLE",
+          status: "UNAVAILABLE",
+          pointImpact: 0,
+          importanceLevel: "HIGH",
+          observation: candles && candles.length > 0
+            ? `Insufficient historical trading sessions (${candles.length} of 50 required) to compute 50-day moving average.`
+            : "Historical price action candles unavailable for this asset.",
+          modelRule: "Price trend requires at least 50 valid trading sessions; zero points awarded when evidence is unavailable.",
+          evidence: candles && candles.length > 0
+            ? [
+                {
+                  metricName: "Price vs 50-Day SMA",
+                  currentValue: `$${safePrice.toFixed(2)}`,
+                  benchmarkValue: "N/A (< 50 sessions)",
+                  source: "Market Feed",
+                  asOf: "15m Delayed",
+                  freshness: "DELAYED",
+                  significance: "HIGH",
+                  status: "UNAVAILABLE",
+                },
+              ]
+            : [],
+          whatWouldChangeAssessment: "Accumulation of 50 closed daily trading sessions will activate trend moving-average analysis.",
         },
-      ],
-      whatWouldChangeAssessment: "A deterioration in operating margins below 8% would trigger a health downgrade.",
-    },
-    {
-      domainId: "trend",
-      domainName: "Price Trend",
-      availability: "AVAILABLE",
-      status: isStage4 ? "UNFAVORABLE" : "FAVORABLE",
-      pointImpact: isStage4 ? -25 : 25,
-      importanceLevel: "HIGH",
-      observation: isStage4
-        ? `Price ($${safePrice.toFixed(2)}) is below the 50-day average ($${sma50.toFixed(2)}).`
-        : `Price ($${safePrice.toFixed(2)}) is holding firmly above the 20 EMA ($${ema20.toFixed(2)}) and 50 SMA ($${sma50.toFixed(2)}).`,
-      modelRule: isStage4
-        ? "Price below 50-day SMA deducts 25 points because trend confirmation is absent."
-        : "VCP base contraction above rising moving averages adds +25 points.",
-      evidence: [
-        {
-          metricName: "Price vs 50-Day SMA",
-          currentValue: `$${safePrice.toFixed(2)}`,
-          benchmarkValue: `$${sma50.toFixed(2)} (50D SMA)`,
-          source: "Market Feed",
-          asOf: "15m Delayed",
-          freshness: "DELAYED",
-          significance: "HIGH",
-          status: isStage4 ? "NEGATIVE" : "POSITIVE",
-        },
-      ],
-      whatWouldChangeAssessment: isStage4
-        ? `Price reclaiming and holding above $${sma50.toFixed(2)} (50D SMA) on above-average volume will remove this penalty.`
-        : "A daily close below the 20-day EMA would weaken breakout strength.",
-    },
+
+    // Domain 3: Smart Money Flow
     {
       domainId: "smart_money",
       domainName: "Smart Money Flow",
@@ -156,6 +218,8 @@ export function generateQuantitativeInsight(
       ],
       whatWouldChangeAssessment: "Sustained net insider buying on Form 4 filings would elevate this factor.",
     },
+
+    // Domain 4: Macro Regime
     {
       domainId: "macro",
       domainName: "Macro Regime",
@@ -256,16 +320,20 @@ export function generateQuantitativeInsight(
           sentiment: "positive",
         },
       ],
-      reclaimMilestone: `${symbol} needs to reclaim $${sma50.toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`,
+      reclaimMilestone: isTrendAvailable
+        ? `${symbol} needs to reclaim $${(sma50 as number).toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`
+        : `Historical trend milestone unavailable (${symbol} has insufficient trading history).`,
       watchLevels: {
         watchZone: `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}`,
-        keyLevel: `$${sma50.toFixed(2)} (50D SMA)`,
+        keyLevel: isTrendAvailable ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
         riskStop: `$${stopLoss.toFixed(2)} (-7.0%)`,
       },
       actionCallout: {
         action: isStage4 ? "WATCH" : "ENTER",
         guidance: isStage4
-          ? `Watch for a strong reversal and reclaim of $${sma50.toFixed(2)} with volume. Don't rush—wait for the trigger.`
+          ? (isTrendAvailable
+              ? `Watch for a strong reversal and reclaim of $${(sma50 as number).toFixed(2)} with volume. Don't rush—wait for the trigger.`
+              : `Trend evidence incomplete. Wait for market structure confirmation.`)
           : `Setup confirmed within the optimal buy zone. Setup invalidation level at $${stopLoss.toFixed(2)}.`,
       },
     },
@@ -275,8 +343,8 @@ export function generateQuantitativeInsight(
       bottomLine: terminalState.headlineExplanation,
       signalsRatio: terminalState.factorAgreement.displayLabel,
       confluenceBreakdown: [
-        { dimension: "Chart Structure", score: isStage4 ? 40 : 88 },
-        { dimension: "Company Health", score: 80 },
+        { dimension: "Chart Structure", score: !isTrendAvailable ? 0 : (isStage4 ? 40 : 88) },
+        { dimension: "Company Health", score: !isHealthAvailable ? 0 : 80 },
         { dimension: "Smart Money Flow", score: 50 },
         { dimension: "Market Tailwinds", score: 70 },
       ],
@@ -292,9 +360,11 @@ export function generateQuantitativeInsight(
         target2Pct: 29.3,
         profitRiskRatio: profitRisk,
       },
-      setupSummary: isStage4
-        ? "Stage 4 Correction / Base Building Required below 50-day SMA."
-        : "VCP Stage 3 Contraction / Relative Strength Leader.",
+      setupSummary: !isTrendAvailable
+        ? "Trend Evidence Incomplete — Awaiting 50-session historical base."
+        : (isStage4
+            ? "Stage 4 Correction / Base Building Required below 50-day SMA."
+            : "VCP Stage 3 Contraction / Relative Strength Leader."),
     },
 
     // Tier 3: Quantitative Data (Advanced)
@@ -307,7 +377,7 @@ export function generateQuantitativeInsight(
       beta: catAsset?.beta ?? 1.18,
       marketCap: catAsset?.marketCap ?? "$5.45B",
       peRatio: catAsset?.fwdPe ?? 22.1,
-      roic: catAsset?.roic ?? 18.4,
+      roic: catAsset?.roic,
       debtToEquity: Number(debtEquityDisplay),
       vcpStage: isStage4 ? undefined : 3,
       relativeStrengthScore: isStage4 ? 62 : 94,

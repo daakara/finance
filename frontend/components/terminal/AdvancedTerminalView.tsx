@@ -45,12 +45,16 @@ export default function AdvancedTerminalView({
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">20 EMA</span>
-          <span className="text-sm font-black text-cyan-300">${adv.ema20.toFixed(2)}</span>
+          <span className="text-sm font-black text-cyan-300">
+            {adv.ema20 !== undefined ? `$${adv.ema20.toFixed(2)}` : "N/A"}
+          </span>
         </div>
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">50 SMA</span>
-          <span className="text-sm font-black text-indigo-300">${adv.sma50.toFixed(2)}</span>
+          <span className="text-sm font-black text-indigo-300">
+            {adv.sma50 !== undefined ? `$${adv.sma50.toFixed(2)}` : "N/A"}
+          </span>
         </div>
 
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
@@ -138,7 +142,9 @@ export default function AdvancedTerminalView({
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
               <span className="text-[10px] text-slate-500 block">ROIC (GREENBLATT)</span>
-              <span className="text-xs font-bold text-emerald-400 mt-0.5 block">{adv.roic.toFixed(1)}%</span>
+              <span className="text-xs font-bold text-emerald-400 mt-0.5 block">
+                {adv.roic !== undefined ? `${adv.roic.toFixed(1)}%` : "N/A"}
+              </span>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
@@ -162,7 +168,7 @@ export default function AdvancedTerminalView({
               Multi-Factor Archetype Classification
             </span>
             <p className="text-slate-300 leading-relaxed font-mono text-[11px]">
-              VCP Structure: {adv.vcpStage ? `Stage ${adv.vcpStage} Contraction` : "Stage 4 Correction"} | 50 SMA: ${adv.sma50.toFixed(2)} | Pivot Proximity: -10.3%
+              VCP Structure: {adv.vcpStage ? `Stage ${adv.vcpStage} Contraction` : "Stage 4 Correction"} | 50 SMA: {adv.sma50 !== undefined ? `$${adv.sma50.toFixed(2)}` : "N/A"} | Pivot Proximity: -10.3%
             </p>
           </div>
         </div>
