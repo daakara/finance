@@ -115,6 +115,23 @@ export default function AdaptiveTerminal({
         </div>
       </div>
 
+      {/* ⚠️ Ineligible / Limited Evidence Notice */}
+      {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
+        <div className="bg-[#181106] border border-amber-800/60 p-3 rounded-xl flex items-start gap-2.5 text-xs text-amber-200" role="alert">
+          <span className="text-base shrink-0">⚠️</span>
+          <div className="space-y-1">
+            <strong className="font-mono font-bold block text-amber-300">
+              {insight.terminalState.overallEligibility === "INELIGIBLE"
+                ? "Insufficient Evidence to Derive Confident Posture"
+                : "Partial Evidence: Reduced Domain Confidence"}
+            </strong>
+            <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+              {insight.terminalState.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 3 Presentation Lenses */}
       {experienceMode === "GUIDED" && (
         <GuidedTerminalView
