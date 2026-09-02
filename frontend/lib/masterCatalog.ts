@@ -1276,12 +1276,67 @@ export const CATALOG_BASELINE_PRICES: Record<string, number> = {
 };
 
 /**
- * Accessor Helpers
+ * Accessor Helpers & SSOT Normalizers
  */
+export function normalizeCatalogSymbol(symbol: string): string {
+  if (!symbol) return "";
+  return symbol.toUpperCase().trim().replace(/[/_]/g, "-");
+}
+
 export function getMasterAsset(symbol: string): MasterAssetEntry | undefined {
   if (!symbol) return undefined;
-  const clean = symbol.toUpperCase().replace("-USD", "").trim();
-  return MASTER_ASSET_CATALOG[clean];
+  const raw = normalizeCatalogSymbol(symbol);
+  
+  // 1. Direct match (e.g. "NVDA", "BTC-USD")
+  if (MASTER_ASSET_CATALOG[raw]) {
+    return MASTER_ASSET_CATALOG[raw];
+  }
+  
+  // 2. Suffix "-USD" match (e.g. "BTC" -> "BTC-USD")
+  const withUsd = `${raw}-USD`;
+  if (MASTER_ASSET_CATALOG[withUsd]) {
+    return MASTER_ASSET_CATALOG[withUsd];
+  }
+  
+  // 3. Strip "-USD" match (e.g. "BTC-USD" -> "BTC")
+  const withoutUsd = raw.replace(/-USD$/, "");
+  if (MASTER_ASSET_CATALOG[withoutUsd]) {
+    return MASTER_ASSET_CATALOG[withoutUsd];
+  }
+  
+  // 4. Concatenated "USD" match (e.g. "BTCUSD" -> "BTC-USD")
+  if (raw.endsWith("USD") && raw.length > 3 && !raw.includes("-")) {
+    const splitUsd = `${raw.slice(0, -3)}-USD`;
+    if (MASTER_ASSET_CATALOG[splitUsd]) {
+      return MASTER_ASSET_CATALOG[splitUsd];
+    }
+  }
+  
+  return undefined;
+}
+
+export function getMasterBaselinePrice(symbol: string, fallback: number = 100.0): number {
+  if (!symbol) return fallback;
+  const raw = normalizeCatalogSymbol(symbol);
+  
+  if (CATALOG_BASELINE_PRICES[raw] !== undefined) {
+    return CATALOG_BASELINE_PRICES[raw];
+  }
+  const withUsd = `${raw}-USD`;
+  if (CATALOG_BASELINE_PRICES[withUsd] !== undefined) {
+    return CATALOG_BASELINE_PRICES[withUsd];
+  }
+  const withoutUsd = raw.replace(/-USD$/, "");
+  if (CATALOG_BASELINE_PRICES[withoutUsd] !== undefined) {
+    return CATALOG_BASELINE_PRICES[withoutUsd];
+  }
+  if (raw.endsWith("USD") && raw.length > 3 && !raw.includes("-")) {
+    const splitUsd = `${raw.slice(0, -3)}-USD`;
+    if (CATALOG_BASELINE_PRICES[splitUsd] !== undefined) {
+      return CATALOG_BASELINE_PRICES[splitUsd];
+    }
+  }
+  return fallback;
 }
 
 export function getAllMasterTickers(): string[] {

@@ -20,31 +20,48 @@ class OptimalExecutionEngine:
         user_role: str = "LONG_TERM",
         technicals: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
+        current_price = max(0.0001, float(current_price))
+        dec = 6 if current_price < 0.01 else (4 if current_price < 1.0 else 2)
+        min_tick = 10 ** (-dec)
+
         if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty or len(price_df) < 5:
             is_day = (user_role == "DAY_TRADER")
             atr = current_price * (0.022 if is_day else 0.028)
-            stop = round(current_price - (1.25 * atr), 2)
-            tp1 = round(current_price + (2.8 * atr), 2)
-            tp2 = round(current_price + (4.8 * atr), 2)
-            rr = round((tp1 - current_price) / max(0.01, (current_price - stop)), 2)
-            return {
+            stop = round(current_price - (1.25 * atr), dec)
+            stop = min(stop, round(current_price - max(min_tick, current_price * 0.005), dec))
+            min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
+            stop = max(min_stop_floor, stop)
+            if stop >= current_price:
+                stop = round(current_price * 0.95, dec)
+            risk = max(min_tick, current_price - stop)
+            min_tp1_rr = current_price + (1.85 * risk)
+            tp1_raw = current_price + (2.8 * atr)
+            tp1 = round(max(tp1_raw, min_tp1_rr), dec)
+            while round((tp1 - current_price) / risk, 4) < 1.85 or tp1 <= current_price:
+                tp1 = round(tp1 + min_tick, dec)
+            tp2 = round(max(current_price + (4.8 * atr), tp1 + max(min_tick, 0.5 * atr)), dec)
+            while tp2 <= tp1:
+                tp2 = round(tp2 + min_tick, dec)
+            rr = round((tp1 - current_price) / risk, 2)
+            raw_fallback = {
                 "current_price": current_price,
-                "optimal_entry_min": round(current_price * (0.988 if is_day else 0.975), 2),
-                "optimal_entry_max": round(current_price * (1.008 if is_day else 1.018), 2),
+                "optimal_entry_min": round(current_price * (0.988 if is_day else 0.975), dec),
+                "optimal_entry_max": round(current_price * (1.008 if is_day else 1.018), dec),
                 "stop_loss": stop,
                 "stop_loss_pct": round(((stop - current_price) / current_price) * 100, 2),
                 "take_profit_1": tp1,
                 "take_profit_1_pct": round(((tp1 - current_price) / current_price) * 100, 2),
                 "take_profit_2": tp2,
                 "take_profit_2_pct": round(((tp2 - current_price) / current_price) * 100, 2),
-                "risk_reward_ratio": max(2.1, rr),
+                "risk_reward_ratio": max(1.85, rr),
                 "setup_pattern": "Raschke 20 EMA Pullback" if is_day else "Minervini Volatility Contraction Pattern (VCP)",
                 "entry_thesis": "Intraday trend continuation above VWAP" if is_day else "Stage 2 base accumulation with declining volume on pullbacks.",
                 "invalidation_condition": "Break of 1.25x 5m ATR below low of day." if is_day else "Daily close below 50-day moving average or -7.5% stop constraint.",
                 "stage_phase": "Intraday Momentum Trend Expansion" if is_day else "Stage 2 Advancing Growth Phase",
                 "vcp_contraction_status": "Tightening 5m Compression" if is_day else "VCP 3-Stage Compression Confirmed",
-                "atr_14": round(atr, 2),
+                "atr_14": round(atr, dec),
             }
+            return OptimalExecutionEngine._enforce_execution_invariants(raw_fallback, user_role)
 
         close = price_df["Close"]
         high = price_df["High"]
@@ -69,25 +86,25 @@ class OptimalExecutionEngine:
         # Protect against unadjusted stock splits or dirty historical candles (clamp 50 SMA to [-20%, +18%])
         sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if not math.isnan(raw_sma_50) else current_price * 1.05
         is_stage_4_downtrend = (current_price < sma_50 * 0.98)
-        breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), 2)
+        breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec)
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
             # Day trader pullback zone: centered around 20 EMA / VWAP anchor with intraday ATR band
             pivot = 0.6 * ema_20 + 0.4 * current_price
-            entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.992), 2)
-            entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.005), 2)
+            entry_min = round(min(pivot - (0.35 * atr_14), current_price * 0.992), dec)
+            entry_max = round(max(pivot + (0.35 * atr_14), current_price * 1.005), dec)
             if entry_min > entry_max:
                 entry_min, entry_max = entry_max, entry_min
             raw_stop = entry_min - (1.25 * atr_14)
             # Strictly cap Day Trader risk while guaranteeing stop_loss < entry_min
-            stop_loss = round(min(entry_min - 0.05, max(current_price * 0.978, min(current_price * 0.990, raw_stop))), 2)
+            stop_loss = round(min(entry_min - min_tick, max(current_price * 0.978, min(current_price * 0.990, raw_stop))), dec)
             if stop_loss >= entry_min:
-                stop_loss = round(entry_min - max(0.10, 0.5 * atr_14), 2)
-            take_profit_1 = round(min(current_price * 1.040, max(current_price * 1.018, current_price + (1.75 * atr_14))), 2)
+                stop_loss = round(entry_min - max(min_tick, 0.5 * atr_14), dec)
+            take_profit_1 = round(min(current_price * 1.040, max(current_price * 1.018, current_price + (1.75 * atr_14))), dec)
             if take_profit_1 <= entry_max:
-                take_profit_1 = round(max(entry_max + 0.10, current_price * 1.018), 2)
-            take_profit_2 = round(max(take_profit_1 + 0.10, min(current_price * 1.075, max(current_price * 1.035, current_price + (3.0 * atr_14)))), 2)
+                take_profit_1 = round(max(entry_max + min_tick, current_price * 1.018), dec)
+            take_profit_2 = round(max(take_profit_1 + min_tick, min(current_price * 1.075, max(current_price * 1.035, current_price + (3.0 * atr_14)))), dec)
             setup_name = "Raschke 20 EMA Pullback & VWAP Re-test"
             thesis = "Look for bid defense around 20 EMA with tight 1.25x ATR stop loss below low-of-day."
             invalidation = "Break of 1.25x 5m ATR below low of the current session."
@@ -99,19 +116,19 @@ class OptimalExecutionEngine:
             pullback_support = max(current_price * 0.95, min(sma_50, base_pivot - (0.75 * atr_14)))
             breakout_ceiling = max(current_price * 1.015, base_pivot + (0.5 * atr_14))
             
-            entry_min = round(min(pullback_support, current_price * 0.975), 2)
-            entry_max = round(min(breakout_ceiling, current_price + (1.0 * atr_14)), 2)
+            entry_min = round(min(pullback_support, current_price * 0.975), dec)
+            entry_max = round(min(breakout_ceiling, current_price + (1.0 * atr_14)), dec)
             if entry_min > entry_max:
                 entry_min, entry_max = entry_max, entry_min
             raw_stop = entry_min - (1.5 * atr_14)
             # Strictly cap Swing risk while guaranteeing stop_loss < entry_min
-            stop_loss = round(min(entry_min - 0.10, max(current_price * 0.930, min(current_price * 0.965, raw_stop))), 2)
+            stop_loss = round(min(entry_min - min_tick, max(current_price * 0.930, min(current_price * 0.965, raw_stop))), dec)
             if stop_loss >= entry_min:
-                stop_loss = round(entry_min - max(0.25, 0.75 * atr_14), 2)
-            take_profit_1 = round(min(current_price * 1.095, max(current_price * 1.048, current_price + (2.5 * atr_14))), 2)
+                stop_loss = round(entry_min - max(min_tick, 0.75 * atr_14), dec)
+            take_profit_1 = round(min(current_price * 1.095, max(current_price * 1.048, current_price + (2.5 * atr_14))), dec)
             if take_profit_1 <= entry_max:
-                take_profit_1 = round(max(entry_max + 0.25, current_price * 1.048), 2)
-            take_profit_2 = round(max(take_profit_1 + 0.25, min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14)))), 2)
+                take_profit_1 = round(max(entry_max + min_tick, current_price * 1.048), dec)
+            take_profit_2 = round(max(take_profit_1 + min_tick, min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14)))), dec)
 
             if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"
@@ -120,9 +137,9 @@ class OptimalExecutionEngine:
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
                 # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) and clamp to realistic technical ceilings
-                breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), 2)
-                take_profit_1 = round(min(current_price * 1.245, max(breakout_pivot * 1.08, current_price * 1.12)), 2)
-                take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), 2)
+                breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec)
+                take_profit_1 = round(min(current_price * 1.245, max(breakout_pivot * 1.08, current_price * 1.12)), dec)
+                take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), dec)
             elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
                 thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."
@@ -138,25 +155,33 @@ class OptimalExecutionEngine:
 
         # Enforce strict mathematical ordering invariant across all scenarios:
         # stop_loss < entry_min <= entry_max < take_profit_1 < take_profit_2
-        entry_min = round(entry_min, 2)
-        entry_max = round(max(entry_min, entry_max), 2)
-        stop_loss = round(min(stop_loss, entry_min - max(0.01, 0.15 * atr_14)), 2)
-        stop_loss = max(0.01, stop_loss)
-        take_profit_1 = round(max(take_profit_1, entry_max + max(0.01, 0.5 * atr_14)), 2)
-        take_profit_2 = round(max(take_profit_2, take_profit_1 + max(0.01, 0.5 * atr_14)), 2)
+        entry_min = round(entry_min, dec)
+        entry_max = round(max(entry_min, entry_max), dec)
+        stop_loss = round(min(stop_loss, entry_min - max(min_tick, 0.15 * atr_14)), dec)
+        min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
+        stop_loss = max(min_stop_floor, stop_loss)
+        if stop_loss >= current_price:
+            stop_loss = round(current_price * 0.95, dec)
+        
+        # Ensure TP1 satisfies minimum R:R >= 1.85:1 vs current price and stop loss
+        risk_per_share = max(min_tick, current_price - stop_loss)
+        min_tp1_for_rr = current_price + (1.85 * risk_per_share)
+        take_profit_1 = round(max(take_profit_1, min_tp1_for_rr, entry_max + max(min_tick, 0.5 * atr_14)), dec)
+        while round((take_profit_1 - current_price) / risk_per_share, 4) < 1.85 or take_profit_1 <= entry_max or take_profit_1 <= current_price:
+            take_profit_1 = round(take_profit_1 + min_tick, dec)
+        take_profit_2 = round(max(take_profit_2, take_profit_1 + max(min_tick, 0.5 * atr_14)), dec)
+        while take_profit_2 <= take_profit_1:
+            take_profit_2 = round(take_profit_2 + min_tick, dec)
 
         # Calculate multi-stage blended reward (50% at TP1 + 50% at TP2) for institutional execution
-        risk_per_share = max(0.01, current_price - stop_loss)
-        tp1_reward = max(0.01, take_profit_1 - current_price)
-        tp2_reward = max(0.01, take_profit_2 - current_price)
+        tp1_reward = max(min_tick, take_profit_1 - current_price)
+        tp2_reward = max(min_tick, take_profit_2 - current_price)
         blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
         
         blended_rr = round(blended_reward / risk_per_share, 2)
-        max_rr = round(tp2_reward / risk_per_share, 2)
-        tp1_rr = round(tp1_reward / risk_per_share, 2)
         
-        # Enforce realistic bounds
-        rr_ratio = round(min(5.0, max(1.10, blended_rr)), 2)
+        # Enforce realistic bounds with minimum 1.85:1 floor
+        rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
 
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":
@@ -174,16 +199,67 @@ class OptimalExecutionEngine:
             "take_profit_1_pct": round(((take_profit_1 - current_price) / current_price) * 100, 2),
             "take_profit_2": take_profit_2,
             "take_profit_2_pct": round(((take_profit_2 - current_price) / current_price) * 100, 2),
-            "risk_reward_ratio": max(1.2, rr_ratio),
+            "risk_reward_ratio": max(1.85, rr_ratio),
             "setup_pattern": setup_name,
             "entry_thesis": thesis,
             "invalidation_condition": invalidation,
             "stage_phase": stage,
             "vcp_contraction_status": vcp,
-            "breakout_pivot": round(breakout_pivot, 2) if is_stage_4_downtrend else None,
-            "atr_14": round(atr_14, 2),
+            "breakout_pivot": round(breakout_pivot, dec) if is_stage_4_downtrend else None,
+            "atr_14": round(atr_14, dec),
         }
         return OptimalExecutionEngine._enforce_execution_invariants(raw_plan, user_role)
+
+    @classmethod
+    def calculate_execution_plan(
+        cls,
+        symbol: str,
+        price: float,
+        atr_14: Optional[float] = None,
+        highs_52w: Optional[float] = None,
+        lows_52w: Optional[float] = None,
+        user_role: str = "LONG_TERM",
+    ) -> Dict[str, Any]:
+        """Convenience execution plan generator given spot price and technical parameters."""
+        price = max(0.0001, float(price))
+        dec = 6 if price < 0.01 else (4 if price < 1.0 else 2)
+        min_tick = 10 ** (-dec)
+        atr = atr_14 if (atr_14 is not None and atr_14 > 0) else price * 0.03
+        is_day = (user_role == "DAY_TRADER")
+        stop = round(price - (1.25 * atr), dec)
+        stop = min(stop, round(price - max(min_tick, price * 0.005), dec))
+        min_stop_floor = 0.01 if price >= 1.0 else max(0.00005, price * 0.5)
+        stop = max(min_stop_floor, stop)
+        if stop >= price:
+            stop = round(price * 0.95, dec)
+        risk = max(min_tick, price - stop)
+        min_tp1_rr = price + (1.85 * risk)
+        tp1 = round(max(price + (2.5 * atr), min_tp1_rr), dec)
+        while round((tp1 - price) / risk, 4) < 1.85 or tp1 <= price:
+            tp1 = round(tp1 + min_tick, dec)
+        tp2 = round(max(price + (4.5 * atr), tp1 + max(min_tick, 0.5 * atr)), dec)
+        while tp2 <= tp1:
+            tp2 = round(tp2 + min_tick, dec)
+        raw_plan = {
+            "symbol": symbol,
+            "current_price": price,
+            "optimal_entry_min": round(price * (0.988 if is_day else 0.975), dec),
+            "optimal_entry_max": round(price * (1.008 if is_day else 1.018), dec),
+            "stop_loss": stop,
+            "stop_loss_pct": round(((stop - price) / price) * 100, 2),
+            "take_profit_1": tp1,
+            "take_profit_1_pct": round(((tp1 - price) / price) * 100, 2),
+            "take_profit_2": tp2,
+            "take_profit_2_pct": round(((tp2 - price) / price) * 100, 2),
+            "risk_reward_ratio": round((tp1 - price) / risk, 2),
+            "setup_pattern": "Minervini Volatility Contraction Pattern (VCP)",
+            "entry_thesis": "Stage 2 base accumulation with declining volume on pullbacks.",
+            "invalidation_condition": "Daily close below 50-day moving average or -7.5% stop constraint.",
+            "stage_phase": "Stage 2 Advancing Growth Phase",
+            "vcp_contraction_status": "VCP 3-Stage Compression Confirmed",
+            "atr_14": round(atr, dec),
+        }
+        return cls._enforce_execution_invariants(raw_plan, user_role)
 
     @staticmethod
     def _enforce_execution_invariants(plan: dict, user_role: str) -> dict:
@@ -191,45 +267,118 @@ class OptimalExecutionEngine:
         Self-Healing Runtime Invariant Circuit Breaker:
         Guarantees that no corrupted calculation, split gap, or floating-point anomaly
         can ever be emitted from the execution engine.
+        Enforces:
+        1. stop_loss < optimal_entry_min <= optimal_entry_max < take_profit_1 < take_profit_2
+        2. stop_loss < spot < take_profit_1
+        3. risk_reward_ratio >= 1.85:1
         """
-        spot = plan["current_price"]
-        entry_min = plan["optimal_entry_min"]
+        raw_spot = plan.get("current_price", 100.0)
+        spot = max(0.0001, float(raw_spot if raw_spot is not None and not math.isnan(raw_spot) else 100.0))
+        plan["current_price"] = spot
 
-        # 1. Stop loss percentage clamping and strict floor guarantee
-        raw_stop_pct = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
+        dec = 6 if spot < 0.01 else (4 if spot < 1.0 else 2)
+        min_tick = 10 ** (-dec)
+
+        # 1. Ensure optimal entry zones
+        raw_entry_min = plan.get("optimal_entry_min")
+        if raw_entry_min is None or math.isnan(raw_entry_min) or raw_entry_min <= 0:
+            raw_entry_min = spot * (0.988 if user_role == "DAY_TRADER" else 0.975)
+        raw_entry_max = plan.get("optimal_entry_max")
+        if raw_entry_max is None or math.isnan(raw_entry_max) or raw_entry_max <= 0:
+            raw_entry_max = spot * (1.008 if user_role == "DAY_TRADER" else 1.018)
+
+        entry_min = round(raw_entry_min, dec)
+        entry_max = round(raw_entry_max, dec)
+        if entry_max < entry_min:
+            entry_max = entry_min
+        plan["optimal_entry_min"] = entry_min
+        plan["optimal_entry_max"] = entry_max
+
+        # 2. Stop loss calculation and clamping
+        raw_stop = plan.get("stop_loss")
+        if raw_stop is None or math.isnan(raw_stop) or raw_stop <= 0:
+            raw_stop = spot * (0.985 if user_role == "DAY_TRADER" else 0.95)
+
+        raw_stop_pct = round(((raw_stop - spot) / spot) * 100, 2)
         if user_role == "DAY_TRADER":
             plan["stop_loss_pct"] = max(-2.2, min(-0.9, raw_stop_pct))
-            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), 2)
+            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
         else:
             plan["stop_loss_pct"] = max(-7.0, min(-3.5, raw_stop_pct))
-            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), 2)
+            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
 
-        if plan["stop_loss"] >= entry_min:
-            plan["stop_loss"] = round(entry_min - max(0.05, spot * 0.005), 2)
-            plan["stop_loss_pct"] = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
+        if plan["stop_loss"] >= plan["optimal_entry_min"]:
+            plan["stop_loss"] = round(plan["optimal_entry_min"] - max(min_tick, spot * 0.005), dec)
 
-        # 2. Target 1 & 2 bounds and progression
-        raw_tp1_pct = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
-        clamped_tp1_pct = max(4.0, min(24.5, raw_tp1_pct))
-        plan["take_profit_1"] = round(spot * (1.0 + (clamped_tp1_pct / 100.0)), 2)
-        plan["take_profit_1_pct"] = clamped_tp1_pct
+        if plan["stop_loss"] >= spot:
+            plan["stop_loss"] = round(spot * 0.98, dec)
+            if plan["stop_loss"] >= spot:
+                plan["stop_loss"] = round(spot - min_tick, dec)
 
-        if plan["take_profit_2"] <= plan["take_profit_1"]:
-            plan["take_profit_2"] = round(plan["take_profit_1"] * 1.06, 2)
+        min_stop_floor = 0.01 if spot >= 1.0 else max(0.00005, spot * 0.5)
+        plan["stop_loss"] = max(min_stop_floor, plan["stop_loss"])
+        if plan["stop_loss"] >= spot:
+            plan["stop_loss"] = round(spot * 0.90, dec)
 
-        raw_tp2_pct = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
-        clamped_tp2_pct = max(clamped_tp1_pct + 3.0, min(35.0, raw_tp2_pct))
-        plan["take_profit_2"] = round(spot * (1.0 + (clamped_tp2_pct / 100.0)), 2)
-        plan["take_profit_2_pct"] = clamped_tp2_pct
+        plan["stop_loss_pct"] = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
 
-        # 3. Stage 4 Breakout Pivot bounds
+        # Re-verify optimal_entry_min > stop_loss
+        if plan["optimal_entry_min"] <= plan["stop_loss"]:
+            plan["optimal_entry_min"] = round(plan["stop_loss"] + min_tick, dec)
+            if plan["optimal_entry_max"] < plan["optimal_entry_min"]:
+                plan["optimal_entry_max"] = plan["optimal_entry_min"]
+
+        # 3. Target 1 & 2 bounds and progression (Mandatory R:R >= 1.85:1 floor)
+        risk = max(min_tick, spot - plan["stop_loss"])
+        min_tp1_for_rr = spot + (1.85 * risk)
+
+        raw_tp1 = plan.get("take_profit_1")
+        if raw_tp1 is None or math.isnan(raw_tp1) or raw_tp1 <= spot:
+            raw_tp1_pct = 4.0 if user_role == "DAY_TRADER" else 6.0
+        else:
+            raw_tp1_pct = round(((raw_tp1 - spot) / spot) * 100, 2)
+
+        clamped_tp1_pct = max(1.5 if spot < 1.0 else 4.0, min(24.5, raw_tp1_pct))
+        candidate_tp1 = round(spot * (1.0 + (clamped_tp1_pct / 100.0)), dec)
+
+        tp1 = round(max(candidate_tp1, min_tp1_for_rr, plan["optimal_entry_max"] + min_tick), dec)
+        while tp1 <= plan["optimal_entry_max"] or tp1 <= spot or round((tp1 - spot) / risk, 4) < 1.85:
+            tp1 = round(tp1 + min_tick, dec)
+
+        plan["take_profit_1"] = tp1
+        plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+
+        raw_tp2 = plan.get("take_profit_2")
+        if raw_tp2 is None or math.isnan(raw_tp2) or raw_tp2 <= tp1:
+            raw_tp2_pct = plan["take_profit_1_pct"] + 2.0
+        else:
+            raw_tp2_pct = round(((raw_tp2 - spot) / spot) * 100, 2)
+
+        clamped_tp2_pct = max(plan["take_profit_1_pct"] + 1.0, min(45.0, raw_tp2_pct))
+        candidate_tp2 = round(spot * (1.0 + (clamped_tp2_pct / 100.0)), dec)
+        tp2 = round(max(candidate_tp2, plan["take_profit_1"] + min_tick), dec)
+        while tp2 <= plan["take_profit_1"]:
+            tp2 = round(tp2 + min_tick, dec)
+
+        plan["take_profit_2"] = tp2
+        plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+
+        # 4. Stage 4 Breakout Pivot bounds
         if plan.get("breakout_pivot") is not None:
             clamped_pivot = min(spot * 1.16, max(spot * 1.04, plan["breakout_pivot"]))
-            plan["breakout_pivot"] = round(clamped_pivot, 2)
+            plan["breakout_pivot"] = round(clamped_pivot, dec)
             if plan["take_profit_1"] < plan["breakout_pivot"] * 1.04:
-                plan["take_profit_1"] = round(plan["breakout_pivot"] * 1.08, 2)
+                plan["take_profit_1"] = round(max(plan["breakout_pivot"] * 1.08, min_tp1_for_rr), dec)
+                while round((plan["take_profit_1"] - spot) / risk, 4) < 1.85:
+                    plan["take_profit_1"] = round(plan["take_profit_1"] + min_tick, dec)
                 plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+            if plan["take_profit_2"] <= plan["take_profit_1"]:
+                plan["take_profit_2"] = round(plan["take_profit_1"] + max(min_tick, plan["take_profit_1"] * 0.05), dec)
+                while plan["take_profit_2"] <= plan["take_profit_1"]:
+                    plan["take_profit_2"] = round(plan["take_profit_2"] + min_tick, dec)
+                plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
 
-        # 4. R:R clamp
-        plan["risk_reward_ratio"] = round(min(3.85, max(1.20, plan["risk_reward_ratio"])), 2)
+        # 5. Mandatory R:R ratio calculation and clamp floor >= 1.85:1
+        actual_tp1_rr = round((plan["take_profit_1"] - spot) / risk, 2)
+        plan["risk_reward_ratio"] = round(min(5.0, max(1.85, max(actual_tp1_rr, plan.get("risk_reward_ratio", 1.85)))), 2)
         return plan

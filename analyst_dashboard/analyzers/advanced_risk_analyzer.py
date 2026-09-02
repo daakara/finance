@@ -97,10 +97,12 @@ class AdvancedRiskAnalyzer:
             max_dd = self._calculate_max_drawdown(returns)
             metrics['Calmar_Ratio'] = annual_return / max(0.001, abs(max_dd)) if max_dd != 0 else 0
             
-            # Sortino Ratio (downside deviation)
-            downside_returns = returns[returns < 0]
-            downside_std = downside_returns.std() * np.sqrt(252)
-            metrics['Sortino_Ratio'] = (annual_return * 100) / max(0.001, downside_std * 100) if downside_std != 0 else 0
+            # Sortino Ratio (standard full-sample downside semi-deviation)
+            risk_free_rate = 0.0
+            downside_diff = np.minimum(0.0, returns - (risk_free_rate / 252.0))
+            downside_dev = np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252)
+            metrics['Downside_Deviation'] = downside_dev * 100
+            metrics['Sortino_Ratio'] = (annual_return * 100) / max(0.001, downside_dev * 100) if downside_dev != 0 else 0
             
             # Omega Ratio
             threshold = 0  # Risk-free rate

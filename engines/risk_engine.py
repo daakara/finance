@@ -161,11 +161,12 @@ class RiskAnalysisEngine:
             # Sharpe ratio
             sharpe_ratio = self.risk_metrics.calculate_sharpe_ratio(returns)
             
-            # Sortino ratio (using downside deviation)
-            downside_returns = returns[returns < 0]
-            downside_std = downside_returns.std() * np.sqrt(252)
+            # Sortino ratio (using standard full-sample downside deviation)
+            risk_free_rate = 0.02
+            downside_diff = np.minimum(0.0, returns - (risk_free_rate / 252.0))
+            downside_std = np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252)
             annual_return = returns.mean() * 252
-            sortino_ratio = (annual_return - 0.02) / downside_std if downside_std > 0 else 0
+            sortino_ratio = (annual_return - risk_free_rate) / downside_std if downside_std > 0 else 0
             
             # Calmar ratio (return / max drawdown)
             max_dd_info = self.risk_metrics.calculate_max_drawdown(returns)

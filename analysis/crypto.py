@@ -174,9 +174,9 @@ class CryptoAnalyzer:
         skewness = daily_returns.skew()
         kurtosis = daily_returns.kurtosis()
         
-        # Downside deviation
-        downside_returns = daily_returns[daily_returns < 0]
-        downside_deviation = downside_returns.std() * np.sqrt(365) * 100
+        # Downside deviation (standard full-sample semi-deviation)
+        downside_diff = np.minimum(0.0, daily_returns)
+        downside_deviation = np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(365) * 100
         
         return {
             'max_drawdown': max_drawdown,

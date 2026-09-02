@@ -39,6 +39,15 @@ async def warmup_core_assets():
     except Exception as e:
         logger.warning(f"Pre-warming skipped: {e}")
 
+    try:
+        logger.info("Initializing background universe pre-warming...")
+        from api.routes import screener
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, screener.run_screener, None)
+        logger.info("Background universe pre-warming completed successfully.")
+    except Exception as e:
+        logger.warning(f"Background pre-warming deferred: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -131,25 +140,6 @@ app.include_router(screener.router, prefix="/api/v1/screener", tags=["Screener"]
 app.include_router(regimes.router, prefix="/api/v1/regimes", tags=["Market Regimes"])
 app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management"])
 app.include_router(smart_money.router, prefix="/api/v1/smart-money", tags=["Smart Money & Flow"])
-
-
-@app.on_event("startup")
-async def startup_prewarm_universe():
-    """Asynchronously pre-warm core universe cache on server boot to eliminate cold-start latency."""
-    import asyncio
-    import threading
-    
-    def _prewarm():
-        try:
-            logger.info("Initializing background universe pre-warming...")
-            # Pre-warm Screener core universe
-            screener.run_screener(None)
-            logger.info("Background universe pre-warming completed successfully.")
-        except Exception as e:
-            logger.warning(f"Background pre-warming deferred: {e}")
-
-    thread = threading.Thread(target=_prewarm, daemon=True)
-    thread.start()
 
 
 @app.get("/health", tags=["Health"])

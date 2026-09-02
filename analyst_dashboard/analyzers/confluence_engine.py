@@ -175,11 +175,12 @@ class ConfluenceEngine:
         if catalyst_data:
             days_to_earnings = catalyst_data.get("days_to_earnings")
             if days_to_earnings is not None:
-                if days_to_earnings < 2:
-                    catalyst_mod -= 15.0
-                    warnings.append(f"⚠️ HIGH BINARY GAP RISK: Earnings in <{int(days_to_earnings*24)}h! Limit position sizing.")
+                if days_to_earnings <= 1:
+                    catalyst_mod -= 25.0
+                    hours_left = int(days_to_earnings * 24) if days_to_earnings > 0 else 24
+                    warnings.append(f"⚠️ HIGH BINARY GAP RISK: Earnings in <={hours_left}h! Limit position sizing.")
                 elif days_to_earnings < 7:
-                    catalyst_mod -= 5.0
+                    catalyst_mod -= 8.0
                     warnings.append(f"Caution: Earnings in {days_to_earnings} days.")
 
         # ── COMPOSITE SYNTHESIS ──────────────────────────────────────────────
@@ -190,7 +191,7 @@ class ConfluenceEngine:
             0.25 * macro_score +
             catalyst_mod
         )
-        final_score = max(20.0, min(96.0, round(raw_composite, 1)))
+        final_score = max(0.0, min(96.0, round(raw_composite, 1)))
 
         pillars = [
             {

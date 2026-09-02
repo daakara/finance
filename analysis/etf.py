@@ -117,10 +117,10 @@ class ETFAnalyzer:
         excess_returns = daily_returns - risk_free_rate
         sharpe_ratio = (excess_returns.mean() / daily_returns.std()) * np.sqrt(252) if daily_returns.std() != 0 else 0
         
-        # Sortino ratio
-        downside_returns = daily_returns[daily_returns < 0]
-        downside_std = downside_returns.std() if not downside_returns.empty else daily_returns.std()
-        sortino_ratio = (excess_returns.mean() / downside_std) * np.sqrt(252) if downside_std != 0 else 0
+        # Sortino ratio (standard full-sample downside semi-deviation)
+        downside_diff = np.minimum(0.0, excess_returns)
+        downside_std = np.sqrt(np.mean(downside_diff ** 2))
+        sortino_ratio = (excess_returns.mean() / downside_std) * np.sqrt(252) if downside_std > 0 else 0
         
         # Calmar ratio
         calmar_ratio = (daily_returns.mean() * 252) / abs(max_drawdown / 100) if max_drawdown != 0 else 0

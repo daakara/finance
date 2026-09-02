@@ -1,4 +1,4 @@
-﻿"""High-Performance Redis & Memory-Fallback Rate Limiter Middleware for FastAPI."""
+"""High-Performance Redis & Memory-Fallback Rate Limiter Middleware for FastAPI."""
 
 import time
 import os
@@ -63,10 +63,14 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
         current_time = int(time.time())
         window_start = current_time - self.window_seconds
 
+        redis_checked = False
         # 1. Distributed Redis Check
         if redis_client:
             try:
-                key = f"ratelimit:{client_ip}:{request.url.path.split('/')[3] if len(request.url.path.split('/')) > 3 else 'root'}"
+                parts = request.url.path.strip("/").split("/")
+                route_tag = parts[2] if len(parts) >= 3 and parts[0] == "api" and parts[1] == "v1" else (parts[0] if parts and parts[0] else "root")
+                key = f"ratelimit:{client_ip}:{route_tag}"
+
                 # Use Redis Sorted Set (ZSET) for precise sliding window
                 pipeline = redis_client.pipeline()
                 pipeline.zremrangebyscore(key, 0, window_start)
@@ -86,12 +90,17 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
                         },
                         headers={"Retry-After": str(self.window_seconds)},
                     )
+                redis_checked = True
             except Exception as e:
                 logger.warning(f"Redis rate limit check failed: {e}. Executing with in-memory fallback.")
+                redis_checked = False
 
         # 2. In-Memory Sliding Window Fallback
-        if not redis_client:
-            store_key = f"{client_ip}:{request.url.path.split('/')[3] if len(request.url.path.split('/')) > 3 else 'root'}"
+        if not redis_checked:
+            parts = request.url.path.strip("/").split("/")
+            route_tag = parts[2] if len(parts) >= 3 and parts[0] == "api" and parts[1] == "v1" else (parts[0] if parts and parts[0] else "root")
+            store_key = f"{client_ip}:{route_tag}"
+
             timestamps = in_memory_rate_store.get(store_key, [])
             # Prune expired timestamps
             valid_timestamps = [t for t in timestamps if t > window_start]
@@ -107,6 +116,18 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
                 )
             valid_timestamps.append(current_time)
             in_memory_rate_store[store_key] = valid_timestamps
+
+            # Bound in-memory store size and prune inactive keys
+            if len(in_memory_rate_store) > 10000:
+                expired_keys = [
+                    k for k, v in in_memory_rate_store.items()
+                    if not v or v[-1] <= window_start
+                ]
+                for k in expired_keys:
+                    in_memory_rate_store.pop(k, None)
+                if len(in_memory_rate_store) > 10000:
+                    for k in list(in_memory_rate_store.keys())[:2000]:
+                        in_memory_rate_store.pop(k, None)
 
         response = await call_next(request)
         return response

@@ -107,12 +107,13 @@ class PortfolioMetrics:
         # Calculate excess returns
         excess_returns = returns - period_rf_rate
         
-        # Calculate downside deviation (only negative returns)
-        downside_returns = excess_returns[excess_returns < 0]
-        if len(downside_returns) == 0:
+        # Standard full-sample downside semi-deviation
+        downside_diff = np.minimum(0.0, excess_returns)
+        sum_sq = np.mean(downside_diff ** 2)
+        if sum_sq == 0.0:
             return float('inf')  # No downside risk
         
-        downside_deviation = downside_returns.std() * np.sqrt(periods_per_year)
+        downside_deviation = np.sqrt(sum_sq) * np.sqrt(periods_per_year)
         
         if downside_deviation == 0:
             return float('inf')

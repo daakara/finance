@@ -1,4 +1,4 @@
-﻿"""Unit and Integration tests for FastAPI Backend API Endpoints (Phases A-D target architecture)."""
+"""Unit and Integration tests for FastAPI Backend API Endpoints (Phases A-D target architecture)."""
 
 import unittest
 from unittest.mock import patch, MagicMock
@@ -24,6 +24,43 @@ class TestTargetArchitectureAPI(unittest.TestCase):
         """Verify POST /api/v1/screener/run returns formatted gem screening results."""
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
+
+    @patch("analyst_dashboard.analyzers.advanced_risk_analyzer.AdvancedRiskAnalyzer.analyze_comprehensive_risk")
+    @patch("yfinance.Ticker")
+    def test_regimes_current_endpoint(self, mock_ticker, mock_risk):
+        """Verify GET /api/v1/regimes/current queries SPY benchmark."""
+        mock_hist = pd.DataFrame({
+            "Close": [100.0, 101.0, 102.0, 103.0, 104.0, 105.0]
+        })
+        mock_instance = MagicMock()
+        mock_instance.history.return_value = mock_hist
+        mock_ticker.return_value = mock_instance
+        mock_risk.return_value = {"advanced_metrics": {"Sortino_Ratio": 2.1}}
+
+        response = self.client.get("/api/v1/regimes/current")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["symbol"], "SPY")
+        self.assertIn("regime", data)
+        self.assertIn("annualized_volatility_pct", data)
+
+    @patch("analyst_dashboard.analyzers.advanced_risk_analyzer.AdvancedRiskAnalyzer.analyze_comprehensive_risk")
+    @patch("yfinance.Ticker")
+    def test_regimes_symbol_endpoint(self, mock_ticker, mock_risk):
+        """Verify GET /api/v1/regimes/{symbol} queries the specific ticker."""
+        mock_hist = pd.DataFrame({
+            "Close": [200.0, 202.0, 204.0, 206.0, 208.0, 210.0]
+        })
+        mock_instance = MagicMock()
+        mock_instance.history.return_value = mock_hist
+        mock_ticker.return_value = mock_instance
+        mock_risk.return_value = {"advanced_metrics": {"Sortino_Ratio": 1.9}}
+
+        response = self.client.get("/api/v1/regimes/QQQ")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["symbol"], "QQQ")
+        self.assertIn("regime", data)
 
     @patch("analyst_dashboard.data.gem_fetchers.MultiAssetDataPipeline.fetch_stock_data")
     def test_workers_prefetch_task(self, mock_fetch):

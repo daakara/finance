@@ -1,8 +1,9 @@
-﻿"""
+"""
 Multi-Asset Data Pipeline for Hidden Gems Scanner
 Fetches comprehensive data from multiple sources for screening analysis
 """
 
+import os
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any, Union
@@ -278,7 +279,6 @@ class MultiAssetDataPipeline:
             os.environ['SSL_CERT_FILE'] = certifi.where()
             os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
             os.environ['CURL_CA_BUNDLE'] = certifi.where()
-            os.environ['CURL_DISABLE_SSL_VERIFY'] = '1'
             
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")

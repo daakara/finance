@@ -1,11 +1,13 @@
-"""Persistent SQLite Database Engine for Market Data, Historical OHLCV, Factors & Catalysts."""
-
 import sqlite3
 import os
 import json
+import time
+import functools
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 try:
     import pandas as pd
@@ -17,6 +19,29 @@ os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(DATA_DIR, ".finance_market_store.db")
 
 
+def retry_sqlite(max_retries: int = 3, base_delay: float = 0.05):
+    """Decorator to retry SQLite operations with exponential backoff on database lock contention."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_err = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except sqlite3.OperationalError as e:
+                    last_err = e
+                    if "locked" in str(e).lower() or "busy" in str(e).lower():
+                        time.sleep(base_delay * (2 ** attempt))
+                        continue
+                    raise
+                except Exception:
+                    raise
+            if last_err:
+                raise last_err
+        return wrapper
+    return decorator
+
+
 class MarketDatabaseEngine:
     """Production-grade SQLite persistent store for market data, eliminating synthetic fallbacks."""
 
@@ -26,14 +51,19 @@ class MarketDatabaseEngine:
         self._init_schema()
 
     def _get_connection(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10.0)
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA busy_timeout = 5000;")
+        conn.execute("PRAGMA synchronous = NORMAL;")
         conn.row_factory = sqlite3.Row
         return conn
 
+    @retry_sqlite()
     def _init_schema(self):
         """Create tables for persistent market storage if they do not exist."""
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
+            with conn:
                 cursor = conn.cursor()
                 # 1. Historical Daily Candles
                 cursor.execute("""
@@ -99,18 +129,20 @@ class MarketDatabaseEngine:
                     )
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_insider_sym ON insider_disclosures (symbol)")
-
-                conn.commit()
         except Exception as e:
             logger.error(f"Failed to initialize market database schema: {e}")
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def save_daily_candles(self, symbol: str, data: Any):
         """Save OHLCV candles (pandas DataFrame or list of dicts) to database."""
         if data is None:
             return
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
+            with conn:
                 cursor = conn.cursor()
                 if pd is not None and isinstance(data, pd.DataFrame):
                     if data.empty:
@@ -144,66 +176,75 @@ class MarketDatabaseEngine:
                             round(float(item.get("close", item.get("Close", 0.0))), 2),
                             int(item.get("volume", item.get("Volume", 0))),
                         ))
-                conn.commit()
         except Exception as e:
             logger.error(f"Error saving candles for {symbol}: {e}")
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def get_daily_candles(self, symbol: str, limit: int = 252) -> List[Dict[str, Any]]:
         """Retrieve stored historical daily candles for a symbol, sorted chronologically."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT trade_date AS time, open, high, low, close, volume
-                    FROM asset_ohlcv_daily
-                    WHERE symbol = ?
-                    ORDER BY trade_date DESC
-                    LIMIT ?
-                """, (upper, limit))
-                rows = cursor.fetchall()
-                if not rows:
-                    return []
-                candles = [dict(row) for row in reversed(rows)]
-                return candles
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT trade_date AS time, open, high, low, close, volume
+                FROM asset_ohlcv_daily
+                WHERE symbol = ?
+                ORDER BY trade_date DESC
+                LIMIT ?
+            """, (upper, limit))
+            rows = cursor.fetchall()
+            if not rows:
+                return []
+            candles = [dict(row) for row in reversed(rows)]
+            return candles
         except Exception as e:
             logger.error(f"Error retrieving candles for {symbol}: {e}")
             return []
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def get_latest_price(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Get the latest stored close price and 24h change for an asset."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT trade_date, close
-                    FROM asset_ohlcv_daily
-                    WHERE symbol = ?
-                    ORDER BY trade_date DESC
-                    LIMIT 2
-                """, (upper,))
-                rows = cursor.fetchall()
-                if not rows:
-                    return None
-                current = float(rows[0]["close"])
-                prev = float(rows[1]["close"]) if len(rows) > 1 else current
-                change_pct = round(((current - prev) / prev) * 100, 2)
-                return {
-                    "symbol": upper,
-                    "date": rows[0]["trade_date"],
-                    "currentPrice": current,
-                    "priceChangePct24h": change_pct,
-                }
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT trade_date, close
+                FROM asset_ohlcv_daily
+                WHERE symbol = ?
+                ORDER BY trade_date DESC
+                LIMIT 2
+            """, (upper,))
+            rows = cursor.fetchall()
+            if not rows:
+                return None
+            current = float(rows[0]["close"])
+            prev = float(rows[1]["close"]) if len(rows) > 1 else current
+            change_pct = round(((current - prev) / prev) * 100, 2)
+            return {
+                "symbol": upper,
+                "date": rows[0]["trade_date"],
+                "currentPrice": current,
+                "priceChangePct24h": change_pct,
+            }
         except Exception as e:
             logger.error(f"Error retrieving latest price for {symbol}: {e}")
             return None
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def save_factor_snapshot(self, symbol: str, snapshot: Dict[str, Any]):
         """Save factor score and fundamental snapshot to database."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
+            with conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     INSERT OR REPLACE INTO asset_factor_snapshots (
@@ -224,30 +265,36 @@ class MarketDatabaseEngine:
                     int(snapshot.get("piotroskiFScore", 8)),
                     str(snapshot.get("verdict", "Strong Buy / Core Accumulation")),
                 ))
-                conn.commit()
         except Exception as e:
             logger.error(f"Error saving factor snapshot for {symbol}: {e}")
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def get_factor_snapshot(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Retrieve stored factor snapshot from database."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM asset_factor_snapshots WHERE symbol = ?", (upper,))
-                row = cursor.fetchone()
-                if not row:
-                    return None
-                return dict(row)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM asset_factor_snapshots WHERE symbol = ?", (upper,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return dict(row)
         except Exception as e:
             logger.error(f"Error retrieving factor snapshot for {symbol}: {e}")
             return None
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def save_catalyst(self, symbol: str, catalyst: Dict[str, Any]):
         """Save verified business catalyst for an asset."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
+            with conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     INSERT OR REPLACE INTO asset_catalyst_registry (
@@ -264,39 +311,46 @@ class MarketDatabaseEngine:
                     catalyst.get("efficacy_summary", "Strong operational leverage and continuous cash conversion."),
                     catalyst.get("competitive_edge", "Ecosystem network effects and high switching costs."),
                 ))
-                conn.commit()
         except Exception as e:
             logger.error(f"Error saving catalyst for {symbol}: {e}")
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def get_catalyst(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Retrieve verified business catalyst for an asset."""
         upper = symbol.upper().strip()
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT * FROM asset_catalyst_registry WHERE symbol = ?", (upper,))
-                row = cursor.fetchone()
-                if not row:
-                    return None
-                return dict(row)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM asset_catalyst_registry WHERE symbol = ?", (upper,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return dict(row)
         except Exception as e:
             logger.error(f"Error retrieving catalyst for {symbol}: {e}")
             return None
+        finally:
+            conn.close()
 
+    @retry_sqlite()
     def purge_stale_data(self, max_factor_age_hours: int = 24) -> int:
         """Purge records older than specified TTL from local store to prevent stale data retention."""
+        conn = self._get_connection()
         try:
-            with self._get_connection() as conn:
+            with conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     DELETE FROM asset_factor_snapshots
                     WHERE updated_at < datetime('now', ?)
                 """, (f"-{max_factor_age_hours} hours",))
                 purged_count = cursor.rowcount
-                conn.commit()
                 logger.info(f"Purged {purged_count} stale factor snapshots older than {max_factor_age_hours}h.")
                 return purged_count
         except Exception as e:
             logger.error(f"Error purging stale database records: {e}")
             return 0
+        finally:
+            conn.close()
 

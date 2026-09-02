@@ -92,5 +92,5 @@ def get_finra_darkpool(symbol: str, response: Response = None):
     valid_sym = _validate_symbol(symbol)
     return {
         "symbol": valid_sym,
-        "darkpool": finra_fetcher.get_darkpool_activity(valid_sym),
+        "metrics": finra_fetcher.get_ats_metrics(valid_sym),
     }

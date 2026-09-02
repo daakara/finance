@@ -4,10 +4,12 @@ and execution ladders strictly obey Wall Street investment logic.
 """
 
 import unittest
-from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
-from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 import os
 import json
+import numpy as np
+import pandas as pd
+from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
+from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
 
 class TestFinancialDomainInvariants(unittest.TestCase):
@@ -48,7 +50,7 @@ class TestFinancialDomainInvariants(unittest.TestCase):
 
     def test_optimal_execution_ladder_mathematical_bounds(self):
         """Financial Domain Invariant: Optimal entry/exit ladders must strictly enforce
-        Stop Loss < Entry < Target 1 < Target 2 and Reward:Risk >= 1.80.
+        Stop Loss < Entry Min <= Entry Max < Target 1 < Target 2 and Reward:Risk >= 1.85.
         """
         test_prices = [25.0, 100.0, 319.64, 924.50]
         for price in test_prices:
@@ -58,15 +60,137 @@ class TestFinancialDomainInvariants(unittest.TestCase):
                 user_role="LONG_TERM",
             )
             # 1. Strict Monotonic Price Sequence
+            self.assertLess(plan["stop_loss"], plan["optimal_entry_min"], "Stop Loss must be strictly below entry min")
+            self.assertLessEqual(plan["optimal_entry_min"], plan["optimal_entry_max"], "Entry min must be <= entry max")
+            self.assertLess(plan["optimal_entry_max"], plan["take_profit_1"], "Target 1 must be strictly above entry max")
+            self.assertLess(plan["take_profit_1"], plan["take_profit_2"], "Target 2 must be strictly above Target 1")
             self.assertLess(plan["stop_loss"], plan["current_price"], "Stop Loss must be strictly below current price")
             self.assertLess(plan["current_price"], plan["take_profit_1"], "Target 1 must be strictly above current price")
-            self.assertLess(plan["take_profit_1"], plan["take_profit_2"], "Target 2 must be strictly above Target 1")
 
-            # 2. Minimum Reward:Risk Ratio Enforced
+            # 2. Minimum Reward:Risk Ratio Enforced (>= 1.85:1)
             risk = plan["current_price"] - plan["stop_loss"]
             reward = plan["take_profit_1"] - plan["current_price"]
             rr_ratio = reward / risk
-            self.assertGreaterEqual(rr_ratio, 1.80, f"Reward:Risk ratio {rr_ratio:.2f} must meet >= 1.80 invariant")
+            self.assertGreaterEqual(rr_ratio, 1.85, f"Reward:Risk ratio {rr_ratio:.2f} must meet >= 1.85 invariant")
+            self.assertGreaterEqual(plan["risk_reward_ratio"], 1.85, f"Plan R:R {plan['risk_reward_ratio']} must meet >= 1.85 invariant")
+
+    def test_sortino_downside_deviation_full_sample_standard(self):
+        """Financial Domain Invariant: Sortino ratio downside semi-deviation must be calculated
+        as root-mean-square over full sample N rather than dividing by N_negative.
+        """
+        from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
+        from analysis.portfolio import PortfolioMetrics
+
+        # Sample daily returns with mixed positive and negative days
+        returns = pd.Series([0.012, -0.008, 0.015, -0.022, 0.005, 0.018, -0.011, 0.009, 0.014, -0.005])
+        
+        # Calculate standard full-sample downside deviation
+        downside_diff = np.minimum(0.0, returns)
+        expected_downside_dev = float(np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252) * 100)
+
+        ara = AdvancedRiskAnalyzer()
+        metrics = ara._calculate_advanced_risk_metrics(returns)
+        
+        self.assertIn("Downside_Deviation", metrics)
+        self.assertIn("Sortino_Ratio", metrics)
+        self.assertAlmostEqual(metrics["Downside_Deviation"], expected_downside_dev, places=2)
+
+        # Compare with PortfolioMetrics
+        pm_sortino = PortfolioMetrics.calculate_sortino_ratio(returns, risk_free_rate=0.0, periods_per_year=252)
+        self.assertAlmostEqual(metrics["Sortino_Ratio"], pm_sortino, places=2)
+
+    def test_cornish_fisher_var_invariants_under_fat_tails(self):
+        """Financial Domain Invariant: Cornish-Fisher Modified VaR 99% must be more conservative
+        than 95% Modified VaR, and account for negative skewness crash risk.
+        """
+        from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
+        ara = AdvancedRiskAnalyzer()
+
+        # Generate negatively skewed fat-tailed synthetic returns
+        np.random.seed(42)
+        base = np.random.normal(0.0005, 0.015, 250)
+        crashes = np.array([-0.065, -0.082, -0.095, -0.070])  # Severe left-tail crash days
+        returns = pd.Series(np.concatenate([base, crashes]))
+
+        metrics = ara._calculate_advanced_risk_metrics(returns)
+        
+        self.assertIn("Modified_VaR_95", metrics)
+        self.assertIn("Modified_VaR_99", metrics)
+        self.assertIn("Modified_CVaR_95", metrics)
+
+        # In percentage terms (where negative number represents loss):
+        # VaR_99 (larger loss, more negative) <= VaR_95
+        self.assertLessEqual(
+            metrics["Modified_VaR_99"],
+            metrics["Modified_VaR_95"],
+            "Modified VaR 99% must represent a larger or equal downside loss than VaR 95%",
+        )
+        self.assertLessEqual(
+            metrics["Modified_CVaR_95"],
+            metrics["Modified_VaR_95"],
+            "Modified CVaR 95% (Expected Shortfall) must represent a larger or equal downside loss than VaR 95%",
+        )
+
+    def test_investor_personas_sector_and_regime_invariants(self):
+        """Financial Domain Invariant: Investor Personas must emit authentic sector/regime theses
+        and NEVER hallucinate high software gross margins on freight carriers or rate-cut regimes during inversions.
+        """
+        from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
+        taa = TraderArchetypeAnalyzer()
+
+        # 1. DHLGY / Freight: Gardner must NOT claim high gross margin or cloud transition
+        res_dhl = taa.analyze_asset(
+            symbol="DHLGY",
+            info={"sector": "Industrials", "industry": "Freight & Logistics Services"},
+            price_df=None,
+            risk_metrics={},
+            macro_indicators={},
+            factor_scores={"growthScore": 65, "momentumScore": 70, "qualityScore": 72, "valuationScore": 70},
+        )
+        gardner_dhl = next(a for a in res_dhl["archetypes"] if "Gardner" in a["name"])
+        self.assertNotIn("High gross margin", gardner_dhl["thesis"], "DHLGY must not claim High gross margin")
+        self.assertNotIn("digital/cloud architecture", gardner_dhl["catalyst"], "DHLGY must not claim digital/cloud catalyst")
+        self.assertIn("logistics", gardner_dhl["thesis"].lower())
+
+        # 2. Inverted Yield Curve: Druckenmiller must NOT claim lower interest rate environment
+        res_inverted = taa.analyze_asset(
+            symbol="NVDA",
+            info={"sector": "Technology", "industry": "Semiconductors"},
+            price_df=None,
+            risk_metrics={},
+            macro_indicators={"yield_curve_spread": -0.52, "credit_spread_oas": 2.8},
+            factor_scores={"growthScore": 90, "momentumScore": 85},
+        )
+        druck_inverted = next(a for a in res_inverted["archetypes"] if "Druckenmiller" in a["name"])
+        self.assertNotIn("lower interest rate environment", druck_inverted["thesis"].lower())
+        self.assertIn("Inverted", druck_inverted["status"])
+        self.assertIn("tightening", druck_inverted["thesis"].lower())
+
+        # 3. Biopharma (ARWR): Gardner must emit therapeutic pipeline thesis
+        res_arwr = taa.analyze_asset(
+            symbol="ARWR",
+            info={"sector": "Healthcare", "industry": "Biotechnology"},
+            price_df=None,
+            risk_metrics={},
+            macro_indicators={},
+            factor_scores={"growthScore": 75, "momentumScore": 68},
+        )
+        gardner_arwr = next(a for a in res_arwr["archetypes"] if "Gardner" in a["name"])
+        self.assertIn("therapeutic", gardner_arwr["thesis"].lower())
+        self.assertIn("clinical trial", gardner_arwr["catalyst"].lower())
+
+        # 4. Asymmetric Downside Tail Risk: Simons must warn of left-tail risk
+        res_tail_risk = taa.analyze_asset(
+            symbol="SPEC1",
+            info={},
+            price_df=None,
+            risk_metrics={"Sortino_Ratio": 0.65, "Skewness": -1.45},
+            macro_indicators={},
+            factor_scores={"tailRiskScore": 42, "momentumScore": 60},
+        )
+        simons_spec = next(a for a in res_tail_risk["archetypes"] if "Simons" in a["name"])
+        self.assertNotIn("limited crash risk", simons_spec["thesis"].lower())
+        self.assertIn("tail risk", simons_spec["status"].lower())
 
     def test_master_catalog_turnaround_integrity(self):
         """Financial Domain Invariant: Master Asset Catalog must classify ULTA and LULU as Stage 4 Turnaround."""

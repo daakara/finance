@@ -1,10 +1,15 @@
+import os
 import re
 import math
+import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Response
 import pandas as pd
 import numpy as np
 import yfinance as yf
+
+logger = logging.getLogger(__name__)
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
 from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
@@ -447,6 +452,12 @@ def get_asset_analytics(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Asset analytics generation failed for symbol {upper_sym}: {e}", exc_info=True)
+        if IS_PRODUCTION:
+            raise HTTPException(
+                status_code=500,
+                detail="An unexpected error occurred while generating asset analytics.",
+            )
         raise HTTPException(status_code=500, detail=str(e))
 
 
