@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Head-to-Head Asset & Pipeline Comparison Matrix | Finance Terminal",
+  title: "Head-to-Head Asset & Pipeline Comparison Matrix | ARX Terminal",
   description: "Compare global stocks, ETFs, and cryptocurrencies side-by-side across fundamental valuations, volatility, Sharpe ratios, and beta sensitivity.",
   openGraph: {
-    title: "Asset & Pipeline Comparison Matrix | Finance Terminal",
+    title: "Asset & Pipeline Comparison Matrix | ARX Terminal",
     description: "Multi-asset quantitative comparison matrix evaluating valuation, beta, and Sharpe ratios.",
     url: "https://www.arxterminal.com/compare/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "website",
   },
   alternates: {
@@ -20,7 +20,7 @@ export default function CompareLayout({ children }: { children: React.ReactNode 
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Finance Terminal Comparison Matrix",
+      "name": "ARX Terminal Comparison Matrix",
       "url": "https://www.arxterminal.com/compare/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
@@ -34,7 +34,7 @@ export default function CompareLayout({ children }: { children: React.ReactNode 
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

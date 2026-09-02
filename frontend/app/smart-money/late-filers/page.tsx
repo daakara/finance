@@ -3,13 +3,13 @@ import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 
 export const metadata: Metadata = {
-  title: "🛑 Congressional Late-Filer Hall of Shame: STOCK Act Violations & Decay | Finance Terminal",
+  title: "🛑 Congressional Late-Filer Hall of Shame: STOCK Act Violations & Decay | ARX Terminal",
   description: "Audit US House & Senate politicians violating the 45-day statutory STOCK Act disclosure deadline. Review filing latency, -32 pt staleness decay penalties, and mean-reversion risks.",
   openGraph: {
     title: "Congressional Late-Filer Hall of Shame & STOCK Act Violations",
     description: "Track delayed Congressional stock disclosures, statutory compliance violations, and mathematical staleness decay penalties.",
     url: "https://www.arxterminal.com/smart-money/late-filers/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "article",
   },
   alternates: {
@@ -27,7 +27,7 @@ export default function LateFilersPage() {
       "url": "https://www.arxterminal.com/smart-money/late-filers/",
       "creator": {
         "@type": "Organization",
-        "name": "Finance Terminal"
+        "name": "ARX Terminal"
       }
     },
     {
@@ -37,7 +37,7 @@ export default function LateFilersPage() {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

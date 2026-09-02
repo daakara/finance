@@ -146,8 +146,8 @@ export default function WeeklyConfluenceSpotlight({
       const atrPct = effectivePrice > 0 ? (currentAtr / effectivePrice) : 0.02;
 
       let compositeScore = 80;
-      let stopVal = effectivePrice - currentAtr * 1.4;
-      let target1Val = effectivePrice + currentAtr * 2.2;
+      let stopVal = effectivePrice - currentAtr * 1.25;
+      let target1Val = effectivePrice + currentAtr * 2.5;
       let target2Val = effectivePrice + currentAtr * 3.8;
       let setupBadge = "INSTITUTIONAL ACCUMULATION";
       let setupBadgePlain = "Smart Money Buying";
@@ -161,8 +161,8 @@ export default function WeeklyConfluenceSpotlight({
 
         compositeScore = Math.round(rvolScore + momentumScore + volatilityBonus + squeezeBonus);
 
-        // Tight Intraday/Swing Monotonic Execution Ladder (1.0x ATR Stop, 1.8x ATR TP1, 3.2x ATR TP2)
-        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.0);
+        // Tight Intraday/Swing Monotonic Execution Ladder (0.9x ATR Stop, 1.8x ATR TP1, 3.2x ATR TP2)
+        stopVal = Math.max(0.01, effectivePrice - currentAtr * 0.9);
         target1Val = effectivePrice + currentAtr * 1.8;
         target2Val = effectivePrice + currentAtr * 3.2;
 
@@ -187,9 +187,9 @@ export default function WeeklyConfluenceSpotlight({
 
         compositeScore = Math.round(piotroskiWeight + factorWeight + pegBonus + roicBonus + momBonus);
 
-        // Structural Swing/Position Ladder (1.4x ATR Stop, 2.2x ATR TP1, 3.8x ATR TP2)
-        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.4);
-        target1Val = effectivePrice + currentAtr * 2.2;
+        // Structural Swing/Position Ladder (1.25x ATR Stop, 2.5x ATR TP1, 3.8x ATR TP2)
+        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.25);
+        target1Val = effectivePrice + currentAtr * 2.5;
         target2Val = effectivePrice + currentAtr * 3.8;
 
         setupBadge = asset.piotroski === 9

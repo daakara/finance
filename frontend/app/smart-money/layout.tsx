@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Congressional STOCK Act & Smart Money Insider Scanner | Finance Terminal",
+  title: "Congressional STOCK Act & Smart Money Insider Scanner | ARX Terminal",
   description: "Track US House & Senate legislative stock disclosures (STOCK Act PL 112-105), SEC Form 4 insider transactions, and unusual options flow sweeps in real time.",
   openGraph: {
-    title: "Congressional STOCK Act & Smart Money Scanner | Finance Terminal",
+    title: "Congressional STOCK Act & Smart Money Scanner | ARX Terminal",
     description: "Track US Congress stock trades and institutional smart money flow in real time.",
     url: "https://www.arxterminal.com/smart-money/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "website",
   },
   alternates: {
@@ -20,7 +20,7 @@ export default function SmartMoneyLayout({ children }: { children: React.ReactNo
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Finance Terminal Smart Money Scanner",
+      "name": "ARX Terminal Smart Money Scanner",
       "url": "https://www.arxterminal.com/smart-money/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
@@ -64,7 +64,7 @@ export default function SmartMoneyLayout({ children }: { children: React.ReactNo
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

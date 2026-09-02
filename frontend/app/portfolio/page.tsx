@@ -405,7 +405,7 @@ export default function PortfolioPage() {
 
         {/* Add Position Modal (Fluid Adaptive & Real-Time Auto-Populated) */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
             <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden max-h-[92vh] flex flex-col my-auto text-slate-100">
               {/* Fixed Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#1b2434] bg-[#0e1422] shrink-0">

@@ -45,7 +45,7 @@ export default function InsightProvenanceModal({
           aria-modal="true"
           aria-label={`${symbol} Insight Provenance and Statutory Sources`}
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 font-mono animate-fadeIn"
+          className="fixed inset-0 z-[1200] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 font-mono animate-fadeIn"
         >
           <div
             onClick={(e) => e.stopPropagation()}

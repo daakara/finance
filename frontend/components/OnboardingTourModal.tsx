@@ -79,7 +79,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
                 {slide.badge} ({slide.step}/4)
               </span>
               <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                Finance Terminal Quick Tour
+                ARX Terminal Quick Tour
               </h2>
             </div>
           </div>

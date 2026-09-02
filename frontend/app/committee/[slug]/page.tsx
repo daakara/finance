@@ -225,7 +225,7 @@ export default function CommitteeHubPage({ params }: PageProps) {
       "url": `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
       "creator": {
         "@type": "Organization",
-        "name": "Finance Terminal"
+        "name": "ARX Terminal"
       }
     },
     {
@@ -235,7 +235,7 @@ export default function CommitteeHubPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

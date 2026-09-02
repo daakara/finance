@@ -4,7 +4,7 @@ import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
-import { getMasterAsset, getAllMasterTickers } from "../../../lib/masterCatalog";
+import { getMasterAsset, getAllMasterTickers, getMasterBaselinePrice } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -116,7 +116,7 @@ export default function StockDetailPage({ params }: PageProps) {
   };
 
   const name = master?.name || watchlist?.name || `${sym} Equity`;
-  const spotPrice = 100.00;
+  const spotPrice = getMasterBaselinePrice(params.ticker);
   const changePct = 0.0;
   const isPositive = changePct >= 0;
 

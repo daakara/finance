@@ -7,10 +7,10 @@ export const metadata: Metadata = {
   description:
     "Institutional manual detailing Decision Intelligence Suites (Pre-Flight Gate, Smart Money Radar, Edge Scorecard, Macro Stress Testing), Congressional STOCK Act tracking, Legislative Alignment Index (0-100), Mark Minervini VCP entry points, Cornish-Fisher Modified VaR, and Self-Healing Forecast Audits.",
   openGraph: {
-    title: "Finance Terminal: Quantitative Field Manual & Algorithmic Handbook",
+    title: "ARX Terminal: Quantitative Field Manual & Algorithmic Handbook",
     description: "Master institutional quantitative trading, 5-point Pre-Flight execution gates, Smart Money order flow forensics, macro stress testing, staleness decay penalties, and tail risk management.",
     url: "https://www.arxterminal.com/guide/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "article",
   },
   alternates: {
@@ -27,11 +27,11 @@ export default function GuidePage() {
       "description": "Comprehensive guide to Decision Intelligence Suites, Congressional STOCK Act tracking, Legislative Alignment Index, Mark Minervini VCP algorithmic entry points, Cornish-Fisher Modified VaR risk modeling, and FRED macroeconomic regimes.",
       "author": {
         "@type": "Organization",
-        "name": "Finance Terminal Quantitative Intelligence"
+        "name": "ARX Terminal Quantitative Intelligence"
       },
       "publisher": {
         "@type": "Organization",
-        "name": "Finance Terminal",
+        "name": "ARX Terminal",
         "logo": {
           "@type": "ImageObject",
           "url": "https://www.arxterminal.com/icons/icon-512x512.png"
@@ -117,7 +117,7 @@ export default function GuidePage() {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

@@ -4,10 +4,10 @@ export const metadata: Metadata = {
   title: "High-Alpha Hidden Gems Screener | Small & Mid-Cap Quant Stock Screener",
   description: "Screen high-alpha small and mid-cap equities with asymmetric risk-reward profiles, Minervini VCP setups, institutional accumulation, and catalyst tracking.",
   openGraph: {
-    title: "High-Alpha Hidden Gems Screener | Finance Terminal",
+    title: "High-Alpha Hidden Gems Screener | ARX Terminal",
     description: "Screen high-alpha small and mid-cap equities with asymmetric risk-reward profiles and VCP setups.",
     url: "https://www.arxterminal.com/screener/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "website",
   },
   alternates: {
@@ -20,7 +20,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Finance Terminal Gems Screener",
+      "name": "ARX Terminal Gems Screener",
       "url": "https://www.arxterminal.com/screener/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
@@ -36,7 +36,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
       "license": "https://creativecommons.org/licenses/by/4.0/",
       "creator": {
         "@type": "Organization",
-        "name": "Finance Terminal"
+        "name": "ARX Terminal"
       }
     },
     {
@@ -46,7 +46,7 @@ export default function ScreenerLayout({ children }: { children: React.ReactNode
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

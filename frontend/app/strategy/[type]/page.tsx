@@ -351,7 +351,7 @@ export default function StrategyDetailPage({ params }: PageProps) {
       "url": `https://www.arxterminal.com/strategy/${params.type.toLowerCase()}/`,
       "creator": {
         "@type": "Organization",
-        "name": "Finance Terminal"
+        "name": "ARX Terminal"
       }
     },
     {
@@ -361,7 +361,7 @@ export default function StrategyDetailPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

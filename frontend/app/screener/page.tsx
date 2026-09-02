@@ -205,12 +205,12 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     const optimalEntryMin = Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2));
     const optimalEntryMax = Number((price * (isDayTrader ? 1.004 : 1.015)).toFixed(2));
-    const stopLoss = Number((price * (isDayTrader ? 0.985 : 0.945)).toFixed(2));
-    const stopLossPct = -5.5;
-    const takeProfit1 = Number((price * 1.085).toFixed(2));
-    const takeProfit1Pct = 8.5;
-    const takeProfit2 = Number((price * 1.155).toFixed(2));
-    const takeProfit2Pct = 15.5;
+    const stopLoss = Number((price * (isDayTrader ? 0.985 : 0.955)).toFixed(2));
+    const stopLossPct = isDayTrader ? -1.5 : -4.5;
+    const takeProfit1 = Number((price * (isDayTrader ? 1.035 : 1.105)).toFixed(2));
+    const takeProfit1Pct = isDayTrader ? 3.5 : 10.5;
+    const takeProfit2 = Number((price * (isDayTrader ? 1.075 : 1.185)).toFixed(2));
+    const takeProfit2Pct = isDayTrader ? 7.5 : 18.5;
     const riskRewardRatio = Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2));
 
     const rawConfluence = Math.min(96, Math.max(72, 75 + (h % 22)));
@@ -266,7 +266,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       takeProfit1Pct,
       takeProfit2,
       takeProfit2Pct,
-      riskRewardRatio: Math.max(1.85, riskRewardRatio),
+      riskRewardRatio,
       setupPattern: isStage4Candidate ? "Stage 4 Mean-Reversion Base" : "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
       entryThesis: isStage4Candidate ? "Awaiting Stage 1 base completion before new entry." : "Stage 2 accumulation breakout above 50-day pivot.",
       confluenceScore,
@@ -385,10 +385,10 @@ export default function ScreenerPage() {
               optimalEntryMax: c.optimalEntryMax || Number(((c.currentPrice || 100) * 0.995).toFixed(2)),
               stopLoss: c.stopLoss || Number(((c.currentPrice || 100) * 0.955).toFixed(2)),
               stopLossPct: c.stopLossPct || -4.5,
-              takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.045).toFixed(2)),
-              takeProfit1Pct: c.takeProfit1Pct || 4.5,
-              takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.095).toFixed(2)),
-              takeProfit2Pct: c.takeProfit2Pct || 9.5,
+              takeProfit1: c.takeProfit1 || Number(((c.currentPrice || 100) * 1.105).toFixed(2)),
+              takeProfit1Pct: c.takeProfit1Pct || 10.5,
+              takeProfit2: c.takeProfit2 || Number(((c.currentPrice || 100) * 1.185).toFixed(2)),
+              takeProfit2Pct: c.takeProfit2Pct || 18.5,
               riskRewardRatio: c.riskRewardRatio || 2.85,
               setupPattern: c.setupPattern || "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
               entryThesis: c.entryThesis || "Stage 2 accumulation breakout above 50-day pivot.",

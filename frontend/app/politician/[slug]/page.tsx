@@ -293,7 +293,7 @@ export default function PoliticianProfilePage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

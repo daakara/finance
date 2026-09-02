@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
+import { getMasterBaselinePrice } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -35,13 +36,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const nameB = SHARED_WATCHLIST_ITEMS.find(i => i.symbol.toUpperCase() === match.b)?.name || match.b;
 
   return {
-    title: `${nameA} (${match.a}) vs. ${nameB} (${match.b}) Quantitative Comparison | Finance Terminal`,
+    title: `${nameA} (${match.a}) vs. ${nameB} (${match.b}) Quantitative Comparison | ARX Terminal`,
     description: `Head-to-head quantitative comparison of ${nameA} (${match.a}) vs. ${nameB} (${match.b}): Valuation multiples, 5-Factor radar scores, Piotroski F-Scores, ATR volatility targets, and institutional conviction.`,
     openGraph: {
       title: `${nameA} (${match.a}) vs. ${nameB} (${match.b}) Comparison Matrix`,
       description: `Compare valuation, growth CAGR, Piotroski F-Score, and volatility invalidation levels between ${match.a} and ${match.b}.`,
       url: `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
-      siteName: "Finance Terminal",
+      siteName: "ARX Terminal",
       type: "article",
     },
     alternates: {
@@ -67,8 +68,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
   const factorA = SHARED_FACTOR_SCORES[symA];
   const factorB = SHARED_FACTOR_SCORES[symB];
 
-  const priceA = 100.00;
-  const priceB = 100.00;
+  const priceA = getMasterBaselinePrice(symA);
+  const priceB = getMasterBaselinePrice(symB);
 
   const scoreA = factorA?.scores.compositeFactorScore ?? 85;
   const scoreB = factorB?.scores.compositeFactorScore ?? 85;
@@ -91,7 +92,7 @@ export default function ComparisonPairPage({ params }: PageProps) {
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {

@@ -123,7 +123,7 @@ export default function UniversalOmniSearch() {
           aria-modal="true"
           aria-label="Universal Asset Search"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-24 p-3 sm:p-4 font-mono animate-fadeIn"
+          className="fixed inset-0 z-[1200] bg-black/85 backdrop-blur-md flex items-start justify-center pt-8 sm:pt-24 p-3 sm:p-4 font-mono animate-fadeIn"
         >
           <div
             onClick={(e) => e.stopPropagation()}

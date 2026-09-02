@@ -5,10 +5,10 @@ export const metadata: Metadata = {
   description:
     "Zero-login private portfolio tracker calculating real-time profit & loss (P&L), position sizing, downside Value-at-Risk (VaR), and target risk ladders across global equities and crypto.",
   openGraph: {
-    title: "My Portfolio & Risk Allocations | Finance Terminal",
+    title: "My Portfolio & Risk Allocations | ARX Terminal",
     description: "Track your equity holdings, cost basis, unrealized P&L, and downside risk with zero-login private client storage.",
     url: "https://www.arxterminal.com/portfolio/",
-    siteName: "Finance Terminal",
+    siteName: "ARX Terminal",
     type: "website",
   },
   alternates: {
@@ -21,7 +21,7 @@ export default function PortfolioLayout({ children }: { children: React.ReactNod
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "Finance Terminal Portfolio Tracker",
+      "name": "ARX Terminal Portfolio Tracker",
       "url": "https://www.arxterminal.com/portfolio/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "All",
@@ -39,7 +39,7 @@ export default function PortfolioLayout({ children }: { children: React.ReactNod
         {
           "@type": "ListItem",
           "position": 1,
-          "name": "Finance Terminal",
+          "name": "ARX Terminal",
           "item": "https://www.arxterminal.com/"
         },
         {
