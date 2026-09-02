@@ -19,6 +19,8 @@ import CongressionalTradesCard from "../components/CongressionalTradesCard";
 import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
 import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
+import IntentHero from "../components/IntentHero";
+import AdaptiveTerminal from "../components/AdaptiveTerminal";
 import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
@@ -209,6 +211,19 @@ function TerminalContent() {
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
         {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
+          {/* Intent-First Home Hero: "What are you looking to do today?" */}
+          <IntentHero onSelectSymbol={handleSelectSymbol} />
+
+          {/* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */}
+          <AdaptiveTerminal
+            symbol={selectedSymbol}
+            companyName={aliasRecommendation?.companyName || selectedSymbol}
+            currentPrice={data?.currentPrice || 100}
+            changePct={data?.priceChangePct24h || 0}
+            setupScore={60}
+            isStage4={selectedSymbol.toUpperCase() === "FIX" || (data?.currentPrice && data.currentPrice < 100) ? true : false}
+          />
+
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
           <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
             {data && (

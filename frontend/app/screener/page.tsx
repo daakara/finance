@@ -782,6 +782,55 @@ export default function ScreenerPage() {
           </div>
         </div>
 
+        {/* 🧭 Tier 1: Goal-Driven Opportunity Lens ("What kind of opportunity are you looking for?") */}
+        <div className="mb-5 bg-[#0b101b] p-4 rounded-2xl border border-[#1e2a3c] space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold block">
+                Guided & Goal-Driven Scanner
+              </span>
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                What kind of opportunity are you looking for?
+              </h2>
+            </div>
+            <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+              1-Click Objective Alignment
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {[
+              { id: "all", label: "🌟 All Setups", desc: "Full universe of monitored assets" },
+              { id: "high_confluence", label: "🏆 High Conviction", desc: "Multiple independent models agree (≥80%)" },
+              { id: "in_buy_zone", label: "🎯 In Buy Zone", desc: "Optimal price accumulation floor" },
+              { id: "lynch", label: "📈 Growing", desc: "Fast revenue & earnings compounders" },
+              { id: "greenblatt", label: "💰 Undervalued", desc: "High ROIC bargain cash generators" },
+              { id: "high_rr", label: "⚡ Asymmetric R:R", desc: "Tight stop with 2:1+ upside asymmetry" },
+            ].map((goal) => {
+              const isGoalActive = selectedFilter === goal.id;
+              return (
+                <button
+                  key={goal.id}
+                  type="button"
+                  onClick={() => handleSelectFilter(goal.id)}
+                  className={`p-2.5 rounded-xl border text-left transition-all active:scale-95 cursor-pointer flex flex-col justify-between ${
+                    isGoalActive
+                      ? "bg-cyan-950/80 border-cyan-400 text-white shadow-md shadow-cyan-950/50"
+                      : "bg-[#070b13] border-[#182335] text-slate-400 hover:text-slate-200 hover:bg-[#0e1522]"
+                  }`}
+                >
+                  <span className={`text-xs font-bold block truncate ${isGoalActive ? "text-cyan-300 font-black" : "text-slate-200"}`}>
+                    {goal.label}
+                  </span>
+                  <span className="text-[10px] text-slate-400 leading-tight mt-1 line-clamp-2">
+                    {goal.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Execution & Archetype Filter Clusters */}
         <div className="space-y-4 mb-6">
           {/* Cluster 1: Actionable Execution Status */}

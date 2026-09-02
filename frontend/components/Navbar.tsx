@@ -10,6 +10,7 @@ import PrivacySettingsModal from "./PrivacySettingsModal";
 import CommandPaletteModal from "./CommandPaletteModal";
 import RealTimeAlertEngine from "./RealTimeAlertEngine";
 import ArxLogo from "./ArxLogo";
+import { useExperienceMode } from "../context/ExperienceModeContext";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -18,6 +19,7 @@ interface NavbarProps {
 
 export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarProps) {
   const pathname = usePathname();
+  const { experienceMode, setExperienceMode } = useExperienceMode();
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -299,43 +301,71 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               </svg>
             </button>
 
-            {/* Vernacular Language Mode Switcher (Plain English vs Pro Quant) */}
-            <div role="toolbar" aria-label="Language Vernacular Mode Switcher" className="flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
+            {/* Adaptive Experience Mode Selector: Guided · Standard · Advanced (ARX_VERNACULAR_MODE: Plain English vs Pro Quant) */}
+            <div role="toolbar" aria-label="Adaptive Experience Mode Switcher" className="flex bg-[#070b13] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
               <button
                 type="button"
-                onClick={() => handleVernacularToggle("PLAIN_ENGLISH")}
-                aria-pressed={vernacularMode === "PLAIN_ENGLISH"}
-                aria-label="Switch to Plain English explanation mode"
-                title="Plain English Mode: Clear, punchy, no-BS financial explanations"
+                onClick={() => {
+                  setExperienceMode("GUIDED");
+                  handleVernacularToggle("PLAIN_ENGLISH");
+                }}
+                aria-pressed={experienceMode === "GUIDED"}
+                aria-label="Switch to Guided Mode (Plain English - Help me understand)"
+                title="Guided Mode: Explain more, Plain English, step-by-step guidance"
                 className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
-                  vernacularMode === "PLAIN_ENGLISH"
-                    ? "bg-emerald-500 text-slate-950 shadow-md font-extrabold"
+                  experienceMode === "GUIDED"
+                    ? "bg-emerald-600 text-white shadow-md font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">💬</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">
-                  <span className="hidden xl:inline">Plain English</span>
-                  <span className="xl:hidden">Plain</span>
+                  <span className="hidden xl:inline">Guided (Plain English)</span>
+                  <span className="xl:hidden">Guided</span>
                 </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleVernacularToggle("PRO_QUANT")}
-                aria-pressed={vernacularMode === "PRO_QUANT"}
-                aria-label="Switch to Pro Quant mathematical mode"
-                title="Pro Quant Mode: Rigorous mathematical models, VaR metrics, and factor loadings"
+                onClick={() => {
+                  setExperienceMode("STANDARD");
+                  handleVernacularToggle("PLAIN_ENGLISH");
+                }}
+                aria-pressed={experienceMode === "STANDARD"}
+                aria-label="Switch to Standard Mode (Help me decide)"
+                title="Standard Mode: Balanced confluence metrics, key levels, and decision triggers"
+                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
+                  experienceMode === "STANDARD"
+                    ? "bg-cyan-600 text-white shadow-md font-extrabold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                  <span className="hidden xl:inline">Standard</span>
+                  <span className="xl:hidden">Std</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setExperienceMode("ADVANCED");
+                  handleVernacularToggle("PRO_QUANT");
+                }}
+                aria-pressed={experienceMode === "ADVANCED"}
+                aria-label="Switch to Advanced Mode (Pro Quant - Give me control)"
+                title="Advanced Mode: Maximum quantitative density, Pro Quant models, and execution controls"
                 className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer ${
-                  vernacularMode === "PRO_QUANT"
+                  experienceMode === "ADVANCED"
                     ? "bg-purple-600 text-white shadow-md font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">🤓</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-300" />
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">
-                  <span className="hidden xl:inline">Pro Quant</span>
-                  <span className="xl:hidden">Quant</span>
+                  <span className="hidden xl:inline">Advanced (Pro Quant)</span>
+                  <span className="xl:hidden">Adv</span>
                 </span>
               </button>
             </div>
