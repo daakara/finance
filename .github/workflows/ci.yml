@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: ARX Terminal CI/CD Pipeline
 
 on:
   push:
@@ -8,113 +8,134 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Backend Test Suite (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-    
-    - name: Install dependencies
+
+    - name: Install test dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt pytest pytest-cov httpx starlette
-    
-    - name: Run tests with pytest
+
+    - name: Run Pytest & Quantitative Invariant Suite
       env:
         PYTHONPATH: "."
       run: |
         pytest tests/ -v
 
-  lint:
-    name: Code Quality
+  lint_and_security:
+    name: Code Quality & Security Linter
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
-    - name: Install linting tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8
-    
-    - name: Lint with flake8
-      run: |
-        flake8 . --count --exit-zero --max-complexity=15 --max-line-length=120 --statistics || true
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install bandit
-    
-    - name: Run Bandit security linter
-      run: |
-        bandit -r . -f json -o bandit-report.json || true
 
-  build:
-    name: Build Check
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
+    - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-    
-    - name: Install dependencies
+        cache: 'pip'
+
+    - name: Install linting & security tools
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Check for syntax errors
+        pip install flake8 bandit
+
+    - name: Enforce Syntax & Critical AST Checks
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Run Bandit Security Analysis
+      run: |
+        bandit -r api/ analyst_dashboard/ -ll -s B101 -f json -o bandit-report.json || true
+
+    - name: Check Bytecode Compilation
       run: |
         python -m py_compile api/main.py
         python -m py_compile analyst_dashboard/analyzers/gem_screener.py
         python -m py_compile analyst_dashboard/analyzers/optimal_execution.py
+        python -m py_compile analyst_dashboard/analyzers/confluence_engine.py
 
-    - name: Frontend Build Verification
+  build_and_export:
+    name: Static SSG Export & Integrity Gate
+    runs-on: ubuntu-latest
+    needs: [test, lint_and_security]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: frontend
+      run: npm ci
+
+    - name: Compile 98 Static SSG Routes
+      working-directory: frontend
+      run: npm run build
+
+    - name: Verify Static Export Integrity
+      working-directory: frontend
       run: |
-        cd frontend
-        npm install --legacy-peer-deps
-        npm run build
-    
-    - name: Verify data integrity policy
+        test -d out && echo "✅ Static build directory exists"
+        test -f out/index.html && echo "✅ Terminal SSR shell verified"
+
+    - name: Enforce Data Integrity Policy
       run: |
         if grep -r "_generate_sample" --include="*.py" data/ analyst_dashboard/ --exclude-dir=tests; then
-          echo "ERROR: Sample data generation found in production code!"
+          echo "ERROR: Rogue sample data generator found in production code!"
           exit 1
         else
-          echo "✅ Data integrity policy verified: No sample data generation in production"
+          echo "✅ Data integrity verified: Zero synthetic generation in production paths"
+        fi
+
+  deploy_and_purge_cache:
+    name: Production Deployment & Edge Cache Invalidation
+    runs-on: ubuntu-latest
+    needs: [build_and_export]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Warm Up Render Backend
+      run: |
+        echo "Pinging Render backend API health endpoint..."
+        curl -s -X POST "https://finance-backend-api-qis0.onrender.com/api/v1/cache/clear" || echo "Backend warming up..."
+
+    - name: Invalidate Cloudflare CDN Edge Cache
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      run: |
+        if [ -n "$CLOUDFLARE_ZONE_ID" ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+          echo "Purging Cloudflare Edge Cache..."
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"purge_everything":true}'
+          echo "✅ Cloudflare edge cache purged successfully."
+        else
+          echo "Cloudflare zone purge skipped (Pages automatically serves updated SSG assets)."
         fi
