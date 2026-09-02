@@ -1,44 +1,118 @@
-// ARX Quantitative Insight & Contract Types (docs/ux/07_data_to_ui_contract.md)
+// ARX Quantitative Insight & Contract Types (docs/ux/07_data_to_ui_contract.md & 09_ui_state_contract.md)
 
 export type TimeHorizon = "INTRADAY" | "SWING" | "POSITION" | "LONG_TERM";
 export type Assessment = "FAVORABLE" | "MIXED" | "UNFAVORABLE" | "INSUFFICIENT_EVIDENCE";
 export type DecisionPosture = "RESEARCH" | "WATCH" | "ACQUIRE" | "HOLD" | "TRIM" | "EXIT_REVIEW" | "AVOID";
 export type OwnershipState = "NOT_OWNED" | "OWNED" | "UNKNOWN";
+export type OwnershipSource = "USER_DECLARED" | "PORTFOLIO_IMPORT" | "BROKER_CONNECTION" | "UNKNOWN";
 export type ExperienceMode = "GUIDED" | "STANDARD" | "ADVANCED";
+
+export type Freshness = "REALTIME" | "DELAYED" | "END_OF_DAY" | "DAILY" | "QUARTERLY" | "STALE" | "UNKNOWN";
+export type EvidenceAvailability = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "STALE";
+
+export interface DataProvenance {
+  source: string;
+  observedAt: string;
+  publishedAt?: string;
+  effectiveAt?: string;
+  freshness: Freshness;
+}
+
+export interface ModelProvenance {
+  modelId: string;
+  modelVersion: string;
+  rulesetVersion: string;
+  calculatedAt: string;
+}
 
 export interface EvidenceItem {
   metricName: string;
   currentValue: string | number;
   benchmarkValue: string | number;
+  provenance?: DataProvenance;
   source?: string;
   asOf?: string;
-  freshness?: "REALTIME" | "DAILY_CLOSE" | "QUARTERLY_FILING";
+  freshness?: Freshness;
   significance?: "HIGH" | "MEDIUM" | "LOW";
-  status: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+  status: "POSITIVE" | "NEGATIVE" | "NEUTRAL" | "UNAVAILABLE";
 }
 
+export interface FactorAgreement {
+  favorable: number;
+  mixed: number;
+  unfavorable: number;
+  unavailable: number;
+  evaluated: number;
+  displayLabel: string;
+}
+
+export interface DomainAssessment {
+  domainId: "trend" | "health" | "smart_money" | "macro" | string;
+  domainName: "Price Trend" | "Company Health" | "Smart Money Flow" | "Macro Regime" | string;
+  availability: EvidenceAvailability;
+  status: "FAVORABLE" | "MIXED" | "UNFAVORABLE" | "UNAVAILABLE";
+  pointImpact: number; // e.g. -25
+  importanceLevel: "HIGH" | "MEDIUM" | "LOW";
+  observation: string; // Raw empirical fact
+  modelRule: string;   // Model weighting rule
+  evidence: EvidenceItem[];
+  whatWouldChangeAssessment: string;
+}
+
+// Backward-compatible factor item alias
 export interface FactorAttributionItem {
   factorId?: string;
-  factorName: "Company Health" | "Price Trend" | "Smart Money Flow" | "Macro Regime" | string;
-  category?: string; // Backward-compatible alias
-  impact: number;    // e.g. +20, -25
+  factorName: string;
+  category?: string;
+  impact: number;
   importanceLevel?: "HIGH" | "MEDIUM" | "LOW";
   plainEnglishReason: string;
-  reason?: string;   // Backward-compatible alias
+  reason?: string;
   sentiment: "positive" | "negative" | "neutral";
   evidence?: EvidenceItem[];
   whatWouldChangeAssessment: string;
 }
 
-// Backward-compatible alias for existing modal props
 export type ScoreAttributionItem = FactorAttributionItem;
 
 export interface ARXAction {
   id: string;
-  type: "RESEARCH" | "SIZE_POSITION" | "SET_ALERT" | "ADD_WATCHLIST" | "STRESS_TEST" | "REVIEW_THESIS" | "COMPARE";
+  type: "RESEARCH" | "SIZE_POSITION" | "SET_ALERT" | "ADD_WATCHLIST" | "REVIEW_THESIS" | "COMPARE";
   label: string;
   enabled: boolean;
   reason?: string;
+}
+
+export interface TerminalViewState {
+  symbol: string;
+  companyName: string;
+  currentPrice: number;
+  changePct: number;
+  horizon: TimeHorizon;
+  ownership: {
+    state: OwnershipState;
+    source: OwnershipSource;
+  };
+  modelProvenance: ModelProvenance;
+  overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE";
+  assessment: Assessment;
+  factorAgreement: FactorAgreement;
+  domains: DomainAssessment[];
+  posture: DecisionPosture;
+  uiStateLabel: string;
+  headlineExplanation: string;
+  setupInvalidationLevel?: {
+    price: number;
+    distancePct: number;
+    description: string;
+  };
+  whatWouldChangeAssessment: string;
+  primaryAction: {
+    label: string;
+    actionType: "SET_ALERT" | "SIZE_TRADE" | "REVIEW_THESIS" | "RESEARCH_PROFILE";
+    enabled: boolean;
+  };
+  availableActions: ARXAction[];
 }
 
 export interface QuantitativeInsight {
@@ -56,11 +130,14 @@ export interface QuantitativeInsight {
   postureLabel: string;
   ownership: OwnershipState;
   
+  // Normalized Terminal State
+  terminalState: TerminalViewState;
+  
   // Legacy verdict for existing components
   verdict: "WAIT_FOR_TRIGGER" | "STRONG_BUY_ZONE" | "PILOT_BUY" | "AVOID_STAGE_4" | "TAKE_PROFIT";
   verdictLabel: string;
   
-  // Tier 1: Human Language (Guided: "Help me understand")
+  // Tier 1: Human Language (Guided)
   human: {
     assessmentHeadline: string;
     assessmentDescription: string;
@@ -82,10 +159,10 @@ export interface QuantitativeInsight {
     };
   };
 
-  // Tier 2: Explanation (Standard: "Help me decide")
+  // Tier 2: Explanation (Standard)
   standard: {
     bottomLine: string;
-    signalsRatio: string; // e.g. "1 of 4 Positive Signals"
+    signalsRatio: string;
     confluenceBreakdown: {
       dimension: string;
       score: number;
@@ -106,7 +183,7 @@ export interface QuantitativeInsight {
     setupSummary: string;
   };
 
-  // Tier 3: Quantitative Data (Advanced: "Give me control")
+  // Tier 3: Quantitative Data (Advanced)
   advanced: {
     rsi: number;
     ema20: number;
@@ -131,7 +208,6 @@ export interface QuantitativeInsight {
     catalystToIncreaseScore: string;
   };
 
-  // Downside Risk & Invalidation
   primaryRiskSummary: string;
   whatWouldChangeAssessment: string;
   availableActions: ARXAction[];

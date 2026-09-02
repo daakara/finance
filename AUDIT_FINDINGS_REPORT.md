@@ -204,6 +204,8 @@ During our iterative CI monitoring, two specific pre-production regressions were
 - [`dcb8e5d`](https://github.com/daakara/finance/commit/dcb8e5d): Render total account net worth with active stock holdings and cash reserves breakdown
 - [`fa265af`](https://github.com/daakara/finance/commit/fa265af): ARX Adaptive Terminal Architecture (Guided · Standard · Advanced), Intent-First Home Hero, and Goal-Driven Screener
 - [`b7d36ca`](https://github.com/daakara/finance/commit/b7d36ca): Complete 8 Sprint 0 UX specification contracts and Phase 1 vertical slice with dead-end recovery and empirical evidence chains
+- [`114fc72`](https://github.com/daakara/finance/commit/114fc72): Record Sprint 0 specification and Phase 1 vertical slice milestone in audit report
+- **Current Milestone**: Canonical pure state engine `deriveAssessmentState()`, granular domain availability, factor agreement metrics, and automated state-transition test suite (167/167 tests passing, 98/98 static routes).
 
 
 ---
