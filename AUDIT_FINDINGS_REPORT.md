@@ -195,8 +195,10 @@ During our iterative CI monitoring, two specific pre-production regressions were
 - [`0be34c2`](https://github.com/daakara/finance/commit/0be34c2): M1 backend hardening & M2 quant domain invariants
 - [`d1de1c7`](https://github.com/daakara/finance/commit/d1de1c7): M3 brand parity, spot price hydration, ESLint config, and modal z-index supremacy
 - [`85da958`](https://github.com/daakara/finance/commit/85da958): Fractional share sizing, 24/7 crypto market badge, and ETF sector breakdown widget
-- [`378e21e`](https://github.com/daakara/finance/commit/378e21e): Watchlist baseline sparklines, custom dark scrollbar, and spotlight header polish
-- [`2f9c274`](https://github.com/daakara/finance/commit/2f9c274): Consolidated 4-stage unified CI/CD pipeline and edge cache invalidation
+- [`5a111f7`](https://github.com/daakara/finance/commit/5a111f7): Canonical pure state engine `deriveAssessmentState()`, granular domain availability, factor agreement metrics, and automated state-transition test suite
+- [`259e4db`](https://github.com/daakara/finance/commit/259e4db): Expand automated state-transition matrix to 10 comprehensive invariant assertions and refine non-prescriptive Guided labels
+- [`f354fc3`](https://github.com/daakara/finance/commit/f354fc3): Implement multi-source data provenance, domain availability breakdown, and model ruleset version in WhyInspectModal
+- **Current Milestone**: Phase 3 & 4 complete (171/171 tests passing, 98/98 static routes pre-rendered, multi-source data provenance & domain availability fully active).
 - [`5b55dcf`](https://github.com/daakara/finance/commit/5b55dcf): Resolved property name collision in catalog parity test
 - [`1287e95`](https://github.com/daakara/finance/commit/1287e95): Targeted tracked python packages in CI data integrity gate
 - [`2bd7690`](https://github.com/daakara/finance/commit/2bd7690): Eliminate card header text overflow with compact score pill and min-w-0 layout

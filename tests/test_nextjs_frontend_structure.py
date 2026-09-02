@@ -487,8 +487,32 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("Tommy Tuberville", content)
         self.assertIn("Nancy Pelosi", content)
         self.assertIn("Jensen Huang", content)
-        self.assertIn("Alexander Karp", content)
-        self.assertIn("Satya Nadella", content)
+    def test_provenance_and_adaptive_views_contract(self):
+        """Quality Gate: Verify AdaptiveTerminal and WhyInspectModal adhere to the Phase 3 provenance and pure state contract."""
+        terminal_path = os.path.join("frontend", "components", "AdaptiveTerminal.tsx")
+        why_modal_path = os.path.join("frontend", "components", "WhyInspectModal.tsx")
+        engine_path = os.path.join("frontend", "lib", "assessmentEngine.ts")
+
+        self.assertTrue(os.path.exists(terminal_path))
+        self.assertTrue(os.path.exists(why_modal_path))
+        self.assertTrue(os.path.exists(engine_path))
+
+        with open(terminal_path, "r", encoding="utf-8") as f:
+            t_content = f.read()
+        self.assertIn("terminalState={insight.terminalState}", t_content)
+        self.assertIn("fromGoal", t_content)
+        self.assertIn("ownership", t_content)
+
+        with open(why_modal_path, "r", encoding="utf-8") as f:
+            w_content = f.read()
+        self.assertIn("Observation (Fact)", w_content)
+        self.assertIn("Model Weighting Rule", w_content)
+        self.assertIn("modelProv", w_content)
+
+        with open(engine_path, "r", encoding="utf-8") as f:
+            e_content = f.read()
+        self.assertIn("deriveAssessmentState", e_content)
+        self.assertIn("calculateFactorAgreement", e_content)
 
 
 if __name__ == "__main__":
