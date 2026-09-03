@@ -22,7 +22,7 @@ export default function GuidedTerminalView({
     { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. Relative strength score is ${insight.advanced.relativeStrengthScore || 65}/100.` },
     { title: "3. Why does ARX like/caution it?", text: insight.human.reclaimMilestone },
     { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${insight.standard.keyLevels.stopLoss.toFixed(2)}, the setup is invalidated.` },
-    { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of ${insight.standard.keyLevels.sma50 !== undefined ? `$${insight.standard.keyLevels.sma50.toFixed(2)}` : "key technical levels"}. Target 1 is $${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%).` },
+    { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of ${insight.standard.keyLevels.sma50 !== undefined ? `$${insight.standard.keyLevels.sma50.toFixed(2)}` : "key technical levels"}. Target 1 is ${insight.standard.keyLevels.target1 !== undefined ? `$${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%)` : "N/A (< 50 sessions)"}.` },
     { title: "6. What should I monitor?", text: `Volume surges, 50-day moving average crossovers, and broader market regime stability.` },
   ];
 
@@ -150,12 +150,42 @@ export default function GuidedTerminalView({
             </div>
           </div>
 
-          <button
-            onClick={onOpenSizer}
-            className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-          >
-            ⚖️ Size Position ($60+ Safe)
-          </button>
+          {insight.terminalState.posture === "ACQUIRE" ? (
+            <button
+              onClick={onOpenSizer}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              ⚖️ Size Position (Buy Zone)
+            </button>
+          ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
+            <button
+              onClick={onOpenWhy}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              🚨 Review Invalidation
+            </button>
+          ) : insight.terminalState.posture === "RESEARCH" ? (
+            <button
+              onClick={onOpenWhy}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              📋 Open Research
+            </button>
+          ) : insight.terminalState.posture === "AVOID" ? (
+            <a
+              href="/screener"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              🔎 Find Setups
+            </a>
+          ) : (
+            <button
+              onClick={onOpenWhy}
+              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              ⏳ Wait for Trigger
+            </button>
+          )}
         </div>
       </div>
 

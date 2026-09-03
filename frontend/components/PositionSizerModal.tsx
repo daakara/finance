@@ -12,7 +12,7 @@ interface PositionSizerProps {
   symbol: string;
   entryPrice: number;
   stopLoss: number;
-  takeProfit1: number;
+  takeProfit1?: number;
   riskRewardRatio?: number;
   isStage4?: boolean;
 }

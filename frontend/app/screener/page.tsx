@@ -9,7 +9,7 @@ import DataSourceBadge from "../../components/DataSourceBadge";
 import { API_BASE_URL, SpotPriceRegistry } from "../../lib/api";
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
-import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
+import { MASTER_ASSET_CATALOG, CATALOG_BASELINE_PRICES } from "../../lib/masterCatalog";
 import { trackScreenerSelection, trackMatomoEvent } from "../../lib/matomo";
 import {
   getCanonicalAssetName,
@@ -94,83 +94,21 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     if (parsed.length > 0) tickers = parsed;
   }
 
-  const BASE_PRICES: Record<string, { price: number; name: string; roic: number; peg: number; margin: number; rvol: number; short: number }> = {
-    LNTH: { price: 100.78, name: "Lantheus Holdings", roic: 32.4, peg: 0.82, margin: 68.5, rvol: 2.4, short: 4.8 },
-    CPRX: { price: 23.40, name: "Catalyst Pharmaceuticals", roic: 28.5, peg: 0.74, margin: 76.2, rvol: 2.8, short: 5.2 },
-    MEDP: { price: 342.10, name: "Medpace Holdings", roic: 36.8, peg: 0.92, margin: 71.0, rvol: 1.8, short: 3.5 },
-    TMDX: { price: 92.60, name: "TransMedics Group", roic: 24.2, peg: 1.15, margin: 78.4, rvol: 3.2, short: 8.4 },
-    ISRG: { price: 446.50, name: "Intuitive Surgical", roic: 22.5, peg: 1.45, margin: 67.2, rvol: 1.7, short: 2.1 },
-    VRTX: { price: 482.10, name: "Vertex Pharmaceuticals", roic: 26.0, peg: 0.95, margin: 82.5, rvol: 1.9, short: 2.4 },
-    LLY: { price: 924.50, name: "Eli Lilly and Company", roic: 38.2, peg: 1.35, margin: 79.5, rvol: 2.1, short: 1.8 },
-    NVO: { price: 136.40, name: "Novo Nordisk A/S", roic: 44.0, peg: 0.88, margin: 84.0, rvol: 2.3, short: 1.5 },
-    DXCM: { price: 89.29, name: "DexCom Inc.", roic: 18.5, peg: 1.20, margin: 64.0, rvol: 2.9, short: 7.2 },
-    PODD: { price: 143.41, name: "Insulet Corporation", roic: 21.0, peg: 1.10, margin: 68.0, rvol: 2.2, short: 6.4 },
-    ACLS: { price: 84.20, name: "Axcelis Technologies", roic: 27.5, peg: 0.78, margin: 54.0, rvol: 2.6, short: 5.8 },
-    POWI: { price: 68.50, name: "Power Integrations", roic: 22.0, peg: 0.85, margin: 56.5, rvol: 1.8, short: 3.2 },
-    ON: { price: 72.40, name: "ON Semiconductor", roic: 24.5, peg: 0.89, margin: 52.0, rvol: 2.2, short: 4.1 },
-    MPWR: { price: 812.30, name: "Monolithic Power Systems", roic: 31.0, peg: 1.25, margin: 55.4, rvol: 2.0, short: 3.8 },
-    KLAC: { price: 734.50, name: "KLA Corporation", roic: 35.0, peg: 0.98, margin: 61.2, rvol: 1.9, short: 2.5 },
-    LRCX: { price: 792.10, name: "Lam Research", roic: 33.5, peg: 0.91, margin: 58.0, rvol: 2.1, short: 2.8 },
-    ASML: { price: 824.60, name: "ASML Holding", roic: 42.0, peg: 1.12, margin: 52.5, rvol: 2.4, short: 1.9 },
-    AVGO: { price: 158.40, name: "Broadcom Inc.", roic: 29.5, peg: 1.05, margin: 64.8, rvol: 2.5, short: 2.2 },
-    ELF: { price: 118.40, name: "e.l.f. Beauty", roic: 26.5, peg: 0.84, margin: 71.0, rvol: 3.1, short: 7.8 },
-    DECK: { price: 86.33, name: "Deckers Outdoor", roic: 34.2, peg: 0.96, margin: 56.0, rvol: 2.0, short: 3.4 },
-    LULU: { price: 264.50, name: "Lululemon Athletica", roic: 31.0, peg: 0.88, margin: 58.5, rvol: 2.5, short: 6.2 },
-    ONON: { price: 44.20, name: "On Holding AG", roic: 23.5, peg: 1.05, margin: 60.2, rvol: 3.4, short: 8.1 },
-    MNST: { price: 46.70, name: "Monster Beverage", roic: 28.0, peg: 1.15, margin: 54.0, rvol: 1.6, short: 2.0 },
-    ULTA: { price: 368.40, name: "Ulta Beauty", roic: 35.5, peg: 0.79, margin: 52.8, rvol: 2.2, short: 4.5 },
-    VRT: { price: 88.40, name: "Vertiv Holdings", roic: 25.0, peg: 0.89, margin: 54.2, rvol: 3.5, short: 4.6 },
-    ETN: { price: 312.50, name: "Eaton Corporation", roic: 21.5, peg: 1.20, margin: 53.0, rvol: 1.7, short: 2.2 },
-    PWR: { price: 268.10, name: "Quanta Services", roic: 19.8, peg: 1.30, margin: 51.5, rvol: 1.8, short: 2.5 },
-    GEV: { price: 224.60, name: "GE Vernova", roic: 22.0, peg: 1.10, margin: 54.0, rvol: 2.6, short: 3.8 },
-    FIX: { price: 346.20, name: "Comfort Systems USA", roic: 30.5, peg: 0.86, margin: 52.0, rvol: 2.3, short: 3.1 },
-    EME: { price: 382.40, name: "EMCOR Group", roic: 28.0, peg: 0.92, margin: 51.8, rvol: 2.0, short: 2.9 },
-    ANET: { price: 324.50, name: "Arista Networks", roic: 32.0, peg: 0.94, margin: 65.4, rvol: 2.2, short: 3.0 },
-    NOW: { price: 785.40, name: "ServiceNow Inc.", roic: 24.0, peg: 1.35, margin: 78.5, rvol: 1.8, short: 2.1 },
-    SNPS: { price: 464.89, name: "Synopsys Inc.", roic: 21.0, peg: 1.40, margin: 80.0, rvol: 1.6, short: 1.8 },
-    CDNS: { price: 254.20, name: "Cadence Design Systems", roic: 22.5, peg: 1.38, margin: 88.0, rvol: 1.7, short: 2.0 },
-    DUOL: { price: 284.50, name: "Duolingo Inc.", roic: 26.0, peg: 1.10, margin: 73.5, rvol: 3.6, short: 8.5 },
-    NVDA: { price: 128.50, name: "NVIDIA Corp.", roic: 48.0, peg: 0.92, margin: 75.0, rvol: 2.8, short: 2.2 },
-    TSLA: { price: 218.40, name: "Tesla Inc.", roic: 18.0, peg: 1.60, margin: 54.5, rvol: 3.1, short: 6.8 },
-    PLTR: { price: 31.20, name: "Palantir Technologies", roic: 23.0, peg: 1.25, margin: 81.0, rvol: 3.8, short: 7.2 },
-    ARM: { price: 134.80, name: "Arm Holdings", roic: 25.5, peg: 1.45, margin: 95.0, rvol: 3.0, short: 6.5 },
-    SMCI: { price: 43.60, name: "Super Micro Computer", roic: 22.4, peg: 0.72, margin: 52.0, rvol: 4.2, short: 14.8 },
-    AMD: { price: 146.20, name: "Advanced Micro Devices", roic: 19.5, peg: 1.18, margin: 52.5, rvol: 2.4, short: 3.2 },
-    META: { price: 512.40, name: "Meta Platforms", roic: 32.0, peg: 0.88, margin: 81.5, rvol: 2.1, short: 1.6 },
-    AAPL: { price: 319.64, name: "Apple Inc.", roic: 45.0, peg: 1.30, margin: 56.0, rvol: 1.7, short: 1.4 },
-    MSFT: { price: 418.20, name: "Microsoft Corp.", roic: 36.0, peg: 1.22, margin: 69.5, rvol: 1.8, short: 1.2 },
-    AMZN: { price: 178.60, name: "Amazon.com Inc.", roic: 22.0, peg: 1.15, margin: 58.0, rvol: 2.0, short: 1.5 },
-    CRWD: { price: 272.50, name: "CrowdStrike Holdings", roic: 24.5, peg: 1.20, margin: 76.0, rvol: 3.2, short: 6.4 },
-    PANW: { price: 348.10, name: "Palo Alto Networks", roic: 21.0, peg: 1.30, margin: 74.0, rvol: 2.3, short: 4.2 },
-    NET: { price: 82.40, name: "Cloudflare Inc.", roic: 19.0, peg: 1.40, margin: 77.0, rvol: 2.9, short: 7.5 },
-    DDOG: { price: 114.20, name: "Datadog Inc.", roic: 22.0, peg: 1.25, margin: 81.0, rvol: 2.7, short: 5.8 },
-    MDB: { price: 288.60, name: "MongoDB Inc.", roic: 18.0, peg: 1.50, margin: 75.0, rvol: 2.8, short: 8.2 },
-    COIN: { price: 212.30, name: "Coinbase Global", roic: 27.0, peg: 0.95, margin: 85.0, rvol: 3.9, short: 11.2 },
-    MARA: { price: 16.80, name: "MARA Holdings", roic: 19.0, peg: 0.85, margin: 54.0, rvol: 4.1, short: 16.4 },
-    MSTR: { price: 134.20, name: "MicroStrategy Inc.", roic: 22.0, peg: 1.10, margin: 72.0, rvol: 3.7, short: 13.5 },
-    HOOD: { price: 21.60, name: "Robinhood Markets", roic: 21.5, peg: 0.90, margin: 78.0, rvol: 3.1, short: 7.9 },
-    CELH: { price: 38.40, name: "Celsius Holdings", roic: 21.0, peg: 0.92, margin: 52.0, rvol: 3.3, short: 9.2 },
-    IONQ: { price: 9.20, name: "IonQ Inc.", roic: 18.0, peg: 1.60, margin: 62.0, rvol: 3.6, short: 12.4 },
-    RKLB: { price: 7.10, name: "Rocket Lab USA", roic: 19.5, peg: 1.40, margin: 55.0, rvol: 3.4, short: 8.8 },
-    APP: { price: 86.40, name: "AppLovin Corp.", roic: 34.0, peg: 0.82, margin: 69.0, rvol: 3.5, short: 6.8 },
-  };
-
   return tickers.map((sym, idx) => {
     const canonicalName = getCanonicalAssetName(sym);
     const canonicalMoat = getCanonicalAssetMoat(sym);
     const canonicalCatalyst = getCanonicalAssetCatalyst(sym);
 
-    const base = BASE_PRICES[sym] || {
-      price: 100.0,
-      name: canonicalName,
-      roic: 24.0,
-      peg: 0.95,
-      margin: 62.0,
-      rvol: 2.2,
-      short: 5.0,
-    };
+    const cat = MASTER_ASSET_CATALOG[sym];
+    const spot = SpotPriceRegistry.get(sym);
+    const price = (spot?.price && spot.price > 0) ? spot.price : (CATALOG_BASELINE_PRICES[sym] ?? 100.0);
+    const roic = cat?.roic ?? 24.0;
+    const peg = cat?.peg ?? 0.95;
+    const margin = cat?.grossMargin ?? 62.0;
+    const rvol = cat?.rvol ?? 2.2;
+    const short = cat?.shortFloat ?? 5.0;
+    const companyName = canonicalName || cat?.name || sym;
 
-    const price = base.price;
     const h = (idx * 17 + sym.charCodeAt(0) * 31) % 100;
 
     let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
@@ -220,15 +158,15 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     let archetype = "Peter Lynch & Greenblatt GARP";
     if (isDayTrader) {
-      archetype = base.short > 8.0 ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
+      archetype = short > 8.0 ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
     } else {
       if (sym === "ULTA" || sym === "LULU") {
         archetype = "Deep Value & Capital Return (Decelerating Comp Watch)";
-      } else if (base.peg <= 1.0) {
+      } else if (peg <= 1.0) {
         archetype = "Peter Lynch GARP Compounder";
-      } else if (base.roic >= 25.0) {
+      } else if (roic >= 25.0) {
         archetype = "Joel Greenblatt Magic Formula";
-      } else if (base.margin >= 65.0) {
+      } else if (margin >= 65.0) {
         archetype = "David Gardner Rule Breaker";
       }
     }
@@ -239,20 +177,20 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     return {
       symbol: sym,
-      companyName: base.name,
+      companyName,
       currentPrice: price,
       gemScore: isStage4Candidate ? Math.min(74, 76 + (h % 10)) : 82 + (h % 16),
       expertArchetype: archetype,
-      roic: `${base.roic}%`,
-      pegRatio: `${base.peg}`,
-      grossMargin: `${base.margin}%`,
+      roic: `${roic}%`,
+      pegRatio: `${peg}`,
+      grossMargin: `${margin}%`,
       atr14: `$${(price * (isDayTrader ? 0.032 : 0.024)).toFixed(2)}`,
-      rvol: `${base.rvol}x`,
-      shortFloat: `${base.short}%`,
+      rvol: `${rvol}x`,
+      shortFloat: `${short}%`,
       dayTraderSetup: isDayTrader
         ? "Intraday momentum trend-following above 5m VWAP anchor with defined ATR risk."
         : (isStage4Candidate ? "Stage 4 consolidation — awaiting base formation and comp stabilization." : "Stage 2 accumulation breakout above 50-day pivot."),
-      thesis: canonicalMoat || `${base.name} demonstrates ${base.roic}% ROIC with ${base.margin}% gross margins.`,
+      thesis: canonicalMoat || `${companyName} demonstrates ${roic}% ROIC with ${margin}% gross margins.`,
       catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || "Upcoming product cycle expansion and institutional accumulation.",
       riskLevel: (sym === "ULTA" || sym === "LULU") ? "High Turnaround Risk" : (isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk"),
       executionStatus,
@@ -1027,7 +965,7 @@ export default function ScreenerPage() {
                       <div>
                         <div className="flex items-center space-x-2">
                           <Link
-                            href={`/?symbol=${gem.symbol}`}
+                            href={`/?symbol=${gem.symbol}&fromGoal=${selectedFilter}&fromCount=${displayGems.length}`}
                             className="text-lg font-black text-white hover:text-cyan-400 transition-colors"
                           >
                             {gem.symbol}

@@ -128,27 +128,64 @@ export default function StandardTerminalView({
               </div>
               <div className="flex items-center justify-between pt-1.5">
                 <span className="text-emerald-400">Target 1:</span>
-                <span className="text-emerald-300 font-bold">${kl.target1.toFixed(2)} (+{kl.target1Pct}%)</span>
+                <span className="text-emerald-300 font-bold">
+                  {kl.target1 !== undefined ? `$${kl.target1.toFixed(2)} (+${kl.target1Pct}%)` : "N/A (< 50 sessions)"}
+                </span>
               </div>
               <div className="flex items-center justify-between pt-1.5">
                 <span className="text-emerald-400">Target 2:</span>
-                <span className="text-emerald-300 font-bold">${kl.target2.toFixed(2)} (+{kl.target2Pct}%)</span>
+                <span className="text-emerald-300 font-bold">
+                  {kl.target2 !== undefined ? `$${kl.target2.toFixed(2)} (+${kl.target2Pct}%)` : "N/A (< 50 sessions)"}
+                </span>
               </div>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-xl border border-[#1b2639] flex items-center justify-between">
               <span className="text-slate-400 font-bold">Profit / Risk:</span>
-              <span className="text-emerald-400 font-bold text-sm">{kl.profitRiskRatio.toFixed(2)} : 1.0</span>
+              <span className="text-emerald-400 font-bold text-sm">
+                {kl.profitRiskRatio !== undefined ? `${kl.profitRiskRatio.toFixed(2)} : 1.0` : "N/A"}
+              </span>
             </div>
           </div>
 
           <div className="pt-2 space-y-2">
-            <button
-              onClick={onOpenSizer}
-              className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md"
-            >
-              ⚖️ Institutional Position Sizer
-            </button>
+            {insight.terminalState.posture === "ACQUIRE" ? (
+              <button
+                onClick={onOpenSizer}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md"
+              >
+                ⚖️ Size & Execute Position (Buy Zone)
+              </button>
+            ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
+              <button
+                onClick={onOpenWhy}
+                className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md"
+              >
+                🚨 Review Invalidation & Exit Triggers
+              </button>
+            ) : insight.terminalState.posture === "RESEARCH" ? (
+              <button
+                onClick={onOpenWhy}
+                className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md"
+              >
+                📋 Open Research & Evidence Ledger
+              </button>
+            ) : insight.terminalState.posture === "AVOID" ? (
+              <a
+                href="/screener"
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 block text-center shadow-md cursor-pointer"
+              >
+                🔎 Explore Screened Alternatives
+              </a>
+            ) : (
+              <button
+                onClick={onOpenWhy}
+                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 cursor-pointer shadow-md"
+              >
+                ⏳ Inspect Trigger & Milestone Criteria
+              </button>
+            )}
+
             <button
               onClick={onOpenWhy}
               className="w-full py-1.5 bg-[#090e18] hover:bg-[#141e2e] border border-[#1c283c] text-slate-300 font-bold font-mono rounded-xl text-xs transition-all cursor-pointer"

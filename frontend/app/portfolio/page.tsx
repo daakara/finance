@@ -493,7 +493,7 @@ export default function PortfolioPage() {
                   return (
                     <tr key={pos.symbol} className="hover:bg-[#151e2d] transition-colors">
                       <td className="py-3 px-4">
-                        <Link href={`/?symbol=${pos.symbol}`} className="font-bold text-cyan-400 hover:text-cyan-300 text-sm flex items-center gap-1.5">
+                        <Link href={`/?symbol=${pos.symbol}&ownership=OWNED`} className="font-bold text-cyan-400 hover:text-cyan-300 text-sm flex items-center gap-1.5">
                           <span>{pos.symbol}</span>
                           <span className="text-[10px] text-slate-500 font-normal">({pos.name})</span>
                         </Link>

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
+import { MASTER_ASSET_CATALOG, CATALOG_BASELINE_PRICES } from "../../../lib/masterCatalog";
+import { getCanonicalAssetName } from "../../../lib/assetRegistry";
 
 interface PageProps {
   params: {
@@ -470,45 +472,58 @@ export default function StrategyDetailPage({ params }: PageProps) {
           </div>
 
           <div className="space-y-3">
-            {strategy.candidates.map((cand, idx) => (
-              <div
-                key={idx}
-                className="bg-[#06090f] p-4 rounded-xl border border-[#1b2434] space-y-2.5 text-xs"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2.5">
-                    <Link
-                      href={`/stock/${cand.symbol.toLowerCase()}/`}
-                      className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold hover:underline"
-                    >
-                      {cand.symbol}
-                    </Link>
-                    <span className="text-white font-bold">{cand.name}</span>
-                    <span className="text-slate-400 font-mono">${cand.price.toFixed(2)} ({cand.changePct >= 0 ? "+" : ""}{cand.changePct}%)</span>
+            {strategy.candidates.map((cand, idx) => {
+              const cat = MASTER_ASSET_CATALOG[cand.symbol];
+              const displayPrice = CATALOG_BASELINE_PRICES[cand.symbol] ?? cand.price;
+              const displayChange = cand.changePct;
+              const displayName = getCanonicalAssetName(cand.symbol, cat?.name || cand.name);
+              const isStale = cand.price > 0 && Math.abs(displayPrice - cand.price) > 5;
+              const displayTarget1 = isStale ? `$${(displayPrice * 1.15).toFixed(2)}` : cand.target1;
+              const displayStopLoss = isStale ? `$${(displayPrice * 0.93).toFixed(2)}` : cand.stopLoss;
+              const displayEntryRange = isStale
+                ? `$${(displayPrice * 0.97).toFixed(2)} - $${displayPrice.toFixed(2)}`
+                : cand.entryRange;
+
+              return (
+                <div
+                  key={idx}
+                  className="bg-[#06090f] p-4 rounded-xl border border-[#1b2434] space-y-2.5 text-xs"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2.5">
+                      <Link
+                        href={`/stock/${cand.symbol.toLowerCase()}/`}
+                        className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold hover:underline"
+                      >
+                        {cand.symbol}
+                      </Link>
+                      <span className="text-white font-bold">{displayName}</span>
+                      <span className="text-slate-400 font-mono">${displayPrice.toFixed(2)} ({displayChange >= 0 ? "+" : ""}{displayChange.toFixed(2)}%)</span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold font-mono">
+                        {cand.stateBadge}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-bold">
+                        Piotroski: {cat?.piotroski ?? cand.piotroski}/9
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold font-mono">
-                      {cand.stateBadge}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-bold">
-                      Piotroski: {cand.piotroski}/9
-                    </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-400 pt-1">
+                    <div><strong>Optimal Entry:</strong> <span className="text-slate-200 font-mono">{displayEntryRange}</span></div>
+                    <div><strong>Target 1 (+2.5x ATR):</strong> <span className="text-cyan-300 font-mono">{displayTarget1}</span></div>
+                    <div><strong>Stop Loss Floor:</strong> <span className="text-rose-400 font-mono">{displayStopLoss}</span></div>
+                    <div><strong>Capital Efficiency:</strong> <span className="text-emerald-300 font-mono">ROIC {cat?.roic ? `${cat.roic}%` : cand.roic}</span></div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-400 pt-1">
-                  <div><strong>Optimal Entry:</strong> <span className="text-slate-200 font-mono">{cand.entryRange}</span></div>
-                  <div><strong>Target 1 (+2.5x ATR):</strong> <span className="text-cyan-300 font-mono">{cand.target1}</span></div>
-                  <div><strong>Stop Loss Floor:</strong> <span className="text-rose-400 font-mono">{cand.stopLoss}</span></div>
-                  <div><strong>Capital Efficiency:</strong> <span className="text-emerald-300 font-mono">ROIC {cand.roic}</span></div>
+                  <p className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-[#141b26]">
+                    <strong>Execution Setup:</strong> {cand.thesis}
+                  </p>
                 </div>
-
-                <p className="text-[11px] text-slate-300 font-sans leading-relaxed pt-1 border-t border-[#141b26]">
-                  <strong>Execution Setup:</strong> {cand.thesis}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

@@ -21,7 +21,7 @@ import DataSourceBadge from "../components/DataSourceBadge";
 import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
-import { fetchAssetAnalytics, AnalyticsResponse } from "../lib/api";
+import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
 import TerminalSsrShell from "../components/TerminalSsrShell";
@@ -36,6 +36,7 @@ function TerminalContent() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [interval, setInterval] = useState<string>("1y_hist");
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(
@@ -130,6 +131,7 @@ function TerminalContent() {
       }
 
       setLoading(true);
+      setError(null);
       try {
         let period = "1y";
         let apiInterval = "1d";
@@ -169,10 +171,14 @@ function TerminalContent() {
         const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, knownPrice, knownChange);
         if (isMounted) {
           setData(res);
+          setError(null);
           cacheRef.current.set(cacheKey, res);
         }
       } catch (err) {
         console.error("Failed to load asset analytics:", err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : `Failed to load asset analytics for ${selectedSymbol}`);
+        }
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -214,11 +220,59 @@ function TerminalContent() {
           {/* Intent-First Home Hero: "What are you looking to do today?" */}
           <IntentHero onSelectSymbol={handleSelectSymbol} />
 
+          {/* Ingestion Failure / Explicit Retry State */}
+          {error && !data && (
+            <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-white">Market Ingestion Unavailable for {selectedSymbol}</h2>
+                  <p className="text-xs text-rose-300/90 leading-relaxed mt-0.5">
+                    {error}. Live candle feeds or fundamental disclosures could not be verified.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rose-900/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    cacheRef.current.clear();
+                    setError(null);
+                    setLoading(true);
+                    fetchAssetAnalytics(selectedSymbol, "1y", "1d")
+                      .then((res) => {
+                        setData(res);
+                        setError(null);
+                      })
+                      .catch((e) => setError(e instanceof Error ? e.message : "Retry failed"))
+                      .finally(() => setLoading(false));
+                  }}
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow"
+                >
+                  🔄 Retry Analysis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSymbol("NVDA")}
+                  className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  Analyze NVDA
+                </button>
+                <a
+                  href="/screener"
+                  className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-cyan-400 rounded-lg text-xs font-bold transition-all hover:underline"
+                >
+                  Explore Screener Candidates →
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */}
           <AdaptiveTerminal
             symbol={selectedSymbol}
             companyName={aliasRecommendation?.companyName || selectedSymbol}
-            currentPrice={data?.currentPrice || 100}
+            currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
             changePct={data?.priceChangePct24h || 0}
             setupScore={60}
             candles={data?.candles}

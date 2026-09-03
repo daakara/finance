@@ -86,18 +86,24 @@ export default function AdvancedTerminalView({
         <div className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 shadow-xl space-y-3">
           <div className="flex items-center justify-between border-b border-[#182335] pb-2">
             <span className="text-slate-300 font-bold">Execution Ladder</span>
-            <span className="text-emerald-400 font-bold">{kl.profitRiskRatio.toFixed(2)}:1 R:R</span>
+            <span className="text-emerald-400 font-bold">
+              {kl.profitRiskRatio !== undefined ? `${kl.profitRiskRatio.toFixed(2)}:1 R:R` : "N/A (< 50 sessions)"}
+            </span>
           </div>
 
           <div className="space-y-1.5 font-mono text-xs">
             <div className="flex items-center justify-between p-2 rounded bg-[#07130e] border border-emerald-950/60">
               <span className="text-emerald-400 font-bold">TARGET 2 (R2)</span>
-              <span className="text-emerald-300 font-black">${kl.target2.toFixed(2)} (+{kl.target2Pct}%)</span>
+              <span className="text-emerald-300 font-black">
+                {kl.target2 !== undefined ? `$${kl.target2.toFixed(2)} (+${kl.target2Pct}%)` : "N/A"}
+              </span>
             </div>
 
             <div className="flex items-center justify-between p-2 rounded bg-[#07130e] border border-emerald-950/60">
               <span className="text-emerald-400 font-bold">TARGET 1 (R1)</span>
-              <span className="text-emerald-300 font-black">${kl.target1.toFixed(2)} (+{kl.target1Pct}%)</span>
+              <span className="text-emerald-300 font-black">
+                {kl.target1 !== undefined ? `$${kl.target1.toFixed(2)} (+${kl.target1Pct}%)` : "N/A"}
+              </span>
             </div>
 
             <div className="flex items-center justify-between p-2 rounded bg-[#130f07] border border-amber-950/60">
@@ -116,12 +122,42 @@ export default function AdvancedTerminalView({
             </div>
           </div>
 
-          <button
-            onClick={onOpenSizer}
-            className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2"
-          >
-            ⚖️ Open Institutional Position Sizer
-          </button>
+          {insight.terminalState.posture === "ACQUIRE" ? (
+            <button
+              onClick={onOpenSizer}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2"
+            >
+              ⚖️ Open Institutional Position Sizer
+            </button>
+          ) : insight.terminalState.posture === "EXIT_REVIEW" ? (
+            <button
+              onClick={onOpenWhy}
+              className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2"
+            >
+              🚨 Review Invalidation & Breaches
+            </button>
+          ) : insight.terminalState.posture === "RESEARCH" ? (
+            <button
+              onClick={onOpenWhy}
+              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2"
+            >
+              📋 Open Quantitative Evidence Ledger
+            </button>
+          ) : insight.terminalState.posture === "AVOID" ? (
+            <a
+              href="/screener"
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2 block text-center"
+            >
+              🔎 Explore Screened Opportunities
+            </a>
+          ) : (
+            <button
+              onClick={onOpenWhy}
+              className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black rounded-xl transition-all active:scale-95 cursor-pointer shadow-md mt-2"
+            >
+              ⏳ Monitor Technical Triggers
+            </button>
+          )}
         </div>
 
         {/* Quant Statistics & Fundamentals */}

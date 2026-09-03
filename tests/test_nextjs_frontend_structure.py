@@ -58,7 +58,7 @@ class TestNextJsFrontendStructure(unittest.TestCase):
                 content = f.read()
 
             # Must contain links to root terminal with symbol query
-            link_pattern = re.compile(r'href=\{`/\?symbol=\${[a-zA-Z0-9_\.]+\}`\}')
+            link_pattern = re.compile(r'href=\{`/\?symbol=\${[a-zA-Z0-9_\.]+\}(?:&[^`]+)?`\}')
             matches = link_pattern.findall(content)
             self.assertTrue(len(matches) > 0, f"Page {subpage} must contain dynamic deep links in format /?symbol=${{...}}")
 

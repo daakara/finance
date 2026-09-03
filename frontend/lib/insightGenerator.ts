@@ -376,11 +376,11 @@ export function generateQuantitativeInsight(
         sma50,
         stopLoss,
         stopLossPct: -7.0,
-        target1,
-        target1Pct: 20.4,
-        target2,
-        target2Pct: 29.3,
-        profitRiskRatio: profitRisk,
+        target1: isTrendAvailable ? target1 : undefined,
+        target1Pct: isTrendAvailable ? 20.4 : undefined,
+        target2: isTrendAvailable ? target2 : undefined,
+        target2Pct: isTrendAvailable ? 29.3 : undefined,
+        profitRiskRatio: isTrendAvailable ? profitRisk : undefined,
       },
       setupSummary: !isTrendAvailable
         ? "Trend Evidence Incomplete — Awaiting 50-session historical base."

@@ -174,11 +174,11 @@ export interface QuantitativeInsight {
       sma50?: number;
       stopLoss: number;
       stopLossPct: number;
-      target1: number;
-      target1Pct: number;
-      target2: number;
-      target2Pct: number;
-      profitRiskRatio: number;
+      target1?: number;
+      target1Pct?: number;
+      target2?: number;
+      target2Pct?: number;
+      profitRiskRatio?: number;
     };
     setupSummary: string;
   };
