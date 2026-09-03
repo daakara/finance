@@ -15,7 +15,7 @@ import {
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics, SpotPriceRegistry } from "../../lib/api";
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
-import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
+import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
@@ -54,7 +54,7 @@ export default function PortfolioPage() {
 
     try {
       // 1. Fetch freshest live exchange analytics
-      let price = 100.0;
+      let price: number | null = null;
       try {
         const analytics = await fetchAssetAnalytics(symKey, "1mo", "1d");
         if (analytics?.currentPrice && !isNaN(analytics.currentPrice) && analytics.currentPrice > 0) {
@@ -63,15 +63,25 @@ export default function PortfolioPage() {
       } catch (e) {
         const reg = SpotPriceRegistry.get(symKey);
         const snap = getPersistedMarketSnapshot(symKey);
-        if (reg?.price) price = reg.price;
-        else if (snap?.currentPrice) price = snap.currentPrice;
+        const baseline = getMasterBaselinePrice(symKey, 0);
+        if (reg?.price && reg.price > 0) price = reg.price;
+        else if (snap?.currentPrice && snap.currentPrice > 0) price = snap.currentPrice;
+        else if (baseline > 0) price = baseline;
       }
 
-      setResolvedQuotePrice(price);
-      setNewEntryPrice(price.toFixed(2));
-      setNewStopLoss((price * 0.93).toFixed(2));
-      setNewTarget((price * 1.25).toFixed(2));
-      setNewShares(Math.max(1, Math.round(2500 / price)).toString());
+      if (price && price > 0) {
+        setResolvedQuotePrice(price);
+        setNewEntryPrice(price.toFixed(2));
+        setNewStopLoss((price * 0.93).toFixed(2));
+        setNewTarget((price * 1.25).toFixed(2));
+        setNewShares(Math.max(1, Math.round(2500 / price)).toString());
+      } else {
+        setResolvedQuotePrice(null);
+        setNewEntryPrice("");
+        setNewStopLoss("");
+        setNewTarget("");
+        setNewShares("10");
+      }
     } catch (err) {
       console.warn("Failed to auto-populate ticker data:", err);
     } finally {

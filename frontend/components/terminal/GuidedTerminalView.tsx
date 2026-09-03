@@ -19,7 +19,7 @@ export default function GuidedTerminalView({
 
   const steps = [
     { title: "1. What's Happening?", text: `${insight.symbol} is trading at $${insight.price.toFixed(2)}, ${insight.changePct >= 0 ? "+" : ""}${insight.changePct.toFixed(2)}% today. ${insight.human.assessmentDescription}` },
-    { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. Relative strength score is ${insight.advanced.relativeStrengthScore || 65}/100.` },
+    { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. ${insight.advanced.relativeStrengthScore !== undefined ? `Relative strength score is ${insight.advanced.relativeStrengthScore}/100.` : "Relative strength score is unverified for this security."}` },
     { title: "3. Why does ARX like/caution it?", text: insight.human.reclaimMilestone },
     { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${insight.standard.keyLevels.stopLoss.toFixed(2)}, the setup is invalidated.` },
     { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of ${insight.standard.keyLevels.sma50 !== undefined ? `$${insight.standard.keyLevels.sma50.toFixed(2)}` : "key technical levels"}. Target 1 is ${insight.standard.keyLevels.target1 !== undefined ? `$${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%)` : "N/A (< 50 sessions)"}.` },

@@ -636,21 +636,7 @@ export function generateFallbackAnalytics(
     },
     smartMoney: registered?.smartMoney || persisted?.smartMoney || {
       congressTrades: [],
-      optionsFlow: [
-        {
-          time: "14:23:05",
-          ticker: upper,
-          strike: `$${(basePrice * 1.05).toFixed(0)} CALL`,
-          expiration: "2026-09-18",
-          spot_price: basePrice,
-          premium: "$1.45M",
-          type: "CALL SWEEP",
-          sentiment: "Bullish",
-          volume_oi_ratio: 3.4,
-          implied_volatility: "38.2%",
-          order_type: "Ask (Aggressive)",
-        },
-      ],
+      optionsFlow: [],
     },
   };
 }
@@ -897,21 +883,7 @@ export async function fetchDirectYahooFinanceChart(
         },
         smartMoney: {
           congressTrades: [],
-          optionsFlow: [
-            {
-              time: "14:23:05",
-              ticker: upper,
-              strike: `$${(currentPrice * 1.05).toFixed(0)} CALL`,
-              expiration: "2026-09-18",
-              spot_price: currentPrice,
-              premium: "$1.45M",
-              type: "CALL SWEEP",
-              sentiment: "Bullish",
-              volume_oi_ratio: 3.4,
-              implied_volatility: "38.2%",
-              order_type: "Ask (Aggressive)",
-            },
-          ],
+          optionsFlow: [],
         },
       };
 

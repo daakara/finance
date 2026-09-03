@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
-import { getMasterBaselinePrice } from "../../../lib/masterCatalog";
+import { getMasterBaselinePrice, getMasterAsset } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -71,11 +71,26 @@ export default function ComparisonPairPage({ params }: PageProps) {
   const priceA = getMasterBaselinePrice(symA);
   const priceB = getMasterBaselinePrice(symB);
 
-  const scoreA = factorA?.scores.compositeFactorScore ?? 85;
-  const scoreB = factorB?.scores.compositeFactorScore ?? 85;
+  const masterA = getMasterAsset(symA);
+  const masterB = getMasterAsset(symB);
 
-  const piotroskiA = factorA?.scores.piotroskiFScore ?? 8;
-  const piotroskiB = factorB?.scores.piotroskiFScore ?? 8;
+  const scoreA = masterA?.compositeFactorScore ?? factorA?.scores.compositeFactorScore;
+  const scoreB = masterB?.compositeFactorScore ?? factorB?.scores.compositeFactorScore;
+
+  const piotroskiA = masterA?.piotroski ?? factorA?.scores.piotroskiFScore;
+  const piotroskiB = masterB?.piotroski ?? factorB?.scores.piotroskiFScore;
+
+  const growthA = masterA?.growthScore ?? factorA?.scores.growthScore;
+  const growthB = masterB?.growthScore ?? factorB?.scores.growthScore;
+
+  const qualityA = masterA?.qualityScore ?? factorA?.scores.qualityScore;
+  const qualityB = masterB?.qualityScore ?? factorB?.scores.qualityScore;
+
+  const valA = masterA?.valuationScore ?? factorA?.scores.valuationScore;
+  const valB = masterB?.valuationScore ?? factorB?.scores.valuationScore;
+
+  const verdictA = masterA?.verdict ?? factorA?.scores.verdict ?? "Unverified Security — Research Required";
+  const verdictB = masterB?.verdict ?? factorB?.scores.verdict ?? "Unverified Security — Research Required";
 
   const jsonLd = [
     {
@@ -183,33 +198,33 @@ export default function ComparisonPairPage({ params }: PageProps) {
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Composite Factor Score</td>
-                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreA} / 100</td>
-                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreB} / 100</td>
+                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreA !== undefined ? `${scoreA} / 100` : "N/A"}</td>
+                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreB !== undefined ? `${scoreB} / 100` : "N/A"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Piotroski 9-Point F-Score</td>
-                  <td className="py-2.5 px-3 font-mono text-cyan-300 font-bold">{piotroskiA} / 9</td>
-                  <td className="py-2.5 px-3 font-mono text-amber-300 font-bold">{piotroskiB} / 9</td>
+                  <td className="py-2.5 px-3 font-mono text-cyan-300 font-bold">{piotroskiA !== undefined ? `${piotroskiA} / 9` : "N/A"}</td>
+                  <td className="py-2.5 px-3 font-mono text-amber-300 font-bold">{piotroskiB !== undefined ? `${piotroskiB} / 9` : "N/A"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Growth Score</td>
-                  <td className="py-2.5 px-3 font-mono">{factorA?.scores.growthScore ?? 88} / 100</td>
-                  <td className="py-2.5 px-3 font-mono">{factorB?.scores.growthScore ?? 88} / 100</td>
+                  <td className="py-2.5 px-3 font-mono">{growthA !== undefined ? `${growthA} / 100` : "N/A"}</td>
+                  <td className="py-2.5 px-3 font-mono">{growthB !== undefined ? `${growthB} / 100` : "N/A"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Quality Score</td>
-                  <td className="py-2.5 px-3 font-mono">{factorA?.scores.qualityScore ?? 92} / 100</td>
-                  <td className="py-2.5 px-3 font-mono">{factorB?.scores.qualityScore ?? 90} / 100</td>
+                  <td className="py-2.5 px-3 font-mono">{qualityA !== undefined ? `${qualityA} / 100` : "N/A"}</td>
+                  <td className="py-2.5 px-3 font-mono">{qualityB !== undefined ? `${qualityB} / 100` : "N/A"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Valuation Score</td>
-                  <td className="py-2.5 px-3 font-mono">{factorA?.scores.valuationScore ?? 75} / 100</td>
-                  <td className="py-2.5 px-3 font-mono">{factorB?.scores.valuationScore ?? 70} / 100</td>
+                  <td className="py-2.5 px-3 font-mono">{valA !== undefined ? `${valA} / 100` : "N/A"}</td>
+                  <td className="py-2.5 px-3 font-mono">{valB !== undefined ? `${valB} / 100` : "N/A"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Institutional Verdict</td>
-                  <td className="py-2.5 px-3 font-sans text-emerald-400">{factorA?.scores.verdict ?? "High Quality Compounder"}</td>
-                  <td className="py-2.5 px-3 font-sans text-amber-400">{factorB?.scores.verdict ?? "Secular Growth Leader"}</td>
+                  <td className="py-2.5 px-3 font-sans text-emerald-400">{verdictA}</td>
+                  <td className="py-2.5 px-3 font-sans text-amber-400">{verdictB}</td>
                 </tr>
               </tbody>
             </table>

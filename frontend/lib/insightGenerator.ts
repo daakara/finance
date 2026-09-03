@@ -23,7 +23,8 @@ export function generateQuantitativeInsight(
   candles?: CandleData[],
   dataSource?: "live" | "fallback"
 ): QuantitativeInsight {
-  const safePrice = currentPrice > 0 ? currentPrice : 100;
+  const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
+  const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback";
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
@@ -47,6 +48,45 @@ export function generateQuantitativeInsight(
     calculatedEma20 = Number(currentEma.toFixed(2));
   }
 
+  // 1b. Authentic 14-Period RSI Calculation (Requires >= 15 valid candles)
+  let calculatedRsi14: number | undefined = undefined;
+  if (candles && candles.length >= 15 && !isFallbackFeed) {
+    const rsiSlice = candles.slice(-15);
+    let totalGain = 0;
+    let totalLoss = 0;
+    for (let i = 1; i < rsiSlice.length; i++) {
+      const diff = rsiSlice[i].close - rsiSlice[i - 1].close;
+      if (diff > 0) totalGain += diff;
+      else totalLoss += Math.abs(diff);
+    }
+    const avgGain = totalGain / 14;
+    const avgLoss = totalLoss / 14;
+    if (avgLoss === 0) {
+      calculatedRsi14 = 100.0;
+    } else {
+      const rs = avgGain / avgLoss;
+      calculatedRsi14 = Number((100 - (100 / (1 + rs))).toFixed(1));
+    }
+  }
+
+  // 1c. Authentic 1D Parametric Value at Risk (VaR 95%)
+  let calculatedVar95: number | undefined = undefined;
+  if (candles && candles.length >= 20 && !isFallbackFeed) {
+    const returns: number[] = [];
+    const varSlice = candles.slice(-21);
+    for (let i = 1; i < varSlice.length; i++) {
+      if (varSlice[i - 1].close > 0) {
+        returns.push((varSlice[i].close - varSlice[i - 1].close) / varSlice[i - 1].close);
+      }
+    }
+    if (returns.length >= 20) {
+      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((acc, r) => acc + Math.pow(r - mean, 2), 0) / (returns.length - 1);
+      const stdev = Math.sqrt(variance);
+      calculatedVar95 = Number((1.645 * stdev * 100).toFixed(1));
+    }
+  }
+
   const isTrendAvailable = calculatedSma50 !== null;
   const sma50 = calculatedSma50 ?? undefined;
   const ema20 = calculatedEma20 ?? undefined;
@@ -58,10 +98,12 @@ export function generateQuantitativeInsight(
     : (isTrendAvailable ? (safePrice < (sma50 as number) ? 4 : 2) : 2);
   const isStage4 = derivedStage === 4;
 
-  const stopLoss = Number((safePrice * 0.93).toFixed(2));
-  const target1 = Number((safePrice * 1.204).toFixed(2));
-  const target2 = Number((safePrice * 1.293).toFixed(2));
-  const profitRisk = Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2));
+  const stopLoss = isPriceValid ? Number((safePrice * 0.93).toFixed(2)) : 0;
+  const target1 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.204).toFixed(2)) : undefined;
+  const target2 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.293).toFixed(2)) : undefined;
+  const profitRisk = (isPriceValid && isTrendAvailable && target1 !== undefined && safePrice > stopLoss)
+    ? Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2))
+    : undefined;
 
   // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog (DISC-03, DISC-04)
   const upperSym = symbol.toUpperCase().replace("-USD", "");
@@ -332,9 +374,9 @@ export function generateQuantitativeInsight(
         ? `${symbol} needs to reclaim $${(sma50 as number).toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`
         : `Historical trend milestone unavailable (${symbol} has insufficient trading history).`,
       watchLevels: {
-        watchZone: `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}`,
+        watchZone: isPriceValid ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (Awaiting price)",
         keyLevel: isTrendAvailable ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
-        riskStop: `$${stopLoss.toFixed(2)} (-7.0%)`,
+        riskStop: isPriceValid ? `$${stopLoss.toFixed(2)} (-7.0%)` : "N/A (Awaiting price)",
       },
       actionCallout: {
         action: terminalState.posture === "ACQUIRE"
@@ -372,10 +414,10 @@ export function generateQuantitativeInsight(
       ],
       keyLevels: {
         currentPrice: safePrice,
-        watchZone: `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}`,
+        watchZone: isPriceValid ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
         sma50,
         stopLoss,
-        stopLossPct: -7.0,
+        stopLossPct: isPriceValid ? -7.0 : 0,
         target1: isTrendAvailable ? target1 : undefined,
         target1Pct: isTrendAvailable ? 20.4 : undefined,
         target2: isTrendAvailable ? target2 : undefined,
@@ -391,7 +433,7 @@ export function generateQuantitativeInsight(
 
     // Tier 3: Quantitative Data (Advanced)
     advanced: {
-      rsi: isStage4 ? 36.3 : 62.4,
+      rsi: calculatedRsi14,
       ema20,
       sma50,
       atr: catAsset?.atr14,
@@ -402,8 +444,8 @@ export function generateQuantitativeInsight(
       roic: catAsset?.roic,
       debtToEquity: catAsset !== undefined ? Number(debtEquityDisplay) : undefined,
       vcpStage: isStage4 ? undefined : 3,
-      relativeStrengthScore: isStage4 ? 62 : 94,
-      var95Pct: 3.2,
+      relativeStrengthScore: catAsset?.momentumScore ?? (isTrendAvailable ? (isStage4 ? 45 : 88) : undefined),
+      var95Pct: calculatedVar95,
     },
 
     // Traceable Attribution Model

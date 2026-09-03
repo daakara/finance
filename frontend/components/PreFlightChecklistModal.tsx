@@ -103,49 +103,52 @@ export default function PreFlightChecklistModal({
   const cleanSym = (symbol || "ASSET").toUpperCase().replace("-USD", "");
   const catalogItem = MASTER_ASSET_CATALOG[cleanSym];
 
-  // Defensive Numeric Guards
-  const safePrice = (typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0) ? currentPrice : 100;
-  const safeStop = (typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0) ? stopLoss : (safePrice * 0.95);
-  const safeTarget = (typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0) ? takeProfit1 : (safePrice * 1.10);
-  const safeRR = (typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0) ? riskRewardRatio : 2.5;
-  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin)) ? optimalEntryMin : (safePrice * 0.98);
+  // Defensive Numeric Guards & Epistemic Verification
+  const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
+  const safePrice = isPriceValid ? currentPrice : 0;
+  const safeStop = (typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0) ? stopLoss : (isPriceValid ? safePrice * 0.95 : 0);
+  const safeTarget = (typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0) ? takeProfit1 : (isPriceValid ? safePrice * 1.10 : 0);
+  const isRRValid = typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0;
+  const safeRR = isRRValid ? riskRewardRatio : 0;
+  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin)) ? optimalEntryMin : (isPriceValid ? safePrice * 0.98 : 0);
   const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax)) ? optimalEntryMax : safePrice;
-  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot)) ? breakoutPivot : (safePrice * 1.072);
-  const safeVix = (typeof vix === "number" && !isNaN(vix)) ? vix : 15.4;
+  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot)) ? breakoutPivot : (isPriceValid ? safePrice * 1.072 : 0);
+  const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
+  const safeVix = isVixValid ? vix : 99.0;
 
-  const stopLossPct = safePrice > 0 ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "-5.00";
-  const target1Pct = safePrice > 0 ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "+10.00";
+  const stopLossPct = (isPriceValid && safeStop > 0) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
+  const target1Pct = (isPriceValid && safeTarget > 0) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
 
   // ── 5-Point Quantitative Decision Checklist ──────────────────────────────
 
-  // Check 1: Asymmetric Risk-Reward
-  const isRRPassed = safeRR >= 2.0;
+  // Check 1: Asymmetric Risk-Reward (Must have valid R:R >= 2.0:1)
+  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0;
 
   // Check 2: Technical Trend Alignment & Stage Discipline
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
-  const isTrendPassed = !isStage4 && !isExtendedAboveZone;
+  const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone;
 
   // Check 3: Smart Money Flow & Distribution Traps
-  // distributionTrapActive = true means a trap EXISTS (bad). Naming is unambiguous.
-  const distributionTrapActive = isDistributionTrap ?? Boolean(
+  // isDistributionTrapResolved = true means a trap EXISTS (bad). Naming is unambiguous.
+  const isDistributionTrapResolved = isDistributionTrap ?? Boolean(
     catalogItem && (
       (Number(catalogItem.shortFloat) || 0) > 12.0 ||
       String(catalogItem.verdict || "").toLowerCase().includes("turnaround") ||
       (Number(catalogItem.qualityScore) || 100) < 60
     )
   );
-  const isDistributionTrapResolved = distributionTrapActive;
-  const isSmartMoneyPassed = !distributionTrapActive;
+  const distributionTrapActive = isDistributionTrapResolved;
+  const isSmartMoneyPassed = isPriceValid && !distributionTrapActive;
 
   // Check 4: Catalyst Hazard Buffer
-  const isCatalystPassed = !hasImminentEarnings;
+  const isCatalystPassed = isPriceValid && !hasImminentEarnings;
 
-  // Check 5: Macro Regime Guard
-  const isMacroPassed = safeVix < 26.0;
+  // Check 5: Macro Regime Guard (VIX < 26.0 with valid macro reading)
+  const isMacroPassed = isPriceValid && isVixValid && safeVix < 26.0;
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
-  const convictionPct = Math.round((passedCount / 5) * 100);
-  const isCleared = convictionPct >= 80 && !isStage4 && isSmartMoneyPassed;
+  const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
+  const isCleared = isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isSmartMoneyPassed && isTrendPassed;
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
@@ -234,6 +237,14 @@ export default function PreFlightChecklistModal({
 
         {/* Scrollable body — barometer + 5-point checklist */}
         <div className="overflow-y-auto flex-1 space-y-4 py-4 pr-0.5">
+          {/* Warning banner when price or execution levels are unverified */}
+          {!isPriceValid && (
+            <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs font-mono text-rose-300 flex items-center gap-2">
+              <span className="text-base">⚠️</span>
+              <span>Live spot price or execution levels are unverified for this asset. Trade execution is blocked until verified market data is received.</span>
+            </div>
+          )}
+
           {/* Clearance Conviction Barometer */}
           <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
             isCleared
@@ -265,8 +276,8 @@ export default function PreFlightChecklistModal({
                   <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  Current: <strong className="text-cyan-300 font-mono">{safeRR.toFixed(2)} : 1.0</strong>{" "}
-                  {isRRPassed ? "(Adequate upside cushion)" : "(Hazard: upside too small for downside risk)"}
+                  Current: <strong className="text-cyan-300 font-mono">{isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "N/A (Unverified R:R)"}</strong>{" "}
+                  {isRRPassed ? "(Adequate upside cushion)" : isRRValid ? "(Hazard: upside too small for downside risk)" : "(Evidence incomplete: risk-reward unavailable)"}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
@@ -358,6 +369,10 @@ export default function PreFlightChecklistModal({
                     ? (isPlain
                         ? `Market volatility is within standard parameters (VIX ${safeVix.toFixed(1)}).`
                         : `Macro Guard: Normal volatility regime (VIX ${safeVix.toFixed(1)} < 26.0).`)
+                    : !isVixValid
+                    ? (isPlain
+                        ? "Market volatility reading (VIX) is currently unavailable."
+                        : "Macro Guard: CBOE Volatility Index (VIX) feed unavailable.")
                     : (isPlain
                         ? `⚠️ High Volatility: Market VIX (${safeVix.toFixed(1)}) indicates elevated systemic turbulence.`
                         : `⚠️ Elevated Macro Risk: VIX (${safeVix.toFixed(1)}) exceeds 26.0 threshold.`)}
@@ -365,7 +380,7 @@ export default function PreFlightChecklistModal({
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
                 isMacroPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-amber-950 text-amber-300 border-amber-800"
-              }`}>{isMacroPassed ? "PASS" : "HIGH VIX"}</span>
+              }`}>{isMacroPassed ? "PASS" : isVixValid ? "HIGH VIX" : "UNAVAILABLE"}</span>
             </div>
           </div>
         </div>

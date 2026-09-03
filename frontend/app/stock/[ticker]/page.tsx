@@ -85,15 +85,23 @@ export function generateMetadata({ params }: PageProps): Metadata {
   
   const name = master?.name || watchlist?.name || sym;
   const price = "Live Market Price";
-  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 85;
-  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
+  const hasVerifiedData = Boolean(master || factor);
+  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore;
+  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore;
+
+  const isStage4 = (master?.verdict?.includes("Stage 4") || factor?.scores.verdict?.includes("Stage 4") || false);
+  const isStage1 = (master?.verdict?.includes("Stage 1") || factor?.scores.verdict?.includes("Stage 1") || false);
+  const statusIcon = isStage4 ? "🔴" : isStage1 ? "🟡" : (hasVerifiedData ? "🟢" : "⚪");
   
+  const scoreDesc = compositeScore !== undefined ? `${compositeScore}/100` : "Unverified";
+  const piotroskiDesc = piotroskiScore !== undefined ? `${piotroskiScore}/9` : "Unverified";
+
   return {
-    title: `🟢 ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`,
-    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${compositeScore}/100), and Congressional STOCK Act disclosures.`,
+    title: `${statusIcon} ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`,
+    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${scoreDesc}), and Congressional STOCK Act disclosures.`,
     openGraph: {
-      title: `🟢 ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
-      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${piotroskiScore}/9), and downside Cornish-Fisher VaR.`,
+      title: `${statusIcon} ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
+      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${piotroskiDesc}), and downside Cornish-Fisher VaR.`,
       url: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "article",
@@ -146,14 +154,14 @@ export default function StockDetailPage({ params }: PageProps) {
   const target1 = !isHaltedOrIncomplete && atr14 !== undefined ? +(spotPrice + 2.5 * atr14).toFixed(2) : undefined;
   const target2 = !isHaltedOrIncomplete && atr14 !== undefined ? +(spotPrice + 4.5 * atr14).toFixed(2) : undefined;
 
-  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 84;
-  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
-  const growthScore = master?.growthScore ?? factor?.scores.growthScore ?? 86;
-  const qualityScore = master?.qualityScore ?? factor?.scores.qualityScore ?? 90;
-  const valuationScore = master?.valuationScore ?? factor?.scores.valuationScore ?? 72;
-  const momentumScore = master?.momentumScore ?? factor?.scores.momentumScore ?? 85;
-  const tailRiskScore = master?.tailRiskScore ?? factor?.scores.tailRiskScore ?? 80;
-  const verdict = master?.verdict ?? factor?.scores.verdict ?? "Strong Quantitative Compounder";
+  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore;
+  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore;
+  const growthScore = master?.growthScore ?? factor?.scores.growthScore;
+  const qualityScore = master?.qualityScore ?? factor?.scores.qualityScore;
+  const valuationScore = master?.valuationScore ?? factor?.scores.valuationScore;
+  const momentumScore = master?.momentumScore ?? factor?.scores.momentumScore;
+  const tailRiskScore = master?.tailRiskScore ?? factor?.scores.tailRiskScore;
+  const verdict = master?.verdict ?? factor?.scores.verdict ?? "Unverified Security — Research Required";
 
   const jsonLd = [
     {
@@ -249,7 +257,7 @@ export default function StockDetailPage({ params }: PageProps) {
               <div className="flex items-center space-x-2">
                 <span className="text-slate-500 uppercase">Composite Score:</span>
                 <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">
-                  {compositeScore}/100
+                  {compositeScore !== undefined ? `${compositeScore}/100` : "N/A"}
                 </span>
               </div>
               <ShareTradeCardButton
@@ -260,8 +268,8 @@ export default function StockDetailPage({ params }: PageProps) {
                 entryMax={entryMax}
                 target1={target1}
                 stopLoss={stopLoss}
-                compositeScore={compositeScore}
-                piotroskiScore={piotroskiScore}
+                compositeScore={compositeScore ?? 0}
+                piotroskiScore={piotroskiScore ?? 0}
                 posture={postureCode}
               />
             </div>
@@ -367,7 +375,7 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Growth Score</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{growthScore}</strong>
+                <strong className="text-white text-base font-mono">{growthScore ?? "N/A"}</strong>
                 <span className="text-[10px] text-cyan-400">/ 100</span>
               </div>
             </div>
@@ -375,7 +383,7 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Quality Score</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{qualityScore}</strong>
+                <strong className="text-white text-base font-mono">{qualityScore ?? "N/A"}</strong>
                 <span className="text-[10px] text-emerald-400">/ 100</span>
               </div>
             </div>
@@ -383,7 +391,7 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Valuation Score</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{valuationScore}</strong>
+                <strong className="text-white text-base font-mono">{valuationScore ?? "N/A"}</strong>
                 <span className="text-[10px] text-purple-400">/ 100</span>
               </div>
             </div>
@@ -391,7 +399,7 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Momentum Score</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{momentumScore}</strong>
+                <strong className="text-white text-base font-mono">{momentumScore ?? "N/A"}</strong>
                 <span className="text-[10px] text-amber-400">/ 100</span>
               </div>
             </div>
@@ -399,7 +407,7 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Tail Risk Safety</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{tailRiskScore}</strong>
+                <strong className="text-white text-base font-mono">{tailRiskScore ?? "N/A"}</strong>
                 <span className="text-[10px] text-rose-400">/ 100</span>
               </div>
             </div>
@@ -407,8 +415,8 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#111722] p-3 rounded-xl border border-[#1b2434] space-y-1">
               <span className="text-slate-400 block">Piotroski F-Score</span>
               <div className="flex items-center justify-between">
-                <strong className="text-white text-base font-mono">{piotroskiScore}</strong>
-                <span className="text-[10px] text-cyan-400">/ 9 (Pristine)</span>
+                <strong className="text-white text-base font-mono">{piotroskiScore ?? "N/A"}</strong>
+                <span className="text-[10px] text-cyan-400">{piotroskiScore !== undefined ? (piotroskiScore >= 8 ? "/ 9 (Pristine)" : "/ 9") : "/ 9 (Unverified)"}</span>
               </div>
             </div>
           </div>

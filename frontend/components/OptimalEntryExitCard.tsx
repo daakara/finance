@@ -151,10 +151,15 @@ export default function OptimalEntryExitCard({
   })();
 
   const handleLogToPortfolio = () => {
+    if (!current_price || isNaN(current_price) || current_price <= 0) {
+      setLogStatus("❌ Cannot log position: live spot price is unavailable.");
+      setTimeout(() => setLogStatus(null), 3000);
+      return;
+    }
     const res = addPortfolioPosition({
       symbol,
       name: symbol,
-      shares: Math.max(1, Math.round(2500 / (current_price || 100))),
+      shares: Math.max(1, Math.round(2500 / current_price)),
       entryPrice: current_price,
       currentPrice: current_price,
       targetPrice: take_profit_1,

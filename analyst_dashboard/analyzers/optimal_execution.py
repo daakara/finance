@@ -82,11 +82,12 @@ class OptimalExecutionEngine:
 
         # 2. Moving Averages
         ema_20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
-        raw_sma_50 = float(close.rolling(50, min_periods=5).mean().iloc[-1])
+        # 50-period SMA strictly requires at least 50 valid closed sessions
+        raw_sma_50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
         # Protect against unadjusted stock splits or dirty historical candles (clamp 50 SMA to [-20%, +18%])
-        sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if not math.isnan(raw_sma_50) else current_price * 1.05
-        is_stage_4_downtrend = (current_price < sma_50 * 0.98)
-        breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec)
+        sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if raw_sma_50 is not None and not math.isnan(raw_sma_50) else None
+        is_stage_4_downtrend = (current_price < sma_50 * 0.98) if sma_50 is not None else False
+        breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec) if sma_50 is not None else round(current_price * 1.05, dec)
 
         # Dual-Horizon Strategy Logic
         if user_role == "DAY_TRADER":
@@ -113,7 +114,7 @@ class OptimalExecutionEngine:
         else:
             # Swing / Long-term accumulation zone: structural support floor and breakout resistance corridor
             base_pivot = 0.5 * ema_20 + 0.5 * current_price
-            pullback_support = max(current_price * 0.95, min(sma_50, base_pivot - (0.75 * atr_14)))
+            pullback_support = max(current_price * 0.95, min(sma_50, base_pivot - (0.75 * atr_14))) if sma_50 is not None else max(current_price * 0.95, base_pivot - (0.75 * atr_14))
             breakout_ceiling = max(current_price * 1.015, base_pivot + (0.5 * atr_14))
             
             entry_min = round(min(pullback_support, current_price * 0.975), dec)
@@ -137,9 +138,15 @@ class OptimalExecutionEngine:
                 stage = "Stage 4 Markdown (Awaiting New Base)"
                 vcp = "Base Consolidation in Progress"
                 # In Stage 4, re-anchor targets from the Breakout Pivot (50 SMA) and clamp to realistic technical ceilings
-                breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec)
+                breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec) if sma_50 is not None else round(current_price * 1.05, dec)
                 take_profit_1 = round(min(current_price * 1.245, max(breakout_pivot * 1.08, current_price * 1.12)), dec)
                 take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), dec)
+            elif sma_50 is None:
+                setup_name = "Trend Evidence Incomplete (< 50 Sessions)"
+                thesis = "Insufficient historical sessions to compute 50-day moving average. Maintain defensive risk control."
+                invalidation = "Breakdown below recent range support or -5.0% stop constraint."
+                stage = "Awaiting Historical Base (< 50 Sessions)"
+                vcp = "Consolidation Unverified"
             elif len(close) >= 20 and float(close.max()) > current_price * 1.20:
                 setup_name = "Stage 1 Bottoming Base / Re-Accumulation"
                 thesis = "Post-correction consolidation channel. Accumulate near lower support boundary and avoid chasing upper range boundaries."

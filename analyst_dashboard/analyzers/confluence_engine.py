@@ -56,13 +56,9 @@ class ConfluenceEngine:
                 tech_plain = f"Sideways price action (RSI {rsi:.1f}). No clear direction yet."
 
         # ── 2. FUNDAMENTAL QUALITY & SOLVENCY (Weight: 25%) ──────────────────
-        fund_score = 65.0
-        fund_status = "neutral"
-        fund_detail = "Moderate financial solvency with stable operational profile."
-        fund_plain = "Healthy average company financials with no immediate solvency risks."
-
-        if fundamental_data:
-            piotroski = int(fundamental_data.get("piotroski_f", 7))
+        has_fundamentals = bool(fundamental_data and any(k in fundamental_data for k in ["qualityScore", "piotroski_f", "piotroskiFScore", "roic"]))
+        if has_fundamentals:
+            piotroski = int(fundamental_data.get("piotroski_f") or fundamental_data.get("piotroskiFScore", 7))
             quality = float(fundamental_data.get("qualityScore", 70.0))
             growth = float(fundamental_data.get("growthScore", 70.0))
             valuation = float(fundamental_data.get("valuationScore", 65.0))
@@ -81,6 +77,11 @@ class ConfluenceEngine:
                 fund_status = "neutral"
                 fund_detail = f"Stable Solvency: Piotroski F-Score {piotroski}/9, Quality Factor {quality:.0f}/100."
                 fund_plain = f"Stable core financials ({piotroski}/9 score) without acute balance sheet concerns."
+        else:
+            fund_score = 0.0
+            fund_status = "neutral"
+            fund_detail = "Verified SEC fundamental filings unavailable for this asset."
+            fund_plain = "Financial health data unavailable — awaiting audited SEC financial statements."
 
         # ── 3. SMART MONEY & REGULATORY FILINGS (Weight: 25%) ────────────────
         smart_score = 50.0

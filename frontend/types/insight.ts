@@ -185,7 +185,7 @@ export interface QuantitativeInsight {
 
   // Tier 3: Quantitative Data (Advanced)
   advanced: {
-    rsi: number;
+    rsi?: number;
     ema20?: number;
     sma50?: number;
     atr?: number;

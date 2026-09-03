@@ -39,8 +39,8 @@ export default function AdvancedTerminalView({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-[#070b13] p-3 rounded-xl border border-[#1b2639]">
         <div className="bg-[#0b101b] p-2 rounded-lg border border-[#162132]">
           <span className="text-[10px] text-slate-500 block">RSI (14D)</span>
-          <span className={`text-sm font-black ${adv.rsi < 30 ? "text-emerald-400" : adv.rsi > 70 ? "text-rose-400" : "text-slate-200"}`}>
-            {adv.rsi.toFixed(1)}
+          <span className={`text-sm font-black ${adv.rsi !== undefined ? (adv.rsi < 30 ? "text-emerald-400" : adv.rsi > 70 ? "text-rose-400" : "text-slate-200") : "text-slate-500"}`}>
+            {adv.rsi !== undefined ? adv.rsi.toFixed(1) : "N/A"}
           </span>
         </div>
 
@@ -201,12 +201,12 @@ export default function AdvancedTerminalView({
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
               <span className="text-[10px] text-slate-500 block">RELATIVE STRENGTH</span>
-              <span className="text-xs font-bold text-cyan-400 mt-0.5 block">{adv.relativeStrengthScore || 65}/100</span>
+              <span className="text-xs font-bold text-cyan-400 mt-0.5 block">{adv.relativeStrengthScore !== undefined ? `${adv.relativeStrengthScore}/100` : "N/A"}</span>
             </div>
 
             <div className="bg-[#070b13] p-2.5 rounded-lg border border-[#182436]">
-              <span className="text-[10px] text-slate-500 block">CORNISH-FISHER VAR</span>
-              <span className="text-xs font-bold text-rose-400 mt-0.5 block">-{adv.var95Pct || 3.2}% (95% 1D)</span>
+              <span className="text-[10px] text-slate-500 block">PARAMETRIC VAR</span>
+              <span className="text-xs font-bold text-rose-400 mt-0.5 block">{adv.var95Pct !== undefined ? `-${adv.var95Pct}% (95% 1D)` : "N/A (< 20 sessions)"}</span>
             </div>
           </div>
 
