@@ -122,7 +122,7 @@ export default function StockDetailPage({ params }: PageProps) {
 
   // Minervini execution levels
   const atr14 = master?.atr14 ? master.atr14 : +(spotPrice * 0.032).toFixed(2);
-  const stopLoss = +(spotPrice - 1.25 * atr14).toFixed(2);
+  const stopLoss = +(spotPrice * 0.93).toFixed(2);
   const entryMin = +(spotPrice - 0.5 * atr14).toFixed(2);
   const entryMax = spotPrice;
   const target1 = +(spotPrice + 2.5 * atr14).toFixed(2);
