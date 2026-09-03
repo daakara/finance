@@ -183,7 +183,7 @@ class RiskAnalysisEngine:
             
         except Exception as e:
             logger.error(f"Error calculating risk-adjusted returns: {e}")
-            return {'sharpe_ratio': 0.5, 'annual_return': 8.0}
+            return {'sharpe_ratio': None, 'annual_return': None}
     
     def _analyze_tail_risk(self, returns: pd.Series) -> Dict[str, Any]:
         """Analyze tail risk characteristics."""
@@ -220,13 +220,13 @@ class RiskAnalysisEngine:
             # Extract key metrics
             volatility = risk_results.get('volatility_metrics', {}).get('annual_volatility', 20)
             max_drawdown = abs(risk_results.get('drawdown_analysis', {}).get('max_drawdown', 15))
-            sharpe_ratio = risk_results.get('risk_adjusted_returns', {}).get('sharpe_ratio', 0.5)
+            sharpe_ratio = risk_results.get('risk_adjusted_returns', {}).get('sharpe_ratio')
             var_5 = abs(risk_results.get('var_analysis', {}).get('var_5_percent', 5))
             
             # Risk scoring (0-100, lower is better)
             vol_score = min(volatility / 30 * 100, 100)  # 30% vol = 100 points
             dd_score = min(max_drawdown / 50 * 100, 100)  # 50% DD = 100 points
-            sharpe_score = max(0, 100 - sharpe_ratio * 50)  # Higher Sharpe = lower risk score
+            sharpe_score = max(0, 100 - (sharpe_ratio or 0.0) * 50) if sharpe_ratio is not None else 50.0  # None -> neutral 50
             var_score = min(var_5 * 10, 100)  # 10% VaR = 100 points
             
             overall_score = (vol_score + dd_score + sharpe_score + var_score) / 4

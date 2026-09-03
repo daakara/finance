@@ -407,11 +407,12 @@ def get_asset_analytics(
         except Exception:
             pass
 
-        # Smart Money Feeds
-        congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
+        # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
         options_flow = smart_money_engine.get_options_flow(upper_sym) or []
-        has_congress_buy = any("BUY" in (t.get("transaction_type", "") or "").upper() for t in congress_trades)
         has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
+        congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
+        # Curated historical STOCK Act records are informational and do not synthesize real-time intraday buy confluence
+        has_congress_buy = False
 
         # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
         confluence_output = confluence_engine.calculate_confluence(

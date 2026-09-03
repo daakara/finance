@@ -79,13 +79,15 @@ class ConfluenceEngine:
                 fund_plain = f"Stable core financials ({piotroski}/9 score) without acute balance sheet concerns."
         else:
             fund_score = 0.0
-            fund_status = "neutral"
+            fund_status = "unavailable"
             fund_detail = "Verified SEC fundamental filings unavailable for this asset."
             fund_plain = "Financial health data unavailable — awaiting audited SEC financial statements."
 
         # ── 3. SMART MONEY & REGULATORY FILINGS (Weight: 25%) ────────────────
-        smart_score = 50.0
-        smart_status = "neutral"
+        smart_score = 0.0
+        smart_status = "unavailable"
+        smart_detail = "Verified smart money regulatory filings unavailable for this asset."
+        smart_plain = "No verified insider or institutional order flow records connected."
         
         # Check if Foreign Private Issuer / ADR (American Depositary Receipt)
         known_foreign_adrs = {
@@ -96,13 +98,11 @@ class ConfluenceEngine:
         is_foreign_adr = (len(clean_sym) == 5 and clean_sym.endswith(("Y", "F"))) or clean_sym in known_foreign_adrs
 
         if is_foreign_adr:
+            smart_score = 50.0
+            smart_status = "neutral"
             smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
             smart_plain = "Foreign Company (ADR): Executive trades are reported to European/overseas regulators rather than the US SEC."
-        else:
-            smart_detail = "No high-conviction C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
-            smart_plain = "No recent major C-suite insider purchases filed with the SEC this month."
-
-        if smart_money_data:
+        elif smart_money_data is not None and len(smart_money_data) > 0:
             has_insider_buy = smart_money_data.get("has_insider_buy", False)
             insider_val = float(smart_money_data.get("insider_value_usd", 0))
             insider_name = smart_money_data.get("insider_name", "")
@@ -127,12 +127,8 @@ class ConfluenceEngine:
             else:
                 smart_score = 50.0
                 smart_status = "neutral"
-                if is_foreign_adr:
-                    smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
-                    smart_plain = "Foreign Company (ADR): Executive trades are reported to European/overseas regulators rather than the US SEC."
-                else:
-                    smart_detail = "No major C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
-                    smart_plain = "No recent big boss insider purchases filed with the SEC this month."
+                smart_detail = "No major C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
+                smart_plain = "No recent big boss insider purchases filed with the SEC this month."
 
         # ── 4. MACRO REGIME & DOWNSIDE SAFETY FLOOR (Weight: 25%) ────────────
         macro_score = 60.0
@@ -143,10 +139,10 @@ class ConfluenceEngine:
         stop_loss = 0.0
         risk_pct = 5.0
         if technical_data:
-            stop_loss = float(technical_data.get("stop_loss", 0))
-            current_p = float(technical_data.get("current_price", 0))
-            if stop_loss > 0 and current_p > 0:
-                risk_pct = abs((current_p - stop_loss) / current_p) * 100.0
+            current_p = float(technical_data.get("current_price", 100.0))
+            stop_loss = float(technical_data.get("stop_loss", current_p * 0.95))
+            if current_p > 0:
+                risk_pct = max(0.1, abs(current_p - stop_loss) / current_p * 100.0)
 
         yield_curve = 0.25
         credit_spread = 3.5
@@ -192,6 +188,7 @@ class ConfluenceEngine:
             0.25 * macro_score +
             catalyst_mod
         )
+
         final_score = max(0.0, min(96.0, round(raw_composite, 1)))
 
         pillars = [

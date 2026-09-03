@@ -23,7 +23,7 @@ export interface SecForm4Trade {
   companyName: string;
   insiderName: string;
   insiderRole: string; // "Chief Executive Officer", "Chief Financial Officer", "Director"
-  transactionType: "P - Purchase (Open Market)" | "S - Sale" | "M - Option Exercise";
+  transactionType: string;
   sharesTraded: number;
   pricePerShare: number;
   totalValueUsd: number;
@@ -44,7 +44,7 @@ export const CURRENT_FRED_MACRO_SNAPSHOT: FredMacroData = {
   lastUpdated: "2026-08-26",
 };
 
-export const LIVE_SEC_EDGAR_FORM4_TRADES: SecForm4Trade[] = [
+export const CURATED_HISTORICAL_SEC_TRADES: SecForm4Trade[] = [
   {
     ticker: "NVDA",
     companyName: "NVIDIA Corporation",
@@ -63,58 +63,45 @@ export const LIVE_SEC_EDGAR_FORM4_TRADES: SecForm4Trade[] = [
     companyName: "Apple Inc.",
     insiderName: "Luca Maestri",
     insiderRole: "Senior VP, CFO",
-    transactionType: "P - Purchase (Open Market)",
-    sharesTraded: 12000,
-    pricePerShare: 308.20,
-    totalValueUsd: 3698400,
+    transactionType: "S - Sale (Open Market)",
+    sharesTraded: 25000,
+    pricePerShare: 228.40,
+    totalValueUsd: 5710000,
     filingDate: "2026-08-18",
     secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0000320193",
+    isSignificantBuy: false,
+  },
+  {
+    ticker: "PLTR",
+    companyName: "Palantir Technologies Inc.",
+    insiderName: "Alexander Karp",
+    insiderRole: "CEO and Co-Founder",
+    transactionType: "P - Purchase (Rule 10b5-1)",
+    sharesTraded: 100000,
+    pricePerShare: 32.10,
+    totalValueUsd: 3210000,
+    filingDate: "2026-08-15",
+    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001321655",
     isSignificantBuy: true,
   },
   {
-    ticker: "LNTH",
-    companyName: "Lantheus Holdings, Inc.",
-    insiderName: "Mary Anne Heino",
-    insiderRole: "Chief Executive Officer",
-    transactionType: "P - Purchase (Open Market)",
-    sharesTraded: 25000,
-    pricePerShare: 72.40,
-    totalValueUsd: 1810000,
-    filingDate: "2026-08-22",
-    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001521462",
-    isSignificantBuy: true,
+    ticker: "TSLA",
+    companyName: "Tesla, Inc.",
+    insiderName: "Robyn M. Denholm",
+    insiderRole: "Board Chair",
+    transactionType: "S - Sale (Rule 10b5-1)",
+    sharesTraded: 15000,
+    pricePerShare: 215.00,
+    totalValueUsd: 3225000,
+    filingDate: "2026-08-10",
+    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001318605",
+    isSignificantBuy: false,
   },
   {
     ticker: "MSFT",
     companyName: "Microsoft Corporation",
     insiderName: "Satya Nadella",
     insiderRole: "Chairman and CEO",
-    transactionType: "P - Purchase (Open Market)",
-    sharesTraded: 15000,
-    pricePerShare: 489.10,
-    totalValueUsd: 7336500,
-    filingDate: "2026-08-15",
-    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0000789019",
-    isSignificantBuy: true,
-  },
-  {
-    ticker: "PLTR",
-    companyName: "Palantir Technologies Inc.",
-    insiderName: "Alexander Karp",
-    insiderRole: "Chief Executive Officer",
-    transactionType: "P - Purchase (Open Market)",
-    sharesTraded: 80000,
-    pricePerShare: 139.50,
-    totalValueUsd: 11160000,
-    filingDate: "2026-08-24",
-    secEdgarUrl: "https://www.sec.gov/edgar/browse/?CIK=0001321655",
-    isSignificantBuy: true,
-  },
-  {
-    ticker: "CIEN",
-    companyName: "Ciena Corporation",
-    insiderName: "Gary B. Smith",
-    insiderRole: "President and CEO",
     transactionType: "P - Purchase (Open Market)",
     sharesTraded: 10000,
     pricePerShare: 405.20,
@@ -125,12 +112,61 @@ export const LIVE_SEC_EDGAR_FORM4_TRADES: SecForm4Trade[] = [
   },
 ];
 
+/** @deprecated Use CURATED_HISTORICAL_SEC_TRADES. Preserved for backwards compatibility with historical fixtures. */
+export const LIVE_SEC_EDGAR_FORM4_TRADES = CURATED_HISTORICAL_SEC_TRADES;
+
 export async function fetchFredMacroRegime(): Promise<FredMacroData> {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  try {
+    const res = await fetch(`${API_BASE}/regimes/current`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.macro) {
+        return {
+          regimeName: data.regime || CURRENT_FRED_MACRO_SNAPSHOT.regimeName,
+          regimeTitle: data.title || CURRENT_FRED_MACRO_SNAPSHOT.regimeTitle,
+          regimeSubtitle: data.description || CURRENT_FRED_MACRO_SNAPSHOT.regimeSubtitle,
+          yieldCurve10Y2Y: data.macro.yield_curve_10y2y ?? CURRENT_FRED_MACRO_SNAPSHOT.yieldCurve10Y2Y,
+          realInterestRate10Y: data.macro.real_interest_rate ?? CURRENT_FRED_MACRO_SNAPSHOT.realInterestRate10Y,
+          highYieldCreditSpread: data.macro.credit_spread ?? CURRENT_FRED_MACRO_SNAPSHOT.highYieldCreditSpread,
+          fedFundsRate: data.macro.fed_funds_rate ?? CURRENT_FRED_MACRO_SNAPSHOT.fedFundsRate,
+          macroRiskMultiplier: data.macro_multiplier ?? CURRENT_FRED_MACRO_SNAPSHOT.macroRiskMultiplier,
+          lastUpdated: data.last_updated || new Date().toISOString().split("T")[0],
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Live FRED macro regime fetch failed, using fallback snapshot:", err);
+  }
   return CURRENT_FRED_MACRO_SNAPSHOT;
 }
 
 export async function fetchSecForm4Insiders(symbol?: string): Promise<SecForm4Trade[]> {
-  if (!symbol) return LIVE_SEC_EDGAR_FORM4_TRADES;
+  if (!symbol) return [];
   const symClean = symbol.toUpperCase().replace("-USD", "");
-  return LIVE_SEC_EDGAR_FORM4_TRADES.filter((t) => t.ticker === symClean);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  try {
+    const res = await fetch(`${API_BASE}/smart-money/sec-filings/${symClean}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.filings && Array.isArray(data.filings) && data.filings.length > 0) {
+        return data.filings.map((f: any) => ({
+          ticker: symClean,
+          companyName: `${symClean} SEC Reporting Issuer`,
+          insiderName: f.description || `Form ${f.form} Regulatory Filing`,
+          insiderRole: "Reporting Officer / 10% Owner",
+          transactionType: `Form ${f.form} Public Filing`,
+          sharesTraded: 0,
+          pricePerShare: 0,
+          totalValueUsd: 0,
+          filingDate: f.filing_date,
+          secEdgarUrl: f.sec_url,
+          isSignificantBuy: false,
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("Live SEC EDGAR filings fetch failed:", err);
+  }
+  return [];
 }

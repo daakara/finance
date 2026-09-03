@@ -265,35 +265,14 @@ class CryptoFundamentalAnalyzer:
             return {'error': 'Crypto fundamental analysis failed'}
     
     def _generate_onchain_metrics(self, symbol: str, price_data: pd.DataFrame) -> Dict[str, Any]:
-        """Generate on-chain metrics for cryptocurrency."""
-        # Mock on-chain data based on symbol
-        current_price = price_data['Close'].iloc[-1] if not price_data.empty else 100
-        
-        if symbol == 'BTC':
-            return {
-                'active_addresses': 850000 + np.random.randint(-50000, 50000),
-                'transaction_volume_24h': 15e9 + np.random.uniform(-2e9, 2e9),
-                'network_hash_rate': 450e6 + np.random.uniform(-50e6, 50e6),
-                'mvrv_ratio': np.random.uniform(1.5, 3.5),
-                'nvt_ratio': np.random.uniform(80, 150),
-                'exchange_balance': np.random.uniform(2.5e6, 3e6)
-            }
-        elif symbol == 'ETH':
-            return {
-                'active_addresses': 450000 + np.random.randint(-30000, 30000),
-                'transaction_volume_24h': 8e9 + np.random.uniform(-1e9, 1e9),
-                'gas_usage': np.random.uniform(50, 90),
-                'defi_tvl': 25e9 + np.random.uniform(-5e9, 5e9),
-                'staking_ratio': np.random.uniform(0.15, 0.25),
-                'burn_rate': np.random.uniform(800, 1500)
-            }
-        else:
-            return {
-                'active_addresses': np.random.randint(5000, 100000),
-                'transaction_volume_24h': np.random.uniform(1e6, 1e9),
-                'network_activity': np.random.uniform(0.3, 0.9),
-                'holder_distribution': np.random.uniform(0.4, 0.8)
-            }
+        """Generate on-chain metrics for cryptocurrency (Fails closed without live provider)."""
+        logger.warning(f"On-chain intelligence unavailable for {symbol}: No authenticated blockchain provider configured.")
+        return {
+            "available": False,
+            "status": "UNAVAILABLE",
+            "message": f"On-chain metrics unavailable for {symbol}. Connect Glassnode or CoinMetrics API key to enable live chain telemetry.",
+            "metrics": None,
+        }
     
     def _analyze_network_health(self, symbol: str) -> Dict[str, Any]:
         """Analyze network health and security."""

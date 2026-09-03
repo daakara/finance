@@ -4,9 +4,20 @@ Imports and exposes all analysis engines with global instances
 """
 
 import numpy as np
-from .technical_engine import technical_engine, TechnicalAnalysisEngine
-from .risk_engine import risk_engine, RiskAnalysisEngine  
-from .fundamental_engine import fundamental_engine, FundamentalAnalysisEngine
+try:
+    from .technical_engine import technical_engine, TechnicalAnalysisEngine
+except ImportError:
+    technical_engine, TechnicalAnalysisEngine = None, None
+
+try:
+    from .risk_engine import risk_engine, RiskAnalysisEngine
+except ImportError:
+    risk_engine, RiskAnalysisEngine = None, None
+
+try:
+    from .fundamental_engine import fundamental_engine, FundamentalAnalysisEngine
+except ImportError:
+    fundamental_engine, FundamentalAnalysisEngine = None, None
 
 # Create additional lightweight engines for compatibility
 class PerformanceAnalysisEngine:

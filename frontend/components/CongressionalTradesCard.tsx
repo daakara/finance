@@ -375,8 +375,11 @@ export default function CongressionalTradesCard({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-4 text-center text-slate-500 text-xs">
-                      No unusual intraday sweeps detected for {symbol} in current session window.
+                    <td colSpan={7} className="py-6 text-center text-slate-400 text-xs">
+                      <div className="font-semibold text-slate-300">⚠️ Options Flow Unavailable</div>
+                      <div className="text-[11px] text-slate-500 mt-1">
+                        Live OPRA / Cboe options tape requires an active real-time data provider (e.g., Polygon.io / Trade Alert API Key).
+                      </div>
                     </td>
                   </tr>
                 )}

@@ -2017,7 +2017,12 @@ class SmartMoneyEngine:
         return SEC_FORM_4_TRADES
 
     @staticmethod
-    def get_options_flow(symbol: str = None) -> List[Dict[str, Any]]:
+    def get_options_flow(symbol: str = None, include_curated: bool = False) -> List[Dict[str, Any]]:
+        """Fetch options flow. Requires verified live provider (Polygon/OPRA) unless explicitly querying curated research archive."""
+        import os
+        has_live_provider = bool(os.getenv("POLYGON_API_KEY") or os.getenv("OPRA_API_KEY"))
+        if not (include_curated or has_live_provider):
+            return []
         if symbol:
             sym_clean = symbol.upper().strip()
             return [f for f in UNUSUAL_OPTIONS_FLOW if f['ticker'] == sym_clean]
@@ -2040,5 +2045,5 @@ class SmartMoneyEngine:
             'fresh_trades_count': len(fresh_trades),
             'congress_trades': enriched_trades,
             'sec_insider_trades': SEC_FORM_4_TRADES,
-            'options_flow': UNUSUAL_OPTIONS_FLOW,
+            'options_flow': SmartMoneyEngine.get_options_flow(include_curated=True),
         }
