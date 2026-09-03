@@ -90,7 +90,10 @@ def get_finra_darkpool(symbol: str, response: Response = None):
         response.headers["CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=600, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
+    metrics = finra_fetcher.get_ats_metrics(valid_sym)
     return {
         "symbol": valid_sym,
-        "metrics": finra_fetcher.get_ats_metrics(valid_sym),
+        "available": metrics is not None,
+        "metrics": metrics,
+        "message": None if metrics is not None else "FINRA ATS off-exchange transparency data is unavailable for this ticker.",
     }

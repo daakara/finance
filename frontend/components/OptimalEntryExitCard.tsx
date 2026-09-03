@@ -211,6 +211,21 @@ export default function OptimalEntryExitCard({
                 <span>⚠️</span> {isPlain ? "High Market Swings (Defensive)" : "Macro Buffer Active"}
               </span>
             )}
+            {executionPlan.liquidity_defense && (
+              <span
+                className={`px-2 py-0.5 rounded border inline-flex items-center gap-1 font-mono text-[10px] ${
+                  executionPlan.liquidity_defense.badge_color === "rose"
+                    ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
+                    : executionPlan.liquidity_defense.badge_color === "amber"
+                    ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
+                    : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                }`}
+                title={executionPlan.liquidity_defense.pro_summary}
+              >
+                <span>{executionPlan.liquidity_defense.badge_color === "rose" ? "🛑" : executionPlan.liquidity_defense.badge_color === "amber" ? "⚡" : "💧"}</span>
+                {isPlain ? executionPlan.liquidity_defense.plain_label : executionPlan.liquidity_defense.pro_label}
+              </span>
+            )}
             <span className="hidden sm:inline text-slate-500">•</span>
             <span className="text-slate-400 text-[11px]">{isPlain ? "Automatic risk boundaries" : "Volatility-anchored risk limits"}</span>
           </div>
@@ -244,6 +259,33 @@ export default function OptimalEntryExitCard({
           </button>
         </div>
       </div>
+
+      {/* 🛑 Liquidity Defense Alert Banner */}
+      {executionPlan.liquidity_defense?.execution_hazard && (
+        <div className="bg-rose-950/40 border border-rose-800/80 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
+          <span className="text-xl flex-shrink-0">⚠️</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-rose-300 uppercase tracking-wider text-[11px]">
+                {isPlain ? "Liquidity Trap Hazard Detected" : "Execution Safety Invariant Breach: Toxic Liquidity"}
+              </span>
+              <span className="px-1.5 py-0.5 bg-rose-900/60 text-rose-200 text-[9px] font-mono rounded">
+                ADV: ${executionPlan.liquidity_defense.adv_20d_usd.toLocaleString()}
+              </span>
+            </div>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              {isPlain
+                ? executionPlan.liquidity_defense.plain_summary
+                : executionPlan.liquidity_defense.pro_summary}
+            </p>
+            <p className="text-rose-400 font-semibold text-[10px]">
+              {isPlain
+                ? "💡 Action: Do not market buy into sudden volume surges. Chasing breakouts here risks severe slippage."
+                : "💡 Invariant Enforced: IN_BUY_ZONE status suppressed until ADV >= $500,000 and Amihud ILLIQ stabilizes."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 🚀 5-Step Guided Trade Execution Stepper */}
       <TradeExecutionStepper

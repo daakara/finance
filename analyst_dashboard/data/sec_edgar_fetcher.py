@@ -1,4 +1,4 @@
-﻿"""SEC EDGAR Regulatory Filing & Corporate Financial Disclosure Fetcher (Free Public API)."""
+"""SEC EDGAR Regulatory Filing & Corporate Financial Disclosure Fetcher (Free Public API)."""
 
 import logging
 import requests
@@ -27,16 +27,51 @@ class SecEdgarFetcher:
         "VRT": "0001674101",
         "TSM": "0001046179",
         "GE": "0000040545",
+        "GOOGL": "0001652044",
+        "AMZN": "0001018724",
+        "META": "0001326801",
+        "NFLX": "0001065280",
+        "CPRX": "0001373715",
+        "FIX": "0001056285",
+        "SYM": "0001837240",
+        "DECK": "0000910521",
+        "PODD": "0001145236",
+        "MNST": "0000865752",
+        "ULTA": "0001403568",
+        "LULU": "0001397187",
     }
 
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": SEC_USER_AGENT})
+        self.cik_cache: Dict[str, str] = dict(self.CIK_MAP)
+        self._has_loaded_master_index: bool = False
+
+    def resolve_cik(self, symbol: str) -> Optional[str]:
+        """Resolve ticker to 10-digit CIK from local cache or SEC company_tickers index."""
+        upper = symbol.upper().strip()
+        if upper in self.cik_cache:
+            return self.cik_cache[upper]
+
+        if not self._has_loaded_master_index:
+            try:
+                resp = self.session.get("https://www.sec.gov/files/company_tickers.json", timeout=6)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for item in data.values():
+                        t = item.get("ticker", "").upper()
+                        c = str(item.get("cik_str", "")).zfill(10)
+                        if t and c:
+                            self.cik_cache[t] = c
+                self._has_loaded_master_index = True
+            except Exception as e:
+                logger.warning(f"Failed to fetch SEC master company_tickers.json: {e}")
+
+        return self.cik_cache.get(upper)
 
     def get_company_submissions(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Fetch real-time company submissions including Form 4 (insiders) and 8-K (material events)."""
-        upper = symbol.upper().strip()
-        cik = self.CIK_MAP.get(upper)
+        cik = self.resolve_cik(symbol)
         if not cik:
             return None
 
@@ -64,11 +99,13 @@ class SecEdgarFetcher:
         allowed_forms = set(form_types) if form_types else {"10-K", "10-Q", "8-K", "4", "13F-HR"}
         results = []
 
+        cik = self.resolve_cik(symbol)
+        cik_int = int(cik) if cik and cik.isdigit() else 0
+
         for i in range(min(len(forms), 25)):
             form = forms[i]
             if form in allowed_forms:
                 clean_acc = accessions[i].replace("-", "")
-                cik_int = int(self.CIK_MAP.get(symbol.upper(), "0"))
                 results.append({
                     "form": form,
                     "filing_date": filing_dates[i] if i < len(filing_dates) else "",

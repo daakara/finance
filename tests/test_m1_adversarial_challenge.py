@@ -39,18 +39,28 @@ def client():
 
 def test_finra_darkpool_valid_and_edge_case_tickers(client):
     """Test FINRA darkpool endpoint with valid, dotted, and dashed tickers."""
-    for ticker in ["AAPL", "LNTH", "BRK.B", "BTC-USD"]:
+    # 1. Verified cataloged ticker (AAPL) must return full authentic metrics
+    resp_aapl = client.get("/api/v1/smart-money/finra-darkpool/AAPL")
+    assert resp_aapl.status_code == 200
+    data_aapl = resp_aapl.json()
+    assert data_aapl["symbol"] == "AAPL"
+    assert data_aapl["available"] is True
+    metrics = data_aapl["metrics"]
+    assert "ats_dark_pool_volume_share_pct" in metrics
+    assert "dominant_ats_venue" in metrics
+    assert "short_volume_ratio_pct" in metrics
+    assert "off_exchange_dollar_volume" in metrics
+    assert "regulatory_status" in metrics
+
+    # 2. Edge-case ticker formats must be accepted by routing regex and fail closed safely
+    for ticker in ["LNTH", "BRK.B", "BTC-USD"]:
         resp = client.get(f"/api/v1/smart-money/finra-darkpool/{ticker}")
         assert resp.status_code == 200, f"Failed for valid ticker {ticker}: {resp.text}"
         data = resp.json()
         assert data["symbol"] == ticker.upper()
-        assert "metrics" in data
-        metrics = data["metrics"]
-        assert "ats_dark_pool_volume_share_pct" in metrics
-        assert "dominant_ats_venue" in metrics
-        assert "short_volume_ratio_pct" in metrics
-        assert "off_exchange_dollar_volume" in metrics
-        assert "regulatory_status" in metrics
+        assert data["available"] is False
+        assert data["metrics"] is None
+        assert "unavailable" in data["message"].lower()
 
 
 def test_finra_darkpool_invalid_ticker_rejection(client):

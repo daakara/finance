@@ -292,6 +292,23 @@ export interface SmartMoneyOverview {
   _dataSource?: "live" | "fallback";
 }
 
+export interface LiquidityDefenseData {
+  liquidity_grade: "INSTITUTIONAL" | "THIN" | "TRAP";
+  badge_color: "emerald" | "amber" | "rose";
+  adv_20d_usd: number;
+  amihud_illiq: number;
+  volume_spike_ratio: number;
+  is_volume_spike: boolean;
+  float_turnover_pct?: number | null;
+  is_float_turnover_anomaly: boolean;
+  execution_hazard: boolean;
+  suppress_buy_zone: boolean;
+  plain_label: string;
+  pro_label: string;
+  plain_summary: string;
+  pro_summary: string;
+}
+
 export interface OptimalExecutionPlan {
   current_price: number;
   optimal_entry_min: number;
@@ -310,6 +327,9 @@ export interface OptimalExecutionPlan {
   vcp_contraction_status: string;
   breakout_pivot?: number;
   atr_14?: number;
+  liquidity_defense?: LiquidityDefenseData;
+  execution_hazard?: boolean;
+  liquidity_warning?: string;
 }
 
 export interface ConfluencePillar {
@@ -356,6 +376,7 @@ export interface AnalyticsResponse {
   marketGraph?: MarketGraphReport;
   catalystForecast?: CatalystForecastData;
   optimalExecution?: OptimalExecutionPlan;
+  liquidityDefense?: LiquidityDefenseData;
   confluence?: ConfluenceData;
   smartMoney?: {
     congressTrades?: CongressTradeItem[];

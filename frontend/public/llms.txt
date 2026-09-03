@@ -22,7 +22,7 @@
    - Tracking legislative transactions under the 2012 Stop Trading on Congressional Knowledge (STOCK) Act (Public Law 112-105).
    - **Quantitative Legislative Alignment Index (0–100)**: Scoring committee oversight overlap (+16 to +32 pts), transaction sizing tiers ($50k–$1M+), and historical politician win rate alpha.
    - **Staleness Time-Decay Engine**: Multi-tier signal decay penalizing disclosures older than 15, 30, and 45 days, with explicit late-filer mean-reversion risk warnings.
-   - Unusual Options Flow & Institutional Block Sweeps tracking OPRA & FINRA ATS Dark Pool volumes.
+   - Curated Unusual Options Flow & Institutional Block Sweeps analyzing options flow structures and FINRA ATS off-exchange volume data.
    - SEC EDGAR Form 4 open-market insider purchases (>= $100k) by C-Suite executives.
 
 2. **Algorithmic Execution & Volatility Sizing**:

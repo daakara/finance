@@ -455,6 +455,7 @@ def get_asset_analytics(
             "selfHealingAudit": self_healing_audit,
             "marketGraph": market_graph,
             "optimalExecution": optimal_execution_plan,
+            "liquidityDefense": optimal_execution_plan.get("liquidity_defense"),
             "catalystForecast": catalyst_report,
             "smartMoney": {
                 "congressTrades": congress_trades,

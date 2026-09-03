@@ -249,8 +249,8 @@ export default function SmartMoneyDetailModal({
 
             {/* Regulatory Transparency Footprint */}
             <div className="bg-[#070a10] p-3 rounded-lg border border-[#162030] flex items-center justify-between text-[11px] text-slate-400">
-              <span>Regulatory Verification: <strong>FINRA ATS Dark Pool & OPRA Tape</strong></span>
-              <span className="text-emerald-400 font-semibold text-[10px]">✓ Public Regulatory Mandate</span>
+              <span>Regulatory Source: <strong>FINRA ATS Weekly Reports & Public Regulatory Records</strong></span>
+              <span className="text-cyan-400 font-semibold text-[10px]">✓ Curated Regulatory Case Study</span>
             </div>
           </div>
         )}

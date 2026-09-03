@@ -261,19 +261,19 @@ export default function CongressionalTradesCard({
               <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
                 <span>
                   {isDayTrader
-                    ? (isPlain ? "⚡ Whale Bets & Big Options Sweeps" : "⚡ Intraday Options Sweeps & Dark Pool Block Prints")
+                    ? (isPlain ? "⚡ Institutional Options Sweeps & Case Studies" : "⚡ Institutional Options Sweeps & Flow Analysis")
                     : (isPlain ? "🏛️ Follow The Money (Capitol Hill Insider Trades)" : "🏛️ Capitol Hill & Institutional Order Flow Radar")}
                 </span>
               </h3>
             </div>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
               {isDayTrader
-                ? (isPlain ? `Tracking big institutional call/put bets moving on ${symbol} right now.` : `High-velocity OPRA options order flow & volume-to-open-interest anomalies for ${symbol}`)
+                ? (isPlain ? `Curated institutional call/put sweep setups and positioning on ${symbol}.` : `Curated options order flow & volume-to-open-interest analysis for ${symbol}`)
                 : (isPlain ? `See which members of US Congress bought or sold ${symbol} and their filing delays.` : `STOCK Act Title I Article 105 disclosures & congressional committee alignment for ${symbol}`)}
             </p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/80 inline-flex items-center gap-1">
-                <span>🏛️</span> {isDayTrader ? (isPlain ? "Live Big-Money Options Tape" : "OPRA Options Flow Aggregation & Gamma Exposure") : (isPlain ? "STOCK Act Legal Disclosures" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)")}
+                <span>🏛️</span> {isDayTrader ? (isPlain ? "Institutional Options Flow Intelligence" : "Curated Options Flow & Gamma Exposure Analysis") : (isPlain ? "STOCK Act Legal Disclosures" : "STOCK Act Statutory Filing Disclosures (Public Law 112-105)")}
               </span>
             </div>
           </div>

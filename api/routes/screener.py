@@ -173,6 +173,13 @@ def run_screener_get(
             status_label = "⏳ Pullback Pending"
             status_color = "cyan"
 
+        # Liquidity Guard: Suppress IN_BUY_ZONE on toxic illiquid orderbooks
+        liq_def = execution.get("liquidity_defense")
+        if execution_status == "IN_BUY_ZONE" and isinstance(liq_def, dict) and liq_def.get("suppress_buy_zone"):
+            execution_status = "WAITING_PULLBACK"
+            status_label = "⚠️ Liquidity Hazard (Hold Entry)"
+            status_color = "rose"
+
         # Deterministic Smart Money & Catalyst Attributes
         has_insider = (abs(hash(sym)) % 3 == 0) or sym in ["LNTH", "CPRX", "ELF", "ACLS", "NVDA", "PLTR", "AAPL", "MSFT", "ISRG", "VRT"]
         has_congress = (abs(hash(sym)) % 4 == 0) or sym in ["LNTH", "POWI", "DUOL", "NVDA", "TSLA", "AMD", "LLY", "UNH", "PANW"]
@@ -253,6 +260,7 @@ def run_screener_get(
             "confluenceBadgeColor": confluence_res["badgeColor"],
             "confluenceReasons": confluence_res["reasons"],
             "confluenceWarnings": confluence_res["warnings"],
+            "liquidityDefense": liq_def,
         })
 
     # Apply Selected Filter dynamically based on numerical thresholds
