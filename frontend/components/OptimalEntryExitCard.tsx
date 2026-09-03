@@ -80,7 +80,7 @@ export default function OptimalEntryExitCard({
 
   // Tactical Execution Hint
   let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
-  if (!isStage4 && inZone) {
+  if (!isStage4 && inZone && risk_reward_ratio >= 1.0) {
     if (zonePositionPct > 65) {
       zoneTacticalHint = {
         label: "⚠️ Near Zone Ceiling",
@@ -151,8 +151,8 @@ export default function OptimalEntryExitCard({
   })();
 
   const handleLogToPortfolio = () => {
-    if (!current_price || isNaN(current_price) || current_price <= 0) {
-      setLogStatus("❌ Cannot log position: live spot price is unavailable.");
+    if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio <= 0) {
+      setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
       return;
     }

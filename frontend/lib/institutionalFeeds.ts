@@ -132,6 +132,5 @@ export async function fetchFredMacroRegime(): Promise<FredMacroData> {
 export async function fetchSecForm4Insiders(symbol?: string): Promise<SecForm4Trade[]> {
   if (!symbol) return LIVE_SEC_EDGAR_FORM4_TRADES;
   const symClean = symbol.toUpperCase().replace("-USD", "");
-  const matched = LIVE_SEC_EDGAR_FORM4_TRADES.filter((t) => t.ticker === symClean);
-  return matched.length > 0 ? matched : LIVE_SEC_EDGAR_FORM4_TRADES;
+  return LIVE_SEC_EDGAR_FORM4_TRADES.filter((t) => t.ticker === symClean);
 }

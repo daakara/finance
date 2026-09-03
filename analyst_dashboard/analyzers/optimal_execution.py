@@ -10,6 +10,9 @@ except ImportError:
     pd = None
     np = None
 
+from analyst_dashboard.analyzers.liquidity_guard import LiquidityGuard
+
+
 class OptimalExecutionEngine:
     """Calculates mathematical entry price targets, stop-loss invalidation thresholds, and take-profit ladders."""
 
@@ -60,6 +63,7 @@ class OptimalExecutionEngine:
                 "stage_phase": "Intraday Momentum Trend Expansion" if is_day else "Stage 2 Advancing Growth Phase",
                 "vcp_contraction_status": "Tightening 5m Compression" if is_day else "VCP 3-Stage Compression Confirmed",
                 "atr_14": round(atr, dec),
+                "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, current_price),
             }
             return OptimalExecutionEngine._enforce_execution_invariants(raw_fallback, user_role)
 
@@ -214,6 +218,7 @@ class OptimalExecutionEngine:
             "vcp_contraction_status": vcp,
             "breakout_pivot": round(breakout_pivot, dec) if is_stage_4_downtrend else None,
             "atr_14": round(atr_14, dec),
+            "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, current_price),
         }
         return OptimalExecutionEngine._enforce_execution_invariants(raw_plan, user_role)
 
@@ -265,6 +270,7 @@ class OptimalExecutionEngine:
             "stage_phase": "Stage 2 Advancing Growth Phase",
             "vcp_contraction_status": "VCP 3-Stage Compression Confirmed",
             "atr_14": round(atr, dec),
+            "liquidity_defense": LiquidityGuard._generate_fallback(price),
         }
         return cls._enforce_execution_invariants(raw_plan, user_role)
 
@@ -388,4 +394,11 @@ class OptimalExecutionEngine:
         # 5. Mandatory R:R ratio calculation and clamp floor >= 1.85:1
         actual_tp1_rr = round((plan["take_profit_1"] - spot) / risk, 2)
         plan["risk_reward_ratio"] = round(min(5.0, max(1.85, max(actual_tp1_rr, plan.get("risk_reward_ratio", 1.85)))), 2)
+
+        # 6. Liquidity Guard execution hazard annotation
+        liq = plan.get("liquidity_defense")
+        if isinstance(liq, dict) and liq.get("execution_hazard"):
+            plan["execution_hazard"] = True
+            plan["liquidity_warning"] = liq.get("pro_summary")
+
         return plan

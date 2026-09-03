@@ -54,8 +54,16 @@ function TerminalContent() {
   }, [data]);
 
   useEffect(() => {
-    fetchFredMacroRegime().then(setMacroData);
-    fetchSecForm4Insiders(selectedSymbol).then(setInsiderTrades);
+    let isCurrent = true;
+    fetchFredMacroRegime().then((res) => {
+      if (isCurrent) setMacroData(res);
+    });
+    fetchSecForm4Insiders(selectedSymbol).then((res) => {
+      if (isCurrent) setInsiderTrades(res);
+    });
+    return () => {
+      isCurrent = false;
+    };
   }, [selectedSymbol]);
 
   // Sync URL search params when navigated from Screener, Compare, or Smart Money pages

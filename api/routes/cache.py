@@ -1,4 +1,4 @@
-﻿"""FastAPI Router for System & Pipeline Cache Management."""
+"""FastAPI Router for System & Pipeline Cache Management."""
 
 import shutil
 import tempfile
@@ -9,7 +9,6 @@ router = APIRouter()
 
 
 @router.post("/clear")
-@router.get("/clear")
 def clear_all_caches():
     """Purge in-memory and disk pipeline caches upon deployment."""
     purged_items = []

@@ -15,7 +15,7 @@ def test_health_check_bypasses_rate_limiting():
 
 def test_rate_limiter_allows_normal_traffic():
     """Verify normal valid traffic passes without restriction."""
-    res = client.get("/api/v1/cache/clear")
+    res = client.post("/api/v1/cache/clear")
     assert res.status_code == 200
     assert res.json()["status"] == "success"
 
@@ -45,6 +45,6 @@ def test_rate_limiter_redis_failure_fallback():
     mock_redis.pipeline.side_effect = Exception("Redis connection reset by peer")
 
     with patch.object(rl, "redis_client", mock_redis):
-        res = client.get("/api/v1/cache/clear")
+        res = client.post("/api/v1/cache/clear")
         assert res.status_code == 200
         assert res.json()["status"] == "success"

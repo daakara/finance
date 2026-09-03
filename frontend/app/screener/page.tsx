@@ -102,44 +102,14 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const cat = MASTER_ASSET_CATALOG[sym];
     const spot = SpotPriceRegistry.get(sym);
     const price = (spot?.price && spot.price > 0) ? spot.price : (CATALOG_BASELINE_PRICES[sym] ?? 100.0);
-    const roic = cat?.roic ?? 24.0;
-    const peg = cat?.peg ?? 0.95;
-    const margin = cat?.grossMargin ?? 62.0;
-    const rvol = cat?.rvol ?? 2.2;
-    const short = cat?.shortFloat ?? 5.0;
+    const roic = cat?.roic;
+    const peg = cat?.peg;
+    const margin = cat?.grossMargin;
+    const rvol = cat?.rvol;
+    const short = cat?.shortFloat;
     const companyName = canonicalName || cat?.name || sym;
 
-    const h = (idx * 17 + sym.charCodeAt(0) * 31) % 100;
-
-    let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
-    let statusLabel: string;
-    let statusColor: string;
-
     const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST" || sym === "ULTA" || sym === "LULU";
-
-    if (isStage4Candidate) {
-      executionStatus = "WAITING_PULLBACK";
-      statusLabel = sym === "ULTA" || sym === "LULU" 
-        ? "⚠️ Stage 4 Turnaround Watch" 
-        : "⏳ Awaiting Base Formation";
-      statusColor = sym === "ULTA" || sym === "LULU" ? "amber" : "cyan";
-    } else if (h < 40) {
-      executionStatus = "IN_BUY_ZONE";
-      statusLabel = isDayTrader ? "🎯 Active VWAP Bounce" : "🎯 Active Buy Zone";
-      statusColor = "emerald";
-    } else if (h < 70) {
-      executionStatus = "APPROACHING_TARGET";
-      statusLabel = isDayTrader ? "🚀 Session ORB Breakout" : "🚀 Near TP Target";
-      statusColor = "amber";
-    } else if (h < 95) {
-      executionStatus = "WAITING_PULLBACK";
-      statusLabel = "⏳ Pullback Pending";
-      statusColor = "cyan";
-    } else {
-      executionStatus = "STOPPED_OUT";
-      statusLabel = "🛑 Invalidation Alert";
-      statusColor = "rose";
-    }
 
     const optimalEntryMin = Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2));
     const optimalEntryMax = Number((price * (isDayTrader ? 1.004 : 1.015)).toFixed(2));
@@ -151,46 +121,79 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const takeProfit2Pct = isDayTrader ? 7.5 : 18.5;
     const riskRewardRatio = Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2));
 
-    const rawConfluence = Math.min(96, Math.max(72, 75 + (h % 22)));
-    const confluenceScore = isStage4Candidate ? Math.min(68, rawConfluence) : rawConfluence;
-    const confluenceRating = isStage4Candidate ? "⚠️ TURNAROUND WATCH" : (confluenceScore >= 85 ? "⭐ HIGH CONFLUENCE" : "MODERATE CONFLUENCE");
-    const confluenceBadgeColor = isStage4Candidate ? "amber" : (confluenceScore >= 85 ? "emerald" : "cyan");
+    let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
+    let statusLabel: string;
+    let statusColor: string;
 
-    let archetype = "Peter Lynch & Greenblatt GARP";
-    if (isDayTrader) {
-      archetype = short > 8.0 ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
+    if (!cat) {
+      executionStatus = "WAITING_PULLBACK";
+      statusLabel = "⏳ Unverified Asset";
+      statusColor = "slate";
+    } else if (isStage4Candidate) {
+      executionStatus = "WAITING_PULLBACK";
+      statusLabel = sym === "ULTA" || sym === "LULU" 
+        ? "⚠️ Stage 4 Turnaround Watch" 
+        : "⏳ Awaiting Base Formation";
+      statusColor = sym === "ULTA" || sym === "LULU" ? "amber" : "cyan";
+    } else if (price >= optimalEntryMin && price <= optimalEntryMax) {
+      executionStatus = "IN_BUY_ZONE";
+      statusLabel = isDayTrader ? "🎯 Active VWAP Bounce" : "🎯 Active Buy Zone";
+      statusColor = "emerald";
+    } else if (price > optimalEntryMax && price < takeProfit1) {
+      executionStatus = "APPROACHING_TARGET";
+      statusLabel = isDayTrader ? "🚀 Session ORB Breakout" : "🚀 Near TP Target";
+      statusColor = "amber";
     } else {
-      if (sym === "ULTA" || sym === "LULU") {
-        archetype = "Deep Value & Capital Return (Decelerating Comp Watch)";
-      } else if (peg <= 1.0) {
-        archetype = "Peter Lynch GARP Compounder";
-      } else if (roic >= 25.0) {
-        archetype = "Joel Greenblatt Magic Formula";
-      } else if (margin >= 65.0) {
-        archetype = "David Gardner Rule Breaker";
+      executionStatus = "WAITING_PULLBACK";
+      statusLabel = "⏳ Pullback Pending";
+      statusColor = "cyan";
+    }
+
+    const confluenceScore = cat ? (isStage4Candidate ? Math.min(68, cat.compositeFactorScore) : cat.compositeFactorScore) : undefined;
+    const confluenceRating = !cat ? "UNVERIFIED" : isStage4Candidate ? "⚠️ TURNAROUND WATCH" : ((confluenceScore && confluenceScore >= 85) ? "⭐ HIGH CONFLUENCE" : "MODERATE CONFLUENCE");
+    const confluenceBadgeColor = !cat ? "slate" : isStage4Candidate ? "amber" : ((confluenceScore && confluenceScore >= 85) ? "emerald" : "cyan");
+
+    let archetype = "Unverified Asset Setup";
+    if (cat) {
+      if (isDayTrader) {
+        archetype = (short && short > 8.0) ? "Short Squeeze High-Beta Scalp" : "High RVOL Trend Momentum Leader";
+      } else {
+        if (sym === "ULTA" || sym === "LULU") {
+          archetype = "Deep Value & Capital Return (Decelerating Comp Watch)";
+        } else if (peg && peg <= 1.0) {
+          archetype = "Peter Lynch GARP Compounder";
+        } else if (roic && roic >= 25.0) {
+          archetype = "Joel Greenblatt Magic Formula";
+        } else if (margin && margin >= 65.0) {
+          archetype = "David Gardner Rule Breaker";
+        } else {
+          archetype = "Core Quality Compounder";
+        }
       }
     }
 
-    const confluenceWarnings = (sym === "ULTA" || sym === "LULU") 
-      ? ["Negative 1Y/3Y momentum trend", "Prestige beauty comp deceleration", "Trading below 200-day EMA"]
-      : (isStage4Candidate ? ["Awaiting Stage 1 base completion"] : []);
+    const confluenceWarnings = !cat
+      ? ["Uncataloged asset: awaiting official SEC 10-K and exchange data verification."]
+      : (sym === "ULTA" || sym === "LULU") 
+        ? ["Negative 1Y/3Y momentum trend", "Prestige beauty comp deceleration", "Trading below 200-day EMA"]
+        : (isStage4Candidate ? ["Awaiting Stage 1 base completion"] : []);
 
     return {
       symbol: sym,
       companyName,
       currentPrice: price,
-      gemScore: isStage4Candidate ? Math.min(74, 76 + (h % 10)) : 82 + (h % 16),
+      gemScore: cat ? (isStage4Candidate ? Math.min(74, cat.qualityScore) : cat.qualityScore) : 40,
       expertArchetype: archetype,
-      roic: `${roic}%`,
-      pegRatio: `${peg}`,
-      grossMargin: `${margin}%`,
+      roic: roic !== undefined ? `${roic}%` : "N/A",
+      pegRatio: peg !== undefined ? `${peg}` : "N/A",
+      grossMargin: margin !== undefined ? `${margin}%` : "N/A",
       atr14: `$${(price * (isDayTrader ? 0.032 : 0.024)).toFixed(2)}`,
-      rvol: `${rvol}x`,
-      shortFloat: `${short}%`,
+      rvol: rvol !== undefined ? `${rvol}x` : "N/A",
+      shortFloat: short !== undefined ? `${short}%` : "N/A",
       dayTraderSetup: isDayTrader
         ? "Intraday momentum trend-following above 5m VWAP anchor with defined ATR risk."
         : (isStage4Candidate ? "Stage 4 consolidation — awaiting base formation and comp stabilization." : "Stage 2 accumulation breakout above 50-day pivot."),
-      thesis: canonicalMoat || `${companyName} demonstrates ${roic}% ROIC with ${margin}% gross margins.`,
+      thesis: canonicalMoat || (cat ? `${companyName} demonstrates ${roic}% ROIC with ${margin}% gross margins.` : `${companyName} uncataloged market asset.`),
       catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || "Upcoming product cycle expansion and institutional accumulation.",
       riskLevel: (sym === "ULTA" || sym === "LULU") ? "High Turnaround Risk" : (isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk"),
       executionStatus,

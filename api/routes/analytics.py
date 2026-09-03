@@ -49,62 +49,51 @@ VALID_ROLES = {"DAY_TRADER", "LONG_TERM"}
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
-    """Compute Piotroski F-Score (0 to 9) measuring corporate fundamental health."""
-    score = 0
+    """Compute Piotroski F-Score (0 to 9) measuring corporate fundamental health.
+    Returns 0 when fundamental evidence is missing, ensuring UNKNOWN != FAVORABLE."""
     if not info:
-        return 7  # High-quality robust default when external data provider rate-limits info payload
+        return 0
 
+    score = 0
     try:
-        roa = info.get("returnOnAssets", 0)
-        if roa and roa > 0:
-            score += 1
-        elif roa is None:
+        roa = info.get("returnOnAssets")
+        if roa is not None and roa > 0:
             score += 1
 
-        fcf = info.get("freeCashflow", 0) or info.get("operatingCashflow", 0)
-        if fcf and fcf > 0:
-            score += 1
-        elif fcf is None:
+        fcf = info.get("freeCashflow") or info.get("operatingCashflow")
+        if fcf is not None and fcf > 0:
             score += 1
 
-        op_margin = info.get("operatingMargins", 0) or info.get("profitMargins", 0)
-        if op_margin and op_margin > 0.10:
-            score += 1
-        elif op_margin is None:
+        # Accrual / Quality of Earnings: positive cash flow confirming net profitability
+        if fcf is not None and fcf > 0 and roa is not None and roa > 0:
             score += 1
 
-        current_ratio = info.get("currentRatio", 0)
-        if current_ratio and current_ratio > 1.1:
-            score += 1
-        elif current_ratio is None:
+        op_margin = info.get("operatingMargins") or info.get("profitMargins")
+        if op_margin is not None and op_margin > 0.10:
             score += 1
 
-        debt_to_equity = info.get("debtToEquity", 0)
+        current_ratio = info.get("currentRatio")
+        if current_ratio is not None and current_ratio > 1.1:
+            score += 1
+
+        debt_to_equity = info.get("debtToEquity")
         if debt_to_equity is not None and debt_to_equity < 180:
             score += 1
 
-        gross_margins = info.get("grossMargins", 0)
-        if gross_margins and gross_margins > 0.30:
-            score += 1
-        elif gross_margins is None:
+        gross_margins = info.get("grossMargins")
+        if gross_margins is not None and gross_margins > 0.30:
             score += 1
 
-        roe = info.get("returnOnEquity", 0)
-        if roe and roe > 0.10:
-            score += 1
-        elif roe is None:
+        roe = info.get("returnOnEquity")
+        if roe is not None and roe > 0.10:
             score += 1
 
-        rev_growth = info.get("revenueGrowth", 0)
-        if rev_growth and rev_growth > 0.05:
+        rev_growth = info.get("revenueGrowth")
+        if rev_growth is not None and rev_growth > 0.05:
             score += 1
-        elif rev_growth is None:
-            score += 1
-
-        score += 1
     except Exception:
-        score = 7
-    return min(9, max(3, score))
+        return 0
+    return min(9, max(0, score))
 
 
 def compute_intraday_technicals(df: pd.DataFrame) -> dict:
@@ -292,21 +281,42 @@ def get_asset_analytics(
             except Exception:
                 pass
 
-        piotroski = 8 if upper_sym in KNOWN_ETFS else calculate_piotroski_f_score(info, {})
-        rev_g = info.get("revenueGrowth") if info.get("revenueGrowth") is not None else 0.16
-        growth_score = 75 if upper_sym in KNOWN_ETFS else min(99, max(70, int(rev_g * 250 + 65)))
-        quality_score = min(99, max(70, int(piotroski * 11)))
-        pe_val = info.get("trailingPE") or info.get("forwardPE") or 24.0
-        valuation_score = 75 if upper_sym in KNOWN_ETFS else (85 if pe_val < 40 else 75)
-        momentum_score = min(99, max(55, int(65 + price_change_pct * 3.5)))
-        mvar = adv_metrics.get("Modified_VaR_95", 2.2)
-        if mvar is None or math.isnan(mvar):
-            mvar = 2.2
-        tail_risk_score = min(99, max(65, int(100 - abs(mvar) * 7)))
-
-        composite_score = int(np.mean([growth_score, quality_score, valuation_score, momentum_score, tail_risk_score]))
-
-        verdict = "Strong Buy / Core Accumulation" if composite_score >= 80 else "Moderate Growth Hold" if composite_score >= 60 else "High Volatility Speculative"
+        has_fundamentals = bool(info and any(k in info for k in ["returnOnAssets", "trailingPE", "forwardPE", "grossMargins", "revenueGrowth", "freeCashflow"]))
+        if upper_sym in KNOWN_ETFS:
+            piotroski = 8
+            growth_score = 75
+            quality_score = 80
+            valuation_score = 75
+            momentum_score = min(99, max(55, int(65 + price_change_pct * 3.5)))
+            mvar = adv_metrics.get("Modified_VaR_95", 2.2)
+            if mvar is None or math.isnan(mvar):
+                mvar = 2.2
+            tail_risk_score = min(99, max(65, int(100 - abs(mvar) * 7)))
+            composite_score = int(np.mean([growth_score, quality_score, valuation_score, momentum_score, tail_risk_score]))
+            verdict = "Core ETF Benchmark Allocation"
+        elif not has_fundamentals:
+            piotroski = 0
+            growth_score = None
+            quality_score = None
+            valuation_score = None
+            momentum_score = min(99, max(30, int(50 + price_change_pct * 2.0)))
+            mvar = adv_metrics.get("Modified_VaR_95")
+            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
+            composite_score = None
+            verdict = "Awaiting Verified Fundamental Filing"
+        else:
+            piotroski = calculate_piotroski_f_score(info, {})
+            rev_g = info.get("revenueGrowth")
+            growth_score = min(99, max(30, int(rev_g * 250 + 50))) if rev_g is not None else 50
+            quality_score = min(99, max(20, int(piotroski * 11)))
+            pe_val = info.get("trailingPE") or info.get("forwardPE")
+            valuation_score = 85 if (pe_val is not None and pe_val < 35) else (65 if pe_val is not None else 50)
+            momentum_score = min(99, max(30, int(50 + price_change_pct * 3.0)))
+            mvar = adv_metrics.get("Modified_VaR_95")
+            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else 65
+            valid_scores = [s for s in [growth_score, quality_score, valuation_score, momentum_score, tail_risk_score] if s is not None]
+            composite_score = int(np.mean(valid_scores)) if valid_scores else None
+            verdict = "Strong Buy / Core Accumulation" if composite_score and composite_score >= 80 else ("Moderate Growth Hold" if composite_score and composite_score >= 60 else "High Volatility Speculative")
 
         factor_scores = {
             "growthScore": growth_score,
@@ -421,7 +431,7 @@ def get_asset_analytics(
             fundamental_data={
                 **factor_scores,
                 "piotroski_f": piotroski,
-            },
+            } if (has_fundamentals or upper_sym in KNOWN_ETFS) else {},
             catalyst_data=catalyst_report,
             macro_data={
                 "yield_curve_10y2y": macro_difficulty.get("yield_curve_10y2y", 0.25) if isinstance(macro_difficulty, dict) else 0.25,

@@ -109,6 +109,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
 
     const handleSaveToPortfolio = () => {
+    if (positionUnits <= 0) return;
     const symKey = symbol.toUpperCase().replace("-USD", "");
     const existing = loadPortfolioPositions();
     const newPos: PortfolioPosition = {

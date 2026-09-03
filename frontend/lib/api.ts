@@ -289,6 +289,7 @@ export interface SmartMoneyOverview {
   congress_trades: CongressTradeItem[];
   sec_insider_trades?: SecInsiderTradeItem[];
   options_flow: OptionsFlowItem[];
+  _dataSource?: "live" | "fallback";
 }
 
 export interface OptimalExecutionPlan {
@@ -618,20 +619,20 @@ export function generateFallbackAnalytics(
     },
     optimalExecution: {
       current_price: basePrice,
-      optimal_entry_min: Number((basePrice * 0.975).toFixed(2)),
-      optimal_entry_max: Number((basePrice * 1.018).toFixed(2)),
-      stop_loss: Number((basePrice * 0.945).toFixed(2)),
-      stop_loss_pct: -5.5,
-      take_profit_1: Number((basePrice * 1.045).toFixed(2)),
-      take_profit_1_pct: 4.5,
-      take_profit_2: Number((basePrice * 1.095).toFixed(2)),
-      take_profit_2_pct: 9.5,
-      risk_reward_ratio: 2.85,
-      setup_pattern: "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
-      entry_thesis: "Stage 2 accumulation breakout above 50-day pivot with declining volume on pullbacks.",
-      invalidation_condition: "Daily close below 1.8x ATR14 trailing floor.",
-      stage_phase: "Stage 2 Growth Acceleration",
-      vcp_contraction_status: "VCP 3-Stage Compression Confirmed",
+      optimal_entry_min: basePrice,
+      optimal_entry_max: basePrice,
+      stop_loss: Number((basePrice * 0.93).toFixed(2)),
+      stop_loss_pct: -7.0,
+      take_profit_1: basePrice,
+      take_profit_1_pct: 0,
+      take_profit_2: basePrice,
+      take_profit_2_pct: 0,
+      risk_reward_ratio: 0,
+      setup_pattern: "Trend Evidence Incomplete (Offline Fallback Feed)",
+      entry_thesis: "Live exchange feed unavailable. Synthetic fallback data cannot generate verified trade setups or actionable buy zones.",
+      invalidation_condition: "Awaiting live exchange candlestick feed.",
+      stage_phase: "Awaiting Live Feed",
+      vcp_contraction_status: "Unverified (Fallback Feed)",
       atr_14: Number((basePrice * 0.022).toFixed(2)),
     },
     smartMoney: registered?.smartMoney || persisted?.smartMoney || {
@@ -998,7 +999,10 @@ export async function fetchAssetAnalytics(
       }
     }
   } catch (err) {
-    // Backend unavailable or timed out; proceed to Direct Yahoo Finance Client Fetcher
+    // Backend unavailable or timed out; emit telemetry and proceed to Direct Yahoo Finance Client Fetcher
+    if (typeof window !== "undefined" && (window as any)._paq) {
+      (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Backend API Failover", upper]);
+    }
   }
 
   // 2. Direct Live Yahoo Finance Client Fetcher (Resolves authentic prices & OHLCV candles directly)
@@ -1008,10 +1012,16 @@ export async function fetchAssetAnalytics(
       return yfLive;
     }
   } catch (err) {
-    // Yahoo query failed; proceed to local database or safe fallback
+    // Yahoo query failed; emit telemetry and proceed to safe fallback
+    if (typeof window !== "undefined" && (window as any)._paq) {
+      (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Direct Yahoo Failover", upper]);
+    }
   }
 
   // 3. High-Fidelity Fallback Generator anchored to verified spot prices (Guaranteed never to stick unknown tickers to $319.64)
+  if (typeof window !== "undefined" && (window as any)._paq) {
+    (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Fallback Generator Engaged", upper]);
+  }
   const reg = SpotPriceRegistry.get(upper);
   return generateFallbackAnalytics(
     symbol,
@@ -1082,7 +1092,10 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
     if (res.ok) {
       const data = await res.json();
       if (data && data.congress_trades) {
-        return data;
+        return {
+          ...data,
+          _dataSource: "live" as const,
+        };
       }
     }
   } catch (err) {
@@ -1090,7 +1103,8 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
   }
 
   return {
-  "total_congress_filings_30d": 14,
+    _dataSource: "fallback" as const,
+    "total_congress_filings_30d": 14,
   "total_sec_insiders_30d": 5,
   "net_political_sentiment": "Bullish (91.7% Purchases)",
   "top_congress_bought_sector": "AI Infrastructure, Semis & GLP-1",

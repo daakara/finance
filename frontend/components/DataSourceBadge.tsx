@@ -8,7 +8,7 @@ interface DataSourceBadgeProps {
 }
 
 export default function DataSourceBadge({
-  source = "live",
+  source = "fallback",
   className = "",
   labelLive = "📡 Live Market Feed",
   labelFallback = "📊 Model Estimate",

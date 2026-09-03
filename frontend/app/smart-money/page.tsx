@@ -71,7 +71,7 @@ function SmartMoneyContent() {
         const res = await fetchSmartMoneyOverview();
         if (isMounted) {
           setData(res);
-          setDataSource("live");
+          setDataSource(res._dataSource || "fallback");
         }
       } catch (err) {
         console.error("Failed to load smart money overview:", err);
