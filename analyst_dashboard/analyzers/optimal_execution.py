@@ -285,8 +285,10 @@ class OptimalExecutionEngine:
         2. stop_loss < spot < take_profit_1
         3. risk_reward_ratio >= 1.85:1
         """
-        raw_spot = plan.get("current_price", 100.0)
-        spot = max(0.0001, float(raw_spot if raw_spot is not None and not math.isnan(raw_spot) else 100.0))
+        raw_spot = plan.get("current_price")
+        if raw_spot is None or not isinstance(raw_spot, (int, float)) or math.isnan(raw_spot) or raw_spot <= 0:
+            raise ValueError("Execution plan strictly requires a verified positive spot price")
+        spot = float(raw_spot)
         plan["current_price"] = spot
 
         dec = 6 if spot < 0.01 else (4 if spot < 1.0 else 2)

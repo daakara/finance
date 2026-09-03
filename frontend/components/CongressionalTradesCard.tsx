@@ -255,9 +255,9 @@ export default function CongressionalTradesCard({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-4">
           <div>
             <div className="flex items-center space-x-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${
-                isDayTrader ? "bg-amber-400" : "bg-purple-400"
-              } animate-pulse`}></span>
+              <span className={`w-2 h-2 rounded-full ${
+                isDayTrader ? "bg-amber-500/70" : "bg-purple-500/70"
+              }`}></span>
               <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
                 <span>
                   {isDayTrader
