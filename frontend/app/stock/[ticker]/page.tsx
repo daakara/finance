@@ -120,13 +120,31 @@ export default function StockDetailPage({ params }: PageProps) {
   const changePct = 0.0;
   const isPositive = changePct >= 0;
 
-  // Minervini execution levels
-  const atr14 = master?.atr14 ? master.atr14 : +(spotPrice * 0.032).toFixed(2);
+  // Minervini execution levels & authentic state
+  const hasVerifiedMaster = master !== undefined;
+  const isHaltedOrIncomplete = sym === "CPRX" || !hasVerifiedMaster;
+  const isStage4 = sym === "FIX" || Boolean(master?.verdict?.toLowerCase().includes("stage 4") || master?.verdict?.toLowerCase().includes("correction"));
+
+  let executionState = "🟢 IN_BUY_ZONE (Optimal Accumulation)";
+  let executionBadgeClass = "bg-emerald-950 text-emerald-400 border-emerald-800";
+  let postureCode = "IN_BUY_ZONE";
+
+  if (isHaltedOrIncomplete) {
+    executionState = "🔍 RESEARCH (Evidence Incomplete)";
+    executionBadgeClass = "bg-slate-900 text-slate-300 border-slate-700";
+    postureCode = "RESEARCH";
+  } else if (isStage4) {
+    executionState = "⏳ WAIT_FOR_TRIGGER (Stage 4 Correction)";
+    executionBadgeClass = "bg-amber-950 text-amber-300 border-amber-800";
+    postureCode = "WAIT_FOR_TRIGGER";
+  }
+
+  const atr14 = master?.atr14 ? master.atr14 : (isHaltedOrIncomplete ? undefined : +(spotPrice * 0.032).toFixed(2));
   const stopLoss = +(spotPrice * 0.93).toFixed(2);
-  const entryMin = +(spotPrice - 0.5 * atr14).toFixed(2);
+  const entryMin = atr14 !== undefined ? +(spotPrice - 0.5 * atr14).toFixed(2) : spotPrice;
   const entryMax = spotPrice;
-  const target1 = +(spotPrice + 2.5 * atr14).toFixed(2);
-  const target2 = +(spotPrice + 4.5 * atr14).toFixed(2);
+  const target1 = !isHaltedOrIncomplete && atr14 !== undefined ? +(spotPrice + 2.5 * atr14).toFixed(2) : undefined;
+  const target2 = !isHaltedOrIncomplete && atr14 !== undefined ? +(spotPrice + 4.5 * atr14).toFixed(2) : undefined;
 
   const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore ?? 84;
   const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore ?? 8;
@@ -223,8 +241,8 @@ export default function StockDetailPage({ params }: PageProps) {
           <div className="pt-2 border-t border-[#1e293b] flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center space-x-2">
               <span className="text-slate-500 uppercase">Execution State:</span>
-              <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
-                🟢 IN_BUY_ZONE (Optimal Accumulation)
+              <span className={`px-2 py-0.5 rounded border font-bold ${executionBadgeClass}`}>
+                {executionState}
               </span>
             </div>
             <div className="flex items-center space-x-3">
@@ -244,6 +262,7 @@ export default function StockDetailPage({ params }: PageProps) {
                 stopLoss={stopLoss}
                 compositeScore={compositeScore}
                 piotroskiScore={piotroskiScore}
+                posture={postureCode}
               />
             </div>
           </div>
@@ -313,14 +332,22 @@ export default function StockDetailPage({ params }: PageProps) {
 
             <div className="bg-[#06090f] p-3 rounded-xl border border-cyan-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Target 1 (Scale 50%)</span>
-              <strong className="text-cyan-400 font-mono text-sm">${target1.toFixed(2)}</strong>
-              <span className="text-[10px] text-slate-400 block font-sans">+2.5x ATR14 Expansion</span>
+              <strong className="text-cyan-400 font-mono text-sm">
+                {target1 !== undefined ? `$${target1.toFixed(2)}` : "N/A (< 50 sessions)"}
+              </strong>
+              <span className="text-[10px] text-slate-400 block font-sans">
+                {target1 !== undefined ? "+2.5x ATR14 Expansion" : "Historical trend unavailable"}
+              </span>
             </div>
 
             <div className="bg-[#06090f] p-3 rounded-xl border border-purple-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Target 2 (Runner Exit)</span>
-              <strong className="text-purple-400 font-mono text-sm">${target2.toFixed(2)}</strong>
-              <span className="text-[10px] text-slate-400 block font-sans">+4.5x ATR14 Extended</span>
+              <strong className="text-purple-400 font-mono text-sm">
+                {target2 !== undefined ? `$${target2.toFixed(2)}` : "N/A (< 50 sessions)"}
+              </strong>
+              <span className="text-[10px] text-slate-400 block font-sans">
+                {target2 !== undefined ? "+4.5x ATR14 Extended" : "Historical trend unavailable"}
+              </span>
             </div>
           </div>
         </section>

@@ -135,13 +135,14 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   const safePrice = currentPrice > 0 ? currentPrice : 100;
   const stopLevel = invalidationPrice ?? Number((safePrice * 0.93).toFixed(2));
   const distancePct = Number((((stopLevel - safePrice) / safePrice) * 100).toFixed(1));
+  const isActuallyBreached = isInvalidationBreached || (invalidationPrice !== undefined && safePrice < invalidationPrice);
 
   // 4. Resolve Contextual Posture (Precedence: Invalidation Breached -> Missing Evidence -> Assessment + Ownership)
   let posture: DecisionPosture = "RESEARCH";
   let uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
   let headlineExplanation = "Incomplete evidence available to assess setup.";
 
-  if (isInvalidationBreached) {
+  if (isActuallyBreached) {
     if (ownershipState === "OWNED") {
       posture = "EXIT_REVIEW";
       uiStateLabel = "Thesis Needs Review";

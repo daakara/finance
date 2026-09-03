@@ -634,16 +634,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.peRatio}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.peRatio}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.peRaw < assetB.peRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🟢 {assetA.symbol} (Lower Multiple)
-                        </span>
-                      ) : assetB.peRaw < assetA.peRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🟢 {assetB.symbol} (Lower Multiple)
-                        </span>
+                      {assetA.peRaw > 0 && assetB.peRaw > 0 ? (
+                        assetA.peRaw < assetB.peRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🟢 {assetA.symbol} (Lower Multiple)
+                          </span>
+                        ) : assetB.peRaw < assetA.peRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🟢 {assetB.symbol} (Lower Multiple)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                        )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">PARITY</span>
+                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
                       )}
                     </td>
                   </tr>
@@ -654,16 +658,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.fcfYield}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.fcfYield}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.fcfYieldRaw > assetB.fcfYieldRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🟢 {assetA.symbol} (+{(assetA.fcfYieldRaw - assetB.fcfYieldRaw).toFixed(1)}% FCF)
-                        </span>
-                      ) : assetB.fcfYieldRaw > assetA.fcfYieldRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🟢 {assetB.symbol} (+{(assetB.fcfYieldRaw - assetA.fcfYieldRaw).toFixed(1)}% FCF)
-                        </span>
+                      {assetA.fcfYieldRaw > 0 && assetB.fcfYieldRaw > 0 ? (
+                        assetA.fcfYieldRaw > assetB.fcfYieldRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🟢 {assetA.symbol} (+{(assetA.fcfYieldRaw - assetB.fcfYieldRaw).toFixed(1)}% FCF)
+                          </span>
+                        ) : assetB.fcfYieldRaw > assetA.fcfYieldRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🟢 {assetB.symbol} (+{(assetB.fcfYieldRaw - assetA.fcfYieldRaw).toFixed(1)}% FCF)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                        )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">PARITY</span>
+                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
                       )}
                     </td>
                   </tr>
@@ -674,16 +682,22 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.piotroski} / 9</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.piotroski} / 9</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.piotroski > assetB.piotroski ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🟢 {assetA.symbol}
-                        </span>
-                      ) : assetB.piotroski > assetA.piotroski ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🟢 {assetB.symbol}
-                        </span>
+                      {assetA.piotroski > 0 || assetB.piotroski > 0 ? (
+                        assetA.piotroski > assetB.piotroski ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🟢 {assetA.symbol}
+                          </span>
+                        ) : assetB.piotroski > assetA.piotroski ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🟢 {assetB.symbol}
+                          </span>
+                        ) : assetA.piotroski >= 8 && assetB.piotroski >= 8 ? (
+                          <span className="text-emerald-400 font-bold text-[10px]">⚖️ Both Pristine Tier</span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                        )
                       ) : (
-                        <span className="text-emerald-400 font-bold text-[10px]">⚖️ Both Pristine Tier</span>
+                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
                       )}
                     </td>
                   </tr>
@@ -694,16 +708,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetA.atr14} / day</td>
                     <td className="py-3 px-4 text-right font-bold text-amber-300 tabular-nums">{assetB.atr14} / day</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.atr14Raw > assetB.atr14Raw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
-                          ⚡ {assetA.symbol} (Higher Scalp Range)
-                        </span>
-                      ) : assetB.atr14Raw > assetA.atr14Raw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
-                          ⚡ {assetB.symbol} (Higher Scalp Range)
-                        </span>
+                      {assetA.atr14Raw > 0 && assetB.atr14Raw > 0 ? (
+                        assetA.atr14Raw > assetB.atr14Raw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
+                            ⚡ {assetA.symbol} (Higher Scalp Range)
+                          </span>
+                        ) : assetB.atr14Raw > assetA.atr14Raw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
+                            ⚡ {assetB.symbol} (Higher Scalp Range)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                        )
                       ) : (
-                        <span className="text-slate-500 text-[10px]">PARITY</span>
+                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
                       )}
                     </td>
                   </tr>
@@ -714,14 +732,20 @@ function CompareContent() {
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetA.intradayBeta}</td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100 tabular-nums">{assetB.intradayBeta}</td>
                     <td className="py-3 px-4 text-center">
-                      {assetA.intradayBetaRaw > assetB.intradayBetaRaw ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                          🚀 {assetA.symbol} (Higher Beta)
-                        </span>
+                      {assetA.intradayBetaRaw > 0 && assetB.intradayBetaRaw > 0 ? (
+                        assetA.intradayBetaRaw > assetB.intradayBetaRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                            🚀 {assetA.symbol} (Higher Beta)
+                          </span>
+                        ) : assetB.intradayBetaRaw > assetA.intradayBetaRaw ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
+                            🚀 {assetB.symbol} (Higher Beta)
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">PARITY</span>
+                        )
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-800">
-                          🛡️ {assetB.symbol} (Defensive Anchor)
-                        </span>
+                        <span className="text-slate-500 text-[10px]">N/A (Unverified)</span>
                       )}
                     </td>
                   </tr>

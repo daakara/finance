@@ -34,16 +34,37 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     }
   };
 
-  const currentPrice = data.currentPrice || 100.0;
-  const metrics = data.analytics?.advanced_metrics || {};
-  const technicals = data.technicals || { vwap: currentPrice, rsi_14: 55.0, ema_20: currentPrice, atr_14: currentPrice * 0.015 };
+  const isTechnicalsUnavailable = !data || !data.currentPrice || data.currentPrice <= 0 || !data.technicals;
+  const currentPrice = data?.currentPrice && data.currentPrice > 0 ? data.currentPrice : 0;
+  const metrics = data?.analytics?.advanced_metrics || {};
+  const technicals = data?.technicals || null;
+
+  if (isTechnicalsUnavailable || currentPrice <= 0 || !technicals) {
+    return (
+      <section className="bg-[#0b1019] p-4 sm:p-5 rounded-2xl border border-[#243044] space-y-3 font-sans">
+        <div className="flex items-center gap-2.5 text-slate-300">
+          <span className="text-xl">⚖️</span>
+          <h3 className="text-sm sm:text-base font-bold text-white">
+            Rule #1: Protect The Castle ({symbol} Position Sizer)
+          </h3>
+        </div>
+        <div className="p-4 bg-slate-900/60 border border-slate-700/60 rounded-xl text-slate-300 text-xs space-y-1">
+          <strong className="text-slate-200 block">Intraday Technicals Unavailable:</strong>
+          <p className="text-slate-400 leading-relaxed">
+            Live intraday VWAP, RSI-14, and volatility metrics cannot be verified for {symbol}. Position sizing is disabled to protect capital from unverified volatility estimates.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const rsi = technicals.rsi_14 ?? 50.0;
 
   // Calculate Dollar Risk Budget
   const dollarRisk = accountSize * (riskPct / 100);
 
   // Statistical stop distance derived from Cornish-Fisher Modified VaR 95% and ATR 14
-  const mVaR95Pct = Math.abs(metrics.Modified_VaR_95 || 2.5);
+  const mVaR95Pct = Math.abs(metrics.Modified_VaR_95 || (technicals.atr_14 ? (technicals.atr_14 / currentPrice) * 100 : 2.5));
   const stopDistancePct = Math.max(0.8, Math.min(6.0, mVaR95Pct * 0.65));
   const stopDistanceDollar = currentPrice * (stopDistancePct / 100);
 

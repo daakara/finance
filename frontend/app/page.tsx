@@ -220,8 +220,8 @@ function TerminalContent() {
           {/* Intent-First Home Hero: "What are you looking to do today?" */}
           <IntentHero onSelectSymbol={handleSelectSymbol} />
 
-          {/* Ingestion Failure / Explicit Retry State */}
-          {error && !data && (
+          {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
+          {error && !data ? (
             <div className="p-5 bg-rose-950/40 border border-rose-800/60 rounded-2xl text-rose-200 font-sans space-y-3 animate-fade-in shadow-xl">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">⚠️</span>
@@ -266,18 +266,18 @@ function TerminalContent() {
                 </a>
               </div>
             </div>
+          ) : (
+            /* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */
+            <AdaptiveTerminal
+              symbol={selectedSymbol}
+              companyName={aliasRecommendation?.companyName || selectedSymbol}
+              currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
+              changePct={data?.priceChangePct24h || 0}
+              setupScore={60}
+              candles={data?.candles}
+              dataSource={data?._dataSource}
+            />
           )}
-
-          {/* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */}
-          <AdaptiveTerminal
-            symbol={selectedSymbol}
-            companyName={aliasRecommendation?.companyName || selectedSymbol}
-            currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
-            changePct={data?.priceChangePct24h || 0}
-            setupScore={60}
-            candles={data?.candles}
-            dataSource={data?._dataSource}
-          />
 
           {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
           <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">

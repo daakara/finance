@@ -8,10 +8,11 @@ interface ShareTradeCardButtonProps {
   spotPrice: number;
   entryMin: number;
   entryMax: number;
-  target1: number;
+  target1?: number;
   stopLoss: number;
   compositeScore: number;
   piotroskiScore: number;
+  posture?: string;
 }
 
 export default function ShareTradeCardButton({
@@ -24,13 +25,26 @@ export default function ShareTradeCardButton({
   stopLoss,
   compositeScore,
   piotroskiScore,
+  posture = "IN_BUY_ZONE",
 }: ShareTradeCardButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = () => {
+    const postureLabel =
+      posture === "IN_BUY_ZONE" || posture === "ACQUIRE"
+        ? `🟢 IN_BUY_ZONE ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)})`
+        : posture === "WAIT_FOR_TRIGGER"
+        ? `⏳ WAIT_FOR_TRIGGER (Stage 4 Correction)`
+        : `🔍 RESEARCH (Evidence Incomplete)`;
+
+    const targetLabel =
+      typeof target1 === "number" && !isNaN(target1) && target1 > 0
+        ? `🎯 Target 1: $${target1.toFixed(2)} (+2.5x ATR)`
+        : `🎯 Target 1: N/A (< 50 sessions)`;
+
     const text = `📊 ${ticker} (${name}) Quantitative Trade Setup
-Spot: $${spotPrice.toFixed(2)} | 🟢 IN_BUY_ZONE ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)})
-🎯 Target 1: $${target1.toFixed(2)} (+2.5x ATR) | 🛑 Stop Loss: $${stopLoss.toFixed(2)}
+Spot: $${spotPrice.toFixed(2)} | ${postureLabel}
+${targetLabel} | 🛑 Stop Loss: $${stopLoss.toFixed(2)}
 Health: ${compositeScore}/100 | Piotroski: ${piotroskiScore}/9
 Analyze on ARX Terminal: https://www.arxterminal.com/stock/${ticker.toLowerCase()}/`;
 
