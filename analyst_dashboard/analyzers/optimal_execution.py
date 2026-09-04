@@ -183,15 +183,19 @@ class OptimalExecutionEngine:
             entry_max = round(max(breakout_ceiling, base_pivot + 0.25 * atr_14), dec)
             if entry_min > entry_max:
                 entry_min, entry_max = entry_max, entry_min
-            raw_stop = entry_min - (1.5 * atr_14)
+            recent_swing_low = float(low.iloc[-5:].min()) if len(close) >= 5 else current_price * 0.96
+            # Structural swing stop: anchored below 5-session swing reaction low with 0.25x ATR buffer
+            structural_stop = min(recent_swing_low - (0.25 * atr_14), entry_min - min_tick)
+            # Bound raw stop between entry_min * 0.935 and entry_min * 0.970
+            raw_stop = max(entry_min * 0.935, min(entry_min * 0.970, structural_stop))
             # Strictly cap Swing risk while guaranteeing stop_loss < entry_min
-            stop_loss = round(min(entry_min - min_tick, max(entry_min * 0.930, min(entry_min * 0.965, raw_stop))), dec)
+            stop_loss = round(min(entry_min - min_tick, raw_stop), dec)
             if stop_loss >= entry_min:
-                stop_loss = round(entry_min - max(min_tick, 0.75 * atr_14), dec)
-            take_profit_1 = round(max(entry_max + (1.5 * atr_14), current_price * 1.048), dec)
+                stop_loss = round(entry_min - max(min_tick, 0.5 * atr_14), dec)
+            take_profit_1 = round(max(entry_max + (1.25 * atr_14), current_price * 1.045), dec)
             if take_profit_1 <= entry_max:
-                take_profit_1 = round(entry_max + max(min_tick, 1.5 * atr_14), dec)
-            take_profit_2 = round(max(take_profit_1 + min_tick, take_profit_1 + (2.0 * atr_14)), dec)
+                take_profit_1 = round(entry_max + max(min_tick, 1.0 * atr_14), dec)
+            take_profit_2 = round(max(take_profit_1 + min_tick, take_profit_1 + (1.75 * atr_14)), dec)
 
             if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"
@@ -252,14 +256,36 @@ class OptimalExecutionEngine:
         # Enforce realistic bounds with minimum 1.85:1 floor without artificial buy-zone inflation (Phase 22 calibration)
         rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
 
+        # Check confirmation / stabilization candle
+        open_series = price_df["Open"] if "Open" in price_df.columns else (price_df["open"] if "open" in price_df.columns else None)
+        last_close = float(close.iloc[-1])
+        last_low = float(low.iloc[-1])
+        last_high = float(high.iloc[-1])
+        last_open = float(open_series.iloc[-1]) if open_series is not None and not open_series.empty else last_close
+        prev_close = close.shift(1)
+        prev_close_val = float(prev_close.iloc[-1]) if len(close) >= 2 and not math.isnan(prev_close.iloc[-1]) else last_close
+
+        candle_range = max(min_tick, last_high - last_low)
+        range_pos = (last_close - last_low) / candle_range
+
+        # Confirmation signals:
+        # 1. Buyer absorption: closed in upper 45% of daily candle
+        # 2. Green candle: close >= open
+        # 3. Positive day: close >= prev_close
+        # 4. Holding 20 EMA: close >= ema_20
+        is_stabilized = (range_pos >= 0.45) or (last_close >= last_open) or (last_close >= prev_close_val) or (last_close >= ema_20)
+
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":
             stop_loss_pct = max(-2.2, min(-0.9, raw_stop_pct))
         else:
-            stop_loss_pct = max(-7.0, min(-3.5, raw_stop_pct))
+            stop_loss_pct = max(-6.5, min(-3.5, raw_stop_pct))
 
         if entry_min is not None and entry_max is not None and current_price >= entry_min and current_price <= entry_max:
-            exec_status = "IN_BUY_ZONE"
+            if is_stabilized:
+                exec_status = "IN_BUY_ZONE"
+            else:
+                exec_status = "IN_BUY_ZONE_AWAITING_TRIGGER"
         elif take_profit_1 is not None and entry_max is not None and current_price > entry_max and current_price < take_profit_1:
             exec_status = "APPROACHING_TARGET"
         else:
@@ -385,7 +411,7 @@ class OptimalExecutionEngine:
             plan["stop_loss_pct"] = max(-2.2, min(-0.9, raw_stop_pct))
             plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
         else:
-            plan["stop_loss_pct"] = max(-7.0, min(-3.5, raw_stop_pct))
+            plan["stop_loss_pct"] = max(-6.5, min(-3.5, raw_stop_pct))
             plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
 
         if plan["stop_loss"] >= plan["optimal_entry_min"]:

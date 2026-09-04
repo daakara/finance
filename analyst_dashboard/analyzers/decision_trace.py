@@ -37,7 +37,8 @@ class DecisionTraceEngine:
 
         confluence_score = float(confluence.get("confluenceScore", 0.0)) if confluence else 0.0
         exec_status = optimal_execution.get("execution_status", "UNKNOWN") if optimal_execution else "UNKNOWN"
-        is_in_buy_zone = exec_status == "IN_BUY_ZONE"
+        is_in_buy_zone = exec_status in ("IN_BUY_ZONE", "IN_BUY_ZONE_CONFIRMED", "IN_BUY_ZONE_AWAITING_TRIGGER")
+        is_confirmed = exec_status in ("IN_BUY_ZONE", "IN_BUY_ZONE_CONFIRMED")
         rr = optimal_execution.get("risk_reward_ratio") if optimal_execution else None
 
         stage = None
@@ -60,6 +61,7 @@ class DecisionTraceEngine:
             is_in_buy_zone=is_in_buy_zone,
             risk_reward_ratio=rr,
             is_cataloged=True,
+            is_confirmed=is_confirmed,
         )
 
         # 2. Extract Pillar Statuses

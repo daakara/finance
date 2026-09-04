@@ -38,7 +38,7 @@ interface GemCandidate {
   catalyst: string;
   riskLevel: string;
   // Execution Scanner Levels
-  executionStatus?: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
+  executionStatus?: "IN_BUY_ZONE" | "IN_BUY_ZONE_AWAITING_TRIGGER" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
   statusLabel?: string;
   statusColor?: string;
   optimalEntryMin?: number;
@@ -129,7 +129,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const takeProfit2Pct = hasVerifiedData ? (isDayTrader ? 7.5 : 18.5) : 0;
     const riskRewardRatio = hasVerifiedData ? Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2)) : 0;
 
-    let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
+    let executionStatus: "IN_BUY_ZONE" | "IN_BUY_ZONE_AWAITING_TRIGGER" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
     let statusLabel: string;
     let statusColor: string;
 

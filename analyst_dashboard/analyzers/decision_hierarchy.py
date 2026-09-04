@@ -45,6 +45,7 @@ class DecisionHierarchyEngine:
         is_in_buy_zone: bool = False,
         risk_reward_ratio: Optional[float] = None,
         is_cataloged: bool = True,
+        is_confirmed: bool = True,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
@@ -98,12 +99,13 @@ class DecisionHierarchyEngine:
             }
 
         # ── Precedence 6: ACTIONABLE_SETUP (Highest criteria) ─────────────────
-        # Requires: Full evidence + Stage 2 accumulation + Confluence >= 75 + in buy zone + R:R >= 2.0
+        # Requires: Full evidence + Stage 2 accumulation + Confluence >= 75 + in buy zone + confirmed trigger + R:R >= 2.0
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
         is_stage_2 = stage_phase == 2 or stage_phase is None
         if (
             confluence_score >= 75.0
             and is_in_buy_zone
+            and is_confirmed
             and is_stage_2
             and rr >= 2.0
         ):
@@ -124,6 +126,8 @@ class DecisionHierarchyEngine:
             reason = "Stage 4 distribution: price below 50-day SMA; wait for floor formation."
         elif not is_in_buy_zone:
             reason = "Price is outside the optimal entry corridor; awaiting pullback to buy zone."
+        elif not is_confirmed:
+            reason = "Price is in optimal buy zone; awaiting reversal/stabilization confirmation candle."
         elif rr < 2.0:
             reason = f"Risk/Reward ratio ({rr:.1f}:1) is below the institutional 2.0:1 minimum threshold."
         elif confluence_score < 75.0:
