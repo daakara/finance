@@ -53,11 +53,12 @@ export default function AlertTriggerModal({
 
   if (!isOpen) return null;
 
-  const safeCurrent = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0 ? currentPrice : 100;
-  const safeEntryMin = typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0 ? optimalEntryMin : safeCurrent * 0.98;
-  const safeEntryMax = typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0 ? optimalEntryMax : safeCurrent * 1.02;
-  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeCurrent * 0.95;
-  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeCurrent * 1.10;
+  const hasValidPricing = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
+  const safeCurrent = hasValidPricing ? currentPrice : 0;
+  const safeEntryMin = typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0 ? optimalEntryMin : (hasValidPricing ? safeCurrent * 0.98 : 0);
+  const safeEntryMax = typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0 ? optimalEntryMax : (hasValidPricing ? safeCurrent * 1.02 : 0);
+  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : (hasValidPricing ? safeCurrent * 0.95 : 0);
+  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : (hasValidPricing ? safeCurrent * 1.10 : 0);
 
   const handleRequestPermission = async () => {
     const res = await AlertManager.requestPermission();
@@ -65,6 +66,7 @@ export default function AlertTriggerModal({
   };
 
   const handleSaveAlerts = () => {
+    if (!hasValidPricing) return;
     if (permission !== "granted") {
       handleRequestPermission();
     }
@@ -246,9 +248,14 @@ export default function AlertTriggerModal({
             </button>
             <button
               onClick={handleSaveAlerts}
-              className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-all shadow"
+              disabled={!hasValidPricing}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow ${
+                hasValidPricing
+                  ? "bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+                  : "bg-slate-800 text-slate-500 cursor-not-allowed"
+              }`}
             >
-              Save Active Alerts
+              {hasValidPricing ? "Save Active Alerts" : "Price Feed Unavailable"}
             </button>
           </div>
         </div>

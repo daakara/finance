@@ -152,19 +152,23 @@ def run_screener_get(
         atr_14 = execution.get("atr_14", round(current_price * 0.025, 2))
 
         # Pure Mathematical Execution State Determination
-        if execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
+        if execution.get("execution_status") == "INSUFFICIENT_HISTORY" or stop_loss is None:
+            execution_status = "WAITING_PULLBACK"
+            status_label = "⏳ Insufficient History"
+            status_color = "cyan"
+        elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
             execution_status = "WAITING_PULLBACK"
             status_label = "⏳ Awaiting Base Formation"
             status_color = "cyan"
-        elif current_price < stop_loss:
+        elif stop_loss is not None and current_price < stop_loss:
             execution_status = "STOPPED_OUT"
             status_label = "🛑 Below Stop Loss"
             status_color = "rose"
-        elif (abs(hash(sym)) % 4 == 0) or (current_price >= tp1 * 0.96):
+        elif tp1 is not None and ((abs(hash(sym)) % 4 == 0) or (current_price >= tp1 * 0.96)):
             execution_status = "APPROACHING_TARGET"
             status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
             status_color = "amber"
-        elif abs(current_price - entry_max) / max(0.01, current_price) <= 0.015 or (entry_min <= current_price <= entry_max * 1.008) or (abs(hash(sym)) % 3 == 0):
+        elif entry_min is not None and entry_max is not None and (abs(current_price - entry_max) / max(0.01, current_price) <= 0.015 or (entry_min <= current_price <= entry_max * 1.008) or (abs(hash(sym)) % 3 == 0)):
             execution_status = "IN_BUY_ZONE"
             status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Active Buy Zone"
             status_color = "emerald"

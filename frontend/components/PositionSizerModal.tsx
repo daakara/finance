@@ -21,7 +21,7 @@ export default function PositionSizerModal({
   isOpen,
   onClose,
   symbol,
-  entryPrice = 100,
+  entryPrice = 0,
   stopLoss,
   takeProfit1,
   riskRewardRatio = 2.5,
@@ -58,8 +58,6 @@ export default function PositionSizerModal({
         );
         if (focusable.length > 0) {
           focusable[0].focus();
-        } else {
-          modalRef.current.focus();
         }
       }
     }, 50);
@@ -74,18 +72,13 @@ export default function PositionSizerModal({
         const focusable = modalRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        if (focusable.length === 0) return;
-
-        const firstElement = focusable[0];
-        const lastElement = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
+        if (focusable.length > 0) {
+          const firstElement = focusable[0];
+          const lastElement = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === firstElement) {
             e.preventDefault();
             lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
+          } else if (!e.shiftKey && document.activeElement === lastElement) {
             e.preventDefault();
             firstElement.focus();
           }
@@ -105,16 +98,17 @@ export default function PositionSizerModal({
 
   if (!isOpen) return null;
 
-  const safeEntry = typeof entryPrice === "number" && !isNaN(entryPrice) && entryPrice > 0 ? entryPrice : 100;
-  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : safeEntry * 0.95;
-  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : safeEntry * 1.10;
+  const hasValidPricing = typeof entryPrice === "number" && !isNaN(entryPrice) && entryPrice > 0 && typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
+  const safeEntry = hasValidPricing ? entryPrice : 0;
+  const safeStop = hasValidPricing ? stopLoss : 0;
+  const safeTarget = hasValidPricing && typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : (safeEntry > 0 ? safeEntry * 1.10 : 0);
 
   const isSetupInvalid = safeEntry <= safeStop;
-  const isMicroAccount = accountSize < safeEntry;
+  const isMicroAccount = hasValidPricing && accountSize < safeEntry;
   const isFractionalActive = allowFractional || isMicroAccount;
 
   const riskPerShare = isSetupInvalid ? 0 : Math.max(0.01, safeEntry - safeStop);
-  const maxDollarRisk = accountSize * (riskPct / 100);
+  const maxDollarRisk = isSetupInvalid ? 0 : accountSize * (riskPct / 100);
   const rawShares = isSetupInvalid
     ? 0
     : isFractionalActive
@@ -212,9 +206,13 @@ export default function PositionSizerModal({
             <div className="p-3.5 bg-rose-950/80 border border-rose-600 rounded-xl text-rose-200 text-xs font-sans flex items-start gap-2.5 shadow-lg">
               <span className="text-xl leading-none">🚨</span>
               <div className="space-y-1">
-                <strong className="font-bold text-rose-300 block text-sm">Setup Invalidated — Sizing Disabled:</strong>
+                <strong className="font-bold text-rose-300 block text-sm">
+                  {!hasValidPricing ? "Unverified Asset — Sizing Blocked:" : "Setup Invalidated — Sizing Disabled:"}
+                </strong>
                 <p className="leading-relaxed text-slate-200">
-                  Current entry price (${safeEntry.toFixed(2)}) is at or below the stop loss floor (${safeStop.toFixed(2)}). Risk geometry is invalid and capital deployment is blocked. Zero shares recommended.
+                  {!hasValidPricing
+                    ? `Live market data and verified stop-loss levels are unavailable for ${symbol}. Under Phase 18 quantitative integrity invariants, the platform refuses to size capital for unverified assets.`
+                    : `Current entry price ($${safeEntry.toFixed(2)}) is at or below the stop loss floor ($${safeStop.toFixed(2)}). Risk geometry is invalid and capital deployment is blocked. Zero shares recommended.`}
                 </p>
               </div>
             </div>

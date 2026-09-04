@@ -193,8 +193,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
               <tbody className="divide-y divide-[#162030] text-slate-300">
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Current Spot Price</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">${priceA.toFixed(2)}</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">${priceB.toFixed(2)}</td>
+                  <td className="py-2.5 px-3 font-mono text-white font-bold">{priceA !== undefined ? `$${priceA.toFixed(2)}` : "Unavailable"}</td>
+                  <td className="py-2.5 px-3 font-mono text-white font-bold">{priceB !== undefined ? `$${priceB.toFixed(2)}` : "Unavailable"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Composite Factor Score</td>

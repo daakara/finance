@@ -27,12 +27,18 @@ class OptimalExecutionEngine:
         dec = 6 if current_price < 0.01 else (4 if current_price < 1.0 else 2)
         min_tick = 10 ** (-dec)
 
-        if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty or len(price_df) < 5:
-            is_day = (user_role == "DAY_TRADER")
-            atr = current_price * (0.022 if is_day else 0.028)
-            stop = round(current_price - (1.25 * atr), dec)
-            stop = min(stop, round(current_price - max(min_tick, current_price * 0.005), dec))
-            min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
+        is_day = (user_role == "DAY_TRADER")
+
+        # Fallback logic if price_df is not provided or empty: generate mathematical ATR-proportional levels
+        if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty:
+            # Synthetic 2.5% ATR proxy
+            atr = max(min_tick * 2, current_price * (0.015 if is_day else 0.025))
+            if is_day:
+                stop = round(current_price - (1.2 * atr), dec)
+                min_stop_floor = round(current_price * 0.985, dec)
+            else:
+                stop = round(current_price - (2.2 * atr), dec)
+                min_stop_floor = round(current_price * 0.93, dec)
             stop = max(min_stop_floor, stop)
             if stop >= current_price:
                 stop = round(current_price * 0.95, dec)
@@ -57,11 +63,13 @@ class OptimalExecutionEngine:
                 "take_profit_2": tp2,
                 "take_profit_2_pct": round(((tp2 - current_price) / current_price) * 100, 2),
                 "risk_reward_ratio": max(1.85, rr),
+                "execution_status": "WAITING_PULLBACK",
                 "setup_pattern": "Raschke 20 EMA Pullback" if is_day else "Minervini Volatility Contraction Pattern (VCP)",
                 "entry_thesis": "Intraday trend continuation above VWAP" if is_day else "Stage 2 base accumulation with declining volume on pullbacks.",
                 "invalidation_condition": "Break of 1.25x 5m ATR below low of day." if is_day else "Daily close below 50-day moving average or -7.5% stop constraint.",
                 "stage_phase": "Intraday Momentum Trend Expansion" if is_day else "Stage 2 Advancing Growth Phase",
                 "vcp_contraction_status": "Tightening 5m Compression" if is_day else "VCP 3-Stage Compression Confirmed",
+                "breakout_pivot": None,
                 "atr_14": round(atr, dec),
                 "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, current_price),
             }
@@ -83,6 +91,58 @@ class OptimalExecutionEngine:
             atr_14 = current_price * 0.025
         # Clamp ATR between 1.5% and 5.5% of spot price
         atr_14 = min(current_price * 0.055, max(current_price * 0.015, atr_14))
+        liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price)
+
+        # Strict Epistemic Invariant: Insufficient history cannot synthesize actionable trade levels
+        if len(close) < 50 and user_role != "DAY_TRADER":
+            return {
+                "current_price": current_price,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "INSUFFICIENT_HISTORY",
+                "setup_pattern": "Trend Evidence Incomplete (< 50 Sessions)",
+                "entry_thesis": "Trade setup suppressed: Minervini VCP requires at least 50 historical sessions to establish baseline trend.",
+                "invalidation_condition": "Awaiting historical price discovery.",
+                "stage_phase": "Awaiting Historical Base (< 50 Sessions)",
+                "vcp_contraction_status": "Consolidation Unverified",
+                "breakout_pivot": None,
+                "atr_14": round(atr_14, dec) if atr_14 else None,
+                "liquidity_defense": liquidity_report,
+                "execution_hazard": liquidity_report.get("execution_hazard", False) if isinstance(liquidity_report, dict) else False,
+                "liquidity_warning": liquidity_report.get("pro_summary") if isinstance(liquidity_report, dict) and liquidity_report.get("execution_hazard") else None,
+            }
+
+        if len(close) < 15 and user_role == "DAY_TRADER":
+            return {
+                "current_price": current_price,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "INSUFFICIENT_HISTORY",
+                "setup_pattern": "Trend Evidence Incomplete (< 15 Sessions)",
+                "entry_thesis": "Trade setup suppressed: Intraday execution requires at least 15 valid sessions.",
+                "invalidation_condition": "Awaiting intraday liquidity discovery.",
+                "stage_phase": "Awaiting Historical Base (< 15 Sessions)",
+                "vcp_contraction_status": "Consolidation Unverified",
+                "breakout_pivot": None,
+                "atr_14": round(atr_14, dec) if atr_14 else None,
+                "liquidity_defense": liquidity_report,
+                "execution_hazard": liquidity_report.get("execution_hazard", False) if isinstance(liquidity_report, dict) else False,
+                "liquidity_warning": liquidity_report.get("pro_summary") if isinstance(liquidity_report, dict) and liquidity_report.get("execution_hazard") else None,
+            }
 
         # 2. Moving Averages
         ema_20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
@@ -193,12 +253,23 @@ class OptimalExecutionEngine:
         
         # Enforce realistic bounds with minimum 1.85:1 floor
         rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
+        if user_role == "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.01):
+            rr_ratio = min(5.0, max(2.1, rr_ratio))
+        elif user_role != "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.015):
+            rr_ratio = min(5.0, max(2.25, rr_ratio))
 
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":
             stop_loss_pct = max(-2.2, min(-0.9, raw_stop_pct))
         else:
             stop_loss_pct = max(-7.0, min(-3.5, raw_stop_pct))
+
+        if entry_min is not None and entry_max is not None and current_price >= entry_min and current_price <= entry_max:
+            exec_status = "IN_BUY_ZONE"
+        elif take_profit_1 is not None and entry_max is not None and current_price > entry_max and current_price < take_profit_1:
+            exec_status = "APPROACHING_TARGET"
+        else:
+            exec_status = "WAITING_PULLBACK"
 
         raw_plan = {
             "current_price": current_price,
@@ -211,6 +282,7 @@ class OptimalExecutionEngine:
             "take_profit_2": take_profit_2,
             "take_profit_2_pct": round(((take_profit_2 - current_price) / current_price) * 100, 2),
             "risk_reward_ratio": max(1.85, rr_ratio),
+            "execution_status": exec_status,
             "setup_pattern": setup_name,
             "entry_thesis": thesis,
             "invalidation_condition": invalidation,

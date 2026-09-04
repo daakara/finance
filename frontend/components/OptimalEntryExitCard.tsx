@@ -64,7 +64,34 @@ export default function OptimalEntryExitCard({
     invalidation_condition,
     stage_phase,
     vcp_contraction_status,
-  } = executionPlan;
+  } = executionPlan as {
+    [K in keyof OptimalExecutionPlan]: NonNullable<OptimalExecutionPlan[K]>;
+  };
+
+  if (
+    optimal_entry_min == null ||
+    optimal_entry_max == null ||
+    stop_loss == null ||
+    take_profit_1 == null ||
+    take_profit_2 == null ||
+    risk_reward_ratio == null ||
+    current_price <= 0
+  ) {
+    return (
+      <div className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-3 font-sans text-slate-300">
+        <div className="flex items-center space-x-2 text-slate-400">
+          <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+          <h3 className="text-sm font-bold text-slate-200">🎯 {symbol} Execution Setup Unavailable</h3>
+        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          {entry_thesis || "Historical candlestick depth is insufficient (< 50 trading sessions) or asset identity is unverified. Under Phase 18 quantitative integrity invariants, the platform strictly refuses to synthesize hypothetical entry ranges, stop-loss levels, or asymmetric profit targets."}
+        </p>
+        <div className="text-[11px] text-slate-400 font-mono bg-[#0b0f17] p-2.5 rounded border border-slate-800/80">
+          Status: {executionPlan.execution_status || "INSUFFICIENT_HISTORY"} • Invalidation: {invalidation_condition || "Awaiting verified historical exchange candles"}
+        </div>
+      </div>
+    );
+  }
 
   const isStage4 = Boolean(
     setup_pattern?.includes("Stage 4") ||
@@ -80,7 +107,7 @@ export default function OptimalEntryExitCard({
 
   // Tactical Execution Hint
   let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
-  if (!isStage4 && inZone && risk_reward_ratio >= 1.0) {
+  if (!isStage4 && inZone && risk_reward_ratio !== null && risk_reward_ratio >= 1.0) {
     if (zonePositionPct > 65) {
       zoneTacticalHint = {
         label: "⚠️ Near Zone Ceiling",
@@ -151,7 +178,7 @@ export default function OptimalEntryExitCard({
   })();
 
   const handleLogToPortfolio = () => {
-    if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio <= 0) {
+    if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
       setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
       return;

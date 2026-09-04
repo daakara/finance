@@ -28,8 +28,10 @@ export default function ShareTradeCardButton({
   posture = "IN_BUY_ZONE",
 }: ShareTradeCardButtonProps) {
   const [copied, setCopied] = useState(false);
+  const isAvailable = Boolean(spotPrice && spotPrice > 0 && stopLoss && stopLoss > 0 && posture !== "UNAVAILABLE");
 
   const handleShare = () => {
+    if (!isAvailable) return;
     const postureLabel =
       posture === "IN_BUY_ZONE" || posture === "ACQUIRE"
         ? `🟢 IN_BUY_ZONE ($${entryMin.toFixed(2)} - $${entryMax.toFixed(2)})`
@@ -61,11 +63,16 @@ Analyze on ARX Terminal: https://www.arxterminal.com/stock/${ticker.toLowerCase(
     <button
       type="button"
       onClick={handleShare}
-      className="px-3 py-1.5 rounded-lg bg-[#141b29] hover:bg-[#1c2638] border border-[#24334a] text-xs font-bold text-cyan-300 hover:text-white transition-all active:scale-95 flex items-center gap-1.5 shadow"
-      title="Copy formatted trade card to clipboard for Discord, X, or Reddit"
+      disabled={!isAvailable}
+      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 shadow transition-all ${
+        isAvailable
+          ? "bg-[#141b29] hover:bg-[#1c2638] border-[#24334a] text-cyan-300 hover:text-white active:scale-95"
+          : "bg-slate-900/60 border-slate-800 text-slate-500 cursor-not-allowed"
+      }`}
+      title={isAvailable ? "Copy formatted trade card to clipboard for Discord, X, or Reddit" : "Trade setup unavailable for unverified asset"}
     >
       <span>🔗</span>
-      <span>{copied ? "✅ Trade Card Copied!" : "Share Setup"}</span>
+      <span>{!isAvailable ? "Setup Unavailable" : copied ? "✅ Trade Card Copied!" : "Share Setup"}</span>
     </button>
   );
 }

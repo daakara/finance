@@ -138,11 +138,16 @@ class ConfluenceEngine:
 
         stop_loss = 0.0
         risk_pct = 5.0
+        stop_loss = None
         if technical_data:
-            current_p = float(technical_data.get("current_price", 100.0))
-            stop_loss = float(technical_data.get("stop_loss", current_p * 0.95))
-            if current_p > 0:
+            raw_curr = technical_data.get("current_price")
+            current_p = float(raw_curr) if raw_curr is not None else 0.0
+            raw_stop = technical_data.get("stop_loss")
+            stop_loss = float(raw_stop) if raw_stop is not None else None
+            if current_p > 0 and stop_loss is not None:
                 risk_pct = max(0.1, abs(current_p - stop_loss) / current_p * 100.0)
+            else:
+                risk_pct = 5.0
 
         yield_curve = 0.25
         credit_spread = 3.5
@@ -150,11 +155,12 @@ class ConfluenceEngine:
             yield_curve = float(macro_data.get("yield_curve_10y2y", 0.25))
             credit_spread = float(macro_data.get("credit_spread", 3.5))
 
+        stop_desc = f"at ${stop_loss:.2f}" if stop_loss is not None else "(stop unverified)"
         if yield_curve >= 0.0 and credit_spread < 4.2 and risk_pct <= 7.5:
             macro_score = 85.0
             macro_status = "positive"
-            macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight. Defined stop at ${stop_loss:.2f} ({risk_pct:.1f}% risk)."
-            macro_plain = f"Macro green light: Credit markets healthy. Clear exit floor set at ${stop_loss:.2f} ({risk_pct:.1f}% risk)."
+            macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight. Defined stop {stop_desc} ({risk_pct:.1f}% risk)."
+            macro_plain = f"Macro green light: Credit markets healthy. Clear exit floor set {stop_desc} ({risk_pct:.1f}% risk)."
         elif yield_curve < 0.0 or risk_pct > 12.0:
             macro_score = 38.0
             macro_status = "warning"
@@ -163,8 +169,8 @@ class ConfluenceEngine:
         else:
             macro_score = 60.0
             macro_status = "neutral"
-            macro_detail = f"Supportive liquidity background with stop floor at ${stop_loss:.2f} ({risk_pct:.1f}% risk)."
-            macro_plain = f"Stable economic background with safety exit floor set at ${stop_loss:.2f} ({risk_pct:.1f}% risk)."
+            macro_detail = f"Supportive liquidity background with stop floor {stop_desc} ({risk_pct:.1f}% risk)."
+            macro_plain = f"Stable economic background with safety exit floor set {stop_desc} ({risk_pct:.1f}% risk)."
 
         # ── 5. CATALYST RUNWAY RISK ADJUSTMENT ────────────────────────────────
         catalyst_mod = 0.0
@@ -269,7 +275,8 @@ class ConfluenceEngine:
             rating = "CONSTRUCTIVE ACCUMULATION CONVICTION"
             plain_rating = "💡 SOLID ACCUMULATION SETUP"
             badge_color = "cyan"
-            bottom_line = f"Disciplined trade structure with {positives}/4 supporting pillars. Favorable risk floor near ${stop_loss:.2f}. Execute inside buy zones."
+            risk_floor_str = f"near ${stop_loss:.2f}" if stop_loss is not None else "pending price discovery"
+            bottom_line = f"Disciplined trade structure with {positives}/4 supporting pillars. Favorable risk floor {risk_floor_str}. Execute inside buy zones."
 
         return {
             "symbol": clean_sym,

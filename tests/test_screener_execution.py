@@ -21,13 +21,13 @@ def test_optimal_execution_levels():
     
     current_price = 106.80
     if pd is not None:
-        dates = pd.date_range(start="2026-01-01", periods=30, freq="D")
+        dates = pd.date_range(start="2026-01-01", periods=60, freq="D")
         df = pd.DataFrame({
-            "Open": [100.0 + (i * 0.2) for i in range(30)],
-            "High": [102.0 + (i * 0.2) for i in range(30)],
-            "Low": [99.0 + (i * 0.2) for i in range(30)],
-            "Close": [101.0 + (i * 0.2) for i in range(30)],
-            "Volume": [1000000 for _ in range(30)],
+            "Open": [100.0 + (i * 0.2) for i in range(60)],
+            "High": [102.0 + (i * 0.2) for i in range(60)],
+            "Low": [99.0 + (i * 0.2) for i in range(60)],
+            "Close": [101.0 + (i * 0.2) for i in range(60)],
+            "Volume": [1000000 for _ in range(60)],
         }, index=dates)
     else:
         df = []

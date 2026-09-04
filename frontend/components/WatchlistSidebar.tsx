@@ -38,11 +38,19 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
       }
       // Guarantee instant sparkline and quote hydration from master catalog
       const baseline = getMasterBaselineQuote(item.symbol);
-      const isUp = baseline.pctChange >= 0;
+      if (baseline.spot === undefined) {
+        return {
+          ...item,
+          price: "Unavailable",
+          change: "—",
+          isUp: true,
+        };
+      }
+      const isUp = (baseline.pctChange ?? 0) >= 0;
       return {
         ...item,
         price: `$${baseline.spot.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-        change: `${isUp ? "+" : ""}${baseline.pctChange.toFixed(2)}%`,
+        change: `${isUp ? "+" : ""}${(baseline.pctChange ?? 0).toFixed(2)}%`,
         isUp,
       };
     });

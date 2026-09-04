@@ -101,7 +101,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     const cat = MASTER_ASSET_CATALOG[sym];
     const spot = SpotPriceRegistry.get(sym);
-    const price = (spot?.price && spot.price > 0) ? spot.price : (CATALOG_BASELINE_PRICES[sym] ?? 100.0);
+    const price = (spot?.price && spot.price > 0) ? spot.price : (CATALOG_BASELINE_PRICES[sym] ?? 0);
     const roic = cat?.roic;
     const peg = cat?.peg;
     const margin = cat?.grossMargin;
@@ -111,15 +111,16 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST" || sym === "ULTA" || sym === "LULU";
 
-    const optimalEntryMin = Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2));
-    const optimalEntryMax = Number((price * (isDayTrader ? 1.004 : 1.015)).toFixed(2));
-    const stopLoss = Number((price * (isDayTrader ? 0.985 : 0.955)).toFixed(2));
-    const stopLossPct = isDayTrader ? -1.5 : -4.5;
-    const takeProfit1 = Number((price * (isDayTrader ? 1.035 : 1.105)).toFixed(2));
-    const takeProfit1Pct = isDayTrader ? 3.5 : 10.5;
-    const takeProfit2 = Number((price * (isDayTrader ? 1.075 : 1.185)).toFixed(2));
-    const takeProfit2Pct = isDayTrader ? 7.5 : 18.5;
-    const riskRewardRatio = Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2));
+    const hasVerifiedData = Boolean(cat && price > 0);
+    const optimalEntryMin = hasVerifiedData ? Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2)) : 0;
+    const optimalEntryMax = hasVerifiedData ? Number((price * (isDayTrader ? 1.004 : 1.015)).toFixed(2)) : 0;
+    const stopLoss = hasVerifiedData ? Number((price * (isDayTrader ? 0.985 : 0.955)).toFixed(2)) : 0;
+    const stopLossPct = hasVerifiedData ? (isDayTrader ? -1.5 : -4.5) : 0;
+    const takeProfit1 = hasVerifiedData ? Number((price * (isDayTrader ? 1.035 : 1.105)).toFixed(2)) : 0;
+    const takeProfit1Pct = hasVerifiedData ? (isDayTrader ? 3.5 : 10.5) : 0;
+    const takeProfit2 = hasVerifiedData ? Number((price * (isDayTrader ? 1.075 : 1.185)).toFixed(2)) : 0;
+    const takeProfit2Pct = hasVerifiedData ? (isDayTrader ? 7.5 : 18.5) : 0;
+    const riskRewardRatio = hasVerifiedData ? Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2)) : 0;
 
     let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
     let statusLabel: string;
@@ -325,10 +326,10 @@ export default function ScreenerPage() {
               executionStatus: c.executionStatus || (candHasFundamentals ? "IN_BUY_ZONE" : "RESEARCH"),
               statusLabel: c.statusLabel || (candHasFundamentals ? "🎯 Active Buy Zone" : "📋 Research Required"),
               statusColor: c.statusColor || (candHasFundamentals ? "emerald" : "slate"),
-              optimalEntryMin: c.optimalEntryMin || (candPrice > 0 ? Number((candPrice * 0.975).toFixed(2)) : 0),
-              optimalEntryMax: c.optimalEntryMax || (candPrice > 0 ? Number((candPrice * 0.995).toFixed(2)) : 0),
-              stopLoss: c.stopLoss || (candPrice > 0 ? Number((candPrice * 0.93).toFixed(2)) : 0),
-              stopLossPct: c.stopLossPct || -7.0,
+              optimalEntryMin: c.optimalEntryMin || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.975).toFixed(2)) : 0),
+              optimalEntryMax: c.optimalEntryMax || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.995).toFixed(2)) : 0),
+              stopLoss: c.stopLoss || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.93).toFixed(2)) : 0),
+              stopLossPct: c.stopLossPct || (candHasFundamentals ? -7.0 : 0),
               takeProfit1: c.takeProfit1 || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 1.15).toFixed(2)) : undefined),
               takeProfit1Pct: c.takeProfit1Pct || (candHasFundamentals ? 15.0 : undefined),
               takeProfit2: c.takeProfit2 || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 1.25).toFixed(2)) : undefined),
@@ -1140,10 +1141,10 @@ export default function ScreenerPage() {
           isOpen={!!sizerGem}
           onClose={() => setSizerGem(null)}
           symbol={sizerGem.symbol}
-          entryPrice={sizerGem.currentPrice || 100}
-          stopLoss={sizerGem.stopLoss || (sizerGem.currentPrice || 100) * 0.95}
-          takeProfit1={sizerGem.takeProfit1 || (sizerGem.currentPrice || 100) * 1.05}
-          riskRewardRatio={sizerGem.riskRewardRatio || 2.5}
+          entryPrice={sizerGem.currentPrice || 0}
+          stopLoss={sizerGem.stopLoss || 0}
+          takeProfit1={sizerGem.takeProfit1 || 0}
+          riskRewardRatio={sizerGem.riskRewardRatio || 0}
         />
       )}
 
@@ -1153,11 +1154,11 @@ export default function ScreenerPage() {
           isOpen={!!alertGem}
           onClose={() => setAlertGem(null)}
           symbol={alertGem.symbol}
-          currentPrice={alertGem.currentPrice || 100}
-          optimalEntryMin={alertGem.optimalEntryMin || (alertGem.currentPrice || 100) * 0.97}
-          optimalEntryMax={alertGem.optimalEntryMax || (alertGem.currentPrice || 100)}
-          stopLoss={alertGem.stopLoss || (alertGem.currentPrice || 100) * 0.95}
-          takeProfit1={alertGem.takeProfit1 || (alertGem.currentPrice || 100) * 1.05}
+          currentPrice={alertGem.currentPrice || 0}
+          optimalEntryMin={alertGem.optimalEntryMin || 0}
+          optimalEntryMax={alertGem.optimalEntryMax || 0}
+          stopLoss={alertGem.stopLoss || 0}
+          takeProfit1={alertGem.takeProfit1 || 0}
         />
       )}
     </main>

@@ -355,7 +355,7 @@ export const CANONICAL_ASSET_CATALYSTS: Record<string, AssetCatalystProfile> = {
 /** Get the authoritative, clean full corporate name */
 export function getCanonicalAssetName(symbol: string, defaultName?: string): string {
   const upper = symbol.toUpperCase().replace("-USD", "").trim();
-  return CANONICAL_ASSET_NAMES[upper] || defaultName || `${upper} Corporation`;
+  return CANONICAL_ASSET_NAMES[upper] || defaultName || upper;
 }
 
 /** Get the authoritative fundamental moat thesis */
@@ -364,7 +364,7 @@ export function getCanonicalAssetMoat(symbol: string, defaultMoat?: string): str
   return (
     CANONICAL_ASSET_MOATS[upper] ||
     defaultMoat ||
-    `${getCanonicalAssetName(upper)} demonstrates strong operational moats, disciplined capital allocation, and durable returns on invested capital.`
+    "Verified operational moat data unavailable."
   );
 }
 
@@ -468,12 +468,21 @@ export function getCanonicalAssetCatalyst(
     };
   }
 
-  // 8. Default Commercial Product & TAM Expansion
+  if (!sector || sector === "Unknown" || sector === "Unclassified" || sector === "General") {
+    return {
+      trial: "Awaiting Corporate Disclosure & Regulatory Pipeline Submissions",
+      phase: "Pre-Filing / Verification Pending",
+      timeline: "Next Scheduled Regulatory Disclosures",
+      thesis: `${cleanName} has no verified sector classification. Specific catalyst roadmap pending verified corporate disclosures.`,
+    };
+  }
+
+  // 8. Default Commercial Product & Operating Roadmap
   return {
-    trial: "Commercial Execution, TAM Expansion & Operating Margin Compounding",
-    phase: "Market Scaling & Product Line Optimization",
-    timeline: "Quarterly Earnings & Capital Allocation Guidance",
-    thesis: `${cleanName} demonstrates solid balance sheet quality, strong operational execution, and consistent institutional accumulation.`,
+    trial: "Commercial Execution & Operating Roadmap",
+    phase: "Market Scaling & Product Roadmap",
+    timeline: "Quarterly Earnings & Corporate Filings",
+    thesis: `${cleanName} operating roadmap and corporate milestones pending verified quarterly disclosures.`,
   };
 }
 

@@ -695,24 +695,16 @@ class CatalystEngine:
             }
 
         # Generic quantitative catalyst generation for multi-asset stocks
+        # Uncataloged / Unclassified asset fallback (Enforce Epistemic Honesty: No fabricated targets)
         return {
             "symbol": upper,
             "company_name": clean_name,
-            "sector": sector or "Multi-Asset Equities",
-            "primary_drug_trial": "Commercial Operating Margin Expansion & Free Cash Flow Compounding",
-            "trial_phase": "Operational Execution & Market Scale",
-            "trial_readout_timeline": "Quarterly Earnings & Capital Allocation Guidance",
-            "efficacy_summary": f"Strong operational execution, revenue compounding, and free cash flow generation for {clean_name}.",
-            "competitive_edge": "Ecosystem network effects, operational efficiency, and high customer switching costs.",
-            "upcoming_milestones": [
-                {"date": "Q3 2026", "event": "Quarterly Earnings & Forward Operating Margin Guidance", "impact": "Medium-to-High"},
-                {"date": "Q4 2026", "event": "Core Business Line Expansion & Volume Growth", "impact": "High Positive"},
-                {"date": "2027", "event": "International Market Expansion & Capital Return Program", "impact": "Positive"}
-            ],
-            "multi_year_forecast": [
-                {"year": 2025, "revenue_billions": round(current_price * 0.4, 1), "net_margin_pct": 25.0, "projected_eps": round(current_price * 0.04, 2), "implied_pe": 28.0, "implied_target": round(current_price * 1.12, 2)},
-                {"year": 2027, "revenue_billions": round(current_price * 0.55, 1), "net_margin_pct": 27.5, "projected_eps": round(current_price * 0.06, 2), "implied_pe": 26.0, "implied_target": round(current_price * 1.45, 2)},
-                {"year": 2029, "revenue_billions": round(current_price * 0.75, 1), "net_margin_pct": 29.0, "projected_eps": round(current_price * 0.085, 2), "implied_pe": 24.0, "implied_target": round(current_price * 1.95, 2)},
-                {"year": 2031, "revenue_billions": round(current_price * 1.05, 1), "net_margin_pct": 30.0, "projected_eps": round(current_price * 0.12, 2), "implied_pe": 22.0, "implied_target": round(current_price * 2.50, 2)}
-            ]
+            "sector": sector or "Unclassified Asset",
+            "primary_drug_trial": "Awaiting Verified Regulatory Disclosures",
+            "trial_phase": "Data Unavailable",
+            "trial_readout_timeline": "Awaiting Official Corporate Schedule",
+            "efficacy_summary": f"Awaiting verified fundamental and financial reporting disclosures for {clean_name}.",
+            "competitive_edge": "Verified operational moat data unavailable.",
+            "upcoming_milestones": [],
+            "multi_year_forecast": [],
         }

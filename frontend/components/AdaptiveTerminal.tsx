@@ -22,7 +22,7 @@ interface AdaptiveTerminalProps {
   setupScore?: number;
   isStage4?: boolean;
   candles?: CandleData[];
-  dataSource?: "live" | "fallback";
+  dataSource?: "live" | "fallback" | "unavailable";
 }
 
 export default function AdaptiveTerminal({

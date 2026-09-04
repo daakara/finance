@@ -66,7 +66,7 @@ export default function PortfolioPage() {
         const baseline = getMasterBaselinePrice(symKey, 0);
         if (reg?.price && reg.price > 0) price = reg.price;
         else if (snap?.currentPrice && snap.currentPrice > 0) price = snap.currentPrice;
-        else if (baseline > 0) price = baseline;
+        else if (baseline !== undefined && baseline > 0) price = baseline;
       }
 
       if (price && price > 0) {

@@ -3,7 +3,7 @@
 import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "./constants";
 import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandles } from "./marketDatabase";
 import { getCanonicalAssetCatalyst } from "./assetRegistry";
-import { MASTER_ASSET_CATALOG } from "./masterCatalog";
+import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "./masterCatalog";
 
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
@@ -161,9 +161,9 @@ export interface CatalystForecastData {
   company_name: string;
   symbol: string;
   sector: string;
-  primary_drug_trial: string;
-  trial_phase: string;
-  trial_readout_timeline: string;
+  primary_drug_trial?: string;
+  trial_phase?: string;
+  trial_readout_timeline?: string;
   efficacy_summary: string;
   competitive_edge: string;
   upcoming_milestones: CatalystMilestone[];
@@ -311,20 +311,21 @@ export interface LiquidityDefenseData {
 
 export interface OptimalExecutionPlan {
   current_price: number;
-  optimal_entry_min: number;
-  optimal_entry_max: number;
-  stop_loss: number;
-  stop_loss_pct: number;
-  take_profit_1: number;
-  take_profit_1_pct: number;
-  take_profit_2: number;
-  take_profit_2_pct: number;
-  risk_reward_ratio: number;
+  optimal_entry_min?: number | null;
+  optimal_entry_max?: number | null;
+  stop_loss?: number | null;
+  stop_loss_pct?: number | null;
+  take_profit_1?: number | null;
+  take_profit_1_pct?: number | null;
+  take_profit_2?: number | null;
+  take_profit_2_pct?: number | null;
+  risk_reward_ratio?: number | null;
   setup_pattern: string;
   entry_thesis: string;
   invalidation_condition: string;
   stage_phase: string;
   vcp_contraction_status: string;
+  execution_status?: string;
   breakout_pivot?: number;
   atr_14?: number;
   liquidity_defense?: LiquidityDefenseData;
@@ -359,7 +360,7 @@ export interface ConfluenceData {
 }
 
 export interface AnalyticsResponse {
-  _dataSource?: "live" | "fallback";
+  _dataSource?: "live" | "fallback" | "unavailable";
   symbol: string;
   period: string;
   interval: string;
@@ -458,41 +459,86 @@ export function generateFallbackAnalytics(
 ): AnalyticsResponse {
   const upper = symbol.toUpperCase().replace("-USD", "");
   const catalogEntry = MASTER_ASSET_CATALOG[upper];
-  const matched = SHARED_FACTOR_SCORES[upper] || {
-    scores: {
-      growthScore: 80,
-      qualityScore: 78,
-      valuationScore: 75,
-      momentumScore: 76,
-      tailRiskScore: 72,
-      compositeFactorScore: 77,
-      verdict: "Bullish Stage 2 Alignment",
-      piotroskiFScore: 7,
-    },
-    price: 0,
-    changePct: 1.5,
-  };
   const registered = SpotPriceRegistry.get(upper);
   const persisted = getPersistedMarketSnapshot(upper);
 
-  // Derive a distinct deterministic price based on symbol hash rather than defaulting to Apple's price
-  const deterministicSeed = Math.abs(upper.split("").reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) % 100000, 7));
-  const deterministicDefaultPrice = Number((25 + (deterministicSeed % 175) + ((deterministicSeed % 99) / 100)).toFixed(2));
-
-  // Base price resolution hierarchy:
-  // 1) Explicit override
-  // 2) Live in-memory registry (if not poisoned 319.64 for non-AAPL)
-  // 3) Persisted browser DB snapshot (if not poisoned 319.64 for non-AAPL)
-  // 4) Master asset catalog price
-  // 5) Specific shared factor score price (if matched specifically for this ticker)
-  // 6) Deterministic unique price
   const registeredValidPrice = (registered?.price && (upper === "AAPL" || Math.abs(registered.price - 319.64) >= 0.01)) ? registered.price : undefined;
   const persistedValidPrice = (persisted?.currentPrice && (upper === "AAPL" || Math.abs(persisted.currentPrice - 319.64) >= 0.01)) ? persisted.currentPrice : undefined;
+
+  // Phase 18 Epistemic Invariant: If asset is uncataloged AND has no verified price from registry/storage/override,
+  // downstream analytics MUST NOT invent evidence, fake prices, synthetic candles, or fake trade setups.
+  if (!catalogEntry && !registeredValidPrice && !persistedValidPrice && !overridePrice) {
+    return {
+      _dataSource: "unavailable" as const,
+      symbol: upper,
+      period,
+      interval,
+      currentPrice: 0,
+      priceChangePct24h: 0,
+      candles: [],
+      technicals: undefined,
+      factorScores: undefined,
+      dnaScores: undefined,
+      macroDifficulty: undefined,
+      expectedReturn: undefined,
+      traderArchetypes: undefined,
+      selfHealingAudit: undefined,
+      marketGraph: undefined,
+      catalystForecast: {
+        company_name: upper,
+        symbol: upper,
+        sector: "Unclassified",
+        efficacy_summary: "No verified corporate filings or operational disclosures available for this uncataloged asset.",
+        competitive_edge: "Awaiting verified regulatory filings.",
+        upcoming_milestones: [],
+        multi_year_forecast: [],
+        overallDirection: "Unverified Asset",
+      },
+      optimalExecution: {
+        current_price: 0,
+        optimal_entry_min: null as any,
+        optimal_entry_max: null as any,
+        stop_loss: null as any,
+        stop_loss_pct: 0,
+        take_profit_1: null as any,
+        take_profit_1_pct: 0,
+        take_profit_2: null as any,
+        take_profit_2_pct: 0,
+        risk_reward_ratio: 0,
+        execution_status: "UNVERIFIED_ASSET",
+        setup_pattern: "No Verified Market Data (Uncataloged)",
+        entry_thesis: "Live exchange feed and catalog metadata unavailable. Under Phase 18 anti-hallucination invariants, the terminal refuses to invent hypothetical prices or trade levels.",
+        invalidation_condition: "Awaiting verified exchange data feed.",
+        stage_phase: "Unverified Asset",
+        vcp_contraction_status: "Unverified",
+        atr_14: 0,
+      },
+      smartMoney: {
+        congressTrades: [],
+        optionsFlow: [],
+      },
+    };
+  }
+
+  const matched = SHARED_FACTOR_SCORES[upper] || {
+    scores: {
+      growthScore: catalogEntry?.growthScore ?? 75,
+      qualityScore: catalogEntry?.qualityScore ?? 75,
+      valuationScore: catalogEntry?.valuationScore ?? 70,
+      momentumScore: catalogEntry?.momentumScore ?? 70,
+      tailRiskScore: catalogEntry?.tailRiskScore ?? 70,
+      compositeFactorScore: catalogEntry?.compositeFactorScore ?? 72,
+      verdict: catalogEntry?.verdict ?? "Catalog Baseline",
+      piotroskiFScore: catalogEntry?.piotroski ?? 7,
+    },
+    price: catalogEntry ? (getMasterBaselinePrice(upper) ?? 0) : 0,
+    changePct: 1.5,
+  };
 
   const basePrice = overridePrice ||
     registeredValidPrice ||
     persistedValidPrice ||
-    deterministicDefaultPrice;
+    (catalogEntry ? (getMasterBaselinePrice(upper) ?? 0) : 0);
   const baseChangePct = overrideChangePct !== undefined
     ? overrideChangePct
     : (registered?.changePct ?? persisted?.priceChangePct24h ?? 0.0);
@@ -820,19 +866,51 @@ export async function fetchDirectYahooFinanceChart(
         rsi_14: isNaN(rsi_14) ? 55.0 : Math.max(10, Math.min(90, rsi_14)),
       };
 
+      const isCataloged = Boolean(MASTER_ASSET_CATALOG[upper]);
+      const matched = SHARED_FACTOR_SCORES[upper];
+      const hasSufficientHistory = candles.length >= 50;
+
+      const optimalExecution: OptimalExecutionPlan = hasSufficientHistory
+        ? {
+            current_price: currentPrice,
+            optimal_entry_min: Number((currentPrice * 0.98).toFixed(2)),
+            optimal_entry_max: Number((currentPrice * 1.015).toFixed(2)),
+            stop_loss: Number((currentPrice - 1.8 * atr_14).toFixed(2)),
+            stop_loss_pct: Number((((currentPrice - 1.8 * atr_14 - currentPrice) / currentPrice) * 100).toFixed(1)),
+            take_profit_1: Number((currentPrice + 2.5 * atr_14).toFixed(2)),
+            take_profit_1_pct: Number((((2.5 * atr_14) / currentPrice) * 100).toFixed(1)),
+            take_profit_2: Number((currentPrice + 4.5 * atr_14).toFixed(2)),
+            take_profit_2_pct: Number((((4.5 * atr_14) / currentPrice) * 100).toFixed(1)),
+            risk_reward_ratio: 2.5,
+            execution_status: "IN_BUY_ZONE",
+            setup_pattern: "Institutional Liquidity Expansion",
+            entry_thesis: "Live market trend alignment above 20 EMA with ATR trailing stop buffer.",
+            invalidation_condition: `Daily close below $${(currentPrice - 1.8 * atr_14).toFixed(2)} safety floor.`,
+            stage_phase: "Stage 2 Trend Following",
+            vcp_contraction_status: "Compression Calibrated",
+            atr_14,
+          }
+        : {
+            current_price: currentPrice,
+            optimal_entry_min: null as any,
+            optimal_entry_max: null as any,
+            stop_loss: null as any,
+            stop_loss_pct: 0,
+            take_profit_1: null as any,
+            take_profit_1_pct: 0,
+            take_profit_2: null as any,
+            take_profit_2_pct: 0,
+            risk_reward_ratio: 0,
+            execution_status: "INSUFFICIENT_HISTORY",
+            setup_pattern: "Insufficient Candlestick History (< 50 Sessions)",
+            entry_thesis: "Asset has fewer than 50 verified daily sessions. Under Phase 18 quantitative integrity invariants, the platform refuses to synthesize hypothetical entry corridors, stop losses, or profit targets.",
+            invalidation_condition: "Awaiting 50+ sessions of verified exchange trading history.",
+            stage_phase: "Stage 1 Undefined Base",
+            vcp_contraction_status: "Insufficient History",
+            atr_14,
+          };
+
       const assetCat = getCanonicalAssetCatalyst(upper);
-      const matched = SHARED_FACTOR_SCORES[upper] || {
-        scores: {
-          growthScore: 84,
-          qualityScore: 82,
-          valuationScore: 78,
-          momentumScore: 80,
-          tailRiskScore: 75,
-          compositeFactorScore: 81,
-          verdict: "Strong Institutional Accumulation",
-          piotroskiFScore: 8,
-        },
-      };
 
       const responsePayload: AnalyticsResponse = {
         _dataSource: "live",
@@ -843,7 +921,7 @@ export async function fetchDirectYahooFinanceChart(
         priceChangePct24h,
         candles,
         technicals,
-        factorScores: matched.scores,
+        factorScores: matched?.scores,
         macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
         expectedReturn: DEFAULT_EXPECTED_RETURN,
         selfHealingAudit: {
@@ -867,42 +945,22 @@ export async function fetchDirectYahooFinanceChart(
           systemicContagionRisk: "Low-to-Moderate (Market Calibrated)",
         },
         catalystForecast: {
-          company_name: meta.shortName || meta.longName || `${upper} Corporation`,
+          company_name: meta.shortName || meta.longName || upper,
           symbol: upper,
-          sector: "Public Equities / Growth",
-          primary_drug_trial: assetCat.trial,
-          trial_phase: assetCat.phase,
-          trial_readout_timeline: assetCat.timeline,
-          efficacy_summary: assetCat.thesis,
-          competitive_edge: "Expanding market share and positive return on invested capital",
-          upcoming_milestones: [
+          sector: isCataloged ? (MASTER_ASSET_CATALOG[upper]?.sector || "Public Equities") : "Unclassified",
+          primary_drug_trial: isCataloged ? assetCat.trial : "Awaiting Corporate Disclosures",
+          trial_phase: isCataloged ? assetCat.phase : "Corporate Disclosure Pending",
+          trial_readout_timeline: isCataloged ? assetCat.timeline : "Scheduled Calendar Pending",
+          efficacy_summary: isCataloged ? assetCat.thesis : "No verified operational roadmap or corporate filings registered.",
+          competitive_edge: isCataloged ? "Expanding market share and positive return on invested capital" : "Moat metrics unverified.",
+          upcoming_milestones: isCataloged ? [
             { date: "2026-09-15", event: "Q3 Earnings & Operating Update", impact: "High" },
             { date: "2026-10-22", event: "Analyst Day & Guidance", impact: "High" },
-          ],
-          multi_year_forecast: [
-            { year: 2026, revenue_billions: 12.5, net_margin_pct: 22.4, projected_eps: 4.85, implied_target: currentPrice * 1.15 },
-            { year: 2027, revenue_billions: 15.2, net_margin_pct: 24.1, projected_eps: 6.2, implied_target: currentPrice * 1.35 },
-          ],
-          overallDirection: "Bullish Accumulation",
+          ] : [],
+          multi_year_forecast: [],
+          overallDirection: isCataloged ? "Bullish Accumulation" : "Unverified Asset",
         },
-        optimalExecution: {
-          current_price: currentPrice,
-          optimal_entry_min: Number((currentPrice * 0.98).toFixed(2)),
-          optimal_entry_max: Number((currentPrice * 1.015).toFixed(2)),
-          stop_loss: Number((currentPrice - 1.8 * atr_14).toFixed(2)),
-          stop_loss_pct: Number((((currentPrice - 1.8 * atr_14 - currentPrice) / currentPrice) * 100).toFixed(1)),
-          take_profit_1: Number((currentPrice + 2.5 * atr_14).toFixed(2)),
-          take_profit_1_pct: Number((((2.5 * atr_14) / currentPrice) * 100).toFixed(1)),
-          take_profit_2: Number((currentPrice + 4.5 * atr_14).toFixed(2)),
-          take_profit_2_pct: Number((((4.5 * atr_14) / currentPrice) * 100).toFixed(1)),
-          risk_reward_ratio: 2.5,
-          setup_pattern: "Institutional Liquidity Expansion",
-          entry_thesis: "Live market trend alignment above 20 EMA with ATR trailing stop buffer.",
-          invalidation_condition: `Daily close below $${(currentPrice - 1.8 * atr_14).toFixed(2)} safety floor.`,
-          stage_phase: "Stage 2 Trend Following",
-          vcp_contraction_status: "Compression Calibrated",
-          atr_14,
-        },
+        optimalExecution,
         smartMoney: {
           congressTrades: [],
           optionsFlow: [],

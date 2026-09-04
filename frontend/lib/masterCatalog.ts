@@ -1349,7 +1349,7 @@ export function getMasterAsset(symbol: string): MasterAssetEntry | undefined {
   return undefined;
 }
 
-export function getMasterBaselinePrice(symbol: string, fallback: number = 100.0): number {
+export function getMasterBaselinePrice(symbol: string, fallback?: number): number | undefined {
   if (!symbol) return fallback;
   const raw = normalizeCatalogSymbol(symbol);
   
@@ -1427,13 +1427,13 @@ export const CATALOG_BASELINE_CHANGES: Record<string, number> = {
 };
 
 export interface MasterBaselineQuote {
-  spot: number;
-  pctChange: number;
+  spot?: number;
+  pctChange?: number;
 }
 
 export function getMasterBaselineQuote(symbol: string): MasterBaselineQuote {
-  const spot = getMasterBaselinePrice(symbol, 100.0);
-  if (!symbol) return { spot, pctChange: 0.5 };
+  const spot = getMasterBaselinePrice(symbol);
+  if (!symbol || spot === undefined) return { spot: undefined, pctChange: undefined };
   const raw = normalizeCatalogSymbol(symbol);
   
   if (CATALOG_BASELINE_CHANGES[raw] !== undefined) {
@@ -1447,7 +1447,7 @@ export function getMasterBaselineQuote(symbol: string): MasterBaselineQuote {
   if (CATALOG_BASELINE_CHANGES[withoutUsd] !== undefined) {
     return { spot, pctChange: CATALOG_BASELINE_CHANGES[withoutUsd] };
   }
-  return { spot, pctChange: 0.85 };
+  return { spot, pctChange: undefined };
 }
 
 export function getAllMasterTickers(): string[] {

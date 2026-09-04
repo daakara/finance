@@ -21,7 +21,7 @@ export function generateQuantitativeInsight(
   ownership: OwnershipState = "NOT_OWNED",
   ownershipSource: OwnershipSource = "USER_DECLARED",
   candles?: CandleData[],
-  dataSource?: "live" | "fallback"
+  dataSource?: "live" | "fallback" | "unavailable"
 ): QuantitativeInsight {
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;

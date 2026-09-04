@@ -375,11 +375,12 @@ def get_asset_analytics(
 
         # Persist factor scores and catalyst snapshot into SQLite
         try:
-            market_db.save_factor_snapshot(upper_sym, {
-                "currentPrice": current_price,
-                "priceChangePct24h": price_change_pct,
-                **factor_scores,
-            })
+            if factor_scores.get("compositeFactorScore") is not None:
+                market_db.save_factor_snapshot(upper_sym, {
+                    "currentPrice": current_price,
+                    "priceChangePct24h": price_change_pct,
+                    **factor_scores,
+                })
             market_db.save_catalyst(upper_sym, catalyst_report)
         except Exception:
             pass
@@ -394,7 +395,8 @@ def get_asset_analytics(
 
         # Log recommendation into persistent History SQLite
         try:
-            history_db.log_trade_recommendation(upper_sym, optimal_execution_plan)
+            if optimal_execution_plan.get("stop_loss") is not None:
+                history_db.log_trade_recommendation(upper_sym, optimal_execution_plan)
         except Exception:
             pass
 
