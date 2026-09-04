@@ -626,7 +626,7 @@ export function generateFallbackAnalytics(
         high,
         low,
         close,
-        volume: Math.floor(25000000 + Math.random() * 15000000),
+        volume: 0,
       });
     }
   }
@@ -678,11 +678,8 @@ export function generateFallbackAnalytics(
         { date: "2026-09-15", event: "Q3 Product Line Readout", impact: "High" },
         { date: "2026-10-22", event: "FY26 Analyst Day Guidance", impact: "High" },
       ],
-      multi_year_forecast: [
-        { year: 2026, revenue_billions: 38.5, net_margin_pct: 28.4, projected_eps: 8.45, implied_target: basePrice * 1.15 },
-        { year: 2027, revenue_billions: 44.2, net_margin_pct: 30.1, projected_eps: 10.2, implied_target: basePrice * 1.35 },
-      ],
-      overallDirection: "Bullish Accumulation",
+      multi_year_forecast: [],
+      overallDirection: "Offline Fallback Feed",
     },
     optimalExecution: {
       current_price: basePrice,
@@ -794,7 +791,7 @@ export async function fetchDirectYahooFinanceChart(
             high: Number((h ?? Math.max(o, c)).toFixed(2)),
             low: Number((l ?? Math.min(o, c)).toFixed(2)),
             close: Number(c.toFixed(2)),
-            volume: v || 1000,
+            volume: v ?? 0,
           });
         }
       }
@@ -825,8 +822,9 @@ export async function fetchDirectYahooFinanceChart(
       let cumVP = 0;
       for (const c of candles) {
         const typical = (c.high + c.low + c.close) / 3;
-        cumVol += c.volume || 1000;
-        cumVP += typical * (c.volume || 1000);
+        const vol = c.volume ?? 0;
+        cumVol += vol;
+        cumVP += typical * vol;
       }
       const vwap = cumVol > 0 ? Number((cumVP / cumVol).toFixed(2)) : currentPrice;
 

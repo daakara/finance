@@ -131,6 +131,7 @@ export default function PositionSizerModal({
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
 
   const handleSaveToPortfolio = () => {
+    if (isSetupInvalid || shares <= 0 || safeEntry <= 0) return;
     try {
       const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");
       let currentPositions = raw ? JSON.parse(raw) : [];

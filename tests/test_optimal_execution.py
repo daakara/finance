@@ -8,10 +8,13 @@ def test_optimal_execution_engine_fallback():
     empty_df = pd.DataFrame()
     plan = OptimalExecutionEngine.calculate_trade_levels(empty_df, current_price=100.0, user_role="LONG_TERM")
     assert plan["current_price"] == 100.0
-    assert plan["stop_loss"] < 100.0
-    assert plan["take_profit_1"] > 100.0
-    assert plan["take_profit_2"] > plan["take_profit_1"]
-    assert plan["risk_reward_ratio"] >= 1.85
+    assert plan["execution_status"] == "INSUFFICIENT_HISTORY"
+    assert plan["stop_loss"] is None
+    assert plan["take_profit_1"] is None
+    assert plan["take_profit_2"] is None
+    assert plan["risk_reward_ratio"] is None
+    assert plan["optimal_entry_min"] is None
+    assert plan["optimal_entry_max"] is None
 
 
 def test_optimal_execution_engine_long_term():

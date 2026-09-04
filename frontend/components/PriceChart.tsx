@@ -227,7 +227,7 @@ export default function PriceChart({
             high: Number(c.high),
             low: Number(c.low),
             close: Number(c.close),
-            volume: Number(c.volume || 1000),
+            volume: Number(c.volume ?? 0),
           };
         })
         .filter((c) => !isNaN(c.open) && !isNaN(c.close) && c.open > 0 && c.close > 0 && c.time)

@@ -1554,7 +1554,43 @@ UNUSUAL_OPTIONS_FLOW: List[Dict[str, Any]] = [
 
 
 SEC_FORM_4_TRADES = [
-    # --- 7D HORIZON (Aug 22 - Aug 28, 2026) --- (2 trades)
+    # --- 7D HORIZON (Aug 22 - Aug 28, 2026) --- (4 trades)
+    {
+        'id': 'sec-anet-1',
+        'insider_name': 'Jayshree Ullal (President & CEO)',
+        'ticker': 'ANET',
+        'company_name': 'Arista Networks Inc.',
+        'role': 'President & Chief Executive Officer',
+        'transaction_type': 'Purchase (Direct Open Market)',
+        'shares_traded': 12000,
+        'price_per_share': 188.40,
+        'total_value': '$2,260,800',
+        'filing_date': '2026-08-28',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '3.4%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 C-Suite Open Market Buy ($2.3M)',
+        'conviction_score': 96,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
+    {
+        'id': 'sec-lnth-1',
+        'insider_name': 'Mary Anne Heino (Director & Ex-CEO)',
+        'ticker': 'LNTH',
+        'company_name': 'Lantheus Holdings Inc.',
+        'role': 'Director',
+        'transaction_type': 'Purchase (Direct Open Market)',
+        'shares_traded': 15000,
+        'price_per_share': 98.50,
+        'total_value': '$1,477,500',
+        'filing_date': '2026-08-26',
+        'form_type': 'SEC Form 4',
+        'direct_ownership_pct': '1.8%',
+        'sentiment': 'Strong Bullish',
+        'conviction_tier': '👑 Director Open Market Buy ($1.5M)',
+        'conviction_score': 95,
+        'sec_url': 'https://www.sec.gov/edgar/searchedgar/companysearch',
+    },
     {
         'id': 'sec-pltr-1',
         'insider_name': 'Alexander Karp (CEO)',

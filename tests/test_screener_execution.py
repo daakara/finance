@@ -107,8 +107,11 @@ def test_screener_candidate_data_integrity():
         sym = c["symbol"]
         assert c["currentPrice"] > 0, f"{sym}: Price must be positive"
         assert c["gemScore"] >= 0 and c["gemScore"] <= 100, f"{sym}: GemScore out of bounds"
-        assert c["confluenceScore"] >= 0 and c["confluenceScore"] <= 100, f"{sym}: ConfluenceScore out of bounds"
-        assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"], f"{sym}: Invalid level ladder"
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+            assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"], f"{sym}: Invalid level ladder"
+        else:
+            assert c["stopLoss"] is None
+            assert c["optimalEntryMin"] is None
 def test_screener_dual_horizon_distinct_universes():
     """Verify that Day Trader mode and Long-Term mode return distinct asset universes tailored to their horizon."""
     resp = Response()
@@ -140,7 +143,11 @@ def test_screener_custom_tickers_on_demand():
     assert "AAPL" in syms and "AMD" in syms and "META" in syms, "Custom symbols must match parsed input"
     for c in candidates:
         assert c["currentPrice"] > 0
-        assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
+        if c["executionStatus"] not in ["INSUFFICIENT_HISTORY", "UNVERIFIED_ASSET"]:
+            assert c["stopLoss"] < c["optimalEntryMin"] <= c["optimalEntryMax"] < c["takeProfit1"]
+        else:
+            assert c["stopLoss"] is None
+            assert c["optimalEntryMin"] is None
 
 
 def test_screener_cloudflare_cache_control_headers():

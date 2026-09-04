@@ -160,40 +160,8 @@ export function slicePersistedCandles(
 
   const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h";
   if (isIntraday) {
-    // Generate authentic micro-steps anchored strictly to basePrice
-    const count = interval === "1m" ? 45 : interval === "5m" ? 45 : interval === "15m" ? 48 : 40;
-    const stepSec = interval === "1m" ? 60 : interval === "5m" ? 300 : interval === "15m" ? 900 : 3600;
-    const nowSec = Math.floor(Date.now() / 1000);
-    const result: CandleData[] = [];
-    let p = basePrice * 0.995;
-
-    for (let i = count; i >= 0; i--) {
-      const t = nowSec - i * stepSec;
-      if (i === 0) {
-        result.push({
-          time: t,
-          open: Number(p.toFixed(2)),
-          high: Number((basePrice * 1.002).toFixed(2)),
-          low: Number((basePrice * 0.998).toFixed(2)),
-          close: Number(basePrice.toFixed(2)),
-          volume: Math.floor(150000 + Math.random() * 250000),
-        });
-      } else {
-        const drift = (Math.random() - 0.48) * (basePrice * 0.003);
-        p = Math.max(basePrice * 0.95, Math.min(basePrice * 1.05, p + drift));
-        const op = Number((p * 0.999).toFixed(2));
-        const cl = Number(p.toFixed(2));
-        result.push({
-          time: t,
-          open: op,
-          high: Number((Math.max(op, cl) + basePrice * 0.002).toFixed(2)),
-          low: Number((Math.min(op, cl) - basePrice * 0.002).toFixed(2)),
-          close: cl,
-          volume: Math.floor(120000 + Math.random() * 200000),
-        });
-      }
-    }
-    return result;
+    // Epistemic Invariant: Synthetic random-walk candles cannot be fabricated from daily historical stores
+    return [];
   }
 
   // Daily / Macro Horizon Slicing from real historical bars

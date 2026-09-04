@@ -16,11 +16,21 @@ logger = logging.getLogger(__name__)
 
 TRACKED_UNIVERSE = [
     # Mega-Cap & Growth Leaders
-    "AAPL", "NVDA", "NVO", "LLY", "MSFT", "GOOGL", "TSLA", "PLTR", "CIEN",
-    # Major ETFs & Benchmarks
-    "SPY", "QQQ", "SMH", "XLK", "IWM", "GLD", "TLT", "XLE",
-    # Authentic Discovery Gems
-    "CPRX", "ACLS", "TMDX", "LNTH", "POWI", "MEDP", "ELF", "DUOL", "VRT", "CRWD", "TSM", "AMD",
+    "AAPL", "NVDA", "NVO", "LLY", "MSFT", "GOOGL", "TSLA", "PLTR", "CIEN", "AMZN", "META", "AMD", "ARM", "SMCI",
+    # Cloud & Cyber
+    "CRWD", "PANW", "NET", "DDOG", "MDB", "ANET", "NOW", "SNPS", "CDNS",
+    # Crypto & FinTech Beta
+    "COIN", "MARA", "MSTR", "HOOD",
+    # Squeeze & Volatility Growth
+    "DUOL", "CELH", "IONQ", "RKLB", "APP",
+    # MedTech & Pharma
+    "LNTH", "CPRX", "MEDP", "TMDX", "ISRG", "VRTX", "DXCM", "PODD",
+    # Semis & Power
+    "ACLS", "POWI", "ON", "MPWR", "KLAC", "LRCX", "ASML", "AVGO", "VRT", "ETN", "PWR", "GEV", "FIX", "EME",
+    # Consumer & GARP
+    "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
+    # Benchmarks
+    "SPY", "QQQ", "IWM",
 ]
 
 def sync_universe():

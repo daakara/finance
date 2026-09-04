@@ -29,51 +29,38 @@ class OptimalExecutionEngine:
 
         is_day = (user_role == "DAY_TRADER")
 
-        # Fallback logic if price_df is not provided or empty: generate mathematical ATR-proportional levels
+        # Epistemic Invariant: Missing or empty price history strictly suppresses actionable trade levels
         if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty:
-            # Synthetic 2.5% ATR proxy
-            atr = max(min_tick * 2, current_price * (0.015 if is_day else 0.025))
-            if is_day:
-                stop = round(current_price - (1.2 * atr), dec)
-                min_stop_floor = round(current_price * 0.985, dec)
-            else:
-                stop = round(current_price - (2.2 * atr), dec)
-                min_stop_floor = round(current_price * 0.93, dec)
-            stop = max(min_stop_floor, stop)
-            if stop >= current_price:
-                stop = round(current_price * 0.95, dec)
-            risk = max(min_tick, current_price - stop)
-            min_tp1_rr = current_price + (1.85 * risk)
-            tp1_raw = current_price + (2.8 * atr)
-            tp1 = round(max(tp1_raw, min_tp1_rr), dec)
-            while round((tp1 - current_price) / risk, 4) < 1.85 or tp1 <= current_price:
-                tp1 = round(tp1 + min_tick, dec)
-            tp2 = round(max(current_price + (4.8 * atr), tp1 + max(min_tick, 0.5 * atr)), dec)
-            while tp2 <= tp1:
-                tp2 = round(tp2 + min_tick, dec)
-            rr = round((tp1 - current_price) / risk, 2)
-            raw_fallback = {
-                "current_price": current_price,
-                "optimal_entry_min": round(current_price * (0.988 if is_day else 0.975), dec),
-                "optimal_entry_max": round(current_price * (1.008 if is_day else 1.018), dec),
-                "stop_loss": stop,
-                "stop_loss_pct": round(((stop - current_price) / current_price) * 100, 2),
-                "take_profit_1": tp1,
-                "take_profit_1_pct": round(((tp1 - current_price) / current_price) * 100, 2),
-                "take_profit_2": tp2,
-                "take_profit_2_pct": round(((tp2 - current_price) / current_price) * 100, 2),
-                "risk_reward_ratio": max(1.85, rr),
-                "execution_status": "WAITING_PULLBACK",
-                "setup_pattern": "Raschke 20 EMA Pullback" if is_day else "Minervini Volatility Contraction Pattern (VCP)",
-                "entry_thesis": "Intraday trend continuation above VWAP" if is_day else "Stage 2 base accumulation with declining volume on pullbacks.",
-                "invalidation_condition": "Break of 1.25x 5m ATR below low of day." if is_day else "Daily close below 50-day moving average or -7.5% stop constraint.",
-                "stage_phase": "Intraday Momentum Trend Expansion" if is_day else "Stage 2 Advancing Growth Phase",
-                "vcp_contraction_status": "Tightening 5m Compression" if is_day else "VCP 3-Stage Compression Confirmed",
-                "breakout_pivot": None,
-                "atr_14": round(atr, dec),
-                "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, current_price),
+            liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price) if (price_df is not None and isinstance(price_df, pd.DataFrame)) else {
+                "execution_hazard": True,
+                "spread_pct": 0.0,
+                "pro_summary": "No market data or exchange orderbook available.",
+                "suppress_buy_zone": True,
+                "liquidity_grade": "F (Zero Data)",
             }
-            return OptimalExecutionEngine._enforce_execution_invariants(raw_fallback, user_role)
+            return {
+                "current_price": current_price,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "INSUFFICIENT_HISTORY",
+                "setup_pattern": "Trend Evidence Incomplete (0 Sessions)",
+                "entry_thesis": "Trade setup suppressed: Execution analysis requires authentic price history to establish baseline trend.",
+                "invalidation_condition": "Awaiting historical price discovery.",
+                "stage_phase": "Awaiting Historical Base (0 Sessions)",
+                "vcp_contraction_status": "Consolidation Unverified",
+                "breakout_pivot": None,
+                "atr_14": None,
+                "liquidity_defense": liquidity_report,
+                "execution_hazard": True,
+                "liquidity_warning": "No historical price series provided.",
+            }
 
         close = price_df["Close"]
         high = price_df["High"]
@@ -177,23 +164,23 @@ class OptimalExecutionEngine:
             vcp = "Tightening 5m Compression"
         else:
             # Swing / Long-term accumulation zone: structural support floor and breakout resistance corridor
-            base_pivot = 0.5 * ema_20 + 0.5 * current_price
-            pullback_support = max(current_price * 0.95, min(sma_50, base_pivot - (0.75 * atr_14))) if sma_50 is not None else max(current_price * 0.95, base_pivot - (0.75 * atr_14))
-            breakout_ceiling = max(current_price * 1.015, base_pivot + (0.5 * atr_14))
+            base_pivot = float(ema_20)
+            pullback_support = min(sma_50, base_pivot - (0.5 * atr_14)) if sma_50 is not None else (base_pivot - (0.5 * atr_14))
+            breakout_ceiling = base_pivot + (0.5 * atr_14)
             
-            entry_min = round(min(pullback_support, current_price * 0.975), dec)
-            entry_max = round(min(breakout_ceiling, current_price + (1.0 * atr_14)), dec)
+            entry_min = round(min(pullback_support, base_pivot - 0.25 * atr_14), dec)
+            entry_max = round(max(breakout_ceiling, base_pivot + 0.25 * atr_14), dec)
             if entry_min > entry_max:
                 entry_min, entry_max = entry_max, entry_min
             raw_stop = entry_min - (1.5 * atr_14)
             # Strictly cap Swing risk while guaranteeing stop_loss < entry_min
-            stop_loss = round(min(entry_min - min_tick, max(current_price * 0.930, min(current_price * 0.965, raw_stop))), dec)
+            stop_loss = round(min(entry_min - min_tick, max(entry_min * 0.930, min(entry_min * 0.965, raw_stop))), dec)
             if stop_loss >= entry_min:
                 stop_loss = round(entry_min - max(min_tick, 0.75 * atr_14), dec)
-            take_profit_1 = round(min(current_price * 1.095, max(current_price * 1.048, current_price + (2.5 * atr_14))), dec)
+            take_profit_1 = round(max(entry_max + (1.5 * atr_14), current_price * 1.048), dec)
             if take_profit_1 <= entry_max:
-                take_profit_1 = round(max(entry_max + min_tick, current_price * 1.048), dec)
-            take_profit_2 = round(max(take_profit_1 + min_tick, min(current_price * 1.175, max(current_price * 1.090, current_price + (4.5 * atr_14)))), dec)
+                take_profit_1 = round(entry_max + max(min_tick, 1.5 * atr_14), dec)
+            take_profit_2 = round(max(take_profit_1 + min_tick, take_profit_1 + (2.0 * atr_14)), dec)
 
             if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"

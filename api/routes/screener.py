@@ -7,12 +7,14 @@ import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 
 router = APIRouter()
 screener = HiddenGemsScreener()
 optimal_engine = OptimalExecutionEngine()
 confluence_engine = ConfluenceEngine()
+smart_money_engine = SmartMoneyEngine()
 market_db = MarketDatabaseEngine()
 
 # Authentic Multi-Sector Dual-Horizon Universes (60 Total Quality Assets)
@@ -192,11 +194,11 @@ def run_screener_get(
             execution_status = "STOPPED_OUT"
             status_label = "🛑 Below Stop Loss"
             status_color = "rose"
-        elif tp1 is not None and ((abs(hash(sym)) % 4 == 0) or (current_price >= tp1 * 0.96)):
+        elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price >= tp1 * 0.96):
             execution_status = "APPROACHING_TARGET"
             status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
             status_color = "amber"
-        elif entry_min is not None and entry_max is not None and (abs(current_price - entry_max) / max(0.01, current_price) <= 0.015 or (entry_min <= current_price <= entry_max * 1.008) or (abs(hash(sym)) % 3 == 0)):
+        elif entry_min is not None and entry_max is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
             execution_status = "IN_BUY_ZONE"
             status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Active Buy Zone"
             status_color = "emerald"
@@ -234,9 +236,27 @@ def run_screener_get(
             rvol_val = "N/A"
             short_float_val = "N/A"
         else:
-            has_insider = (abs(hash(sym)) % 3 == 0) or sym in ["LNTH", "CPRX", "ELF", "ACLS", "NVDA", "PLTR", "AAPL", "MSFT", "ISRG", "VRT"]
-            has_congress = (abs(hash(sym)) % 4 == 0) or sym in ["LNTH", "POWI", "DUOL", "NVDA", "TSLA", "AMD", "LLY", "UNH", "PANW"]
-            days_to_earn = 1 if sym in ["DUOL", "SMCI", "CELH"] else (35 if (abs(hash(sym)) % 2 == 0) else 18)
+            sec_trades = smart_money_engine.get_sec_insider_trades(sym)
+            cong_trades = smart_money_engine.get_congressional_trades(sym)
+            has_insider = len(sec_trades) > 0
+            has_congress = len(cong_trades) > 0
+            insider_val = 0.0
+            if has_insider:
+                for t in sec_trades:
+                    val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
+                    if isinstance(val_raw, str):
+                        cleaned = val_raw.replace("$", "").replace(",", "").strip()
+                        try:
+                            insider_val += float(cleaned)
+                        except ValueError:
+                            insider_val += 1500000.0
+                    elif isinstance(val_raw, (int, float)):
+                        insider_val += float(val_raw)
+                if insider_val <= 0.0:
+                    insider_val = 1500000.0
+            days_to_earn = r.get("days_to_earnings")
+            if days_to_earn is None:
+                days_to_earn = 1 if sym in ["DUOL", "SMCI", "CELH"] else 30
 
             # Compute multi-factor confluence conviction score
             confluence_res = confluence_engine.calculate_confluence(
@@ -252,7 +272,7 @@ def run_screener_get(
                 },
                 smart_money_data={
                     "has_insider_buy": has_insider,
-                    "insider_value_usd": 1500000.0 if has_insider else 0.0,
+                    "insider_value_usd": insider_val,
                     "has_congress_buy": has_congress,
                     "has_options_flow": is_day_trader,
                 },
@@ -273,8 +293,21 @@ def run_screener_get(
                 },
             )
 
-            rvol_val = f"{2.2 + (abs(hash(sym)) % 20) / 10.0:.1f}x"
-            short_float_val = f"{4.8 + (abs(hash(sym)) % 65) / 10.0:.1f}%"
+            if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
+                recent_vol = float(hist_df["Volume"].iloc[-1])
+                avg_vol = float(hist_df["Volume"].tail(20).mean())
+                if avg_vol > 0:
+                    rvol_val = f"{round(recent_vol / avg_vol, 1)}x"
+                else:
+                    rvol_val = "1.0x"
+            else:
+                rvol_val = "1.0x"
+
+            short_float_num = r.get("short_float_pct")
+            if short_float_num is not None:
+                short_float_val = f"{short_float_num}%"
+            else:
+                short_float_val = "N/A"
 
         mapped_candidates.append({
             "symbol": sym,

@@ -51,15 +51,37 @@ class TestFinancialDomainInvariants(unittest.TestCase):
     def test_optimal_execution_ladder_mathematical_bounds(self):
         """Financial Domain Invariant: Optimal entry/exit ladders must strictly enforce
         Stop Loss < Entry Min <= Entry Max < Target 1 < Target 2 and Reward:Risk >= 1.85.
+        When price history is absent, actionable trade levels must fail-closed (None).
         """
+        # Invariant 1: Suppress actionable levels when price history is absent
+        suppressed_plan = self.execution_engine.calculate_trade_levels(
+            price_df=None,
+            current_price=100.0,
+            user_role="LONG_TERM",
+        )
+        self.assertEqual(suppressed_plan["execution_status"], "INSUFFICIENT_HISTORY")
+        self.assertIsNone(suppressed_plan["stop_loss"])
+        self.assertIsNone(suppressed_plan["optimal_entry_min"])
+        self.assertIsNone(suppressed_plan["optimal_entry_max"])
+        self.assertIsNone(suppressed_plan["take_profit_1"])
+
+        # Invariant 2: When authentic price history is present, enforce mathematical ladder bounds
         test_prices = [25.0, 100.0, 319.64, 924.50]
         for price in test_prices:
+            prices = [price * (0.95 + 0.05 * i / 60) for i in range(60)]
+            df = pd.DataFrame({
+                "Open": prices,
+                "High": [p * 1.01 for p in prices],
+                "Low": [p * 0.99 for p in prices],
+                "Close": prices,
+                "Volume": [1000000] * 60,
+            })
             plan = self.execution_engine.calculate_trade_levels(
-                price_df=None,
+                price_df=df,
                 current_price=price,
                 user_role="LONG_TERM",
             )
-            # 1. Strict Monotonic Price Sequence
+            # Strict Monotonic Price Sequence
             self.assertLess(plan["stop_loss"], plan["optimal_entry_min"], "Stop Loss must be strictly below entry min")
             self.assertLessEqual(plan["optimal_entry_min"], plan["optimal_entry_max"], "Entry min must be <= entry max")
             self.assertLess(plan["optimal_entry_max"], plan["take_profit_1"], "Target 1 must be strictly above entry max")
@@ -67,7 +89,7 @@ class TestFinancialDomainInvariants(unittest.TestCase):
             self.assertLess(plan["stop_loss"], plan["current_price"], "Stop Loss must be strictly below current price")
             self.assertLess(plan["current_price"], plan["take_profit_1"], "Target 1 must be strictly above current price")
 
-            # 2. Minimum Reward:Risk Ratio Enforced (>= 1.85:1)
+            # Minimum Reward:Risk Ratio Enforced (>= 1.85:1)
             risk = plan["current_price"] - plan["stop_loss"]
             reward = plan["take_profit_1"] - plan["current_price"]
             rr_ratio = reward / risk
