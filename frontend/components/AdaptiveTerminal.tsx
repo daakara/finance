@@ -13,6 +13,7 @@ import WhyInspectModal from "./WhyInspectModal";
 import PositionSizerModal from "./PositionSizerModal";
 
 import { CandleData, ConfluenceData } from "../lib/api";
+import { resolveOverallEvidenceBadge } from "../lib/dataProvenance";
 
 interface AdaptiveTerminalProps {
   symbol: string;
@@ -89,6 +90,14 @@ export default function AdaptiveTerminal({
     confluence
   );
 
+  const evidenceBadge = resolveOverallEvidenceBadge({
+    hasLiveFeed: dataSource === "live",
+    candleCount: candles?.length || 0,
+    hasSecFilings: Boolean(confluence?.pillars?.some((p) => p.pillar === "FUNDAMENTAL_SOLVENCY" && p.status === "positive")),
+    isCataloged: Boolean(confluence),
+    price: currentPrice,
+  });
+
   return (
     <div className="w-full space-y-3 font-sans">
       {/* 🧭 Dead-End Recovery Breadcrumb (if navigated from Screener) */}
@@ -134,23 +143,34 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* ⏱️ First-Class Time Horizon Selector */}
-      <div className="flex items-center justify-between bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
-        <span className="text-slate-400 text-[11px] font-bold">Horizon Evaluation:</span>
-        <div className="flex items-center gap-1">
-          {(["INTRADAY", "SWING", "POSITION", "LONG_TERM"] as TimeHorizon[]).map((hz) => (
-            <button
-              key={hz}
-              onClick={() => setTimeHorizon(hz)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                timeHorizon === hz
-                  ? "bg-cyan-600 text-slate-950 font-black"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#131d2c]"
-              }`}
-            >
-              {hz}
-            </button>
-          ))}
+      {/* ⏱️ First-Class Time Horizon Selector & Evidence State Pill */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-[11px] font-bold">Horizon Evaluation:</span>
+          <div className="flex items-center gap-1">
+            {(["INTRADAY", "SWING", "POSITION", "LONG_TERM"] as TimeHorizon[]).map((hz) => (
+              <button
+                key={hz}
+                onClick={() => setTimeHorizon(hz)}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                  timeHorizon === hz
+                    ? "bg-cyan-600 text-slate-950 font-black"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#131d2c]"
+                }`}
+              >
+                {hz}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 🛡️ Evidence State Provenance Badge */}
+        <div
+          title={evidenceBadge.tooltip}
+          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[10px] font-mono font-semibold cursor-help transition-colors ${evidenceBadge.badgeClass}`}
+        >
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current" />
+          <span>{evidenceBadge.label}</span>
         </div>
       </div>
 

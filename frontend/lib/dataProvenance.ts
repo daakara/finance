@@ -175,3 +175,57 @@ export function resolveDataProvenance(
       };
   }
 }
+
+export interface OverallEvidenceBadge {
+  status: "VERIFIED_LIVE" | "VERIFIED_HISTORICAL" | "PARTIAL_EVIDENCE" | "INSUFFICIENT_HISTORY" | "UNVERIFIED";
+  label: string;
+  badgeClass: string;
+  tooltip: string;
+}
+
+export function resolveOverallEvidenceBadge(context: ProvenanceContext): OverallEvidenceBadge {
+  const { hasLiveFeed, candleCount = 0, hasSecFilings, isCataloged, price = 0 } = context;
+
+  if (hasLiveFeed && candleCount >= 50 && hasSecFilings) {
+    return {
+      status: "VERIFIED_LIVE",
+      label: "Verified Live Market Tape",
+      badgeClass: "bg-emerald-950/80 text-emerald-300 border-emerald-700/60",
+      tooltip: "Streaming exchange quotes + audited SEC EDGAR financial filings.",
+    };
+  }
+
+  if (candleCount >= 50 && hasSecFilings) {
+    return {
+      status: "VERIFIED_HISTORICAL",
+      label: "Verified Historical EOD",
+      badgeClass: "bg-cyan-950/80 text-cyan-300 border-cyan-700/60",
+      tooltip: "Authentic historical exchange tape + audited SEC EDGAR disclosures.",
+    };
+  }
+
+  if (candleCount >= 50) {
+    return {
+      status: "PARTIAL_EVIDENCE",
+      label: "Partial: Price Tape Only",
+      badgeClass: "bg-amber-950/80 text-amber-300 border-amber-700/60",
+      tooltip: "50+ verified trading sessions; financial statement filings uncataloged.",
+    };
+  }
+
+  if (candleCount > 0) {
+    return {
+      status: "INSUFFICIENT_HISTORY",
+      label: `Insufficient History (${candleCount}/50 Sessions)`,
+      badgeClass: "bg-amber-950/90 text-amber-200 border-amber-600/70",
+      tooltip: `Asset has only ${candleCount} trading sessions. Requires 50+ sessions before trade setups or risk levels can be generated.`,
+    };
+  }
+
+  return {
+    status: "UNVERIFIED",
+    label: "Awaiting Verified Disclosures",
+    badgeClass: "bg-slate-900 text-slate-400 border-slate-700",
+    tooltip: "Unseasoned or uncataloged asset without verified exchange data.",
+  };
+}

@@ -207,6 +207,43 @@ class MarketDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
+    def get_candles_with_freshness(self, symbol: str, limit: int = 252) -> Dict[str, Any]:
+        """Retrieve stored daily candles along with calculated freshness metadata."""
+        candles = self.get_daily_candles(symbol, limit=limit)
+        if not candles:
+            return {
+                "candles": [],
+                "freshness_status": "UNAVAILABLE",
+                "last_trade_date": None,
+                "staleness_days": None,
+                "candle_count": 0,
+            }
+        last_date_str = str(candles[-1]["time"])[:10]
+        staleness_days = 0
+        try:
+            last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+            today = datetime.utcnow().date()
+            staleness_days = max(0, (today - last_date).days)
+        except Exception:
+            staleness_days = 0
+
+        # Account for weekend gap (up to 4 calendar days is still considered recent)
+        if staleness_days <= 1:
+            freshness = "LIVE"
+        elif staleness_days <= 4:
+            freshness = "RECENT"
+        else:
+            freshness = "STALE_HISTORICAL"
+
+        return {
+            "candles": candles,
+            "freshness_status": freshness,
+            "last_trade_date": last_date_str,
+            "staleness_days": staleness_days,
+            "candle_count": len(candles),
+        }
+
+    @retry_sqlite()
     def get_latest_price(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Get the latest stored close price and 24h change for an asset."""
         upper = symbol.upper().strip()
@@ -226,11 +263,25 @@ class MarketDatabaseEngine:
             current = float(rows[0]["close"])
             prev = float(rows[1]["close"]) if len(rows) > 1 else current
             change_pct = round(((current - prev) / prev) * 100, 2)
+
+            last_date_str = str(rows[0]["trade_date"])[:10]
+            staleness_days = 0
+            try:
+                last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+                today = datetime.utcnow().date()
+                staleness_days = max(0, (today - last_date).days)
+            except Exception:
+                staleness_days = 0
+
+            freshness = "LIVE" if staleness_days <= 1 else ("RECENT" if staleness_days <= 4 else "STALE_HISTORICAL")
+
             return {
                 "symbol": upper,
                 "date": rows[0]["trade_date"],
                 "currentPrice": current,
                 "priceChangePct24h": change_pct,
+                "freshnessStatus": freshness,
+                "stalenessDays": staleness_days,
             }
         except Exception as e:
             logger.error(f"Error retrieving latest price for {symbol}: {e}")

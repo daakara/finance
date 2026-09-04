@@ -196,6 +196,7 @@ def get_asset_analytics(
         elif clean_interval in ["1h"]:
             clean_period = "1mo" if clean_period not in ["1d", "5d", "1mo"] else clean_period
 
+        provider_source = "yfinance"
         ticker_obj = yf.Ticker(fetch_sym)
         hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
@@ -211,14 +212,17 @@ def get_asset_analytics(
             crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
             if is_valid_ohlcv(crypto_hist):
                 hist = crypto_hist
+                provider_source = "yfinance_crypto"
 
         if not is_valid_ohlcv(hist):
             eodhd_df = eodhd_fetcher.fetch_historical_candles(upper_sym)
             if eodhd_df is not None and is_valid_ohlcv(eodhd_df):
                 hist = eodhd_df
+                provider_source = "eodhd"
             else:
                 # Check persistent database for historical daily candles
-                db_candles = market_db.get_daily_candles(upper_sym, limit=252)
+                fresh_candles = market_db.get_candles_with_freshness(upper_sym, limit=252)
+                db_candles = fresh_candles.get("candles", [])
                 if db_candles and len(db_candles) >= 15:
                     hist_data = []
                     for c in db_candles:
@@ -230,6 +234,7 @@ def get_asset_analytics(
                             "Volume": c["volume"],
                         })
                     hist = pd.DataFrame(hist_data, index=pd.to_datetime([c["time"] for c in db_candles]))
+                    provider_source = "sqlite_cache"
                 else:
                     raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
 
@@ -260,6 +265,20 @@ def get_asset_analytics(
         current_price = round(float(hist["Close"].iloc[-1]), 2)
         prev_price = float(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
         price_change_pct = round(((current_price - prev_price) / prev_price) * 100, 2)
+
+        # Freshness calculation
+        last_trade_date_str = str(candles[-1]["time"])[:10] if candles else ""
+        staleness_days = 0
+        try:
+            last_date = datetime.strptime(last_trade_date_str, "%Y-%m-%d").date()
+            staleness_days = max(0, (datetime.utcnow().date() - last_date).days)
+        except Exception:
+            staleness_days = 0
+
+        if provider_source == "sqlite_cache":
+            freshness_status = "STALE_HISTORICAL" if staleness_days > 4 else "RECENT"
+        else:
+            freshness_status = "LIVE" if staleness_days <= 1 else ("RECENT" if staleness_days <= 4 else "STALE_HISTORICAL")
 
         # Intraday Technicals
         technicals = compute_intraday_technicals(hist)
@@ -466,6 +485,13 @@ def get_asset_analytics(
             },
             "confluence": confluence_output,
             "analytics": risk_output,
+            "freshness": {
+                "status": freshness_status,
+                "providerSource": provider_source,
+                "lastTradeDate": last_trade_date_str,
+                "stalenessDays": staleness_days,
+                "candleCount": len(candles),
+            },
         }
 
     except HTTPException:
