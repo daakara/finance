@@ -211,7 +211,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/smart-money"
                 aria-current={pathname === "/smart-money" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`hidden xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -229,7 +229,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               <Link
                 href="/guide"
                 aria-current={pathname === "/guide" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                className={`hidden xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -256,7 +256,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
           </div>
 
           {/* Center: Global Omni-Search Bar */}
-          <div className="flex-1 min-w-[130px] max-w-[220px] md:max-w-xs xl:max-w-sm 2xl:max-w-md mx-1.5 sm:mx-2 flex items-center justify-center shrink-0">
+          <div className="flex-1 min-w-0 md:min-w-[140px] max-w-xs xl:max-w-sm 2xl:max-w-md mx-1.5 sm:mx-2 flex items-center justify-center">
             <UniversalOmniSearch />
           </div>
 

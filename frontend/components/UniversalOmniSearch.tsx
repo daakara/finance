@@ -109,7 +109,7 @@ export default function UniversalOmniSearch() {
         onClick={() => setIsOpen(true)}
         type="button"
         aria-label="Search any asset or ticker"
-        className="md:hidden flex items-center justify-center min-w-[36px] min-h-[36px] p-2 rounded-lg bg-[#111722] hover:bg-[#1b2537] border border-cyan-400/70 text-cyan-300 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+        className="md:hidden flex items-center justify-center min-w-[40px] min-h-[40px] p-2 rounded-lg bg-[#111722] hover:bg-[#1b2537] border border-cyan-400/70 text-cyan-300 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
       >
         <svg aria-hidden="true" className="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <circle cx="11" cy="11" r="8" />

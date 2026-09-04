@@ -12,7 +12,7 @@ import AdvancedTerminalView from "./terminal/AdvancedTerminalView";
 import WhyInspectModal from "./WhyInspectModal";
 import PositionSizerModal from "./PositionSizerModal";
 
-import { CandleData } from "../lib/api";
+import { CandleData, ConfluenceData } from "../lib/api";
 
 interface AdaptiveTerminalProps {
   symbol: string;
@@ -20,6 +20,7 @@ interface AdaptiveTerminalProps {
   currentPrice: number;
   changePct: number;
   setupScore?: number;
+  confluence?: ConfluenceData;
   isStage4?: boolean;
   candles?: CandleData[];
   dataSource?: "live" | "fallback" | "unavailable";
@@ -30,7 +31,8 @@ export default function AdaptiveTerminal({
   companyName = "Asset Intelligence",
   currentPrice,
   changePct,
-  setupScore = 60,
+  setupScore,
+  confluence,
   isStage4,
   candles,
   dataSource,
@@ -83,7 +85,8 @@ export default function AdaptiveTerminal({
     ownership,
     "USER_DECLARED",
     candles,
-    dataSource
+    dataSource,
+    confluence
   );
 
   return (

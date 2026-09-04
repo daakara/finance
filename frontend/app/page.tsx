@@ -281,7 +281,8 @@ function TerminalContent() {
               companyName={aliasRecommendation?.companyName || selectedSymbol}
               currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}
               changePct={data?.priceChangePct24h || 0}
-              setupScore={60}
+              setupScore={data?.confluence?.confluenceScore !== undefined ? Math.round(data.confluence.confluenceScore) : undefined}
+              confluence={data?.confluence}
               candles={data?.candles}
               dataSource={data?._dataSource}
             />

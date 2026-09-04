@@ -195,8 +195,8 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
         ? "Intraday momentum trend-following above 5m VWAP anchor with defined ATR risk."
         : (isStage4Candidate ? "Stage 4 consolidation — awaiting base formation and comp stabilization." : "Stage 2 accumulation breakout above 50-day pivot."),
       thesis: canonicalMoat || (cat ? `${companyName} demonstrates ${roic}% ROIC with ${margin}% gross margins.` : `${companyName} uncataloged market asset.`),
-      catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || "Upcoming product cycle expansion and institutional accumulation.",
-      riskLevel: (sym === "ULTA" || sym === "LULU") ? "High Turnaround Risk" : (isDayTrader ? "High Volatility (Intraday)" : "Low-to-Medium Risk"),
+      catalyst: canonicalCatalyst?.trial || canonicalCatalyst?.thesis || (cat ? "Product cycle expansion and margin gains." : "Awaiting verified disclosures."),
+      riskLevel: (sym === "ULTA" || sym === "LULU") ? "High Turnaround Risk" : (isDayTrader ? "High Volatility (Intraday)" : (cat ? "Low-to-Medium Risk" : "Unverified Risk Profile")),
       executionStatus,
       statusLabel,
       statusColor,
@@ -209,12 +209,12 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       takeProfit2,
       takeProfit2Pct,
       riskRewardRatio,
-      setupPattern: isStage4Candidate ? "Stage 4 Mean-Reversion Base" : "Minervini Volatility Contraction Pattern (VCP 3-Stage)",
-      entryThesis: isStage4Candidate ? "Awaiting Stage 1 base completion before new entry." : "Stage 2 accumulation breakout above 50-day pivot.",
+      setupPattern: !cat ? "Awaiting Historical Base (< 50 Sessions)" : (isStage4Candidate ? "Stage 4 Mean-Reversion Base" : "Minervini Volatility Contraction Pattern (VCP 3-Stage)"),
+      entryThesis: !cat ? "Trade levels suppressed: requires authentic historical trading sessions." : (isStage4Candidate ? "Awaiting Stage 1 base completion before new entry." : "Stage 2 accumulation breakout above 50-day pivot."),
       confluenceScore,
       confluenceRating,
       confluenceBadgeColor,
-      confluenceReasons: isStage4Candidate ? ["Compressed valuation multiple", "High historical ROIC"] : ["Above 20 EMA / 50 SMA support", "Institutional accumulation surge"],
+      confluenceReasons: !cat ? ["Asset has unverified regulatory filings or insufficient history."] : (isStage4Candidate ? ["Compressed valuation multiple", "High historical ROIC"] : ["Above 20 EMA / 50 SMA support", "Institutional accumulation surge"]),
       confluenceWarnings,
     };
   });
@@ -306,41 +306,42 @@ export default function ScreenerPage() {
 
             const candPrice = c.currentPrice || CATALOG_BASELINE_PRICES[c.symbol] || SpotPriceRegistry.get(c.symbol)?.price || 0;
             const candHasFundamentals = masterMeta !== undefined;
+            const isUnverifiedOrInsufficient = c.executionStatus === "UNVERIFIED_ASSET" || c.executionStatus === "INSUFFICIENT_HISTORY" || !candHasFundamentals;
 
             return {
               symbol: c.symbol,
               companyName: c.companyName || masterMeta?.name || c.symbol,
               currentPrice: candPrice,
-              gemScore: c.gemScore || (candHasFundamentals ? 88 : 50),
-              expertArchetype: archetype || (candHasFundamentals ? "Quality Compounder" : "Unclassified Asset"),
+              gemScore: c.gemScore ?? (candHasFundamentals ? 88 : 40),
+              expertArchetype: archetype || (candHasFundamentals ? "Quality Compounder" : "Unverified Asset"),
               roic: c.roic || (candHasFundamentals ? `${masterMeta.roic}%` : "N/A"),
               pegRatio: c.pegRatio || (candHasFundamentals ? `${masterMeta.peg}` : "N/A"),
               grossMargin: c.grossMargin || (candHasFundamentals ? `${masterMeta.grossMargin}%` : "N/A"),
               thesis: c.thesis || masterMeta?.thesis || "Uncataloged asset — preliminary quantitative profile.",
-              atr14: c.atr14 || (masterMeta?.atr14 ? `$${masterMeta.atr14.toFixed(2)}` : (candPrice > 0 ? `$${(candPrice * 0.025).toFixed(2)}` : "N/A")),
+              atr14: c.atr14 || (masterMeta?.atr14 ? `$${masterMeta.atr14.toFixed(2)}` : "N/A"),
               rvol: c.rvol || (masterMeta?.rvol ? `${masterMeta.rvol}x` : "N/A"),
               shortFloat: c.shortFloat || (masterMeta?.shortFloat ? `${masterMeta.shortFloat}%` : "N/A"),
-              dayTraderSetup: c.dayTraderSetup || "Intraday momentum trend tracking with clear risk-defined support.",
+              dayTraderSetup: c.dayTraderSetup || (isUnverifiedOrInsufficient ? "Pricing and intraday VWAP tape unavailable." : "Intraday momentum trend tracking with clear risk-defined support."),
               catalyst: c.catalyst || masterMeta?.upcomingCatalyst || "Pending SEC filing disclosure verification.",
               riskLevel: role === "DAY_TRADER" ? "High Volatility (Intraday)" : (c.riskLevel || (candHasFundamentals ? "Low-to-Medium Risk" : "Unverified Risk Profile")),
-              executionStatus: c.executionStatus || (candHasFundamentals ? "IN_BUY_ZONE" : "RESEARCH"),
-              statusLabel: c.statusLabel || (candHasFundamentals ? "🎯 Active Buy Zone" : "📋 Research Required"),
-              statusColor: c.statusColor || (candHasFundamentals ? "emerald" : "slate"),
-              optimalEntryMin: c.optimalEntryMin || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.975).toFixed(2)) : 0),
-              optimalEntryMax: c.optimalEntryMax || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.995).toFixed(2)) : 0),
-              stopLoss: c.stopLoss || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 0.93).toFixed(2)) : 0),
-              stopLossPct: c.stopLossPct || (candHasFundamentals ? -7.0 : 0),
-              takeProfit1: c.takeProfit1 || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 1.15).toFixed(2)) : undefined),
-              takeProfit1Pct: c.takeProfit1Pct || (candHasFundamentals ? 15.0 : undefined),
-              takeProfit2: c.takeProfit2 || (candHasFundamentals && candPrice > 0 ? Number((candPrice * 1.25).toFixed(2)) : undefined),
-              takeProfit2Pct: c.takeProfit2Pct || (candHasFundamentals ? 25.0 : undefined),
-              riskRewardRatio: c.riskRewardRatio || (candHasFundamentals ? 2.14 : undefined),
-              setupPattern: c.setupPattern || (candHasFundamentals ? "Minervini Volatility Contraction Pattern (VCP 3-Stage)" : "Base Formation Tracking"),
-              entryThesis: c.entryThesis || (candHasFundamentals ? "Stage 2 accumulation breakout above 50-day pivot." : "Awaiting validated technical confirmation."),
-              confluenceScore: c.confluenceScore || (candHasFundamentals ? 85 : 50),
-              confluenceRating: c.confluenceRating || (candHasFundamentals ? "⭐ HIGH CONFLUENCE" : "⚠️ UNVERIFIED PROFILE"),
-              confluenceBadgeColor: c.confluenceBadgeColor || (candHasFundamentals ? "emerald" : "slate"),
-              confluenceReasons: c.confluenceReasons || [],
+              executionStatus: c.executionStatus || (candHasFundamentals ? "WAITING_PULLBACK" : "UNVERIFIED_ASSET"),
+              statusLabel: c.statusLabel || (candHasFundamentals ? "⏳ Pullback Pending" : "⏳ Unverified Asset"),
+              statusColor: c.statusColor || (candHasFundamentals ? "cyan" : "slate"),
+              optimalEntryMin: isUnverifiedOrInsufficient ? 0 : (c.optimalEntryMin ?? 0),
+              optimalEntryMax: isUnverifiedOrInsufficient ? 0 : (c.optimalEntryMax ?? 0),
+              stopLoss: isUnverifiedOrInsufficient ? 0 : (c.stopLoss ?? 0),
+              stopLossPct: isUnverifiedOrInsufficient ? 0 : (c.stopLossPct ?? 0),
+              takeProfit1: isUnverifiedOrInsufficient ? undefined : (c.takeProfit1 ?? undefined),
+              takeProfit1Pct: isUnverifiedOrInsufficient ? undefined : (c.takeProfit1Pct ?? undefined),
+              takeProfit2: isUnverifiedOrInsufficient ? undefined : (c.takeProfit2 ?? undefined),
+              takeProfit2Pct: isUnverifiedOrInsufficient ? undefined : (c.takeProfit2Pct ?? undefined),
+              riskRewardRatio: isUnverifiedOrInsufficient ? undefined : (c.riskRewardRatio ?? undefined),
+              setupPattern: c.setupPattern || (isUnverifiedOrInsufficient ? "Trend Evidence Incomplete (< 50 Sessions)" : "Minervini Volatility Contraction Pattern (VCP 3-Stage)"),
+              entryThesis: c.entryThesis || (isUnverifiedOrInsufficient ? "Trade setup suppressed: requires authentic historical trading sessions." : "Stage 2 accumulation breakout above 50-day pivot."),
+              confluenceScore: c.confluenceScore !== undefined ? c.confluenceScore : (candHasFundamentals ? 70 : 40),
+              confluenceRating: c.confluenceRating || (candHasFundamentals ? "MODERATE CONFLUENCE" : "⚠️ UNVERIFIED PROFILE"),
+              confluenceBadgeColor: c.confluenceBadgeColor || (candHasFundamentals ? "cyan" : "slate"),
+              confluenceReasons: c.confluenceReasons || (isUnverifiedOrInsufficient ? ["Awaiting exchange trading history and SEC filings."] : []),
               confluenceWarnings: c.confluenceWarnings || [],
             };
           });
@@ -591,7 +592,8 @@ export default function ScreenerPage() {
     if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
     if (filterId === "high_rr") {
       // Asymmetric plan geometry (>= 2.0:1) AND Actionable buy zone proximity (In buy zone or spot <= optimalEntryMax * 1.02)
-      const isActionable = gem.executionStatus === "IN_BUY_ZONE" || (gem.currentPrice || 0) <= (gem.optimalEntryMax || gem.currentPrice || 0) * 1.02;
+      const hasValidEntry = Boolean(gem.optimalEntryMax && gem.optimalEntryMax > 0);
+      const isActionable = gem.executionStatus === "IN_BUY_ZONE" || (hasValidEntry && (gem.currentPrice || 0) <= (gem.optimalEntryMax as number) * 1.02);
       return (gem.riskRewardRatio || 0) >= 2.0 && isActionable;
     }
     if (filterId === "high_rvol") return parseNum(gem.rvol) >= 2.5;
@@ -1110,9 +1112,9 @@ export default function ScreenerPage() {
 
                       <button
                         type="button"
-                        disabled={!gem.currentPrice || gem.currentPrice <= 0}
+                        disabled={!gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY"}
                         onClick={() => {
-                          if (!gem.currentPrice || gem.currentPrice <= 0) return;
+                          if (!gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return;
                           const res = addPortfolioPosition({
                             symbol: gem.symbol,
                             name: gem.companyName,
@@ -1126,11 +1128,11 @@ export default function ScreenerPage() {
                           setTimeout(() => setLoggedGemSymbol(null), 3000);
                         }}
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border flex items-center gap-1 shadow ${
-                          !gem.currentPrice || gem.currentPrice <= 0
+                          !gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY"
                             ? "bg-slate-800/40 border-slate-700/50 text-slate-500 cursor-not-allowed opacity-50"
                             : "bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300"
                         }`}
-                        title={!gem.currentPrice || gem.currentPrice <= 0 ? "Price unavailable" : "Log directly to Paper Portfolio"}
+                        title={!gem.currentPrice || gem.currentPrice <= 0 ? "Price unavailable" : (gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY" ? "Cannot log unverified asset to portfolio" : "Log directly to Paper Portfolio")}
                       >
                         <span>💼</span>
                         <span>{loggedGemSymbol && loggedGemSymbol.startsWith(gem.symbol) ? loggedGemSymbol.split(":")[1] : "Log"}</span>

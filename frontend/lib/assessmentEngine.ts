@@ -132,9 +132,13 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   }
 
   // 3. Setup Invalidation Level
-  const safePrice = currentPrice > 0 ? currentPrice : 100;
-  const stopLevel = invalidationPrice ?? Number((safePrice * 0.93).toFixed(2));
-  const distancePct = Number((((stopLevel - safePrice) / safePrice) * 100).toFixed(1));
+  const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
+  const safePrice = isPriceValid ? currentPrice : 0;
+  const hasInvalidationPrice = typeof invalidationPrice === "number" && !isNaN(invalidationPrice) && invalidationPrice > 0;
+  const stopLevel = hasInvalidationPrice ? invalidationPrice : 0;
+  const distancePct = (isPriceValid && stopLevel > 0)
+    ? Number((((stopLevel - safePrice) / safePrice) * 100).toFixed(1))
+    : 0;
   const isActuallyBreached = isInvalidationBreached || (invalidationPrice !== undefined && safePrice < invalidationPrice);
 
   // 4. Resolve Contextual Posture (Precedence: Invalidation Breached -> Missing Evidence -> Assessment + Ownership)

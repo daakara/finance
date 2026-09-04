@@ -7,7 +7,7 @@ import {
   FactorAttributionItem,
 } from "../types/insight";
 import { deriveAssessmentState } from "./assessmentEngine";
-import { CandleData } from "./api";
+import { CandleData, ConfluenceData } from "./api";
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 
 export function generateQuantitativeInsight(
@@ -15,17 +15,21 @@ export function generateQuantitativeInsight(
   companyName: string,
   currentPrice: number,
   changePct: number,
-  setupScore: number = 60,
+  setupScore?: number,
   stage?: number,
   horizon: TimeHorizon = "SWING",
   ownership: OwnershipState = "NOT_OWNED",
   ownershipSource: OwnershipSource = "USER_DECLARED",
   candles?: CandleData[],
-  dataSource?: "live" | "fallback" | "unavailable"
+  dataSource?: "live" | "fallback" | "unavailable",
+  confluence?: ConfluenceData
 ): QuantitativeInsight {
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback";
+  const finalSetupScore = confluence?.confluenceScore !== undefined
+    ? Math.round(confluence.confluenceScore)
+    : (setupScore !== undefined ? setupScore : 40);
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
   // SMA50 requires at least 50 valid closed daily sessions. Synthetic fallback candles are NEVER treated as market evidence.
@@ -98,7 +102,7 @@ export function generateQuantitativeInsight(
     : (isTrendAvailable ? (safePrice < (sma50 as number) ? 4 : 2) : 2);
   const isStage4 = derivedStage === 4;
 
-  const stopLoss = isPriceValid ? Number((safePrice * 0.93).toFixed(2)) : 0;
+  const stopLoss = (isPriceValid && isTrendAvailable) ? Number((safePrice * 0.93).toFixed(2)) : 0;
   const target1 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.204).toFixed(2)) : undefined;
   const target2 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.293).toFixed(2)) : undefined;
   const profitRisk = (isPriceValid && isTrendAvailable && target1 !== undefined && safePrice > stopLoss)
@@ -322,7 +326,7 @@ export function generateQuantitativeInsight(
     companyName,
     price: safePrice,
     changePct,
-    setupScore,
+    setupScore: finalSetupScore,
     horizon,
     assessment: terminalState.assessment,
     posture: terminalState.posture,
@@ -374,9 +378,9 @@ export function generateQuantitativeInsight(
         ? `${symbol} needs to reclaim $${(sma50 as number).toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`
         : `Historical trend milestone unavailable (${symbol} has insufficient trading history).`,
       watchLevels: {
-        watchZone: isPriceValid ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (Awaiting price)",
+        watchZone: (isPriceValid && isTrendAvailable) ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (< 50 sessions)",
         keyLevel: isTrendAvailable ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
-        riskStop: isPriceValid ? `$${stopLoss.toFixed(2)} (-7.0%)` : "N/A (Awaiting price)",
+        riskStop: (isPriceValid && isTrendAvailable && stopLoss > 0) ? `$${stopLoss.toFixed(2)} (-7.0%)` : "N/A (< 50 sessions)",
       },
       actionCallout: {
         action: terminalState.posture === "ACQUIRE"
@@ -406,18 +410,23 @@ export function generateQuantitativeInsight(
     standard: {
       bottomLine: terminalState.headlineExplanation,
       signalsRatio: terminalState.factorAgreement.displayLabel,
-      confluenceBreakdown: [
-        { dimension: "Chart Structure", score: !isTrendAvailable ? 0 : (isStage4 ? 40 : 88) },
-        { dimension: "Company Health", score: !isHealthAvailable ? 0 : 80 },
-        { dimension: "Smart Money Flow", score: 50 },
-        { dimension: "Market Tailwinds", score: 70 },
-      ],
+      confluenceBreakdown: (confluence?.pillars && confluence.pillars.length > 0)
+        ? confluence.pillars.map((p) => ({
+            dimension: p.plainLabel || p.label,
+            score: Math.round(p.score),
+          }))
+        : [
+            { dimension: "Chart Structure", score: !isTrendAvailable ? 0 : (isStage4 ? 40 : 88) },
+            { dimension: "Company Health", score: !isHealthAvailable ? 0 : 80 },
+            { dimension: "Smart Money Flow", score: 0 },
+            { dimension: "Market Tailwinds", score: 60 },
+          ],
       keyLevels: {
         currentPrice: safePrice,
-        watchZone: isPriceValid ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
+        watchZone: (isPriceValid && isTrendAvailable) ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
         sma50,
-        stopLoss,
-        stopLossPct: isPriceValid ? -7.0 : 0,
+        stopLoss: isTrendAvailable ? stopLoss : 0,
+        stopLossPct: (isPriceValid && isTrendAvailable) ? -7.0 : 0,
         target1: isTrendAvailable ? target1 : undefined,
         target1Pct: isTrendAvailable ? 20.4 : undefined,
         target2: isTrendAvailable ? target2 : undefined,
@@ -450,12 +459,14 @@ export function generateQuantitativeInsight(
 
     // Traceable Attribution Model
     scoreAttribution: {
-      finalScore: setupScore,
+      finalScore: finalSetupScore,
       items: factors,
       catalystToIncreaseScore: terminalState.whatWouldChangeAssessment,
     },
 
-    primaryRiskSummary: `A close below $${stopLoss.toFixed(2)} (-7.0%) invalidates the technical setup.`,
+    primaryRiskSummary: (isTrendAvailable && stopLoss > 0)
+      ? `A close below $${stopLoss.toFixed(2)} (-7.0%) invalidates the technical setup.`
+      : "Risk levels suppressed: awaiting 50-session historical base.",
     whatWouldChangeAssessment: terminalState.whatWouldChangeAssessment,
     availableActions: terminalState.availableActions,
   };
