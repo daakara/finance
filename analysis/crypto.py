@@ -417,39 +417,19 @@ class CryptoAnalyzer:
         return results
     
     @staticmethod
-    def get_market_sentiment_indicators() -> Dict[str, Union[float, str]]:
+    def get_market_sentiment_indicators() -> Dict[str, Union[float, str, None]]:
         """
         Get cryptocurrency market sentiment indicators.
-        (This would connect to real sentiment APIs in production)
+        Returns UNAVAILABLE when live verified sentiment feeds are disconnected.
         """
-        # Simulated sentiment data
-        import random
-        
-        fear_greed_index = random.randint(0, 100)
-        
-        if fear_greed_index <= 25:
-            sentiment = 'Extreme Fear'
-            color = 'red'
-        elif fear_greed_index <= 45:
-            sentiment = 'Fear'
-            color = 'orange'
-        elif fear_greed_index <= 55:
-            sentiment = 'Neutral'
-            color = 'yellow'
-        elif fear_greed_index <= 75:
-            sentiment = 'Greed'
-            color = 'lightgreen'
-        else:
-            sentiment = 'Extreme Greed'
-            color = 'green'
-        
         return {
-            'fear_greed_index': fear_greed_index,
-            'sentiment': sentiment,
-            'sentiment_color': color,
-            'social_volume': random.randint(50, 150),  # Relative social mentions
-            'google_trends': random.randint(30, 100),  # Google search interest
-            'reddit_sentiment': random.choice(['Bullish', 'Bearish', 'Neutral'])
+            'fear_greed_index': None,
+            'sentiment': 'UNAVAILABLE',
+            'sentiment_color': 'gray',
+            'social_volume': None,
+            'google_trends': None,
+            'reddit_sentiment': 'UNAVAILABLE',
+            'status': 'AWAITING_VERIFIED_SENTIMENT_FEED'
         }
 
 # Create instance for easy importing

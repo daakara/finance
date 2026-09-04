@@ -584,52 +584,8 @@ export function generateFallbackAnalytics(
     generatedCandles = slicePersistedCandles(persisted.dailyCandles, period, interval, basePrice);
   }
 
-  if (generatedCandles.length === 0) {
-    const now = Date.now();
-    // Derive historical starting price from the expected total horizon return
-    const historicalStartPrice = basePrice / (1 + (expectedTotalPctChange / 100));
-
-    for (let i = 0; i <= numPoints; i++) {
-      const timeMs = now - ((numPoints - i) * stepMs);
-      const timeVal = isIntraday 
-        ? Math.floor(timeMs / 1000) 
-        : new Date(timeMs).toISOString().split("T")[0];
-
-      let open: number;
-      let close: number;
-
-      if (i === numPoints) {
-        // Pin the final candle precisely to basePrice
-        const prevClose = generatedCandles.length > 0 ? generatedCandles[generatedCandles.length - 1].close : basePrice * 0.995;
-        open = Number(prevClose.toFixed(2));
-        close = Number(basePrice.toFixed(2));
-      } else if (i === 0) {
-        // Pin the first candle to historicalStartPrice
-        open = Number(historicalStartPrice.toFixed(2));
-        close = Number((historicalStartPrice * 1.002).toFixed(2));
-      } else {
-        // Smooth deterministic interpolation curve towards current price
-        const progress = i / numPoints;
-        const targetTrendPrice = historicalStartPrice + (basePrice - historicalStartPrice) * progress;
-        const wave = Math.sin(i / 3.5) * (basePrice * 0.02);
-        const walkPrice = targetTrendPrice + wave;
-        open = Number((walkPrice * 0.998).toFixed(2));
-        close = Number(walkPrice.toFixed(2));
-      }
-
-      const high = Number((Math.max(open, close) + Math.abs(basePrice * 0.006)).toFixed(2));
-      const low = Number((Math.min(open, close) - Math.abs(basePrice * 0.006)).toFixed(2));
-
-      generatedCandles.push({
-        time: timeVal,
-        open,
-        high,
-        low,
-        close,
-        volume: 0,
-      });
-    }
-  }
+  // Phase 18 Invariant: If authentic persisted candles are unavailable, never synthesize sine-wave or Brownian walk candles.
+  // Missing candles must remain empty ([]).
 
   const assetCat = getCanonicalAssetCatalyst(upper);
 
@@ -641,7 +597,7 @@ export function generateFallbackAnalytics(
     currentPrice: basePrice,
     priceChangePct24h: baseChangePct,
     candles: generatedCandles,
-    technicals: registered?.technicals || persisted?.technicals || { vwap: basePrice * 0.985, rsi_14: 56.4, ema_20: basePrice * 0.992, atr_14: basePrice * 0.015 },
+    technicals: registered?.technicals || persisted?.technicals || undefined,
     factorScores: matched.scores,
     macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
     expectedReturn: DEFAULT_EXPECTED_RETURN,
@@ -683,21 +639,22 @@ export function generateFallbackAnalytics(
     },
     optimalExecution: {
       current_price: basePrice,
-      optimal_entry_min: basePrice,
-      optimal_entry_max: basePrice,
-      stop_loss: Number((basePrice * 0.93).toFixed(2)),
-      stop_loss_pct: -7.0,
-      take_profit_1: basePrice,
+      optimal_entry_min: null as any,
+      optimal_entry_max: null as any,
+      stop_loss: null as any,
+      stop_loss_pct: 0,
+      take_profit_1: null as any,
       take_profit_1_pct: 0,
-      take_profit_2: basePrice,
+      take_profit_2: null as any,
       take_profit_2_pct: 0,
       risk_reward_ratio: 0,
+      execution_status: "INSUFFICIENT_HISTORY",
       setup_pattern: "Trend Evidence Incomplete (Offline Fallback Feed)",
-      entry_thesis: "Live exchange feed unavailable. Synthetic fallback data cannot generate verified trade setups or actionable buy zones.",
+      entry_thesis: "Live exchange feed unavailable. Under Phase 18 anti-hallucination invariants, offline fallback feeds cannot generate verified trade setups or actionable buy zones.",
       invalidation_condition: "Awaiting live exchange candlestick feed.",
       stage_phase: "Awaiting Live Feed",
       vcp_contraction_status: "Unverified (Fallback Feed)",
-      atr_14: Number((basePrice * 0.022).toFixed(2)),
+      atr_14: 0,
     },
     smartMoney: registered?.smartMoney || persisted?.smartMoney || {
       congressTrades: [],

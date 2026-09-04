@@ -172,7 +172,7 @@ export default function PortfolioPage() {
     const stopNum = newStopLoss ? parseFloat(newStopLoss) : undefined;
     const targetNum = newTarget ? parseFloat(newTarget) : undefined;
 
-    if (!symUpper || isNaN(sharesNum) || isNaN(entryNum) || sharesNum <= 0) return;
+    if (!symUpper || isNaN(sharesNum) || isNaN(entryNum) || sharesNum <= 0 || entryNum <= 0) return;
 
     const authenticName = getCanonicalAssetName(symUpper);
     const curPrice = resolvedQuotePrice && !isNaN(resolvedQuotePrice) ? resolvedQuotePrice : entryNum;

@@ -28,7 +28,20 @@ export default function ShareTradeCardButton({
   posture = "IN_BUY_ZONE",
 }: ShareTradeCardButtonProps) {
   const [copied, setCopied] = useState(false);
-  const isAvailable = Boolean(spotPrice && spotPrice > 0 && stopLoss && stopLoss > 0 && posture !== "UNAVAILABLE");
+  const hasValidLevels = Boolean(
+    spotPrice && spotPrice > 0 &&
+    entryMin && entryMin > 0 &&
+    entryMax && entryMax > 0 &&
+    stopLoss && stopLoss > 0 &&
+    stopLoss < entryMin &&
+    entryMin <= entryMax
+  );
+  const isAvailable = Boolean(
+    hasValidLevels &&
+    posture !== "UNAVAILABLE" &&
+    posture !== "UNVERIFIED_ASSET" &&
+    posture !== "INSUFFICIENT_HISTORY"
+  );
 
   const handleShare = () => {
     if (!isAvailable) return;

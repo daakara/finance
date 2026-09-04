@@ -38,7 +38,7 @@ interface GemCandidate {
   catalyst: string;
   riskLevel: string;
   // Execution Scanner Levels
-  executionStatus?: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
+  executionStatus?: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
   statusLabel?: string;
   statusColor?: string;
   optimalEntryMin?: number;
@@ -122,12 +122,12 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const takeProfit2Pct = hasVerifiedData ? (isDayTrader ? 7.5 : 18.5) : 0;
     const riskRewardRatio = hasVerifiedData ? Number(((takeProfit1 - price) / Math.max(0.01, price - stopLoss)).toFixed(2)) : 0;
 
-    let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT";
+    let executionStatus: "IN_BUY_ZONE" | "APPROACHING_TARGET" | "WAITING_PULLBACK" | "STOPPED_OUT" | "UNVERIFIED_ASSET" | "INSUFFICIENT_HISTORY";
     let statusLabel: string;
     let statusColor: string;
 
     if (!cat) {
-      executionStatus = "WAITING_PULLBACK";
+      executionStatus = "UNVERIFIED_ASSET";
       statusLabel = "⏳ Unverified Asset";
       statusColor = "slate";
     } else if (isStage4Candidate) {
@@ -584,6 +584,8 @@ export default function ScreenerPage() {
   // Instant Client-Side Filter with 0ms Latency and Robust Type Parsing
   const isMatchFilter = (gem: GemCandidate, filterId: string): boolean => {
     if (!filterId || filterId === "all") return true;
+    // Phase 18 Invariant: UNKNOWN != FAVORABLE. Unverified / insufficient history assets must NEVER match favorable filter tabs.
+    if (gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return false;
     if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
     if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
     if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
@@ -957,6 +959,8 @@ export default function ScreenerPage() {
                   ? "bg-amber-950/80 border-amber-500/80 text-amber-300"
                   : gem.executionStatus === "STOPPED_OUT"
                   ? "bg-rose-950/80 border-rose-500/80 text-rose-300"
+                  : gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY"
+                  ? "bg-slate-900 border-slate-700 text-slate-400"
                   : "bg-cyan-950/80 border-cyan-500/80 text-cyan-300";
 
               return (
@@ -1004,40 +1008,47 @@ export default function ScreenerPage() {
                     </div>
 
                     {/* Optimal Trade Execution Level Ladder */}
-                    <div
-                      onClick={() => setSizerGem(gem)}
-                      className="my-3 bg-[#080c14] p-3 rounded-lg border border-[#192334] space-y-2 cursor-pointer hover:border-cyan-500/50 transition-colors group/ladder"
-                      title="Click to calculate exact position sizing for this optimal buy zone"
-                    >
-                      <div className="flex items-center justify-between text-[11px] pb-1 border-b border-[#141b28]">
-                        <span className="text-slate-400 font-bold group-hover/ladder:text-cyan-300 transition-colors">
-                          🎯 Optimal Buy Zone <span className="text-[9px] text-slate-500 font-normal">(Click to Size)</span>
-                        </span>
-                        <span className="text-emerald-400 font-black tabular-nums">
-                          ${gem.optimalEntryMin?.toFixed(2)} – ${gem.optimalEntryMax?.toFixed(2)}
-                        </span>
+                    {gem.optimalEntryMin && gem.optimalEntryMin > 0 && gem.executionStatus !== "UNVERIFIED_ASSET" && gem.executionStatus !== "INSUFFICIENT_HISTORY" ? (
+                      <div
+                        onClick={() => setSizerGem(gem)}
+                        className="my-3 bg-[#080c14] p-3 rounded-lg border border-[#192334] space-y-2 cursor-pointer hover:border-cyan-500/50 transition-colors group/ladder"
+                        title="Click to calculate exact position sizing for this optimal buy zone"
+                      >
+                        <div className="flex items-center justify-between text-[11px] pb-1 border-b border-[#141b28]">
+                          <span className="text-slate-400 font-bold group-hover/ladder:text-cyan-300 transition-colors">
+                            🎯 Optimal Buy Zone <span className="text-[9px] text-slate-500 font-normal">(Click to Size)</span>
+                          </span>
+                          <span className="text-emerald-400 font-black tabular-nums">
+                            ${gem.optimalEntryMin?.toFixed(2)} – ${gem.optimalEntryMax?.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                          <div className="bg-[#110d0f] p-1.5 rounded border border-rose-950">
+                            <span className="text-rose-400 block font-semibold">🛑 Stop Loss</span>
+                            <span className="text-rose-200 font-bold tabular-nums">
+                              ${gem.stopLoss?.toFixed(2)} ({gem.stopLossPct}%)
+                            </span>
+                          </div>
+                          <div className="bg-[#0b1414] p-1.5 rounded border border-emerald-950">
+                            <span className="text-emerald-400 block font-semibold">🎯 Target 1</span>
+                            <span className="text-emerald-200 font-bold tabular-nums">
+                              ${gem.takeProfit1?.toFixed(2)} (+{gem.takeProfit1Pct}%)
+                            </span>
+                          </div>
+                          <div className="bg-[#14120a] p-1.5 rounded border border-amber-950">
+                            <span className="text-amber-400 block font-semibold">⚖️ Risk:Reward</span>
+                            <span className="text-amber-200 font-black tabular-nums">
+                              {gem.riskRewardRatio}:1 R:R
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                        <div className="bg-[#110d0f] p-1.5 rounded border border-rose-950">
-                          <span className="text-rose-400 block font-semibold">🛑 Stop Loss</span>
-                          <span className="text-rose-200 font-bold tabular-nums">
-                            ${gem.stopLoss?.toFixed(2)} ({gem.stopLossPct}%)
-                          </span>
-                        </div>
-                        <div className="bg-[#0b1414] p-1.5 rounded border border-emerald-950">
-                          <span className="text-emerald-400 block font-semibold">🎯 Target 1</span>
-                          <span className="text-emerald-200 font-bold tabular-nums">
-                            ${gem.takeProfit1?.toFixed(2)} (+{gem.takeProfit1Pct}%)
-                          </span>
-                        </div>
-                        <div className="bg-[#14120a] p-1.5 rounded border border-amber-950">
-                          <span className="text-amber-400 block font-semibold">⚖️ Risk:Reward</span>
-                          <span className="text-amber-200 font-black tabular-nums">
-                            {gem.riskRewardRatio}:1 R:R
-                          </span>
-                        </div>
+                    ) : (
+                      <div className="my-3 bg-[#080c14] p-2.5 rounded-lg border border-[#192334] text-center">
+                        <span className="text-xs text-slate-400 font-bold block">Execution Levels Suppressed</span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">Live market data required to calculate buy zone</span>
                       </div>
-                    </div>
+                    )}
 
                     {/* Fundamental / Technical Dual-Horizon Thesis */}
                     <div className="space-y-1.5 text-xs">

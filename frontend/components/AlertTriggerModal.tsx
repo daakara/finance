@@ -55,10 +55,21 @@ export default function AlertTriggerModal({
 
   const hasValidPricing = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safeCurrent = hasValidPricing ? currentPrice : 0;
-  const safeEntryMin = typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0 ? optimalEntryMin : (hasValidPricing ? safeCurrent * 0.98 : 0);
-  const safeEntryMax = typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0 ? optimalEntryMax : (hasValidPricing ? safeCurrent * 1.02 : 0);
-  const safeStop = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 ? stopLoss : (hasValidPricing ? safeCurrent * 0.95 : 0);
-  const safeTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : (hasValidPricing ? safeCurrent * 1.10 : 0);
+  const hasValidLevels = Boolean(
+    hasValidPricing &&
+    typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0 &&
+    typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0 &&
+    typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0 &&
+    typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 &&
+    stopLoss < optimalEntryMin &&
+    optimalEntryMin <= optimalEntryMax &&
+    optimalEntryMax < takeProfit1
+  );
+
+  const safeEntryMin = hasValidLevels ? optimalEntryMin : 0;
+  const safeEntryMax = hasValidLevels ? optimalEntryMax : 0;
+  const safeStop = hasValidLevels ? stopLoss : 0;
+  const safeTarget = hasValidLevels ? takeProfit1 : 0;
 
   const handleRequestPermission = async () => {
     const res = await AlertManager.requestPermission();
@@ -66,7 +77,7 @@ export default function AlertTriggerModal({
   };
 
   const handleSaveAlerts = () => {
-    if (!hasValidPricing) return;
+    if (!hasValidPricing || !hasValidLevels) return;
     if (permission !== "granted") {
       handleRequestPermission();
     }
@@ -80,12 +91,12 @@ export default function AlertTriggerModal({
       stopLoss: safeStop,
       takeProfit1: safeTarget,
       isStage4: isStage4,
-      breakoutPivotPrice: breakoutPivot || safeCurrent * 1.072,
+      breakoutPivotPrice: breakoutPivot || (safeEntryMax * 1.015),
       createdAt: Date.now(),
     };
     AlertManager.saveAlertRule(rule);
     setIsSaved(true);
-    trackAlertSet(symbol, isStage4 ? (breakoutPivot || safeCurrent * 1.072) : safeEntryMin, isStage4);
+    trackAlertSet(symbol, isStage4 ? (breakoutPivot || safeEntryMax * 1.015) : safeEntryMin, isStage4);
     AlertManager.playAlertSound("BUY");
     onClose();
   };
@@ -126,6 +137,16 @@ export default function AlertTriggerModal({
 
         {/* Permission Status Banner */}
         <div className="p-5 space-y-4">
+          {!hasValidLevels && (
+            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-300 text-xs font-mono flex items-start gap-2">
+              <span className="text-base">⚠️</span>
+              <div>
+                <strong className="block text-amber-200">Execution Levels Suppressed</strong>
+                Authentic entry, stop-loss, and target levels are not established for {symbol}. The terminal refuses to synthesize speculative price triggers under Phase 18 quantitative integrity invariants.
+              </div>
+            </div>
+          )}
+
           {permission !== "granted" && (
             <div className="bg-[#191508] border border-amber-900/60 p-3 rounded-xl flex items-center justify-between gap-3 text-xs">
               <div>
@@ -248,14 +269,14 @@ export default function AlertTriggerModal({
             </button>
             <button
               onClick={handleSaveAlerts}
-              disabled={!hasValidPricing}
+              disabled={!hasValidPricing || !hasValidLevels}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow ${
-                hasValidPricing
-                  ? "bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+                hasValidPricing && hasValidLevels
+                  ? "bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer active:scale-95"
                   : "bg-slate-800 text-slate-500 cursor-not-allowed"
               }`}
             >
-              {hasValidPricing ? "Save Active Alerts" : "Price Feed Unavailable"}
+              {!hasValidPricing ? "Price Feed Unavailable" : !hasValidLevels ? "Levels Suppressed" : "Save Active Alerts"}
             </button>
           </div>
         </div>

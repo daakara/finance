@@ -101,11 +101,12 @@ export default function PositionSizerModal({
   const hasValidPricing = typeof entryPrice === "number" && !isNaN(entryPrice) && entryPrice > 0 && typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
   const safeEntry = hasValidPricing ? entryPrice : 0;
   const safeStop = hasValidPricing ? stopLoss : 0;
-  const safeTarget = hasValidPricing && typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : (safeEntry > 0 ? safeEntry * 1.10 : 0);
+  const safeTarget = hasValidPricing && typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : 0;
 
   const isSetupInvalid = safeEntry <= safeStop;
   const isMicroAccount = hasValidPricing && accountSize < safeEntry;
   const isFractionalActive = allowFractional || isMicroAccount;
+  const hasTarget = safeTarget > safeEntry;
 
   const riskPerShare = isSetupInvalid ? 0 : Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = isSetupInvalid ? 0 : accountSize * (riskPct / 100);
@@ -118,14 +119,14 @@ export default function PositionSizerModal({
   const totalAllocation = Number((shares * safeEntry).toFixed(2));
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
   const actualDollarRisk = Number((shares * riskPerShare).toFixed(2));
-  const projectedProfit = isSetupInvalid ? 0 : Number((shares * (safeTarget - safeEntry)).toFixed(2));
+  const projectedProfit = isSetupInvalid ? 0 : (!hasTarget ? 0 : Number((shares * (safeTarget - safeEntry)).toFixed(2)));
 
   // Half-Kelly calculation
-  const b = isSetupInvalid ? 0 : Math.max(0.5, (safeTarget - safeEntry) / (riskPerShare || 1));
+  const b = isSetupInvalid ? 0 : (!hasTarget ? 0 : Math.max(0.5, (safeTarget - safeEntry) / (riskPerShare || 1)));
   const p = 0.55;
   const q = 0.45;
-  const fullKelly = isSetupInvalid ? 0 : Math.max(0, (b * p - q) / (b || 1));
-  const halfKellyPct = isSetupInvalid ? 0 : Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1)));
+  const fullKelly = isSetupInvalid ? 0 : (!hasTarget ? 0 : Math.max(0, (b * p - q) / (b || 1)));
+  const halfKellyPct = isSetupInvalid ? 0 : (!hasTarget ? 0 : Math.min(25, Number(((fullKelly / 2) * 100).toFixed(1))));
 
   const matchedItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === symbol.toUpperCase());
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
@@ -373,14 +374,24 @@ export default function PositionSizerModal({
 
               <div className="bg-[#0a1414] p-2.5 rounded-lg border border-emerald-950/60">
                 <span className="text-[10px] text-emerald-400 block font-semibold">TARGET PROFIT (TP1)</span>
-                <span className="font-bold text-emerald-300 tabular-nums">+${projectedProfit.toFixed(2)}</span>
-                <span className="text-[10px] text-emerald-500/80 block mt-0.5">at ${safeTarget.toFixed(2)} (+{(((safeTarget - safeEntry)/safeEntry)*100).toFixed(1)}%)</span>
+                <span className="font-bold text-emerald-300 tabular-nums">
+                  {hasTarget ? `+$${projectedProfit.toFixed(2)}` : "N/A"}
+                </span>
+                <span className="text-[10px] text-emerald-500/80 block mt-0.5">
+                  {hasTarget
+                    ? `at $${safeTarget.toFixed(2)} (+${(((safeTarget - safeEntry) / safeEntry) * 100).toFixed(1)}%)`
+                    : "Suppressed (< 50 sessions)"}
+                </span>
               </div>
 
               <div className="bg-[#12110c] p-2.5 rounded-lg border border-amber-950/60">
                 <span className="text-[10px] text-amber-400 block font-semibold">FRACTIONAL KELLY</span>
-                <span className="font-bold text-amber-300 tabular-nums">{halfKellyPct}% Optimal</span>
-                <span className="text-[10px] text-amber-500/80 block mt-0.5">Half-Kelly Cap: 25% max</span>
+                <span className="font-bold text-amber-300 tabular-nums">
+                  {hasTarget ? `${halfKellyPct}% Optimal` : "N/A"}
+                </span>
+                <span className="text-[10px] text-amber-500/80 block mt-0.5">
+                  {hasTarget ? "Half-Kelly Cap: 25% max" : "Requires Valid Target"}
+                </span>
               </div>
             </div>
           </div>

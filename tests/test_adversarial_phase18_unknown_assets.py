@@ -59,13 +59,13 @@ def test_glx_insufficient_history_suppresses_trade_levels():
     """GLX has 47 candles on Yahoo Finance. It must refuse to invent trade setups."""
     engine = OptimalExecutionEngine()
     df_47 = _make_dummy_candles(47, base_price=50.0)
-    
+
     plan = engine.calculate_trade_levels(
         price_df=df_47,
         current_price=50.0,
         user_role="INVESTOR"
     )
-    
+
     assert plan["execution_status"] == "INSUFFICIENT_HISTORY"
     assert plan["optimal_entry_min"] is None
     assert plan["optimal_entry_max"] is None
@@ -84,13 +84,13 @@ def test_day_trader_insufficient_history_suppresses_trade_levels():
     """Day trader mode requires at least 15 bars; fewer bars must fail closed."""
     engine = OptimalExecutionEngine()
     df_10 = _make_dummy_candles(10, base_price=25.0)
-    
+
     plan = engine.calculate_trade_levels(
         price_df=df_10,
         current_price=25.0,
         user_role="DAY_TRADER"
     )
-    
+
     assert plan["execution_status"] == "INSUFFICIENT_HISTORY"
     assert plan["optimal_entry_min"] is None
     assert plan["stop_loss"] is None
@@ -103,16 +103,26 @@ def test_day_trader_insufficient_history_suppresses_trade_levels():
 def test_catalyst_does_not_fabricate_forecast_for_uncataloged_asset():
     """Uncataloged assets must have empty multi_year_forecast and unverified disclosures."""
     engine = CatalystEngine()
-    
+
     # Test GLX
     report_glx = engine.get_asset_catalyst_report("GLX", current_price=50.0)
     assert report_glx["multi_year_forecast"] == []
     assert "awaiting" in report_glx["efficacy_summary"].lower() or "unverified" in report_glx["efficacy_summary"].lower()
-    
+
     # Test GLX ETF
     report_etf = engine.get_asset_catalyst_report("GLX ETF", current_price=25.0)
     assert report_etf["multi_year_forecast"] == []
     assert "awaiting" in report_etf["efficacy_summary"].lower() or "unverified" in report_etf["efficacy_summary"].lower()
+
+    # Test uncataloged assets with sector and industry provided (must not synthesize fake trials or forecasts)
+    report_bio = engine.get_asset_catalyst_report("UNKNOWN_BIO", current_price=50.0, sector="Biotechnology & Pharmaceuticals")
+    assert report_bio["multi_year_forecast"] == []
+    assert report_bio["upcoming_milestones"] == []
+    assert "awaiting" in report_bio["primary_drug_trial"].lower() or "data unavailable" in report_bio["trial_phase"].lower()
+
+    report_tech = engine.get_asset_catalyst_report("UNKNOWN_TECH", current_price=120.0, sector="Technology", industry="Semiconductors")
+    assert report_tech["multi_year_forecast"] == []
+    assert report_tech["upcoming_milestones"] == []
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +173,7 @@ def test_property_unverified_symbols_fail_closed(test_sym):
     """Any arbitrary unverified symbol must never acquire fabricated setups."""
     engine = OptimalExecutionEngine()
     df_short = _make_dummy_candles(20, base_price=10.0)
-    
+
     plan = engine.calculate_trade_levels(
         price_df=df_short,
         current_price=10.0,
@@ -173,7 +183,7 @@ def test_property_unverified_symbols_fail_closed(test_sym):
     assert plan["optimal_entry_min"] is None
     assert plan["stop_loss"] is None
     assert plan["risk_reward_ratio"] is None
-    
+
     cat_engine = CatalystEngine()
     cat_report = cat_engine.get_asset_catalyst_report(test_sym, current_price=10.0)
     assert cat_report["multi_year_forecast"] == []
@@ -186,7 +196,7 @@ def test_regression_verified_assets_healthy():
     """Verified assets with >= 50 candles must continue to produce valid execution setups."""
     engine = OptimalExecutionEngine()
     df_100 = _make_dummy_candles(100, base_price=120.0)
-    
+
     # NVDA: Bullish compounder
     plan_nvda = engine.calculate_trade_levels(
         price_df=df_100,
@@ -198,7 +208,7 @@ def test_regression_verified_assets_healthy():
     assert plan_nvda["stop_loss"] is not None
     assert plan_nvda["risk_reward_ratio"] is not None
     assert plan_nvda["risk_reward_ratio"] > 0
-    
+
     # FIX: Stage 4 correction or valid execution
     plan_fix = engine.calculate_trade_levels(
         price_df=df_100,
@@ -206,7 +216,7 @@ def test_regression_verified_assets_healthy():
         user_role="INVESTOR"
     )
     assert plan_fix["optimal_entry_min"] is not None
-    
+
     # CPRX: Research / evidence incomplete
     cat_engine = CatalystEngine()
     cprx_cat = cat_engine.get_asset_catalyst_report("CPRX", current_price=22.0)
@@ -273,3 +283,79 @@ def test_hidden_gems_screener_fails_closed_on_uncataloged_tickers():
         assert "Unverified" in r["expert_model"]
         assert "Unverified" in r["factor_verdict"]
         assert "Unverified" in r["dna_verdict"]
+
+
+# ---------------------------------------------------------------------------
+# Test 11: Fundamental Engine Sanitized Against Synthetic Simulation
+# ---------------------------------------------------------------------------
+def test_fundamental_engine_sanitized_against_synthetic_simulation():
+    """Verify that FundamentalAnalysisEngine sub-analyzers never use np.random or synthetic data."""
+    from engines.fundamental_engine import ETFFundamentalAnalyzer, CryptoFundamentalAnalyzer, StockFundamentalAnalyzer
+    import pandas as pd
+
+    etf_analyzer = ETFFundamentalAnalyzer()
+    # ETF Holdings without verified disclosures
+    res_holdings = etf_analyzer._analyze_holdings({"symbol": "UNKNOWN_ETF"})
+    assert res_holdings["top_10_concentration"] is None
+    assert res_holdings["concentration_risk"] == "UNAVAILABLE"
+    assert res_holdings["diversification_score"] is None
+    assert res_holdings["status"] == "AWAITING_VERIFIED_HOLDINGS_DATA"
+
+    # Benchmark comparison without live benchmark feed
+    df_prices = pd.DataFrame({"Close": [100.0, 102.0, 101.5, 103.0]})
+    res_bench = etf_analyzer._compare_to_benchmark(df_prices, {"symbol": "UNKNOWN_ETF"})
+    assert res_bench["benchmark_total_return"] is None
+    assert res_bench["tracking_error"] is None
+    assert res_bench["tracking_quality"] == "UNAVAILABLE"
+
+    # ETF assessment with missing components
+    res_assessment = etf_analyzer._generate_etf_assessment({
+        "expense_analysis": {"competitiveness": "Competitive"},
+        "holdings_analysis": res_holdings,
+        "benchmark_comparison": res_bench
+    })
+    assert res_assessment["overall_score"] is None
+    assert res_assessment["rating"] == "UNAVAILABLE"
+
+    # Growth prospects without verified disclosures
+    stock_analyzer = StockFundamentalAnalyzer()
+    res_growth = stock_analyzer._analyze_growth_prospects({"symbol": "UNKNOWN_EQUITY"})
+    assert res_growth["growth_consistency"] is None
+    assert res_growth["growth_quality"] == "UNAVAILABLE"
+    assert res_growth["status"] == "AWAITING_VERIFIED_DISCLOSURES"
+
+    # Crypto analyzer fail-closed checks
+    cfa = CryptoFundamentalAnalyzer()
+    res_net = cfa._analyze_network_health("UNKNOWN_COIN")
+    assert res_net["security_score"] is None
+    assert res_net["validator_count"] is None
+    assert res_net["status"] == "UNAVAILABLE"
+
+    res_dev = cfa._analyze_development("UNKNOWN_COIN")
+    assert res_dev["monthly_commits"] is None
+    assert res_dev["active_developers"] is None
+    assert res_dev["development_activity"] == "UNAVAILABLE"
+
+    res_score = cfa._calculate_fundamental_score({
+        "network_analysis": res_net,
+        "development_activity": res_dev,
+        "tokenomics": {"utility_score": None}
+    })
+    assert res_score["fundamental_score"] is None
+    assert res_score["rating"] == "UNAVAILABLE"
+
+
+# ---------------------------------------------------------------------------
+# Test 12: Crypto Sentiment Indicators Sanitized
+# ---------------------------------------------------------------------------
+def test_crypto_sentiment_indicators_sanitized():
+    """Verify that crypto market sentiment returns fail-closed UNAVAILABLE without random simulation."""
+    from analysis.crypto import CryptoAnalyzer
+
+    indicators = CryptoAnalyzer.get_market_sentiment_indicators()
+    assert indicators["fear_greed_index"] is None
+    assert indicators["sentiment"] == "UNAVAILABLE"
+    assert indicators["social_volume"] is None
+    assert indicators["google_trends"] is None
+    assert indicators["reddit_sentiment"] == "UNAVAILABLE"
+    assert indicators["status"] == "AWAITING_VERIFIED_SENTIMENT_FEED"
