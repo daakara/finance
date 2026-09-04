@@ -327,11 +327,29 @@ def get_asset_analytics(
         else:
             piotroski = calculate_piotroski_f_score(info, {})
             rev_g = info.get("revenueGrowth")
-            growth_score = min(99, max(30, int(rev_g * 250 + 50))) if rev_g is not None else 50
+            if rev_g is not None:
+                if rev_g >= 0:
+                    growth_score = min(99, max(50, int(round(50 + math.sqrt(rev_g * 100) * 6.9))))
+                else:
+                    growth_score = max(25, int(round(50 + rev_g * 100 * 1.5)))
+            else:
+                growth_score = 50
+
             quality_score = min(99, max(20, int(piotroski * 11)))
             pe_val = info.get("trailingPE") or info.get("forwardPE")
-            valuation_score = 85 if (pe_val is not None and pe_val < 35) else (65 if pe_val is not None else 50)
-            momentum_score = min(99, max(30, int(50 + price_change_pct * 3.0)))
+            if pe_val is not None and pe_val > 0:
+                if pe_val <= 15.0:
+                    valuation_score = 90
+                elif pe_val <= 60.0:
+                    valuation_score = int(round(90 - ((pe_val - 15.0) / 45.0) * 40))
+                else:
+                    valuation_score = max(35, int(round(50 - (pe_val - 60.0) * 0.25)))
+            else:
+                valuation_score = 50
+
+            # Momentum combines short-term 24h delta with intermediate 20-day trend
+            ret_20d = float((hist["Close"].iloc[-1] - hist["Close"].iloc[-min(20, len(hist))]) / hist["Close"].iloc[-min(20, len(hist))]) * 100 if len(hist) >= 5 else price_change_pct
+            momentum_score = min(99, max(30, int(round(50 + price_change_pct * 1.5 + ret_20d * 0.8))))
             mvar = adv_metrics.get("Modified_VaR_95")
             tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else 65
             valid_scores = [s for s in [growth_score, quality_score, valuation_score, momentum_score, tail_risk_score] if s is not None]

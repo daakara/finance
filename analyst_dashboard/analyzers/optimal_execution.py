@@ -76,8 +76,8 @@ class OptimalExecutionEngine:
         # 1. Volatility (ATR-14) with strict sanity bounds to prevent stock-split distortion
         if math.isnan(atr_14) or atr_14 <= 0:
             atr_14 = current_price * 0.025
-        # Clamp ATR between 1.5% and 5.5% of spot price
-        atr_14 = min(current_price * 0.055, max(current_price * 0.015, atr_14))
+        # Clamp ATR between 0.8% and 9.5% of spot price (Phase 22 calibration: prevents distortion on high-beta and defensive assets)
+        atr_14 = min(current_price * 0.095, max(current_price * 0.008, atr_14))
         liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price)
 
         # Strict Epistemic Invariant: Insufficient history cannot synthesize actionable trade levels
@@ -135,9 +135,20 @@ class OptimalExecutionEngine:
         ema_20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
         # 50-period SMA strictly requires at least 50 valid closed sessions
         raw_sma_50 = float(close.rolling(50).mean().iloc[-1]) if len(close) >= 50 else None
+        sma_50_series = close.rolling(50).mean() if len(close) >= 50 else None
         # Protect against unadjusted stock splits or dirty historical candles (clamp 50 SMA to [-20%, +18%])
         sma_50 = max(current_price * 0.80, min(current_price * 1.18, raw_sma_50)) if raw_sma_50 is not None and not math.isnan(raw_sma_50) else None
-        is_stage_4_downtrend = (current_price < sma_50 * 0.98) if sma_50 is not None else False
+        
+        # Stage 4 Markdown requires genuine secular downtrend:
+        # Price below 50-day SMA by > 2% AND declining 50-day SMA slope (or persistent closes below 50 SMA)
+        is_stage_4_downtrend = False
+        if sma_50 is not None and sma_50_series is not None and len(close) >= 60:
+            sma_50_10d_ago = float(sma_50_series.iloc[-10]) if not math.isnan(sma_50_series.iloc[-10]) else sma_50
+            sma_declining = sma_50 < sma_50_10d_ago
+            persistent_below = bool((close.iloc[-5:] < sma_50 * 0.98).all())
+            is_stage_4_downtrend = (current_price < sma_50 * 0.98) and (sma_declining or persistent_below)
+        elif sma_50 is not None:
+            is_stage_4_downtrend = (current_price < sma_50 * 0.95)
         breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec) if sma_50 is not None else round(current_price * 1.05, dec)
 
         # Dual-Horizon Strategy Logic
@@ -221,15 +232,15 @@ class OptimalExecutionEngine:
         if stop_loss >= current_price:
             stop_loss = round(current_price * 0.95, dec)
         
-        # Ensure TP1 satisfies minimum R:R >= 1.85:1 vs current price and stop loss
+        # Ensure TP1 satisfies minimum institutional R:R >= 1.85:1 vs current price and stop loss
         risk_per_share = max(min_tick, current_price - stop_loss)
         min_tp1_for_rr = current_price + (1.85 * risk_per_share)
         take_profit_1 = round(max(take_profit_1, min_tp1_for_rr, entry_max + max(min_tick, 0.5 * atr_14)), dec)
-        while round((take_profit_1 - current_price) / risk_per_share, 4) < 1.85 or take_profit_1 <= entry_max or take_profit_1 <= current_price:
-            take_profit_1 = round(take_profit_1 + min_tick, dec)
+        if take_profit_1 <= current_price:
+            take_profit_1 = round(current_price + (1.85 * risk_per_share), dec)
         take_profit_2 = round(max(take_profit_2, take_profit_1 + max(min_tick, 0.5 * atr_14)), dec)
-        while take_profit_2 <= take_profit_1:
-            take_profit_2 = round(take_profit_2 + min_tick, dec)
+        if take_profit_2 <= take_profit_1:
+            take_profit_2 = round(take_profit_1 + max(min_tick, 0.5 * atr_14), dec)
 
         # Calculate multi-stage blended reward (50% at TP1 + 50% at TP2) for institutional execution
         tp1_reward = max(min_tick, take_profit_1 - current_price)
@@ -238,12 +249,8 @@ class OptimalExecutionEngine:
         
         blended_rr = round(blended_reward / risk_per_share, 2)
         
-        # Enforce realistic bounds with minimum 1.85:1 floor
+        # Enforce realistic bounds with minimum 1.85:1 floor without artificial buy-zone inflation (Phase 22 calibration)
         rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
-        if user_role == "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.01):
-            rr_ratio = min(5.0, max(2.1, rr_ratio))
-        elif user_role != "DAY_TRADER" and (entry_min <= current_price <= entry_max * 1.015):
-            rr_ratio = min(5.0, max(2.25, rr_ratio))
 
         raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":

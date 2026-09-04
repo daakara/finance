@@ -46,10 +46,13 @@ class ConfluenceEngine:
                 tech_plain = "Falling knife mode: Price is breaking down. Wait for buyers to establish a firm floor."
             elif any(k in pattern for k in ["Breakout", "Stage 2", "VCP", "Pullback"]) or "Stage 2" in stage or exec_status == "IN_BUY_ZONE":
                 tech_score = 88.0 if rr >= 2.5 else 80.0 if rr >= 2.0 else 75.0
+                # Continuous RSI momentum bonus & overbought penalty (Phase 22 calibration)
                 if 42.0 <= rsi <= 65.0:
                     tech_score += 5.0
-                if rsi > 75.0:
-                    tech_score -= 10.0
+                elif 35.0 <= rsi < 42.0:
+                    tech_score += (rsi - 35.0) * (5.0 / 7.0)
+                elif rsi > 65.0:
+                    tech_score -= min(10.0, (rsi - 65.0) * (10.0 / 15.0))
                 tech_status = "positive"
                 tech_detail = f"{stage or 'Stage 2 Accumulation'} with {rr:.1f}:1 R:R structure and healthy RSI ({rsi:.1f})."
                 tech_plain = f"Coiled spring setup: Buyers defending key levels with healthy {rsi:.1f} RSI momentum."
@@ -160,21 +163,21 @@ class ConfluenceEngine:
             credit_spread = float(macro_data.get("credit_spread", 3.5))
 
         stop_desc = f"at ${stop_loss:.2f}" if stop_loss is not None else "(stop unverified)"
-        if yield_curve >= 0.0 and credit_spread < 4.2 and risk_pct <= 7.5:
+        if yield_curve >= 0.0 and credit_spread < 4.2:
             macro_score = 85.0
             macro_status = "positive"
-            macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight. Defined stop {stop_desc} ({risk_pct:.1f}% risk)."
-            macro_plain = f"Macro green light: Credit markets healthy. Clear exit floor set {stop_desc} ({risk_pct:.1f}% risk)."
-        elif yield_curve < 0.0 or risk_pct > 12.0:
+            macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight ({credit_spread:.2f}%). Exit floor {stop_desc}."
+            macro_plain = f"Macro green light: Credit markets healthy and treasury yield curve normal. Clear exit floor set {stop_desc}."
+        elif yield_curve < 0.0 or credit_spread >= 5.0:
             macro_score = 38.0
             macro_status = "warning"
-            macro_detail = f"Macro risk elevated or wide stop requirement ({risk_pct:.1f}% risk). Defensive sizing required."
-            macro_plain = f"Macro warning flags or large downside distance ({risk_pct:.1f}% risk). Size down carefully."
+            macro_detail = f"Macro risk elevated: Inverted curve ({yield_curve:.2f}%) or credit spreads wide ({credit_spread:.2f}%). Defensive sizing required."
+            macro_plain = f"Macro warning flags: Tight financial conditions. Size down carefully."
         else:
             macro_score = 60.0
             macro_status = "neutral"
-            macro_detail = f"Supportive liquidity background with stop floor {stop_desc} ({risk_pct:.1f}% risk)."
-            macro_plain = f"Stable economic background with safety exit floor set {stop_desc} ({risk_pct:.1f}% risk)."
+            macro_detail = f"Supportive liquidity background with stop floor {stop_desc}."
+            macro_plain = f"Stable economic background with safety exit floor set {stop_desc}."
 
         # ── 5. CATALYST RUNWAY RISK ADJUSTMENT ────────────────────────────────
         catalyst_mod = 0.0
@@ -190,14 +193,28 @@ class ConfluenceEngine:
                     catalyst_mod -= 8.0
                     warnings.append(f"Caution: Earnings in {days_to_earnings} days.")
 
-        # ── COMPOSITE SYNTHESIS ──────────────────────────────────────────────
-        raw_composite = (
-            0.25 * tech_score +
-            0.25 * fund_score +
-            0.25 * smart_score +
-            0.25 * macro_score +
-            catalyst_mod
-        )
+        # ── COMPOSITE SYNTHESIS (Phase 22 Dynamic Normalized Reweighting) ─────
+        # If an asset has verified fundamentals but Smart Money regulatory filings are unavailable
+        # (e.g., standard equity with no recent Form 4 open-market buy, or broad ETF),
+        # dynamically re-weight across the 3 verified pillars (Tech: 35%, Fund: 35%, Macro: 30%)
+        # so missing insider trades do not act as an artificial 25-point penalty ceiling.
+        # Note: If fundamentals are also missing/empty, standard 4-pillar weighting applies to preserve
+        # mathematical compression below 50.0.
+        if smart_status == "unavailable" and has_fundamentals:
+            raw_composite = (
+                0.35 * tech_score +
+                0.35 * fund_score +
+                0.30 * macro_score +
+                catalyst_mod
+            )
+        else:
+            raw_composite = (
+                0.25 * tech_score +
+                0.25 * fund_score +
+                0.25 * smart_score +
+                0.25 * macro_score +
+                catalyst_mod
+            )
 
         final_score = max(0.0, min(96.0, round(raw_composite, 1)))
 
