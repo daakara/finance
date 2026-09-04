@@ -3,6 +3,13 @@
 export type TimeHorizon = "INTRADAY" | "SWING" | "POSITION" | "LONG_TERM";
 export type Assessment = "FAVORABLE" | "MIXED" | "UNFAVORABLE" | "INSUFFICIENT_EVIDENCE";
 export type DecisionPosture = "RESEARCH" | "WATCH" | "ACQUIRE" | "HOLD" | "TRIM" | "EXIT_REVIEW" | "AVOID";
+export type DecisionState =
+  | "UNVERIFIED"
+  | "INSUFFICIENT_DATA"
+  | "STALE_DATA"
+  | "EVIDENCE_INCOMPLETE"
+  | "VALID_SETUP"
+  | "ACTIONABLE_SETUP";
 export type OwnershipState = "NOT_OWNED" | "OWNED" | "UNKNOWN";
 export type OwnershipSource = "USER_DECLARED" | "PORTFOLIO_IMPORT" | "BROKER_CONNECTION" | "UNKNOWN";
 export type ExperienceMode = "GUIDED" | "STANDARD" | "ADVANCED";
@@ -95,6 +102,7 @@ export interface TerminalViewState {
   };
   modelProvenance: ModelProvenance;
   overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE";
+  decisionState?: DecisionState;
   assessment: Assessment;
   factorAgreement: FactorAgreement;
   domains: DomainAssessment[];

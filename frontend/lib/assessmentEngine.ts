@@ -10,6 +10,7 @@ import {
   TimeHorizon,
   Assessment,
   DecisionPosture,
+  DecisionState,
   OwnershipState,
   OwnershipSource,
   DomainAssessment,
@@ -225,6 +226,20 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
   ];
 
+  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A)
+  let decisionState: DecisionState = "VALID_SETUP";
+  if (!isPriceValid || agreement.evaluated === 0) {
+    decisionState = "UNVERIFIED";
+  } else if (!isTrendAvailable) {
+    decisionState = "INSUFFICIENT_DATA";
+  } else if (!isHealthAvailable) {
+    decisionState = "EVIDENCE_INCOMPLETE";
+  } else if (posture === "ACQUIRE") {
+    decisionState = "ACTIONABLE_SETUP";
+  } else {
+    decisionState = "VALID_SETUP";
+  }
+
   return {
     symbol: symbol.toUpperCase(),
     companyName,
@@ -237,6 +252,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
     modelProvenance,
     overallEligibility,
+    decisionState,
     assessment,
     factorAgreement: agreement,
     domains,

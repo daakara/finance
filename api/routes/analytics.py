@@ -23,6 +23,7 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -492,6 +493,29 @@ def get_asset_analytics(
                 "stalenessDays": staleness_days,
                 "candleCount": len(candles),
             },
+            "decisionTrace": DecisionTraceEngine.build_decision_trace(
+                symbol=upper_sym,
+                current_price=current_price,
+                candles=candles,
+                freshness={
+                    "status": freshness_status,
+                    "providerSource": provider_source,
+                    "lastTradeDate": last_trade_date_str,
+                    "stalenessDays": staleness_days,
+                    "candleCount": len(candles),
+                },
+                technicals=technicals,
+                confluence=confluence_output,
+                factor_scores=factor_scores,
+                optimal_execution=optimal_execution_plan,
+                smart_money={
+                    "has_congress_buy": has_congress_buy,
+                    "has_insider_buy": False,
+                    "optionsFlow": options_flow,
+                },
+                macro_difficulty=macro_difficulty,
+                catalyst_report=catalyst_report,
+            ),
         }
 
     except HTTPException:

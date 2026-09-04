@@ -165,6 +165,25 @@ export default function WhyInspectModal({
                 </span>
               </div>
             )}
+
+            {terminalState?.decisionState && (
+              <div className="flex items-center justify-between pt-1 text-[10px] font-mono text-slate-400">
+                <span>Decision State:</span>
+                <span className={`px-2 py-0.5 rounded font-bold ${
+                  terminalState.decisionState === "ACTIONABLE_SETUP"
+                    ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
+                    : terminalState.decisionState === "VALID_SETUP"
+                    ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
+                    : terminalState.decisionState === "EVIDENCE_INCOMPLETE"
+                    ? "bg-amber-950 text-amber-300 border border-amber-700"
+                    : terminalState.decisionState === "INSUFFICIENT_DATA"
+                    ? "bg-amber-950 text-amber-200 border border-amber-600"
+                    : "bg-slate-900 text-slate-400 border border-slate-700"
+                }`}>
+                  {terminalState.decisionState.replace(/_/g, " ")}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Domain Breakdown Cards */}
