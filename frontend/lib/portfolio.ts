@@ -128,16 +128,24 @@ export function addPortfolioPosition(pos: {
       };
     }
 
+    if (!pos.entryPrice || pos.entryPrice <= 0) {
+      return {
+        success: false,
+        isDuplicate: false,
+        message: `Cannot add ${symUpper} to portfolio without a verified market price.`,
+      };
+    }
+
     const calculatedShares = (pos.shares && pos.shares > 0)
       ? pos.shares
-      : Math.max(1, Math.round(2500 / (pos.entryPrice || 100)));
+      : Math.max(1, Math.round(2500 / pos.entryPrice));
 
     const newPos: PortfolioPosition = {
       symbol: symUpper,
       name: pos.name || symUpper,
       shares: calculatedShares,
       entryPrice: pos.entryPrice,
-      currentPrice: pos.currentPrice || pos.entryPrice,
+      currentPrice: (pos.currentPrice && pos.currentPrice > 0) ? pos.currentPrice : pos.entryPrice,
       targetPrice: pos.targetPrice,
       stopLossPrice: pos.stopLossPrice,
       addedAt: new Date().toISOString().split("T")[0],

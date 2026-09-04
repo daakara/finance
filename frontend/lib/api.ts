@@ -1131,10 +1131,6 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
   // Dynamic Live Catalog Discovery (Constructed from authentic multi-factor models & spot prices)
   const catalogEntries = Object.entries(MASTER_ASSET_CATALOG);
   const candidates: GemCandidate[] = catalogEntries.map(([ticker, asset]) => {
-    const reg = SpotPriceRegistry.get(ticker);
-    const snap = getPersistedMarketSnapshot(ticker, true);
-    const livePrice = reg?.price || snap?.currentPrice || 100.0;
-
     return {
       ticker,
       composite_score: Math.min(99, Math.max(70, Math.round(asset.compositeFactorScore))),

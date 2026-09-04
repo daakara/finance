@@ -32,8 +32,12 @@ class ConfluenceEngine:
             pattern = technical_data.get("setup_pattern", "")
             stage = technical_data.get("stage_phase", "")
             exec_status = technical_data.get("executionStatus") or technical_data.get("execution_status", "")
-            rsi = float(technical_data.get("rsi_14", 50.0))
-            rr = float(technical_data.get("risk_reward_ratio") or technical_data.get("riskRewardRatio", 2.0))
+            raw_rsi = technical_data.get("rsi_14")
+            rsi = float(raw_rsi) if raw_rsi is not None else 50.0
+            raw_rr = technical_data.get("risk_reward_ratio")
+            if raw_rr is None:
+                raw_rr = technical_data.get("riskRewardRatio")
+            rr = float(raw_rr) if raw_rr is not None else 2.0
 
             if "Correction" in pattern or "Stage 4" in pattern or "Stage 4" in stage:
                 tech_score = 30.0

@@ -195,8 +195,49 @@ class HiddenGemsScreener:
             return []
 
         results = []
+        SUPPORTED_SCREENER_UNIVERSE = {
+            # AI & Megacap Momentum
+            "NVDA", "TSLA", "PLTR", "ARM", "SMCI", "AMD", "META", "AAPL", "MSFT", "AMZN",
+            # Cloud & Cybersecurity
+            "CRWD", "PANW", "NET", "DDOG", "MDB",
+            # Crypto & FinTech Beta
+            "COIN", "MARA", "MSTR", "HOOD", "BTC", "ETH", "SOL",
+            # High-Beta Volatility & Squeeze Runners
+            "DUOL", "CELH", "IONQ", "RKLB", "APP",
+            # MedTech & Biotech Monopolies
+            "LNTH", "CPRX", "MEDP", "TMDX", "ISRG", "VRTX", "LLY", "NVO", "DXCM", "PODD",
+            # High-Moat Semiconductors & SiC Ion Implantation
+            "ACLS", "POWI", "ON", "MPWR", "KLAC", "LRCX", "ASML", "AVGO",
+            # Peter Lynch GARP & Organic Consumer Compounders
+            "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
+            # Clean Tech, Power Infrastructure & Industrials
+            "VRT", "ETN", "PWR", "GEV", "FIX", "EME", "ENPH",
+            # Disruptive Cloud, EdTech & EDA Infrastructure
+            "ANET", "NOW", "SNPS", "CDNS",
+        }
+
         for ticker in tickers:
-            sym_clean = ticker.upper().replace("-USD", "")
+            sym_clean = ticker.upper().replace("-USD", "").strip()
+            # Epistemic Invariant: Unknown/uncataloged tickers must strictly fail closed
+            if sym_clean not in self.KNOWN_GEMS_DATA and sym_clean not in SUPPORTED_SCREENER_UNIVERSE:
+                results.append({
+                    "ticker": ticker.upper(),
+                    "composite_score": 0.0,
+                    "lynch_score": 0.0,
+                    "greenblatt_score": 0.0,
+                    "growth_score": 0.0,
+                    "expert_model": "Unverified Asset / Missing Regulatory Filings",
+                    "peg_ratio": 0.0,
+                    "roic_pct": 0.0,
+                    "gross_margin_pct": 0.0,
+                    "risk_rating": "Unverified Risk",
+                    "investment_thesis": "Fundamental metrics and SEC disclosures unavailable for this uncataloged asset.",
+                    "primary_catalyst": "Awaiting verified corporate disclosures.",
+                    "factor_verdict": "Unverified / Awaiting SEC Disclosures",
+                    "dna_verdict": "Unverified Asset",
+                })
+                continue
+
             gem_data = self.KNOWN_GEMS_DATA.get(
                 sym_clean,
                 {

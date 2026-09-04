@@ -387,9 +387,9 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
 
                 {/* Inline Mini Sparkline */}
                 <div className="hidden sm:block shrink-0 px-1">
-                  {item.price ? (
+                  {item.price && parseFloat(item.price.replace(/[^0-9.]/g, "")) > 0 ? (
                     <MiniSparkline
-                      basePrice={parseFloat(item.price.replace(/[^0-9.]/g, "")) || 100}
+                      basePrice={parseFloat(item.price.replace(/[^0-9.]/g, ""))}
                       changePct={parseFloat(item.change?.replace(/[^0-9.-]/g, "") || "0") || 0}
                       isPositive={item.isUp ?? true}
                       width={42}

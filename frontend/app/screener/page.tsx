@@ -1099,21 +1099,27 @@ export default function ScreenerPage() {
 
                       <button
                         type="button"
+                        disabled={!gem.currentPrice || gem.currentPrice <= 0}
                         onClick={() => {
+                          if (!gem.currentPrice || gem.currentPrice <= 0) return;
                           const res = addPortfolioPosition({
                             symbol: gem.symbol,
                             name: gem.companyName,
-                            shares: Math.max(1, Math.round(2500 / (gem.currentPrice || 100))),
-                            entryPrice: gem.currentPrice || 100,
-                            currentPrice: gem.currentPrice || 100,
+                            shares: Math.max(1, Math.round(2500 / gem.currentPrice)),
+                            entryPrice: gem.currentPrice,
+                            currentPrice: gem.currentPrice,
                             targetPrice: gem.takeProfit1,
                             stopLossPrice: gem.stopLoss,
                           });
                           setLoggedGemSymbol(`${gem.symbol}: ${res.isDuplicate ? "Already In Portfolio" : "Logged!"}`);
                           setTimeout(() => setLoggedGemSymbol(null), 3000);
                         }}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300 flex items-center gap-1 shadow"
-                        title="Log directly to Paper Portfolio"
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border flex items-center gap-1 shadow ${
+                          !gem.currentPrice || gem.currentPrice <= 0
+                            ? "bg-slate-800/40 border-slate-700/50 text-slate-500 cursor-not-allowed opacity-50"
+                            : "bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300"
+                        }`}
+                        title={!gem.currentPrice || gem.currentPrice <= 0 ? "Price unavailable" : "Log directly to Paper Portfolio"}
                       >
                         <span>💼</span>
                         <span>{loggedGemSymbol && loggedGemSymbol.startsWith(gem.symbol) ? loggedGemSymbol.split(":")[1] : "Log"}</span>

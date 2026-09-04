@@ -129,17 +129,41 @@ def run_screener_get(
 
         # Retrieve current price and candles from market database
         latest_info = market_db.get_latest_price(sym)
-        current_price = latest_info["currentPrice"] if latest_info else CANDIDATE_BASELINES.get(sym, 100.0)
+        current_price = latest_info["currentPrice"] if latest_info else CANDIDATE_BASELINES.get(sym)
 
-        db_candles = market_db.get_daily_candles(sym, limit=60)
-        if db_candles:
-            hist_df = pd.DataFrame([{
-                "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-            } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+        if current_price is None or current_price <= 0:
+            current_price = 0.0
+            execution = {
+                "current_price": 0.0,
+                "optimal_entry_min": None,
+                "optimal_entry_max": None,
+                "stop_loss": None,
+                "stop_loss_pct": None,
+                "take_profit_1": None,
+                "take_profit_1_pct": None,
+                "take_profit_2": None,
+                "take_profit_2_pct": None,
+                "risk_reward_ratio": None,
+                "execution_status": "UNVERIFIED_ASSET",
+                "setup_pattern": "Unverified Asset Setup",
+                "entry_thesis": "Pricing and exchange tape unavailable. Trade levels suppressed.",
+                "invalidation_condition": "Awaiting market data.",
+                "stage_phase": "Unverified Asset",
+                "vcp_contraction_status": "Unverified",
+                "breakout_pivot": None,
+                "atr_14": None,
+                "liquidity_defense": None,
+            }
         else:
-            hist_df = pd.DataFrame()
+            db_candles = market_db.get_daily_candles(sym, limit=60)
+            if db_candles:
+                hist_df = pd.DataFrame([{
+                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+            else:
+                hist_df = pd.DataFrame()
 
-        execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
+            execution = optimal_engine.calculate_trade_levels(hist_df, current_price, user_role=user_role)
 
         entry_min = execution["optimal_entry_min"]
         entry_max = execution["optimal_entry_max"]
@@ -149,11 +173,15 @@ def run_screener_get(
         rr_ratio = execution["risk_reward_ratio"]
         setup_pat = execution["setup_pattern"]
         entry_th = execution["entry_thesis"]
-        atr_14 = execution.get("atr_14", round(current_price * 0.025, 2))
+        atr_14 = execution.get("atr_14")
 
         # Pure Mathematical Execution State Determination
-        if execution.get("execution_status") == "INSUFFICIENT_HISTORY" or stop_loss is None:
-            execution_status = "WAITING_PULLBACK"
+        if execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price <= 0:
+            execution_status = "UNVERIFIED_ASSET"
+            status_label = "⚠️ Unverified Asset"
+            status_color = "slate"
+        elif execution.get("execution_status") == "INSUFFICIENT_HISTORY" or stop_loss is None:
+            execution_status = "INSUFFICIENT_HISTORY"
             status_label = "⏳ Insufficient History"
             status_color = "cyan"
         elif execution.get("stage_phase") == "Stage 4 Markdown (Awaiting New Base)":
@@ -185,64 +213,85 @@ def run_screener_get(
             status_color = "rose"
 
         # Deterministic Smart Money & Catalyst Attributes
-        has_insider = (abs(hash(sym)) % 3 == 0) or sym in ["LNTH", "CPRX", "ELF", "ACLS", "NVDA", "PLTR", "AAPL", "MSFT", "ISRG", "VRT"]
-        has_congress = (abs(hash(sym)) % 4 == 0) or sym in ["LNTH", "POWI", "DUOL", "NVDA", "TSLA", "AMD", "LLY", "UNH", "PANW"]
-        days_to_earn = 1 if sym in ["DUOL", "SMCI", "CELH"] else (35 if (abs(hash(sym)) % 2 == 0) else 18)
+        if execution_status == "UNVERIFIED_ASSET" or current_price <= 0:
+            confluence_res = {
+                "confluenceScore": 0.0,
+                "confluenceRating": "Unverified Asset / No Market Data",
+                "badgeColor": "slate",
+                "reasons": ["Pricing, tape, and regulatory filings unavailable for unverified security."],
+                "warnings": ["Do not trade unverified assets. Trade levels suppressed."],
+            }
+            rvol_val = "N/A"
+            short_float_val = "N/A"
+        elif execution_status == "INSUFFICIENT_HISTORY":
+            confluence_res = {
+                "confluenceScore": 0.0,
+                "confluenceRating": "Insufficient History (< 50 Bars)",
+                "badgeColor": "cyan",
+                "reasons": ["Asset has fewer than 50 historical trading sessions on exchange record."],
+                "warnings": ["Trade levels and risk geometry suppressed until seasoning threshold met."],
+            }
+            rvol_val = "N/A"
+            short_float_val = "N/A"
+        else:
+            has_insider = (abs(hash(sym)) % 3 == 0) or sym in ["LNTH", "CPRX", "ELF", "ACLS", "NVDA", "PLTR", "AAPL", "MSFT", "ISRG", "VRT"]
+            has_congress = (abs(hash(sym)) % 4 == 0) or sym in ["LNTH", "POWI", "DUOL", "NVDA", "TSLA", "AMD", "LLY", "UNH", "PANW"]
+            days_to_earn = 1 if sym in ["DUOL", "SMCI", "CELH"] else (35 if (abs(hash(sym)) % 2 == 0) else 18)
 
-        # Compute multi-factor confluence conviction score
-        confluence_res = confluence_engine.calculate_confluence(
-            symbol=sym,
-            technical_data={
-                "executionStatus": execution_status,
-                "riskRewardRatio": rr_ratio,
-                "setup_pattern": setup_pat,
-                "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
-                "rsi_14": 56.0,
-                "stop_loss": stop_loss,
-                "current_price": current_price,
-            },
-            smart_money_data={
-                "has_insider_buy": has_insider,
-                "insider_value_usd": 1500000.0 if has_insider else 0.0,
-                "has_congress_buy": has_congress,
-                "has_options_flow": is_day_trader,
-            },
-            fundamental_data={
-                "qualityScore": 88.0 if int(r.get("piotroski_f", 8)) >= 8 else 75.0,
-                "growthScore": float(r.get("growth_score", 85.0)),
-                "valuationScore": float(r.get("valuation_score", 70.0)),
-                "piotroski_f": int(r.get("piotroski_f", 8)),
-                "roic": roic_val,
-                "peg": float(r.get("peg_ratio", 0.85)),
-            },
-            catalyst_data={
-                "days_to_earnings": days_to_earn,
-            },
-            macro_data={
-                "yield_curve_10y2y": 0.25,
-                "credit_spread": 3.5,
-            },
-        )
+            # Compute multi-factor confluence conviction score
+            confluence_res = confluence_engine.calculate_confluence(
+                symbol=sym,
+                technical_data={
+                    "executionStatus": execution_status,
+                    "riskRewardRatio": rr_ratio,
+                    "setup_pattern": setup_pat,
+                    "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
+                    "rsi_14": 56.0,
+                    "stop_loss": stop_loss,
+                    "current_price": current_price,
+                },
+                smart_money_data={
+                    "has_insider_buy": has_insider,
+                    "insider_value_usd": 1500000.0 if has_insider else 0.0,
+                    "has_congress_buy": has_congress,
+                    "has_options_flow": is_day_trader,
+                },
+                fundamental_data={
+                    "qualityScore": 88.0 if int(r.get("piotroski_f", 8)) >= 8 else 75.0,
+                    "growthScore": float(r.get("growth_score", 85.0)),
+                    "valuationScore": float(r.get("valuation_score", 70.0)),
+                    "piotroski_f": int(r.get("piotroski_f", 8)),
+                    "roic": roic_val,
+                    "peg": float(r.get("peg_ratio", 0.85)),
+                },
+                catalyst_data={
+                    "days_to_earnings": days_to_earn,
+                },
+                macro_data={
+                    "yield_curve_10y2y": 0.25,
+                    "credit_spread": 3.5,
+                },
+            )
 
-        rvol_val = f"{2.2 + (abs(hash(sym)) % 20) / 10.0:.1f}x"
-        short_float_val = f"{4.8 + (abs(hash(sym)) % 65) / 10.0:.1f}%"
+            rvol_val = f"{2.2 + (abs(hash(sym)) % 20) / 10.0:.1f}x"
+            short_float_val = f"{4.8 + (abs(hash(sym)) % 65) / 10.0:.1f}%"
 
         mapped_candidates.append({
             "symbol": sym,
             "companyName": r.get("company_name", sym),
             "currentPrice": current_price,
-            "gemScore": int(r.get("composite_score", 88)),
-            "expertArchetype": r.get("expert_model", "High-Beta Momentum Leader" if is_day_trader else "Peter Lynch GARP Compounder"),
+            "gemScore": int(r.get("composite_score", 0 if execution_status == "UNVERIFIED_ASSET" else 88)),
+            "expertArchetype": r.get("expert_model", "Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else ("High-Beta Momentum Leader" if is_day_trader else "Peter Lynch GARP Compounder")),
             "roic": f"{roic_val}%",
-            "pegRatio": str(r.get("peg_ratio", 0.82)),
+            "pegRatio": str(r.get("peg_ratio", 0.0 if execution_status == "UNVERIFIED_ASSET" else 0.82)),
             "grossMargin": f"{margin_val}%",
-            "atr14": f"${atr_14:.2f}",
+            "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY"]) else "N/A",
             "rvol": rvol_val,
             "shortFloat": short_float_val,
-            "dayTraderSetup": "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk.",
-            "thesis": r.get("investment_thesis", "High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows."),
-            "catalyst": r.get("primary_catalyst", "Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains."),
-            "riskLevel": "High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk"),
+            "dayTraderSetup": "Pricing and intraday VWAP tape unavailable." if execution_status == "UNVERIFIED_ASSET" else "Intraday momentum trend continuation above 5m VWAP anchor with defined ATR risk.",
+            "thesis": r.get("investment_thesis", "Disclosures and market data unavailable for unverified security." if execution_status == "UNVERIFIED_ASSET" else ("High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows.")),
+            "catalyst": r.get("primary_catalyst", "Awaiting verified disclosures." if execution_status == "UNVERIFIED_ASSET" else ("Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains.")),
+            "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk")),
             # Execution Scanner Levels
             "executionStatus": execution_status,
             "statusLabel": status_label,
@@ -250,11 +299,11 @@ def run_screener_get(
             "optimalEntryMin": entry_min,
             "optimalEntryMax": entry_max,
             "stopLoss": stop_loss,
-            "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1),
+            "stopLossPct": round(((stop_loss - current_price) / current_price) * 100, 1) if (stop_loss is not None and current_price > 0) else None,
             "takeProfit1": tp1,
-            "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1),
+            "takeProfit1Pct": round(((tp1 - current_price) / current_price) * 100, 1) if (tp1 is not None and current_price > 0) else None,
             "takeProfit2": tp2,
-            "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1),
+            "takeProfit2Pct": round(((tp2 - current_price) / current_price) * 100, 1) if (tp2 is not None and current_price > 0) else None,
             "riskRewardRatio": rr_ratio,
             "setupPattern": setup_pat,
             "entryThesis": entry_th,
@@ -275,20 +324,20 @@ def run_screener_get(
     elif filter_type == "high_rr":
         filtered = [
             c for c in mapped_candidates
-            if c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or c["currentPrice"] <= c.get("optimalEntryMax", c["currentPrice"]) * 1.02)
+            if c.get("riskRewardRatio") is not None and c["riskRewardRatio"] >= 2.0 and (c["executionStatus"] == "IN_BUY_ZONE" or (c.get("optimalEntryMax") is not None and c["currentPrice"] <= c["optimalEntryMax"] * 1.02))
         ]
     elif filter_type == "high_confluence":
-        filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0]
+        filtered = [c for c in mapped_candidates if c["confluenceScore"] >= 80.0 and c["executionStatus"] != "UNVERIFIED_ASSET"]
     elif filter_type == "high_rvol":
-        filtered = [c for c in mapped_candidates if float(c["rvol"].replace("x", "")) >= 2.5]
+        filtered = [c for c in mapped_candidates if c["rvol"] != "N/A" and float(c["rvol"].replace("x", "")) >= 2.5]
     elif filter_type == "squeeze":
-        filtered = [c for c in mapped_candidates if float(c["shortFloat"].replace("%", "")) >= 6.0]
+        filtered = [c for c in mapped_candidates if c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
     elif filter_type == "lynch":
-        filtered = [c for c in mapped_candidates if (0 < float(c["pegRatio"]) <= 1.05) or "Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and ((0 < float(c["pegRatio"]) <= 1.05) or "Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])]
     elif filter_type == "greenblatt":
-        filtered = [c for c in mapped_candidates if float(c["roic"].replace("%", "")) >= 28.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["roic"].replace("%", "")) >= 28.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"])]
     elif filter_type == "rule_breakers":
-        filtered = [c for c in mapped_candidates if float(c["grossMargin"].replace("%", "")) >= 65.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"]]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["grossMargin"].replace("%", "")) >= 65.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"])]
     else:
         filtered = mapped_candidates
 

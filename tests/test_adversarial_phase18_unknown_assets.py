@@ -22,6 +22,7 @@ from api.main import app
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 
 client = TestClient(app)
 
@@ -138,11 +139,20 @@ def test_confluence_engine_handles_none_stop_loss():
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("fake_symbol", ["FAKEETF123", "NONEXISTENT_TICKER_999", "UNKNOWN_XYZ"])
 def test_analytics_api_rejects_nonexistent_assets(fake_symbol):
-    """The backend API must return 404 for completely fake tickers."""
-    response = client.get(f"/analytics/{fake_symbol}")
-    assert response.status_code == 404
+    """The backend API must return 404 (or 400 for invalid format/length) for fake tickers."""
+    response = client.get(f"/api/v1/analytics/{fake_symbol}")
+    assert response.status_code in [400, 404]
     detail = response.json().get("detail", "")
-    assert "not found" in detail.lower() or "insufficient" in detail.lower() or fake_symbol in detail
+    assert "not found" in detail.lower() or "insufficient" in detail.lower() or "invalid" in detail.lower() or fake_symbol in detail
+
+
+def test_analytics_api_rejects_malformed_symbol_format():
+    """The backend API must return 400 for malformed ticker formats with special characters or excessive length."""
+    response = client.get("/api/v1/analytics/INVALID!@#")
+    assert response.status_code == 400
+    detail = response.json().get("detail", "")
+    assert "invalid ticker symbol format" in detail.lower()
+
 
 
 # ---------------------------------------------------------------------------
@@ -201,3 +211,65 @@ def test_regression_verified_assets_healthy():
     cat_engine = CatalystEngine()
     cprx_cat = cat_engine.get_asset_catalyst_report("CPRX", current_price=22.0)
     assert cprx_cat["company_name"] is not None
+
+
+# ---------------------------------------------------------------------------
+# Test 8: Screener Route Rejects Custom Unknown Tickers End-to-End
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("fake_sym", ["FAKEETF123", "NONEXISTENT_TICKER_999", "UNKNOWN_XYZ", "GLX ETF"])
+def test_screener_custom_unknown_tickers_fail_closed(fake_sym):
+    """Custom unknown tickers passed to /api/v1/screener/run must fail closed with zero levels."""
+    response = client.get(f"/api/v1/screener/run?custom_tickers={fake_sym}")
+    assert response.status_code == 200
+    data = response.json()
+    candidates = data.get("candidates", [])
+    assert len(candidates) >= 1
+    cand = candidates[0]
+
+    assert cand["executionStatus"] in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY"]
+    assert cand["optimalEntryMin"] is None
+    assert cand["optimalEntryMax"] is None
+    assert cand["stopLoss"] is None
+    assert cand["stopLossPct"] is None
+    assert cand["takeProfit1"] is None
+    assert cand["takeProfit1Pct"] is None
+    assert cand["takeProfit2"] is None
+    assert cand["takeProfit2Pct"] is None
+    assert cand["riskRewardRatio"] is None
+    assert cand["confluenceScore"] == 0.0
+    assert cand["atr14"] == "N/A"
+    assert cand["rvol"] == "N/A"
+    assert cand["shortFloat"] == "N/A"
+
+
+# ---------------------------------------------------------------------------
+# Test 9: Unverified Assets Excluded from Favorable Screener Filters
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("filter_type", ["high_confluence", "in_buy_zone", "high_rr", "lynch", "greenblatt", "rule_breakers"])
+def test_screener_unverified_assets_excluded_from_filters(filter_type):
+    """Unverified assets must never pass through favorable or strategy filters."""
+    response = client.get(f"/api/v1/screener/run?custom_tickers=FAKEETF123,NVDA&filter_type={filter_type}")
+    assert response.status_code == 200
+    data = response.json()
+    symbols_in_filtered = [c["symbol"] for c in data.get("candidates", [])]
+    assert "FAKEETF123" not in symbols_in_filtered
+
+
+# ---------------------------------------------------------------------------
+# Test 10: HiddenGemsScreener Analyzer Fails Closed on Uncataloged Tickers
+# ---------------------------------------------------------------------------
+def test_hidden_gems_screener_fails_closed_on_uncataloged_tickers():
+    """HiddenGemsScreener must not synthesize random metrics for unknown tickers."""
+    screener = HiddenGemsScreener()
+    results = screener.evaluate_candidates(["FAKE123", "   ", "UNKNOWN_ABC", "GLX"])
+    for r in results:
+        # GLX is not in KNOWN_GEMS_DATA or SUPPORTED_SCREENER_UNIVERSE
+        assert r["composite_score"] == 0.0
+        assert r["lynch_score"] == 0.0
+        assert r["greenblatt_score"] == 0.0
+        assert r["growth_score"] == 0.0
+        assert r["roic_pct"] == 0.0
+        assert r["peg_ratio"] == 0.0
+        assert "Unverified" in r["expert_model"]
+        assert "Unverified" in r["factor_verdict"]
+        assert "Unverified" in r["dna_verdict"]
