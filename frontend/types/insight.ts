@@ -220,3 +220,24 @@ export interface QuantitativeInsight {
   whatWouldChangeAssessment: string;
   availableActions: ARXAction[];
 }
+
+export interface FreshnessInfo {
+  status: "LIVE" | "DELAYED" | "END_OF_DAY" | "STALE_HISTORICAL" | "UNAVAILABLE" | string;
+  providerSource?: string;
+  lastTradeDate?: string;
+  stalenessDays?: number;
+  candleCount?: number;
+}
+
+export interface DecisionTrace {
+  symbol: string;
+  decisionState: DecisionState;
+  stateLabel: string;
+  isActionable: boolean;
+  canSizeTrade: boolean;
+  allowedActions: string[];
+  disqualificationReason: string | null;
+  pillarBreakdown?: Record<string, any>;
+  timestamp?: string;
+}
+

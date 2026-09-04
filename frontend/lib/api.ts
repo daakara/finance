@@ -4,6 +4,7 @@ import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN
 import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandles } from "./marketDatabase";
 import { getCanonicalAssetCatalyst } from "./assetRegistry";
 import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "./masterCatalog";
+import { DecisionTrace, FreshnessInfo } from "../types/insight";
 
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
@@ -383,6 +384,8 @@ export interface AnalyticsResponse {
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];
   };
+  freshness?: FreshnessInfo;
+  decisionTrace?: DecisionTrace;
   analytics?: {
     advanced_metrics?: {
       VaR_95?: number;
@@ -516,6 +519,21 @@ export function generateFallbackAnalytics(
       smartMoney: {
         congressTrades: [],
         optionsFlow: [],
+      },
+      freshness: {
+        status: "UNAVAILABLE",
+        providerSource: "none",
+        stalenessDays: 999,
+        candleCount: 0,
+      },
+      decisionTrace: {
+        symbol: upper,
+        decisionState: "UNVERIFIED",
+        stateLabel: "Unverified Asset — Disclosures Required",
+        isActionable: false,
+        canSizeTrade: false,
+        allowedActions: ["RESEARCH_PROFILE"],
+        disqualificationReason: "No verified real-time or historical exchange tape on record.",
       },
     };
   }
@@ -659,6 +677,21 @@ export function generateFallbackAnalytics(
     smartMoney: registered?.smartMoney || persisted?.smartMoney || {
       congressTrades: [],
       optionsFlow: [],
+    },
+    freshness: {
+      status: "END_OF_DAY",
+      providerSource: "offline_fallback",
+      stalenessDays: 1,
+      candleCount: generatedCandles.length,
+    },
+    decisionTrace: {
+      symbol: upper,
+      decisionState: generatedCandles.length >= 50 ? "VALID_SETUP" : "INSUFFICIENT_DATA",
+      stateLabel: generatedCandles.length >= 50 ? "Valid Setup — Offline Fallback" : `Insufficient History (${generatedCandles.length}/50 Sessions)`,
+      isActionable: false,
+      canSizeTrade: false,
+      allowedActions: generatedCandles.length >= 50 ? ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"] : ["RESEARCH_PROFILE", "ADD_WATCHLIST"],
+      disqualificationReason: generatedCandles.length >= 50 ? "Offline fallback feed: live trade triggers are suspended." : `Requires minimum 50 daily trading sessions for trend validation; ${generatedCandles.length} provided.`,
     },
   };
 }

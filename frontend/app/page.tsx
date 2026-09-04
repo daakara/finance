@@ -285,6 +285,9 @@ function TerminalContent() {
               confluence={data?.confluence}
               candles={data?.candles}
               dataSource={data?._dataSource}
+              decisionTrace={data?.decisionTrace}
+              optimalExecution={data?.optimalExecution}
+              freshness={data?.freshness}
             />
           )}
 

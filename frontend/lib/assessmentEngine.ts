@@ -32,6 +32,7 @@ export interface AssessmentEngineInput {
   isInvalidationBreached?: boolean;
   invalidationPrice?: number;
   reclaimMilestonePrice?: number;
+  freshnessStatus?: string;
   modelProvenance?: ModelProvenance;
 }
 
@@ -95,6 +96,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     isInvalidationBreached = false,
     invalidationPrice,
     reclaimMilestonePrice,
+    freshnessStatus,
     modelProvenance = {
       modelId: "arx-confluence-engine",
       modelVersion: "2.4.0",
@@ -147,6 +149,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   let uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
   let headlineExplanation = "Incomplete evidence available to assess setup.";
 
+  const isStale = freshnessStatus === "STALE_HISTORICAL";
+
   if (isActuallyBreached) {
     if (ownershipState === "OWNED") {
       posture = "EXIT_REVIEW";
@@ -157,6 +161,10 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       uiStateLabel = "Setup Invalidated";
       headlineExplanation = `Price has fallen below the setup invalidation floor at $${stopLevel.toFixed(2)}. Risk parameters breached.`;
     }
+  } else if (isStale) {
+    posture = "RESEARCH";
+    uiStateLabel = "Stale Historical Tape (> 4 Days)";
+    headlineExplanation = "Market data is historical/stale; live trade triggers are suspended.";
   } else if (!isCoreEvidenceAvailable || overallEligibility !== "ELIGIBLE" || !isTrendAvailable) {
     posture = "RESEARCH";
     uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
@@ -226,12 +234,14 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
   ];
 
-  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A)
+  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21)
   let decisionState: DecisionState = "VALID_SETUP";
-  if (!isPriceValid || agreement.evaluated === 0) {
+  if (!isPriceValid || agreement.evaluated === 0 || freshnessStatus === "UNAVAILABLE") {
     decisionState = "UNVERIFIED";
   } else if (!isTrendAvailable) {
     decisionState = "INSUFFICIENT_DATA";
+  } else if (isStale) {
+    decisionState = "STALE_DATA";
   } else if (!isHealthAvailable) {
     decisionState = "EVIDENCE_INCOMPLETE";
   } else if (posture === "ACQUIRE") {

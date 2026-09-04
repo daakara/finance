@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useExperienceMode } from "../context/ExperienceModeContext";
 import { generateQuantitativeInsight } from "../lib/insightGenerator";
-import { TimeHorizon, OwnershipState } from "../types/insight";
+import { TimeHorizon, OwnershipState, DecisionTrace, FreshnessInfo } from "../types/insight";
 import GuidedTerminalView from "./terminal/GuidedTerminalView";
 import StandardTerminalView from "./terminal/StandardTerminalView";
 import AdvancedTerminalView from "./terminal/AdvancedTerminalView";
 import WhyInspectModal from "./WhyInspectModal";
 import PositionSizerModal from "./PositionSizerModal";
 
-import { CandleData, ConfluenceData } from "../lib/api";
+import { CandleData, ConfluenceData, OptimalExecutionPlan } from "../lib/api";
 import { resolveOverallEvidenceBadge } from "../lib/dataProvenance";
 
 interface AdaptiveTerminalProps {
@@ -25,6 +25,9 @@ interface AdaptiveTerminalProps {
   isStage4?: boolean;
   candles?: CandleData[];
   dataSource?: "live" | "fallback" | "unavailable";
+  decisionTrace?: DecisionTrace;
+  optimalExecution?: OptimalExecutionPlan;
+  freshness?: FreshnessInfo;
 }
 
 export default function AdaptiveTerminal({
@@ -37,6 +40,9 @@ export default function AdaptiveTerminal({
   isStage4,
   candles,
   dataSource,
+  decisionTrace,
+  optimalExecution,
+  freshness,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -87,7 +93,10 @@ export default function AdaptiveTerminal({
     "USER_DECLARED",
     candles,
     dataSource,
-    confluence
+    confluence,
+    decisionTrace,
+    optimalExecution,
+    freshness?.status
   );
 
   const evidenceBadge = resolveOverallEvidenceBadge({
@@ -236,7 +245,8 @@ export default function AdaptiveTerminal({
         entryPrice={currentPrice}
         stopLoss={insight.standard.keyLevels.stopLoss}
         takeProfit1={insight.standard.keyLevels.target1}
-        isStage4={isStage4}
+        riskRewardRatio={insight.standard.keyLevels.profitRiskRatio}
+        isStage4={isStage4 || (insight.advanced.vcpStage === undefined && insight.verdict !== "ACTIONABLE_BUY_ZONE")}
       />
     </div>
   );

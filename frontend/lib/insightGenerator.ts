@@ -5,9 +5,10 @@ import {
   OwnershipSource,
   DomainAssessment,
   FactorAttributionItem,
+  DecisionTrace,
 } from "../types/insight";
 import { deriveAssessmentState } from "./assessmentEngine";
-import { CandleData, ConfluenceData } from "./api";
+import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 
 export function generateQuantitativeInsight(
@@ -22,7 +23,10 @@ export function generateQuantitativeInsight(
   ownershipSource: OwnershipSource = "USER_DECLARED",
   candles?: CandleData[],
   dataSource?: "live" | "fallback" | "unavailable",
-  confluence?: ConfluenceData
+  confluence?: ConfluenceData,
+  decisionTrace?: DecisionTrace,
+  optimalExecution?: OptimalExecutionPlan,
+  freshnessStatus?: string
 ): QuantitativeInsight {
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
@@ -102,12 +106,29 @@ export function generateQuantitativeInsight(
     : (isTrendAvailable ? (safePrice < (sma50 as number) ? 4 : 2) : 2);
   const isStage4 = derivedStage === 4;
 
-  const stopLoss = (isPriceValid && isTrendAvailable) ? Number((safePrice * 0.93).toFixed(2)) : 0;
-  const target1 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.204).toFixed(2)) : undefined;
-  const target2 = (isPriceValid && isTrendAvailable) ? Number((safePrice * 1.293).toFixed(2)) : undefined;
-  const profitRisk = (isPriceValid && isTrendAvailable && target1 !== undefined && safePrice > stopLoss)
-    ? Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2))
-    : undefined;
+  // 2b. Authentic Trade Levels (Phase 21: Use backend optimalExecution directly if provided)
+  const isExecutionSuppressed = optimalExecution?.execution_status === "INSUFFICIENT_HISTORY"
+    || optimalExecution?.execution_status === "UNVERIFIED_ASSET"
+    || !isTrendAvailable;
+
+  let stopLoss: number = 0;
+  let target1: number | undefined = undefined;
+  let target2: number | undefined = undefined;
+  let profitRisk: number | undefined = undefined;
+
+  if (optimalExecution && optimalExecution.stop_loss && optimalExecution.stop_loss > 0 && !isExecutionSuppressed) {
+    stopLoss = optimalExecution.stop_loss;
+    target1 = optimalExecution.take_profit_1 ?? undefined;
+    target2 = optimalExecution.take_profit_2 ?? undefined;
+    profitRisk = optimalExecution.risk_reward_ratio ?? undefined;
+  } else if (!isExecutionSuppressed && isPriceValid && isTrendAvailable) {
+    stopLoss = Number((safePrice * 0.93).toFixed(2));
+    target1 = Number((safePrice * 1.204).toFixed(2));
+    target2 = Number((safePrice * 1.293).toFixed(2));
+    profitRisk = (target1 !== undefined && safePrice > stopLoss)
+      ? Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2))
+      : undefined;
+  }
 
   // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog (DISC-03, DISC-04)
   const upperSym = symbol.toUpperCase().replace("-USD", "");
@@ -305,7 +326,39 @@ export function generateQuantitativeInsight(
     domains,
     invalidationPrice: stopLoss,
     reclaimMilestonePrice: sma50,
+    freshnessStatus,
   });
+
+  // Phase 21 Epistemic Alignment: Honor authoritative backend decisionTrace if provided
+  if (decisionTrace) {
+    terminalState.decisionState = decisionTrace.decisionState;
+
+    if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
+      terminalState.posture = "WATCH";
+      terminalState.uiStateLabel = decisionTrace.stateLabel || "Valid Setup — Awaiting Trigger";
+      terminalState.headlineExplanation = decisionTrace.disqualificationReason || "Price is outside the optimal entry corridor; awaiting pullback to buy zone.";
+      terminalState.primaryAction = {
+        label: sma50 !== undefined ? `Set Alert for $${sma50.toFixed(2)}` : "Set Price Alert",
+        actionType: "SET_ALERT",
+        enabled: true,
+      };
+    } else if (decisionTrace.stateLabel) {
+      terminalState.uiStateLabel = decisionTrace.stateLabel;
+      if (decisionTrace.disqualificationReason) {
+        terminalState.headlineExplanation = decisionTrace.disqualificationReason;
+      }
+    }
+
+    // Bind canSizeTrade and allowed actions directly from decisionTrace
+    for (const action of terminalState.availableActions) {
+      if (action.id === "size_trade") {
+        action.enabled = decisionTrace.canSizeTrade;
+        if (!decisionTrace.canSizeTrade) {
+          action.reason = decisionTrace.disqualificationReason || "Trade sizing disabled until trigger confirmed";
+        }
+      }
+    }
+  }
 
   const factors: FactorAttributionItem[] = domains.map((d) => ({
     factorId: d.domainId,
@@ -320,6 +373,10 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: d.whatWouldChangeAssessment,
   }));
 
+  const finalVerdict = decisionTrace
+    ? (decisionTrace.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER")
+    : (terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
+
   return {
     id: `insight_${symbol.toLowerCase()}`,
     symbol: symbol.toUpperCase(),
@@ -333,7 +390,7 @@ export function generateQuantitativeInsight(
     postureLabel: terminalState.uiStateLabel,
     ownership,
     terminalState,
-    verdict: terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER",
+    verdict: finalVerdict,
     verdictLabel: terminalState.uiStateLabel,
 
     // Tier 1: Human (Guided)
@@ -378,9 +435,9 @@ export function generateQuantitativeInsight(
         ? `${symbol} needs to reclaim $${(sma50 as number).toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`
         : `Historical trend milestone unavailable (${symbol} has insufficient trading history).`,
       watchLevels: {
-        watchZone: (isPriceValid && isTrendAvailable) ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (< 50 sessions)",
-        keyLevel: isTrendAvailable ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
-        riskStop: (isPriceValid && isTrendAvailable && stopLoss > 0) ? `$${stopLoss.toFixed(2)} (-7.0%)` : "N/A (< 50 sessions)",
+        watchZone: (isPriceValid && !isExecutionSuppressed) ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (< 50 sessions)",
+        keyLevel: sma50 !== undefined ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
+        riskStop: (isPriceValid && !isExecutionSuppressed && stopLoss > 0) ? `$${stopLoss.toFixed(2)} (${(((stopLoss - safePrice) / safePrice) * 100).toFixed(1)}%)` : "N/A (< 50 sessions)",
       },
       actionCallout: {
         action: terminalState.posture === "ACQUIRE"
@@ -423,14 +480,20 @@ export function generateQuantitativeInsight(
           ],
       keyLevels: {
         currentPrice: safePrice,
-        watchZone: (isPriceValid && isTrendAvailable) ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
+        watchZone: (isPriceValid && !isExecutionSuppressed) ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
         sma50,
-        stopLoss: isTrendAvailable ? stopLoss : 0,
-        stopLossPct: (isPriceValid && isTrendAvailable) ? -7.0 : 0,
+        stopLoss: !isExecutionSuppressed ? stopLoss : 0,
+        stopLossPct: (isPriceValid && !isExecutionSuppressed && stopLoss > 0)
+          ? Number((((stopLoss - safePrice) / safePrice) * 100).toFixed(1))
+          : 0,
         target1: isTrendAvailable ? target1 : undefined,
-        target1Pct: isTrendAvailable ? 20.4 : undefined,
+        target1Pct: (isPriceValid && !isExecutionSuppressed && target1 !== undefined && target1 > 0)
+          ? Number((((target1 - safePrice) / safePrice) * 100).toFixed(1))
+          : undefined,
         target2: isTrendAvailable ? target2 : undefined,
-        target2Pct: isTrendAvailable ? 29.3 : undefined,
+        target2Pct: (isPriceValid && !isExecutionSuppressed && target2 !== undefined && target2 > 0)
+          ? Number((((target2 - safePrice) / safePrice) * 100).toFixed(1))
+          : undefined,
         profitRiskRatio: isTrendAvailable ? profitRisk : undefined,
       },
       setupSummary: !isTrendAvailable

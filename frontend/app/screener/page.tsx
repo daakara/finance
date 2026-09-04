@@ -109,7 +109,14 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     const short = cat?.shortFloat;
     const companyName = canonicalName || cat?.name || sym;
 
-    const isStage4Candidate = sym === "DECK" || sym === "PODD" || sym === "MNST" || sym === "ULTA" || sym === "LULU";
+    const isStage4Candidate =
+      sym === "FIX" ||
+      sym === "DECK" ||
+      sym === "PODD" ||
+      sym === "MNST" ||
+      sym === "ULTA" ||
+      sym === "LULU" ||
+      Boolean(cat?.verdict?.toLowerCase().includes("stage 4") || cat?.verdict?.toLowerCase().includes("correction"));
 
     const hasVerifiedData = Boolean(cat && price > 0);
     const optimalEntryMin = hasVerifiedData ? Number((price * (isDayTrader ? 0.992 : 0.965)).toFixed(2)) : 0;
@@ -132,10 +139,12 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       statusColor = "slate";
     } else if (isStage4Candidate) {
       executionStatus = "WAITING_PULLBACK";
-      statusLabel = sym === "ULTA" || sym === "LULU" 
-        ? "⚠️ Stage 4 Turnaround Watch" 
-        : "⏳ Awaiting Base Formation";
-      statusColor = sym === "ULTA" || sym === "LULU" ? "amber" : "cyan";
+      statusLabel = sym === "FIX"
+        ? "⏳ Stage 4 Distribution (Wait for Floor)"
+        : (sym === "ULTA" || sym === "LULU" 
+          ? "⚠️ Stage 4 Turnaround Watch" 
+          : "⏳ Awaiting Base Formation");
+      statusColor = "amber";
     } else if (price >= optimalEntryMin && price <= optimalEntryMax) {
       executionStatus = "IN_BUY_ZONE";
       statusLabel = isDayTrader ? "🎯 Active VWAP Bounce" : "🎯 Active Buy Zone";
@@ -584,9 +593,11 @@ export default function ScreenerPage() {
 
   // Instant Client-Side Filter with 0ms Latency and Robust Type Parsing
   const isMatchFilter = (gem: GemCandidate, filterId: string): boolean => {
-    if (!filterId || filterId === "all") return true;
-    // Phase 18 Invariant: UNKNOWN != FAVORABLE. Unverified / insufficient history assets must NEVER match favorable filter tabs.
+    // Phase 18/21 Invariant: UNKNOWN != FAVORABLE & DISTRIBUTION != BUY_ZONE.
+    // Unverified / insufficient history assets must NEVER match favorable filter tabs.
     if (gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return false;
+    const isStage4 = gem.symbol === "FIX" || gem.statusLabel?.toLowerCase().includes("stage 4") || gem.statusLabel?.toLowerCase().includes("distribution");
+    if (isStage4 && (filterId === "in_buy_zone" || filterId === "vwap_pullback" || filterId === "high_rr")) return false;
     if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
     if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
     if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
