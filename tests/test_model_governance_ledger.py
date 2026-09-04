@@ -157,3 +157,58 @@ def test_experiment_ledger_governance_scorecard(tmp_path):
     assert scorecard["profitFactor"] == 2.0
     assert scorecard["governanceGates"]["expectancyPositive"] is True
     assert scorecard["governanceGates"]["profitFactorAbove1_5"] is True
+    assert "governancePrinciple" in scorecard
+
+
+def test_experiment_ledger_anti_lookahead_audit(tmp_path):
+    """Verify that candles occurring before or during signal date cannot be contaminated by future data,
+    and modifying future candles leaves initial decisions strictly immutable."""
+    ledger_path = str(tmp_path / "test_ledger.json")
+    today = "2026-09-04"
+    
+    opt_exec = {
+        "optimal_entry_min": 98.0,
+        "optimal_entry_max": 102.0,
+        "stop_loss": 94.0,
+        "stop_loss_pct": -6.0,
+        "take_profit_1": 110.0,
+        "take_profit_1_pct": 10.0,
+        "take_profit_2": 118.0,
+        "take_profit_2_pct": 18.0,
+        "risk_reward_ratio": 2.0,
+        "atr_14": 3.0,
+    }
+    
+    # 1. Register signal
+    rec = ExperimentLedger.register_signal(
+        symbol="SHIELD",
+        entry_price=100.0,
+        opt_exec=opt_exec,
+        confluence_score=85.0,
+        inputs_meta={"market_regime": "BULL"},
+        ledger_path=ledger_path
+    )
+    
+    # Verify initial decision immutability
+    assert rec["entryPrice"] == 100.0
+    assert rec["stopLoss"] == 94.0
+    assert rec["takeProfit1"] == 110.0
+    
+    # 2. Feed future candles that drop in the future
+    future_candles = [
+        {"time": "2026-09-04", "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1000},
+        {"time": "2026-09-05", "open": 95.0, "high": 96.0, "low": 50.0, "close": 52.0, "volume": 50000},
+    ]
+    db = DummyDB({"SHIELD": future_candles})
+    ExperimentLedger.update_forward_observations(db, ledger_path=ledger_path)
+    
+    # Reload and assert: future crash resolved outcome as STOP_LOSS, but CANNOT retroactively change initial entry, stop, or confluence
+    ledger = ExperimentLedger.load_ledger(ledger_path)
+    sig = ledger["signals"][0]
+    assert sig["entryPrice"] == 100.0
+    assert sig["stopLoss"] == 94.0
+    assert sig["takeProfit1"] == 110.0
+    assert sig["confluenceScore"] == 85.0
+    assert sig["status"] == "RESOLVED"
+    assert sig["forwardTracking"]["resolvedOutcome"] == "STOP_LOSS"
+    assert sig["forwardTracking"]["stopHit"] is True

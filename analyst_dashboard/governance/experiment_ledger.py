@@ -238,19 +238,51 @@ class ExperimentLedger:
         total_losses = sum([abs(s["forwardTracking"]["realizedReturnPct"]) for s in stops]) if stops else 0.0
         profit_factor = (total_gains / total_losses) if total_losses > 0 else (999.0 if total_gains > 0 else 0.0)
 
+        # Statistical Uncertainty & Confidence Intervals (Phase 25 Governance)
+        # N=100 is an evidence-building target, NOT a formal significance threshold.
+        # Compute standard error of returns and 95% confidence intervals around Expectancy.
+        all_realized = [s["forwardTracking"]["realizedReturnPct"] for s in resolved if s["forwardTracking"].get("realizedReturnPct") is not None]
+        if len(all_realized) >= 2:
+            std_err = float(np.std(all_realized, ddof=1) / np.sqrt(len(all_realized)))
+            ci_95_lower = round(expectancy - 1.96 * std_err, 2)
+            ci_95_upper = round(expectancy + 1.96 * std_err, 2)
+            
+            # Wilson score interval for binomial Win Rate
+            z = 1.96
+            p = p_win
+            denom = 1 + (z**2 / n_resolved)
+            center = (p + (z**2 / (2 * n_resolved))) / denom
+            spread = (z * np.sqrt((p * (1 - p) / n_resolved) + (z**2 / (4 * n_resolved**2)))) / denom
+            win_ci_lower = round(max(0.0, (center - spread) * 100.0), 1)
+            win_ci_upper = round(min(100.0, (center + spread) * 100.0), 1)
+        else:
+            std_err = None
+            ci_95_lower = None
+            ci_95_upper = None
+            win_ci_lower = None
+            win_ci_upper = None
+
         return {
             "totalSignals": len(signals),
             "openSignals": len(open_signals),
             "resolvedSignals": n_resolved,
             "winRate": round(p_win * 100.0, 1),
+            "winRateCI95": [win_ci_lower, win_ci_upper] if win_ci_lower is not None else None,
             "stopRate": round(p_loss * 100.0, 1),
             "avgWinPct": round(avg_win, 2),
             "avgLossPct": round(avg_loss, 2),
             "expectancyPct": round(expectancy, 2),
+            "expectancyStandardError": round(std_err, 2) if std_err is not None else None,
+            "expectancyCI95": [ci_95_lower, ci_95_upper] if ci_95_lower is not None else None,
             "profitFactor": round(profit_factor, 2),
             "governanceGates": {
                 "expectancyPositive": bool(expectancy > 0),
                 "profitFactorAbove1_5": bool(profit_factor >= 1.5),
-                "stopRateBelow50": bool(p_loss < 0.50 if n_resolved > 0 else True)
-            }
+                "stopRateBelow50": bool(p_loss < 0.50 if n_resolved > 0 else True),
+                "statisticallySignificant": bool(ci_95_lower is not None and ci_95_lower > 0)
+            },
+            "governancePrinciple": (
+                "A model change cannot be justified by a single metric moving outside its target. "
+                "It requires a reproducible failure pattern across a predefined cohort and sufficient forward observations."
+            )
         }
