@@ -255,19 +255,9 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             </nav>
           </div>
 
-          {/* Center: Global Omni-Search Bar & Cmd+K Quick Button */}
-          <div className="flex-1 min-w-[70px] max-w-[120px] sm:max-w-[170px] md:max-w-[200px] lg:max-w-[220px] xl:max-w-xs 2xl:max-w-md mx-1 sm:mx-1.5 flex items-center justify-center gap-1.5">
+          {/* Center: Global Omni-Search Bar */}
+          <div className="flex-1 min-w-[130px] max-w-[220px] md:max-w-xs xl:max-w-sm 2xl:max-w-md mx-1.5 sm:mx-2 flex items-center justify-center shrink-0">
             <UniversalOmniSearch />
-            <button
-              type="button"
-              onClick={() => setIsCommandPaletteOpen(true)}
-              aria-label="Open Command Palette (Cmd+K)"
-              className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg border border-[#243044] bg-[#070a10] text-[11px] font-mono text-slate-400 hover:text-cyan-300 hover:border-cyan-500/50 transition-colors shadow-inner shrink-0"
-              title="Open Command Palette (Cmd+K or /)"
-            >
-              <span>⚡</span>
-              <kbd className="text-[10px] text-cyan-400 font-bold">⌘K</kbd>
-            </button>
           </div>
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}

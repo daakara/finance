@@ -89,8 +89,9 @@ export default function UniversalOmniSearch() {
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <span className="truncate text-slate-300 group-hover:text-white font-medium">
-            Search any ticker, stock, ETF or crypto...
+          <span className="truncate text-slate-300 group-hover:text-white font-medium text-left">
+            <span className="hidden xl:inline">Search any ticker, stock, ETF or crypto...</span>
+            <span className="xl:hidden">Search ticker...</span>
           </span>
         </div>
         <div className="flex items-center space-x-1 shrink-0 ml-2">
