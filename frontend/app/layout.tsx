@@ -28,11 +28,33 @@ export const metadata: Metadata = {
     shortcut: "/icon.png",
     apple: "/apple-icon.png",
   },
+  keywords: [
+    "ARX Terminal",
+    "ARX Technology",
+    "ARX Model Finance",
+    "Quantitative Terminal",
+    "STOCK Act Disclosures",
+    "Nancy Pelosi Stock Tracker",
+    "Congressional Stock Trades",
+    "Mark Minervini VCP Screener",
+    "Cornish-Fisher Modified VaR",
+    "Amihud Illiquidity Ratio",
+    "Turtle Trading ATR Stops",
+    "Linda Raschke 20 EMA Pullback",
+    "Institutional Screener",
+    "FinTech Terminal"
+  ],
+  alternates: {
+    canonical: "https://www.arxterminal.com/",
+    languages: {
+      "en-US": "https://www.arxterminal.com/",
+    },
+  },
   openGraph: {
     title: "ARX Terminal | Quantitative Intelligence & Congressional STOCK Act Platform",
     description:
       "Master institutional trading with real-time STOCK Act disclosures, Minervini VCP setups, 20 EMA pullbacks, and Cornish-Fisher VaR risk modeling.",
-    url: "https://www.arxterminal.com",
+    url: "https://www.arxterminal.com/",
     siteName: "ARX Terminal",
     images: [
       {
@@ -65,17 +87,43 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const websiteJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "ARX Terminal",
-    "url": "https://www.arxterminal.com/",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://www.arxterminal.com/?symbol={search_term_string}",
-      "query-input": "required name=search_term_string"
+  const rootJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "ARX Terminal",
+      "alternateName": ["ARX", "ARX Finance", "ARX Quant"],
+      "url": "https://www.arxterminal.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.arxterminal.com/?symbol={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ARX Terminal",
+      "legalName": "ARX Quantitative Technologies",
+      "alternateName": ["ARX", "ARX Terminal Inc", "ARX Technologies"],
+      "url": "https://www.arxterminal.com/",
+      "logo": "https://www.arxterminal.com/icon.png",
+      "description": "Institutional quantitative trading terminal, econometric modeling, and Congressional STOCK Act intelligence platform.",
+      "knowsAbout": [
+        "Quantitative Finance",
+        "Econometric Modeling",
+        "Autoregressive Exogenous Model (ARX)",
+        "2012 STOCK Act Congressional Disclosures",
+        "Mark Minervini Volatility Contraction Pattern (VCP)",
+        "Cornish-Fisher Value-at-Risk",
+        "Amihud Illiquidity Ratio"
+      ],
+      "sameAs": [
+        "https://github.com/daakara/finance",
+        "https://twitter.com/ARXTerminal"
+      ]
     }
-  };
+  ];
 
   return (
     <html lang="en">
@@ -131,7 +179,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c") }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(rootJsonLd).replace(/</g, "\\u003c") }}
         />
       </head>
       <body className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] antialiased transition-colors duration-200">

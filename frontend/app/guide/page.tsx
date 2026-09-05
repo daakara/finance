@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Navbar from "../../components/Navbar";
 import GuideContent from "../../components/GuideContent";
+import AuthorEeatBadge from "../../components/AuthorEeatBadge";
 
 export const metadata: Metadata = {
   title: "Quantitative Terminal Field Manual & Algorithmic Handbook",
@@ -139,6 +140,13 @@ export default function GuidePage() {
       />
 
       <Navbar />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 -mb-4">
+        <AuthorEeatBadge
+          topic="Institutional Decision Intelligence & Algorithmic Execution"
+          lastUpdated="September 2026"
+        />
+      </div>
 
       <GuideContent />
     </div>

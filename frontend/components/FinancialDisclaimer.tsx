@@ -1,6 +1,5 @@
-"use client";
-
 import React from "react";
+import Link from "next/link";
 
 interface FinancialDisclaimerProps {
   variant?: "footer" | "compact" | "card";
@@ -18,8 +17,60 @@ export default function FinancialDisclaimer({ variant = "footer", className = ""
   }
 
   return (
-    <footer className={`bg-[#060a12] border-t border-[#182335] py-6 px-4 text-[11px] text-slate-400 font-sans ${className}`}>
-      <div className="max-w-7xl mx-auto space-y-3">
+    <footer className={`bg-[#060a12] border-t border-[#182335] py-8 px-4 text-[11px] text-slate-400 font-sans ${className}`}>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Footer Navigation Hub */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pb-6 border-b border-[#141d2c] text-xs">
+          <div className="space-y-2.5">
+            <h4 className="font-mono text-white text-[11px] uppercase tracking-wider font-bold">
+              Core Platform
+            </h4>
+            <ul className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+              <li><Link href="/" className="hover:text-cyan-400 transition-colors">Live Terminal</Link></li>
+              <li><Link href="/screener/" className="hover:text-cyan-400 transition-colors">Multi-Factor Screener</Link></li>
+              <li><Link href="/compare/" className="hover:text-cyan-400 transition-colors">Asset Comparison</Link></li>
+              <li><Link href="/portfolio/" className="hover:text-cyan-400 transition-colors">Risk Allocator</Link></li>
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            <h4 className="font-mono text-white text-[11px] uppercase tracking-wider font-bold">
+              Smart Money
+            </h4>
+            <ul className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+              <li><Link href="/smart-money/" className="hover:text-cyan-400 transition-colors">Congressional STOCK Act Radar</Link></li>
+              <li><Link href="/smart-money/late-filers/" className="hover:text-cyan-400 transition-colors">Late-Filer Hall of Shame</Link></li>
+              <li><Link href="/politician/nancy-pelosi/" className="hover:text-cyan-400 transition-colors">Nancy Pelosi Portfolio</Link></li>
+              <li><Link href="/committee/armed-services/" className="hover:text-cyan-400 transition-colors">Committee Jurisdictions</Link></li>
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            <h4 className="font-mono text-white text-[11px] uppercase tracking-wider font-bold">
+              Quant Glossary
+            </h4>
+            <ul className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+              <li><Link href="/glossary/arx-model/" className="hover:text-cyan-400 transition-colors">ARX Econometric Model</Link></li>
+              <li><Link href="/glossary/minervini-vcp/" className="hover:text-cyan-400 transition-colors">Minervini VCP Pattern</Link></li>
+              <li><Link href="/glossary/cornish-fisher-var/" className="hover:text-cyan-400 transition-colors">Cornish-Fisher VaR</Link></li>
+              <li><Link href="/glossary/" className="text-cyan-400 hover:underline">All Quantitative Terms →</Link></li>
+            </ul>
+          </div>
+
+          <div className="space-y-2.5">
+            <h4 className="font-mono text-white text-[11px] uppercase tracking-wider font-bold">
+              Platform Benchmarks
+            </h4>
+            <ul className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+              <li><Link href="/vs/quiver-quantitative/" className="hover:text-cyan-400 transition-colors">ARX vs Quiver Quant</Link></li>
+              <li><Link href="/vs/unusual-whales/" className="hover:text-cyan-400 transition-colors">ARX vs Unusual Whales</Link></li>
+              <li><Link href="/vs/koyfin/" className="hover:text-cyan-400 transition-colors">ARX vs Koyfin</Link></li>
+              <li><Link href="/vs/bloomberg-terminal/" className="hover:text-cyan-400 transition-colors">ARX vs Bloomberg</Link></li>
+              <li><Link href="/vs/" className="text-cyan-400 hover:underline">All Comparisons →</Link></li>
+            </ul>
+          </div>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#141d2c] pb-3">
           <div className="flex items-center gap-2">
             <span className="font-black text-white text-xs tracking-wider">ARX TERMINAL</span>

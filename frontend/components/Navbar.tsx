@@ -235,6 +235,15 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               >
                 <span>📖 Guide</span>
               </Link>
+              <Link
+                href="/glossary"
+                aria-current={pathname?.startsWith("/glossary") ? "page" : undefined}
+                className={`hidden 2xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                  pathname?.startsWith("/glossary") ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <span>📚 Glossary</span>
+              </Link>
               <button
                 type="button"
                 onClick={handleOpenOnboarding}

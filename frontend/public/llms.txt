@@ -6,6 +6,9 @@
 
 - **Live Terminal**: https://www.arxterminal.com/
 - **User Guide & Quantitative Methodologies**: https://www.arxterminal.com/guide/
+- **Quantitative Finance & Econometric Glossary**: https://www.arxterminal.com/glossary/
+- **ARX Econometric Model (Autoregressive Exogenous)**: https://www.arxterminal.com/glossary/arx-model/
+- **Platform Comparisons & Alternatives (vs Quiver, Unusual Whales, Koyfin, Bloomberg)**: https://www.arxterminal.com/vs/
 - **Smart Money & Congressional Disclosures**: https://www.arxterminal.com/smart-money/
 - **Congressional Late-Filer Hall of Shame**: https://www.arxterminal.com/smart-money/late-filers/
 - **Congressional Politician Portfolios**: https://www.arxterminal.com/politician/nancy-pelosi/
