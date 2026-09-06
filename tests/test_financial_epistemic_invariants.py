@@ -20,6 +20,9 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.liquidity_guard import LiquidityGuard
 
+pytestmark = pytest.mark.tier1
+
+
 
 def make_short_candles(count: int, base_price: float = 20.0) -> pd.DataFrame:
     """Generate a DataFrame with fewer than 50 sessions to simulate unseasoned assets like GLX."""
@@ -127,7 +130,7 @@ def test_unknown_asset_never_passes_favorable_filter():
         "grossMargin": "N/A",
         "expertArchetype": "Unverified Asset",
     }
-    
+
     # Invariant: UNVERIFIED_ASSET must never match favorable filters
     favorable_filters = ["in_buy_zone", "high_confluence", "high_rr", "lynch", "greenblatt", "rule_breakers"]
     for f in favorable_filters:

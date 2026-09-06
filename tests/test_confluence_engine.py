@@ -7,6 +7,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 
+import pytest
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_confluence_scoring():
     engine = ConfluenceEngine()
@@ -118,4 +122,3 @@ if __name__ == "__main__":
     test_position_sizing_zero_division_guard()
     test_position_sizing_kelly_capping()
     print("[PASS] ALL CONFLUENCE & POSITION SIZING INVARIANT TESTS PASSED SUCCESSFULLY")
-

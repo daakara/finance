@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
 
+import pytest
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_trader_archetype_consensus_five_models():
     analyzer = TraderArchetypeAnalyzer()
@@ -363,6 +367,3 @@ def test_hardware_odm_broadened_matching():
         buffett = next(a for a in res["archetypes"] if "Buffett" in a["name"])
         assert buffett["status"] == "Competitive Commodity Risk", f"{sym} expected Competitive Commodity Risk"
         assert buffett["alignmentScore"] <= 62
-
-
-

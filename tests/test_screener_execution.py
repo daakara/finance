@@ -18,7 +18,7 @@ except ImportError:
 def test_optimal_execution_levels():
     """Verify ATR-derived trade levels maintain monotonic ladder integrity."""
     engine = OptimalExecutionEngine()
-    
+
     current_price = 106.80
     if pd is not None:
         dates = pd.date_range(start="2026-01-01", periods=60, freq="D")
@@ -52,7 +52,7 @@ def test_optimal_execution_levels():
 def test_screener_differential_subsets():
     """Differential Test: Verify that every filter returns a distinct, non-empty, mathematically valid subset."""
     resp = Response()
-    
+
     all_data = run_screener_get(filter_type="all")
     all_candidates = all_data.get("candidates", [])
     all_syms = set(c["symbol"] for c in all_candidates)
@@ -75,7 +75,7 @@ def test_screener_differential_subsets():
 
         # 1. Non-Zero Distribution Assertion: No filter should return 0 results
         assert len(candidates) > 0, f"Filter '{filter_name}' returned 0 results; must return non-zero candidates"
-        
+
         # 2. Strict Subset Assertion: Filtered set must be a proper subset of total universe
         assert len(candidates) <= len(all_candidates), f"Filter '{filter_name}' count cannot exceed total universe"
         assert syms.issubset(all_syms), f"Filter '{filter_name}' contained unknown symbols not in universe"
@@ -89,7 +89,7 @@ def test_screener_disjoint_execution_states():
     """Verify that execution state categories are mutually exclusive (disjoint)."""
     buy_zone_data = run_screener_get(filter_type="in_buy_zone")
     tp_target_data = run_screener_get(filter_type="approaching_target")
-    
+
     buy_zone_syms = set(c["symbol"] for c in buy_zone_data.get("candidates", []))
     tp_target_syms = set(c["symbol"] for c in tp_target_data.get("candidates", []))
 
@@ -102,7 +102,7 @@ def test_screener_candidate_data_integrity():
     """Verify all candidate fields meet strict institutional boundary invariants."""
     resp = Response()
     all_data = run_screener_get(filter_type="all")
-    
+
     for c in all_data.get("candidates", []):
         sym = c["symbol"]
         assert c["currentPrice"] > 0, f"{sym}: Price must be positive"
@@ -124,7 +124,7 @@ def test_screener_dual_horizon_distinct_universes():
 
     assert len(day_syms) > 0, "Day trader universe must not be empty"
     assert len(long_syms) > 0, "Long term universe must not be empty"
-    
+
     # Assert distinct sets tailored to each profile
     assert day_syms != long_syms, "Day trader and Long term modes must recommend distinct universe profiles"
     assert "NVDA" in day_syms or "TSLA" in day_syms, "Day trader universe must contain high-beta volatility leaders"
@@ -160,7 +160,49 @@ def test_screener_cloudflare_cache_control_headers():
     assert resp.headers.get("Cloudflare-CDN-Cache-Control") == "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
 
 
+def test_screener_liquidity_non_contamination():
+    """
+    API-Level Non-Contamination Regression Invariant:
+    Verify that an asset triggering EXECUTION_RISK (e.g. low ADV < $500K)
+    remains strictly in IN_BUY_ZONE executionStatus without being mutated,
+    suppressed, or downgraded to WAITING_PULLBACK.
+    """
+    from unittest.mock import patch
+
+    dates = pd.date_range("2026-01-01", periods=60)
+    prices = [100.0 + (i * 0.1) for i in range(60)]
+
+    resp = Response()
+    with patch("api.routes.screener.market_db.get_latest_price", return_value={"currentPrice": 104.5}):
+        with patch("api.routes.screener.market_db.get_daily_candles", return_value=[
+            {"time": str(d), "open": p, "high": p + 0.5, "low": p - 0.5, "close": p, "volume": 2000}
+            for d, p in zip(dates, prices)
+        ]):
+            data = run_screener_get(resp, filter_type="all", custom_tickers="TEST_ILLIQ")
+            candidates = data.get("candidates", [])
+            assert len(candidates) == 1
+            cand = candidates[0]
+
+            # Invariant 1: executionStatus must remain IN_BUY_ZONE despite execution hazard
+            assert cand["executionStatus"] == "IN_BUY_ZONE"
+            assert "Buy Zone" in cand["statusLabel"] or "VWAP" in cand["statusLabel"]
+
+            # Invariant 2: liquidityDefense metadata is faithfully attached
+            assert cand["liquidityDefense"] is not None
+            assert cand["liquidityDefense"]["liquidity_grade"] == "EXECUTION_RISK"
+            assert cand["liquidityDefense"]["execution_hazard"] is True
+
+            # Invariant 3: Asset is returned when filtering specifically by in_buy_zone
+            data_buy_zone = run_screener_get(resp, filter_type="in_buy_zone", custom_tickers="TEST_ILLIQ")
+            assert len(data_buy_zone.get("candidates", [])) == 1
+            assert data_buy_zone["candidates"][0]["symbol"] == "TEST_ILLIQ"
+
+
 import unittest
+
+import pytest
+pytestmark = pytest.mark.tier2b
+
 
 class TestScreenerExecution(unittest.TestCase):
     def test_optimal_execution_levels(self):
@@ -184,8 +226,9 @@ class TestScreenerExecution(unittest.TestCase):
     def test_screener_cloudflare_cache_control_headers(self):
         test_screener_cloudflare_cache_control_headers()
 
+    def test_screener_liquidity_non_contamination(self):
+        test_screener_liquidity_non_contamination()
+
 
 if __name__ == "__main__":
     unittest.main()
-
-

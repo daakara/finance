@@ -7,6 +7,10 @@ import numpy as np
 from analyst_dashboard.analyzers.market_regime_analyzer import MarketRegimeAnalyzer
 from analyst_dashboard.analyzers.volatility_forecaster import VolatilityForecaster
 
+import pytest
+pytestmark = pytest.mark.tier3
+
+
 
 class TestCategoryCAnalytics(unittest.TestCase):
     """Test suite verifying GMM statistical regime detection and ARIMA price forecasting."""

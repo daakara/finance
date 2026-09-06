@@ -16,6 +16,9 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
 from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 
+pytestmark = pytest.mark.tier3
+
+
 client = TestClient(app)
 
 

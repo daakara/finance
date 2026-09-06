@@ -1,5 +1,9 @@
 import unittest
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 class TestARXStateEngine(unittest.TestCase):
     """Automated state-transition test matrix for ARX deriveAssessmentState engine."""
 
@@ -90,7 +94,7 @@ class TestARXStateEngine(unittest.TestCase):
 
         domains = [technical_domain, fundamental_domain]
         available_domains = [d for d in domains if d["availability"] == "AVAILABLE"]
-        
+
         self.assertEqual(len(available_domains), 1)
         self.assertEqual(available_domains[0]["status"], "FAVORABLE")
         self.assertEqual(domains[1]["status"], "UNAVAILABLE")

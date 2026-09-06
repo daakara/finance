@@ -18,6 +18,9 @@ from fastapi.testclient import TestClient
 from api.main import app
 from api.routes.analytics import calculate_piotroski_f_score
 
+pytestmark = pytest.mark.tier3
+
+
 client = TestClient(app)
 
 

@@ -14,6 +14,10 @@ from api.routes.screener import run_screener_get
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analysis.portfolio import PortfolioMetrics
 
+import pytest
+pytestmark = pytest.mark.tier2a
+
+
 try:
     import pandas as pd
     import numpy as np
@@ -51,7 +55,7 @@ class FullAppAuditTestSuite(unittest.TestCase):
             # 1. Normal returns series
             dates = pd.date_range("2026-01-01", periods=100)
             returns = pd.Series(np.random.normal(0.001, 0.02, 100), index=dates)
-            
+
             sharpe = PortfolioMetrics.calculate_sharpe_ratio(returns)
             self.assertTrue(math.isfinite(sharpe))
 

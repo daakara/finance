@@ -9,6 +9,10 @@ import numpy as np
 from analyst_dashboard.data.gem_fetchers import MultiAssetDataPipeline
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestPhases234Enhancements(unittest.TestCase):
     """Test suite verifying DiskCache integration and SQLite persistence engine."""

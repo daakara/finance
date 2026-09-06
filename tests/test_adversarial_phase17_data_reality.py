@@ -29,6 +29,9 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
 from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 
+pytestmark = pytest.mark.tier2c
+
+
 client = TestClient(app)
 
 
@@ -144,7 +147,7 @@ def test_9_fallback_badge_renders_model_estimate():
     badge_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "components", "DataSourceBadge.tsx")
     with open(badge_path, "r", encoding="utf-8") as f:
         content = f.read()
-  
+
     assert "Model Estimate" in content
     assert "bg-amber-950" in content, "Fallback badge must render amber, never emerald live styling"
 

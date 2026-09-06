@@ -6,6 +6,10 @@ import pandas as pd
 from fastapi.testclient import TestClient
 from api.main import app
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestTargetArchitectureAPI(unittest.TestCase):
     """Test suite verifying FastAPI endpoints and routes."""

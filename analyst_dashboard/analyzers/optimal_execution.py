@@ -31,13 +31,7 @@ class OptimalExecutionEngine:
 
         # Epistemic Invariant: Missing or empty price history strictly suppresses actionable trade levels
         if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty:
-            liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price) if (price_df is not None and isinstance(price_df, pd.DataFrame)) else {
-                "execution_hazard": True,
-                "spread_pct": 0.0,
-                "pro_summary": "No market data or exchange orderbook available.",
-                "suppress_buy_zone": True,
-                "liquidity_grade": "F (Zero Data)",
-            }
+            liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price)
             return {
                 "current_price": current_price,
                 "optimal_entry_min": None,

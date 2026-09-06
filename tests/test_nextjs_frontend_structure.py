@@ -5,6 +5,10 @@ import os
 import json
 import re
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestNextJsFrontendStructure(unittest.TestCase):
     """Test suite verifying Next.js application scaffold, deep links, and route parameter bindings."""

@@ -20,6 +20,9 @@ from analyst_dashboard.data.market_db import MarketDatabaseEngine, DB_PATH
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 
+pytestmark = pytest.mark.tier3
+
+
 client = TestClient(app)
 db = MarketDatabaseEngine(db_path=DB_PATH)
 

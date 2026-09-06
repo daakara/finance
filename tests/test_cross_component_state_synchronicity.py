@@ -8,6 +8,10 @@ import unittest
 import os
 import re
 
+import pytest
+pytestmark = pytest.mark.tier2a
+
+
 
 class TestCrossComponentStateSynchronicity(unittest.TestCase):
     """Rigorous tests asserting Cross-Component State Synchronicity & Contradiction Immunity."""

@@ -16,6 +16,9 @@ from api.main import app
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
 from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 
+pytestmark = pytest.mark.tier2c
+
+
 client = TestClient(app)
 
 

@@ -4,6 +4,10 @@ from unittest.mock import patch, MagicMock
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 import pandas as pd
 
+import pytest
+pytestmark = pytest.mark.tier2c
+
+
 def test_eodhd_fetcher_realtime_quote():
     fetcher = EODHDMarketFetcher(api_key="mock_test_key")
     mock_resp = MagicMock()

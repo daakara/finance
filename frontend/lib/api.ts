@@ -294,15 +294,20 @@ export interface SmartMoneyOverview {
 }
 
 export interface LiquidityDefenseData {
-  liquidity_grade: "INSTITUTIONAL" | "THIN" | "TRAP";
-  badge_color: "emerald" | "amber" | "rose";
+  liquidity_grade: "HIGH_TRADING_LIQUIDITY" | "MODERATE_TRADING_LIQUIDITY" | "EXECUTION_RISK" | "UNKNOWN_LIQUIDITY" | "DEEP_LIQUIDITY" | "LIMIT_ORDER_REQUIRED" | "INSTITUTIONAL" | "THIN" | "TRAP";
+  badge_color: "emerald" | "amber" | "rose" | "slate";
   adv_20d_usd: number;
+  adv_5d_usd?: number;
+  liquidity_trend?: number;
   amihud_illiq: number;
+  amihud_illiq_scaled?: number;
   volume_spike_ratio: number;
   is_volume_spike: boolean;
   float_turnover_pct?: number | null;
   is_float_turnover_anomaly: boolean;
+  estimated_participation_rate?: number;
   execution_hazard: boolean;
+  market_order_warning?: boolean;
   suppress_buy_zone: boolean;
   plain_label: string;
   pro_label: string;
@@ -332,6 +337,153 @@ export interface OptimalExecutionPlan {
   liquidity_defense?: LiquidityDefenseData;
   execution_hazard?: boolean;
   liquidity_warning?: string;
+}
+
+export interface Phase26ExecutionObservation {
+  observationId: string;
+  signalId: string;
+  symbol: string;
+  signalTimestamp: string;
+  referencePrice: number;
+  executionTimestamp?: string | null;
+  fillPrice?: number | null;
+  side: "BUY" | "SELL";
+  orderSizeUsd?: number | null;
+  adv20dUsd: number;
+  adv5dUsd: number;
+  liquidityTrend: number;
+  amihudIlliqRaw: number;
+  amihudIlliqScaled: number;
+  liquidityGrade: string;
+  participationRate?: number | null;
+  slippageBps?: number | null;
+  signedSlippageBps?: number | null;
+  executionSource: "BROKER_FILL" | "SIMULATED_FILL" | "MANUAL_RECORD" | "UNFILLED";
+  isSimulated: boolean;
+  specVersion: string;
+  recordedAt: string;
+}
+
+export interface Phase26CohortFrictionStats {
+  sampleSize: number;
+  realFills: number;
+  simulatedFills: number;
+  meanSlippageBps?: number | null;
+  medianSlippageBps?: number | null;
+  stdDevBps?: number | null;
+  standardErrorBps?: number | null;
+  ci95?: [number, number] | null;
+  status: "EMPTY_COHORT" | "SINGLE_OBSERVATION" | "SUFFICIENT_SAMPLE";
+}
+
+export interface Phase26EvidencePartition {
+  evidenceType: string;
+  sampleCount: number;
+  cohorts: Record<string, Phase26CohortFrictionStats>;
+  pairwiseComparison: {
+    comparison: string;
+    evidenceType?: string;
+    status: string;
+    differenceInMeansBps?: number | null;
+    cohensD?: number | null;
+    pValue?: number | null;
+    statisticallySignificant: boolean;
+  };
+}
+
+export interface Phase26FrictionReport {
+  experiment: string;
+  specVersion: string;
+  status: string;
+  totalObservations: number;
+  validFillsCount: number;
+  missingFillsCount: number;
+  realFillsCount: number;
+  simulatedFillsCount: number;
+  cohorts: Record<string, Phase26CohortFrictionStats>;
+  pairwiseComparison: {
+    comparison: string;
+    evidenceType?: string;
+    status: string;
+    differenceInMeansBps?: number | null;
+    cohensD?: number | null;
+    pValue?: number | null;
+    statisticallySignificant: boolean;
+  };
+  realEvidence?: Phase26EvidencePartition;
+  simulatedEvidence?: Phase26EvidencePartition;
+  combinedEvidence?: Phase26EvidencePartition;
+  formalPromotionEvidence?: Phase26EvidencePartition;
+  epistemicClassification: string;
+  conclusion: string;
+}
+
+export interface Phase26PortfolioEconomics {
+  tradeCount: number;
+  winCount: number;
+  lossCount: number;
+  winRatePct: number;
+  meanGrossReturnPct: number;
+  meanNetReturnPct: number;
+  totalGrossReturnPct: number;
+  totalNetReturnPct: number;
+  profitFactorNet: number;
+  sharpeRatioNet?: number | null;
+  maxDrawdownPct: number;
+}
+
+export interface Phase26CounterfactualReport {
+  experiment: string;
+  specVersion: string;
+  filterCriterion: string;
+  status: string;
+  totalSignals: number;
+  resolvedSignals: number;
+  ungatedPortfolio: Phase26PortfolioEconomics;
+  gatedPortfolio: Phase26PortfolioEconomics;
+  tradeoffAnalysis: {
+    filteredTradesCount: number;
+    excludedWinnersCount: number;
+    avoidedLosersCount: number;
+    opportunityCostPct: number;
+    lossesAvoidedPct: number;
+    frictionSavedPct: number;
+    netEconomicBenefitPct: number;
+    excludedWinnersList: Array<{
+      signalId: string;
+      symbol: string;
+      grossReturnPct: number;
+      netReturnPct: number;
+      liquidityGrade: string;
+    }>;
+    avoidedLosersList: Array<{
+      signalId: string;
+      symbol: string;
+      grossReturnPct: number;
+      netReturnPct: number;
+      liquidityGrade: string;
+    }>;
+  };
+  counterfactualVerdict: string;
+  conclusion: string;
+}
+
+export interface Phase26ValidationSummary {
+  document: string;
+  specVersion: string;
+  engineCommit: string;
+  engineTag: string;
+  executionFrictionExperiment: Phase26FrictionReport;
+  economicCounterfactualExperiment: Phase26CounterfactualReport;
+  promotionGateReadiness: {
+    gate1_non_interference: boolean;
+    gate2_prospective_cohort_size_met: boolean;
+    gate3_net_economic_value_proven: boolean;
+    gate4_microstructure_spread_integrated: boolean;
+    gate5_dual_key_governance_signed: boolean;
+  };
+  overallPromotionVerdict: "PROMOTE_TO_GATE" | "RETAIN_SHADOW_OBSERVATION";
+  epistemicSummary: string;
 }
 
 export interface ConfluencePillar {
@@ -1024,7 +1176,7 @@ export async function fetchAssetAnalytics(
   overrideChangePct?: number
 ): Promise<AnalyticsResponse> {
   const upper = symbol.toUpperCase().replace("-USD", "");
-  
+
   // 1. Fetch live production API with 4000ms timeout
   try {
     const baseUrl = getApiBaseUrl();

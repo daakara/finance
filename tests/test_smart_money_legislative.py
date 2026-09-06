@@ -9,6 +9,9 @@ from analyst_dashboard.analyzers.smart_money import (
 )
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
 
+pytestmark = pytest.mark.tier2c
+
+
 
 def test_calculate_legislative_alignment_bounds():
     """Verify legislative alignment scores are within valid quantitative bounds [35, 99]."""

@@ -5,6 +5,9 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 
+pytestmark = pytest.mark.tier2b
+
+
 
 def _generate_synthetic_candles(
     count: int = 60,
@@ -42,10 +45,10 @@ def test_pullback_confirmation_trigger_gates_actionable_setup():
     df_knife = _generate_synthetic_candles(60, base_price=100.0, final_candle_type="FALLING_KNIFE_UNCONFIRMED")
     curr_knife = float(df_knife["Close"].iloc[-1])
     plan_knife = OptimalExecutionEngine.calculate_trade_levels(df_knife, current_price=curr_knife, user_role="LONG_TERM")
-    
+
     if plan_knife["optimal_entry_min"] <= curr_knife <= plan_knife["optimal_entry_max"]:
         assert plan_knife["execution_status"] == "IN_BUY_ZONE_AWAITING_TRIGGER"
-        
+
         trace = DecisionTraceEngine.generate_trace(
             symbol="TEST_KNIFE",
             current_price=curr_knife,
@@ -63,10 +66,10 @@ def test_pullback_confirmation_trigger_gates_actionable_setup():
     df_bounce = _generate_synthetic_candles(60, base_price=100.0, final_candle_type="CONFIRMED_BOUNCE")
     curr_bounce = float(df_bounce["Close"].iloc[-1])
     plan_bounce = OptimalExecutionEngine.calculate_trade_levels(df_bounce, current_price=curr_bounce, user_role="LONG_TERM")
-    
+
     if plan_bounce["optimal_entry_min"] <= curr_bounce <= plan_bounce["optimal_entry_max"]:
         assert plan_bounce["execution_status"] == "IN_BUY_ZONE"
-        
+
         trace = DecisionTraceEngine.generate_trace(
             symbol="TEST_BOUNCE",
             current_price=curr_bounce,
@@ -86,7 +89,7 @@ def test_structural_stop_anchoring_and_realistic_targets():
     df = _generate_synthetic_candles(60, base_price=150.0, final_candle_type="CONFIRMED_BOUNCE")
     raw_spot = float(df["Close"].iloc[-1])
     initial_plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=raw_spot, user_role="LONG_TERM")
-    
+
     # Test execution levels when entering inside the buy zone
     buy_zone_spot = (initial_plan["optimal_entry_min"] + initial_plan["optimal_entry_max"]) / 2.0
     plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=buy_zone_spot, user_role="LONG_TERM")
@@ -114,7 +117,7 @@ def test_boundary_corridor_state_transitions():
     df = _generate_synthetic_candles(60, base_price=200.0, final_candle_type="CONFIRMED_BOUNCE")
     spot = float(df["Close"].iloc[-1])
     plan = OptimalExecutionEngine.calculate_trade_levels(df, current_price=spot, user_role="LONG_TERM")
-    
+
     emin = plan["optimal_entry_min"]
     emax = plan["optimal_entry_max"]
 

@@ -5,6 +5,9 @@ import pytest
 from api.routes.analytics import get_asset_analytics, compute_intraday_technicals
 import pandas as pd
 
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_intraday_interval_support():
     prices = [100 + i * 0.1 for i in range(50)]

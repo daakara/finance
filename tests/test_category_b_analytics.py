@@ -7,6 +7,10 @@ import numpy as np
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
 from analyst_dashboard.analyzers.volatility_forecaster import VolatilityForecaster
 
+import pytest
+pytestmark = pytest.mark.tier3
+
+
 
 class TestCategoryBAnalytics(unittest.TestCase):
     """Test suite verifying Cornish-Fisher VaR and Out-of-Sample evaluation metrics."""

@@ -14,6 +14,10 @@ import os
 import re
 import unittest
 
+import pytest
+pytestmark = pytest.mark.tier3
+
+
 
 class TestAdversarialPhase13Verification(unittest.TestCase):
     """Adversarial stress-testing suite for Phase 13.1 remediations."""

@@ -1,0 +1,24 @@
+{
+  "manifestVersion": "1.0",
+  "frozenTimestamp": "2026-09-04T00:00:00Z",
+  "provenanceCommit": "4e3686296aad24e2210ef580bbc9116054d84fd1",
+  "frozenStrategyVersion": "2.4.0",
+  "engines": {
+    "optimal_execution": {
+      "filePath": "analyst_dashboard/analyzers/optimal_execution.py",
+      "sha256": "2fd6af868d8161561c5f8af2d41cbcca2a633af98c7a333487118872d75e6505"
+    },
+    "confluence_engine": {
+      "filePath": "analyst_dashboard/analyzers/confluence_engine.py",
+      "sha256": "aa6315a93d480a5ddc71ab5c09c2b7cde23dc7d3947796f8f74e5ba504ee6c0b"
+    },
+    "decision_hierarchy": {
+      "filePath": "analyst_dashboard/analyzers/decision_hierarchy.py",
+      "sha256": "9d9a8fd920494de4aa9c7670df1f57afb391a853ca1b9072eab664be4280ba4f"
+    }
+  },
+  "invariants": {
+    "zero_production_mutation": true,
+    "enforced_by": "tests/test_measurement_adversarial_suite.py::test_production_engine_freeze_manifest_compliance"
+  }
+}

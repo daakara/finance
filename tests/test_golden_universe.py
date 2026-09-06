@@ -20,6 +20,9 @@ from analyst_dashboard.data.market_db import MarketDatabaseEngine, DB_PATH
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from tests.fixtures.golden_universe import GOLDEN_ASSETS
 
+pytestmark = pytest.mark.tier3
+
+
 client = TestClient(app)
 db = MarketDatabaseEngine(db_path=DB_PATH)
 

@@ -24,6 +24,9 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 
+pytestmark = pytest.mark.tier2c
+
+
 client = TestClient(app)
 
 

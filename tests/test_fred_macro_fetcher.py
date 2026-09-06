@@ -4,6 +4,9 @@ from unittest.mock import patch, MagicMock
 import pytest
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 
+pytestmark = pytest.mark.tier2c
+
+
 
 def test_fred_macro_fetcher_indicators():
     fetcher = FredMacroFetcher()

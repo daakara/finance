@@ -19,6 +19,9 @@ from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from tests.fixtures.golden_universe import GOLDEN_ASSETS
 
+pytestmark = pytest.mark.tier3
+
+
 
 def test_smart_money_dynamic_reweighting_allows_actionable_confluence():
     """Verify that a compounder without active insider purchases is not capped at 75.0."""

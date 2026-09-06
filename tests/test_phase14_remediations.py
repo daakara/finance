@@ -13,6 +13,10 @@ Enforces:
 import unittest
 import os
 
+import pytest
+pytestmark = pytest.mark.tier2a
+
+
 
 class TestPhase14Remediations(unittest.TestCase):
     """Test suite for Phase 14 production readiness remediations."""

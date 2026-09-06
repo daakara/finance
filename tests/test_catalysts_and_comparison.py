@@ -7,6 +7,9 @@ from fastapi.testclient import TestClient
 from api.main import app
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
 
+pytestmark = pytest.mark.tier3
+
+
 client = TestClient(app)
 catalyst_engine = CatalystEngine()
 
@@ -17,7 +20,7 @@ def test_catalyst_engine_nvo_report():
     assert "Amycretin" in nvo_report["primary_drug_trial"]
     assert len(nvo_report["upcoming_milestones"]) >= 3
     assert len(nvo_report["multi_year_forecast"]) == 4
-    
+
     # Check 2031 forecast scaling
     y2031 = nvo_report["multi_year_forecast"][-1]
     assert y2031["year"] == 2031

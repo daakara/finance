@@ -14,6 +14,9 @@ from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngi
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 from tests.fixtures.golden_universe import GOLDEN_ASSETS
 
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_decision_trace_contract_completeness():
     """Verify that DecisionTraceEngine produces a complete, strongly-typed trace payload."""

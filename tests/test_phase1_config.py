@@ -3,6 +3,10 @@
 import unittest
 from config import Config, AppSettings
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestPhase1ConfigValidation(unittest.TestCase):
     """Test suite verifying AppSettings validation and defaults."""
@@ -25,4 +29,3 @@ class TestPhase1ConfigValidation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

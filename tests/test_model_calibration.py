@@ -5,6 +5,9 @@ import pytest
 import pandas as pd
 from api.routes.analytics import get_asset_analytics
 
+pytestmark = pytest.mark.tier2b
+
+
 def _mock_hist_dataframe():
     prices = [100 + i * 0.5 for i in range(100)]
     return pd.DataFrame({

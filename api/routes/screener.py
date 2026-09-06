@@ -110,7 +110,7 @@ def run_screener_get(
         response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
-    
+
     is_day_trader = (user_role == "DAY_TRADER")
 
     # On-demand custom watchlist input support
@@ -207,12 +207,8 @@ def run_screener_get(
             status_label = "⏳ Pullback Pending"
             status_color = "cyan"
 
-        # Liquidity Guard: Suppress IN_BUY_ZONE on toxic illiquid orderbooks
+        # Liquidity Guard (Shadow Observation Mode): Informational execution metadata only; does not mutate frozen decision state
         liq_def = execution.get("liquidity_defense")
-        if execution_status == "IN_BUY_ZONE" and isinstance(liq_def, dict) and liq_def.get("suppress_buy_zone"):
-            execution_status = "WAITING_PULLBACK"
-            status_label = "⚠️ Liquidity Hazard (Hold Entry)"
-            status_color = "rose"
 
         # Deterministic Smart Money & Catalyst Attributes
         if execution_status == "UNVERIFIED_ASSET" or current_price <= 0:
@@ -402,3 +398,8 @@ def calculate_trade_position_size(
     )
 
 
+@router.get("/phase26/validation-report")
+def get_phase26_validation_report():
+    """Returns Phase 26 prospective liquidity validation report covering Experiment 26-A and 26-B."""
+    from analyst_dashboard.governance.liquidity_validation import Phase26ValidationEngine
+    return Phase26ValidationEngine.generate_phase26_validation_report()

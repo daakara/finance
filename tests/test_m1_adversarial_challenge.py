@@ -26,6 +26,9 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 
+pytestmark = pytest.mark.tier3
+
+
 
 @pytest.fixture
 def client():
@@ -277,7 +280,7 @@ def test_confluence_imminent_earnings_penalty():
 def test_api_key_auth_enforcement_in_production(client):
     """Verify API key authentication when ARX_API_KEY is configured in production."""
     with patch.object(api_key_auth_module, "ARX_API_KEY", "secret-test-api-key-123"):
-        
+
         # Missing key should be rejected with 401
         resp_unauth = client.get("/api/v1/analytics/NVDA")
         assert resp_unauth.status_code == 401

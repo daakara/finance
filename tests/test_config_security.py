@@ -7,6 +7,10 @@ import ssl
 from ssl_config import create_ssl_context, create_session_with_retries
 from config import Config
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestSecurityConfiguration(unittest.TestCase):
     """Test suite to ensure security defaults are enforced."""
@@ -34,4 +38,3 @@ class TestSecurityConfiguration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

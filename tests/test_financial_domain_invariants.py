@@ -11,6 +11,10 @@ import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestFinancialDomainInvariants(unittest.TestCase):
     """Rigorous tests asserting Financial Domain Semantic Invariants."""
@@ -105,14 +109,14 @@ class TestFinancialDomainInvariants(unittest.TestCase):
 
         # Sample daily returns with mixed positive and negative days
         returns = pd.Series([0.012, -0.008, 0.015, -0.022, 0.005, 0.018, -0.011, 0.009, 0.014, -0.005])
-        
+
         # Calculate standard full-sample downside deviation
         downside_diff = np.minimum(0.0, returns)
         expected_downside_dev = float(np.sqrt(np.mean(downside_diff ** 2)) * np.sqrt(252) * 100)
 
         ara = AdvancedRiskAnalyzer()
         metrics = ara._calculate_advanced_risk_metrics(returns)
-        
+
         self.assertIn("Downside_Deviation", metrics)
         self.assertIn("Sortino_Ratio", metrics)
         self.assertAlmostEqual(metrics["Downside_Deviation"], expected_downside_dev, places=2)
@@ -135,7 +139,7 @@ class TestFinancialDomainInvariants(unittest.TestCase):
         returns = pd.Series(np.concatenate([base, crashes]))
 
         metrics = ara._calculate_advanced_risk_metrics(returns)
-        
+
         self.assertIn("Modified_VaR_95", metrics)
         self.assertIn("Modified_VaR_99", metrics)
         self.assertIn("Modified_CVaR_95", metrics)
@@ -376,5 +380,3 @@ if __name__ == "__main__":
     unittest.main()
 else:
     import numpy as np
-
-

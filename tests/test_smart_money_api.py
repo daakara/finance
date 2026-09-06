@@ -3,6 +3,10 @@
 from fastapi.testclient import TestClient
 from api.main import app
 
+import pytest
+pytestmark = pytest.mark.tier2c
+
+
 client = TestClient(app)
 
 def test_smart_money_overview_endpoint():

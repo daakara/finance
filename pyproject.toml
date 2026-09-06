@@ -34,4 +34,11 @@ dependencies = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
-
+addopts = "--strict-markers"
+markers = [
+    "tier1: Core Invariant Gate — always runs on every PR (<60s)",
+    "tier2a: Presentation and UX Gate — path-filtered to frontend/UI changes",
+    "tier2b: State and Solver Gate — path-filtered to engines/analyzers changes",
+    "tier2c: Provenance and Data Gate — path-filtered to api/data/fetcher changes",
+    "tier3: Pre-Flight Release Gate — runs on merge to main only",
+]

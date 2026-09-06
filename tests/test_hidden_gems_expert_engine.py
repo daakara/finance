@@ -4,6 +4,9 @@ import pytest
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from api.routes.screener import run_screener, ScreenerRequest
 
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_hidden_gems_screener_scoring():
     screener = HiddenGemsScreener()
@@ -25,4 +28,3 @@ def test_screener_api_endpoint():
     assert res["total_candidates"] == 3
     assert res["gems_found"] == 3
     assert len(res["results"]) == 3
-

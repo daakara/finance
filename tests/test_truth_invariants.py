@@ -14,6 +14,10 @@ import os
 import json
 import re
 
+import pytest
+pytestmark = pytest.mark.tier1
+
+
 
 class TestTruthInvariantMatrix(unittest.TestCase):
     """Permanent regression contract for ARX decision-grade truth invariants."""

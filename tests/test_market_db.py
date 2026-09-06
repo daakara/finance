@@ -8,6 +8,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 
+import pytest
+pytestmark = pytest.mark.tier2c
+
+
 
 def test_market_database_lifecycle():
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:

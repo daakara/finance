@@ -10,6 +10,10 @@ Enforces:
 import unittest
 import os
 
+import pytest
+pytestmark = pytest.mark.tier2a
+
+
 
 class TestPhase13Batch3Remediations(unittest.TestCase):
     """Test suite for Phase 13.1 Batch 3 (P2 Polish & Accessibility)."""

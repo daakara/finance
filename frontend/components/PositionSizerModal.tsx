@@ -15,6 +15,7 @@ interface PositionSizerProps {
   takeProfit1?: number;
   riskRewardRatio?: number;
   isStage4?: boolean;
+  adv20d?: number;
 }
 
 export default function PositionSizerModal({
@@ -26,6 +27,7 @@ export default function PositionSizerModal({
   takeProfit1,
   riskRewardRatio = 2.5,
   isStage4 = false,
+  adv20d,
 }: PositionSizerProps) {
   const [accountSize, setAccountSize] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -120,6 +122,11 @@ export default function PositionSizerModal({
   const portfolioAllocPct = Number(((totalAllocation / (accountSize || 1)) * 100).toFixed(1));
   const actualDollarRisk = Number((shares * riskPerShare).toFixed(2));
   const projectedProfit = isSetupInvalid ? 0 : (!hasTarget ? 0 : Number((shares * (safeTarget - safeEntry)).toFixed(2)));
+
+  // Order participation calculation against 20-day ADV
+  const participationRatePct = (adv20d && adv20d > 0 && totalAllocation > 0)
+    ? (totalAllocation / adv20d) * 100
+    : null;
 
   // Half-Kelly calculation
   const b = isSetupInvalid ? 0 : (!hasTarget ? 0 : Math.max(0.5, (safeTarget - safeEntry) / (riskPerShare || 1)));
@@ -395,6 +402,38 @@ export default function PositionSizerModal({
               </div>
             </div>
           </div>
+
+          {/* Order Participation Rate Diagnostic (LiquidityGuard Advisory) */}
+          {participationRatePct !== null && (
+            <div
+              className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 shadow ${
+                participationRatePct > 1.0
+                  ? "bg-rose-950/40 border-rose-800/80 text-rose-200"
+                  : participationRatePct > 0.25
+                  ? "bg-amber-950/40 border-amber-800/80 text-amber-200"
+                  : "bg-[#0b101b] border-[#172235] text-slate-300"
+              }`}
+            >
+              <span className="text-base shrink-0">{participationRatePct > 1.0 ? "⚠️" : participationRatePct > 0.25 ? "⚡" : "💧"}</span>
+              <div className="space-y-0.5 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="font-bold text-[11px] uppercase tracking-wide">
+                    Estimated Order Participation: {participationRatePct.toFixed(3)}% of 20D ADV
+                  </strong>
+                  {adv20d != null && (
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      ADV: ${adv20d.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  {participationRatePct > 1.0
+                    ? `Your planned order of $${totalAllocation.toLocaleString()} represents ${participationRatePct.toFixed(2)}% of historical average daily volume. Sizing > 1% typically incurs measurable market impact; use limit orders or break execution into algorithmic tranches.`
+                    : `Order allocation represents a manageable fraction of historical dollar volume (< 1% ADV). Estimated execution risk based on historical trading liquidity is minimal.`}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Action Guidance */}
           <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">

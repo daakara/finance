@@ -245,11 +245,13 @@ export default function OptimalEntryExitCard({
                     ? "bg-rose-950/80 text-rose-300 border-rose-700/80"
                     : executionPlan.liquidity_defense.badge_color === "amber"
                     ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
+                    : executionPlan.liquidity_defense.badge_color === "slate"
+                    ? "bg-slate-900/80 text-slate-400 border-slate-700/80"
                     : "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
                 }`}
                 title={executionPlan.liquidity_defense.pro_summary}
               >
-                <span>{executionPlan.liquidity_defense.badge_color === "rose" ? "🛑" : executionPlan.liquidity_defense.badge_color === "amber" ? "⚡" : "💧"}</span>
+                <span>{executionPlan.liquidity_defense.badge_color === "rose" ? "🛑" : executionPlan.liquidity_defense.badge_color === "amber" ? "⚡" : executionPlan.liquidity_defense.badge_color === "slate" ? "⚪" : "💧"}</span>
                 {isPlain ? executionPlan.liquidity_defense.plain_label : executionPlan.liquidity_defense.pro_label}
               </span>
             )}
@@ -287,17 +289,22 @@ export default function OptimalEntryExitCard({
         </div>
       </div>
 
-      {/* 🛑 Liquidity Defense Alert Banner */}
+      {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}
       {executionPlan.liquidity_defense?.execution_hazard && (
-        <div className="bg-rose-950/40 border border-rose-800/80 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
+        <div className="bg-amber-950/30 border border-amber-800/60 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
           <span className="text-xl flex-shrink-0">⚠️</span>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-rose-300 uppercase tracking-wider text-[11px]">
-                {isPlain ? "Liquidity Trap Hazard Detected" : "Execution Safety Invariant Breach: Toxic Liquidity"}
+              <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">
+                {isPlain ? "Estimated Execution Risk" : "Execution Risk: Low Historical Dollar Volume"}
               </span>
-              <span className="px-1.5 py-0.5 bg-rose-900/60 text-rose-200 text-[9px] font-mono rounded">
-                ADV: ${executionPlan.liquidity_defense.adv_20d_usd.toLocaleString()}
+              <span className="px-1.5 py-0.5 bg-amber-900/60 text-amber-200 text-[9px] font-mono rounded">
+                ADV 20D: ${executionPlan.liquidity_defense.adv_20d_usd.toLocaleString()}
+                {executionPlan.liquidity_defense.liquidity_trend != null && (
+                  <span className="ml-1.5 text-amber-300">
+                    • 5D Trend: {executionPlan.liquidity_defense.liquidity_trend}x
+                  </span>
+                )}
               </span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
@@ -305,10 +312,10 @@ export default function OptimalEntryExitCard({
                 ? executionPlan.liquidity_defense.plain_summary
                 : executionPlan.liquidity_defense.pro_summary}
             </p>
-            <p className="text-rose-400 font-semibold text-[10px]">
+            <p className="text-amber-400 font-semibold text-[10px]">
               {isPlain
-                ? "💡 Action: Do not market buy into sudden volume surges. Chasing breakouts here risks severe slippage."
-                : "💡 Invariant Enforced: IN_BUY_ZONE status suppressed until ADV >= $500,000 and Amihud ILLIQ stabilizes."}
+                ? "💡 Advisory: Estimated execution risk based on historical trading liquidity. Market orders may experience greater slippage; consider using a limit order. Model signal remains active."
+                : "💡 Shadow Observation: Model decision unconstrained. Low historical dollar volume may induce execution friction on market orders."}
             </p>
           </div>
         </div>
@@ -384,7 +391,7 @@ export default function OptimalEntryExitCard({
         }`}>
           <div className="flex items-center space-x-2">
             <span className={isStage4 ? "text-amber-400 font-bold" : "text-cyan-400 font-bold"}>
-              {isStage4 
+              {isStage4
                 ? (isPlain ? "⏳ WATCHLIST ONLY (WAIT FOR BOUNCE)" : "⏳ PROSPECTIVE BASE CORRIDOR (AWAITING PIVOT)")
                 : (isPlain ? "🔵 BEST BUYING PRICE RANGE (Accumulation Area)" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE")}
             </span>
@@ -538,6 +545,7 @@ export default function OptimalEntryExitCard({
         takeProfit1={take_profit_1}
         riskRewardRatio={risk_reward_ratio}
         isStage4={isStage4}
+        adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
       />
 
       <AlertTriggerModal

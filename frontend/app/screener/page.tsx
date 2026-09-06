@@ -141,8 +141,8 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
       executionStatus = "WAITING_PULLBACK";
       statusLabel = sym === "FIX"
         ? "⏳ Stage 4 Distribution (Wait for Floor)"
-        : (sym === "ULTA" || sym === "LULU" 
-          ? "⚠️ Stage 4 Turnaround Watch" 
+        : (sym === "ULTA" || sym === "LULU"
+          ? "⚠️ Stage 4 Turnaround Watch"
           : "⏳ Awaiting Base Formation");
       statusColor = "amber";
     } else if (price >= optimalEntryMin && price <= optimalEntryMax) {
@@ -184,7 +184,7 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
 
     const confluenceWarnings = !cat
       ? ["Uncataloged asset: awaiting official SEC 10-K and exchange data verification."]
-      : (sym === "ULTA" || sym === "LULU") 
+      : (sym === "ULTA" || sym === "LULU")
         ? ["Negative 1Y/3Y momentum trend", "Prestige beauty comp deceleration", "Trading below 200-day EMA"]
         : (isStage4Candidate ? ["Awaiting Stage 1 base completion"] : []);
 
@@ -228,6 +228,53 @@ function generateBuiltinGems(role: "DAY_TRADER" | "LONG_TERM", customQuery?: str
     };
   });
 }
+
+const parseNum = (val: any): number => {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === "number") return isNaN(val) ? 0 : val;
+  if (typeof val === "string") {
+    const cleaned = val.replace(/[^0-9.-]/g, "");
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const hasArchetype = (gem: GemCandidate, keyword: string): boolean => {
+  if (!gem || !gem.expertArchetype || typeof gem.expertArchetype !== "string") return false;
+  return gem.expertArchetype.toLowerCase().includes(keyword.toLowerCase());
+};
+
+// Instant Client-Side Filter with 0ms Latency and Robust Type Parsing
+const isMatchFilter = (gem: GemCandidate, filterId: string): boolean => {
+  // Phase 18/21 Invariant: UNKNOWN != FAVORABLE & DISTRIBUTION != BUY_ZONE.
+  // Unverified / insufficient history assets must NEVER match favorable filter tabs.
+  if (gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return false;
+  const isStage4 = gem.symbol === "FIX" || gem.statusLabel?.toLowerCase().includes("stage 4") || gem.statusLabel?.toLowerCase().includes("distribution");
+  if (isStage4 && (filterId === "in_buy_zone" || filterId === "vwap_pullback" || filterId === "high_rr")) return false;
+  if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
+  if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
+  if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
+  if (filterId === "high_rr") {
+    // Asymmetric plan geometry (>= 2.0:1) AND Actionable buy zone proximity (In buy zone or spot <= optimalEntryMax * 1.02)
+    const hasValidEntry = Boolean(gem.optimalEntryMax && gem.optimalEntryMax > 0);
+    const isActionable = gem.executionStatus === "IN_BUY_ZONE" || (hasValidEntry && (gem.currentPrice || 0) <= (gem.optimalEntryMax as number) * 1.02);
+    return (gem.riskRewardRatio || 0) >= 2.0 && isActionable;
+  }
+  if (filterId === "high_rvol") return parseNum(gem.rvol) >= 2.5;
+  if (filterId === "squeeze") return parseNum(gem.shortFloat) >= 6.0;
+  if (filterId === "lynch") {
+    const peg = parseNum(gem.pegRatio);
+    return (peg > 0 && peg <= 1.05) || hasArchetype(gem, "Lynch") || hasArchetype(gem, "GARP");
+  }
+  if (filterId === "greenblatt") {
+    return parseNum(gem.roic) >= 28.0 || hasArchetype(gem, "Greenblatt") || hasArchetype(gem, "Magic");
+  }
+  if (filterId === "rule_breakers") {
+    return parseNum(gem.grossMargin) >= 65.0 || hasArchetype(gem, "Rule Breakers") || hasArchetype(gem, "Disruptive");
+  }
+  return true;
+};
 
 export default function ScreenerPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -275,11 +322,15 @@ export default function ScreenerPage() {
     setSelectedFilter("all");
     localStorage.setItem("FINANCE_USER_ROLE", role);
     localStorage.setItem("FINANCE_SCREENER_TAB", "all");
+    const count = gems.filter((gem) => isMatchFilter(gem, "all")).length;
+    trackScreenerSelection(`All Setups (${role})`, count);
   };
 
   const handleSelectFilter = (tabId: string) => {
     setSelectedFilter(tabId);
     localStorage.setItem("FINANCE_SCREENER_TAB", tabId);
+    const count = gems.filter((gem) => isMatchFilter(gem, tabId)).length;
+    trackScreenerSelection(tabId, count);
   };
 
   const executeScreenerFetch = async (role: "DAY_TRADER" | "LONG_TERM", customQuery?: string) => {
@@ -575,52 +626,7 @@ export default function ScreenerPage() {
     ? (isDayTrader ? plainDayTraderTabs : plainLongTermTabs)
     : (isDayTrader ? DAY_TRADER_FILTER_TABS : LONG_TERM_FILTER_TABS);
 
-  const parseNum = (val: any): number => {
-    if (val === null || val === undefined) return 0;
-    if (typeof val === "number") return isNaN(val) ? 0 : val;
-    if (typeof val === "string") {
-      const cleaned = val.replace(/[^0-9.-]/g, "");
-      const parsed = parseFloat(cleaned);
-      return isNaN(parsed) ? 0 : parsed;
-    }
-    return 0;
-  };
 
-  const hasArchetype = (gem: GemCandidate, keyword: string): boolean => {
-    if (!gem || !gem.expertArchetype || typeof gem.expertArchetype !== "string") return false;
-    return gem.expertArchetype.toLowerCase().includes(keyword.toLowerCase());
-  };
-
-  // Instant Client-Side Filter with 0ms Latency and Robust Type Parsing
-  const isMatchFilter = (gem: GemCandidate, filterId: string): boolean => {
-    // Phase 18/21 Invariant: UNKNOWN != FAVORABLE & DISTRIBUTION != BUY_ZONE.
-    // Unverified / insufficient history assets must NEVER match favorable filter tabs.
-    if (gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return false;
-    const isStage4 = gem.symbol === "FIX" || gem.statusLabel?.toLowerCase().includes("stage 4") || gem.statusLabel?.toLowerCase().includes("distribution");
-    if (isStage4 && (filterId === "in_buy_zone" || filterId === "vwap_pullback" || filterId === "high_rr")) return false;
-    if (filterId === "high_confluence") return (gem.confluenceScore || 0) >= 80;
-    if (filterId === "in_buy_zone" || filterId === "vwap_pullback") return gem.executionStatus === "IN_BUY_ZONE";
-    if (filterId === "approaching_target" || filterId === "orb_breakout") return gem.executionStatus === "APPROACHING_TARGET";
-    if (filterId === "high_rr") {
-      // Asymmetric plan geometry (>= 2.0:1) AND Actionable buy zone proximity (In buy zone or spot <= optimalEntryMax * 1.02)
-      const hasValidEntry = Boolean(gem.optimalEntryMax && gem.optimalEntryMax > 0);
-      const isActionable = gem.executionStatus === "IN_BUY_ZONE" || (hasValidEntry && (gem.currentPrice || 0) <= (gem.optimalEntryMax as number) * 1.02);
-      return (gem.riskRewardRatio || 0) >= 2.0 && isActionable;
-    }
-    if (filterId === "high_rvol") return parseNum(gem.rvol) >= 2.5;
-    if (filterId === "squeeze") return parseNum(gem.shortFloat) >= 6.0;
-    if (filterId === "lynch") {
-      const peg = parseNum(gem.pegRatio);
-      return (peg > 0 && peg <= 1.05) || hasArchetype(gem, "Lynch") || hasArchetype(gem, "GARP");
-    }
-    if (filterId === "greenblatt") {
-      return parseNum(gem.roic) >= 28.0 || hasArchetype(gem, "Greenblatt") || hasArchetype(gem, "Magic");
-    }
-    if (filterId === "rule_breakers") {
-      return parseNum(gem.grossMargin) >= 65.0 || hasArchetype(gem, "Rule Breakers") || hasArchetype(gem, "Disruptive");
-    }
-    return true;
-  };
 
   const displayGems = gems.filter((gem) => isMatchFilter(gem, selectedFilter));
   const getTabCount = (tabId: string) => gems.filter((gem) => isMatchFilter(gem, tabId)).length;

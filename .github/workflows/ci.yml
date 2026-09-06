@@ -29,11 +29,24 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt pytest pytest-cov httpx starlette
 
-    - name: Run Pytest & Quantitative Invariant Suite
+    - name: Run Tier 1 Core Invariant Gate
       env:
         PYTHONPATH: "."
       run: |
-        pytest tests/ -v
+        pytest tests/ -m tier1 -v
+
+    - name: Run Tier 2 Path-Filtered Gates (Temporary All-Run)
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/ -m "tier2a or tier2b or tier2c" -v
+
+    - name: Run Tier 3 Pre-Flight Release Gate
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      env:
+        PYTHONPATH: "."
+      run: |
+        pytest tests/ -m tier3 -v
 
   lint_and_security:
     name: Code Quality & Security Linter

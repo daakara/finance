@@ -13,6 +13,10 @@ import unittest
 import os
 import re
 
+import pytest
+pytestmark = pytest.mark.tier2a
+
+
 
 class TestPhase13Batch1Remediations(unittest.TestCase):
     """Test suite for Phase 13.1 Batch 1 (P0 Safety & Integrity)."""

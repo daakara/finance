@@ -10,6 +10,9 @@ Validates:
 import pytest
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 
+pytestmark = pytest.mark.tier3
+
+
 
 def test_score_monotonicity_fundamental_quality():
     """Higher fundamental solvency strictly increases the fundamental pillar and overall confluence."""

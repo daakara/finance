@@ -15,12 +15,22 @@ from api.main import app
 from analyst_dashboard.data.market_db import MarketDatabaseEngine, DB_PATH
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
+pytestmark = pytest.mark.tier2c
+
+
 client = TestClient(app)
 db = MarketDatabaseEngine(db_path=DB_PATH)
 
 
 def _seed_test_candles(symbol: str, count: int, base_price: float = 50.0, days_ago: int = 1):
     """Seed historical candles in SQLite with specific age and count."""
+    db._init_schema()
+    conn = db._get_connection()
+    try:
+        conn.execute("DELETE FROM asset_ohlcv_daily WHERE symbol = ?", (symbol,))
+        conn.commit()
+    finally:
+        conn.close()
     start_date = datetime.utcnow() - timedelta(days=days_ago + count)
     records = []
     for i in range(count):

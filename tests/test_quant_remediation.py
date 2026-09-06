@@ -17,6 +17,10 @@ import os
 import json
 import re
 
+import pytest
+pytestmark = pytest.mark.tier3
+
+
 
 class TestQuantRemediation(unittest.TestCase):
     """Regression and adversarial verification suite for quantitative truth."""
@@ -172,4 +176,3 @@ class TestQuantRemediation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
+pytestmark = pytest.mark.tier2b
+
+
 
 def test_optimal_execution_engine_fallback():
     empty_df = pd.DataFrame()

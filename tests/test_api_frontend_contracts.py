@@ -19,12 +19,22 @@ from fastapi.testclient import TestClient
 from api.main import app
 from analyst_dashboard.data.market_db import MarketDatabaseEngine, DB_PATH
 
+pytestmark = pytest.mark.tier1
+
+
 client = TestClient(app)
 db = MarketDatabaseEngine(db_path=DB_PATH)
 
 
 def _seed_contract_candles(symbol: str, count: int, base_price: float = 30.0):
     """Seed candles in SQLite for contract validation."""
+    db._init_schema()
+    conn = db._get_connection()
+    try:
+        conn.execute("DELETE FROM asset_ohlcv_daily WHERE symbol = ?", (symbol,))
+        conn.commit()
+    finally:
+        conn.close()
     start_date = datetime.utcnow() - timedelta(days=count + 1)
     records = []
     for i in range(count):

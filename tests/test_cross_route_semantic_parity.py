@@ -16,6 +16,9 @@ import pandas as pd
 from fastapi.testclient import TestClient
 from api.main import app
 
+pytestmark = pytest.mark.tier2a
+
+
 client = TestClient(app)
 
 CURATED_SMALL_CAP_GEMS = [

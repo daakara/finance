@@ -7,6 +7,9 @@ import math
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 
+pytestmark = pytest.mark.tier3
+
+
 
 def test_confluence_engine_fails_closed_on_missing_fundamentals():
     engine = ConfluenceEngine()
