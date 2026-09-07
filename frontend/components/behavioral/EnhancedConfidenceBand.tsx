@@ -95,7 +95,7 @@ export default function EnhancedConfidenceBand({
 
         <div className="text-right">
           <div className="text-caption-mono text-text-secondary text-xs">
-            {delta30d >= 0 ? `+${delta30d}%` : `${delta30d}%`} 30d
+            {delta30d >= 0 ? `▲ +${delta30d}%` : `▼ ${delta30d}%`} 30d
           </div>
           <div className="text-caption text-text-muted text-[10px]">
             ±{marginOfError.toFixed(1)}% MoE

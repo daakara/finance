@@ -351,3 +351,165 @@ export interface CanonicalBehavioralIntelligenceProfile {
   coachSummary: BehavioralCoachSummary;
   cohortMetrics: CohortMetrics;
 }
+
+// -------------------------------------------------------------------------
+// Phase 28 Milestone 1: Behavioral Intelligence Foundations Interfaces
+// -------------------------------------------------------------------------
+
+export interface DIRProfile {
+  userId: string;
+  currentDecisionQuality: number;
+  previousDecisionQuality: number;
+  decisionQualityDelta: number;
+  learningVelocityIndex: number;
+  behavioralAdoptionRate: number;
+  ruleAdherenceRate: number;
+  repeatMistakeReduction: number;
+  decisionDriftScore: number;
+  decisionImprovementScore: number;
+  percentileRank: number;
+  confidence: number;
+  generatedAt: string;
+}
+
+export interface DecisionImprovementScore {
+  overallScore: number;
+  qualityContribution: number;
+  adoptionContribution: number;
+  adherenceContribution: number;
+  mistakeReductionContribution: number;
+  driftContribution: number;
+  trend: 'IMPROVING' | 'STABLE' | 'DECLINING';
+  confidence: number;
+}
+
+export interface LearningVelocityIndex {
+  currentValue: number;
+  quarterlyGrowth: number;
+  annualGrowth: number;
+  acceleration: number;
+  percentile: number;
+  confidenceLower: number;
+  confidenceUpper: number;
+  category: 'LOW' | 'MEDIUM' | 'HIGH' | 'ELITE';
+}
+
+export interface EvaluatedLearningVelocity {
+  score: number;
+  direction: 'ACCELERATING' | 'IMPROVING' | 'STABLE' | 'PLATEAU' | 'REGRESSING';
+  acceleration: number;
+  confidence: number;
+  category: 'LOW' | 'MEDIUM' | 'HIGH' | 'ELITE';
+  confidenceInterval: {
+    lower: number;
+    upper: number;
+  };
+}
+
+export interface BehavioralCohort {
+  cohortId: string;
+  category: 'CONSUMER' | 'INVESTIGATOR' | 'PRACTITIONER' | 'LEARNER' | 'OPTIMIZER';
+  confidence: number;
+  assignedAt: string;
+  characteristics: string[];
+  nextTargetCohort?: string;
+}
+
+export interface CohortDistribution {
+  consumers: number;
+  investigators: number;
+  practitioners: number;
+  learners: number;
+  optimizers: number;
+  totalUsers: number;
+  generatedAt: string;
+}
+
+export interface BehavioralRecommendation {
+  recommendationId: string;
+  title: string;
+  category: 'DO_MORE' | 'STOP_DOING' | 'CALIBRATE';
+  projectedQualityImpact: number;
+  projectedRiskReduction: number;
+  projectedTimeToBenefitDays: number;
+  confidence: number;
+  evidenceCount: number;
+  rationale: string;
+}
+
+export interface BehavioralIntelligenceDashboard {
+  profile: DIRProfile;
+  learningVelocity: LearningVelocityIndex;
+  cohort: BehavioralCohort;
+  distribution: CohortDistribution;
+  timeline: BehavioralTimelineEvent[];
+  recommendations: BehavioralRecommendation[];
+  lastUpdated: string;
+}
+
+export interface ExecutiveStory {
+  headline: string;
+  summary: string;
+  topImprovement: string;
+  biggestRisk: string;
+  recommendedAction: string;
+  projectedBenefit: number;
+  confidence: number;
+  generatedAt: string;
+}
+
+export interface DecisionIntelligenceResult {
+  dirScore: number;
+  confidenceScore: number;
+  trendDirection: 'IMPROVING' | 'STABLE' | 'DECLINING';
+  percentile: number;
+  benchmark: number;
+  confidenceBand: {
+    lower: number;
+    upper: number;
+    confidenceLevel: number;
+  };
+  sampleSize?: number;
+  edgeCases?: string[];
+  isProvisional?: boolean;
+  components?: {
+    dqsContribution: number;
+    outcomeContribution: number;
+    learningContribution: number;
+    governanceContribution: number;
+  };
+}
+
+export interface BehavioralCohortResult {
+  cohortName: string;
+  tenureCohort: '0-30 Days' | '31-90 Days' | '91-365 Days' | '365+ Days';
+  behavioralCohort: 'Observer' | 'Reviewer' | 'Predictor' | 'Learner' | 'Institutional Operator' | 'Consumer' | 'Investigator' | 'Practitioner' | 'Optimizer';
+  dir: number;
+  par: number; // Participation/Adoption Rate
+  learningVelocity: number;
+  engagement: number;
+  retention: number;
+  confidence: number;
+}
+
+export interface ExecutiveBenchmarkResult {
+  percentileRank: number;
+  improvementDelta: number;
+  expectedProgression: {
+    targetScore: number;
+    targetHorizonMonths: number;
+    projectedGrowthRate: number;
+  };
+  benchmarks: {
+    personalHistorical: number;
+    teamAverage: number;
+    institutionAverage: number;
+    eliteQuartile: number;
+  };
+  layerDeltas: {
+    vsPersonalHistorical: number;
+    vsTeamAverage: number;
+    vsInstitutionAverage: number;
+    vsEliteQuartile: number;
+  };
+}

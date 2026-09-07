@@ -154,9 +154,14 @@ export default function BehavioralMaturityCohortMatrix() {
 
       {/* 3. Role-Based Behavioral Adoption Benchmarking */}
       <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-4 shadow-sm">
-        <h4 className="text-header-2 font-bold text-text-primary">
-          Role-Based Behavioral Adoption Benchmarking
-        </h4>
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+          <h4 className="text-header-2 font-bold text-text-primary">
+            ROLE-BASED BEHAVIORAL ADOPTION
+          </h4>
+          <span className="text-caption-mono text-text-muted text-xs">
+            Executives · Portfolio Managers · Analysts Cohorts
+          </span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {ROLE_COHORTS.map((rc) => (
             <div key={rc.role} className="p-4 bg-bg-surface-raised rounded-xl border border-border-subtle space-y-2">

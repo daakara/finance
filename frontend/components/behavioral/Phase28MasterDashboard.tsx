@@ -11,13 +11,14 @@ import BehavioralMaturityCohortMatrix from './BehavioralMaturityCohortMatrix';
 import DIRHeroCard from './DIRHeroCard';
 import DIREvolutionTimeline from './DIREvolutionTimeline';
 import CohortMigrationDashboard from './CohortMigrationDashboard';
+import BehavioralIntelligenceDashboard from './BehavioralIntelligenceDashboard';
 import { CANONICAL_CONFIDENCE_METRICS } from '@/lib/telemetry/statisticalConfidenceEngine';
 import { CANONICAL_DIR_RESULT } from '@/lib/telemetry/dirEngine';
 
 export default function Phase28MasterDashboard() {
   const [activeTab, setActiveTab] = useState<
-    'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
-  >('dir');
+    'foundations' | 'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
+  >('foundations');
 
   return (
     <div className="space-y-8" data-testid="phase28-master-dashboard">
@@ -56,13 +57,14 @@ export default function Phase28MasterDashboard() {
         {/* Sub-Navigation Strip */}
         <div className="flex items-center gap-2 border-t border-border-subtle pt-4 overflow-x-auto">
           {[
-            { id: 'dir', label: '1. Decision Improvement Rating (DIR 63)' },
-            { id: 'migration', label: '2. Cohort Migration (CAR 31%)' },
-            { id: 'home', label: '3. Story-First Executive Home' },
-            { id: 'briefing', label: '4. Morning Briefing 2.0 (Story Flow)' },
-            { id: 'center', label: '5. Behavioral Intelligence Center' },
-            { id: 'coach', label: '6. AI Behavioral Coach (Forecast 80)' },
-            { id: 'confidence', label: '7. Statistical Confidence & Bands' },
+            { id: 'foundations', label: '1. Foundations (Milestone 1)' },
+            { id: 'dir', label: '2. Decision Improvement Rating (DIR 63)' },
+            { id: 'migration', label: '3. Cohort Migration (CAR 31%)' },
+            { id: 'home', label: '4. Story-First Executive Home' },
+            { id: 'briefing', label: '5. Morning Briefing 2.0 (Story Flow)' },
+            { id: 'center', label: '6. Behavioral Intelligence Center' },
+            { id: 'coach', label: '7. AI Behavioral Coach (Forecast 80)' },
+            { id: 'confidence', label: '8. Statistical Confidence & Bands' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -80,6 +82,10 @@ export default function Phase28MasterDashboard() {
       </div>
 
       {/* Tab Views */}
+      {activeTab === 'foundations' && (
+        <BehavioralIntelligenceDashboard />
+      )}
+
       {activeTab === 'dir' && (
         <div className="space-y-6">
           <DIRHeroCard result={CANONICAL_DIR_RESULT} />
