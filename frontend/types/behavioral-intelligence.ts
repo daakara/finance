@@ -709,4 +709,79 @@ export interface EvolutionJourneyProfile {
   attributionCoveragePct: number;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 28 Milestone 3: Decision Simulator & M3 Verification Framework Contracts
+// ---------------------------------------------------------------------------
+
+export interface SimulationAssumption {
+  assumptionId: string;
+  type:
+    | "RULE_ADOPTION"
+    | "RULE_REMOVAL"
+    | "POSITION_SIZING"
+    | "RISK_CONTROL"
+    | "MACRO_FILTER";
+  description: string;
+  impactWeight: number;
+  confidence: number;
+  ruleGroup: "A" | "B" | "C" | "D" | "E";
+  active?: boolean;
+}
+
+export interface SimulationRecommendation {
+  recommendationId: string;
+  category: "DO_MORE" | "STOP_DOING" | "CALIBRATE";
+  title: string;
+  projectedDelta: number;
+  confidence: number;
+  supportingSample: number;
+  rationale?: string;
+  evidenceTrace?: string;
+}
+
+export interface SimulationOutcome {
+  metric:
+    | "QUALITY_SCORE"
+    | "WIN_RATE"
+    | "LOSS_AVOIDANCE"
+    | "DRIFT"
+    | "ADOPTION";
+  baseline: number;
+  projected: number;
+  delta: number;
+  unit?: string;
+}
+
+export interface DecisionSimulation {
+  simulationId: string;
+  userId: string;
+  generatedAt: string;
+  baselineQualityScore: number;
+  projectedQualityScore: number;
+  projectedDelta: number;
+  confidence: number;
+  assumptions: SimulationAssumption[];
+  recommendations: SimulationRecommendation[];
+  outcomes: SimulationOutcome[];
+}
+
+export interface M3CertificationScorecard {
+  recommendationTraceabilityPct: number; // Target: 100%
+  adoptionVerificationPct: number; // Target: >95%
+  outcomeAttributionPct: number; // Target: 100%
+  statisticalValidityCoveragePct: number; // Target: >90%
+  decisionQualityImprovementPoints: number; // Target: >5 pts
+  recommendationEffectivenessPct: number; // Target: >70%
+  status: "CERTIFIED" | "IN_PROGRESS";
+}
+
+export interface M3InvariantCriterion {
+  invariantId: "M3-I01" | "M3-I02" | "M3-I03" | "M3-I04" | "M3-I05" | "M3-I06";
+  name: string;
+  passed: boolean;
+  actual: string | number;
+  target: string | number;
+  evidence: string;
+}
+
 
