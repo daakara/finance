@@ -513,3 +513,99 @@ export interface ExecutiveBenchmarkResult {
     vsEliteQuartile: number;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Phase 28 Milestone 2A: Executive Narrative & Capability Attribution Contracts
+// ---------------------------------------------------------------------------
+
+export type ExecutiveNarrativeState =
+  | 'HEALTHY'
+  | 'IMPROVING'
+  | 'PLATEAU'
+  | 'DECLINING'
+  | 'INACTIVE'
+  | 'LOW_CONFIDENCE'
+  | 'NEW_USER';
+
+export interface ExecutiveNarrativeInputs {
+  dir: number;
+  dirTrend?: number;
+  learningVelocity?: number;
+  confidence?: number;
+  decisionCount?: number;
+  daysSinceLastActivity?: number;
+  topDriver?: string;
+  topWeakness?: string;
+  userName?: string;
+  dateString?: string;
+  portfolioAtRisk?: number;
+}
+
+export interface ExecutiveNarrativeResult {
+  state: ExecutiveNarrativeState;
+  stateLabel: string;
+  dirScore: number;
+  dirTrend: number;
+  trendDirection: 'IMPROVING' | 'STABLE' | 'DECLINING';
+  confidence: number;
+  headline: string;
+  executiveSummary: {
+    observation: string;
+    learning: string;
+    recommendedAction: string;
+    actionConfidence: number;
+    evidenceTrace: string;
+  };
+  metrics: {
+    learningVelocity: number;
+    attentionCount: number;
+    portfolioAtRisk: number;
+  };
+  topOpportunity: ExecutiveTopOpportunity;
+  topRisk: ExecutiveTopRisk;
+  generatedAt: string;
+}
+
+export interface ExecutiveTopOpportunity {
+  title: string;
+  driverPattern: string;
+  historicalWinRate: number;
+  estimatedContributionPoints: number;
+  actionableDirective: string;
+  confidence: number;
+  evidenceSample: number;
+}
+
+export interface ExecutiveTopRisk {
+  title: string;
+  threatPattern: string;
+  lossContributionPct: number;
+  mitigationDirective: string;
+  confidence: number;
+  evidenceSample: number;
+}
+
+export interface CapabilityImpactItem {
+  capabilityId: 'outcome_reviews' | 'ai_coach' | 'decision_journal' | 'committee_governance' | string;
+  capabilityName: string;
+  usageRate: number; // percentage, e.g. 78%
+  estimatedContribution: number; // DQ points, e.g. +4.7
+  contributionRange: {
+    lower: number;
+    upper: number;
+  };
+  confidence: number; // percentage, e.g. 92%
+  interactionsCount: number; // e.g. 843
+  capabilityRoiIndex: number; // CRI = contribution / (usageRate / 10) or contribution / usage
+  executiveExplanation: string;
+}
+
+export interface CapabilityImpactAttribution {
+  totalImprovementPoints: number; // e.g. 12.0
+  explainedImprovementPoints: number; // e.g. 11.4
+  residualDriftPoints: number; // e.g. 0.6
+  isConservationSatisfied: boolean; // within +/- 0.5 points
+  capabilities: CapabilityImpactItem[];
+  highestRoiCapability: string;
+}
+

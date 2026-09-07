@@ -12,13 +12,14 @@ import DIRHeroCard from './DIRHeroCard';
 import DIREvolutionTimeline from './DIREvolutionTimeline';
 import CohortMigrationDashboard from './CohortMigrationDashboard';
 import BehavioralIntelligenceDashboard from './BehavioralIntelligenceDashboard';
+import ExecutiveNarrativeHome from './ExecutiveNarrativeHome';
 import { CANONICAL_CONFIDENCE_METRICS } from '@/lib/telemetry/statisticalConfidenceEngine';
 import { CANONICAL_DIR_RESULT } from '@/lib/telemetry/dirEngine';
 
 export default function Phase28MasterDashboard() {
   const [activeTab, setActiveTab] = useState<
-    'foundations' | 'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
-  >('foundations');
+    'foundations' | 'executive-narrative' | 'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
+  >('executive-narrative');
 
   return (
     <div className="space-y-8" data-testid="phase28-master-dashboard">
@@ -57,6 +58,7 @@ export default function Phase28MasterDashboard() {
         {/* Sub-Navigation Strip */}
         <div className="flex items-center gap-2 border-t border-border-subtle pt-4 overflow-x-auto">
           {[
+            { id: 'executive-narrative', label: '★ Executive Narrative Home (M2-A)' },
             { id: 'foundations', label: '1. Foundations (Milestone 1)' },
             { id: 'dir', label: '2. Decision Improvement Rating (DIR 63)' },
             { id: 'migration', label: '3. Cohort Migration (CAR 31%)' },
@@ -82,6 +84,10 @@ export default function Phase28MasterDashboard() {
       </div>
 
       {/* Tab Views */}
+      {activeTab === 'executive-narrative' && (
+        <ExecutiveNarrativeHome />
+      )}
+
       {activeTab === 'foundations' && (
         <BehavioralIntelligenceDashboard />
       )}
