@@ -217,7 +217,7 @@ export default function AdaptiveTerminal({
         />
       )}
 
-      {experienceMode === "ADVANCED" && (
+      {experienceMode === "QUANT" && (
         <AdvancedTerminalView
           insight={insight}
           onOpenSizer={() => setIsSizerOpen(true)}

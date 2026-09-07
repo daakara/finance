@@ -3,43 +3,74 @@
 @tailwind utilities;
 
 :root {
-  /* Default: Obsidian Dark Terminal */
-  --bg-app: #070a10;
-  --bg-surface: #111722;
+  /* Default: Obsidian Dark Terminal vNext */
+  --bg-app: #090d16;
+  --bg-surface: #0f1422;
+  --bg-surface-raised: #161f33;
+  --bg-surface-elevated: #1e2a45;
   --bg-surface-hover: #1b2434;
   --bg-element: #162030;
-  --border-subtle: #243044;
-  --border-strong: #364866;
 
-  --text-main: #f0f4f8;
+  --border-subtle: rgba(51, 65, 85, 0.8);
+  --border-strong: #334155;
+
+  /* vNext Semantic Typography Tokens */
+  --text-primary: #f8fafc;      /* Pure White (Slate 50) for critical prices & scores */
+  --text-secondary: #94a3b8;    /* Slate 400 for sub-labels & descriptions */
+  --text-faint: #64748b;        /* Slate 500 for disclaimers & metadata */
+  --text-main: #f8fafc;         /* Compatibility bridge */
   --text-muted: #94a3b8;
-  --text-faint: #64748b;
 
-  --accent-cyan: #06b6d4;
+  /* vNext Anti-Cyan Semantic Decision Tokens */
+  /* GREEN = Positive Setup / In Buy Zone */
+  --accent-positive: #10b981;
   --accent-emerald: #10b981;
   --accent-emerald-dark: #064e3b;
-  --accent-rose: #f43f5e;
+
+  /* AMBER = Caution / Waiting Pullback / Thin Liquidity */
+  --accent-warning: #f59e0b;
   --accent-amber: #f59e0b;
+
+  /* ROSE = Risk / Invalidation Stop / Stopped Out */
+  --accent-risk: #f43f5e;
+  --accent-rose: #f43f5e;
+
+  /* CYAN = STRICTLY System Information / Selection Focus / Active Tools */
+  /* NEVER USE CYAN FOR BULLISH STATE, SETUP SCORE, OR EXECUTION STATUS */
+  --accent-info: #06b6d4;
+  --accent-cyan: #06b6d4;
+
+  --accent-neutral: #64748b;
 }
 
 [data-theme="paper"] {
   /* Editorial Paper Light Terminal */
   --bg-app: #f4f6f9;
   --bg-surface: #ffffff;
+  --bg-surface-raised: #f8fafc;
+  --bg-surface-elevated: #ffffff;
   --bg-surface-hover: #f1f5f9;
   --bg-element: #e2e8f0;
+
   --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;
 
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-faint: #64748b;
   --text-main: #0f172a;
   --text-muted: #475569;
-  --text-faint: #64748b;
 
-  --accent-cyan: #0284c7;
+  --accent-positive: #16a34a;
   --accent-emerald: #16a34a;
   --accent-emerald-dark: #dcfce7;
-  --accent-rose: #dc2626;
+  --accent-warning: #d97706;
   --accent-amber: #d97706;
+  --accent-risk: #dc2626;
+  --accent-rose: #dc2626;
+  --accent-info: #0284c7;
+  --accent-cyan: #0284c7;
+  --accent-neutral: #94a3b8;
 }
 
 body {

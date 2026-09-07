@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
@@ -10,7 +10,9 @@ import PrivacySettingsModal from "./PrivacySettingsModal";
 import CommandPaletteModal from "./CommandPaletteModal";
 import RealTimeAlertEngine from "./RealTimeAlertEngine";
 import ArxLogo from "./ArxLogo";
-import { useExperienceMode } from "../context/ExperienceModeContext";
+import MarketCommandRibbon from "./nav/MarketCommandRibbon";
+import ExperienceModeToggle from "./experience/ExperienceModeToggle";
+import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -19,7 +21,6 @@ interface NavbarProps {
 
 export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarProps) {
   const pathname = usePathname();
-  const { experienceMode, setExperienceMode } = useExperienceMode();
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -59,18 +60,18 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
     }
   };
 
-  const handleRoleToggle = (role: "DAY_TRADER" | "LONG_TERM") => {
+  const handleRoleToggle = useCallback((role: "DAY_TRADER" | "LONG_TERM") => {
     setActiveRole(role);
     try { localStorage.setItem("FINANCE_USER_ROLE", role); } catch {}
     if (onRoleChange) onRoleChange(role);
     window.dispatchEvent(new CustomEvent("finance:role-change", { detail: role }));
-  };
+  }, [onRoleChange]);
 
-  const handleVernacularToggle = (mode: "PLAIN_ENGLISH" | "PRO_QUANT") => {
+  const handleVernacularToggle = useCallback((mode: "PLAIN_ENGLISH" | "PRO_QUANT") => {
     setVernacularMode(mode);
     try { localStorage.setItem("ARX_VERNACULAR_MODE", mode); } catch {}
     window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: mode }));
-  };
+  }, []);
 
   useEffect(() => {
     try {
@@ -108,7 +109,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeRole, vernacularMode, pathname, router]);
+  }, [activeRole, vernacularMode, pathname, router, handleRoleToggle, handleVernacularToggle]);
 
   useEffect(() => {
     try {
@@ -121,10 +122,6 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
     } catch {
       if (userRole) setActiveRole(userRole);
     }
-  }, []);
-
-  useEffect(() => {
-    if (userRole) setActiveRole(userRole);
   }, [userRole]);
 
   useEffect(() => {
@@ -160,109 +157,114 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
   return (
     <>
-      <header role="banner" className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-4">
-          {/* Left: Brand Logo & Title */}
-          <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
-            <Link href="/" aria-label="ARX Terminal Home" className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg">
-              <ArxLogo size="sm" variant="badge" />
-              <div className="min-w-0 hidden sm:block">
-                <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base block leading-none">
-                  ARX TERMINAL
-                </span>
-                <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block mt-0.5">
-                  No-BS Market Intel
-                </span>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation Links (Always visible on all desktop and laptop resolutions >= 1024px) */}
-            <nav aria-label="Main Navigation" className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0">
+      <div className="sticky top-0 z-50">
+        <header
+          role="banner"
+          data-testid="navbar"
+          className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14 flex items-center"
+        >
+          <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full h-14 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-4">
+            {/* Left: Brand Logo & Title */}
+            <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
               <Link
                 href="/"
-                aria-current={pathname === "/" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
+                aria-label="ARX Terminal Home"
+                className="flex items-center space-x-2 group shrink-0 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded-lg"
               >
-                Terminal
+                <ArxLogo size="sm" variant="badge" />
+                <div className="min-w-0 hidden sm:block">
+                  <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base block leading-none">
+                    ARX TERMINAL
+                  </span>
+                  <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block mt-0.5">
+                    No-BS Market Intel
+                  </span>
+                </div>
               </Link>
-              <Link
-                href="/screener"
-                aria-current={pathname === "/screener" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
+
+              {/* Desktop Navigation Links (Consolidated 5 Semantic Categories) */}
+              <nav
+                aria-label="Main Navigation"
+                data-testid="desktop-nav-links"
+                className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0"
               >
-                <svg aria-hidden="true" className="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span>Screener</span>
-              </Link>
-              <Link
-                href="/compare"
-                aria-current={pathname === "/compare" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>⚔️ Compare</span>
-              </Link>
-              <Link
-                href="/smart-money"
-                aria-current={pathname === "/smart-money" ? "page" : undefined}
-                className={`hidden xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>🏛️ Insiders</span>
-              </Link>
-              <Link
-                href="/portfolio"
-                aria-current={pathname === "/portfolio" ? "page" : undefined}
-                className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>💼 Portfolio</span>
-              </Link>
-              <Link
-                href="/guide"
-                aria-current={pathname === "/guide" ? "page" : undefined}
-                className={`hidden xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>📖 Guide</span>
-              </Link>
-              <Link
-                href="/glossary"
-                aria-current={pathname?.startsWith("/glossary") ? "page" : undefined}
-                className={`hidden 2xl:flex px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  pathname?.startsWith("/glossary") ? "bg-[#1b2434] text-cyan-400 font-semibold" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <span>📚 Glossary</span>
-              </Link>
-              <button
-                type="button"
-                onClick={handleOpenOnboarding}
-                aria-label="Open Terminal Setup & Onboarding Tour"
-                className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
-              >
-                <span>✨ Tour</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsPrivacyOpen(true)}
-                aria-label="Open Privacy & Analytics Settings"
-                className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer text-xs"
-                title="GDPR Privacy & Data Telemetry Settings"
-              >
-                <span>🛡️ Privacy</span>
-              </button>
-            </nav>
-          </div>
+                <Link
+                  href="/"
+                  aria-current={pathname === "/" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Terminal
+                </Link>
+                <Link
+                  href="/screener"
+                  aria-current={pathname === "/screener" || pathname === "/smart-money" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/screener" || pathname === "/smart-money"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <svg aria-hidden="true" className="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span>Intelligence</span>
+                </Link>
+                <Link
+                  href="/portfolio"
+                  aria-current={pathname === "/portfolio" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/portfolio"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Portfolio</span>
+                </Link>
+                <Link
+                  href="/compare"
+                  aria-current={pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs") ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs")
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Research</span>
+                </Link>
+                <Link
+                  href="/guide"
+                  aria-current={pathname === "/guide" || pathname?.startsWith("/glossary") ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/guide" || pathname?.startsWith("/glossary")
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Docs</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleOpenOnboarding}
+                  aria-label="Open Terminal Setup & Onboarding Tour"
+                  className="hidden 2xl:flex px-2 xl:px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs"
+                >
+                  <span>✨ Tour</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPrivacyOpen(true)}
+                  aria-label="Open Privacy & Analytics Settings"
+                  className="hidden 2xl:flex px-2 xl:px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-emerald-300 hover:bg-[#162030] transition-colors items-center gap-1 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer text-xs"
+                  title="GDPR Privacy & Data Telemetry Settings"
+                >
+                  <span>🛡️ Privacy</span>
+                </button>
+              </nav>
+            </div>
 
           {/* Center: Global Omni-Search Bar */}
           <div className="flex-1 min-w-0 md:min-w-[140px] max-w-xs xl:max-w-sm 2xl:max-w-md mx-1.5 sm:mx-2 flex items-center justify-center">
@@ -300,74 +302,11 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
               </svg>
             </button>
 
-            {/* Adaptive Experience Mode Selector: Guided · Standard · Advanced (ARX_VERNACULAR_MODE: Plain English vs Pro Quant) */}
-            <div role="toolbar" aria-label="Adaptive Experience Mode Switcher" className="flex bg-[#070b13] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setExperienceMode("GUIDED");
-                  handleVernacularToggle("PLAIN_ENGLISH");
-                }}
-                aria-pressed={experienceMode === "GUIDED"}
-                aria-label="Switch to Guided Mode (Plain English - Help me understand)"
-                title="Guided Mode: Explain more, Plain English, step-by-step guidance"
-                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
-                  experienceMode === "GUIDED"
-                    ? "bg-emerald-600 text-white shadow-md font-extrabold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
-                  <span className="hidden xl:inline">Guided (Plain English)</span>
-                  <span className="xl:hidden">Guided</span>
-                </span>
-              </button>
+            {/* Slide-Over Watchlist Drawer Trigger */}
+            <WatchlistDrawerTrigger variant="navbar" />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setExperienceMode("STANDARD");
-                  handleVernacularToggle("PLAIN_ENGLISH");
-                }}
-                aria-pressed={experienceMode === "STANDARD"}
-                aria-label="Switch to Standard Mode (Help me decide)"
-                title="Standard Mode: Balanced confluence metrics, key levels, and decision triggers"
-                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
-                  experienceMode === "STANDARD"
-                    ? "bg-cyan-600 text-white shadow-md font-extrabold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
-                  <span className="hidden xl:inline">Standard</span>
-                  <span className="xl:hidden">Std</span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setExperienceMode("ADVANCED");
-                  handleVernacularToggle("PRO_QUANT");
-                }}
-                aria-pressed={experienceMode === "ADVANCED"}
-                aria-label="Switch to Advanced Mode (Pro Quant - Give me control)"
-                title="Advanced Mode: Maximum quantitative density, Pro Quant models, and execution controls"
-                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer ${
-                  experienceMode === "ADVANCED"
-                    ? "bg-purple-600 text-white shadow-md font-extrabold"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-300" />
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
-                  <span className="hidden xl:inline">Advanced (Pro Quant)</span>
-                  <span className="xl:hidden">Adv</span>
-                </span>
-              </button>
-            </div>
+            {/* Adaptive Experience Mode Selector: Guided · Standard · Quant (URL-Synchronized per ADR-003) */}
+            <ExperienceModeToggle />
 
             {/* Theme Toggle */}
             <ThemeToggle />
@@ -416,117 +355,111 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
         </div>
       </header>
 
-      {/* Cache Purge Notification Toast */}
-      {purgeToast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed top-16 right-4 z-[1000] bg-cyan-950/95 border border-cyan-500 text-cyan-200 px-3.5 py-2 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 animate-fadeIn"
-        >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-          <span>⚡ Local cache purged — Live quotes re-synced!</span>
-        </div>
-      )}
+      {/* Persistent 36px Market Command Ribbon directly beneath Navbar */}
+      <MarketCommandRibbon />
+    </div>
 
-      {/* Floating Bottom Navigation Dock for Mobile Devices */}
-      <nav
-        role="navigation"
-        aria-label="Mobile Navigation Dock"
-        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
-        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
+    {/* Cache Purge Notification Toast */}
+    {purgeToast && (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed top-24 right-4 z-[1000] bg-cyan-950/95 border border-cyan-500 text-cyan-200 px-3.5 py-2 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 animate-fadeIn"
       >
-        <Link
-          href="/"
-          aria-current={pathname === "/" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect width="7" height="9" x="3" y="3" rx="1" />
-            <rect width="7" height="5" x="14" y="3" rx="1" />
-            <rect width="7" height="9" x="14" y="12" rx="1" />
-            <rect width="7" height="5" x="3" y="16" rx="1" />
-          </svg>
-          <span className="text-[9px] tracking-tight">Terminal</span>
-        </Link>
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+        <span>⚡ Local cache purged — Live quotes re-synced!</span>
+      </div>
+    )}
 
-        <Link
-          href="/screener"
-          aria-current={pathname === "/screener" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          <span className="text-[9px] tracking-tight">Screener</span>
-        </Link>
+    {/* Floating Bottom Navigation Dock for Mobile Devices (5 Semantic Categories) */}
+    <nav
+      role="navigation"
+      aria-label="Mobile Navigation Dock"
+      data-testid="mobile-nav-dock"
+      className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
+      style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
+    >
+      <Link
+        href="/"
+        aria-current={pathname === "/" ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect width="7" height="9" x="3" y="3" rx="1" />
+          <rect width="7" height="5" x="14" y="3" rx="1" />
+          <rect width="7" height="9" x="14" y="12" rx="1" />
+          <rect width="7" height="5" x="3" y="16" rx="1" />
+        </svg>
+        <span className="text-[9px] tracking-tight">Terminal</span>
+      </Link>
 
-        <Link
-          href="/compare"
-          aria-current={pathname === "/compare" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/compare" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚔️</span>
-          <span className="text-[9px] tracking-tight">Compare</span>
-        </Link>
+      <Link
+        href="/screener"
+        aria-current={pathname === "/screener" || pathname === "/smart-money" ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/screener" || pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <svg aria-hidden="true" className="w-4 h-4 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        <span className="text-[9px] tracking-tight">Intelligence</span>
+      </Link>
 
-        <Link
-          href="/smart-money"
-          aria-current={pathname === "/smart-money" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/smart-money" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🏛️</span>
-          <span className="text-[9px] tracking-tight">Insiders</span>
-        </Link>
+      <Link
+        href="/portfolio"
+        aria-current={pathname === "/portfolio" ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
+        <span className="text-[9px] tracking-tight">Portfolio</span>
+      </Link>
 
-        <Link
-          href="/portfolio"
-          aria-current={pathname === "/portfolio" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
-          <span className="text-[9px] tracking-tight">Portfolio</span>
-        </Link>
+      <Link
+        href="/compare"
+        aria-current={pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs") ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs") ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚔️</span>
+        <span className="text-[9px] tracking-tight">Research</span>
+      </Link>
 
-        <Link
-          href="/guide"
-          aria-current={pathname === "/guide" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/guide" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
-          <span className="text-[9px] tracking-tight">Guide</span>
-        </Link>
+      <Link
+        href="/guide"
+        aria-current={pathname === "/guide" || pathname?.startsWith("/glossary") ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/guide" || pathname?.startsWith("/glossary") ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        }`}
+      >
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
+        <span className="text-[9px] tracking-tight">Docs</span>
+      </Link>
 
-        {/* Quick Horizon Toggle on Mobile Dock */}
-        <button
-          type="button"
-          onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
-          aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
-          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-w-[46px] min-h-[44px] border ${
-            activeRole === "DAY_TRADER"
-              ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
-              : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
-            {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
-          </span>
-          <span className="text-[8.5px] tracking-tight">
-            {activeRole === "DAY_TRADER" ? "Day" : "Long"}
-          </span>
-        </button>
-      </nav>
+      {/* Quick Horizon Toggle on Mobile Dock */}
+      <button
+        type="button"
+        onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
+        aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
+        className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-w-[46px] min-h-[44px] border ${
+          activeRole === "DAY_TRADER"
+            ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
+            : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
+        }`}
+      >
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
+          {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
+        </span>
+        <span className="text-[8.5px] tracking-tight">
+          {activeRole === "DAY_TRADER" ? "Day" : "Long"}
+        </span>
+      </button>
+    </nav>
 
       {/* Onboarding Tour Modal */}
       <OnboardingTourModal

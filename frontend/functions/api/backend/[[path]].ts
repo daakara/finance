@@ -34,6 +34,15 @@ export const onRequest = async (context: any): Promise<Response> => {
     responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, Accept, Origin, User-Agent");
 
+    // Strict Governance Security Invariant: Never allow Cloudflare edge to cache private evaluation endpoints
+    if (path.startsWith("governance") || path.includes("/governance")) {
+      responseHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      responseHeaders.set("CDN-Cache-Control", "no-store");
+      responseHeaders.set("Cloudflare-CDN-Cache-Control", "no-store");
+      responseHeaders.set("Vary", "Authorization, X-Evaluation-Key");
+      responseHeaders.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+    }
+
     return new Response(apiResponse.body, {
       status: apiResponse.status,
       statusText: apiResponse.statusText,

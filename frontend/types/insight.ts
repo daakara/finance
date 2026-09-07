@@ -12,7 +12,7 @@ export type DecisionState =
   | "ACTIONABLE_SETUP";
 export type OwnershipState = "NOT_OWNED" | "OWNED" | "UNKNOWN";
 export type OwnershipSource = "USER_DECLARED" | "PORTFOLIO_IMPORT" | "BROKER_CONNECTION" | "UNKNOWN";
-export type ExperienceMode = "GUIDED" | "STANDARD" | "ADVANCED";
+export type ExperienceMode = "GUIDED" | "STANDARD" | "QUANT" | "ADVANCED";
 
 export type Freshness = "REALTIME" | "DELAYED" | "END_OF_DAY" | "DAILY" | "QUARTERLY" | "STALE" | "UNKNOWN";
 export type EvidenceAvailability = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "STALE";
