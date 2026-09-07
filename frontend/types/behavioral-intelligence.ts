@@ -1,0 +1,265 @@
+/**
+ * Phase 28: Behavioral Intelligence & Story-First Decision Operating System Type Contracts
+ * 
+ * Defines contracts for:
+ * 1. Story-First Executive Home & AI Chief of Staff
+ * 2. Morning Briefing 2.0 (Market Changed -> Why It Matters -> What Is Affected -> What To Do)
+ * 3. Behavioral Intelligence Center & Behavioral Evolution Timeline
+ * 4. Learning Velocity Engine (LVI, BMI, Momentum)
+ * 5. AI Behavioral Coach & 4-Month Forecasting
+ * 6. Statistical Confidence Bands & Behavioral Cohorts
+ * 
+ * Phase 26 Quantitative Freeze Compliant: Strictly frontend presentation & behavioral contracts.
+ */
+
+export type TrendDirection = 'IMPROVING' | 'STABLE' | 'DECLINING';
+
+export type TrendVelocity =
+  | 'RAPID_IMPROVEMENT' // >= +10%
+  | 'IMPROVING'         // +3% to +10%
+  | 'STABLE'            // -3% to +3%
+  | 'DECLINING'         // -10% to -3%
+  | 'CRITICAL_DECLINE'; // < -10%
+
+export interface ConfidenceInterval {
+  pointEstimate: number; // e.g. 70.5
+  lowerBound: number;    // e.g. 68.1
+  upperBound: number;    // e.g. 72.7
+  marginOfError: number; // e.g. 2.3
+  confidenceLevel: number; // e.g. 0.95 for 95%
+  displayString: string; // e.g. "70.5% (68.1% - 72.7%)"
+}
+
+export interface MetricWithConfidence {
+  name: string;
+  value: number;
+  unit: string;
+  ci: ConfidenceInterval;
+  trend: TrendVelocity;
+  delta7d: number;
+  delta30d: number;
+  target: number;
+  isPassing: boolean;
+}
+
+export interface DecisionQualityMetrics {
+  currentScore: number; // 74
+  previousScore: number; // 62
+  quarterlyChange: number; // +6
+  annualChange: number; // +12
+  percentileRank: number; // 18 (Top 18%)
+  targetScore: number; // 80
+  trend: TrendDirection;
+}
+
+export interface LearningVelocityMetrics {
+  velocityIndex: number; // 84 (0-100)
+  qualityImprovementRate: number; // +12 / year
+  recommendationAdoptionRate: number; // 70.5%
+  playbookAdherenceRate: number; // 87.0%
+  projectedMonthsToGoal: number; // 4.0 months
+  momentumMultiplier: number; // 1.5 (>1.0 = accelerating)
+  velocityTier: 'LOW' | 'MEDIUM' | 'HIGH' | 'ELITE';
+}
+
+export interface DriftMetrics {
+  driftScore: number; // 21.0%
+  targetThreshold: number; // < 20.0%
+  driftCategory: 'LOW' | 'MEDIUM' | 'HIGH';
+  majorDeviationDrivers: string[];
+}
+
+export interface BehavioralStrength {
+  id: string;
+  title: string;
+  qualityPointContribution: number; // e.g. +6.2
+  confidence: number; // e.g. 91%
+  description: string;
+  evidenceHash: string;
+}
+
+export interface BehavioralRisk {
+  id: string;
+  title: string;
+  exposurePercentage: number; // e.g. 21%
+  confidence: number; // e.g. 87%
+  description: string;
+  mitigation: string;
+}
+
+export interface ImprovementForecast {
+  currentScore: number; // 74
+  projectedScoreFourMonths: number; // 80
+  projectedScoreSixMonths: number; // 82
+  confidence: number; // 87%
+  isLowConfidenceWarning: boolean; // true if confidence < 60
+  expectedGain: number; // +6.0
+  keyCatalysts: string[];
+}
+
+export interface BehavioralTimelineEvent {
+  quarter: string; // e.g. "Q1 2026"
+  problemIdentified: string;
+  governanceImprovement: string;
+  qualityDelta: number; // e.g. +2
+  supportingEvidence: string;
+  category: 'STOP_LOSS' | 'MACRO_GATING' | 'FLOW_ACCUMULATION' | 'SIZING';
+}
+
+export interface BehavioralStory {
+  userName: string; // "David"
+  dateString: string; // "Monday, September 7, 2026"
+  weeklyAdoptionRate: number; // 84%
+  weeklyScoreDelta: number; // +2
+  repeatMistakeDelta: number; // -12%
+  macroExposureTrend: string;
+  recommendedActionToday: string;
+  monthlyStats: {
+    totalDecisions: number; // 42
+    successCount: number; // 30
+    failureCount: number; // 12
+    largestSuccessDriver: string;
+    largestFailureDriver: string;
+    netLearningTakeaway: string;
+  };
+  chiefOfStaffHighlight: {
+    actionTitle: string;
+    drawdownReductionPct: number; // 4.2%
+    confidence: number; // 92%
+    evidenceDetail: string;
+  };
+}
+
+export interface ImpactedPositionRisk {
+  symbol: string;
+  shares: number;
+  currentPrice: number;
+  capitalAtRisk: number; // e.g. 78,000
+  violatedCondition: string;
+  suggestedAction: 'TRIM_50' | 'TIGHTEN_STOP' | 'EXIT';
+}
+
+export interface MorningBriefingV2Story {
+  marketRiskScorePrev: number; // 42
+  marketRiskScoreCurrent: number; // 56
+  narrativeSummary: string;
+  marketShifts: Array<{
+    dimension: string;
+    direction: 'STRENGTHENED' | 'WEAKENED' | 'NARROWED';
+    detail: string;
+  }>;
+  affectedPositions: ImpactedPositionRisk[];
+  totalCapitalAtRisk: number; // 184,000
+  recommendationConfidence: number; // 91%
+  isFeedStale: boolean;
+  stalenessWarning?: string;
+}
+
+export type BehavioralMaturityTier =
+  | 'CONSUMER'     // Level 1: 0-20
+  | 'INVESTIGATOR' // Level 2: 21-40
+  | 'PRACTITIONER' // Level 3: 41-60
+  | 'LEARNER'      // Level 4: 61-80
+  | 'OPTIMIZER';   // Level 5: 81-100
+
+export interface MaturityTierDistribution {
+  tier: BehavioralMaturityTier;
+  label: string;
+  scoreRange: string;
+  userPercentage: number;
+  description: string;
+  primaryAction: string;
+}
+
+export interface RoleCohortMetric {
+  role: 'EXECUTIVES' | 'PORTFOLIO_MANAGERS' | 'ANALYSTS' | 'NEW_USERS';
+  label: string;
+  adoptionRate: number; // e.g. 76%, 82%, 61%, 49%
+  decisionQuality: number;
+  userCount: number;
+}
+
+export interface BehavioralIntelligenceProfile {
+  profileId: string;
+  userId: string;
+  generatedAt: string;
+  story: BehavioralStory;
+  decisionQuality: DecisionQualityMetrics;
+  learningVelocity: LearningVelocityMetrics;
+  behaviorAdoption: MetricWithConfidence;
+  ruleAdherence: MetricWithConfidence;
+  decisionDrift: DriftMetrics;
+  strengths: BehavioralStrength[];
+  risks: BehavioralRisk[];
+  projectedImprovement: ImprovementForecast;
+  timeline: BehavioralTimelineEvent[];
+}
+
+// Telemetry Event Contracts
+export interface ExecutiveHomeViewedEvent {
+  event: 'executive_home_viewed';
+  screen: 'executive_home';
+  user_id: string;
+  session_id: string;
+  decision_quality: number;
+  cohort_rank: number;
+  timestamp: string;
+}
+
+export interface StoryModuleViewedEvent {
+  event: 'story_module_viewed';
+  story_id: string;
+  story_type: 'behavioral' | 'outcome';
+  timestamp: string;
+}
+
+export interface BriefingNarrativeViewedEvent {
+  event: 'briefing_narrative_viewed';
+  market_risk_score: number;
+  portfolio_risk_score: number;
+  user_id: string;
+  timestamp: string;
+}
+
+export interface ImpactedPositionsViewedEvent {
+  event: 'impacted_positions_viewed';
+  position_count: number;
+  estimated_capital_at_risk: number;
+  timestamp: string;
+}
+
+export interface BehavioralCenterViewedEvent {
+  event: 'behavioral_center_viewed';
+  decision_quality: number;
+  behavioral_adoption_rate: number;
+  decision_drift: number;
+  timestamp: string;
+}
+
+export interface BehaviorChangeViewedEvent {
+  event: 'behavior_change_viewed';
+  change_type: string;
+  quality_delta: number;
+  timestamp: string;
+}
+
+export interface LviViewedEvent {
+  event: 'lvi_viewed';
+  lvi_score: number;
+  cohort_rank: number;
+  timestamp: string;
+}
+
+export interface BehavioralForecastViewedEvent {
+  event: 'behavioral_forecast_viewed';
+  predicted_quality_score: number;
+  confidence: number;
+  timestamp: string;
+}
+
+export interface CohortComparisonViewedEvent {
+  event: 'cohort_comparison_viewed';
+  cohort: string;
+  comparison_type: 'decision_quality' | 'adoption' | 'drift';
+  timestamp: string;
+}
