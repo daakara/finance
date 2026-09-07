@@ -40,7 +40,15 @@ export type UserOutcomeEventName =
   | 'drift_warning_seen'
   | 'drift_warning_acknowledged'
   | 'lifecycle_stage_viewed'
-  | 'lifecycle_transition_completed';
+  | 'lifecycle_transition_completed'
+  // Phase 28 Milestone 1 Behavioral Telemetry
+  | 'outcome_review_viewed'
+  | 'decision_journal_viewed'
+  | 'learning_coach_opened'
+  | 'learning_coach_accepted'
+  | 'learning_recommendation_completed'
+  | 'repeat_error_occurred'
+  | 'behavior_improvement_detected';
 
 export interface MentorViewedPayload {
   screen: string;
@@ -126,6 +134,48 @@ export interface LifecycleTransitionCompletedPayload {
   to: string;
   ticker?: string;
   actor: string;
+}
+
+export interface OutcomeReviewViewedPayload {
+  review_id: string;
+  decision_id: string;
+  quality_delta: number;
+  user_id: string;
+}
+
+export interface DecisionJournalViewedPayload {
+  journal_entries_count: number;
+  user_id: string;
+}
+
+export interface LearningCoachOpenedPayload {
+  context: string;
+  source: 'executive_home' | 'decision_workspace' | 'playbook' | 'timeline';
+  user_id: string;
+}
+
+export interface LearningCoachAcceptedPayload {
+  recommendation_id: string;
+  coach_focus_area: string;
+  projected_impact: number;
+}
+
+export interface LearningRecommendationCompletedPayload {
+  recommendation_id: string;
+  completion_time_ms: number;
+  evidence_verified: boolean;
+}
+
+export interface RepeatErrorOccurredPayload {
+  error_type: string;
+  prior_occurrence_count: number;
+  drift_penalty: number;
+}
+
+export interface BehaviorImprovementDetectedPayload {
+  behavior_category: string;
+  points_gained: number;
+  rule_adherence_rate: number;
 }
 
 export interface UserOutcomeTelemetryEvent {

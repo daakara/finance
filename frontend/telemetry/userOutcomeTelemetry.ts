@@ -1,4 +1,4 @@
-import {
+import type {
   UserOutcomeTelemetryEvent,
   UserOutcomeEventName,
   OutcomeTelemetryPhase,
@@ -18,7 +18,14 @@ import {
   DriftWarningAcknowledgedPayload,
   LifecycleStageViewedPayload,
   LifecycleTransitionCompletedPayload,
-} from '@/types/user-outcome-telemetry';
+  OutcomeReviewViewedPayload,
+  DecisionJournalViewedPayload,
+  LearningCoachOpenedPayload,
+  LearningCoachAcceptedPayload,
+  LearningRecommendationCompletedPayload,
+  RepeatErrorOccurredPayload,
+  BehaviorImprovementDetectedPayload,
+} from '../types/user-outcome-telemetry';
 
 class UserOutcomeTelemetryService {
   private buffer: UserOutcomeTelemetryEvent[] = [];
@@ -108,6 +115,35 @@ class UserOutcomeTelemetryService {
 
   trackLifecycleTransitionCompleted(payload: LifecycleTransitionCompletedPayload): UserOutcomeTelemetryEvent {
     return this.pushEvent('lifecycle_transition_completed', 'DECISION', 'ACTED_UPON', payload as unknown as Record<string, unknown>);
+  }
+
+  // 6. Phase 28 Milestone 1 Behavioral Telemetry
+  trackOutcomeReviewViewed(payload: OutcomeReviewViewedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('outcome_review_viewed', 'LEARNING', 'SEEN', payload as unknown as Record<string, unknown>, payload.user_id);
+  }
+
+  trackDecisionJournalViewed(payload: DecisionJournalViewedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('decision_journal_viewed', 'LEARNING', 'SEEN', payload as unknown as Record<string, unknown>, payload.user_id);
+  }
+
+  trackLearningCoachOpened(payload: LearningCoachOpenedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('learning_coach_opened', 'MENTOR', 'SEEN', payload as unknown as Record<string, unknown>, payload.user_id);
+  }
+
+  trackLearningCoachAccepted(payload: LearningCoachAcceptedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('learning_coach_accepted', 'MENTOR', 'ACTED_UPON', payload as unknown as Record<string, unknown>);
+  }
+
+  trackLearningRecommendationCompleted(payload: LearningRecommendationCompletedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('learning_recommendation_completed', 'LEARNING', 'BEHAVIOR_IMPROVED', payload as unknown as Record<string, unknown>);
+  }
+
+  trackRepeatErrorOccurred(payload: RepeatErrorOccurredPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('repeat_error_occurred', 'OUTCOME', 'SEEN', payload as unknown as Record<string, unknown>);
+  }
+
+  trackBehaviorImprovementDetected(payload: BehaviorImprovementDetectedPayload): UserOutcomeTelemetryEvent {
+    return this.pushEvent('behavior_improvement_detected', 'OUTCOME', 'BEHAVIOR_IMPROVED', payload as unknown as Record<string, unknown>);
   }
 
   // Live Metrics & KPI Calculation
