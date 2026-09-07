@@ -784,4 +784,62 @@ export interface M3InvariantCriterion {
   evidence: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 28: Daily Production Certification & Outcome Intelligence Attribution
+// ---------------------------------------------------------------------------
+
+export interface DailyAuditItem {
+  id: string;
+  name: string;
+  category: 'TELEMETRY' | 'ATTRIBUTION' | 'PERFORMANCE' | 'PLAYBOOK' | 'AI_CONFIDENCE' | 'GOVERNANCE';
+  target: string;
+  actual: string;
+  status: 'PASS' | 'FAIL';
+  details: string;
+}
+
+export interface DecisionImpactRatioData {
+  highAdoptionWinRate: number; // e.g. 68.0%
+  lowAdoptionWinRate: number; // e.g. 44.0%
+  dirRatio: number; // +24.0%
+  confidence: number; // 95%
+  description: string;
+  sampleSize: number;
+}
+
+export interface OutcomeValueAttributionData {
+  capitalPreservedFormatted: string; // "$2.4M"
+  capitalPreservedDollars: number; // 2400000
+  excessReturnPct: number; // +3.8%
+  mistakesPrevented: number; // 74
+  recommendationsAdopted: number; // 1247
+  topDriverName: string; // "Institutional Flow Filter"
+  topDriverContributionPct: number; // 28%
+  sources: {
+    stopDiscipline: string; // "$1.1M"
+    macroFilters: string; // "$850K"
+    riskReductions: string; // "$450K"
+  };
+}
+
+export interface BehavioralMaturityCohortDistribution {
+  nonAdoptersPct: number; // 12%
+  explorersPct: number; // 24%
+  practitionersPct: number; // 31%
+  learnersPct: number; // 21%
+  optimizersPct: number; // 12%
+  optimizerTargetPct: number; // 20%
+}
+
+export interface DailyProductionCertificationData {
+  certifiedAt: string;
+  releaseTrain: string;
+  overallHealthScore: number; // 99.8%
+  status: 'CERTIFIED' | 'CONDITIONAL_CERTIFICATION' | 'DO_NOT_CERTIFY';
+  audits: DailyAuditItem[];
+  decisionImpactRatio: DecisionImpactRatioData;
+  valueAttribution: OutcomeValueAttributionData;
+  behavioralMaturity: BehavioralMaturityCohortDistribution;
+}
+
 
