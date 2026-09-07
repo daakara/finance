@@ -66,6 +66,14 @@ export function computeImprovementMomentum(
   return { multiplier, status };
 }
 
+
+export function classifyLVI(score: number): 'LOW' | 'MODERATE' | 'HIGH' | 'ELITE' {
+  if (score >= 86) return 'ELITE';
+  if (score >= 71) return 'HIGH';
+  if (score >= 41) return 'MODERATE';
+  return 'LOW';
+}
+
 export const CANONICAL_LEARNING_VELOCITY: LearningVelocityMetrics = {
   velocityIndex: computeLearningVelocityIndex(12, 70.5, 87.0), // 84
   qualityImprovementRate: 12.0, // +12 points annual

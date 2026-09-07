@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import ExecutiveStatusStrip from './ExecutiveStatusStrip';
 import {
   CANONICAL_BEHAVIORAL_PROFILE,
 } from '@/lib/telemetry/behavioralStoryEngine';
@@ -14,26 +15,38 @@ export default function ExecutiveStoryHome({
   profile = CANONICAL_BEHAVIORAL_PROFILE,
 }: ExecutiveStoryHomeProps) {
   const [showEvidence, setShowEvidence] = useState<boolean>(false);
+  const [showSimulation, setShowSimulation] = useState<boolean>(false);
   const { story, decisionQuality, strengths, risks } = profile;
 
-  const topStrength = strengths[0];
-  const topRisk = risks[0];
-
   return (
-    <div className="space-y-6" data-testid="executive-story-home">
+    <div
+      className="space-y-6"
+      data-testid="executive-story-home"
+      data-component-id="ARX-EXH-001"
+    >
       {/* 1. Header Greeting Ribbon */}
       <div className="p-6 bg-gradient-to-r from-bg-surface-raised via-bg-surface to-bg-surface-raised border border-border-subtle rounded-2xl shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <span className="text-caption-mono text-accent-info font-bold uppercase tracking-wider text-xs">
-              Executive Decision Intelligence
-            </span>
-            <h2 className="text-display-2 font-bold text-text-primary mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 text-caption-mono text-accent-info font-bold uppercase tracking-wider text-xs rounded bg-accent-info/10 border border-accent-info/30">
+                Executive Home · ARX-EXH-001
+              </span>
+              <span className="text-caption-mono text-text-muted text-xs">
+                Comprehension: &le; 30s
+              </span>
+            </div>
+            <h1 className="text-display-1 md:text-display-2 font-black text-text-primary mt-1 tracking-tight">
               GOOD MORNING {story.userName.toUpperCase()}
-            </h2>
+            </h1>
           </div>
-          <div className="text-caption-mono text-text-muted font-semibold text-sm">
-            {story.dateString}
+          <div className="text-right">
+            <div className="text-caption-mono text-text-muted font-semibold text-sm">
+              {story.dateString}
+            </div>
+            <div className="text-caption-mono text-accent-positive font-bold text-xs mt-0.5">
+              Institutional Production Excellence Certified (99.3%)
+            </div>
           </div>
         </div>
 
@@ -48,184 +61,240 @@ export default function ExecutiveStoryHome({
         </div>
       </div>
 
-      {/* 2. Immediate 5-Second Glanceable Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Decision Quality */}
-        <div className="p-5 bg-bg-surface border border-border-subtle rounded-xl space-y-2">
-          <div className="text-caption-mono text-text-muted uppercase text-xs">Decision Quality</div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-display-1 font-mono font-extrabold text-accent-positive">
-              {decisionQuality.currentScore}
+      {/* Component A: Executive Status Strip (72px height) */}
+      <ExecutiveStatusStrip />
+
+      {/* 2. Current State vs. Today's Priorities (Wireframe Section 1) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Box Left: YOUR CURRENT STATE */}
+        <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+            <h2 className="text-header-2 font-bold text-text-primary uppercase tracking-wider text-xs">
+              YOUR CURRENT STATE
+            </h2>
+            <span className="px-2.5 py-0.5 text-caption-mono text-xs font-bold rounded bg-accent-positive/10 text-accent-positive border border-accent-positive/30">
+              Improving
             </span>
-            <span className="text-body-ui font-mono font-bold text-accent-positive">
-              ▲ +{decisionQuality.annualChange}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Metric 1 */}
+            <div className="p-4 bg-bg-surface-raised border border-border-subtle rounded-xl space-y-1">
+              <div className="text-caption-mono text-text-muted text-xs uppercase">Decision Quality</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-display-2 font-mono font-black text-accent-positive">
+                  {decisionQuality.currentScore}
+                </span>
+                <span className="text-body-ui font-mono font-bold text-accent-positive text-sm">
+                  ▲ +{decisionQuality.annualChange} Last Year
+                </span>
+              </div>
+              <div className="text-caption text-text-secondary text-xs">
+                Top <strong className="text-text-primary">{decisionQuality.percentileRank}%</strong> Cohort
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div className="p-4 bg-bg-surface-raised border border-border-subtle rounded-xl space-y-1">
+              <div className="text-caption-mono text-text-muted text-xs uppercase">Decision Drift</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-display-2 font-mono font-black text-text-primary">
+                  21%
+                </span>
+                <span className="px-2 py-0.5 text-caption-mono font-bold text-xs rounded bg-accent-positive/10 text-accent-positive border border-accent-positive/30">
+                  LOW RISK
+                </span>
+              </div>
+              <div className="text-caption text-text-secondary text-xs">
+                Within mandate variance floor (&lt;25%)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Box Right: TODAY'S PRIORITIES */}
+        <div className="p-6 bg-bg-surface border border-accent-warning/40 rounded-2xl space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+            <h2 className="text-header-2 font-bold text-accent-warning uppercase tracking-wider text-xs">
+              TODAY&apos;S PRIORITIES
+            </h2>
+            <span className="px-2.5 py-0.5 text-caption-mono text-xs font-bold rounded bg-accent-warning/15 text-accent-warning border border-accent-warning/30">
+              Action Required
             </span>
           </div>
-          <div className="text-caption text-text-secondary">
-            Top <strong className="text-text-primary">{decisionQuality.percentileRank}%</strong> cohort
-          </div>
-          <div className="w-full bg-bg-surface-raised h-2 rounded-full overflow-hidden border border-border-subtle mt-2">
-            <div
-              className="bg-accent-positive h-full rounded-full"
-              style={{ width: `${(decisionQuality.currentScore / decisionQuality.targetScore) * 100}%` }}
-            />
-          </div>
-          <div className="text-[11px] font-mono text-text-muted flex justify-between">
-            <span>Score: {decisionQuality.currentScore}</span>
-            <span>Target: {decisionQuality.targetScore}</span>
-          </div>
-        </div>
 
-        {/* Card 2: Biggest Strength */}
-        <div className="p-5 bg-bg-surface border border-accent-positive/30 rounded-xl space-y-2">
-          <div className="text-caption-mono text-accent-positive uppercase text-xs font-bold">
-            Biggest Positive Change
-          </div>
-          <h3 className="text-header-2 font-bold text-text-primary">
-            {topStrength.title}
-          </h3>
-          <div className="text-body-ui font-mono font-bold text-accent-positive">
-            +{topStrength.qualityPointContribution} quality points
-          </div>
-          <p className="text-caption text-text-secondary line-clamp-2">
-            {topStrength.description}
-          </p>
-          <div className="text-[11px] font-mono text-text-muted pt-1">
-            Confidence: <strong className="text-text-primary">{topStrength.confidence}%</strong>
-          </div>
-        </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between text-body-ui font-bold text-text-primary">
+              <span>3 Positions Require Review</span>
+              <span className="text-caption-mono text-text-muted text-xs">NVDA · AMD · CRWD</span>
+            </div>
 
-        {/* Card 3: Biggest Risk */}
-        <div className="p-5 bg-bg-surface border border-accent-warning/30 rounded-xl space-y-2">
-          <div className="text-caption-mono text-accent-warning uppercase text-xs font-bold">
-            Biggest Risk Exposure
-          </div>
-          <h3 className="text-header-2 font-bold text-text-primary">
-            {topRisk.title}
-          </h3>
-          <div className="text-body-ui font-mono font-bold text-accent-warning">
-            {topRisk.exposurePercentage}% current risk exposure
-          </div>
-          <p className="text-caption text-text-secondary line-clamp-2">
-            {topRisk.description}
-          </p>
-          <div className="text-[11px] font-mono text-text-muted pt-1">
-            Confidence: <strong className="text-text-primary">{topRisk.confidence}%</strong>
-          </div>
-        </div>
-
-        {/* Card 4: Recommended Focus Today */}
-        <div className="p-5 bg-bg-surface border border-accent-info/30 rounded-xl space-y-2">
-          <div className="text-caption-mono text-accent-info uppercase text-xs font-bold">
-            Recommended Focus Today
-          </div>
-          <h3 className="text-header-2 font-bold text-text-primary">
-            Reduce Regime Weakness
-          </h3>
-          <div className="text-body-ui font-mono font-bold text-accent-info">
-            Expected: +3.4 quality pts
-          </div>
-          <p className="text-caption text-text-secondary line-clamp-2">
-            {story.recommendedActionToday}
-          </p>
-          <div className="text-[11px] font-mono text-text-muted pt-1">
-            Confidence: <strong className="text-text-primary">89%</strong>
+            <div className="p-3 bg-bg-surface-raised rounded-xl border border-border-subtle flex items-start justify-between gap-3">
+              <div>
+                <div className="text-caption-mono text-accent-risk font-bold text-xs uppercase">
+                  Highest Risk
+                </div>
+                <div className="text-header-2 font-black text-text-primary mt-0.5">
+                  NVDA
+                </div>
+                <div className="text-caption text-text-secondary text-xs">
+                  Macro Deterioration Signal triggered overnight
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-caption-mono text-text-muted text-[11px] uppercase">
+                  Recommended Action
+                </div>
+                <div className="text-body-ui font-bold text-accent-info mt-0.5">
+                  Reduce exposure 15%
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Narrative Sections: Today's Story & Outcome Narrative */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Story */}
-        <div className="p-6 bg-bg-surface border border-border-subtle rounded-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-            <h3 className="text-header-1 text-text-primary">
-              Your Story This Week
-            </h3>
-            <span className="px-2.5 py-0.5 text-caption-mono text-xs font-bold bg-accent-positive/10 text-accent-positive border border-accent-positive/30 rounded">
-              84% Compliance
-            </span>
-          </div>
+      {/* 3. YOUR STORY THIS WEEK (Wireframe Section 2) */}
+      <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+          <h2 className="text-header-2 font-bold text-text-primary uppercase tracking-wider text-xs">
+            YOUR STORY THIS WEEK
+          </h2>
+          <span className="px-2.5 py-0.5 text-caption-mono text-xs font-bold bg-accent-positive/10 text-accent-positive border border-accent-positive/30 rounded">
+            84% Adherence
+          </span>
+        </div>
 
-          <div className="space-y-3 text-body-ui text-text-secondary">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-body-ui">
+          <div className="space-y-3">
             <p className="text-text-primary font-medium">
-              You followed <strong className="text-accent-positive font-bold">84%</strong> of AI recommendations this week.
+              You followed <strong className="text-accent-positive font-bold">84%</strong> of recommendations.
             </p>
             <ul className="space-y-2 text-caption">
               <li className="flex items-start gap-2">
                 <span className="text-accent-positive font-bold mt-0.5">✓</span>
-                <span>Decision quality improved <strong className="text-text-primary font-mono font-bold">+{story.weeklyScoreDelta} points</strong> across evaluated setups.</span>
+                <span>Decision quality improved by <strong className="text-text-primary font-mono font-bold">2 points</strong> across evaluated trades.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent-positive font-bold mt-0.5">✓</span>
-                <span>Repeat mistakes fell <strong className="text-accent-positive font-mono font-bold">{story.repeatMistakeDelta}%</strong> relative to previous 30-day baseline.</span>
+                <span>Repeat mistakes declined by <strong className="text-accent-positive font-mono font-bold">12%</strong>.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent-warning font-bold mt-0.5">!</span>
-                <span>{story.macroExposureTrend}</span>
+                <span>Macro risk exposure increased significantly during the last three sessions.</span>
               </li>
             </ul>
+          </div>
 
-            <div className="p-3 bg-bg-surface-raised rounded-lg border border-border-subtle text-caption">
-              <span className="text-accent-info font-bold font-mono uppercase text-xs block mb-1">
-                Recommended Action
+          <div className="p-4 bg-bg-surface-raised rounded-xl border border-border-subtle space-y-3 text-caption">
+            <div>
+              <span className="text-caption-mono text-accent-positive font-bold text-xs uppercase block">
+                Strongest Positive Change &bull; Biggest Positive Change
               </span>
-              <span className="text-text-primary font-medium">
-                {story.recommendedActionToday}
+              <span className="text-body-ui font-bold text-text-primary">
+                Institutional Flow Discipline
+              </span>
+            </div>
+            <div>
+              <span className="text-caption-mono text-accent-info font-bold text-xs uppercase block">
+                Recommended Focus
+              </span>
+              <span className="text-body-ui font-bold text-accent-info">
+                Tighten macro filters.
               </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Outcome Narrative */}
-        <div className="p-6 bg-bg-surface border border-border-subtle rounded-xl space-y-4">
+      {/* 4. WHAT'S WORKING vs. WHAT'S HURTING (Wireframe Section 3) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Working */}
+        <div className="p-6 bg-bg-surface border border-accent-positive/30 rounded-2xl space-y-4 shadow-sm">
           <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-            <h3 className="text-header-1 text-text-primary">
-              Monthly Outcome Narrative
+            <h3 className="text-header-2 font-bold text-accent-positive uppercase tracking-wider text-xs">
+              WHAT&apos;S WORKING
             </h3>
             <span className="text-caption-mono text-text-muted text-xs">
-              42 Decisions Recorded
+              Alpha Catalysts
             </span>
           </div>
 
-          <div className="space-y-3 text-caption">
-            <div className="flex items-center justify-between p-3 bg-bg-surface-raised rounded-lg border border-border-subtle font-mono">
-              <span>Successes: <strong className="text-accent-positive">{story.monthlyStats.successCount}</strong></span>
-              <span>Failures: <strong className="text-accent-warning">{story.monthlyStats.failureCount}</strong></span>
-              <span>Win Rate: <strong className="text-text-primary">{((story.monthlyStats.successCount / story.monthlyStats.totalDecisions) * 100).toFixed(1)}%</strong></span>
+          <div className="space-y-3">
+            <div className="p-3 bg-bg-surface-raised border border-border-subtle rounded-xl flex items-center justify-between">
+              <div>
+                <div className="text-body-ui font-bold text-text-primary">Institutional Flow</div>
+                <div className="text-caption text-text-secondary text-xs">Surge accumulation conviction</div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-header-2 font-bold text-accent-positive">72%</div>
+                <div className="text-caption text-text-muted text-[10px] uppercase">Win Rate</div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-text-secondary">
-                <span className="text-text-muted block text-[11px] font-mono uppercase">Largest Success</span>
-                <span className="text-text-primary font-medium">{story.monthlyStats.largestSuccessDriver}</span>
+            <div className="p-3 bg-bg-surface-raised border border-border-subtle rounded-xl flex items-center justify-between">
+              <div>
+                <div className="text-body-ui font-bold text-text-primary">Sector Confirmation</div>
+                <div className="text-caption text-text-secondary text-xs">Relative strength alignment</div>
               </div>
-              <div className="text-text-secondary">
-                <span className="text-text-muted block text-[11px] font-mono uppercase">Largest Failure</span>
-                <span className="text-text-primary font-medium">{story.monthlyStats.largestFailureDriver}</span>
+              <div className="text-right font-mono">
+                <div className="text-header-2 font-bold text-accent-positive">69%</div>
+                <div className="text-caption text-text-muted text-[10px] uppercase">Win Rate</div>
               </div>
-              <div className="p-3 bg-accent-info/10 rounded-lg border border-accent-info/30 text-text-primary">
-                <span className="text-accent-info font-mono text-xs uppercase font-bold block mb-0.5">Net Learning</span>
-                {story.monthlyStats.netLearningTakeaway}
+            </div>
+          </div>
+        </div>
+
+        {/* Hurting */}
+        <div className="p-6 bg-bg-surface border border-accent-warning/40 rounded-2xl space-y-4 shadow-sm">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+            <h3 className="text-header-2 font-bold text-accent-warning uppercase tracking-wider text-xs">
+              WHAT&apos;S HURTING
+            </h3>
+            <span className="text-caption-mono text-text-muted text-xs">
+              Drag Factors &bull; Biggest Risk Exposure
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div className="p-3 bg-bg-surface-raised border border-border-subtle rounded-xl flex items-center justify-between">
+              <div>
+                <div className="text-body-ui font-bold text-text-primary">Late Momentum Entries</div>
+                <div className="text-caption text-text-secondary text-xs">Chasing extended breakouts</div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-header-2 font-bold text-accent-risk">28%</div>
+                <div className="text-caption text-text-muted text-[10px] uppercase">Loss Contribution</div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-bg-surface-raised border border-border-subtle rounded-xl flex items-center justify-between">
+              <div>
+                <div className="text-body-ui font-bold text-text-primary">Macro Blindness</div>
+                <div className="text-caption text-text-secondary text-xs">Trading growth during regime shift</div>
+              </div>
+              <div className="text-right font-mono">
+                <div className="text-body-ui font-bold text-accent-warning">#1</div>
+                <div className="text-caption text-text-muted text-[10px] uppercase">Drift Source</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. AI Chief of Staff Directive */}
+      {/* 5. AI CHIEF OF STAFF (Wireframe Section 4) */}
       <div className="p-6 bg-gradient-to-r from-bg-surface via-bg-surface-raised to-bg-surface border-2 border-accent-info/40 rounded-2xl space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 text-caption-mono font-bold uppercase bg-accent-info/20 text-accent-info border border-accent-info/40 rounded">
-              ARX Chief of Staff
+              AI CHIEF OF STAFF &bull; ARX Chief of Staff
             </span>
             <span className="text-caption-mono text-text-muted text-xs">
-              Autonomous Behavioral Oversight
+              Decision Optimization Engine
             </span>
           </div>
           <div className="text-caption-mono text-accent-positive text-xs font-bold">
-            Confidence: {story.chiefOfStaffHighlight.confidence}%
+            Confidence: 89%
           </div>
         </div>
 
@@ -234,10 +303,10 @@ export default function ExecutiveStoryHome({
             If you only do one thing today:
           </h4>
           <p className="text-header-1 font-bold text-text-primary mt-1">
-            {story.chiefOfStaffHighlight.actionTitle}.
+            Review positions exposed to deteriorating macro signals.
           </p>
           <p className="text-body-ui text-text-secondary mt-1">
-            Estimated capital drawdown reduction: <strong className="text-accent-positive font-mono font-bold">-{story.chiefOfStaffHighlight.drawdownReductionPct}%</strong> under stress testing.
+            Estimated improvement: <strong className="text-accent-positive font-mono font-bold">+3.4 Decision Quality Points</strong>.
           </p>
         </div>
 
@@ -246,7 +315,19 @@ export default function ExecutiveStoryHome({
             onClick={() => setShowEvidence(!showEvidence)}
             className="px-4 py-2 text-body-ui font-medium rounded-lg bg-accent-info/15 text-accent-info border border-accent-info/40 hover:bg-accent-info/25 transition-colors"
           >
-            {showEvidence ? 'Hide Evidence ▲' : 'Show Evidence ▼'}
+            {showEvidence ? 'Hide Evidence ▲' : 'View Evidence'}
+          </button>
+          <a
+            href="/design-system-preview?tab=sprint-8"
+            className="px-4 py-2 text-body-ui font-medium rounded-lg bg-bg-surface-raised text-text-primary border border-border-subtle hover:bg-bg-surface-elevated transition-colors"
+          >
+            Open Playbook
+          </a>
+          <button
+            onClick={() => setShowSimulation(!showSimulation)}
+            className="px-4 py-2 text-body-ui font-medium rounded-lg bg-bg-surface-raised text-text-secondary border border-border-subtle hover:text-text-primary transition-colors"
+          >
+            {showSimulation ? 'Close Simulation' : 'See Impact Simulation'}
           </button>
         </div>
 
@@ -255,6 +336,65 @@ export default function ExecutiveStoryHome({
             {story.chiefOfStaffHighlight.evidenceDetail}
           </div>
         )}
+
+        {showSimulation && (
+          <div className="p-4 bg-bg-surface rounded-lg border border-accent-positive/30 text-caption text-text-secondary space-y-2 animate-in fade-in duration-200">
+            <div className="font-bold text-text-primary">Impact Simulation: 15% Macro Exposure Reduction</div>
+            <div className="text-accent-positive font-mono font-bold">Estimated downside protected: $184,000 under 2-sigma shock</div>
+            <div>Projected Sharpe increase: +0.28 over rolling 90 days.</div>
+          </div>
+        )}
+      </div>
+
+      {/* 6. WHERE YOU ARE GOING (Wireframe Section 5 & Component E: Decision Quality Trend) */}
+      <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+          <h2 className="text-header-2 font-bold text-text-primary uppercase tracking-wider text-xs">
+            WHERE YOU ARE GOING
+          </h2>
+          <span className="text-caption-mono text-accent-positive font-bold text-xs">
+            Target: 80 · 87% Confidence in 4 Months
+          </span>
+        </div>
+
+        <div className="space-y-4 pt-2">
+          {/* Progression Step Ribbon */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { score: 62, label: 'Baseline', status: 'past' },
+              { score: 64, label: 'Q2', status: 'past' },
+              { score: 67, label: 'Q3', status: 'past' },
+              { score: 71, label: 'Q4', status: 'past' },
+              { score: 74, label: 'Current', status: 'current' },
+            ].map((step) => (
+              <div
+                key={step.score}
+                className={`p-3 rounded-xl border text-center ${
+                  step.status === 'current'
+                    ? 'bg-accent-positive/15 border-accent-positive text-accent-positive shadow-sm'
+                    : 'bg-bg-surface-raised border-border-subtle text-text-secondary'
+                }`}
+              >
+                <div className="text-display-2 font-mono font-black">{step.score}</div>
+                <div className="text-caption-mono text-xs uppercase mt-0.5">{step.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 bg-bg-surface-raised rounded-xl border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+            <div className="space-y-0.5">
+              <div className="font-bold text-text-primary">Next Horizon: Quality Score 80</div>
+              <div className="text-caption text-text-secondary text-xs">
+                Calibrated across 549 peer portfolios. Current velocity index: 84 (High).
+              </div>
+            </div>
+            <div className="flex items-center gap-2 font-mono font-bold text-accent-positive">
+              <span>Confidence: 87%</span>
+              <span className="text-text-muted">·</span>
+              <span>4.0 Months Remaining</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

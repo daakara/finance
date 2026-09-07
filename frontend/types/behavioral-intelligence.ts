@@ -263,3 +263,91 @@ export interface CohortComparisonViewedEvent {
   comparison_type: 'decision_quality' | 'adoption' | 'drift';
   timestamp: string;
 }
+
+// -------------------------------------------------------------------------
+// Phase 28 Final Technical Domain Models & Aggregate Contracts
+// -------------------------------------------------------------------------
+
+export type BehavioralStage =
+  | 'CONSUMER'
+  | 'INVESTIGATOR'
+  | 'PRACTITIONER'
+  | 'LEARNER'
+  | 'OPTIMIZER';
+
+export interface BehaviorInsight {
+  id: string;
+  title: string;
+  category:
+    | 'POSITION_SIZING'
+    | 'RISK_DISCIPLINE'
+    | 'ENTRY_TIMING'
+    | 'EXIT_TIMING'
+    | 'MACRO_ALIGNMENT'
+    | 'PLAYBOOK_ADHERENCE';
+  impactScore: number;
+  contributionToQuality: number;
+  confidence: number;
+  trend: 'IMPROVING' | 'STABLE' | 'DECLINING';
+}
+
+export interface LearningVelocity {
+  score: number;
+  percentile: number;
+  trend: 'ACCELERATING' | 'STABLE' | 'SLOWING';
+  qualityGainLast90Days: number;
+  recommendationAdoption: number;
+  ruleAdherence: number;
+}
+
+export interface BehavioralCoachSummary {
+  summary: string;
+  keyDrivers: string[];
+  nextRecommendation: string;
+  projectedImpact: number;
+  projectedMonthsToGoal: number;
+  confidence: number;
+}
+
+export interface BehavioralMilestone {
+  milestoneId: string;
+  quarter: string;
+  problemIdentified: string;
+  improvementImplemented: string;
+  impactPoints: number;
+  newQualityScore: number;
+}
+
+export interface CohortMetrics {
+  cohortType: 'EXECUTIVE' | 'PORTFOLIO_MANAGER' | 'ANALYST' | 'NEW_USER';
+  adoptionRate: number;
+  decisionQuality: number;
+  driftScore: number;
+  learningVelocity: number;
+}
+
+export interface ConfidenceBand {
+  metricName: string;
+  observedValue: number;
+  lowerBound: number;
+  upperBound: number;
+  confidenceLevel: number;
+}
+
+export interface CanonicalBehavioralIntelligenceProfile {
+  userId: string;
+  generatedAt: string;
+  version: number;
+  decisionQualityScore: number;
+  learningVelocityIndex: number;
+  behavioralAdoptionRate: number;
+  decisionDriftScore: number;
+  repeatMistakeReduction: number;
+  currentBehavioralStage: BehavioralStage;
+  projectedQualityScore: number;
+  projectedDateToGoal?: string;
+  strongestBehavior: BehaviorInsight;
+  weakestBehavior: BehaviorInsight;
+  coachSummary: BehavioralCoachSummary;
+  cohortMetrics: CohortMetrics;
+}

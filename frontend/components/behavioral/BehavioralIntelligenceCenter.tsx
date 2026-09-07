@@ -106,10 +106,12 @@ export default function BehavioralIntelligenceCenter({
           </span>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4" role="list" aria-label="Behavioral Milestone Timeline">
           {timeline.map((event, idx) => (
             <div
               key={idx}
+              role="listitem"
+              aria-label={`Milestone for ${event.quarter}: ${event.problemIdentified}`}
               className="p-4 bg-bg-surface-raised rounded-xl border border-border-subtle space-y-2"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

@@ -23,106 +23,118 @@ export default function MorningBriefingV2({
         </div>
       )}
 
-      {/* Top Banner: Market Context & Risk Shift */}
-      <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Story-Based Flow Hero Card (Wireframe 2) */}
+      <div className="p-6 md:p-8 bg-gradient-to-br from-bg-surface-raised via-bg-surface to-bg-surface-raised border border-border-subtle rounded-2xl space-y-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-subtle pb-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 text-caption-mono font-bold uppercase bg-accent-info/10 text-accent-info border border-accent-info/30 rounded">
                 Morning Briefing 2.0
               </span>
-              <span className="text-caption-mono text-text-muted">
-                Narrative &rarr; Insight &rarr; Action
+              <span className="text-caption-mono text-text-muted text-xs">
+                Context &bull; Meaning &bull; Impact &bull; Action
               </span>
             </div>
-            <h3 className="text-display-2 font-bold text-text-primary mt-1">
-              Overnight Market Risk Context
-            </h3>
-            <p className="text-body-ui text-text-secondary mt-0.5">
-              {story.narrativeSummary}
-            </p>
+            <h2 className="text-display-1 font-black text-text-primary mt-1">
+              GOOD MORNING
+            </h2>
           </div>
 
-          <div className="flex items-center gap-4 p-4 bg-bg-surface-raised rounded-xl border border-border-subtle">
-            <div>
-              <div className="text-[11px] font-mono text-text-muted uppercase">Market Risk Score</div>
+          <div className="flex items-center gap-3 p-3 bg-bg-surface rounded-xl border border-border-subtle">
+            <div className="text-right">
+              <div className="text-caption-mono text-text-muted uppercase text-[10px]">Market Risk Score</div>
               <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-display-2 font-mono font-bold text-text-muted line-through">
-                  {story.marketRiskScorePrev}
-                </span>
-                <span className="text-display-1 font-mono font-extrabold text-accent-warning">
-                  &rarr; {story.marketRiskScoreCurrent}
-                </span>
-              </div>
-              <div className="text-caption text-accent-warning font-semibold mt-0.5">
-                Risk Environment Deteriorated
+                <span className="text-display-2 font-mono font-bold text-text-muted line-through">42</span>
+                <span className="text-display-2 font-mono font-black text-accent-warning">&rarr; 56</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4-Step Narrative UX Flow */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-border-subtle">
-          <div className="p-3 bg-bg-surface-raised rounded-lg border border-border-subtle">
-            <div className="text-[11px] font-mono text-accent-info uppercase font-bold">1. Market Changed</div>
-            <div className="text-body-ui font-semibold text-text-primary mt-1">SOX &amp; Tech Pullback</div>
-            <div className="text-caption text-text-muted mt-0.5">Treasury flight to safety</div>
+        {/* 4 Story-Based Flow Blocks */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Block 1: OVERNIGHT STORY */}
+          <div className="p-5 bg-bg-surface border border-border-subtle rounded-xl space-y-2">
+            <div className="text-caption-mono text-accent-info uppercase font-bold text-xs">
+              1. Market Changed &bull; OVERNIGHT STORY
+            </div>
+            <div className="space-y-1 text-caption text-text-secondary">
+              <p className="font-semibold text-text-primary">Risk conditions deteriorated.</p>
+              <p>Treasuries strengthened.</p>
+              <p>Semiconductor leadership weakened.</p>
+            </div>
+            <div className="pt-2 border-t border-border-subtle text-[11px] font-mono text-accent-warning font-bold">
+              Market Risk: 42 &rarr; 56
+            </div>
           </div>
 
-          <div className="p-3 bg-bg-surface-raised rounded-lg border border-border-subtle">
-            <div className="text-[11px] font-mono text-accent-info uppercase font-bold">2. Why It Matters</div>
-            <div className="text-body-ui font-semibold text-text-primary mt-1">Beta Headwinds</div>
-            <div className="text-caption text-text-muted mt-0.5">Growth breadth narrowed to 32%</div>
+          {/* Block 2: WHY IT MATTERS */}
+          <div className="p-5 bg-bg-surface border border-border-subtle rounded-xl space-y-2">
+            <div className="text-caption-mono text-accent-info uppercase font-bold text-xs">
+              WHY IT MATTERS
+            </div>
+            <p className="text-caption text-text-secondary leading-relaxed">
+              Three of your current positions depend on growth leadership. These positions are now operating outside preferred conditions.
+            </p>
+            <div className="pt-2 border-t border-border-subtle text-[11px] font-mono text-text-muted">
+              Breadth: 32% growth stocks above 50d MA
+            </div>
           </div>
 
-          <div className="p-3 bg-bg-surface-raised rounded-lg border border-border-subtle">
-            <div className="text-[11px] font-mono text-accent-info uppercase font-bold">3. What Is Affected</div>
-            <div className="text-body-ui font-semibold text-text-primary mt-1">3 Exposed Holdings</div>
-            <div className="text-caption text-accent-warning font-semibold mt-0.5">${(story.totalCapitalAtRisk / 1000).toFixed(0)}K Capital at Risk</div>
+          {/* Block 3: IMPACTED POSITIONS */}
+          <div className="p-5 bg-bg-surface border border-accent-warning/30 rounded-xl space-y-2">
+            <div className="text-caption-mono text-accent-warning uppercase font-bold text-xs">
+              IMPACTED POSITIONS
+            </div>
+            <div className="space-y-1 font-mono font-bold text-text-primary text-sm">
+              <div>NVDA <span className="text-text-muted font-normal text-xs">(Semis)</span></div>
+              <div>AMD <span className="text-text-muted font-normal text-xs">(Semis)</span></div>
+              <div>CRWD <span className="text-text-muted font-normal text-xs">(Software)</span></div>
+            </div>
+            <div className="pt-2 border-t border-border-subtle text-[11px] font-mono text-accent-warning font-semibold">
+              Estimated Capital At Risk: ${(story.totalCapitalAtRisk / 1000).toFixed(0)}K ($184,000 Total at Risk)
+            </div>
           </div>
 
-          <div className="p-3 bg-bg-surface-raised rounded-lg border border-accent-positive/40">
-            <div className="text-[11px] font-mono text-accent-positive uppercase font-bold">4. What To Do</div>
-            <div className="text-body-ui font-semibold text-accent-positive mt-1">Tighten Regime Gates</div>
-            <div className="text-caption text-text-muted mt-0.5">Confidence: {story.recommendationConfidence}%</div>
+          {/* Block 4: RECOMMENDED ACTION */}
+          <div className="p-5 bg-bg-surface border border-accent-positive/40 rounded-xl space-y-2 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="text-caption-mono text-accent-positive uppercase font-bold text-xs">
+                RECOMMENDED ACTION
+              </div>
+              <div className="text-body-ui font-bold text-text-primary text-sm">
+                Reduce allocation by 15%.
+              </div>
+              <div className="text-caption text-text-secondary text-xs">
+                Estimated downside protected: <strong className="text-accent-positive font-mono">${story.totalCapitalAtRisk.toLocaleString()}</strong>
+              </div>
+              <div className="text-[11px] font-mono text-text-muted">
+                Confidence: {story.recommendationConfidence}%
+              </div>
+            </div>
+            <button
+              onClick={() => alert('Opening Macro Invalidation Review for NVDA, AMD, CRWD')}
+              className="mt-2 w-full py-2 px-3 text-caption-mono font-bold text-xs rounded-lg bg-accent-positive text-bg-app hover:opacity-90 transition-opacity text-center"
+            >
+              [Review Now]
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Market Shifts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {story.marketShifts.map((shift, idx) => (
-          <div key={idx} className="p-4 bg-bg-surface rounded-xl border border-border-subtle space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-caption-mono font-bold text-text-primary">{shift.dimension}</span>
-              <span
-                className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded ${
-                  shift.direction === 'STRENGTHENED'
-                    ? 'bg-accent-positive/15 text-accent-positive border border-accent-positive/30'
-                    : 'bg-accent-warning/15 text-accent-warning border border-accent-warning/30'
-                }`}
-              >
-                {shift.direction}
-              </span>
-            </div>
-            <p className="text-caption text-text-secondary">{shift.detail}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Affected Positions Table */}
-      <div className="p-6 bg-bg-surface border border-border-subtle rounded-xl space-y-4">
+      {/* Affected Positions Breakdown Table */}
+      <div className="p-6 bg-bg-surface border border-border-subtle rounded-2xl space-y-4 shadow-sm">
         <div className="flex items-center justify-between border-b border-border-subtle pb-3">
           <div>
-            <h4 className="text-header-1 text-text-primary">
-              Your Exposure &amp; Impacted Positions
-            </h4>
-            <p className="text-body-ui text-text-secondary mt-0.5">
-              Positions currently violating preferred macro regime filters based on overnight shift.
+            <h3 className="text-header-2 font-bold text-text-primary">
+              Impacted Positions Detail
+            </h3>
+            <p className="text-body-ui text-text-secondary text-sm">
+              Positions currently violating macro filters based on overnight risk shift.
             </p>
           </div>
           <div className="text-right">
-            <span className="text-caption-mono text-text-muted text-xs block">Estimated Capital At Risk</span>
+            <span className="text-caption-mono text-text-muted text-xs block">Downside Risk Exposure</span>
             <span className="text-header-1 font-mono font-bold text-accent-warning">
               ${story.totalCapitalAtRisk.toLocaleString()}
             </span>
@@ -135,7 +147,7 @@ export default function MorningBriefingV2({
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="pb-2">Ticker</th>
                 <th className="pb-2">Shares</th>
-                <th className="pb-2">Price</th>
+                <th className="pb-2">Current Price</th>
                 <th className="pb-2">Capital at Risk</th>
                 <th className="pb-2">Violated Condition</th>
                 <th className="pb-2 text-right">Suggested Action</th>
