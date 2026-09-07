@@ -609,3 +609,104 @@ export interface CapabilityImpactAttribution {
   highestRoiCapability: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 28 Milestone 2B: My Evolution Workspace Contracts
+// ---------------------------------------------------------------------------
+
+export type EvolutionInteractionMode = 'SUMMARY' | 'EXPLORATION' | 'ANALYSIS' | 'PROJECTION';
+
+export interface EvolutionMilestone {
+  id?: string;
+  quarter: string; // e.g. "2025 Q4", "2026 Q1", "2026 Q2", "CURRENT (2026 Q3)", "TARGET (Q1 2027)"
+  dirScore: number;
+  scoreDelta: number;
+  cohort: 'CONSUMER' | 'INVESTIGATOR' | 'PRACTITIONER' | 'LEARNER' | 'OPTIMIZER';
+  cohortLabel: string;
+  status?: 'COMPLETED' | 'CURRENT' | 'PROJECTED';
+  isCurrent: boolean;
+  isTarget: boolean;
+  problem: string;
+  problemStatement?: string;
+  actionTaken: string;
+  behaviorAdopted: string;
+  adoptedHabits?: string[];
+  behaviorStopped: string;
+  stoppedHabits?: string[];
+  primaryCapability: string;
+  capabilityContribution: number;
+  outcomeImpact: {
+    winRate: string;
+    drawdown: string;
+    profitFactor: string;
+  };
+  evidenceTrace: string;
+  confidence: number;
+  confidenceInterval?: {
+    lower: number;
+    upper: number;
+  };
+}
+
+export interface BehaviorLedgerItem {
+  id: string;
+  name: string;
+  habitName?: string;
+  type: 'ADOPTED' | 'REMOVED';
+  quarter: string;
+  impactPoints: number;
+  dqImpactPoints?: number;
+  metricCorrelation: string;
+  category?: string;
+  frequency?: string;
+  confidence: number;
+}
+
+export interface CapabilityRoiLeaderboardItem {
+  rank: number;
+  capabilityId: string;
+  name: string;
+  capabilityName?: string;
+  badge: 'BEST_CAPABILITY' | 'FASTEST_GROWING' | 'MOST_UNDERUSED' | 'GOVERNANCE_ANCHOR';
+  efficiencyBadge?: string;
+  cri: number;
+  capabilityRoiIndex?: number;
+  impactPoints: number;
+  marginalDIRPoints?: number;
+  usageRate: number;
+  confidence: number;
+  strategicNote: string;
+}
+
+export interface EvolutionJourneyProfile {
+  userId: string;
+  currentDir: number;
+  currentDIR?: number;
+  baselineDir: number;
+  startingDIR?: number;
+  totalGain: number;
+  fourQuarterGain?: number;
+  cohortPercentile: number;
+  percentileRank?: number;
+  maturityTier: string;
+  learningVelocity: number;
+  learningVelocityClass: string;
+  targetDir: number;
+  targetDIR?: number;
+  targetHorizon: string;
+  targetProbability: number;
+  projectedMonthsToTarget?: number;
+  projectionConfidence?: number;
+  milestones: EvolutionMilestone[];
+  behaviorLedger: BehaviorLedgerItem[];
+  capabilityLeaderboard: CapabilityRoiLeaderboardItem[];
+  evolutionCoach: {
+    biggestWin: string;
+    biggestRisk: string;
+    nextHabit: string;
+    projectedMonthsToTarget: number;
+    projectedConfidence: number;
+  };
+  attributionCoveragePct: number;
+}
+
+

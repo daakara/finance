@@ -13,13 +13,14 @@ import DIREvolutionTimeline from './DIREvolutionTimeline';
 import CohortMigrationDashboard from './CohortMigrationDashboard';
 import BehavioralIntelligenceDashboard from './BehavioralIntelligenceDashboard';
 import ExecutiveNarrativeHome from './ExecutiveNarrativeHome';
+import MyEvolutionWorkspace from './MyEvolutionWorkspace';
 import { CANONICAL_CONFIDENCE_METRICS } from '@/lib/telemetry/statisticalConfidenceEngine';
 import { CANONICAL_DIR_RESULT } from '@/lib/telemetry/dirEngine';
 
 export default function Phase28MasterDashboard() {
   const [activeTab, setActiveTab] = useState<
-    'foundations' | 'executive-narrative' | 'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
-  >('executive-narrative');
+    'evolution' | 'executive-narrative' | 'foundations' | 'dir' | 'home' | 'briefing' | 'center' | 'coach' | 'confidence' | 'migration'
+  >('evolution');
 
   return (
     <div className="space-y-8" data-testid="phase28-master-dashboard">
@@ -58,6 +59,7 @@ export default function Phase28MasterDashboard() {
         {/* Sub-Navigation Strip */}
         <div className="flex items-center gap-2 border-t border-border-subtle pt-4 overflow-x-auto">
           {[
+            { id: 'evolution', label: '★ My Evolution Workspace (M2-B)' },
             { id: 'executive-narrative', label: '★ Executive Narrative Home (M2-A)' },
             { id: 'foundations', label: '1. Foundations (Milestone 1)' },
             { id: 'dir', label: '2. Decision Improvement Rating (DIR 63)' },
@@ -84,6 +86,10 @@ export default function Phase28MasterDashboard() {
       </div>
 
       {/* Tab Views */}
+      {activeTab === 'evolution' && (
+        <MyEvolutionWorkspace />
+      )}
+
       {activeTab === 'executive-narrative' && (
         <ExecutiveNarrativeHome />
       )}
