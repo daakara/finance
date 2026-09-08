@@ -53,10 +53,11 @@ import AIMentorCard from '@/components/playbook/AIMentorCard';
 import { Sprint85Showcase } from '@/components/experience/Sprint85Showcase';
 import CentralTelemetryDashboard from '@/components/observability/CentralTelemetryDashboard';
 import Phase28MasterDashboard from '@/components/behavioral/Phase28MasterDashboard';
+import Phase29MasterDashboard from '@/components/organizational/Phase29MasterDashboard';
 
 export default function DesignSystemPreviewPage() {
   const [activeTab, setActiveTab] = useState<
-    'tokens' | 'grid' | 'cards' | 'checklist' | 'command-strip' | 'watchlist-drawer' | 'workspace-canvas' | 'sprint-3' | 'sprint-4' | 'sprint-5' | 'sprint-6' | 'sprint-7' | 'sprint-8' | 'sprint-8-5' | 'phase-27' | 'phase-28'
+    'tokens' | 'grid' | 'cards' | 'checklist' | 'command-strip' | 'watchlist-drawer' | 'workspace-canvas' | 'sprint-3' | 'sprint-4' | 'sprint-5' | 'sprint-6' | 'sprint-7' | 'sprint-8' | 'sprint-8-5' | 'phase-27' | 'phase-28' | 'phase-29'
   >('tokens');
   const [previewMode, setPreviewMode] = useState<ExperienceMode>('STANDARD');
   const [previewSymbol, setPreviewSymbol] = useState<string>('CPRX');
@@ -114,6 +115,7 @@ export default function DesignSystemPreviewPage() {
           { id: 'sprint-8-5', label: '14. UX Foundations Program (Sprint 8.5)' },
           { id: 'phase-27', label: '15. Production Adoption & Observability (Phase 27)' },
           { id: 'phase-28', label: '16. Behavioral Intelligence (Phase 28)' },
+          { id: 'phase-29', label: '17. Organizational Intelligence (Phase 29)' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -2311,6 +2313,13 @@ export default function DesignSystemPreviewPage() {
         {activeTab === 'phase-28' && (
           <div className="space-y-10">
             <Phase28MasterDashboard />
+          </div>
+        )}
+
+        {/* TAB 17: PHASE 29 ORGANIZATIONAL INTELLIGENCE */}
+        {activeTab === 'phase-29' && (
+          <div className="space-y-0">
+            <Phase29MasterDashboard />
           </div>
         )}
       </main>
