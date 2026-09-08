@@ -39,7 +39,9 @@ export type NavigationEntityType =
   | 'HUMAN_OVERRIDE'
   | 'POLICY_EVALUATION'
   | 'FAIL_CLOSE_ERROR'
-  | 'OPERATIONAL_RUNBOOK';
+  | 'OPERATIONAL_RUNBOOK'
+  | 'NARRATIVE_BRIEFING'
+  | 'GRAPH_NODE';
 
 export interface EntityResolution {
   input: string;

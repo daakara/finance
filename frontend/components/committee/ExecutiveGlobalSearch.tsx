@@ -62,8 +62,10 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-"];
+  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-"];
   const SAMPLE_ENTITIES = [
+    { id: "NI-001", label: "Executive Strategic Briefing", type: "NARRATIVE_BRIEFING" },
+    { id: "GRP-001", label: "Institutional Causal Graph", type: "GRAPH_NODE" },
     { id: "DEC-001", label: "Flow Regime Allocation", type: "DECISION" },
     { id: "OUT-001", label: "+$145k Realized Return", type: "OUTCOME" },
     { id: "DIS-001", label: "Liquidity Macro Dissent", type: "DISSENT" },

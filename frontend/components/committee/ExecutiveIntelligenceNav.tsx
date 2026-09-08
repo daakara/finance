@@ -11,6 +11,39 @@ export interface ExecutiveIntelligenceNavProps {
 
 const NAV_LINKS = [
   {
+    href: "/intelligence-center",
+    label: "Overview",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+      </svg>
+    ),
+  },
+  {
+    href: "/action-center",
+    label: "Actions",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </svg>
+    ),
+  },
+  {
+    href: "/graph-explorer",
+    label: "Graph",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="6" cy="6" r="3" />
+        <circle cx="18" cy="18" r="3" />
+        <path d="M8.5 8.5l7 7" />
+      </svg>
+    ),
+  },
+  {
     href: "/committee-intelligence",
     label: "Scorecards",
     icon: (
@@ -145,7 +178,7 @@ const NAV_LINKS = [
   },
 ];
 
-export default function ExecutiveIntelligenceNav({ badgeText = "10/10 M10 SAFETY GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
+export default function ExecutiveIntelligenceNav({ badgeText = "10/10 M11 UX GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
 
   return (
@@ -154,7 +187,7 @@ export default function ExecutiveIntelligenceNav({ badgeText = "10/10 M10 SAFETY
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono tracking-wider font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>PHASE 31-M10</span>
+            <span>PHASE 31-M11</span>
           </div>
           <h1 className="text-sm font-mono font-bold text-slate-100 tracking-tight">
             EXECUTIVE DECISION INTELLIGENCE
