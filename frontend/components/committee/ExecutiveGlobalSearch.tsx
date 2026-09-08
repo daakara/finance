@@ -62,8 +62,11 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
+  const QUICK_PREFIXES = ["WS-", "INBOX-", "BRF-", "DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
   const SAMPLE_ENTITIES = [
+    { id: "WS-CIO-001", label: "CIO Mission Control Workspace", type: "EXECUTIVE_WORKSPACE" },
+    { id: "INBOX-01", label: "Authorize Q3 Liquidity Buffer Reallocation", type: "DECISION_INBOX" },
+    { id: "BRF-EXEC-01", label: "Executive Intelligence Flash Briefing", type: "EXECUTIVE_BRIEFING" },
     { id: "TWIN-001", label: "Strategic Committee Digital Twin", type: "DIGITAL_TWIN" },
     { id: "SIM-EXP-001", label: "Multi-Regime Scenario Simulation", type: "STRATEGY_SIMULATION" },
     { id: "NI-001", label: "Executive Strategic Briefing", type: "NARRATIVE_BRIEFING" },

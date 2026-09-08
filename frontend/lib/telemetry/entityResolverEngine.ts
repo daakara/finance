@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -740,7 +740,53 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     return resolution;
   }
 
+  // 34. WS (Executive Workspace)
+  if (prefix === 'WS') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'EXECUTIVE_WORKSPACE',
+      entityId: input,
+      title: `Executive Workspace Profile (${input})`,
+      canonicalRoute: `/workspace?workspaceId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { workspaceId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
 
+  // 35. INBOX (Decision Inbox)
+  if (prefix === 'INBOX') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'DECISION_INBOX',
+      entityId: input,
+      title: `Decision Inbox Item (${input})`,
+      canonicalRoute: `/decision-inbox?itemId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { itemId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 36. BRF (Executive Briefing)
+  if (prefix === 'BRF') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'EXECUTIVE_BRIEFING',
+      entityId: input,
+      title: `Executive Briefing Package (${input})`,
+      canonicalRoute: `/decision-inbox?briefingId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { briefingId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
 
   return {
     input: rawInput,
@@ -1511,6 +1557,47 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     return {
       primaryEntityId: id,
       primaryEntityType: id.startsWith('RECSTATE-') ? 'RECOVERY_STATE' : id.startsWith('FAIL-') ? 'FAILOVER_EVENT' : id.startsWith('SURV-') ? 'STRATEGY_SURVIVABILITY' : 'SCENARIO_DEFINITION',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
+  // If Workspace / Decision Inbox / Briefing (WS-, INBOX-, BRF-)
+  if (id.startsWith('WS-') || id.startsWith('INBOX-') || id.startsWith('BRF-')) {
+    items.push({
+      entityId: 'WS-EXEC-001',
+      entityType: 'EXECUTIVE_WORKSPACE',
+      title: 'Executive Workspace: Mission Control',
+      subtitle: 'Personalized Tasks, Assigned Committees & Outage Fallback',
+      canonicalRoute: '/workspace',
+      relationship: 'PARENT_COMMITTEE',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'INBOX-QUEUE-001',
+      entityType: 'DECISION_INBOX',
+      title: 'Unified Decision Inbox',
+      subtitle: 'Consolidated Triage: Approvals, Escalations & Runbooks',
+      canonicalRoute: '/decision-inbox',
+      relationship: 'SOURCE_DECISION',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'BRF-PKG-001',
+      entityType: 'EXECUTIVE_BRIEFING',
+      title: 'One-Click Executive Briefing',
+      subtitle: 'Multi-Audience Narrative Synthesis with Replay Determinism',
+      canonicalRoute: '/decision-inbox?tab=briefings',
+      relationship: 'REALIZED_OUTCOME',
+      statusBadge: 'CERTIFIED',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('WS-') ? 'EXECUTIVE_WORKSPACE' : id.startsWith('INBOX-') ? 'DECISION_INBOX' : 'EXECUTIVE_BRIEFING',
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: true,
