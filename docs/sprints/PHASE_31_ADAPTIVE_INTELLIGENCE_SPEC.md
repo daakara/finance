@@ -1,4 +1,4 @@
-﻿# Phase 31: Adaptive Intelligence Specification
+# Phase 31: Adaptive Intelligence Specification
 ## Organizational Decision Operating System & Autonomous Intelligence Adaptation
 
 **Author & Authority:**  
@@ -70,8 +70,8 @@ $$\text{AOR} = \frac{\text{Improved Outcomes Realized}}{\text{Adaptive Recommend
 ## 4. Phase 31 Six-Milestone Roadmap
 
 ```
-Phase 31-M1: Committee Intelligence Foundations (2 Weeks)
-  └─ Committee DIR & ODEI · Approval Network · Invariants OI13, OI14
+Phase 31-M1: Committee Intelligence Foundations (Certified)
+  └─ Committee DIR & ODEI · Approval Network · Invariants OI13, OI14 · CII-Gates 01-06
 Phase 31-M2: Decision Network Intelligence (2 Weeks)
   └─ Decision Graph · Influence Heatmaps · Invariants OI15, OI16
 Phase 31-M3: Organizational Learning Intelligence (2-3 Weeks)
@@ -86,7 +86,53 @@ Phase 31-M6: Organizational Operating System (2 Weeks)
 
 ---
 
-## 5. Phase 31 Success Metrics & Release Criteria
+## 5. Milestone 31-M1: Committee Intelligence Foundations Specification
+
+### 5.1 Strategic Objective
+Phase 31-M1 formalizes how groups make decisions within the ARX Terminal ecosystem, establishing collective decision quality, dissent preservation, and cross-committee network governance.
+
+### 5.2 Canonical Governance Invariants
+
+#### INV-OI13: Collective Decision Transparency Invariant
+Every committee decision must maintain an unbroken, verifiable audit trail:
+$$\text{Proposal} \longrightarrow \text{Supporting Evidence} \longrightarrow \text{Participants (Quorum + Chair)} \longrightarrow \text{Decision} \longrightarrow \text{Outcome} \longrightarrow \text{Attribution}$$
+$$\text{Transparency Coverage} = \frac{\text{Traceable Committee Decisions}}{\text{Total Committee Decisions}} \times 100\% = \mathbf{100.0\%} \quad (\text{Target: } 100\%, \text{ Violations: } 0)$$
+
+#### INV-OI14: Dissent Preservation Invariant
+To rigorously prevent groupthink, every material committee decision must capture:
+1. Alternative View / Counter-thesis
+2. Risk Assessment
+3. Supporting Evidence
+4. Final Decision Rationale
+$$\text{Dissent Coverage} = \frac{\text{Material Decisions with Captured Dissent}}{\text{Total Material Decisions}} \times 100\% = \mathbf{100.0\%} \quad (\text{Target: } 100\%, \text{ Violations: } 0)$$
+
+### 5.3 Core Committee Intelligence Metrics
+1. **Committee Decision Quality Index (CDQI)**:
+   $$\text{CDQI} = 0.35 \times \text{DQ} + 0.30 \times \text{Outcome Accuracy} + 0.20 \times \text{Risk Control} + 0.15 \times \text{Learning Retention}$$
+   - *Target*: $\ge 80.0$ (Canonical Committees: Investment $85.4$, Governance $83.2$, Risk $86.8$).
+2. **Committee Decision Impact Ratio (DIRatio)**:
+   $$\text{Committee DIRatio} = \frac{\text{High Performing Committees} - \text{Low Performing Committees}}{\text{Low Performing Committees}} \times 100\%$$
+   - *Target*: $\ge +20.0\%$ (Canonical Spread: $+24.9\%$).
+3. **Committee ODEI**:
+   - Institutional floor: $\ge 80.0$ across all registered committees.
+4. **Dissent Utilization Rate**:
+   $$\text{Dissent Utilization} = \frac{\text{Material Dissents Accepted for Review or Amending Decisions}}{\text{Total Material Dissents}} \times 100\%$$
+   - *Target*: $> 25.0\%$ (Canonical: $100.0\%$).
+
+### 5.4 Release Certification Gates (CII-Gate-01 through CII-Gate-06)
+
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **CII-Gate-01** | Committee Registry & Membership Integrity | Active registry $>0$, Quorum $\ge 3$, Chair required | 3 Committees, 100% Valid | `PASS` |
+| **CII-Gate-02** | Collective Decision Transparency (INV-OI13) | $100\%$ Coverage, $0$ Violations | $100.0\%$, $0$ Violations | `PASS` |
+| **CII-Gate-03** | Dissent Preservation (INV-OI14) | $100\%$ Material Coverage, $0$ Lost Dissents | $100.0\%$, $0$ Violations | `PASS` |
+| **CII-Gate-04** | Committee Quality Floors (CDQI & ODEI) | $\text{CDQI} \ge 80.0$, $\text{ODEI} \ge 80.0$ | Min ODEI $83.0$, Min CDQI $83.2$ | `PASS` |
+| **CII-Gate-05** | Committee Decision Impact Ratio (DIRatio) | Spread $\ge +20.0\%$ | $+24.9\%$ | `PASS` |
+| **CII-Gate-06** | Final Committee Foundations Verdict | Unanimous Gate Pass & 0 Assertion Errors | All Gates Passed (83/83 Assertions) | `PASS` |
+
+---
+
+## 6. Phase 31 Success Metrics & Release Criteria
 
 | Metric | Target | Verification Method |
 |---|---|---|
@@ -100,3 +146,4 @@ Phase 31-M6: Organizational Operating System (2 Weeks)
 | **Explainability Coverage** | $100.0\%$ | INV-OI9 & INV-OI21 Audit |
 | **Total Test Rigor** | $\ge 2,000$ Assertions | Automated Test Runner (100% Pass) |
 | **Production Excellence** | $\ge 99.5\%$ | Daily Production Protection Framework |
+

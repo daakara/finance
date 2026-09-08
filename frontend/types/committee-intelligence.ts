@@ -153,3 +153,136 @@ export interface CommitteeFeedItem {
   requiresAction: boolean;
   createdAt: string;
 }
+
+/**
+ * ============================================================================
+ * Phase 31-M1: Committee Intelligence Foundations Contracts (Epic AI-001)
+ * ============================================================================
+ */
+
+export type CommitteeDecisionStatus =
+  | 'PROPOSED'
+  | 'UNDER_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'SUPERSEDED';
+
+export type DissentSeverity =
+  | 'LOW'
+  | 'MEDIUM'
+  | 'HIGH'
+  | 'MATERIAL';
+
+export interface CommitteeParticipant {
+  userId: string;
+  role: string;
+  votingEligible: boolean;
+}
+
+export interface CommitteeDissent {
+  dissentId: string;
+  decisionId: string;
+  authorId: string;
+  severity: DissentSeverity;
+  alternativeRecommendation: string;
+  riskAssessment: string;
+  evidenceIds: string[];
+  acceptedForReview: boolean;
+  timestampUtc: string;
+}
+
+export interface CommitteeDecision {
+  committeeId: string;
+  decisionId: string;
+  proposalId: string;
+  title: string;
+  participants: CommitteeParticipant[];
+  evidenceIds: string[];
+  dissents: CommitteeDissent[];
+  finalDecision: string;
+  status: CommitteeDecisionStatus;
+  materialDecision: boolean;
+  evidenceLinked: boolean;
+  participantsRecorded: boolean;
+  outcomeLinked: boolean;
+  attributionLinked: boolean;
+  dissentRecorded: boolean;
+  alternativeViewPresent?: boolean;
+  riskAssessmentPresent?: boolean;
+  dissentEvidenceLinked?: boolean;
+  outcomeId?: string;
+  decisionQuality?: number;
+  timestampUtc: string;
+}
+
+export interface CommitteeHealth {
+  committeeId: string;
+  committeeName: string;
+  cdqi: number;
+  committeeODEI: number;
+  committeeDIRatio: number;
+  dissentCoveragePct: number;
+  learningVelocityPct: number;
+  governanceCompliancePct: number;
+  transparencyCoveragePct: number;
+}
+
+export interface CommitteeDecisionTrace {
+  decisionId: string;
+  proposalId: string;
+  evidenceLinked: boolean;
+  participantsRecorded: boolean;
+  outcomeLinked: boolean;
+  attributionLinked: boolean;
+  traceabilityScore: number;
+}
+
+export interface CommitteeNetworkNode {
+  committeeId: string;
+  committeeName: string;
+  decisionCount: number;
+  qualityScore: number;
+}
+
+export interface CommitteeNetworkEdge {
+  sourceCommitteeId: string;
+  targetCommitteeId: string;
+  sharedDecisionCount: number;
+  influenceScore: number;
+}
+
+export interface CommitteeIntelligenceDashboard {
+  committeeODEI: number;
+  committeeDIRatio: number;
+  dissentUtilizationRate: number;
+  committeeCount: number;
+  governanceCompliancePct: number;
+}
+
+export type CIIGateId =
+  | 'CII-Gate-01'
+  | 'CII-Gate-02'
+  | 'CII-Gate-03'
+  | 'CII-Gate-04'
+  | 'CII-Gate-05'
+  | 'CII-Gate-06';
+
+export interface CIIGateEvaluation {
+  gateId: CIIGateId;
+  name: string;
+  status: 'PASS' | 'FAIL';
+  actualValue: string | number;
+  targetValue: string | number;
+  rationale: string;
+}
+
+export interface CommitteeCertificationResult {
+  certified: boolean;
+  gates: CIIGateEvaluation[];
+  totalAssertions: number;
+  passedAssertions: number;
+  failedAssertions: number;
+  oi13Violations: number;
+  oi14Violations: number;
+  certificationStatus: 'PASS' | 'FAIL';
+}
