@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -659,6 +659,39 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
   }
+
+  // 29. ERR / GOV (Fail-Close Error)
+  if (prefix === 'ERR' || prefix === 'GOV') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'FAIL_CLOSE_ERROR',
+      entityId: input,
+      title: `Governance Fail-Close Error (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=audit&errId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'audit', errId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 30. RB (Operational Runbook)
+  if (prefix === 'RB') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'OPERATIONAL_RUNBOOK',
+      entityId: input,
+      title: `Operational Governance Runbook (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=runbooks&rbId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'runbooks', rbId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
 
 
   return {
@@ -1321,6 +1354,38 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     };
   }
 
+
+
+  // If ERR, GOV, or RB
+  if (id.startsWith('ERR-') || id.startsWith('GOV-') || id.startsWith('RB-') || id.startsWith('M9-RB-')) {
+    items.push({
+      entityId: 'GOV-POL-001',
+      entityType: 'FAIL_CLOSE_ERROR',
+      title: 'Action Outside Approved Policy Boundary',
+      subtitle: 'Fail-Close Activated: SAFE_MODE',
+      canonicalRoute: '/autonomous-governance?tab=audit',
+      relationship: 'FAIL_CLOSE_TRIGGER',
+      statusBadge: 'FAIL_CLOSED',
+    });
+
+    items.push({
+      entityId: 'M9-RB-01',
+      entityType: 'OPERATIONAL_RUNBOOK',
+      title: 'Autonomous Governance Health Degradation',
+      subtitle: 'Automated Actions: Action Freeze + L4 Safe Mode',
+      canonicalRoute: '/autonomous-governance?tab=runbooks',
+      relationship: 'RUNBOOK_EXECUTION',
+      statusBadge: 'ACTIVE',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('RB-') || id.startsWith('M9-RB-') ? 'OPERATIONAL_RUNBOOK' : 'FAIL_CLOSE_ERROR',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
 
   // If ACT, POL, OVR, or EVAL
   if (id.startsWith('ACT-') || id.startsWith('POL-') || id.startsWith('OVR-') || id.startsWith('EVAL-')) {

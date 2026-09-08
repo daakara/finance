@@ -145,7 +145,7 @@ const NAV_LINKS = [
   },
 ];
 
-export default function ExecutiveIntelligenceNav({ badgeText = "10/10 AUTONOMY GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
+export default function ExecutiveIntelligenceNav({ badgeText = "10/10 M10 SAFETY GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
 
   return (
@@ -154,7 +154,7 @@ export default function ExecutiveIntelligenceNav({ badgeText = "10/10 AUTONOMY G
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono tracking-wider font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>PHASE 31-M9</span>
+            <span>PHASE 31-M10</span>
           </div>
           <h1 className="text-sm font-mono font-bold text-slate-100 tracking-tight">
             EXECUTIVE DECISION INTELLIGENCE
