@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Phase 30: Capability Graph & Dependency Engine (CI-100 to CI-500)
  *
  * Implements:
@@ -391,7 +391,11 @@ export function computeODEIConfidence(
     throw new Error(`Invalid ODEI score: ${odeiScore}. Must be 0-100.`);
   }
 
-  if (sampleSize <= 0) {
+  if (sampleSize < 0) {
+    throw new Error('INVALID_SAMPLE_SIZE: Sample size cannot be negative');
+  }
+
+  if (sampleSize === 0) {
     return {
       odeiScore,
       confidenceScore: 0,
@@ -541,4 +545,36 @@ export function getPhase30Certification(): Phase30CertificationResult {
     certifiedAt: new Date().toISOString().split('T')[0],
     releaseTrain: 'PHASE_30',
   };
+}
+
+/**
+ * ============================================================================
+ * Numerical Stability & Defensive Validation Layer (OI12-GOV)
+ * ============================================================================
+ */
+
+export function validateConfidenceBand(lowerBound: number, upperBound: number): boolean {
+  if (lowerBound > upperBound) {
+    throw new Error('INVALID_CONFIDENCE_BAND: lowerBound exceeds upperBound');
+  }
+  return true;
+}
+
+export function validateBenchmarkPopulation(population: number): boolean {
+  if (population <= 0) {
+    throw new Error('BENCHMARK_POPULATION_MISSING: population must be positive');
+  }
+  return true;
+}
+
+export function validateObservationWindow(orgWindowDays: number, benchmarkWindowDays: number): boolean {
+  if (Math.abs(orgWindowDays - benchmarkWindowDays) > 30) {
+    throw new Error('WINDOW_MISMATCH: Observation window differs significantly from benchmark');
+  }
+  return true;
+}
+
+export function computeSafeGrowthRate(newValue: number, oldValue: number): number | null {
+  if (oldValue === 0) return null;
+  return Math.round(((newValue - oldValue) / oldValue) * 1000) / 10;
 }
