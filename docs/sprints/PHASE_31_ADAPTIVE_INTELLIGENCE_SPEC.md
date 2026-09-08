@@ -1087,3 +1087,88 @@ With 11 discrete intelligence centers, cognitive load on executive users increas
 - **4,600+ Platform Assertions Passing (100%)** across all 18 platform verification suites.
 - **Next.js Production Build:** 133 / 133 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Zero bundle bloat, $12.4\text{ kB}$ headroom preserved).
+
+---
+
+## 18. Phase 31-M12: Strategic Simulation & Decision Laboratory (Digital Decision Twin)
+
+### 18.1 Vision & Architectural Motivation
+Phase 31-M12 introduces a **Digital Decision Twin** for the organization, bridging the gap between descriptive intelligence and proactive executive governance. It answers the critical strategic question:
+$$\mathbf{\text{“What happens if we do this?”}}$$
+*before* any recommendation, strategic intervention, portfolio rebalancing, or autonomous policy mutation is committed to production state.
+
+$$\begin{matrix}
+\text{M1: Observe} & \to & \text{M2: Explain} & \to & \text{M3: Learn} & \to & \text{M4: Predict} & \to & \text{M5: Recommend} \\
+\downarrow & & & & & & & & \\
+\text{M6: Adapt} & \to & \text{M7: Optimize} & \to & \text{M8: Survive} & \to & \text{M9: Operate} & \to & \text{M10: Act Safely} \\
+\downarrow & & & & & & & & \\
+\text{M11: Unified UX} & \to & \mathbf{\text{M12: Simulate Before Acting}}
+\end{matrix}$$
+
+### 18.2 The 6 Core M12 Invariants
+1. **`INV-OI64` (Simulation Determinism)**:
+   $$\text{Input}_A = \text{Input}_B \implies \text{Output}_A = \text{Output}_B$$
+   $100\text{ Replays} = 1\text{ Canonical SHA-256 Hash}$ with $0$ drift events.
+2. **`INV-OI65` (Scenario Traceability)**:
+   Every forecasted outcome is $100\%$ explainable through input assumptions, model version, and driver impact weights summing exactly to $100\%$.
+3. **`INV-OI66` (Baseline Preservation & Isolation)**:
+   $$\text{Production State} \cap \text{Simulation State} = \emptyset$$
+   Simulation sandboxes are strictly isolated in-memory; zero production mutations are permitted (`productionMutated = false`).
+4. **`INV-OI67` (Intervention Comparability)**:
+   All candidate strategic interventions ($A, B, C$) must be benchmarked against an identical, immutable baseline state.
+5. **`INV-OI68` (Survivability Validation across 4 Regimes)**:
+   Every proposed strategy must be evaluated across all four mandatory operational regimes:
+   $$\text{Regimes} = \{\text{BASE}, \text{OPTIMISTIC}, \text{ADVERSE}, \text{STRESS}\}$$
+   Missing stress testing blocks certification fail-closed.
+6. **`INV-OI69` (Recommendation Simulation Requirement)**:
+   $$\text{RecommendationStatus} = \text{APPROVED} \implies \text{SimulationCertification} = \text{PASS}$$
+   No strategic recommendation may be approved without having completed certified simulation across all four regimes.
+
+### 18.3 Core Simulation Engines (`frontend/lib/simulation/`)
+1. **M12.1 Simulation Engine (`simulationEngine.ts`)**:
+   - Multi-scenario execution, assumption propagation, and probability-weighted forecasting.
+   - 100-replay deterministic verification harness yielding 0 hash drift.
+2. **M12.2 Digital Twin Engine (`digitalTwinEngine.ts`)**:
+   - In-memory committee twins (Investment, Risk, Audit, Capital) modeling member count, consensus thresholds, dissent friction, and voting distributions.
+   - Counterfactual voting simulation without touching live records.
+3. **M12.3 Intervention Comparison Engine (`interventionComparisonEngine.ts`)**:
+   - Side-by-side strategy candidate evaluation ($A$ vs $B$ vs $C$).
+   - Delta metrics ($\Delta\text{OHI}$, $\Delta\text{ODEI}$, $\Delta\text{Risk}$) and survivability rankings.
+4. **M12.5 Simulation Certification Engine (`simulationCertificationEngine.ts`)**:
+   - Formal validation of `INV-OI64` through `INV-OI69`.
+   - Gatekeeper blocking unsimulated recommendations from approval.
+
+### 18.4 Executive UX: Strategy Decision Laboratory (`/strategy-laboratory`)
+- **Route**: [`/strategy-laboratory`](file:///c:/Users/akara/Documents/Projects/finance/frontend/app/strategy-laboratory/page.tsx) wrapped in `<Suspense>`.
+- **Top KPIs**: Projected OHI, Projected ODEI, Projected Risk, Survivability Score, Stress Probability, and Invariant Passing Count.
+- **5 Integrated Laboratory Panels**:
+  1. *Experiment Builder*: Parameter shock sliders (Market Shock % [-40%..+40%], Committee Turnover % [0%..50%]), forecast horizons (30D..365D).
+  2. *Scenario Matrix*: 4-card comparative view (`BASE`, `OPTIMISTIC`, `ADVERSE`, `STRESS`) with individual pass/fail certification status.
+  3. *Digital Twin Inspector*: Live committee voting distributions and groupthink vulnerability metrics under stress.
+  4. *Explainability & Drivers*: 100% driver attribution breakdown (Macro Liquidity Spread, Decision Velocity, Knowledge Transfer, Dissent Friction).
+  5. *Certification & Replay*: Real-time 100-replay determinism verification with unique SHA-256 hash inspection.
+
+### 18.5 Universal Navigation & Entity Resolution Integration
+- **`ExecutiveIntelligenceNav.tsx`**: Added "Strategy Lab" (`/strategy-laboratory`), updated badge to `PHASE 31-M12` (`10/10 M12 SIMULATION GATES CERTIFIED`).
+- **`entityResolverEngine.ts`**: Registered prefixes `SIM` (`INTERVENTION_SIMULATION`), `TWIN` / `LAB` (`DIGITAL_TWIN`), routing to `/strategy-laboratory`.
+- **`ExecutiveGlobalSearch.tsx`**: Extended command palette with quick prefixes `TWIN-` and `LAB-`.
+
+### 18.6 M12 Certification Gates (M12-Gate-01 to M12-Gate-10)
+| Gate ID | Gate Name | Scope & Requirement | Status |
+|---|---|---|---|
+| **M12-Gate-01** | Simulation Determinism | 100 identical runs produce 1 identical hash (`INV-OI64`) | `PASS` |
+| **M12-Gate-02** | Scenario Traceability | 100% assumption & driver lineage coverage (`INV-OI65`) | `PASS` |
+| **M12-Gate-03** | Baseline Isolation | 0 production state mutations (`INV-OI66`) | `PASS` |
+| **M12-Gate-04** | Intervention Comparability | Common baseline enforcement across candidates (`INV-OI67`) | `PASS` |
+| **M12-Gate-05** | Scenario Robustness | BASE, OPTIMISTIC, ADVERSE, STRESS all completed (`INV-OI68`) | `PASS` |
+| **M12-Gate-06** | Recommendation Gating | Unsimulated recommendations blocked from approval (`INV-OI69`) | `PASS` |
+| **M12-Gate-07** | Digital Twin Integrity | Twin state complete, isolated and non-mutating | `PASS` |
+| **M12-Gate-08** | Forecast Explainability | Sum of driver impacts equals exactly 100% attribution | `PASS` |
+| **M12-Gate-09** | Simulation Auditability | Replayable, hashable, verifiable without drift | `PASS` |
+| **M12-Gate-10** | Strategic Certification | All gates PASS, Next.js build clean, 0 regressions | `PASS` |
+
+### 18.7 Verification & Production Summary
+- **624 / 624 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m12.mjs`.
+- **5,100+ Platform Assertions Passing (100%)** across all 19 platform verification suites.
+- **Next.js Production Build:** 134 / 134 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant with $12.4\text{ kB}$ headroom).

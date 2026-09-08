@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -719,6 +719,22 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { nodeId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 33. TWIN / LAB (Strategy Laboratory & Digital Twin)
+  if (prefix === 'TWIN' || prefix === 'LAB') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'DIGITAL_TWIN',
+      entityId: input,
+      title: `Strategic Digital Twin & Laboratory (${input})`,
+      canonicalRoute: `/strategy-laboratory?twinId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { twinId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
