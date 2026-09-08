@@ -43,7 +43,10 @@ export type NavigationEntityType =
   | 'NARRATIVE_BRIEFING'
   | 'GRAPH_NODE'
   | 'STRATEGY_SIMULATION'
-  | 'DIGITAL_TWIN';
+  | 'DIGITAL_TWIN'
+  | 'EXECUTIVE_WORKSPACE'
+  | 'DECISION_INBOX'
+  | 'EXECUTIVE_BRIEFING';
 
 export interface EntityResolution {
   input: string;
