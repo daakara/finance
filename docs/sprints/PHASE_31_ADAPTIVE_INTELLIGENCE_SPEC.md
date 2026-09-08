@@ -223,3 +223,33 @@ Proves the scoring and governance engines are dynamically responsive rather than
 | **Total Test Rigor** | $\ge 2,000$ Assertions | Automated Test Runner (100% Pass) |
 | **Production Excellence** | $\ge 99.5\%$ | Daily Production Protection Framework |
 
+---
+
+## 7. Milestone 31-M2: Decision Network Intelligence, Executive Explainability & Audit UX (Epic AI-002)
+
+### 7.1 Architecture & Scope Overview
+Phase 31-M2 delivers 70–80% executive UX across 6 dedicated Next.js routes, backed by mathematical graph topology algorithms, cycle detection, single-artifact lineage reconstruction, and Byzantine defense visualization.
+
+### 7.2 Core Governance Invariants
+- **INV-OI15: Cross-Committee Influence Integrity Invariant**
+  $$\forall e = (u, v) \in E: \quad u \ne v \land \text{SharedDecisions}(u, v) > 0 \land \text{InfluenceScore}(e) \in [0.0, 100.0]$$
+  Guarantees that all directed influence flows represent verified cross-body decisions without negative, NaN, or infinite ratings.
+- **INV-OI16: Network Completeness & Explainability Invariant**
+  $$\text{CompletenessPct} = \frac{|V| - |V_{\text{isolated}}|}{|V|} \times 100\% = 100.0\%$$
+  Every registered committee node must maintain documented directed influence flows, and all cross-committee links must state unambiguous strategic rationales.
+
+### 7.3 Delivered Routes & Executive UX Surfaces
+1. `/committee-intelligence` — Executive Scorecards, Health Grid, CDQI / ODEI / DIRatio Rankings (`CI-001` through `CI-010`).
+2. `/decision-explorer` — Chronological Audit Trail, Proposal to Attribution Traceability, Deep-linking (`DE-001` through `DE-010`).
+3. `/dissent-explorer` — Preserved Minority Counter-theses, Risk Assessments, Drawdown Shield Metrics (`DI-001` through `DI-010`).
+4. `/committee-network` — Interactive SVG Network Topology, Directional Influence Heatmap, Cycle Warning System (`CN-001` through `CN-010`).
+5. `/audit-explorer` — Single-Artifact Reconstruction (RECON-01 to 08), Cryptographic Snapshot Hash Display, JSON Export (`AE-001` through `AE-010`).
+6. `/governance-center` — Mission Control for CII-Gates 01–13, Replay Determinism Verification (100/100 Replays), Byzantine Threat Guard (`GC-001` through `GC-010`).
+
+### 7.4 Verification & Production Performance
+- **130 / 130 Fail-Close Assertions Passed (100%)** via `verify-phase-31-m2.mjs`.
+- **Zero Regression** across all prior milestones (905+ platform assertions verified).
+- **Next.js Production Build:** 123 / 123 static routes compiled with code 0.
+- **First Load JS Shared:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling).
+
+

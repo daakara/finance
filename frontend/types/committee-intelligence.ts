@@ -566,3 +566,61 @@ export interface ReplayDifferentialResult {
   description: string;
 }
 
+/**
+ * ============================================================================
+ * Phase 31-M2: Decision Network Intelligence & Executive UX Contracts
+ * ============================================================================
+ */
+
+export interface NetworkMetrics {
+  totalNodes: number;
+  totalEdges: number;
+  density: number;
+  averageInfluenceScore: number;
+  cycleCount: number;
+  disconnectedCount: number;
+}
+
+export interface InfluenceMatrixEntry {
+  sourceCommitteeId: string;
+  sourceCommitteeName: string;
+  targetCommitteeId: string;
+  targetCommitteeName: string;
+  influenceScore: number;
+  sharedDecisionCount: number;
+  alignmentPct: number;
+  rationale: string;
+}
+
+export interface InfluenceHeatmapMatrix {
+  committeeIds: string[];
+  committeeNames: Record<string, string>;
+  entries: InfluenceMatrixEntry[];
+  maxInfluenceScore: number;
+  minInfluenceScore: number;
+}
+
+export interface DecisionTimelineStep {
+  stepId: string;
+  stepName: 'PROPOSAL' | 'EVIDENCE' | 'QUORUM' | 'DISSENT' | 'DECISION' | 'OUTCOME' | 'ATTRIBUTION';
+  title: string;
+  timestampUtc: string;
+  status: 'COMPLETED' | 'WARNING' | 'FAILED';
+  actorId?: string;
+  actorRole?: string;
+  details: string;
+  artifactId?: string;
+}
+
+export interface AuditExplorerExport {
+  exportedAtUtc: string;
+  queryId: string;
+  reconstructedDecisionId: string;
+  snapshotHash: string;
+  completenessPct: number;
+  missingArtifacts: string[];
+  auditSnapshot: CommitteeAuditSnapshot;
+  timeline: DecisionTimelineStep[];
+}
+
+

@@ -7,7 +7,7 @@
  * Guaranteed 100% coverage from any single artifact ID (Decision ID or Outcome ID).
  */
 
-import crypto from 'node:crypto';
+import { sha256 } from '../governance/sha256';
 import {
   CommitteeProposal,
   CommitteeEvidence,
@@ -346,21 +346,21 @@ export function createAuditSnapshot(decisionId: string): CommitteeAuditSnapshot 
     throw new Error(`Cannot create snapshot for unverified decision: ${decisionId}`);
   }
 
-  const proposalHash = crypto.createHash('sha256').update(JSON.stringify(recon.proposal)).digest('hex');
+  const proposalHash = sha256(JSON.stringify(recon.proposal));
   const evidenceHashes = (recon.evidence ?? []).map(e =>
-    crypto.createHash('sha256').update(JSON.stringify(e)).digest('hex')
+    sha256(JSON.stringify(e))
   );
   const participantHashes = (recon.participants ?? []).map(p =>
-    crypto.createHash('sha256').update(JSON.stringify(p)).digest('hex')
+    sha256(JSON.stringify(p))
   );
   const dissentHashes = (recon.dissents ?? []).map(d =>
-    crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex')
+    sha256(JSON.stringify(d))
   );
   const outcomeHash = recon.outcome
-    ? crypto.createHash('sha256').update(JSON.stringify(recon.outcome)).digest('hex')
+    ? sha256(JSON.stringify(recon.outcome))
     : undefined;
   const attributionHash = recon.attribution
-    ? crypto.createHash('sha256').update(JSON.stringify(recon.attribution)).digest('hex')
+    ? sha256(JSON.stringify(recon.attribution))
     : undefined;
 
   const masterPayload = {
@@ -373,7 +373,7 @@ export function createAuditSnapshot(decisionId: string): CommitteeAuditSnapshot 
     attributionHash,
   };
 
-  const hash = crypto.createHash('sha256').update(JSON.stringify(masterPayload)).digest('hex');
+  const hash = sha256(JSON.stringify(masterPayload));
 
   return {
     snapshotId: `SNP-${decisionId}`,
