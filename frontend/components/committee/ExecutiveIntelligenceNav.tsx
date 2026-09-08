@@ -11,7 +11,7 @@ export interface ExecutiveIntelligenceNavProps {
 
 // 4 Executive Nav Groups
 const WORKSPACE_LINKS = [
-  { href: "/workspace", label: "Workspace" },
+  { href: "/executive-workspace", label: "Workspace" },
   { href: "/decision-inbox", label: "Inbox" },
   { href: "/intelligence-center", label: "Overview" },
   { href: "/action-center", label: "Actions" },
@@ -43,7 +43,7 @@ const EVIDENCE_LINKS = [
 
 export default function ExecutiveIntelligenceNav({
   activeTab,
-  badgeText = "PHASE 31-M15",
+  badgeText = "PHASE 31-M16",
 }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
   const currentPath = activeTab || pathname || "/intelligence-center";
@@ -51,6 +51,9 @@ export default function ExecutiveIntelligenceNav({
   const isLinkActive = (href: string) => {
     if (href === "/intelligence-center") {
       return currentPath === "/intelligence-center" || currentPath === "/intelligence";
+    }
+    if (href === "/executive-workspace") {
+      return currentPath === "/executive-workspace" || currentPath === "/workspace";
     }
     return currentPath === href || currentPath.startsWith(href + "/");
   };
