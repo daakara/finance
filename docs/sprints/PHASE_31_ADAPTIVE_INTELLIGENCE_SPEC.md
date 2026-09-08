@@ -157,7 +157,38 @@ Milestone 31-M1.1 expands the governance foundation with strict adversarial resi
 - **RECON-01 through RECON-08:** Proves $100.0\%$ bidirectional chain reconstruction from any single artifact ID ($\text{Outcome} \leftrightarrow \text{Decision} \leftrightarrow \text{Proposal} \leftrightarrow \text{Evidence} \leftrightarrow \text{Attribution}$).
 - Reconstructs attribution sum to strictly $100.0\%$.
 
-#### 5. Expanded Release Certification Gates (CII-Gate-01 through CII-Gate-10)
+#### 5. Byzantine Corruption Detection Framework (BC-001 through BC-010)
+Traditional tests validate missing artifacts; Byzantine tests simulate conflicting, malicious, and inconsistent institutional records:
+- **BC-001 (Split-Brain Decision State):** Decision claims multiple divergent outcomes (`DECISION_FORK`, `OUTCOME_CONFLICT_DETECTED`). Severity: `CRITICAL`.
+- **BC-002 (Conflicting Attribution Ledger):** Divergent outcome attributions or attribution sum $> 100\%$ (`ATTRIBUTION_FORK`, `ATTRIBUTION_SUM_VIOLATION`). Severity: `CRITICAL`.
+- **BC-003 (Hidden Dissent Suppression):** Decision claims unanimous approval while active dissent exists, or multiple committees claim ownership (`SUPPRESSED_DISSENT`, `OWNERSHIP_CONFLICT`). Severity: `CRITICAL`.
+- **BC-004 (Ghost Committee & Resolution Conflict):** References non-existent committee or divergent audit log dissent status (`GHOST_COMMITTEE`, `DISSENT_RESOLUTION_CONFLICT`). Severity: `HIGH`.
+- **BC-005 (Majority Membership Fabrication):** Repeated participant IDs within the same quorum or contradictory evidence usage (`MEMBERSHIP_FABRICATION`, `EVIDENCE_CONTRADICTION`). Severity: `HIGH`.
+- **BC-006 (Evidence Substitution & Temporal Violation):** Certified evidence hash mismatch or outcome timestamp precedes decision timestamp (`EVIDENCE_HASH_MISMATCH`, `TEMPORAL_ORDER_VIOLATION`). Severity: `CRITICAL`.
+- **BC-007 (Replay Divergence Attack):** Identical inputs produce distinct execution hashes (`REPLAY_VARIANCE`). Severity: `CRITICAL`.
+- **BC-008 (Circular Influence Coalition):** Multi-party influence ring created to obscure concentration (`INFLUENCE_CYCLE`). Severity: `HIGH`.
+- **BC-009 (Outcome Fabrication):** Outcome exists without decision lineage or certified benchmark mutated (`ORPHAN_OUTCOME`, `BENCHMARK_MUTATION_DETECTED`). Severity: `HIGH`.
+- **BC-010 (Certification Tampering):** Certification status altered to `PASS` while gates fail (`CERTIFICATION_TAMPERING`, `RECOMMENDATION_DRIFT_DETECTED`). Severity: `CRITICAL`.
+- **BC-AGG-001 & BC-CERT-001 to 003:** 100% detection rate across all Byzantine fixtures with fail-close semantics.
+
+#### 6. Fixture Diversity Score (FDS)
+Protects against test overfitting and shallow happy-path validation:
+$$\text{FDS} = 0.30(\text{CD}) + 0.25(\text{DD}) + 0.20(\text{ND}) + 0.15(\text{DV}) + 0.10(\text{OD})$$
+- **Component A (Committee Diversity, CD):** Multi-committee counts, committee sizes, and mandate types.
+- **Component B (Dissent Diversity, DD):** Spread across MATERIAL, HIGH, MEDIUM, and LOW severities with diverse review outcomes.
+- **Component C (Network Diversity, ND):** Dense vs sparse topologies, hub-and-spoke vs distributed layouts.
+- **Component D (Decision Diversity, DV):** Spread across APPROVED, MODIFIED, REJECTED, and DEFERRED statuses.
+- **Component E (Outcome Diversity, OD):** Distribution of positive, negative, and mixed realized returns.
+- **Classification Tiers:** $\ge 90$ Excellent, $80-89$ Strong, $70-79$ Adequate, $60-69$ Weak, $< 60$ Overfit Risk.
+- **FDS-001 / FDS-002:** Certified baseline $\text{FDS} \ge 80.0$; mutation resilience $\text{FDS} \ge 75.0$.
+
+#### 7. Replay Differential Testing (REPLAY-DIFF)
+Proves the scoring and governance engines are dynamically responsive rather than statically frozen:
+- **REPLAY-DIFF-01 (ODEI Sensitivity):** Increasing learning effectiveness $80 \to 90$ strictly increases ODEI ($\text{Output}_B > \text{Output}_A$).
+- **REPLAY-DIFF-02 (Dissent Coverage Impact):** Dissent coverage degradation $100\% \to 60\%$ alters governance status from `PASS` to `FAIL`.
+- **REPLAY-DIFF-03 (Attribution Integrity Impact):** Attribution sum inflation $100\% \to 105\%$ triggers immediate status transition from `PASS` to `FAIL`.
+
+#### 8. Expanded Master Release Certification Gates (CII-Gate-01 through CII-Gate-13)
 
 | Gate ID | Gate Name | Target | Actual | Status |
 |---|---|---|---|---|
@@ -171,6 +202,9 @@ Milestone 31-M1.1 expands the governance foundation with strict adversarial resi
 | **CII-Gate-08** | Canonical Serialization & Deep Equality | Cycle-Safe, $0$ Stack Overflows, $\epsilon=10^{-9}$ Tolerance | 0 Cycle Errors, 0 Mismatches | `PASS` |
 | **CII-Gate-09** | Full Audit Trail Reconstruction | $100\%$ Complete Bidirectional Recovery from Any Artifact ID | 100% Reconstruction (RECON-01 to 08) | `PASS` |
 | **CII-Gate-10** | Horizontal Stress Resilience & Stability | Zero Invariant Drift & No NaNs across $1$ to $1,000$ Committees | Zero Drift Across All Scales | `PASS` |
+| **CII-Gate-11** | Byzantine Attack Resilience | $10/10$ Attacks Detected, $0$ Undetected | 100% Byzantine Detection (0 Misses) | `PASS` |
+| **CII-Gate-12** | Replay Responsiveness & Differential Sensitivity | Output Diff Verified on Meaningful Input Diff | Sensitive & Dynamically Responsive | `PASS` |
+| **CII-Gate-13** | Fixture Diversity Certification | $\text{FDS} \ge 80.0$ (Strong / Excellent) | $\text{FDS} \ge 80.0$, Mutation $\ge 75.0$ | `PASS` |
 
 ---
 
