@@ -20,7 +20,10 @@ export type NavigationEntityType =
   | 'LEARNING'
   | 'INCIDENT'
   | 'RISK'
-  | 'GROUPTHINK';
+  | 'GROUPTHINK'
+  | 'RECOMMENDATION'
+  | 'INTERVENTION_PLAN'
+  | 'BIAS_ALERT';
 
 export interface EntityResolution {
   input: string;
@@ -61,7 +64,10 @@ export interface RelatedArtifactItem {
     | 'ATTRIBUTED_LEARNING'
     | 'CORRELATED_INCIDENT'
     | 'PREDICTED_RISK'
-    | 'GROUPTHINK_SIGNAL';
+    | 'GROUPTHINK_SIGNAL'
+    | 'COACHING_RECOMMENDATION'
+    | 'INTERVENTION_ACTION'
+    | 'BIAS_WARNING';
   statusBadge?: string;
 }
 
