@@ -37,7 +37,9 @@ export type NavigationEntityType =
   | 'AUTONOMOUS_ACTION'
   | 'GOVERNANCE_POLICY'
   | 'HUMAN_OVERRIDE'
-  | 'POLICY_EVALUATION';
+  | 'POLICY_EVALUATION'
+  | 'FAIL_CLOSE_ERROR'
+  | 'OPERATIONAL_RUNBOOK';
 
 export interface EntityResolution {
   input: string;
@@ -87,7 +89,9 @@ export interface RelatedArtifactItem {
     | 'RESILIENCE_FALLBACK'
     | 'AUTONOMOUS_APPROVAL'
     | 'POLICY_CONSTRAINT'
-    | 'HUMAN_SUPERSEDENCE';
+    | 'HUMAN_SUPERSEDENCE'
+    | 'FAIL_CLOSE_TRIGGER'
+    | 'RUNBOOK_EXECUTION';
   statusBadge?: string;
 }
 
