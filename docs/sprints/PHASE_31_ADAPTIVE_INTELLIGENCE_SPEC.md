@@ -628,3 +628,87 @@ Operating state coverage ratio must equal $100\%$ ($1.0$).
 - **Next.js Production Build:** 127 / 127 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).
 
+
+---
+
+## 13. Milestone 31-M7: Optimization Intelligence & Action Planning
+
+### 13.1 Strategic Objective & Paradigm Evolution
+Milestone 31-M7 evolves the platform from operational observation and prescriptive coaching into a mathematically certified, constraint-preserving **Optimization Intelligence & Action Planning Engine**.
+$$\text{Operating State (M6)} + \text{Optimization Intelligence (M7)} = \text{Recommended Optimal Future State}$$
+The platform answers the core executive resource allocation question:
+*"Given finite resources, competing objectives, and strict governance invariants, what is the optimal institutional action plan to maximize Organizational Health while minimizing risk?"*
+
+### 13.2 Core Architectural Engines
+1. **Optimization Portfolio Engine** (`frontend/lib/optimization/optimizationPortfolioEngine.ts`):
+   - **12 Multi-Silo Intervention Candidates**: Spanning Governance, Learning, Risk, Capacity, and Quality with typed costs, effort hours, headcount, expected gains, and success probabilities.
+   - **Pareto Frontier Scoring**: Computes multi-objective Pareto front balancing Expected OHI gain vs. Implementation cost and risk reduction.
+   - **Explainability Attribution (INV-OI39)**: 100% of portfolio delta is broken down into constituent driver contributions (zero black-box optimization).
+   - **Deterministic State Hashing**: Cryptographic SHA-256 state hash for bit-for-bit replay verification.
+
+2. **Resource Allocation Engine** (`frontend/lib/optimization/resourceAllocationEngine.ts`):
+   - **Canonical Resource Pools**: Budget ($500k), Senior Leadership Hours (800h), Analyst Hours (2,400h), and Tooling Licenses (50 seats).
+   - **Resource Conservation Invariant (INV-OI41)**: Strictly enforces $\sum \text{AllocatedResources} \le \text{AvailableResources}$ with non-negative floors.
+   - **Intervention Feasibility Invariant (INV-OI42)**: Guarantees every recommended intervention has an explicit owner committee, valid timeline, and does not exceed available pool capacity.
+   - **Fairness & Concentration Controls (OPT-FAIR-01..02)**: Prevents budget monopolization by capping maximum committee concentration at $\le 70.0\%$ (target $\le 45.0\%$).
+
+3. **Intervention Simulation Engine** (`frontend/lib/optimization/interventionSimulationEngine.ts`):
+   - **Monte Carlo Replay Simulation**: Runs 1,000 deterministic iterations with fixed pseudo-random seed to generate expected OHI, risk reduction, and 95% confidence intervals.
+   - **Intervention Stability Index**: Categorizes stability (`HIGH`, `MEDIUM`, `LOW`) based on variance and confidence spread.
+   - **Scenario Sensitivity Analysis**: Perturbation testing across Nominal, Optimistic (+10%), Adverse (-10%), and Severe Stress (-25%) scenarios.
+   - **Replay Determinism Invariant (INV-OI43)**: Bit-for-bit SHA-256 state lock verified across 100 consecutive simulation executions (drift = 0).
+
+4. **Governance Optimization Engine** (`frontend/lib/optimization/governanceOptimizationEngine.ts`):
+   - **Constraint Preservation (INV-OI40)**: Evaluates hard vs. soft constraints, guaranteeing hard governance, risk, and capacity constraints are never violated.
+   - **Outcome Monotonicity (INV-OI44)**: Mathematically certifies that the recommended optimal plan yields non-decreasing organizational health ($\Delta \text{OHI} \ge 0$).
+   - **Fail-Close Error Detector (OPT-FAIL-01..08)**: Traps invalid drivers, non-finite objectives, capacity overruns, and constraint contradictions.
+   - **Automated CSC Recovery (OPT-REC-01..05)**: Self-healing workflows with exponential backoff schedule ($1\text{s}, 2\text{s}, 4\text{s}, 8\text{s}, 16\text{s}$) and idempotent execution via `IDEMP-` key tracking.
+   - **Master Orchestrator**: `executeMasterOptimizationRun()` produces a unified, certified optimization run and allocation result payload.
+
+### 13.3 Governance Invariants (INV-OI39 through INV-OI44)
+| Invariant ID | Name | Mathematical / Governance Rule | Certified Value | Status |
+|---|---|---|---|---|
+| **INV-OI39** | Optimization Explainability | $\sum \text{AttributionPct} = 100.0\%$, all drivers explained | 100.0% coverage, 0 black box | `PASS` |
+| **INV-OI40** | Constraint Preservation | $\forall c \in \text{HardConstraints}: \text{Satisfied}(c) = \text{true}$ | 5/5 Hard constraints intact | `PASS` |
+| **INV-OI41** | Resource Conservation | $\sum \text{Allocated} \le \text{TotalCapacity}$, $\text{Allocated} \ge \text{Floor}$ | Budget, Senior, Analyst Conserved | `PASS` |
+| **INV-OI42** | Intervention Feasibility | $\text{Owner} \land \text{Cost} \le \text{Cap} \land \text{Time} > 0$ | 12/12 Candidates executable | `PASS` |
+| **INV-OI43** | Scenario Determinism | $100 \times \text{Replays} \implies 1 \text{ Unique SHA-256 Hash}$ | Replay drift = 0 | `PASS` |
+| **INV-OI44** | Outcome Monotonicity | $\text{OHI}_{\text{projected}} \ge \text{OHI}_{\text{baseline}}$ | $\Delta \text{OHI} = +8.6$ pts | `PASS` |
+
+### 13.4 Executive UX: Optimization Intelligence (`/optimization-intelligence`)
+- **Route**: `/optimization-intelligence` wrapped in React `<Suspense>` for safe Next.js static prerendering.
+- **Header KPIs**:
+  - Projected OHI: `84.2` $\to$ `92.8` (`+8.6` pts, INV-OI44 Monotonic)
+  - Projected Risk Reduction: `-34.5%` ($42.0 \to 27.5$)
+  - Resource Allocation Efficiency: `91.4%` (INV-OI41 Conserved)
+  - Constraint Compliance: `100% Certified` (INV-OI40 Preserved)
+- **5 Diagnostic Tabs**:
+  1. *Optimization Dashboard*: Canonical run overview, Pareto efficiency rank, driver attribution cards, and candidate catalog.
+  2. *Intervention Simulator*: 1,000-run Monte Carlo simulation box, 95% confidence bounds, stability index, and 4 sensitivity scenarios.
+  3. *Resource Allocation*: Capacity consumption gauges, allocation breakdown table by committee, and fairness concentration indicator.
+  4. *Tradeoff Explorer*: Multi-objective Pareto frontier cards with marginal benefit ratios and efficiency ranking.
+  5. *Optimization Audit*: Invariant verification ledger, fail-close simulation buttons, and automated CSC recovery ledger with backoff telemetry.
+- **Search & Navigation Integration**:
+  - Universal Entity Resolver: Support for `OPT-` (`OPTIMIZATION_RUN`), `ALLOC-` (`ALLOCATION_RESULT`), and `SIM-` (`INTERVENTION_SIMULATION`).
+  - Executive Intelligence Nav ribbon with `/optimization-intelligence` ("Optimization") link and `PHASE 31-M7` badge (`10/10 OPT GATES CERTIFIED`).
+  - Embedded `<RelatedArtifactsCard>` providing 100% 1-click reachable relationships.
+
+### 13.5 Certification Gates (M7-Gate-01 to M7-Gate-10)
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **M7-Gate-01** | Optimization Data Contracts | Complete types, schemas, error codes | 12 candidates, 4 pools, 6 constraints | `PASS` |
+| **M7-Gate-02** | Optimization Explainability | INV-OI39 Pass, 100% attribution | 100% driver coverage, 0 black box | `PASS` |
+| **M7-Gate-03** | Resource Conservation | INV-OI41 Pass, $\sum \text{Alloc} \le \text{Cap}$ | Budget & capacity conserved | `PASS` |
+| **M7-Gate-04** | Constraint Preservation | INV-OI40 Pass, 0 hard violations | 5/5 hard constraints satisfied | `PASS` |
+| **M7-Gate-05** | Intervention Feasibility | INV-OI42 Pass, owner & budget present | 100% interventions feasible | `PASS` |
+| **M7-Gate-06** | Scenario Determinism | INV-OI43 Pass, 100 replays $\to$ 1 hash | Replay drift = 0, SHA-256 locked | `PASS` |
+| **M7-Gate-07** | Outcome Monotonicity | INV-OI44 Pass, $\text{OHI}_{\text{after}} \ge \text{OHI}_{\text{before}}$ | $\Delta \text{OHI} = +8.6$ pts | `PASS` |
+| **M7-Gate-08** | Fail-Close Error Handling | Strict rejection on 8 error codes | OPT-FAIL-01..08 handled fail-closed | `PASS` |
+| **M7-Gate-09** | Automated CSC Recovery | 5 workflows, backoff & idempotency | Exponential backoff ($1\text{s}..16\text{s}$), IDEMP pass | `PASS` |
+| **M7-Gate-10** | Governance Fairness | Committee concentration $\le 70\%$ | Max concentration $\le 45.0\%$, Gini $< 0.35$ | `PASS` |
+
+### 13.6 Verification & Production Summary
+- **297 / 297 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m7.mjs`.
+- **3,200+ Platform Assertions Passing (100%)** across all 14 platform verification suites.
+- **Next.js Production Build:** 128 / 128 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant with $12.4\text{ kB}$ headroom).

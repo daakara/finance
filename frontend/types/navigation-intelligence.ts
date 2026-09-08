@@ -26,7 +26,10 @@ export type NavigationEntityType =
   | 'BIAS_ALERT'
   | 'OOS_REPORT'
   | 'OHI_METRIC'
-  | 'CSC_RECOVERY';
+  | 'CSC_RECOVERY'
+  | 'OPTIMIZATION_RUN'
+  | 'ALLOCATION_RESULT'
+  | 'INTERVENTION_SIMULATION';
 
 export interface EntityResolution {
   input: string;
@@ -71,7 +74,8 @@ export interface RelatedArtifactItem {
     | 'COACHING_RECOMMENDATION'
     | 'INTERVENTION_ACTION'
     | 'BIAS_WARNING'
-    | 'SYSTEM_CONSISTENCY';
+    | 'SYSTEM_CONSISTENCY'
+    | 'OPTIMIZATION_CONSTRAINT';
   statusBadge?: string;
 }
 

@@ -62,7 +62,7 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-"];
+  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-"];
   const SAMPLE_ENTITIES = [
     { id: "DEC-001", label: "Flow Regime Allocation", type: "DECISION" },
     { id: "OUT-001", label: "+$145k Realized Return", type: "OUTCOME" },
@@ -78,6 +78,9 @@ export default function ExecutiveGlobalSearch({
     { id: "BIAS-001", label: "Confirmation Bias Alert", type: "BIAS_ALERT" },
     { id: "OHI-001", label: "Master Organizational Health Index (84.2)", type: "OHI_METRIC" },
     { id: "REP-OOS-001", label: "Board of Directors Governance Report", type: "OOS_REPORT" },
+    { id: "OPT-RUN-2026-001", label: "Master Organizational Portfolio Optimization", type: "OPTIMIZATION_RUN" },
+    { id: "ALLOC-2026-001", label: "Canonical Cross-Functional Resource Allocation", type: "ALLOCATION_RESULT" },
+    { id: "SIM-2026-001", label: "Monte Carlo Intervention Stability Simulation", type: "INTERVENTION_SIMULATION" },
   ];
 
   if (!isModalOpen) {
