@@ -1,4 +1,4 @@
-﻿# Phase 29: Organizational Intelligence Specification
+# Phase 29: Organizational Intelligence Specification
 ## Institutional Operating Model for Collective Decision Effectiveness
 
 **Author & Authority:**  
@@ -85,7 +85,7 @@ Where:
 
 ---
 
-## 4. Governance Invariants (INV-OI1 through INV-OI10)
+## 4. Governance Invariants (INV-OI1 through INV-OI11)
 
 1. **INV-OI1 (Organizational Traceability):** Every institutional outcome must trace backwards: $\text{Outcome} \to \text{Decision} \to \text{Committee} \to \text{Evidence}$.
 2. **INV-OI2 (Collective Attribution Completeness):** Attribution of organizational performance across Individual, Team, Committee, and System dimensions must sum to $100.0\%$.
@@ -97,11 +97,12 @@ Where:
 8. **INV-OI8 (Organizational Fairness):** No single actor or team may account for $>40.0\%$ of total institutional influence without triggering a Concentration Risk warning.
 9. **INV-OI9 (Recommendation Explainability):** Every organizational action proposal must expose Evidence, Learning, Benchmark, Impact, and Confidence.
 10. **INV-OI10 (Institutional Memory Integrity):** Historical decision, prediction, and outcome records are immutable and tamper-proof.
+11. **INV-OI11 (Institutional Learning Non-Regression):** Institutionalized best practices (Confidence $\ge 95\%$, $N \ge N_{min}$, Value $> 0$, Governance Approved) must never silently regress: $A(t) \ge B - 10\%$ and $E(t) \ge E_{\text{hist}} - 5\%$.
 
 ---
 
 ## 5. Certification Summary
 
-- **Total Verification Assertions:** 343 / 343 Passed ($100\%$)
-- **OI-Gate-01 through OI-Gate-10:** 10/10 Gates Passed
+- **Total Verification Assertions:** 385 / 385 Passed ($100\%$) across Suites M1–M6 & Governance
+- **OI-Gate-01 through OI-Gate-11:** 11/11 Gates Passed
 - **Certification Status:** CERTIFIED

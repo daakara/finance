@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Phase 29: Organizational Intelligence — Data Contracts
  *
  * Formalizes the complete type system for the Organizational Decision Effectiveness
@@ -362,3 +362,44 @@ export interface OrganizationalTelemetryEvent {
   confidence?: number;
   evidenceId?: string;
 }
+
+// ---------------------------------------------------------------------------
+// INV-OI11: Institutional Learning Non-Regression Invariant
+// ---------------------------------------------------------------------------
+
+export interface ProtectedPractice {
+  practiceId: string;
+  practiceName: string;
+  confidence: number; // >= 95%
+  sampleSize: number; // >= Nmin
+  valueImpactDollars: number; // > 0
+  governanceApproved: boolean; // strictly true
+  baselineAdoption: number; // B
+  currentAdoption: number; // A(t) >= B - 10%
+  historicalEffectiveness: number; // Historical E
+  currentEffectiveness: number; // E(t) >= Historical - 5%
+  mappedTo: {
+    type: 'PLAYBOOK' | 'GOVERNANCE' | 'CAPABILITY';
+    targetId: string;
+  };
+  status: 'PROTECTED' | 'REGRESSED' | 'AT_RISK';
+}
+
+export interface LearningNonRegressionResult {
+  satisfied: boolean;
+  totalProtectedPractices: number;
+  criticalRegressions: number;
+  practices: Array<{
+    practiceId: string;
+    practiceName: string;
+    adoptionVariance: number;
+    effectivenessVariance: number;
+    isAdoptionRegressed: boolean;
+    isEffectivenessRegressed: boolean;
+    status: 'PASS' | 'FAIL';
+  }>;
+  orphanLearningsCount: number;
+  knowledgeReuseRate: number;
+  details: string;
+}
+
