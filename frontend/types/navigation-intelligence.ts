@@ -48,7 +48,9 @@ export type NavigationEntityType =
   | 'DECISION_INBOX'
   | 'EXECUTIVE_BRIEFING'
   | 'INSTITUTIONAL_SIMULATION'
-  | 'COUNTERFACTUAL_ANALYSIS';
+  | 'COUNTERFACTUAL_ANALYSIS'
+  | 'DECISION_PACKAGE'
+  | 'DECISION_OPTION';
 
 export interface EntityResolution {
   input: string;
