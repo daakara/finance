@@ -33,8 +33,11 @@ import { getAllLearnings } from './learningIntelligenceEngine';
 import { getActiveIncidents } from '../governance/alertCorrelationEngine';
 import { getRiskRegistry, getRiskById } from '../governance/riskRegistryEngine';
 import { evaluateGroupthinkAssessment } from '../governance/groupthinkDetectionEngine';
+import { getRecommendations, getRecommendationById } from '../governance/collectiveIntelligenceCoach';
+import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
+import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -325,6 +328,93 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: false,
       error: `Groupthink signal ${input} not found`,
       suggestions: ['GT-COM-001-01', 'GT-COM-002-01', 'GT-COM-003-01'],
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 11. REC (Coaching Recommendation)
+  if (prefix === 'REC') {
+    const rec = getRecommendationById(input);
+    if (rec) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'RECOMMENDATION',
+        entityId: rec.recommendationId,
+        title: `Recommendation: ${rec.title} (${rec.priority})`,
+        canonicalRoute: `/coaching-intelligence?recommendationId=${rec.recommendationId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { recommendationId: rec.recommendationId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allRecIds = getRecommendations().map(r => r.recommendationId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'RECOMMENDATION',
+      found: false,
+      error: `Recommendation ${input} not found in coaching catalog`,
+      suggestions: allRecIds.slice(0, 5),
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 12. PLAN (Intervention Plan)
+  if (prefix === 'PLAN') {
+    const plan = getInterventionPlanById(input);
+    if (plan) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'INTERVENTION_PLAN',
+        entityId: plan.planId,
+        title: `Intervention Plan: ${plan.title}`,
+        canonicalRoute: `/coaching-intelligence?planId=${plan.planId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { planId: plan.planId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allPlanIds = getInterventionPlans().map(p => p.planId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'INTERVENTION_PLAN',
+      found: false,
+      error: `Intervention plan ${input} not found`,
+      suggestions: allPlanIds,
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 13. BIAS (Cognitive Bias Alert)
+  if (prefix === 'BIAS') {
+    const bias = CANONICAL_BIAS_ALERTS.find(b => b.alertId === input);
+    if (bias) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'BIAS_ALERT',
+        entityId: bias.alertId,
+        title: `Bias Alert: ${bias.biasType} (${bias.severity})`,
+        canonicalRoute: `/coaching-intelligence?alertId=${bias.alertId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { alertId: bias.alertId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allBiasIds = CANONICAL_BIAS_ALERTS.map(b => b.alertId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'BIAS_ALERT',
+      found: false,
+      error: `Bias alert ${input} not found`,
+      suggestions: allBiasIds,
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -793,6 +883,118 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: Boolean(sig),
+    };
+  }
+
+    // If Coaching Recommendation (REC-xxx)
+  if (id.startsWith('REC-')) {
+    const rec = getRecommendationById(id);
+    if (rec) {
+      items.push({
+        entityId: rec.committeeId,
+        entityType: 'COMMITTEE',
+        title: `Committee ${rec.committeeId}`,
+        canonicalRoute: `/committee-intelligence?committeeId=${rec.committeeId}`,
+        relationship: 'PARENT_COMMITTEE',
+        statusBadge: 'TARGET_COMMITTEE',
+      });
+
+      rec.actions.forEach(act => {
+        items.push({
+          entityId: act.actionId,
+          entityType: 'RECOMMENDATION',
+          title: act.title,
+          subtitle: `Owner: ${act.ownerId} | Due: ${act.dueDateUtc.slice(0, 10)}`,
+          canonicalRoute: `/coaching-intelligence?recommendationId=${rec.recommendationId}`,
+          relationship: 'INTERVENTION_ACTION',
+          statusBadge: act.status,
+        });
+      });
+
+      items.push({
+        entityId: rec.recommendationId,
+        entityType: 'RECOMMENDATION',
+        title: rec.title,
+        subtitle: `Priority: ${rec.priority} | Confidence: ${rec.confidenceScore}%`,
+        canonicalRoute: `/coaching-intelligence?recommendationId=${rec.recommendationId}`,
+        relationship: 'COACHING_RECOMMENDATION',
+        statusBadge: rec.status,
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'RECOMMENDATION',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(rec),
+    };
+  }
+
+  // If Intervention Plan (PLAN-xxx)
+  if (id.startsWith('PLAN-')) {
+    const plan = getInterventionPlanById(id);
+    if (plan) {
+      items.push({
+        entityId: plan.committeeId,
+        entityType: 'COMMITTEE',
+        title: `Committee ${plan.committeeId}`,
+        canonicalRoute: `/committee-intelligence?committeeId=${plan.committeeId}`,
+        relationship: 'PARENT_COMMITTEE',
+        statusBadge: 'PLAN_TARGET',
+      });
+
+      plan.recommendations.forEach(rec => {
+        items.push({
+          entityId: rec.recommendationId,
+          entityType: 'RECOMMENDATION',
+          title: rec.title,
+          canonicalRoute: `/coaching-intelligence?recommendationId=${rec.recommendationId}`,
+          relationship: 'COACHING_RECOMMENDATION',
+          statusBadge: rec.priority,
+        });
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'INTERVENTION_PLAN',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(plan),
+    };
+  }
+
+  // If Bias Alert (BIAS-xxx)
+  if (id.startsWith('BIAS-')) {
+    const bias = CANONICAL_BIAS_ALERTS.find(b => b.alertId === id);
+    if (bias) {
+      items.push({
+        entityId: bias.committeeId,
+        entityType: 'COMMITTEE',
+        title: `Committee ${bias.committeeId}`,
+        canonicalRoute: `/committee-intelligence?committeeId=${bias.committeeId}`,
+        relationship: 'PARENT_COMMITTEE',
+        statusBadge: 'AFFECTED_COMMITTEE',
+      });
+
+      items.push({
+        entityId: bias.alertId,
+        entityType: 'BIAS_ALERT',
+        title: `Bias Alert: ${bias.biasType}`,
+        subtitle: bias.explanation,
+        canonicalRoute: `/coaching-intelligence?alertId=${bias.alertId}`,
+        relationship: 'BIAS_WARNING',
+        statusBadge: bias.severity,
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'BIAS_ALERT',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(bias),
     };
   }
 

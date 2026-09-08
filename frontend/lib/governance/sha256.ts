@@ -103,3 +103,5 @@ export function sha256(ascii: string): string {
 
   return result;
 }
+
+export { sha256 as sha256Hex };
