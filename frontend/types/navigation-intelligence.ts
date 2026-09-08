@@ -29,7 +29,11 @@ export type NavigationEntityType =
   | 'CSC_RECOVERY'
   | 'OPTIMIZATION_RUN'
   | 'ALLOCATION_RESULT'
-  | 'INTERVENTION_SIMULATION';
+  | 'INTERVENTION_SIMULATION'
+  | 'RECOVERY_STATE'
+  | 'FAILOVER_EVENT'
+  | 'STRATEGY_SURVIVABILITY'
+  | 'SCENARIO_DEFINITION';
 
 export interface EntityResolution {
   input: string;
@@ -75,7 +79,8 @@ export interface RelatedArtifactItem {
     | 'INTERVENTION_ACTION'
     | 'BIAS_WARNING'
     | 'SYSTEM_CONSISTENCY'
-    | 'OPTIMIZATION_CONSTRAINT';
+    | 'OPTIMIZATION_CONSTRAINT'
+    | 'RESILIENCE_FALLBACK';
   statusBadge?: string;
 }
 
