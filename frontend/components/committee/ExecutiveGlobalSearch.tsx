@@ -62,7 +62,7 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-"];
+  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-"];
   const SAMPLE_ENTITIES = [
     { id: "DEC-001", label: "Flow Regime Allocation", type: "DECISION" },
     { id: "OUT-001", label: "+$145k Realized Return", type: "OUTCOME" },
@@ -84,7 +84,10 @@ export default function ExecutiveGlobalSearch({
     { id: "RECSTATE-OHI-L1", label: "L1 Metric Refresh Recovery State", type: "RECOVERY_STATE" },
     { id: "FAIL-2026-001", label: "Autonomous Optimization Failover", type: "FAILOVER_EVENT" },
     { id: "SURV-2026-001", label: "Strategy Survivability Certification", type: "STRATEGY_SURVIVABILITY" },
-    { id: "SCN-STRESS-01", label: "Multi-Factor Market Stress Scenario", type: "SCENARIO_DEFINITION" },
+        { id: "SCN-STRESS-01", label: "Multi-Factor Market Stress Scenario", type: "SCENARIO_DEFINITION" },
+    { id: "ACT-2026-001", label: "Autonomous Portfolio Variance Dampening", type: "AUTONOMOUS_ACTION" },
+    { id: "POL-RISK-001", label: "Capital At Risk Boundary Policy", type: "GOVERNANCE_POLICY" },
+    { id: "OVR-2026-INIT", label: "Baseline Human Override Checkpoint", type: "HUMAN_OVERRIDE" },
   ];
 
   if (!isModalOpen) {

@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -595,6 +595,71 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
   }
+
+  // 25. ACT (Autonomous Action)
+  if (prefix === 'ACT') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'AUTONOMOUS_ACTION',
+      entityId: input,
+      title: `Autonomous Governance Action (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=actions&actionId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'actions', actionId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 26. POL (Governance Policy)
+  if (prefix === 'POL') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'GOVERNANCE_POLICY',
+      entityId: input,
+      title: `Governance Policy Boundary (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=policies&policyId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'policies', policyId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 27. OVR (Human Override)
+  if (prefix === 'OVR') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'HUMAN_OVERRIDE',
+      entityId: input,
+      title: `Human Override Record (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=overrides&overrideId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'overrides', overrideId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 28. EVAL (Policy Evaluation)
+  if (prefix === 'EVAL') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'POLICY_EVALUATION',
+      entityId: input,
+      title: `Policy Evaluation Decision (${input})`,
+      canonicalRoute: `/autonomous-governance?tab=evaluations&evaluationId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'evaluations', evaluationId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
 
   return {
     input: rawInput,
@@ -1250,6 +1315,48 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     return {
       primaryEntityId: id,
       primaryEntityType: id.startsWith('OPT-') ? 'OPTIMIZATION_RUN' : id.startsWith('ALLOC-') ? 'ALLOCATION_RESULT' : 'INTERVENTION_SIMULATION',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
+
+  // If ACT, POL, OVR, or EVAL
+  if (id.startsWith('ACT-') || id.startsWith('POL-') || id.startsWith('OVR-') || id.startsWith('EVAL-')) {
+    items.push({
+      entityId: 'ACT-2026-001',
+      entityType: 'AUTONOMOUS_ACTION',
+      title: 'Autonomous Portfolio Variance Dampening',
+      subtitle: 'Confidence 96.5% | Status: EXECUTED',
+      canonicalRoute: '/autonomous-governance?tab=actions',
+      relationship: 'AUTONOMOUS_APPROVAL',
+      statusBadge: 'EXECUTED',
+    });
+
+    items.push({
+      entityId: 'POL-RISK-001',
+      entityType: 'GOVERNANCE_POLICY',
+      title: 'Capital At Risk Boundary Policy',
+      subtitle: 'VaR 99% Drawdown Floor <= 15.0%',
+      canonicalRoute: '/autonomous-governance?tab=policies',
+      relationship: 'POLICY_CONSTRAINT',
+      statusBadge: 'ACTIVE',
+    });
+
+    items.push({
+      entityId: 'OVR-2026-INIT',
+      entityType: 'HUMAN_OVERRIDE',
+      title: 'Baseline Human Override Checkpoint',
+      subtitle: 'Zero-Delay Supersession Guaranteed (INV-OI52)',
+      canonicalRoute: '/autonomous-governance?tab=overrides',
+      relationship: 'HUMAN_SUPERSEDENCE',
+      statusBadge: 'APPLIED',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('ACT-') ? 'AUTONOMOUS_ACTION' : id.startsWith('POL-') ? 'GOVERNANCE_POLICY' : id.startsWith('OVR-') ? 'HUMAN_OVERRIDE' : 'POLICY_EVALUATION',
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: true,
