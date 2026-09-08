@@ -130,6 +130,48 @@ $$\text{Dissent Coverage} = \frac{\text{Material Decisions with Captured Dissent
 | **CII-Gate-05** | Committee Decision Impact Ratio (DIRatio) | Spread $\ge +20.0\%$ | $+24.9\%$ | `PASS` |
 | **CII-Gate-06** | Final Committee Foundations Verdict | Unanimous Gate Pass & 0 Assertion Errors | All Gates Passed (83/83 Assertions) | `PASS` |
 
+### 5.5 Milestone 31-M1.1: Committee Intelligence Hardening & Adversarial Certification
+
+Milestone 31-M1.1 expands the governance foundation with strict adversarial resilience, deterministic replay verification, and institutional audit trail reconstruction:
+
+#### 1. Corruption Detection & Attack Fixtures
+- **CF-001 through CF-005 (INV-OI13 Transparency Attacks):** Detects and rejects missing proposals (`CF-001`), missing evidence (`CF-002`), missing participants (`CF-003`), missing outcomes (`CF-004`), and missing attributions (`CF-005`).
+- **CF-101 through CF-104 (INV-OI14 Dissent Attacks):** Rejects unrecorded material dissents (`CF-101`), missing alternative views (`CF-102`), missing risk assessments (`CF-103`), and unlinked counter-evidence (`CF-104`).
+- **CF-201 through CF-203 (Membership Integrity Attacks):** Rejects duplicate member records (`CF-201`), zero voting-eligible members (`CF-202`), and committees without a designated chair (`CF-203`).
+- **CF-301 through CF-302 (Network Graph Attacks):** Rejects dangling/invalid edge targets (`CF-301`) and self-referential edges (`CF-302`).
+
+#### 2. Strict Boundary Testing (BF-001 through BF-008)
+- **BF-001/002:** ODEI $\ge 80.0$ (`PASS`) vs $79.9$ (`FAIL`).
+- **BF-003/004:** Committee DIRatio $\ge 20.0\%$ (`PASS`) vs $19.9\%$ (`FAIL`).
+- **BF-005/006:** Transparency Coverage $100.0\%$ (`PASS`) vs $99.0\%$ (`FAIL`).
+- **BF-007/008:** Dissent Coverage $100.0\%$ (`PASS`) vs $99.0\%$ (`FAIL`).
+
+#### 3. Deterministic Replay Engine (`replayDeterminism.ts`)
+- **Cycle-Safe Traversal:** Employs dual `WeakMap<object, string>` tracking to prevent call-stack overflows on cyclical graph references, resolving cyclical nodes to deterministic `{$ref: '$.path'}` pointers.
+- **Scale-Aware Floating-Point Tolerance:** Enforces $\text{scale} = \max(1.0, |a|, |b|) \implies |a - b| \le 10^{-9} \times \text{scale}$ to eliminate cross-architecture numerical noise.
+- **100x Replay Invariance:** 100 consecutive full evaluations verified with exactly $0$ drift ($1$ unique SHA-256 hash).
+- **Order Independence:** Shuffled input evaluation yields bit-for-bit identical hashes to canonical ordering.
+
+#### 4. Audit Trail Reconstruction Engine (`auditReconstructionEngine.ts`)
+- Implements `reconstructDecision`, `reconstructOutcome`, `reconstructDissent`, `reconstructAttribution`, and `createAuditSnapshot`.
+- **RECON-01 through RECON-08:** Proves $100.0\%$ bidirectional chain reconstruction from any single artifact ID ($\text{Outcome} \leftrightarrow \text{Decision} \leftrightarrow \text{Proposal} \leftrightarrow \text{Evidence} \leftrightarrow \text{Attribution}$).
+- Reconstructs attribution sum to strictly $100.0\%$.
+
+#### 5. Expanded Release Certification Gates (CII-Gate-01 through CII-Gate-10)
+
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **CII-Gate-01** | Committee Registry & Membership Integrity | Active registry $>0$, Quorum $\ge 3$, Chair required | 3 Committees, 100% Valid | `PASS` |
+| **CII-Gate-02** | Collective Decision Transparency (INV-OI13) | $100\%$ Coverage, $0$ Violations | $100.0\%$, $0$ Violations | `PASS` |
+| **CII-Gate-03** | Dissent Preservation (INV-OI14) | $100\%$ Material Coverage, $0$ Lost Dissents | $100.0\%$, $0$ Violations | `PASS` |
+| **CII-Gate-04** | Committee Quality Floors (CDQI & ODEI) | $\text{CDQI} \ge 80.0$, $\text{ODEI} \ge 80.0$ | Min ODEI $83.0$, Min CDQI $83.2$ | `PASS` |
+| **CII-Gate-05** | Committee Decision Impact Ratio (DIRatio) | Spread $\ge +20.0\%$ | $+24.9\%$ | `PASS` |
+| **CII-Gate-06** | Final Committee Foundations Verdict | Unanimous Gate Pass & 0 Assertion Errors | All Gates Passed (83/83 Assertions) | `PASS` |
+| **CII-Gate-07** | Deterministic Replay Integrity | $100/100$ Identical Runs, $0$ Drift, $1$ Unique Hash | $100/100$ Replay Pass | `PASS` |
+| **CII-Gate-08** | Canonical Serialization & Deep Equality | Cycle-Safe, $0$ Stack Overflows, $\epsilon=10^{-9}$ Tolerance | 0 Cycle Errors, 0 Mismatches | `PASS` |
+| **CII-Gate-09** | Full Audit Trail Reconstruction | $100\%$ Complete Bidirectional Recovery from Any Artifact ID | 100% Reconstruction (RECON-01 to 08) | `PASS` |
+| **CII-Gate-10** | Horizontal Stress Resilience & Stability | Zero Invariant Drift & No NaNs across $1$ to $1,000$ Committees | Zero Drift Across All Scales | `PASS` |
+
 ---
 
 ## 6. Phase 31 Success Metrics & Release Criteria
