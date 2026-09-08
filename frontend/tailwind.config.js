@@ -40,6 +40,33 @@ module.exports = {
         // vNext Border Tokens
         "border-subtle": "var(--border-subtle, rgba(51, 65, 85, 0.8))", // slate-700/80
         "border-strong": "var(--border-strong, #334155)",                // slate-700
+
+        // ARX Horizon Design System (Phase 31-M11)
+        intelligence: {
+          bg: "#0B1220",
+          panel: "#121B2A",
+          elevated: "#182336",
+          border: "#24324A",
+          pass: "#10B981",
+          warning: "#F59E0B",
+          high: "#EA580C",
+          critical: "#DC2626",
+          certified: "#2563EB",
+          info: "#64748B",
+          text: "#F8FAFC",
+          muted: "#94A3B8",
+        },
+      },
+      screens: {
+        xs: "480px",
+        executive: "768px",
+        analyst: "1024px",
+        intelligence: "1280px",
+        command: "1536px",
+        wallboard: "1920px",
+      },
+      borderRadius: {
+        intelligence: "1rem",
       },
       fontSize: {
         "display-1": ["2.25rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em", fontWeight: "700" }], // 36px

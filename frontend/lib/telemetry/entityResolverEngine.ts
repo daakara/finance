@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -687,6 +687,38 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { tab: 'runbooks', rbId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 31. NI (Narrative Intelligence Briefing)
+  if (prefix === 'NI') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'NARRATIVE_BRIEFING',
+      entityId: input,
+      title: `Executive Narrative Briefing (${input})`,
+      canonicalRoute: `/intelligence-center?briefingId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { briefingId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 32. GRP / NODE (Graph Explorer Node)
+  if (prefix === 'GRP' || prefix === 'NODE') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'GRAPH_NODE',
+      entityId: input,
+      title: `Institutional Lineage Graph Node (${input})`,
+      canonicalRoute: `/graph-explorer?nodeId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { nodeId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
