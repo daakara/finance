@@ -33,7 +33,11 @@ export type NavigationEntityType =
   | 'RECOVERY_STATE'
   | 'FAILOVER_EVENT'
   | 'STRATEGY_SURVIVABILITY'
-  | 'SCENARIO_DEFINITION';
+  | 'SCENARIO_DEFINITION'
+  | 'AUTONOMOUS_ACTION'
+  | 'GOVERNANCE_POLICY'
+  | 'HUMAN_OVERRIDE'
+  | 'POLICY_EVALUATION';
 
 export interface EntityResolution {
   input: string;
@@ -80,7 +84,10 @@ export interface RelatedArtifactItem {
     | 'BIAS_WARNING'
     | 'SYSTEM_CONSISTENCY'
     | 'OPTIMIZATION_CONSTRAINT'
-    | 'RESILIENCE_FALLBACK';
+    | 'RESILIENCE_FALLBACK'
+    | 'AUTONOMOUS_APPROVAL'
+    | 'POLICY_CONSTRAINT'
+    | 'HUMAN_SUPERSEDENCE';
   statusBadge?: string;
 }
 

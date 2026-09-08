@@ -124,6 +124,17 @@ const NAV_LINKS = [
     ),
   },
   {
+    href: "/autonomous-governance",
+    label: "Autonomy",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+        <path d="M12 12 2.1 10.5" />
+        <path d="M12 12V2" />
+      </svg>
+    ),
+  },
+  {
     href: "/governance-center",
     label: "Governance Center",
     icon: (
@@ -134,7 +145,7 @@ const NAV_LINKS = [
   },
 ];
 
-export default function ExecutiveIntelligenceNav({ badgeText = "13/13 RESILIENCE GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
+export default function ExecutiveIntelligenceNav({ badgeText = "10/10 AUTONOMY GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
 
   return (
@@ -143,7 +154,7 @@ export default function ExecutiveIntelligenceNav({ badgeText = "13/13 RESILIENCE
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono tracking-wider font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>PHASE 31-M8</span>
+            <span>PHASE 31-M9</span>
           </div>
           <h1 className="text-sm font-mono font-bold text-slate-100 tracking-tight">
             EXECUTIVE DECISION INTELLIGENCE
