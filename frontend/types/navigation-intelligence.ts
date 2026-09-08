@@ -50,7 +50,9 @@ export type NavigationEntityType =
   | 'INSTITUTIONAL_SIMULATION'
   | 'COUNTERFACTUAL_ANALYSIS'
   | 'DECISION_PACKAGE'
-  | 'DECISION_OPTION';
+  | 'DECISION_OPTION'
+  | 'RELEASE_DASHBOARD'
+  | 'RELEASE_GATE';
 
 export interface EntityResolution {
   input: string;
