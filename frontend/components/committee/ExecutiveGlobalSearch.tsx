@@ -62,7 +62,7 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-"];
+  const QUICK_PREFIXES = ["DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-"];
   const SAMPLE_ENTITIES = [
     { id: "DEC-001", label: "Flow Regime Allocation", type: "DECISION" },
     { id: "OUT-001", label: "+$145k Realized Return", type: "OUTCOME" },
@@ -76,6 +76,8 @@ export default function ExecutiveGlobalSearch({
     { id: "REC-001", label: "Mandate Rotating Contrarian Reviewer", type: "RECOMMENDATION" },
     { id: "PLAN-001", label: "Q4 Equity Allocation De-biasing", type: "INTERVENTION_PLAN" },
     { id: "BIAS-001", label: "Confirmation Bias Alert", type: "BIAS_ALERT" },
+    { id: "OHI-001", label: "Master Organizational Health Index (84.2)", type: "OHI_METRIC" },
+    { id: "REP-OOS-001", label: "Board of Directors Governance Report", type: "OOS_REPORT" },
   ];
 
   if (!isModalOpen) {

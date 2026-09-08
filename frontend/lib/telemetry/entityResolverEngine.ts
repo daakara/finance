@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -420,10 +420,74 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     return resolution;
   }
 
+  // 14. OHI (Organizational Health Index)
+  if (prefix === 'OHI') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'OHI_METRIC',
+      entityId: input,
+      title: `Organizational Health Index (${input})`,
+      canonicalRoute: `/oos?view=overview&entityId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { view: 'overview', entityId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 15. REP (Executive Report)
+  if (prefix === 'REP') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'OOS_REPORT',
+      entityId: input,
+      title: `Executive Report (${input})`,
+      canonicalRoute: `/oos?view=board-report&reportId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { view: 'board-report', reportId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 16. OOS (Operating System Entity)
+  if (prefix === 'OOS') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'OOS_REPORT',
+      entityId: input,
+      title: `Organizational Operating System (${input})`,
+      canonicalRoute: `/oos?view=overview&entityId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { view: 'overview', entityId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 17. CSC (Certification Self-Correction)
+  if (prefix === 'CSC') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'CSC_RECOVERY',
+      entityId: input,
+      title: `CSC Recovery Workflow (${input})`,
+      canonicalRoute: `/oos?view=consistency&recoveryId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { view: 'consistency', recoveryId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
   return {
     input: rawInput,
     found: false,
-    suggestions: ['DEC-001', 'OUT-001', 'DIS-001', 'COM-001', 'RSK-001', 'GT-COM-001-01'],
+    suggestions: ['DEC-001', 'OUT-001', 'DIS-001', 'COM-001', 'RSK-001', 'REC-001', 'OHI-001', 'REP-OOS-001'],
     error: 'Unresolved entity identifier',
   };
 }
@@ -995,6 +1059,47 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: Boolean(bias),
+    };
+  }
+
+  // If OHI, REP, OOS, or CSC
+  if (id.startsWith('OHI-') || id.startsWith('REP-') || id.startsWith('OOS-') || id.startsWith('CSC-')) {
+    items.push({
+      entityId: 'OHI-001',
+      entityType: 'OHI_METRIC',
+      title: 'Organizational Health Index (84.2)',
+      subtitle: 'Certified Composite Health Score',
+      canonicalRoute: '/oos?view=overview',
+      relationship: 'PARENT_COMMITTEE',
+      statusBadge: 'CERTIFIED_OHI',
+    });
+
+    items.push({
+      entityId: 'REP-OOS-001',
+      entityType: 'OOS_REPORT',
+      title: 'ARX Board of Directors Governance Report',
+      subtitle: 'Board-Ready Operating Review',
+      canonicalRoute: '/oos?view=board-report',
+      relationship: 'REALIZED_OUTCOME',
+      statusBadge: 'BOARD_READY',
+    });
+
+    items.push({
+      entityId: 'REC-CSC-001',
+      entityType: 'CSC_RECOVERY',
+      title: 'Certification Self-Correction Engine',
+      subtitle: 'Cross-System Consistency & Recovery Mirror',
+      canonicalRoute: '/oos?view=consistency',
+      relationship: 'SYSTEM_CONSISTENCY',
+      statusBadge: 'CONSISTENT',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('OHI-') ? 'OHI_METRIC' : id.startsWith('REP-') ? 'OOS_REPORT' : id.startsWith('CSC-') ? 'CSC_RECOVERY' : 'OOS_REPORT',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
     };
   }
 
