@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -54,7 +54,7 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     };
   }
 
-  const prefixMatch = input.match(/^([A-Z]+)[-_]?(\d+)?$/);
+  const prefixMatch = input.match(/^([A-Z]+)[-_]/) || input.match(/^([A-Z]+)$/);
   const prefix = prefixMatch ? prefixMatch[1] : '';
 
   // 1. Unsupported prefix detection
@@ -479,6 +479,54 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { view: 'consistency', recoveryId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 18. OPT (Optimization Run)
+  if (prefix === 'OPT') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'OPTIMIZATION_RUN',
+      entityId: input,
+      title: `Optimization Run (${input})`,
+      canonicalRoute: `/optimization-intelligence?runId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { runId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 19. ALLOC (Allocation Result)
+  if (prefix === 'ALLOC') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'ALLOCATION_RESULT',
+      entityId: input,
+      title: `Resource Allocation Plan (${input})`,
+      canonicalRoute: `/optimization-intelligence?tab=allocation&allocationId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'allocation', allocationId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 20. SIM (Intervention Simulation)
+  if (prefix === 'SIM') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'INTERVENTION_SIMULATION',
+      entityId: input,
+      title: `Intervention Simulation (${input})`,
+      canonicalRoute: `/optimization-intelligence?tab=simulation&simId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'simulation', simId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -1097,6 +1145,47 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     return {
       primaryEntityId: id,
       primaryEntityType: id.startsWith('OHI-') ? 'OHI_METRIC' : id.startsWith('REP-') ? 'OOS_REPORT' : id.startsWith('CSC-') ? 'CSC_RECOVERY' : 'OOS_REPORT',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
+  // If OPT, ALLOC, or SIM
+  if (id.startsWith('OPT-') || id.startsWith('ALLOC-') || id.startsWith('SIM-')) {
+    items.push({
+      entityId: 'OPT-RUN-2026-001',
+      entityType: 'OPTIMIZATION_RUN',
+      title: 'Canonical Q3 Optimization Run',
+      subtitle: 'Projected OHI: 84.2 -> 92.8 (+8.6)',
+      canonicalRoute: '/optimization-intelligence?runId=OPT-RUN-2026-001',
+      relationship: 'PARENT_COMMITTEE',
+      statusBadge: 'OPTIMAL',
+    });
+
+    items.push({
+      entityId: 'ALLOC-2026-001',
+      entityType: 'ALLOCATION_RESULT',
+      title: 'Optimal Resource Allocation Plan',
+      subtitle: '91.4 Efficiency | 100% Constraint Preserved',
+      canonicalRoute: '/optimization-intelligence?tab=allocation',
+      relationship: 'REALIZED_OUTCOME',
+      statusBadge: 'FEASIBLE',
+    });
+
+    items.push({
+      entityId: 'SIM-2026-001',
+      entityType: 'INTERVENTION_SIMULATION',
+      title: 'Multi-Intervention Monte Carlo Simulation',
+      subtitle: '1,000 Replays | Deterministic Hash Verified',
+      canonicalRoute: '/optimization-intelligence?tab=simulation',
+      relationship: 'OPTIMIZATION_CONSTRAINT',
+      statusBadge: 'DETERMINISTIC',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('OPT-') ? 'OPTIMIZATION_RUN' : id.startsWith('ALLOC-') ? 'ALLOCATION_RESULT' : 'INTERVENTION_SIMULATION',
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: true,

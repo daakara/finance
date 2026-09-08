@@ -104,6 +104,16 @@ const NAV_LINKS = [
     ),
   },
   {
+    href: "/optimization-intelligence",
+    label: "Optimization",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    ),
+  },
+  {
     href: "/governance-center",
     label: "Governance Center",
     icon: (
@@ -114,7 +124,7 @@ const NAV_LINKS = [
   },
 ];
 
-export default function ExecutiveIntelligenceNav({ badgeText = "10/10 OOS GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
+export default function ExecutiveIntelligenceNav({ badgeText = "10/10 OPT GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
 
   return (
@@ -123,7 +133,7 @@ export default function ExecutiveIntelligenceNav({ badgeText = "10/10 OOS GATES 
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono tracking-wider font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>PHASE 31-M6</span>
+            <span>PHASE 31-M7</span>
           </div>
           <h1 className="text-sm font-mono font-bold text-slate-100 tracking-tight">
             EXECUTIVE DECISION INTELLIGENCE
