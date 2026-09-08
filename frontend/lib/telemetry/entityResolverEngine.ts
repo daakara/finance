@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -783,6 +783,36 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { briefingId: input },
+    };
+  }
+
+  // 37. FUT (Institutional Simulation & Futures Intelligence)
+  if (prefix === 'FUT') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'INSTITUTIONAL_SIMULATION',
+      entityId: input,
+      title: `Institutional Futures Simulation (${input})`,
+      canonicalRoute: `/simulation-intelligence?simulationId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { simulationId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 38. CF (Counterfactual Analysis)
+  if (prefix === 'CF') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'COUNTERFACTUAL_ANALYSIS',
+      entityId: input,
+      title: `Counterfactual Decision Analysis (${input})`,
+      canonicalRoute: `/simulation-intelligence?counterfactualId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { counterfactualId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -1598,6 +1628,37 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     return {
       primaryEntityId: id,
       primaryEntityType: id.startsWith('WS-') ? 'EXECUTIVE_WORKSPACE' : id.startsWith('INBOX-') ? 'DECISION_INBOX' : 'EXECUTIVE_BRIEFING',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
+  // If Institutional Simulation / Counterfactual (FUT-, CF-)
+  if (id.startsWith('FUT-') || id.startsWith('CF-')) {
+    items.push({
+      entityId: 'FUT-SIM-001',
+      entityType: 'INSTITUTIONAL_SIMULATION',
+      title: 'Institutional Futures Simulation Hub',
+      subtitle: 'Multi-Path Scenario Projections & Assumption Propagation',
+      canonicalRoute: '/simulation-intelligence',
+      relationship: 'SOURCE_DECISION',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'CF-DEC-001',
+      entityType: 'COUNTERFACTUAL_ANALYSIS',
+      title: 'Counterfactual Decision Analysis',
+      subtitle: 'Actual vs Alternative Path Causal Delta Attribution',
+      canonicalRoute: '/simulation-intelligence?tab=counterfactual',
+      relationship: 'REALIZED_OUTCOME',
+      statusBadge: 'CERTIFIED',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('FUT-') ? 'INSTITUTIONAL_SIMULATION' : 'COUNTERFACTUAL_ANALYSIS',
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: true,

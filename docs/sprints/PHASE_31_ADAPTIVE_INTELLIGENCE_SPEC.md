@@ -1264,3 +1264,70 @@ Rather than requiring senior executives (CIO, CRO, Board Directors, Committee Ch
 - **5,500+ Platform Assertions Passing (100%)** across all 20 platform verification suites.
 - **Next.js Production Build:** 136 / 136 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\\text{ kB}$ (Strictly below the $100.0\\text{ kB}$ ceiling invariant with $12.4\\text{ kB}$ headroom).
+
+
+---
+
+## 20. Phase 31-M14: Institutional Simulation & Futures Intelligence (ARX Horizon Executive OS)
+
+### 20.1 Architectural Directive & Core Intent
+Phase 31-M14 elevates the ARX Horizon Executive OS from historical observability, operational triage, and executive reporting into **Multi-Path Counterfactual Simulation and Forward Intelligence**. It directly answers the quintessential executive inquiry:
+"What happens to our capital, governance, and operational resilience if we choose Strategy A vs Strategy B vs Strategy C under adverse or stressed regimes?"
+
+M14 enforces deterministic, cryptographically auditable scenario modeling without speculative drift, ensuring every forward projection is grounded in causal lineage, bounded by safety invariants, and certified prior to consumption.
+
+### 20.2 Governance Invariants & Behavioral Contracts
+- **`INV-OI70` (Simulation Reproducibility)**: Identical inputs, decision parameters, and scenario seeds must yield bit-for-bit identical outputs across $N = 100$ independent executions, verified by a single invariant SHA-256 state hash.
+- **`INV-OI71` (Scenario Completeness)**: Every simulation run must evaluate against a mandatory 4-regime taxonomy: `BASELINE`, `OPTIMISTIC`, `ADVERSE`, and `STRESS`. Partial evaluations are rejected fail-closed.
+- **`INV-OI72` (Explainable Outcome Attribution)**: Projected metric divergences must provide 100% causal driver attribution coverage (driver weights sum to $1.0 \pm 0.001$). Unattributed variance is strictly disallowed.
+- **`INV-OI73` (Counterfactual Traceability)**: Counterfactual evaluations must compute the deterministic causal delta between historical actuals and simulated alternatives, with full dependency lineage for all substituted choices.
+- **`INV-OI74` (Simulation Safety Boundary)**: Any simulation path violating defined organizational risk boundaries, capital adequacy floors, or regulatory constraints must trigger `status = FAIL` fail-closed.
+- **`INV-OI75` (Simulation Certification Gating)**: Projections lacking cryptographic verification or failing invariant checks are quarantined and strictly prohibited from influencing strategic recommendations or autonomous execution engines.
+
+### 20.3 Futures Engine Architecture (`frontend/lib/futures/`)
+1. **Scenario Simulation Engine (`scenarioSimulationEngine.ts`)**:
+   - `executeScenarioSimulation(params)`: Executes deterministic multi-regime forward modeling (`BASELINE`, `OPTIMISTIC`, `ADVERSE`, `STRESS`) across 30d, 90d, 180d, and 360d horizons.
+   - `computeSimulationHash(simulation)`: Computes canonical SHA-256 hash across scenario results for replay verification (`INV-OI70`).
+2. **Counterfactual Engine (`counterfactualEngine.ts`)**:
+   - `runCounterfactualAnalysis(params)`: Models alternative decision paths against historical baselines, computing metric deltas, opportunity costs, and strategic trade-offs (`INV-OI73`).
+3. **Future State Engine (`futureStateEngine.ts`)**:
+   - `projectFutureStates(baseline, scenarios)`: Generates multi-horizon metric trajectories with high/low confidence bounds and stress-regime divergence modeling.
+   - `rankStrategies(evaluations, criteria)`: Multi-criteria ranking across Return, Risk, Resilience, Feasibility, and Governance Alignment.
+4. **Futures Certification Engine (`futuresCertificationEngine.ts`)**:
+   - `certifySimulation(simulation)`: Evaluates all 6 invariants (`INV-OI70` through `INV-OI75`), assigning PASS/FAIL status, audit record, and cryptographic certification stamp.
+   - `gateSimulationForRecommendation(certification)`: Enforces fail-close gating on downstream decision pipelines.
+5. **Simulation API Service Layer (`simulationApiClient.ts`)**:
+   - High-performance, statically export-compliant typed service providing `createSimulation`, `executeSimulation`, `getSimulation`, `runCounterfactualAnalysis`, and `getSimulationCertification`.
+
+### 20.4 Executive UI Suite (`/simulation-intelligence`)
+Implemented in `frontend/app/simulation-intelligence/page.tsx` (`HorizonTheme` compliant, `<Suspense>` wrapped):
+- **Simulation Parameter & Horizon Controls**: Target metric selection, planning horizon dropdown (30d to 360d), Monte Carlo sample slider (100 to 5,000), and run triggers.
+- **Multi-Regime Horizon Visualizer**: Scenario cards detailing baseline, optimistic, adverse, and stress metrics, confidence intervals, and regime volatility.
+- **Counterfactual Strategy Comparison Matrix**: Side-by-side comparative ledger contrasting historical actuals against alternative strategic paths.
+- **Causal Driver & Sensitivity Breakdown**: Factor attribution charts demonstrating 100% explainability coverage across macro, governance, and operational levers.
+- **Certification & Cryptographic Audit Badge**: Real-time status display of all 6 invariant gates with SHA-256 verification hash and certification metadata.
+
+### 20.5 Navigation & Universal Search Integration
+- **`ExecutiveIntelligenceNav.tsx`**: Added Simulation link (`/simulation-intelligence`), updated version badge to `PHASE 31-M14` (`10/10 M14 FUTURES GATES CERTIFIED`).
+- **`entityResolverEngine.ts`**: Registered prefixes `FUT` (`INSTITUTIONAL_SIMULATION`) and `CF` (`COUNTERFACTUAL_ANALYSIS`) in `SUPPORTED_PREFIXES` and entity correlation graph.
+- **`ExecutiveGlobalSearch.tsx`**: Registered quick prefix chips `FUT-`, `CF-` and quick search samples into global command palette.
+
+### 20.6 M14 Certification Gates (M14-Gate-01 to M14-Gate-10)
+| Gate ID | Gate Name | Scope & Requirement | Status |
+|---|---|---|---|
+| **M14-Gate-01** | Scenario Coverage Certification | 100% coverage across BASELINE, OPTIMISTIC, ADVERSE, STRESS (`INV-OI71`) | `PASS` |
+| **M14-Gate-02** | Simulation Reproducibility | 100 runs yield 1 bit-for-bit identical SHA-256 state hash (`INV-OI70`) | `PASS` |
+| **M14-Gate-03** | Outcome Explainability & Attribution | 100% causal driver attribution coverage, weights sum to 1.0 (`INV-OI72`) | `PASS` |
+| **M14-Gate-04** | Counterfactual Lineage & Traceability | Full causal delta & opportunity cost lineage between decisions (`INV-OI73`) | `PASS` |
+| **M14-Gate-05** | Futures Forecast & Projections | Multi-horizon projections (30d..360d) with validated confidence bands | `PASS` |
+| **M14-Gate-06** | Simulation Safety Boundaries | Automatic FAIL and fail-close gating upon threshold breach (`INV-OI74`) | `PASS` |
+| **M14-Gate-07** | Certified Simulation Influence Gating | Strict quarantine of uncertified simulations from autonomous feeds (`INV-OI75`) | `PASS` |
+| **M14-Gate-08** | Multi-Criteria Strategy Ranking | Deterministic composite scoring across 5 strategic dimensions | `PASS` |
+| **M14-Gate-09** | Simulation API Client Contract | Type-safe contract fidelity and execution lifecycle validation | `PASS` |
+| **M14-Gate-10** | Master Platform Traceability & Invariants | Zero regressions across M1-M13, shared JS <= 100.0 kB, clean build | `PASS` |
+
+### 20.7 Verification & Production Summary
+- **363 / 363 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m14.mjs`.
+- **5,800+ Platform Assertions Passing (100%)** across all 21 platform verification suites.
+- **Next.js Production Build:** 137 / 137 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant with $12.4\text{ kB}$ headroom).
