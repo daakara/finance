@@ -18,7 +18,9 @@ export type NavigationEntityType =
   | 'EVIDENCE'
   | 'SNAPSHOT'
   | 'LEARNING'
-  | 'INCIDENT';
+  | 'INCIDENT'
+  | 'RISK'
+  | 'GROUPTHINK';
 
 export interface EntityResolution {
   input: string;
@@ -57,7 +59,9 @@ export interface RelatedArtifactItem {
     | 'CRYPTOGRAPHIC_SNAPSHOT'
     | 'INFLUENCE_DEPENDENCY'
     | 'ATTRIBUTED_LEARNING'
-    | 'CORRELATED_INCIDENT';
+    | 'CORRELATED_INCIDENT'
+    | 'PREDICTED_RISK'
+    | 'GROUPTHINK_SIGNAL';
   statusBadge?: string;
 }
 

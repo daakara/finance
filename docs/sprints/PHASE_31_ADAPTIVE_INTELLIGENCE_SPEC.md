@@ -347,5 +347,77 @@ Milestone 31-M3 delivers the institutional organizational learning layer of ARX 
 - **Next.js Production Build:** 124 / 124 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).
 
+---
 
+## 10. Milestone 31-M4: Groupthink & Risk Intelligence Specification & Certification (Epic AI-005)
 
+### 10.1 Scope & Architecture
+Milestone 31-M4 delivers the Groupthink Resistance and Predictive Risk Intelligence layer of ARX Terminal, completing:
+1. **Groupthink Detection Engine & Invariants INV-OI19, INV-OI20, INV-OI21 (Epic M4-101)**:
+   - Evaluates committee collective dynamics across four sub-metrics:
+     - Unanimity Score ($0.0$ to $100.0$): Artificial consensus detection based on vote spread.
+     - Dissent Erosion Score ($0.0$ to $100.0$): Decay of dissenting opinions over rolling time windows.
+     - Influence Concentration ($0.0$ to $100.0$): Herfindahl-Hirschman index of proposal sponsorship and floor time.
+     - Recommendation Diversity ($0.0$ to $100.0\%$): Entropy and variance across alternative options evaluated.
+   - **Invariant INV-OI19 (Groupthink Bound)**:
+     $$\text{GroupthinkScore} < 75.0 \quad (\text{Target: } < 75.0, \text{ Max: } 100.0)$$
+     Committees exceeding $75.0$ are immediately quarantined from capital allocation authority with automated governance alert emission.
+   - **Invariant INV-OI20 (Recommendation Diversity Floor)**:
+     $$\text{RecommendationDiversity} \ge 60.0\%$$
+     Prevents single-paradigm tunnel vision; requires multi-hypothesis exploration.
+   - **Invariant INV-OI21 (Dissent Health Invariant)**:
+     $$\text{DissentParticipationRate} \ge 10.0\% \quad \land \quad \text{DissentUtilizationRate} \ge 25.0\%$$
+     Ensures dissent is neither suppressed (participation) nor purely cosmetic (utilization).
+   - **Gherkin Edge Case Sandbox (6 Scenarios Verified)**:
+     1. *Perfect Agreement*: 100% vote unanimity flags artificial consensus risk.
+     2. *Dissent Never Adopted*: Persistent zero dissent utilization triggers cosmetic dissent alert.
+     3. *Single Influencer Dominance*: Influence concentration $\ge 80.0$ flags chair/sponsor capture.
+     4. *Artificial Consensus*: Rapid convergence with zero alternative debate triggers deliberation freeze.
+     5. *Cosmetic Dissent*: Nominal token dissent with zero impact on final proposal text.
+     6. *Performance Masks Risk*: Favorable short-term financial returns masking high underlying groupthink exposure.
+2. **Organizational Risk Registry Engine (Epic M4-102)**:
+   - Canonical institutional risk register (`RSK-001` through `RSK-010`) covering 6 taxonomy categories:
+     `GOVERNANCE`, `LEARNING`, `NETWORK`, `REPLAY`, `GROUPTHINK`, and `ATTRIBUTION`.
+   - Validation Rules `VR-R01` through `VR-R06`:
+     $$\text{exposureScore} = \frac{\text{likelihood} \times \text{impact}}{100}$$
+     Mandatory mitigation plans, owner assignments, and incident linking for all `CRITICAL` risks.
+   - Portfolio exposure aggregation across committees and institutional levels.
+3. **Predictive Governance Forecasting Engine & Invariant INV-OI22 (Epic M4-103)**:
+   - Multi-horizon projections ($30\text{D}$, $90\text{D}$, $180\text{D}$, $365\text{D}$) for ODEI, DIRatio, Transfer Rate, CDQI, Certification Probability, and Risk Score.
+   - **Invariant INV-OI22 (Driver Explainability Invariant)**:
+     $$\sum_{i=1}^{N} \text{DriverContribution}_i = 100.0\% \quad (\pm 0.1\%)$$
+     Enforces $100.0\%$ driver attribution for every projected trajectory delta with zero unexplained variance.
+   - **Incident Escalation Forecasting (`predictIncidentEscalation`)**:
+     Predicts recurrence probability, days-to-recurrence, and velocity escalation based on unresolved friction and groupthink spikes.
+4. **Executive Risk Dashboard UX (Epic M4-104)**:
+   - Dedicated route `/risks-and-groupthink` with:
+     - Header KPI cards: Max Groupthink Score, Portfolio Exposure, Dissent Health Status, and Forecast Outlook.
+     - Committee selector with multi-committee comparison.
+     - 5 diagnostic tabs:
+       1. *Groupthink Radar*: Sub-metric gauges, trend history, and threshold indicators.
+       2. *Risk Registry*: Filterable ledger by category/severity with exposure scoring and mitigation playbooks.
+       3. *Predictive Forecasts*: Multi-horizon forecast trajectories with driver attribution breakdowns.
+       4. *Dissent Integrity*: Participation vs. utilization matrix and devil's advocate assignments.
+       5. *Edge Case Sandbox*: Live simulation of the 6 Gherkin edge cases with instant alert triggers.
+     - Full `<RelatedArtifactsCard>` integration wrapped inside `<Suspense>` for safe Next.js static prerendering.
+   - Global Search (`RSK-`, `GT-`) and sub-navigation ribbon integration with `PHASE 31-M4` release badge.
+
+### 10.2 Certification Gates (M4-Gate-01 to M4-Gate-10)
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **M4-Gate-01** | Risk Registry Integrity & Schema | 10 Canonical risks, VR-R01..VR-R06 compliant | 10 Risks, 100% Validated | `PASS` |
+| **M4-Gate-02** | INV-OI19 Pass (Groupthink Bound) | GroupthinkScore < 75.0 across all committees | All committees < 75.0 (Pass) | `PASS` |
+| **M4-Gate-03** | INV-OI20 Pass (Recommendation Diversity) | RecommendationDiversity >= 60.0% | All committees >= 60.0% (Pass) | `PASS` |
+| **M4-Gate-04** | INV-OI21 Pass (Dissent Health) | Participation >= 10.0%, Utilization >= 25.0% | Both bounds satisfied across committees | `PASS` |
+| **M4-Gate-05** | Groupthink Edge Case Detection | 6 Gherkin edge cases detected & alerted | 6 / 6 Detected, flagged & quarantined | `PASS` |
+| **M4-Gate-06** | Predictive Governance Forecasting | 30/90/180/365D multi-horizon forecast | Projections valid, monotonic variance bounds | `PASS` |
+| **M4-Gate-07** | INV-OI22 Pass (Driver Explainability) | Driver contributions sum strictly to 100.0% | 100.0% Driver Attribution (0.0% unexplained) | `PASS` |
+| **M4-Gate-08** | Incident Escalation Forecasting | Repeat probability & escalation velocity | Escalation triggers operational | `PASS` |
+| **M4-Gate-09** | Deterministic Hashing & Replay Guard | Bit-for-bit SHA-256 integrity over 100 replays | 100/100 Identical Hashes (0 Drift) | `PASS` |
+| **M4-Gate-10** | Master Groupthink & Risk Intelligence Release | All 200 fail-close assertions PASS | 200 / 200 Assertions Passing (100%) | `PASS` |
+
+### 10.3 Verification & Production Summary
+- **200 / 200 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m4.mjs`.
+- **2,600+ Platform Assertions Passing (100%)** across all 11 platform verification suites.
+- **Next.js Production Build:** 125 / 125 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).

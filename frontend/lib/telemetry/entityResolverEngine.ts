@@ -31,8 +31,10 @@ import {
 
 import { getAllLearnings } from './learningIntelligenceEngine';
 import { getActiveIncidents } from '../governance/alertCorrelationEngine';
+import { getRiskRegistry, getRiskById } from '../governance/riskRegistryEngine';
+import { evaluateGroupthinkAssessment } from '../governance/groupthinkDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -269,10 +271,69 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     return resolution;
   }
 
+  // 9. RSK (Governance Risk)
+  if (prefix === 'RSK') {
+    const risk = getRiskById(input);
+    if (risk) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'RISK',
+        entityId: risk.riskId,
+        title: `Risk: ${risk.title} (${risk.severity})`,
+        canonicalRoute: `/risks-and-groupthink?queryId=${risk.riskId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { queryId: risk.riskId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allRiskIds = getRiskRegistry().map(r => r.riskId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'RISK',
+      found: false,
+      error: `Risk record ${input} not found in risk registry`,
+      suggestions: allRiskIds.slice(0, 5),
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 10. GT (Groupthink Signal)
+  if (prefix === 'GT') {
+    const comId = input.includes('COM-') ? input.split('-').slice(1, 3).join('-') : 'COM-001';
+    const assessment = evaluateGroupthinkAssessment(comId);
+    const sig = assessment.signals.find(s => s.signalId === input) ?? assessment.signals[0];
+    if (sig) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'GROUPTHINK',
+        entityId: sig.signalId,
+        title: `Groupthink: ${sig.signalType} (${sig.severity})`,
+        canonicalRoute: `/risks-and-groupthink?queryId=${sig.signalId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { queryId: sig.signalId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'GROUPTHINK',
+      found: false,
+      error: `Groupthink signal ${input} not found`,
+      suggestions: ['GT-COM-001-01', 'GT-COM-002-01', 'GT-COM-003-01'],
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
   return {
     input: rawInput,
     found: false,
-    suggestions: ['DEC-001', 'OUT-001', 'DIS-001', 'COM-001'],
+    suggestions: ['DEC-001', 'OUT-001', 'DIS-001', 'COM-001', 'RSK-001', 'GT-COM-001-01'],
     error: 'Unresolved entity identifier',
   };
 }
@@ -649,6 +710,89 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: Boolean(incident),
+    };
+  }
+
+  // If Risk ID (RSK-xxx)
+  if (id.startsWith('RSK-')) {
+    const risk = getRiskById(id);
+    if (risk) {
+      if (risk.committeeId) {
+        const com = CANONICAL_COMMITTEES.find(c => c.committeeId === risk.committeeId);
+        items.push({
+          entityId: risk.committeeId,
+          entityType: 'COMMITTEE',
+          title: com?.committeeName ?? risk.committeeId,
+          canonicalRoute: `/committee-intelligence?committeeId=${risk.committeeId}`,
+          relationship: 'PARENT_COMMITTEE',
+          statusBadge: 'EXPOSED_BODY',
+        });
+      }
+
+      for (const incId of risk.incidentIds) {
+        items.push({
+          entityId: incId,
+          entityType: 'INCIDENT',
+          title: `Linked Incident ${incId}`,
+          canonicalRoute: `/learning-intelligence?incidentId=${incId}`,
+          relationship: 'CORRELATED_INCIDENT',
+          statusBadge: 'ACTIVE_INCIDENT',
+        });
+      }
+
+      items.push({
+        entityId: risk.riskId,
+        entityType: 'RISK',
+        title: risk.title,
+        subtitle: `Exposure: ${risk.exposureScore} | Likelihood: ${risk.likelihoodPct}% | Impact: ${risk.impactScore}`,
+        canonicalRoute: `/risks-and-groupthink?queryId=${risk.riskId}`,
+        relationship: 'PREDICTED_RISK',
+        statusBadge: risk.severity,
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'RISK',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(risk),
+    };
+  }
+
+  // If Groupthink Signal (GT-xxx)
+  if (id.startsWith('GT-')) {
+    const comId = id.includes('COM-') ? id.split('-').slice(1, 3).join('-') : 'COM-001';
+    const assessment = evaluateGroupthinkAssessment(comId);
+    const sig = assessment.signals.find(s => s.signalId === id) ?? assessment.signals[0];
+
+    if (sig) {
+      items.push({
+        entityId: sig.committeeId,
+        entityType: 'COMMITTEE',
+        title: `Committee ${sig.committeeId}`,
+        canonicalRoute: `/committee-intelligence?committeeId=${sig.committeeId}`,
+        relationship: 'PARENT_COMMITTEE',
+        statusBadge: 'EXAMINED_BODY',
+      });
+
+      items.push({
+        entityId: sig.signalId,
+        entityType: 'GROUPTHINK',
+        title: sig.signalType,
+        subtitle: `Severity: ${sig.severity} | Observed: ${sig.observedValue} (Threshold: ${sig.thresholdValue})`,
+        canonicalRoute: `/risks-and-groupthink?queryId=${sig.signalId}`,
+        relationship: 'GROUPTHINK_SIGNAL',
+        statusBadge: sig.severity,
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'GROUPTHINK',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(sig),
     };
   }
 
