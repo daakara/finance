@@ -1,13 +1,16 @@
 /**
- * ARX Horizon Design System - Foundation Tokens (Phase 31-M11)
- *
- * Implements:
- * - HorizonColors: High-contrast executive color palette
- * - HorizonTypography: Typographic hierarchy with calibrated mono data styles
- * - HorizonSpacing & HorizonRadius
- * - SeverityColors & statusBadge mapping
- * - WCAG AA Contrast Verification (>= 4.5:1 text, >= 3.0:1 graphic)
+ * ARX Horizon Design System - Foundation Tokens & Types
+ * Phase 31-M15: Executive Modernization Program
  */
+
+export const BREAKPOINTS = {
+  xs: 0,
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  '2xl': 1536,
+} as const;
 
 export const HorizonColors = {
   bg: '#0B1220',
@@ -26,69 +29,52 @@ export const HorizonColors = {
 
 export type HorizonColorKey = keyof typeof HorizonColors;
 
-export const HorizonSpacing = {
-  xs: '4px',
-  sm: '8px',
-  md: '12px',
-  lg: '16px',
-  xl: '24px',
-  '2xl': '32px',
-  '3xl': '48px',
-  '4xl': '64px',
+export const intelligenceColors = {
+  governance: '#2563EB',
+  learning: '#7C3AED',
+  risk: '#EA580C',
+  coaching: '#059669',
+  resilience: '#0891B2',
+  autonomous: '#DC2626',
 } as const;
 
-export const HorizonRadius = {
-  none: '0px',
-  sm: '4px',
-  md: '8px',
-  lg: '12px',
-  intelligence: '16px',
-  full: '9999px',
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
 } as const;
 
-export const HorizonTypography = {
-  display: {
-    fontSize: '2.25rem',
-    lineHeight: '2.5rem',
-    fontWeight: '700',
-    letterSpacing: '-0.02em',
-  },
-  header1: {
-    fontSize: '1.5rem',
-    lineHeight: '2rem',
-    fontWeight: '600',
-    letterSpacing: '-0.01em',
-  },
-  header2: {
-    fontSize: '1.125rem',
-    lineHeight: '1.75rem',
-    fontWeight: '600',
-    letterSpacing: '-0.005em',
-  },
-  body: {
-    fontSize: '0.875rem',
-    lineHeight: '1.25rem',
-    fontWeight: '400',
-  },
-  monoLg: {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-    fontSize: '1.5rem',
-    lineHeight: '2rem',
-    fontWeight: '600',
-  },
-  monoSm: {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-    fontSize: '0.875rem',
-    lineHeight: '1.25rem',
-    fontWeight: '500',
-  },
-  monoCaption: {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-    fontSize: '0.75rem',
-    lineHeight: '1rem',
-    fontWeight: '400',
-  },
+export const radius = {
+  sm: 6,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  pill: 9999,
 } as const;
+
+export const typography = {
+  display: 40,
+  h1: 32,
+  h2: 24,
+  h3: 20,
+  body: 16,
+  small: 14,
+  caption: 12,
+} as const;
+
+/**
+ * Standardized 6-state Status Model across all intelligence centers
+ */
+export type HorizonStatus =
+  | 'CERTIFIED'
+  | 'HEALTHY'
+  | 'WARNING'
+  | 'HIGH_RISK'
+  | 'CRITICAL'
+  | 'FAILED';
 
 export type SeverityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'PASS' | 'INFO';
 
@@ -99,6 +85,7 @@ export interface SeverityColorConfig {
   badge: string;
   dot: string;
   label: string;
+  hex: string;
 }
 
 export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
@@ -109,6 +96,7 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     badge: 'bg-red-500/20 text-red-300 border-red-500/40',
     dot: 'bg-red-500',
     label: 'Critical',
+    hex: '#DC2626',
   },
   HIGH: {
     bg: 'bg-orange-950/50',
@@ -116,7 +104,8 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     text: 'text-orange-400',
     badge: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
     dot: 'bg-orange-500',
-    label: 'High',
+    label: 'High Risk',
+    hex: '#EA580C',
   },
   MEDIUM: {
     bg: 'bg-amber-950/50',
@@ -124,7 +113,8 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     text: 'text-amber-400',
     badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     dot: 'bg-amber-400',
-    label: 'Medium',
+    label: 'Warning',
+    hex: '#F59E0B',
   },
   LOW: {
     bg: 'bg-slate-900/50',
@@ -133,6 +123,7 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     badge: 'bg-slate-800/80 text-slate-300 border-slate-700/60',
     dot: 'bg-slate-400',
     label: 'Low',
+    hex: '#2563EB',
   },
   PASS: {
     bg: 'bg-emerald-950/50',
@@ -140,7 +131,8 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     text: 'text-emerald-400',
     badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     dot: 'bg-emerald-400',
-    label: 'Pass',
+    label: 'Healthy',
+    hex: '#10B981',
   },
   INFO: {
     bg: 'bg-cyan-950/40',
@@ -149,12 +141,59 @@ export const SeverityColors: Record<SeverityLevel, SeverityColorConfig> = {
     badge: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
     dot: 'bg-cyan-400',
     label: 'Info',
+    hex: '#94A3B8',
   },
 };
 
-/**
- * Returns Tailwind class names for a given status string.
- */
+export const HorizonStatusConfig: Record<HorizonStatus, { label: string; badge: string; color: string; hex: string }> = {
+  CERTIFIED: {
+    label: 'Certified',
+    badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    color: 'text-blue-400',
+    hex: '#2563EB',
+  },
+  HEALTHY: {
+    label: 'Healthy',
+    badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    color: 'text-emerald-400',
+    hex: '#10B981',
+  },
+  WARNING: {
+    label: 'Warning',
+    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    color: 'text-amber-400',
+    hex: '#F59E0B',
+  },
+  HIGH_RISK: {
+    label: 'High Risk',
+    badge: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+    color: 'text-orange-400',
+    hex: '#EA580C',
+  },
+  CRITICAL: {
+    label: 'Critical',
+    badge: 'bg-red-500/20 text-red-300 border-red-500/40',
+    color: 'text-red-400',
+    hex: '#DC2626',
+  },
+  FAILED: {
+    label: 'Failed',
+    badge: 'bg-rose-950/80 text-rose-300 border-rose-600/50',
+    color: 'text-rose-400',
+    hex: '#E11D48',
+  },
+};
+
+export function normalizeHorizonStatus(status: string): HorizonStatus {
+  const norm = (status || '').toUpperCase();
+  if (norm.includes('FAIL') || norm.includes('BREACH')) return 'FAILED';
+  if (norm.includes('CRIT')) return 'CRITICAL';
+  if (norm.includes('HIGH') || norm.includes('ALERT') || norm.includes('LOCK')) return 'HIGH_RISK';
+  if (norm.includes('WARN') || norm.includes('MED') || norm.includes('DEGRAD')) return 'WARNING';
+  if (norm.includes('CERTIFIED') || norm.includes('AUDIT') || norm.includes('VERIF')) return 'CERTIFIED';
+  return 'HEALTHY';
+}
+
 export function statusBadge(status: string): string {
   const norm = (status || '').toUpperCase();
   if (norm.includes('CRITICAL') || norm.includes('FAIL') || norm.includes('BREACH')) {
@@ -172,9 +211,6 @@ export function statusBadge(status: string): string {
   return SeverityColors.LOW.badge;
 }
 
-/**
- * Calculate relative luminance and WCAG contrast ratio between two hex colors.
- */
 export function getRelativeLuminance(hex: string): number {
   const cleanHex = hex.replace('#', '');
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
