@@ -269,7 +269,10 @@ export type CIIGateId =
   | 'CII-Gate-07'
   | 'CII-Gate-08'
   | 'CII-Gate-09'
-  | 'CII-Gate-10';
+  | 'CII-Gate-10'
+  | 'CII-Gate-11'
+  | 'CII-Gate-12'
+  | 'CII-Gate-13';
 
 export interface CIIGateEvaluation {
   gateId: CIIGateId;
@@ -499,3 +502,67 @@ export interface StressAggregationResult {
   stabilityScore: number;
   certificationStatus: 'PASS' | 'FAIL';
 }
+
+/**
+ * ============================================================================
+ * Phase 31-M1.1 / M2: Byzantine Corruption, Fixture Diversity & Replay-Diff
+ * ============================================================================
+ */
+
+export type ByzantineViolation =
+  | 'DECISION_FORK'
+  | 'ATTRIBUTION_FORK'
+  | 'SUPPRESSED_DISSENT'
+  | 'GHOST_COMMITTEE'
+  | 'MEMBERSHIP_FABRICATION'
+  | 'EVIDENCE_HASH_MISMATCH'
+  | 'REPLAY_VARIANCE'
+  | 'INFLUENCE_CYCLE'
+  | 'ORPHAN_OUTCOME'
+  | 'CERTIFICATION_TAMPERING'
+  | 'OUTCOME_CONFLICT_DETECTED'
+  | 'ATTRIBUTION_SUM_VIOLATION'
+  | 'OWNERSHIP_CONFLICT'
+  | 'DISSENT_RESOLUTION_CONFLICT'
+  | 'EVIDENCE_CONTRADICTION'
+  | 'TEMPORAL_ORDER_VIOLATION'
+  | 'BENCHMARK_MUTATION_DETECTED'
+  | 'RECOMMENDATION_DRIFT_DETECTED';
+
+export type ByzantineSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface ByzantineCorruptionResult {
+  detected: boolean;
+  violations: ByzantineViolation[];
+  severity: ByzantineSeverity;
+}
+
+export interface FixtureDiversityComponents {
+  committeeDiversity: number;
+  dissentDiversity: number;
+  networkDiversity: number;
+  decisionDiversity: number;
+  outcomeDiversity: number;
+}
+
+export type FixtureDiversityClassification =
+  | 'EXCELLENT'
+  | 'STRONG'
+  | 'ADEQUATE'
+  | 'WEAK'
+  | 'OVERFIT_RISK';
+
+export interface FixtureDiversityResult {
+  fds: number;
+  classification: FixtureDiversityClassification;
+  components: FixtureDiversityComponents;
+}
+
+export interface ReplayDifferentialResult {
+  sensitive: boolean;
+  baselineResult: unknown;
+  modifiedResult: unknown;
+  delta: number;
+  description: string;
+}
+
