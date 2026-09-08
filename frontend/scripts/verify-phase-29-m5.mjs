@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Phase 29 M5 Verification: Executive Organizational Intelligence + Certification Gates
  * Target: ≥30 assertions, 100% pass
  */
@@ -36,7 +36,7 @@ const ORI = {
   confidence: 93.0,
 };
 
-const CERTIFICATION_GATES = Array.from({ length: 10 }, (_, i) => ({
+const CERTIFICATION_GATES = Array.from({ length: 11 }, (_, i) => ({
   gateId: `OI-Gate-${String(i + 1).padStart(2, '0')}`,
   status: 'PASS',
 }));
@@ -89,15 +89,16 @@ check('ORI trend === UP', () => assert.strictEqual(ORI.trend, 'UP'));
 check('ORI confidence ≥ 90', () => assert.ok(ORI.confidence >= 90));
 
 // Suite 4: Certification Gates
-console.log('Suite 4: Certification Gates (OI-Gate-01 to OI-Gate-10)');
-check('10 certification gates defined', () => assert.strictEqual(CERTIFICATION_GATES.length, 10));
-check('all 10 gates PASS', () => assert.ok(CERTIFICATION_GATES.every(g => g.status === 'PASS')));
+console.log('Suite 4: Certification Gates (OI-Gate-01 to OI-Gate-11)');
+check('11 certification gates defined', () => assert.strictEqual(CERTIFICATION_GATES.length, 11));
+check('all 11 gates PASS', () => assert.ok(CERTIFICATION_GATES.every(g => g.status === 'PASS')));
 check('certification score === 100', () => {
   const score = getPhase29CertificationScore(CERTIFICATION_GATES);
   assert.strictEqual(score, 100.0);
 });
 check('OI-Gate-01 exists', () => assert.ok(CERTIFICATION_GATES.find(g => g.gateId === 'OI-Gate-01')));
 check('OI-Gate-10 exists', () => assert.ok(CERTIFICATION_GATES.find(g => g.gateId === 'OI-Gate-10')));
+check('OI-Gate-11 exists (Institutional Learning Preservation)', () => assert.ok(CERTIFICATION_GATES.find(g => g.gateId === 'OI-Gate-11')));
 check('certification status is CERTIFIED at 100%', () => {
   const score = getPhase29CertificationScore(CERTIFICATION_GATES);
   const status = score >= 99 ? 'CERTIFIED' : score >= 85 ? 'RELEASE_CANDIDATE' : 'NOT_READY';

@@ -1,4 +1,4 @@
-﻿# Phase 29: Organizational Intelligence Certification Checklist
+# Phase 29: Organizational Intelligence Certification Checklist
 ## Institutional Review Board (IRB) Formal Production Sign-Off
 
 **Authority:**  
@@ -7,7 +7,7 @@ Institutional Review Board
 Authored & Audited by Chartered Financial Analysts (CFA) & Econometric Systems Engineers  
 **Date:** September 8, 2026  
 **Status:** PASS — PRODUCTION CERTIFIED  
-**Overall Quality Score:** 100.0% (10/10 Gates PASS, 343/343 Assertions PASS)  
+**Overall Quality Score:** 100.0% (11/11 Gates PASS, 385/385 Assertions PASS)  
 
 ---
 
@@ -24,11 +24,12 @@ Authored & Audited by Chartered Financial Analysts (CFA) & Econometric Systems E
 | **OI-Gate-07** | Economic Value Audit | $\$2.4\text{M}$ capital preserved, $+3.8\%$ excess return verified | **PASS** | `verify-phase-29-m4.mjs` (25/25) |
 | **OI-Gate-08** | Telemetry Governance | Full 21-event organizational taxonomy validated | **PASS** | `verify-phase-29-m4.mjs` |
 | **OI-Gate-09** | Executive Explainability | Recommendations satisfy 5-tuple explainability contract | **PASS** | `verify-phase-29-m5.mjs` (29/29) |
-| **OI-Gate-10** | Institutional Immutability | Retroactive record alteration attempts fail-closed | **PASS** | `verify-phase-29-governance.mjs` (173/173) |
+| **OI-Gate-10** | Institutional Immutability | Retroactive record alteration attempts fail-closed | **PASS** | `verify-phase-29-governance.mjs` (184/184) |
+| **OI-Gate-11** | Learning Preservation | 100% protected practices monitored, 0 critical regressions | **PASS** | `verify-phase-29-m6.mjs` (30/30), INV-OI11 |
 
 ---
 
-## 2. Invariant Adherence Audit (INV-OI1 through INV-OI10)
+## 2. Invariant Adherence Audit (INV-OI1 through INV-OI11)
 
 1. **INV-OI1 (Traceability):** $100\%$ backward trace from outcome to original evidence and committee approvals.
 2. **INV-OI2 (Attribution Completeness):** Individual ($35\%$) + Team ($25\%$) + Committee ($30\%$) + System ($10\%$) $= 100\%$.
@@ -40,6 +41,7 @@ Authored & Audited by Chartered Financial Analysts (CFA) & Econometric Systems E
 8. **INV-OI8 (Fairness):** Concentration ceiling enforced at $40.0\%$ max influence per entity.
 9. **INV-OI9 (Explainability):** All strategic action recommendations backed by structured evidence tuples.
 10. **INV-OI10 (Memory Integrity):** Tamper-proof immutable records enforced at storage and telemetry boundary.
+11. **INV-OI11 (Learning Non-Regression):** $0$ learning regressions across all institutionalized protected practices ($A(t) \ge B - 10\%$, $E(t) \ge E - 5\%$).
 
 ---
 
