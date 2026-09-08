@@ -818,6 +818,22 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
     return resolution;
   }
 
+  // 39. GRP (Universal Graph Explorer Node)
+  if (prefix === 'GRP') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'GRAPH_NODE',
+      entityId: input,
+      title: `Universal Graph Relationship Node (${input})`,
+      canonicalRoute: `/graph-explorer?nodeId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { nodeId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
   return {
     input: rawInput,
     found: false,

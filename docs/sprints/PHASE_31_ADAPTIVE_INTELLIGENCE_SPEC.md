@@ -1331,3 +1331,100 @@ Implemented in `frontend/app/simulation-intelligence/page.tsx` (`HorizonTheme` c
 - **5,800+ Platform Assertions Passing (100%)** across all 21 platform verification suites.
 - **Next.js Production Build:** 137 / 137 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant with $12.4\text{ kB}$ headroom).
+
+
+---
+
+## 21. Phase 31-M15: ARX Horizon Executive Modernization Program
+
+### 21.1 Architectural Directive & Core Intent
+Phase 31-M15 executes the **Executive Intelligence Experience Modernization Program**. Following the analytical completion of M1–M14, the platform pauses engine proliferation to resolve operational complexity and cognitive fragmentation across its 12+ intelligence centers.
+
+M15 reorganizes the entire platform around the executive interaction lifecycle:
+$$\mathbf{\text{Find Information} \to \text{Understand Information} \to \text{Act On Information}}$$
+
+It delivers a single-entry **Unified Executive Home**, an action-oriented **Executive Action Center**, a 9-node **Universal Graph Explorer**, a consolidated **ARX Horizon Design System**, and strict **WCAG 2.2 AA Accessibility Hardening**.
+
+### 21.2 ARX Horizon Design System
+- **CSS Variable Tokens (`frontend/styles/horizon-tokens.css`)**:
+  - Semantic colors: `--hz-bg`, `--hz-surface`, `--hz-border`, `--hz-pass`, `--hz-warning`, `--hz-critical`, `--hz-certified`.
+  - Standardized status colors: `--certified: #2563eb;`, `--healthy: #10b981;`, `--warning: #f59e0b;`, `--risk: #ea580c;`, `--critical: #dc2626;`.
+  - 6-tier responsive breakpoints: XS (0), SM (640), MD (768), LG (1024), XL (1280), 2XL (1536).
+- **Standardized Status Model**:
+  ```typescript
+  export type HorizonStatus =
+    | 'CERTIFIED'
+    | 'HEALTHY'
+    | 'WARNING'
+    | 'HIGH_RISK'
+    | 'CRITICAL'
+    | 'FAILED';
+  ```
+- **Shared Executive Components (`frontend/components/ui/`)**:
+  - `IntelligenceHeader.tsx`: Single-pattern executive header with title, subtitle, status, certification stamp, replay hash, and breadcrumbs.
+  - `IntelligenceMetricCard.tsx`: Standardized KPI display with value, QoQ delta, target, confidence, and status.
+  - `SeverityBadge.tsx`: Uniform status indicator with text label + dot icon (non-color-only).
+  - `CertificationPanel.tsx`: Autonomous governance and safety gate verification ledger.
+  - `RelatedArtifactsPanel.tsx`: Global one-click deep link traversal across Decisions, Risks, Learnings, Simulations, Recommendations, Runbooks.
+
+### 21.3 Unified Executive Home (`/intelligence-center`)
+- **Executive Health Overview (UH-001..UH-003)**:
+  - 7 Bounded Institutional Metrics: OHI (89.4), ODEI (86.4), CDQI (82.1), DIRatio (1.42), Learning Velocity (+3.8/q), Forecast Risk (12.0%), Survivability (99.4%).
+- **Organizational Trend Panel (UH-006)**:
+  - Interactive period switching (30D, 90D, 1Y) tracking historical trajectory across OHI, Risk, and Learning.
+- **Executive Narrative Layer (UH-009, M15-04)**:
+  - Natural-language brief with "Why Improved?" (top positive drivers) and "Why Degraded?" (key concerns).
+- **Priority Action Center Preview (UH-004, UH-005)**:
+  - Immediate triage preview surfacing critical items first with SLA timers and 1-click drill-downs.
+- **Categorized Directory (UH-007)**:
+  - Strategic Intelligence: Committee Intelligence, Learning Intelligence, Risks & Groupthink, Futures Simulation.
+  - Operational Intelligence: Governance Center, Resilience Intelligence, Autonomous Governance, Action Center.
+  - Evidence & Audit: Decision Explorer, Dissent Explorer, Audit Explorer, Universal Graph.
+
+### 21.4 Executive Action Center (`/action-center`)
+- **Multi-Center Queue Aggregation (UH-011-AT-001..002)**:
+  - Unified priority inbox aggregating Alerts, Recommendations, Approvals, Escalations, and Runbooks across 6 intelligence domains.
+- **Severity-First Ordering (UH-011-AT-003)**:
+  - Strict ranking: `CRITICAL` > `HIGH` > `MEDIUM` > `LOW` > `INFO`.
+- **Action Execution Lifecycle (UH-011-AT-005)**:
+  - State transitions (`OPEN` $\to$ `COMPLETED`) with real-time audit receipts.
+- **Approval Queue Visibility (UH-011-AT-006)**:
+  - Explicit identification and authorization controls for `PENDING_APPROVAL` items.
+- **In-Feed Search (UH-011-AT-008)**:
+  - Instant filtering by ID (`ACT-`, `DEC-`, `COM-`, `REC-`) and descriptive keywords.
+
+### 21.5 Universal Graph Explorer (`/graph-explorer`)
+- **9-Node Causal Lineage Progression**:
+  $$\text{COMMITTEE} \to \text{DECISION} \to \text{OUTCOME} \to \text{LEARNING} \to \text{RISK} \to \text{RECOMMENDATION} \to \text{INCIDENT} \to \text{SCENARIO} \to \text{RUNBOOK}$$
+- **Impact Tracing & Blast Radius**:
+  - Bidirectional causal lineage: full downstream blast radius from Root Committee (`COM-001`) to Terminal Execution (`RB-001`), and full upstream predecessor ancestry.
+- **Interactive SVG Lineage Canvas**:
+  - Visual node inspection, hop depth tracking, and direct route navigation.
+
+### 21.6 Command Palette & Hierarchical Navigation
+- **`ExecutiveGlobalSearch.tsx`**: Universal command center (`Ctrl + K`) supporting 17 entity prefixes (`DEC-`, `OUT-`, `DIS-`, `COM-`, `PROP-`, `LRN-`, `INC-`, `RSK-`, `GT-`, `REC-`, `PLAN-`, `BIAS-`, `OHI-`, `FUT-`, `CF-`, `ACT-`, `GRP-`).
+- **`ExecutiveIntelligenceNav.tsx`**: Reorganized hierarchical navigation:
+  - Workspaces: Workspace, Inbox, Overview, Actions, Graph.
+  - Strategic: Scorecards, Learning, Risks, Simulation, Strategy Lab.
+  - Operational: Governance, Resilience, Autonomy, OS, Optimization.
+  - Evidence: Decisions, Dissents, Audit, Network.
+
+### 21.7 M15 Certification Gates (M15-Gate-01 to M15-Gate-10)
+| Gate ID | Gate Name | Scope & Requirement | Status |
+|---|---|---|---|
+| **M15-Gate-01** | Unified Executive Home Certification | UH-001..UH-015 100% KPI, Action, Directory & Narrative coverage | `PASS` |
+| **M15-Gate-02** | Executive Action Center Certification | UH-011-AT-001..010 multi-center queue, severity ranking & execution | `PASS` |
+| **M15-Gate-03** | Universal Graph & Impact Tracing | 9 node types, causal lineage & full blast-radius traversal | `PASS` |
+| **M15-Gate-04** | Narrative Intelligence Layer | Executive summary, why improved/degraded attribution & determinism | `PASS` |
+| **M15-Gate-05** | ARX Horizon Design System | CSS variables, standardized status & shared component suite | `PASS` |
+| **M15-Gate-06** | Command Palette & Deep Linking | Ctrl+K search, 17 entity prefixes & RelatedArtifacts reachability | `PASS` |
+| **M15-Gate-07** | Responsive Viewport Scalability | 6 breakpoints (XS..2XL) with column scaling law compliance | `PASS` |
+| **M15-Gate-08** | Accessibility & WCAG 2.2 AA Compliance | A11Y-01..A11Y-15 rules, visible focus, ARIA landmarks, aria-live | `PASS` |
+| **M15-Gate-09** | Fail-Closed Error Resilience | 5 UI lifecycle states & automated Safe Mode engagement on error | `PASS` |
+| **M15-Gate-10** | Master Platform Traceability | Replay determinism (100 runs = 1 hash), zero platform regressions | `PASS` |
+
+### 21.8 Verification & Production Summary
+- **260 / 260 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m15.mjs`.
+- **6,000+ Platform Assertions Passing (100%)** across all 22 platform verification suites.
+- **Next.js Production Build:** 137 / 137 static routes compiled clean (exit code 0 under `output: "export"`).
+- **Shared First Load JS:** $87.7\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant with $12.3\text{ kB}$ headroom).

@@ -1,0 +1,94 @@
+/**
+ * ARX Horizon Design System - CSS Variable Tokens
+ * Phase 31-M15: Executive Modernization Program
+ */
+
+:root {
+  /* Surface & Background Colors */
+  --hz-bg: #0b1220;
+  --hz-surface: #121b2a;
+  --hz-surface-elevated: #182336;
+  --hz-border: #24324a;
+
+  /* Typography Colors */
+  --hz-text-primary: #f8fafc;
+  --hz-text-secondary: #cbd5e1;
+  --hz-text-muted: #94a3b8;
+
+  /* Semantic State Colors */
+  --hz-pass: #10b981;
+  --hz-warning: #f59e0b;
+  --hz-high-alert: #ea580c;
+  --hz-critical: #dc2626;
+  --hz-certified: #2563eb;
+
+  /* Standardized Status Color Tokens */
+  --certified: #2563eb;
+  --healthy: #10b981;
+  --warning: #f59e0b;
+  --risk: #ea580c;
+  --critical: #dc2626;
+
+  /* Border Radius */
+  --hz-radius-sm: 6px;
+  --hz-radius-md: 10px;
+  --hz-radius-lg: 16px;
+  --hz-radius-xl: 24px;
+  --hz-radius-pill: 9999px;
+
+  /* Spacing */
+  --hz-space-xs: 4px;
+  --hz-space-sm: 8px;
+  --hz-space-md: 16px;
+  --hz-space-lg: 24px;
+  --hz-space-xl: 32px;
+  --hz-space-2xl: 48px;
+
+  /* Typography Scale */
+  --hz-font-xs: 0.75rem;
+  --hz-font-sm: 0.875rem;
+  --hz-font-md: 1rem;
+  --hz-font-lg: 1.125rem;
+  --hz-font-xl: 1.5rem;
+  --hz-font-2xl: 2rem;
+
+  /* Layout & Grid Columns */
+  --hz-content-max: 1600px;
+  --hz-grid-columns: 4;
+}
+
+@media (min-width: 480px) {
+  :root {
+    --hz-grid-columns: 4;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --hz-grid-columns: 8;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --hz-grid-columns: 12;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --hz-grid-columns: 12;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --hz-grid-columns: 16;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --hz-grid-columns: 24;
+  }
+}
