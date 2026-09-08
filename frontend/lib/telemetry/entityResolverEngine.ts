@@ -29,7 +29,10 @@ import {
   CANONICAL_OUTCOMES,
 } from './auditReconstructionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP'] as const;
+import { getAllLearnings } from './learningIntelligenceEngine';
+import { getActiveIncidents } from '../governance/alertCorrelationEngine';
+
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -203,6 +206,64 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: false,
       error: `Proposal ${input} not found in proposal vault`,
       suggestions: allPropIds,
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 7. LRN (Learning Record)
+  if (prefix === 'LRN') {
+    const learning = getAllLearnings().find(l => l.learningId === input);
+    if (learning) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'LEARNING',
+        entityId: learning.learningId,
+        title: `Learning: ${learning.title}`,
+        canonicalRoute: `/learning-intelligence?learningId=${learning.learningId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { learningId: learning.learningId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allLrnIds = getAllLearnings().map(l => l.learningId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'LEARNING',
+      found: false,
+      error: `Learning record ${input} not found in catalog`,
+      suggestions: allLrnIds,
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 8. INC (Correlated Incident)
+  if (prefix === 'INC') {
+    const incident = getActiveIncidents().find(i => i.incidentId.startsWith(input));
+    if (incident) {
+      const resolution: EntityResolution = {
+        input: rawInput,
+        entityType: 'INCIDENT',
+        entityId: incident.incidentId,
+        title: `Incident: ${incident.incidentType} (${incident.severity})`,
+        canonicalRoute: `/learning-intelligence?incidentId=${incident.incidentId}`,
+        found: true,
+        suggestions: [],
+        targetParams: { incidentId: incident.incidentId },
+      };
+      logTelemetry(rawInput, resolution, Date.now() - start);
+      return resolution;
+    }
+    const allIncIds = getActiveIncidents().map(i => i.incidentId);
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'INCIDENT',
+      found: false,
+      error: `Correlated incident ${input} not found`,
+      suggestions: allIncIds.length > 0 ? allIncIds : ['INC-201', 'INC-202'],
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -491,6 +552,103 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: Boolean(dis),
+    };
+  }
+
+  // If Learning ID (LRN-xxx)
+  if (id.startsWith('LRN-')) {
+    const learning = getAllLearnings().find(l => l.learningId === id);
+    if (learning) {
+      // 1. Source Committee
+      const com = CANONICAL_COMMITTEES.find(c => c.committeeId === learning.sourceCommitteeId);
+      items.push({
+        entityId: learning.sourceCommitteeId,
+        entityType: 'COMMITTEE',
+        title: com?.committeeName ?? learning.sourceCommitteeId,
+        canonicalRoute: `/committee-intelligence?committeeId=${learning.sourceCommitteeId}`,
+        relationship: 'PARENT_COMMITTEE',
+        statusBadge: 'ORIGIN_BODY',
+      });
+
+      // 2. Source Decision
+      const dec = CANONICAL_COMMITTEE_DECISIONS.find(d => d.decisionId === learning.sourceDecisionId);
+      if (dec) {
+        items.push({
+          entityId: dec.decisionId,
+          entityType: 'DECISION',
+          title: dec.title,
+          canonicalRoute: `/decision-explorer?decisionId=${dec.decisionId}`,
+          relationship: 'SOURCE_DECISION',
+          statusBadge: dec.status,
+        });
+      }
+
+      // 3. Source Outcome
+      if (learning.sourceOutcomeId) {
+        items.push({
+          entityId: learning.sourceOutcomeId,
+          entityType: 'OUTCOME',
+          title: `Outcome: ${learning.sourceOutcomeId}`,
+          canonicalRoute: `/audit-explorer?queryId=${learning.sourceOutcomeId}`,
+          relationship: 'REALIZED_OUTCOME',
+          statusBadge: 'REALIZED',
+        });
+      }
+
+      // 4. Learning Intelligence route
+      items.push({
+        entityId: id,
+        entityType: 'LEARNING',
+        title: learning.title,
+        subtitle: `${learning.category} | ${learning.status}`,
+        canonicalRoute: `/learning-intelligence?learningId=${id}`,
+        relationship: 'ATTRIBUTED_LEARNING',
+        statusBadge: 'CATALOG_ITEM',
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'LEARNING',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(learning),
+    };
+  }
+
+  // If Incident ID (INC-xxx)
+  if (id.startsWith('INC-')) {
+    const incident = getActiveIncidents().find(i => i.incidentId.startsWith(id));
+    if (incident) {
+      for (const comId of incident.affectedCommitteeIds) {
+        const com = CANONICAL_COMMITTEES.find(c => c.committeeId === comId);
+        items.push({
+          entityId: comId,
+          entityType: 'COMMITTEE',
+          title: com?.committeeName ?? comId,
+          canonicalRoute: `/committee-intelligence?committeeId=${comId}`,
+          relationship: 'PARENT_COMMITTEE',
+          statusBadge: 'AFFECTED_COMMITTEE',
+        });
+      }
+
+      items.push({
+        entityId: incident.incidentId,
+        entityType: 'INCIDENT',
+        title: incident.incidentType,
+        subtitle: `Severity: ${incident.severity} | Occurrences: ${incident.occurrenceCount}`,
+        canonicalRoute: `/learning-intelligence?incidentId=${incident.incidentId}`,
+        relationship: 'CORRELATED_INCIDENT',
+        statusBadge: incident.status,
+      });
+    }
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'INCIDENT',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: Boolean(incident),
     };
   }
 

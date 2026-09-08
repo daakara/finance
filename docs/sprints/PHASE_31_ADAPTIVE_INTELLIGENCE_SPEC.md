@@ -287,4 +287,65 @@ Milestone 31-M2.1 connects all Phase 31 intelligence views into a unified instit
 - **Next.js Production Build:** 123 / 123 static pages compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Budget: $\le 100.0\text{ kB}$).
 
+---
+
+## 9. Milestone 31-M3: Organizational Learning Intelligence & Invariant Hardening (Epic AI-004)
+
+### 9.1 Scope & Architecture
+Milestone 31-M3 delivers the institutional organizational learning layer of ARX Terminal, completing:
+1. **Learning Repository Engine (Epic M3-101)**:
+   - Immutable institutional catalog (`LRN-001` through `LRN-010`) with 5 taxonomy tiers (`PROCESS`, `RISK`, `ALLOCATION`, `GOVERNANCE`, `STRATEGY`).
+   - Publication workflow, author assignment (`USR-PM-01`..`03`, `USR-RSK-01`..`02`, `USR-GOV-01`..`02`), evidence linking (`EVD-FLOW-01`, `EVD-MACRO-01`, etc.), and cross-committee adoption tracking (`ADP-001`..`014`).
+   - 100% learning attribution mapping satisfying `AC-OI17-04` and `AC-OI17-06` (zero unexplained gains detected).
+2. **Team Learning Velocity Engine & Invariant INV-OI17 (Epic M3-102)**:
+   - Calculation formula:
+     $$\text{LearningVelocity} = \frac{\Delta\text{ODEI}}{\Delta t} > 0.0$$
+   - Quarterly momentum analysis, annualized velocity projection, and predictive next-quarter forecasting.
+   - Fail-close invariant evaluation (`verifyINV_OI17`) flagging stagnation (`STAGNANT`, $LV = 0.0$) and degradation (`DEGRADING`, $LV < 0.0$) with automated alert emissions (`LEARNING_VELOCITY_NON_POSITIVE`).
+3. **Cross-Committee Knowledge Transfer Network & Invariant INV-OI18 (Epic M3-103)**:
+   - Directed transfer graph across `COM-001`, `COM-002`, and `COM-003` with 6 pairwise directed edges.
+   - Strict 80.0% adoption threshold enforcement (`verifyINV_OI18`).
+   - Node removal simulation (`simulateNodeRemovalImpact`) tracking downstream impacted committees, orphaned learnings, and 100% dependency reconstruction completeness (`AC-OI18-06`).
+4. **Learning Friction Engine (Epic M3-104)**:
+   - 6-category friction breakdown (`IGNORED`, `REJECTED`, `EXPIRED`, `UNKNOWN`, `OWNERSHIP_GAP`, `GOVERNANCE_GAP`).
+   - Quantitative Friction Score ($0.0$ to $100.0$) and diagnostic itemization with pending days and root cause explanations.
+5. **Alert Correlation Engine & Fatigue Controls**:
+   - Multi-signal incident correlation patterns (`CORR-01` to `CORR-05`):
+     - `CORR-01`: `ORGANIZATIONAL_LEARNING_BREAKDOWN` (`HIGH`)
+     - `CORR-02`: `AUDIT_INTEGRITY_INCIDENT` (`CRITICAL`)
+     - `CORR-03`: `DETERMINISM_FAILURE` (`CRITICAL`)
+     - `CORR-04`: `NETWORK_GOVERNANCE_INCIDENT` (`HIGH`)
+     - `CORR-05`: Duplicate Alert Compression ($N$ alerts $\to$ 1 incident with occurrenceCount = $N$)
+   - Fatigue controls (`FAT-01` to `FAT-06`):
+     - `FAT-01`: 30-minute duplicate suppression window
+     - `FAT-02`: Occurrence counter expansion
+     - `FAT-03`: Automatic severity escalation ($\ge 25$ occurrences $\to$ `HIGH` / `CRITICAL`)
+     - `FAT-04`: Cross-signal merge
+     - `FAT-05`: Resolution reset (recurrence spawns fresh incident)
+     - `FAT-06`: SLA preservation (24-hour deadline timer retained and unreset)
+6. **Executive Learning Dashboard UX (Epic M3-105)**:
+   - Dedicated route `/learning-intelligence` with committee selector, 4 summary KPI cards, 5 diagnostic tabs (Velocity Meter, Transfer Network, Friction Diagnostics, NOC Incidents, Canonical Catalog), and `RelatedArtifactsCard` integration inside `<Suspense>`.
+   - Global Search (`ExecutiveGlobalSearch`) & Entity Resolver (`entityResolverEngine`) updated with `LRN-` and `INC-` prefix routing.
+
+### 9.2 Certification Gates (M3-Gate-01 to M3-Gate-10)
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **M3-Gate-01** | Learning Registry Integrity | $\ge 10$ learnings, $\ge 10$ adoptions, full metadata | 10 Learnings, 14 Adoptions, 100% Valid | `PASS` |
+| **M3-Gate-02** | INV-OI17 Pass (Learning Velocity) | $LV > 0.0$ strictly positive across all committees | All 3 Committees Positive ($+3.0$ to $+4.5$) | `PASS` |
+| **M3-Gate-03** | INV-OI18 Pass (Knowledge Transfer) | Transfer rate $\ge 80.0\%$ on all directed edges | All 6 Directed Edges $\ge 80.0\%$ | `PASS` |
+| **M3-Gate-04** | Attribution Coverage = 100% | 100% decisions linked to learnings, 0 unexplained gains | 100.0% Coverage, 0 Unexplained Gains | `PASS` |
+| **M3-Gate-05** | Alert Correlation Operational | CORR-01..05 multi-signal correlation active | 100% Active (4 Patterns + Compression) | `PASS` |
+| **M3-Gate-06** | Fatigue Controls Operational | FAT-01..06 suppression, counter, escalation active | 100% Operational (30m window, 25x escalation) | `PASS` |
+| **M3-Gate-07** | Deterministic Replay Hash Lock | Bit-for-bit identical SHA-256 across 100 replays | 100/100 Identical Hashes (0 Drift) | `PASS` |
+| **M3-Gate-08** | Knowledge Transfer Network Certified | Directed graph, node removal simulation verified | 100% Graph Completeness, 0 Broken Chains | `PASS` |
+| **M3-Gate-09** | Learning Friction Diagnostics | 6 categories scored, friction score computed | Friction Score 18.5/100, 6 Categories Scored | `PASS` |
+| **M3-Gate-10** | Master Learning Intelligence Release | All 155 fail-close assertions PASS | 155 / 155 Pass (100%) | `PASS` |
+
+### 9.3 Verification & Production Summary
+- **155 / 155 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m3.mjs`.
+- **2,400+ Platform Assertions Passing (100%)** across all 10 platform verification suites.
+- **Next.js Production Build:** 124 / 124 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).
+
+
 

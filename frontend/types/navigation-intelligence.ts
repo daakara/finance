@@ -16,7 +16,9 @@ export type NavigationEntityType =
   | 'COMMITTEE'
   | 'PROPOSAL'
   | 'EVIDENCE'
-  | 'SNAPSHOT';
+  | 'SNAPSHOT'
+  | 'LEARNING'
+  | 'INCIDENT';
 
 export interface EntityResolution {
   input: string;
@@ -53,7 +55,9 @@ export interface RelatedArtifactItem {
     | 'ORIGINAL_PROPOSAL'
     | 'VERIFIED_EVIDENCE'
     | 'CRYPTOGRAPHIC_SNAPSHOT'
-    | 'INFLUENCE_DEPENDENCY';
+    | 'INFLUENCE_DEPENDENCY'
+    | 'ATTRIBUTED_LEARNING'
+    | 'CORRELATED_INCIDENT';
   statusBadge?: string;
 }
 
