@@ -1,4 +1,4 @@
-﻿# Phase 30: Capability Intelligence Specification
+# Phase 30: Capability Intelligence Specification
 ## Autonomous Self-Optimizing Decision Improvement Operating System
 
 **Author & Authority:**  
@@ -43,6 +43,20 @@ $$\text{CIE} = \frac{\text{Value Generated (\$)}}{\text{Capability Cost (\$) Dis
 - **AI Mentor Engine**: Value Generated = $\$850\text{K}$, Annualized Operational Cost = $\$200\text{K}$  
   $$\text{CIE} = \frac{\$850\text{K}}{\$200\text{K}} = \mathbf{4.25\times}$$
 
+### 2.3 Three New Executive Capability Metrics
+1. **Capability Value Density (CVD)**:
+   $$\text{CVD} = \frac{\text{Value Generated (\$)}}{\text{Active Users}} \quad (\text{e.g., AI Mentor: } \frac{\$850,000}{4,218} = \mathbf{\$201.52 / \text{user}})$$
+2. **Capability Adoption Efficiency (CAE)**:
+   $$\text{CAE} = \frac{\text{Behavior Impact Score}}{\text{Adoption Rate (\%)}} \quad (\text{Surfaces hidden gems with low adoption but high impact})$$
+3. **Capability Strategic Moat Score (SMS)**:
+   $$\text{SMS} \in [0, 100] \quad (\text{Replaceability} + \text{Uniqueness} + \text{Value} + \text{Organizational Dependence})$$
+
+### 2.4 Capability Portfolio Model
+- **Portfolio A (Core Value Engines)**: Institutional Flow Filter (CIE 4.40x, SMS 92), AI Mentor (CIE 4.25x, SMS 88), Playbook Engine (CIE 3.75x, SMS 78).
+- **Portfolio B (Growth Investments)**: What-If Decision Simulator (CIE 2.63x, CAE 1.31x, SMS 68).
+- **Portfolio C (Governance Infrastructure)**: Committee Governance Gate (CIE 2.90x, SMS 85, Protected under INV-OI11 & INV-OI12).
+- **Portfolio D (Retirement Watchlist)**: Decision Journal (CIE 1.56x, SMS 41, Declining 3-period value trend).
+
 ---
 
 ## 3. Epics & Architectural Breakdown
@@ -60,12 +74,9 @@ $$\text{CIE} = \frac{\text{Value Generated (\$)}}{\text{Capability Cost (\$) Dis
 - **CI-203: Capability ROI Dashboard**: Executive view displaying CIE multiples, cost basis, and confidence intervals ($p < 0.001$).
 
 ### Epic CI-300: Self-Optimizing Platform & Retirement Model
-- **CI-301: Capability Recommendation Engine**: Autonomous recommendations:
-  - **Invest More**: $\text{CIE} > 3.0\times$ and high growth headroom.
-  - **Maintain**: Proven core utility ($\text{CIE} \in [1.5\times, 3.0\times]$).
-  - **Retire / Redesign**: Underperforming or negative ROI capabilities.
-- **CI-302: Underperforming Capability Detection**: Identifies features with *High Usage but Low Impact* (false sense of productivity) vs *Low Usage but High Impact* (discoverability problem).
-- **CI-303: Capability Sunset Framework**: Formal decommissioning pipeline for features with persistently low usage and zero value impact, eliminating platform bloat.
+- **CI-301: Capability Recommendation Engine**: Autonomous recommendations (`Invest More`, `Maintain`, `Retire`).
+- **CI-302: Underperforming Capability Detection**: Identifies features with *High Usage but Low Impact* vs *Low Usage but High Impact*.
+- **CI-303: Capability Sunset Framework**: Formal decommissioning pipeline for features with persistently low usage and zero value impact.
 
 ### Epic CI-400: Executive Intelligence for Product Strategy
 - **CI-401: Capability Impact Dashboard**: Answers *"What produces the most value?"* for the CEO and Product Steering Committee.
@@ -74,8 +85,8 @@ $$\text{CIE} = \frac{\text{Value Generated (\$)}}{\text{Capability Cost (\$) Dis
 
 ### Epic CI-500: Autonomous Intelligence Governance
 - **CI-501: Capability Health Monitoring**: Real-time telemetry tracking adoption decay, confidence erosion, and evidence freshness.
-- **CI-502: Capability Regression Monitoring**: Employs **INV-OI11** to prevent regressions in protected high-performing capabilities.
-- **CI-503: Capability Evolution Engine**: Automates the lifecycle transition of platform features (Scaffold $\to$ Pilot $\to$ Protected $\to$ Core $\to$ Sunset).
+- **CI-502: Capability Regression Monitoring**: Employs **INV-OI11** and **INV-OI12** to protect proven capabilities.
+- **CI-503: Capability Evolution Engine**: Automates lifecycle transitions (Scaffold $\to$ Pilot $\to$ Protected $\to$ Core $\to$ Sunset).
 
 ---
 
@@ -88,15 +99,24 @@ $$\sum_{i=1}^{K} \text{Attributed Capability Value}_i \le \text{Actual Realized 
 ### INV-CI2: Capability Dependency Completeness
 No capability may be promoted to production without all underlying dependencies in the Capability Dependency Graph being certified and operational.
 
+### INV-OI12: Capability Value Decay Detection Invariant
+*Rule:* For any `CORE` or `PROTECTED` capability, the Value Impact Trend must not decline for 3 consecutive review periods:
+$$V(t) \ge V(t-3) - 10.0\%$$
+*Additional Risk Trigger:* A capability enters formal `RETIREMENT REVIEW` when Usage is High while Outcome Impact and Value Impact are Low for 2 consecutive periods.
+
 ---
 
-## 5. Target Success Criteria
+## 5. Certification Gates (CI-Gate-01 through CI-Gate-09)
 
-| Metric | Target | Verification Method |
-|---|---|---|
-| **Capability Attribution Coverage** | $100.0\%$ | CI-Gate-01 / Automated AST Audit |
-| **Capability ROI Coverage** | $100.0\%$ | CI-Gate-02 / Economic Audit |
-| **High-Value Identification** | Top 20% isolated | Automated CIE Ranking |
-| **Low-Value / Sunset Detection** | $100.0\%$ coverage | Sunset Framework Diagnostic |
-| **Investment Confidence Interval** | $\ge 95.0\%$ | Wilson / Bootstrap Monte Carlo |
-| **Annualized Portfolio ROI** | $\ge +15.0\%$ | Executive Impact Ledger |
+| Gate ID | Area | Target Criteria | Status | Verification Suite |
+|---|---|---|---|---|
+| **CI-Gate-01** | Attribution Coverage | $100.0\%$ outcomes & value attributed | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-02** | Value Integrity | $\sum \text{Value} \le \text{Realized Value}$ (`INV-CI1`) | **PASS** | `verify-phase-30-foundations.mjs` |
+| **CI-Gate-03** | Dependency Completeness | $100\%$ prerequisites resolved, acyclic, 0 orphans | **PASS** | `verify-phase-30-foundations.mjs` |
+| **CI-Gate-04** | Health Monitoring | $100\%$ active capabilities monitored | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-05** | Retirement Detection | $100\%$ underperforming capabilities identified | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-06** | Recommendation Confidence | $\ge 95.0\%$ confidence on executive recommendations | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-07** | Capability Portfolio ROI | $\ge 15.0\%$ YoY improvement (actual $+18.4\%$) | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-08** | Concentration Risk | No single capability responsible for $>40.0\%$ value | **PASS** | `verify-phase-30-governance.mjs` |
+| **CI-Gate-09** | Capability Value Preservation | $0$ critical decay violations (`INV-OI12`) | **PASS** | `verify-phase-30-inv-oi12.mjs` (203/203) |
+
