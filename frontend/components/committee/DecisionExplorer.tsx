@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import DecisionTimeline from "./DecisionTimeline";
+import RelatedArtifactsCard from "./RelatedArtifactsCard";
 import {
   CommitteeDecision,
 } from "../../types/committee-intelligence";
@@ -270,6 +271,12 @@ export default function DecisionExplorer({ decisions, initialDecisionId }: Decis
             <DecisionTimeline
               steps={timelineSteps}
               decisionId={selectedDecision.decisionId}
+            />
+
+            {/* Universal Connected Lineage Artifacts (M2-Gate-02) */}
+            <RelatedArtifactsCard
+              entityId={selectedDecision.decisionId}
+              title={`Lineage Network & Related Artifacts (${selectedDecision.decisionId})`}
             />
           </div>
         ) : (

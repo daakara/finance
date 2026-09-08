@@ -3,6 +3,7 @@
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import CommitteeMetricsPanel from "../../components/committee/CommitteeMetricsPanel";
 import CommitteeHealthGrid from "../../components/committee/CommitteeHealthGrid";
+import HistoricalTrendsPanel from "../../components/committee/HistoricalTrendsPanel";
 import {
   getCommitteeIntelligenceDashboard,
   CANONICAL_COMMITTEES,
@@ -45,6 +46,9 @@ export default function CommitteeIntelligencePage() {
 
         {/* Aggregate Institutional Metrics Panel */}
         <CommitteeMetricsPanel dashboard={dashboard} />
+
+        {/* Historical Trends Engine (HT-01 to HT-06) */}
+        <HistoricalTrendsPanel initialCommitteeId="COM-001" initialMetric="ODEI" initialTimeframe="90D" />
 
         {/* Detailed Committee Health Grid with Sorting & Filtering */}
         <div className="space-y-3">

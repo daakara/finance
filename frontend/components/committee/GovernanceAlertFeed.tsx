@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { detectByzantineCorruption } from "../../lib/governance/byzantineCorruptionEngine";
 import { CANONICAL_COMMITTEE_DECISIONS } from "../../lib/telemetry/committeeIntelligenceEngine";
+import {
+  getActiveAlerts,
+  transitionAlertStatus,
+} from "../../lib/governance/alertWorkflowEngine";
+import { AlertWorkflowItem, AlertLifecycleStatus } from "../../types/navigation-intelligence";
+import AlertWorkflowModal from "./AlertWorkflowModal";
 
 interface AttackClassStatus {
   code: string;
@@ -98,17 +104,23 @@ const ATTACK_CLASSES: AttackClassStatus[] = [
 
 export default function GovernanceAlertFeed() {
   const [scanState, setScanState] = useState<"IDLE" | "SCANNING" | "VERIFIED">("IDLE");
-  const [activeTab, setActiveTab] = useState<"ATTACKS" | "EVENTS">("ATTACKS");
+  const [activeTab, setActiveTab] = useState<"ALERTS" | "ATTACKS" | "EVENTS">("ALERTS");
+  const [alerts, setAlerts] = useState<AlertWorkflowItem[]>(getActiveAlerts());
+  const [selectedAlert, setSelectedAlert] = useState<AlertWorkflowItem | null>(null);
 
   const runScan = () => {
     setScanState("SCANNING");
     setTimeout(() => {
-      // Run actual engine verification on clean canonical state
       detectByzantineCorruption({
         decisions: CANONICAL_COMMITTEE_DECISIONS,
       });
       setScanState("VERIFIED");
     }, 400);
+  };
+
+  const handleStatusChange = (alertId: string, newStatus: AlertLifecycleStatus, notes?: string) => {
+    transitionAlertStatus(alertId, newStatus, notes);
+    setAlerts(getActiveAlerts());
   };
 
   return (
@@ -119,16 +131,30 @@ export default function GovernanceAlertFeed() {
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-cyan-400" />
             <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wide">
-              Byzantine Resistance &amp; Continuous Threat Guard
+              Governance NOC &amp; Alert Remediation Workflow (AW-01 to AW-08)
             </h2>
           </div>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            10 automated security engines actively inspecting for governance corruption, forks, and cycle anomalies.
+            Real-time monitoring of governance invariants, network cycles, and actionable remediation playbooks.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="flex bg-[#0c1017] p-0.5 rounded-lg border border-[#243044] text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("ALERTS")}
+              className={`px-3 py-1 rounded transition-colors flex items-center space-x-1.5 ${
+                activeTab === "ALERTS"
+                  ? "bg-[#1f2c42] text-cyan-300 font-bold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span>Active Alerts</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-950 border border-amber-500/40 text-amber-400 text-[10px]">
+                {alerts.filter(a => a.status !== "CLOSED").length}
+              </span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab("ATTACKS")}
@@ -177,7 +203,63 @@ export default function GovernanceAlertFeed() {
       )}
 
       {/* Main Tab Content */}
-      {activeTab === "ATTACKS" ? (
+      {activeTab === "ALERTS" && (
+        <div className="space-y-3">
+          <div className="text-[11px] text-slate-400 flex items-center justify-between">
+            <span>Click any alert to inspect the step-by-step remediation playbook (AW-08).</span>
+            <span>Escalation Matrix Active</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {alerts.map((al) => (
+              <div
+                key={al.alertId}
+                onClick={() => setSelectedAlert(al)}
+                className="p-4 rounded-xl bg-[#111724] border border-[#202d44] hover:border-cyan-500/50 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        al.severity === "CRITICAL"
+                          ? "bg-rose-950/60 border-rose-500/40 text-rose-400"
+                          : al.severity === "HIGH"
+                          ? "bg-amber-950/60 border-amber-500/40 text-amber-400"
+                          : "bg-purple-950/60 border-purple-500/40 text-purple-400"
+                      }`}
+                    >
+                      {al.severity}
+                    </span>
+                    <span className="text-xs font-bold text-slate-100 group-hover:text-cyan-300 transition-colors">
+                      {al.alertCode}: {al.title}
+                    </span>
+                    <span className="text-[10px] text-slate-500">({al.alertId})</span>
+                  </div>
+                  <p className="text-xs text-slate-300">{al.summary}</p>
+                  <div className="flex items-center space-x-3 text-[10px] text-slate-400 pt-1">
+                    <span>Artifact: <strong className="text-purple-300">{al.affectedArtifactId}</strong></span>
+                    <span>&bull;</span>
+                    <span>SLA: <strong className="text-rose-400">{al.playbook.targetSla}</strong></span>
+                    <span>&bull;</span>
+                    <span>Escalation: <strong className="text-cyan-400">{al.playbook.escalationTarget}</strong></span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0">
+                  <span className="px-2 py-1 rounded bg-[#1c273a] text-cyan-300 text-xs font-bold">
+                    {al.status}
+                  </span>
+                  <span className="text-cyan-400 text-xs font-bold group-hover:translate-x-0.5 transition-transform">
+                    Remediate &rarr;
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "ATTACKS" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {ATTACK_CLASSES.map((atk) => (
             <div
@@ -204,7 +286,9 @@ export default function GovernanceAlertFeed() {
             </div>
           ))}
         </div>
-      ) : (
+      )}
+
+      {activeTab === "EVENTS" && (
         <div className="bg-[#111724] border border-[#202d44] p-4 rounded-xl space-y-3 text-xs">
           <div className="flex items-center justify-between border-b border-[#202d44] pb-2 text-[10px] text-slate-400 uppercase tracking-wider">
             <span>Timestamp (UTC)</span>
@@ -237,6 +321,14 @@ export default function GovernanceAlertFeed() {
           </div>
         </div>
       )}
+
+      {/* Alert Remediation Playbook Modal */}
+      <AlertWorkflowModal
+        alert={selectedAlert}
+        isOpen={Boolean(selectedAlert)}
+        onClose={() => setSelectedAlert(null)}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 }

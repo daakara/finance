@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ExecutiveGlobalSearch from "./ExecutiveGlobalSearch";
 
 export interface ExecutiveIntelligenceNavProps {
   activeTab?: string;
@@ -113,6 +114,11 @@ export default function ExecutiveIntelligenceNav({ badgeText = "13/13 GATES CERT
             );
           })}
         </nav>
+
+        {/* Global Search Command Palette */}
+        <div className="flex items-center">
+          <ExecutiveGlobalSearch />
+        </div>
 
         {/* Badges */}
         <div className="hidden xl:flex items-center space-x-2 shrink-0 font-mono text-[10px]">
