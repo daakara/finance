@@ -41,7 +41,9 @@ export type NavigationEntityType =
   | 'FAIL_CLOSE_ERROR'
   | 'OPERATIONAL_RUNBOOK'
   | 'NARRATIVE_BRIEFING'
-  | 'GRAPH_NODE';
+  | 'GRAPH_NODE'
+  | 'STRATEGY_SIMULATION'
+  | 'DIGITAL_TWIN';
 
 export interface EntityResolution {
   input: string;
