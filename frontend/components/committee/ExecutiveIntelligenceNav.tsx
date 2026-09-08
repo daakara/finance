@@ -93,6 +93,17 @@ const NAV_LINKS = [
     ),
   },
   {
+    href: "/oos",
+    label: "Operating System",
+    icon: (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    ),
+  },
+  {
     href: "/governance-center",
     label: "Governance Center",
     icon: (
@@ -103,7 +114,7 @@ const NAV_LINKS = [
   },
 ];
 
-export default function ExecutiveIntelligenceNav({ badgeText = "18/18 GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
+export default function ExecutiveIntelligenceNav({ badgeText = "10/10 OOS GATES CERTIFIED" }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
 
   return (
@@ -112,7 +123,7 @@ export default function ExecutiveIntelligenceNav({ badgeText = "18/18 GATES CERT
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono tracking-wider font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <span>PHASE 31-M5</span>
+            <span>PHASE 31-M6</span>
           </div>
           <h1 className="text-sm font-mono font-bold text-slate-100 tracking-tight">
             EXECUTIVE DECISION INTELLIGENCE

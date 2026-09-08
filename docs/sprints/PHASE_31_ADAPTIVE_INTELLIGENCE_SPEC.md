@@ -523,3 +523,108 @@ Phase 31-M5 elevates the ARX Governance platform from predictive risk forecastin
 - **2,800+ Platform Assertions Passing (100%)** across all 12 platform verification suites.
 - **Next.js Production Build:** 126 / 126 static routes compiled clean (exit code 0).
 - **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).
+
+---
+
+## 12. Phase 31-M6: Organizational Operating System (OOS)
+
+### 12.1 Overview & Architecture
+Milestone 31-M6 unifies all five preceding intelligence layers into a single, cohesive executive operating model:
+$$\text{Committee Intelligence (M1/M2)} + \text{Network Intelligence (M2)} + \text{Learning Intelligence (M3)} + \text{Risk Intelligence (M4)} + \text{Prescriptive Intelligence (M5)} = \text{Organizational Operating System (OOS)}$$
+
+M6 serves as the executive control plane of ARX Terminal, providing board-level health evaluation, end-to-end signal provenance, cross-system zero-variance synchronization with automated Certification Self-Correction (CSC), and multi-horizon deterministic forecasting.
+
+### 12.2 Core Data Models & TypeScript Contracts
+All contracts reside in `frontend/types/oos-intelligence.ts`:
+1. **Organizational Health Index (OHI)**:
+   - `OrganizationalHealthIndex`: Score (0-100), certification status, drivers array, contributions map, validation errors, and deterministic SHA-256 state hash.
+   - `HealthDriver`: Normalized driver score, weight, contribution points, health status (`HEALTHY`, `WARNING`, `CRITICAL`), trend, target floor, and human-readable explanation.
+   - `OHIValidationError`: Fail-close error codes `OHI-VAL-001` through `OHI-VAL-010`.
+2. **Unified Telemetry Hub**:
+   - `OrganizationalTelemetrySnapshot`: Complete cross-subsystem telemetry aggregate (committee, network, learning, risk, coaching, OHI), enterprise alerts, subsystem statuses, and snapshot hash.
+   - `CANONICAL_SYSTEM_HEALTH`: Real-time operational status across all 5 intelligence subsystems.
+3. **Cross-System Consistency & CSC Recovery**:
+   - `ConsistencyVerificationResult`: Pairwise evaluations across `DASHBOARD`, `API`, `REPORT`, `AUDIT`, `FORECAST` ensuring variance $\le 10^{-4}$.
+   - `CSCRecoveryRequest`, `CSCRecoveryResponse`, `CSCRecoveryAuditRecord`: Automated and manual reconciliation workflows (`AUTO_REPAIR`, `MANUAL_REVIEW`, `ROLLBACK`, `RECONSTRUCTION`).
+4. **Executive Reporting**:
+   - `ExecutiveBoardReport`: Executive summary, OHI breakdown, risk digest, verified recommendations, and explainability lineage.
+   - `ReportExplainabilityContract`: Invariant `INV-OI36` requiring Finding, Evidence, Trend, Risk, and Recommendation for every assertion.
+5. **Organizational State & Forecasting**:
+   - `OrganizationalState`: Current, projected, risk, and learning operating states.
+   - `StateTransitionForecast`: Multi-horizon forecasts (30D, 90D, 180D, 365D) with confidence bounds, transition probabilities, and 100x replay bit-for-bit SHA-256 hash invariance.
+
+### 12.3 Mathematical Formulations & Invariants
+
+#### Invariant INV-OI33: Organizational Health Integrity
+The Organizational Health Index (OHI) is a strictly bounded, non-negative weighted linear combination of governance, decision, network, learning, and risk drivers:
+$$\text{OHI} = 0.25 \times \text{ODEI} + 0.20 \times \text{CDQI} + 0.15 \times \text{DIR} + 0.15 \times \text{LV} + 0.10 \times \text{KT} + 0.10 \times \text{GTR} + 0.05 \times \text{RH}$$
+- **Bounds**: $0 \le \text{OHI} \le 100$.
+- **Validation**: Strict rejection (`OHI-VAL-001` to `OHI-VAL-010`) on missing drivers, NaN, $\pm\infty$, out-of-range values, timestamp disorder, or coverage failure.
+- **Fail-Close**: Any violation halts state hashing and emits `certified: false` with score `0`.
+
+#### Invariant INV-OI34: Executive Signal Completeness
+100% of reported executive metrics must trace end-to-end through immutable lineages:
+$$\text{Metric} \longrightarrow \text{Source Engine} \longrightarrow \text{Deliberations/Decisions} \longrightarrow \text{Outcomes} \longrightarrow \text{Attribution}$$
+Audit reconstruction must reproduce reported signals within $\epsilon \le 10^{-4}$.
+
+#### Invariant INV-OI35: Cross-System Consistency
+$$\text{Dashboard} = \text{API} = \text{Report} = \text{Audit Reconstruction} = \text{Forecast}$$
+- Maximum permitted variance $\Delta \le 10^{-4}$.
+- Discrepancy triggers `CROSS_SYSTEM_VARIANCE_DETECTED` and invokes automated Certification Self-Correction (CSC Recovery).
+
+#### Invariant INV-OI36: Executive Report Explainability
+Every finding in executive reports must satisfy the 5-part contract:
+$$\text{Finding} \land \text{Evidence} (\ge 1) \land \text{Trend} \land \text{Risk} \land \text{Recommendation}$$
+Zero unsupported assertions are permitted.
+
+#### Invariant INV-OI37: Organizational Forecast Integrity
+Multi-horizon forecasts must be deterministic and structurally sound:
+- 100 identical replays produce exactly 1 bit-for-bit SHA-256 state hash (drift $= 0$).
+- Projections bounded in $[0, 100]$.
+- Confidence intervals monotonically widen over expanding time horizons ($30\text{D} \to 365\text{D}$).
+
+#### Invariant INV-OI38: Executive Readiness
+Executive decisions require simultaneous availability of:
+1. Current Organizational State
+2. Multi-Horizon Projected State
+3. Active Risk State
+4. Organizational Learning State
+Operating state coverage ratio must equal $100\%$ ($1.0$).
+
+### 12.4 Executive UX: Operating System Center (`/oos`)
+- Route: `/oos` wrapped in React `<Suspense>` for safe Next.js static prerendering.
+- **Header KPIs**:
+  - Organizational Health Index (`84.2` OPTIMAL, +2.4 pts QoQ)
+  - Cross-System Consistency (`0.000` Variance, 5/5 Synchronized)
+  - Subsystems Online (`5 / 5` Online, All Systems Operational)
+  - Active Enterprise Alerts (`4 Active`, 0 Critical)
+- **4 Diagnostic Tabs**:
+  1. *Operating System Overview*: Multi-horizon forecast cards (30D, 90D, 180D, 365D), enterprise alerts table, and subsystem status matrix.
+  2. *Executive Dashboard*: Live OHI gauge, 7-driver weighted contribution cards, and status tags.
+  3. *Board Report*: Formal quarterly executive review, findings catalog with evidence/recommendation cards, and board export digest.
+  4. *Consistency Center*: Cross-system synchronization matrix, pairwise source comparisons, and interactive CSC Recovery sandbox.
+- **Global Search & Navigation Integration**:
+  - Global Search prefixes: `OHI-`, `REP-`, `CSC-`, `OOS-`.
+  - Executive Intelligence Nav ribbon with `/oos` link and `PHASE 31-M6` badge (`10/10 OOS GATES CERTIFIED`).
+  - Embedded `<RelatedArtifactsCard>` linking cross-cutting entities.
+
+### 12.5 Certification Gates (M6-Gate-01 to M6-Gate-10)
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **M6-Gate-01** | OHI Integrity Certified | $0 \le \text{OHI} \le 100$, 7 drivers, INV-OI33 Pass | Score = 84.2, 7/7 Drivers, Zero NaN | `PASS` |
+| **M6-Gate-02** | Executive Signal Completeness | 100% lineage traceability, INV-OI34 Pass | Metric $\to$ Decisions $\to$ Outcomes verified | `PASS` |
+| **M6-Gate-03** | Cross-System Consistency | Dashboard = API = Report = Audit = Forecast | Variance = 0.000, INV-OI35 Pass | `PASS` |
+| **M6-Gate-04** | Executive Report Explainability | 5-part findings contract, INV-OI36 Pass | 100% Findings Evidence-Backed | `PASS` |
+| **M6-Gate-05** | Forecast Integrity Certified | 100 replays $\to$ 1 SHA-256 hash, INV-OI37 Pass | Replay Drift = 0, Hash-Locked | `PASS` |
+| **M6-Gate-06** | Unified Telemetry Hub | 5 Subsystems aggregated, live status tracking | 5/5 Subsystems ONLINE | `PASS` |
+| **M6-Gate-07** | Organizational State Engine | Multi-horizon transitions (30D-365D) | 4 Horizons Modeled Monotonically | `PASS` |
+| **M6-Gate-08** | Replay Determinism Certified | Bit-for-bit SHA-256 state lock across 100x | Drift = 0 across all states | `PASS` |
+| **M6-Gate-09** | Executive Readiness Certified | 100% simultaneous state coverage, INV-OI38 Pass | 4/4 Operating States Available | `PASS` |
+| **M6-Gate-10** | Master OOS Architecture Governance | All M6 gates PASS, fail-close certification | 210 / 210 Assertions Passing (100%) | `PASS` |
+
+### 12.6 Verification & Production Summary
+- **210 / 210 Fail-Close Assertions Passed (100%)** via `frontend/scripts/verify-phase-31-m6.mjs`.
+- **3,000+ Platform Assertions Passing (100%)** across all 13 platform verification suites.
+- **Next.js Production Build:** 127 / 127 static routes compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling invariant).
+

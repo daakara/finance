@@ -23,7 +23,10 @@ export type NavigationEntityType =
   | 'GROUPTHINK'
   | 'RECOMMENDATION'
   | 'INTERVENTION_PLAN'
-  | 'BIAS_ALERT';
+  | 'BIAS_ALERT'
+  | 'OOS_REPORT'
+  | 'OHI_METRIC'
+  | 'CSC_RECOVERY';
 
 export interface EntityResolution {
   input: string;
@@ -67,7 +70,8 @@ export interface RelatedArtifactItem {
     | 'GROUPTHINK_SIGNAL'
     | 'COACHING_RECOMMENDATION'
     | 'INTERVENTION_ACTION'
-    | 'BIAS_WARNING';
+    | 'BIAS_WARNING'
+    | 'SYSTEM_CONSISTENCY';
   statusBadge?: string;
 }
 
