@@ -46,7 +46,9 @@ export type NavigationEntityType =
   | 'DIGITAL_TWIN'
   | 'EXECUTIVE_WORKSPACE'
   | 'DECISION_INBOX'
-  | 'EXECUTIVE_BRIEFING';
+  | 'EXECUTIVE_BRIEFING'
+  | 'INSTITUTIONAL_SIMULATION'
+  | 'COUNTERFACTUAL_ANALYSIS';
 
 export interface EntityResolution {
   input: string;
