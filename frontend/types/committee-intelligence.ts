@@ -320,6 +320,7 @@ export interface CommitteeOutcome {
   realizedValueDollars: number;
   outcomeQualityScore: number;
   measuredAtUtc: string;
+  excessReturnPct?: number;
 }
 
 export interface CommitteeAttribution {

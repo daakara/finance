@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import RelatedArtifactsCard from "./RelatedArtifactsCard";
 import { CommitteeDissent } from "../../types/committee-intelligence";
 import { CANONICAL_DISSENTS } from "../../lib/telemetry/committeeIntelligenceEngine";
 
@@ -144,6 +145,15 @@ export default function DissentExplorer({ dissents = CANONICAL_DISSENTS }: Disse
                 </span>
                 <span className="text-[10px] text-slate-500">0% Omission Risk</span>
               </div>
+            </div>
+
+            {/* Universal Connected Lineage Artifacts (M2-Gate-02) */}
+            <div className="pt-2 border-t border-[#202d44]">
+              <RelatedArtifactsCard
+                entityId={dissent.dissentId}
+                title={`Related Lineage for ${dissent.dissentId}`}
+                compact
+              />
             </div>
           </div>
         ))}

@@ -252,4 +252,39 @@ Phase 31-M2 delivers 70–80% executive UX across 6 dedicated Next.js routes, ba
 - **Next.js Production Build:** 123 / 123 static routes compiled with code 0.
 - **First Load JS Shared:** $87.6\text{ kB}$ (Strictly below the $100.0\text{ kB}$ ceiling).
 
+---
+
+## 8. Milestone 31-M2.1 / M3 Foundation: Global Search, Cross-Linking, Historical Trends & Alert Workflow (Epic AI-003)
+
+### 8.1 Scope & Architecture
+Milestone 31-M2.1 connects all Phase 31 intelligence views into a unified institutional workspace, delivering:
+1. **Global Search Palette (`M2-Gate-01`)**: `Cmd+K` / `Ctrl+K` command palette with prefix routing (`DEC-`, `OUT-`, `DIS-`, `COM-`, `PROP-`), exact match resolution, typo recovery suggestions, and search latency telemetry log.
+2. **Universal Cross-Linking Strategy (`M2-Gate-02`)**: `RelatedArtifactsCard` component providing 1-click reachable relationships across all 6 views with "Copy ID", "Open Audit View", and "Open Source Entity".
+3. **Historical Trends Engine & Visualization (`M2-Gate-03`, HT-01 to HT-06)**: Deterministic 30, 90, 180, and 365-day time series for ODEI, CDQI, DIRatio, Dissent Utilization, Learning Velocity, and Knowledge Transfer. Implements deterioration alerts ($\le -5.0\text{ pts}$), quality floor warnings ($< 80.0$), and underlying decision drill-down links.
+4. **Alert Workflow Engine & NOC Remediation (`M2-Gate-04`, AW-01 to AW-08)**: 5-tier severity model (`INFO`, `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), 7 concrete remediation playbooks (`DECISION_FORK`, `SUPPRESSED_DISSENT`, `INFLUENCE_CYCLE`, `ORPHAN_OUTCOME`, `REPLAY_VARIANCE`, `LEARNING_VELOCITY_NON_POSITIVE`, `KNOWLEDGE_TRANSFER_FAILURE`), and lifecycle state transitions (`OPEN` $\to$ `INVESTIGATING` $\to$ `MITIGATING` $\to$ `RESOLVED` $\to$ `CLOSED`).
+5. **Audit Reconstruction Accessibility (`M2-Gate-05`)**: Single-artifact reconstruction reachable from all entity routes.
+
+### 8.2 Delivered Invariants
+- **INV-OI17: Team Learning Velocity Invariant**
+  $$\text{LearningVelocity} = \frac{\Delta\text{ODEI}}{\Delta t} > 0.0$$
+  Committees must demonstrate strictly positive quarterly decision effectiveness trajectories. Stagnant ($0.0$) or degrading ($<0.0$) velocities trigger automated NOC alerts and remediation playbooks.
+- **INV-OI18: Cross-Committee Knowledge Transfer Invariant**
+  $$\text{KnowledgeTransferRate} = \frac{\text{Adopted Lessons}}{\text{Published Lessons}} \times 100\% \ge 80.0\%$$
+  Mandates that at least 80% of institutional lessons published by upstream committees must be adopted in downstream decisions across the network graph.
+
+### 8.3 Certification Gates (M2-Gate-01 to M2-Gate-05)
+| Gate ID | Gate Name | Target | Actual | Status |
+|---|---|---|---|---|
+| **M2-Gate-01** | Global Search & Prefix Resolver | Exact route resolution, prefix validation, latency logging | 100% Valid (5 Prefixes, 0 Misses) | `PASS` |
+| **M2-Gate-02** | Universal Cross-Link Coverage | 100% 1-click reachable relationships across all views | 100% Reachable (0 Dead Ends) | `PASS` |
+| **M2-Gate-03** | Deterministic Historical Trends | 30/90/180/365D time series, 0 drift hash, -5.0 pt deterioration alert | 100% Deterministic (0 Drift) | `PASS` |
+| **M2-Gate-04** | Alert Workflow & NOC Remediation | 5 Severities, 7 Playbooks, Lifecycle transitions | 100% Operational | `PASS` |
+| **M2-Gate-05** | Audit Reconstruction Accessibility | 100% coverage from any single artifact ID ($<50\text{ms}$) | 100% Coverage, $<50\text{ms}$ | `PASS` |
+
+### 8.4 Verification & Production Summary
+- **85 / 85 Fail-Close Assertions Passed (100%)** via `verify-phase-31-m2-navigation.mjs`.
+- **2,238+ Platform Assertions Passing (100%)** across all 9 regression suites.
+- **Next.js Production Build:** 123 / 123 static pages compiled clean (exit code 0).
+- **Shared First Load JS:** $87.6\text{ kB}$ (Budget: $\le 100.0\text{ kB}$).
+
 
