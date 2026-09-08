@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -527,6 +527,70 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { tab: 'simulation', simId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 21. RECSTATE (Recovery State)
+  if (prefix === 'RECSTATE') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'RECOVERY_STATE',
+      entityId: input,
+      title: `Recovery State Definition (${input})`,
+      canonicalRoute: `/resilience-intelligence?tab=recovery&stateId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'recovery', stateId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 22. FAIL (Failover Event)
+  if (prefix === 'FAIL') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'FAILOVER_EVENT',
+      entityId: input,
+      title: `Autonomous Failover Event (${input})`,
+      canonicalRoute: `/resilience-intelligence?tab=failover&failoverId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'failover', failoverId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 23. SURV (Strategy Survivability)
+  if (prefix === 'SURV') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'STRATEGY_SURVIVABILITY',
+      entityId: input,
+      title: `Strategy Survivability Assessment (${input})`,
+      canonicalRoute: `/resilience-intelligence?tab=survivability&strategyId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'survivability', strategyId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 24. SCN (Scenario Definition)
+  if (prefix === 'SCN') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'SCENARIO_DEFINITION',
+      entityId: input,
+      title: `Resilience Scenario Definition (${input})`,
+      canonicalRoute: `/resilience-intelligence?tab=scenarios&scenarioId=${input}`,
+      found: true,
+      suggestions: [],
+      targetParams: { tab: 'scenarios', scenarioId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -1186,6 +1250,47 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
     return {
       primaryEntityId: id,
       primaryEntityType: id.startsWith('OPT-') ? 'OPTIMIZATION_RUN' : id.startsWith('ALLOC-') ? 'ALLOCATION_RESULT' : 'INTERVENTION_SIMULATION',
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
+  // If RECSTATE, FAIL, SURV, or SCN
+  if (id.startsWith('RECSTATE-') || id.startsWith('FAIL-') || id.startsWith('SURV-') || id.startsWith('SCN-')) {
+    items.push({
+      entityId: 'RECSTATE-OHI-L1',
+      entityType: 'RECOVERY_STATE',
+      title: 'L1 Metric Refresh State',
+      subtitle: 'Transient In-Memory Cache Invalidation (RTO < 5s)',
+      canonicalRoute: '/resilience-intelligence?tab=recovery',
+      relationship: 'RESILIENCE_FALLBACK',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'FAIL-2026-001',
+      entityType: 'FAILOVER_EVENT',
+      title: 'Autonomous Optimization Failover',
+      subtitle: 'Fallback to Last Certified Feasible Plan (RTO 42s)',
+      canonicalRoute: '/resilience-intelligence?tab=failover',
+      relationship: 'SYSTEM_CONSISTENCY',
+      statusBadge: 'RESOLVED',
+    });
+
+    items.push({
+      entityId: 'SURV-2026-001',
+      entityType: 'STRATEGY_SURVIVABILITY',
+      title: 'Stress Survivability Rating: CERTIFIED',
+      subtitle: 'Robustness Score 91.4 | 100% Invariant Compliant',
+      canonicalRoute: '/resilience-intelligence?tab=survivability',
+      relationship: 'REALIZED_OUTCOME',
+      statusBadge: 'CERTIFIED',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: id.startsWith('RECSTATE-') ? 'RECOVERY_STATE' : id.startsWith('FAIL-') ? 'FAILOVER_EVENT' : id.startsWith('SURV-') ? 'STRATEGY_SURVIVABILITY' : 'SCENARIO_DEFINITION',
       items,
       totalConnectedArtifacts: items.length,
       auditReconstructible: true,
