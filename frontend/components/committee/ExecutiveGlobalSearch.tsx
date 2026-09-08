@@ -62,8 +62,9 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["PKG-", "FUT-", "CF-", "WS-", "INBOX-", "BRF-", "DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
+  const QUICK_PREFIXES = ["REL-", "PKG-", "FUT-", "CF-", "WS-", "INBOX-", "BRF-", "DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
   const SAMPLE_ENTITIES = [
+    { id: "REL-2026.09-PROD", label: "Executive Release Certification Dashboard", type: "RELEASE_DASHBOARD" },
     { id: "PKG-2026-001", label: "Autonomous Liquidity & Capital Rebalancing Tranche", type: "DECISION_PACKAGE" },
     { id: "FUT-SIM-001", label: "Institutional Futures Simulation Hub", type: "INSTITUTIONAL_SIMULATION" },
     { id: "CF-DEC-001", label: "Counterfactual Decision Delta Analysis", type: "COUNTERFACTUAL_ANALYSIS" },

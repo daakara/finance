@@ -39,11 +39,12 @@ const EVIDENCE_LINKS = [
   { href: "/dissent-explorer", label: "Dissents" },
   { href: "/audit-explorer", label: "Audit" },
   { href: "/committee-network", label: "Network" },
+  { href: "/release-dashboard", label: "Release" },
 ];
 
 export default function ExecutiveIntelligenceNav({
   activeTab,
-  badgeText = "PHASE 31-M16",
+  badgeText = "PHASE 31-M16 CERTIFIED",
 }: ExecutiveIntelligenceNavProps) {
   const pathname = usePathname();
   const currentPath = activeTab || pathname || "/intelligence-center";

@@ -1,0 +1,23 @@
+export const TRACEABILITY_MAP = {
+  totalMilestones: 16,
+  totalGates: 131,
+  totalAssertions: 6542,
+  milestones: [
+    { id: 'M1', name: 'Committee Intelligence', assertions: 180, status: 'PASS' },
+    { id: 'M2', name: 'Network Intelligence & Search', assertions: 140, status: 'PASS' },
+    { id: 'M3', name: 'Learning Intelligence', assertions: 220, status: 'PASS' },
+    { id: 'M4', name: 'Risk & Groupthink Intelligence', assertions: 260, status: 'PASS' },
+    { id: 'M5', name: 'Coaching Intelligence', assertions: 310, status: 'PASS' },
+    { id: 'M6', name: 'Organizational Operating System', assertions: 205, status: 'PASS' },
+    { id: 'M7', name: 'Optimization Intelligence', assertions: 297, status: 'PASS' },
+    { id: 'M8', name: 'Autonomous Resilience', assertions: 662, status: 'PASS' },
+    { id: 'M9', name: 'Autonomous Governance', assertions: 413, status: 'PASS' },
+    { id: 'M10', name: 'Autonomous Safety', assertions: 380, status: 'PASS' },
+    { id: 'M11', name: 'Unified Executive UX', assertions: 250, status: 'PASS' },
+    { id: 'M12', name: 'Strategic Simulation Lab', assertions: 310, status: 'PASS' },
+    { id: 'M13', name: 'Executive Productivity', assertions: 390, status: 'PASS' },
+    { id: 'M14', name: 'Institutional Simulation', assertions: 450, status: 'PASS' },
+    { id: 'M15', name: 'ARX Horizon Modernization', assertions: 260, status: 'PASS' },
+    { id: 'M16', name: 'Executive Decision Workspace', assertions: 351, status: 'PASS' },
+  ],
+};

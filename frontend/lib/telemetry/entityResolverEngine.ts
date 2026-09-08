@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG', 'REL'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -845,6 +845,22 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { packageId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 42. REL (Release Gate & Readiness Dashboard)
+  if (prefix === 'REL') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'RELEASE_DASHBOARD' as NavigationEntityType,
+      entityId: input,
+      title: `Release Certification Dashboard (${input})`,
+      canonicalRoute: `/release-dashboard`,
+      found: true,
+      suggestions: [],
+      targetParams: { releaseId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -1667,6 +1683,37 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
   }
 
   // If Institutional Simulation / Counterfactual (FUT-, CF-)
+  // If Release ID (REL-xxx)
+  if (id.startsWith('REL-') || id === 'REL') {
+    items.push({
+      entityId: 'REL-2026.09-PROD',
+      entityType: 'RELEASE_DASHBOARD' as NavigationEntityType,
+      title: 'Executive Release Certification Dashboard',
+      subtitle: 'M1–M16 Gate Verification & Attestation Lock',
+      canonicalRoute: '/release-dashboard',
+      relationship: 'SOURCE_DECISION',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'COM-001',
+      entityType: 'COMMITTEE',
+      title: 'Executive Committee Lead',
+      subtitle: 'Attestation & Sign-off Authority',
+      canonicalRoute: '/governance',
+      relationship: 'PARENT_COMMITTEE',
+      statusBadge: 'AUTHORIZING_BODY',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'RELEASE_DASHBOARD' as NavigationEntityType,
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
   if (id.startsWith('FUT-') || id.startsWith('CF-')) {
     items.push({
       entityId: 'FUT-SIM-001',
