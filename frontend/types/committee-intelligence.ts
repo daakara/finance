@@ -265,7 +265,11 @@ export type CIIGateId =
   | 'CII-Gate-03'
   | 'CII-Gate-04'
   | 'CII-Gate-05'
-  | 'CII-Gate-06';
+  | 'CII-Gate-06'
+  | 'CII-Gate-07'
+  | 'CII-Gate-08'
+  | 'CII-Gate-09'
+  | 'CII-Gate-10';
 
 export interface CIIGateEvaluation {
   gateId: CIIGateId;
@@ -284,5 +288,214 @@ export interface CommitteeCertificationResult {
   failedAssertions: number;
   oi13Violations: number;
   oi14Violations: number;
+  certificationStatus: 'PASS' | 'FAIL';
+}
+
+/**
+ * ============================================================================
+ * Phase 31-M1.1: Adversarial Hardening, Replay & Audit Reconstruction Contracts
+ * ============================================================================
+ */
+
+export interface CommitteeProposal {
+  proposalId: string;
+  title: string;
+  createdBy: string;
+  createdAtUtc: string;
+  businessObjective: string;
+}
+
+export interface CommitteeEvidence {
+  evidenceId: string;
+  sourceType: string;
+  sourceReference: string;
+  confidencePct: number;
+}
+
+export interface CommitteeOutcome {
+  outcomeId: string;
+  realizedValueDollars: number;
+  outcomeQualityScore: number;
+  measuredAtUtc: string;
+}
+
+export interface CommitteeAttribution {
+  attributionId: string;
+  decisionId: string;
+  capabilityIds: string[];
+  learningIds: string[];
+  individualContributionPct: number;
+  teamContributionPct: number;
+  committeeContributionPct: number;
+  systemContributionPct: number;
+  totalContributionPct: number;
+}
+
+export interface ReconstructionCoverage {
+  proposalRecovered: boolean;
+  evidenceRecovered: boolean;
+  participantsRecovered: boolean;
+  dissentsRecovered: boolean;
+  outcomeRecovered: boolean;
+  attributionRecovered: boolean;
+  completenessPct: number;
+}
+
+export interface CommitteeAuditSnapshot {
+  snapshotId: string;
+  committeeId: string;
+  decisionId: string;
+  capturedAtUtc: string;
+  hash: string;
+  proposalHash: string;
+  evidenceHashes: string[];
+  participantHashes: string[];
+  dissentHashes: string[];
+  outcomeHash?: string;
+  attributionHash?: string;
+  reconstructionVersion: string;
+}
+
+export interface AuditReconstructionRequest {
+  decisionId: string;
+  requestedBy: string;
+  requestedAtUtc: string;
+  includeDissents: boolean;
+  includeEvidence: boolean;
+  includeAttribution: boolean;
+}
+
+export interface AuditReconstructionResult {
+  decisionId: string;
+  success: boolean;
+  coverage: ReconstructionCoverage;
+  proposal?: CommitteeProposal;
+  evidence?: CommitteeEvidence[];
+  participants?: CommitteeParticipant[];
+  dissents?: CommitteeDissent[];
+  outcome?: CommitteeOutcome;
+  attribution?: CommitteeAttribution;
+  missingArtifacts: string[];
+  elapsedMs: number;
+}
+
+export interface ReplayExpectedResults {
+  transparencyCoveragePct: number;
+  dissentCoveragePct: number;
+  committeeODEI: number;
+  committeeDIRatio: number;
+  oi13Violations: number;
+  oi14Violations: number;
+  certificationStatus: 'PASS' | 'FAIL';
+}
+
+export interface ReplayFixture {
+  fixtureId: string;
+  fixtureVersion: string;
+  createdAtUtc: string;
+  committees: CommitteeHealth[];
+  decisions: CommitteeDecision[];
+  expectedResults: ReplayExpectedResults;
+  sha256?: string;
+}
+
+export interface ReplayComparisonResult {
+  matchesExpected: boolean;
+  deterministic: boolean;
+  expectedHash: string;
+  actualHash: string;
+  mismatchedFields: string[];
+  mismatchDetails?: DeepComparisonMismatch[];
+}
+
+export interface ReplayDeterminismResult {
+  deterministic: boolean;
+  iterations: number;
+  uniqueHashes: number;
+  canonicalHash: string;
+  failures: string[];
+}
+
+export interface DeepComparisonMismatch {
+  path: string;
+  expected: unknown;
+  actual: unknown;
+  reason:
+    | 'VALUE_MISMATCH'
+    | 'TYPE_MISMATCH'
+    | 'MISSING_PROPERTY'
+    | 'EXTRA_PROPERTY'
+    | 'ARRAY_LENGTH_MISMATCH'
+    | 'NAN_DETECTED'
+    | 'CYCLE_MISMATCH';
+}
+
+export interface DeepComparisonResult {
+  equal: boolean;
+  mismatches: DeepComparisonMismatch[];
+}
+
+export type CorruptionType =
+  | 'MISSING_PROPOSAL'
+  | 'MISSING_EVIDENCE'
+  | 'MISSING_PARTICIPANTS'
+  | 'MISSING_OUTCOME'
+  | 'MISSING_ATTRIBUTION'
+  | 'MISSING_DISSENT'
+  | 'MISSING_ALTERNATIVE_VIEW'
+  | 'MISSING_RISK_ASSESSMENT'
+  | 'MISSING_DISSENT_EVIDENCE'
+  | 'DUPLICATE_MEMBER'
+  | 'NO_VOTING_MEMBER'
+  | 'NO_CHAIR'
+  | 'INVALID_NETWORK_EDGE'
+  | 'SELF_REFERENTIAL_EDGE';
+
+export interface CorruptionFixture {
+  fixtureId: string;
+  corruptionType: CorruptionType;
+  expectedInvariantViolation: 'INV-OI13' | 'INV-OI14' | 'MEMBERSHIP' | 'NETWORK';
+  expectedDetection: boolean;
+  payload: Record<string, unknown>;
+}
+
+export interface CorruptionDetectionResult {
+  fixtureId: string;
+  detected: boolean;
+  violatedInvariant: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  remediation: string;
+}
+
+export interface StressProfile {
+  profileId: string;
+  committeeCount: number;
+  decisionCount: number;
+  participantCount: number;
+  evidenceCount: number;
+  dissentCount: number;
+  targetDurationMs: number;
+}
+
+export interface StressTestResult {
+  profileId: string;
+  completed: boolean;
+  elapsedMs: number;
+  memoryMb: number;
+  certificationDriftDetected: boolean;
+  invariantViolations: number;
+  numericalFailures: number;
+}
+
+export interface StressAggregationResult {
+  fixturesExecuted: number;
+  passed: number;
+  failed: number;
+  averageExecutionMs: number;
+  maxExecutionMs: number;
+  replayFailures: number;
+  numericalFailures: number;
+  reliabilityScore: number;
+  stabilityScore: number;
   certificationStatus: 'PASS' | 'FAIL';
 }
