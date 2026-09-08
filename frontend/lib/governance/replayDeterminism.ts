@@ -10,7 +10,7 @@
  * - Numerical Stability Guards (rejection of NaN & Infinity)
  */
 
-import crypto from 'node:crypto';
+import { sha256 } from './sha256';
 import {
   ReplayComparisonResult,
   ReplayDeterminismResult,
@@ -189,7 +189,7 @@ export function canonicalSerialize(value: unknown): string {
 
 export function createReplayHash(value: unknown): string {
   const serialized = canonicalSerialize(value);
-  return crypto.createHash('sha256').update(serialized).digest('hex');
+  return sha256(serialized);
 }
 
 export function compareReplayResults(expected: unknown, actual: unknown): ReplayComparisonResult {
