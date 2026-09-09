@@ -150,6 +150,12 @@ export const SIMULATION_INVARIANTS = {
   INV_OI58: 'Trace Completeness: Every projected metric must have verified upstream lineage',
   INV_OI59: 'Shock Recoverability: Extreme scenarios must map to certified recovery-states',
   INV_OI60: 'Replay Drift Free: Replay drift tolerance is strictly 0.0000%',
+  INV_OI61: 'Portfolio Completeness: Every candidate strategy must be evaluated across all required scenarios',
+  INV_OI62: 'Strategy Comparability: All candidate strategies must evaluate against the exact same twin snapshot',
+  INV_OI63: 'Portfolio Explainability: Every ranking decision must provide explicit deterministic ranking rationale',
+  INV_OI64: 'Edge Confidence Coverage: 100% of trace edges must contain calibrated confidencePct',
+  INV_OI65: 'Confidence Calibration: confidencePct must be strictly bounded within [0, 100]',
+  INV_OI66: 'Sensitivity Coverage: Every top-level executive metric must provide sensitivity analysis',
 } as const;
 
 
@@ -187,6 +193,8 @@ export interface TraceEdge {
   sourceNodeId: string;
   targetNodeId: string;
   contributionPct: number;
+  confidencePct?: number;
+  sensitivityScore?: number;
 }
 
 export interface TraceLedger {
@@ -289,4 +297,71 @@ export const M14_GATE_TRACEABILITY_MATRIX = [
   { gateId: 'M14-Gate-08', name: 'Rollback Plan Coverage', requirement: 'Multi-level rollback strategies (L1-L4) with certified state reversal' },
   { gateId: 'M14-Gate-09', name: 'Executive Sandbox UX', requirement: 'Executive, Analyst, and Audit views conform to Horizon Design System' },
   { gateId: 'M14-Gate-10', name: 'Simulation Platform Certified', requirement: '100% compliance across Invariants INV-OI53..INV-OI60 and static export' },
+] as const;
+
+
+export interface StrategyIntervention {
+  targetMetric: string;
+  interventionType: 'BUDGET_INCREASE' | 'GOVERNANCE_RULE' | 'RISK_DAMPENING' | 'CAPITAL_ALLOCATION';
+  parameterDeltaPct: number;
+  costUSD: number;
+  implementationWeeks: number;
+}
+
+export interface Strategy {
+  strategyId: string;
+  name: string;
+  description: string;
+  interventions: StrategyIntervention[];
+  assumptions: string[];
+  constraints: string[];
+}
+
+export interface ScenarioOutcome {
+  scenarioType: 'BASELINE' | 'OPTIMISTIC' | 'ADVERSE' | 'STRESS';
+  projectedOhi: number;
+  projectedRisk: number;
+  projectedVelocity: number;
+}
+
+export interface StrategyEvaluation {
+  strategyId: string;
+  strategyName: string;
+  projectedOhi: number;
+  projectedRisk: number;
+  implementationCost: number;
+  confidencePct: number;
+  robustnessScore: number;
+  survivabilityScore: number;
+  expectedRoi: number;
+  weightedScore: number;
+  scenarioOutcomes: ScenarioOutcome[];
+  overallRank: number;
+  rankingRationale: string;
+  rollbackCoveragePct: number;
+  recoveryHours: number;
+  failureProbabilityPct: number;
+}
+
+export interface StrategyPortfolioResult {
+  portfolioId: string;
+  snapshotId: string;
+  evaluations: StrategyEvaluation[];
+  topRecommendedStrategyId: string;
+  recommendedRationale: string;
+  evaluatedAtUtc: string;
+  deterministicReplayHash: string;
+}
+
+export const M15_GATE_TRACEABILITY_MATRIX = [
+  { gateId: 'M15-Gate-01', name: 'Portfolio Completeness', requirement: 'INV-OI61: Every strategy evaluated across Baseline, Optimistic, Adverse, Stress' },
+  { gateId: 'M15-Gate-02', name: 'Strategy Comparability', requirement: 'INV-OI62: All strategies evaluated against identical baseline snapshot' },
+  { gateId: 'M15-Gate-03', name: 'Portfolio Explainability', requirement: 'INV-OI63: Deterministic decision rationale generated for all rankings' },
+  { gateId: 'M15-Gate-04', name: 'Edge Confidence Coverage', requirement: 'INV-OI64: 100% of trace edges contain calibrated confidencePct' },
+  { gateId: 'M15-Gate-05', name: 'Confidence Calibration', requirement: 'INV-OI65: confidencePct strictly bounded within [0, 100]' },
+  { gateId: 'M15-Gate-06', name: 'Sensitivity Analysis', requirement: 'INV-OI66: Sensitivity leverage score computed for all causal edges' },
+  { gateId: 'M15-Gate-07', name: 'Robustness Metric Validation', requirement: 'Robustness score strictly satisfies Mean Outcome / StdDev formula' },
+  { gateId: 'M15-Gate-08', name: 'Survivability Scoring', requirement: 'Survivability synthesizes rollback coverage, recovery SLA, and failure risk' },
+  { gateId: 'M15-Gate-09', name: 'Strategy Laboratory UX', requirement: 'Horizon Design System compliance across 4 interactive perspective tabs' },
+  { gateId: 'M15-Gate-10', name: 'Platform Performance & Bundle Budget', requirement: 'Static export compiles cleanly across 141+ routes with sub-100 kB shared JS' },
 ] as const;
