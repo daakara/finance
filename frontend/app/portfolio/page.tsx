@@ -240,9 +240,19 @@ export default function PortfolioPage() {
   const cashPct = totalNetWorth > 0 ? (cashReserves / totalNetWorth) * 100 : 0;
   const isPositive = summary.totalUnrealizedPnL >= 0;
 
+  // Level 0: Total Capital at Risk Calculation
+  const totalRiskAtStop = positions.reduce((acc, p) => {
+    const stop = p.stopLossPrice || p.entryPrice * 0.92;
+    const currentOrEntry = p.entryPrice;
+    return acc + Math.max(0, (currentOrEntry - stop) * p.shares);
+  }, 0);
+  const riskPctOfEquity = totalNetWorth > 0 ? (totalRiskAtStop / totalNetWorth) * 100 : 0;
+  const stopBreaches = positions.filter((p) => p.currentPrice <= (p.stopLossPrice || p.entryPrice * 0.92));
+  const targetHits = positions.filter((p) => !!p.targetPrice && p.currentPrice >= p.targetPrice);
+
   return (
     <TerminalShell activeHub="portfolio">
-      <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 font-mono pb-28 sm:pb-8">
+      <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
         {/* Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#243044] pb-4">
           <div>
@@ -295,47 +305,73 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Portfolio Summary KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Total Account Net Worth</span>
-            <span className="text-xl sm:text-2xl font-extrabold text-white tabular-nums">
-              ${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-1">
-              ${investedEquity.toFixed(2)} Stock + ${cashReserves.toFixed(2)} Cash
-            </span>
+        {/* Level 0: Asymmetric Capital at Risk & Portfolio Heat Hero */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-bold bg-rose-950/80 text-rose-400 border border-rose-800/80">
+                  Level 0 · Portfolio Heat
+                </span>
+                <span className="text-xs text-slate-400 font-sans">
+                  What can hurt me if all stop floors trigger?
+                </span>
+              </div>
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-black font-mono text-rose-400 tabular-nums">
+                  -${totalRiskAtStop.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-sm font-mono text-rose-300/80 font-bold">
+                  ({riskPctOfEquity.toFixed(2)}% Capital at Risk)
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-sans max-w-xl">
+                Maximum portfolio exposure defined strictly by your stop-loss exit floors. Risk is distributed across {summary.positionsCount} active {summary.positionsCount === 1 ? 'position' : 'positions'}.
+              </p>
+            </div>
+
+            {/* Right Rail: Total Capital & Deployment */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0 font-mono text-xs">
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase block">Total Net Worth</span>
+                <span className="text-base font-bold text-white tabular-nums">${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase block">Active Holdings</span>
+                <span className="text-base font-bold text-cyan-400 tabular-nums">${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({investedPct.toFixed(0)}%)</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase block">Cash Buying Power</span>
+                <span className="text-base font-bold text-emerald-400 tabular-nums">${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({cashPct.toFixed(0)}%)</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                <span className="text-[10px] text-slate-400 uppercase block">Unrealized P&amp;L</span>
+                <span className={`text-base font-bold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {isPositive ? `+$${summary.totalUnrealizedPnL.toFixed(2)}` : `-$${Math.abs(summary.totalUnrealizedPnL).toFixed(2)}`}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Active Stock Holdings</span>
-            <span className="text-xl sm:text-2xl font-extrabold text-cyan-300 tabular-nums">
-              ${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-cyan-500/80 block mt-1 font-bold">
-              {investedPct.toFixed(1)}% Deployed ({summary.positionsCount} {summary.positionsCount === 1 ? "Holding" : "Holdings"})
-            </span>
-          </div>
-
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Available Cash Reserves</span>
-            <span className="text-xl sm:text-2xl font-extrabold text-emerald-300 tabular-nums">
-              ${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-[10px] text-emerald-500/80 block mt-1 font-bold">
-              {cashPct.toFixed(1)}% Buying Power
-            </span>
-          </div>
-
-          <div className="bg-[#111722] p-4 rounded-xl border border-[#243044] shadow-xl">
-            <span className="text-[11px] text-slate-400 block uppercase font-semibold">Total Unrealized P&L</span>
-            <span className={`text-xl sm:text-2xl font-extrabold tabular-nums flex items-center gap-1 ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
-              <span>{isPositive ? `+$${summary.totalUnrealizedPnL.toFixed(2)}` : `-$${Math.abs(summary.totalUnrealizedPnL).toFixed(2)}`}</span>
-            </span>
-            <span className={`text-[10px] font-bold block mt-1 ${isPositive ? "text-emerald-500" : "text-rose-500"}`}>
-              {isPositive ? `+${summary.totalUnrealizedPnLPct.toFixed(2)}%` : `${summary.totalUnrealizedPnLPct.toFixed(2)}%`} Total Return
-            </span>
-          </div>
+          {/* Active Exit Rule Triggers Banner */}
+          {(stopBreaches.length > 0 || targetHits.length > 0) && (
+            <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-800/60 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-rose-400 font-bold">⚠️ ACTIVE EXIT TRIGGERS:</span>
+                {stopBreaches.map((b) => (
+                  <span key={b.symbol} className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold text-[11px]">
+                    STOP BREACH: {b.symbol} (${b.currentPrice} &le; ${b.stopLossPrice || (b.entryPrice * 0.92).toFixed(2)})
+                  </span>
+                ))}
+                {targetHits.map((t) => (
+                  <span key={t.symbol} className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold text-[11px]">
+                    TARGET HIT: {t.symbol} (${t.currentPrice} &ge; ${t.targetPrice || (t.entryPrice * 1.2).toFixed(2)})
+                  </span>
+                ))}
+              </div>
+              <span className="text-[11px] text-slate-400 font-sans">Execute disciplined exit to preserve capital</span>
+            </div>
+          )}
         </div>
 
         {/* Interactive Asset & Cash Allocation Visualizer */}
@@ -362,20 +398,20 @@ export default function PortfolioPage() {
                 />
               </div>
 
-              {/* Quick Presets */}
+              {/* Institutional Capital Presets */}
               <div className="hidden sm:flex items-center gap-1">
-                {[50, 100, 500, 2500, 10000, 25000].map((preset) => (
+                {[10000, 25000, 50000, 100000, 250000].map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => handleAccountEquityChange(preset)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all cursor-pointer ${
                       accountEquity === preset
-                        ? "bg-cyan-600 border-cyan-400 text-white"
+                        ? "bg-cyan-600 border-cyan-400 text-white shadow-sm"
                         : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    ${preset >= 1000 ? `${preset / 1000}k` : preset}
+                    ${preset / 1000}k
                   </button>
                 ))}
               </div>

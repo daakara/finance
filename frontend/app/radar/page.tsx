@@ -330,32 +330,78 @@ export default function RadarPage() {
       });
   }, [allAssets, activeFilter, searchQuery, sortBy]);
 
+  const heroAsset = filteredAssets[0] || allAssets[0];
+
   return (
     <TerminalShell activeHub="radar">
       <div className="space-y-6">
-        {/* Top Market Regime Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
-            <div>
-              <div className="text-xs font-mono font-semibold text-emerald-400 uppercase tracking-wider">
-                Market Regime: Confirmed Uptrend
+        {/* Level 0: Asymmetric #1 High-Confluence Attention Leader Hero */}
+        {heroAsset && (
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl">
+            <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 border-b border-l border-emerald-500/40 text-[10px] font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-bl-xl">
+              Level 0 · #1 Attention Leader Today
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-2xl md:text-3xl font-black font-mono tracking-tight text-white">
+                    {heroAsset.ticker}
+                  </span>
+                  <span className="text-sm md:text-base text-slate-300 font-medium">
+                    {heroAsset.name}
+                  </span>
+                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50">
+                    {heroAsset.executionStatus.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    Stage 2 · {heroAsset.vcpStage}
+                  </span>
+                </div>
+
+                <p className="text-xs md:text-sm text-slate-200 font-sans leading-relaxed">
+                  <strong className="text-amber-400 font-semibold">Primary Catalyst: </strong>
+                  {heroAsset.catalyst}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Price:</span>
+                    <span className="text-white font-bold">${heroAsset.price.toFixed(2)}</span>
+                  </div>
+                  <span className="text-slate-700">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Confluence:</span>
+                    <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
+                  </div>
+                  <span className="text-slate-700">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">RS Rating:</span>
+                    <span className="text-white font-bold">{heroAsset.rsRating}/99</span>
+                  </div>
+                  <span className="text-slate-700">•</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Vol Dry-Up:</span>
+                    <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct}%</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm font-bold text-white">
-                S&P 500 &gt; 21-EMA (+3.2% Spread) · Institutional Distribution: Low · Market Poise: 91/100
+
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+                <Link
+                  href="/setups"
+                  className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <span>ARM EXECUTION TICKET IN /SETUPS</span>
+                  <span>→</span>
+                </Link>
+                <div className="text-[10px] font-mono text-slate-400 text-center">
+                  Verified S&P 500 Uptrend · 3-Model Convergence
+                </div>
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/setups"
-              className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono tracking-tight transition-colors shadow-sm"
-            >
-              Open Tactical Setups →
-            </Link>
-          </div>
-        </div>
+        )}
 
         {/* Search & Filter Toolbar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
@@ -370,8 +416,11 @@ export default function RadarPage() {
               }`}
             >
               <span>All Confluences</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 rounded-full text-slate-300 font-bold">{counts.ALL}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                {counts.ALL}
+              </span>
             </button>
+
             <button
               onClick={() => setActiveFilter('VCP')}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
@@ -381,8 +430,11 @@ export default function RadarPage() {
               }`}
             >
               <span>⚡ Minervini VCP</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 rounded-full text-cyan-400 font-bold">{counts.VCP}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                {counts.VCP}
+              </span>
             </button>
+
             <button
               onClick={() => setActiveFilter('SMART_MONEY')}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
@@ -392,8 +444,11 @@ export default function RadarPage() {
               }`}
             >
               <span>🐋 Smart Money</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 rounded-full text-purple-400 font-bold">{counts.SMART_MONEY}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                {counts.SMART_MONEY}
+              </span>
             </button>
+
             <button
               onClick={() => setActiveFilter('VALUE')}
               className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
@@ -403,127 +458,120 @@ export default function RadarPage() {
               }`}
             >
               <span>🏛️ Value &amp; GARP</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-slate-800 rounded-full text-emerald-400 font-bold">{counts.VALUE}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                {counts.VALUE}
+              </span>
             </button>
           </div>
 
-          {/* Search & Sort Controls */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex-1 md:w-56">
+          {/* Search Input & Sort Controls */}
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-64">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search ticker, catalyst..."
-                className="w-full px-3 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500 transition-colors"
+                placeholder="Search ticker, catalyst, model..."
+                className="w-full px-3 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1.5 text-xs text-slate-500 hover:text-slate-300"
+                  className="absolute right-2.5 top-2 text-xs text-slate-500 hover:text-slate-300 font-mono"
                 >
                   ✕
                 </button>
               )}
             </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'SCORE' | 'RS' | 'PRICE')}
-              className="px-2.5 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition-colors"
-            >
-              <option value="SCORE">Sort: Confluence</option>
-              <option value="RS">Sort: RS Rating</option>
-              <option value="PRICE">Sort: Price</option>
-            </select>
+            <div className="flex items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-0.5 text-xs font-mono shrink-0">
+              <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
+              <button
+                onClick={() => setSortBy('SCORE')}
+                className={`px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Score
+              </button>
+              <button
+                onClick={() => setSortBy('RS')}
+                className={`px-2 py-1 rounded ${sortBy === 'RS' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                RS
+              </button>
+              <button
+                onClick={() => setSortBy('PRICE')}
+                className={`px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                Price
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Status Count Banner */}
-        <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-          <div>
-            Scanning <span className="text-white font-bold">{allAssets.length}</span> Qualified Assets · Displaying <span className="text-cyan-400 font-bold">{filteredAssets.length}</span> opportunities
+        {/* Level 1: Dense Confluence Stream Table */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left font-mono text-xs">
+              <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
+                <tr>
+                  <th className="p-3">Asset</th>
+                  <th className="p-3">Action Status</th>
+                  <th className="p-3">Price</th>
+                  <th className="p-3 text-center">Score</th>
+                  <th className="p-3 text-center">RS Rating</th>
+                  <th className="p-3">VCP / Base Setup</th>
+                  <th className="p-3 text-right">Vol Dry-Up</th>
+                  <th className="p-3">Catalyst Rationale</th>
+                  <th className="p-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {filteredAssets.map((asset) => {
+                  const isBuy = asset.executionStatus === 'IN_BUY_ZONE';
+                  const isPivot = asset.executionStatus === 'NEAR_PIVOT';
+                  return (
+                    <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
+                      <td className="p-3">
+                        <div className="font-black text-white text-sm tracking-tight">{asset.ticker}</div>
+                        <div className="text-[10px] text-slate-400 font-sans truncate max-w-[120px]">{asset.name}</div>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          isBuy
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                            : isPivot
+                            ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                            : 'bg-slate-800/60 text-slate-400 border border-slate-700/60'
+                        }`}>
+                          {asset.executionStatus.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="p-3 font-bold text-white">${asset.price.toFixed(2)}</td>
+                      <td className="p-3 text-center">
+                        <span className="font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded">
+                          {asset.confluenceScore}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center font-bold text-white">{asset.rsRating}</td>
+                      <td className="p-3 text-slate-300 text-[11px]">{asset.vcpStage}</td>
+                      <td className="p-3 text-right font-bold text-emerald-400">{asset.volumeDryUpPct}%</td>
+                      <td className="p-3 text-slate-300 text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
+                        {asset.catalyst}
+                      </td>
+                      <td className="p-3 text-right">
+                        <Link
+                          href="/setups"
+                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400 text-[10px] font-bold font-mono transition-colors inline-block"
+                        >
+                          Setup →
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          {searchQuery && (
-            <div className="text-slate-500 italic">
-              Matching: &quot;{searchQuery}&quot;
-            </div>
-          )}
-        </div>
-
-        {/* Radar Assets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAssets.map((asset) => (
-            <div
-              key={asset.ticker}
-              className="p-5 rounded-xl border border-slate-800/80 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/70 transition-all space-y-4 flex flex-col justify-between"
-            >
-              <div className="space-y-2.5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-black font-mono tracking-tight text-white">
-                        {asset.ticker}
-                      </span>
-                      <span className="text-xs text-slate-400 font-medium truncate max-w-[150px]">
-                        {asset.name}
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-mono text-slate-500 mt-0.5">
-                      Stage 2 Uptrend · {asset.vcpStage}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-sm font-bold font-mono text-white">
-                      ${asset.price.toFixed(2)}
-                    </div>
-                    <div className="text-xs font-mono text-emerald-400 font-semibold">
-                      Score: {asset.confluenceScore}/100
-                    </div>
-                  </div>
-                </div>
-
-                {/* Confluence Metrics */}
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/60 text-xs font-mono">
-                  <div>
-                    <div className="text-[10px] uppercase text-slate-400">RS Rating</div>
-                    <div className="font-bold text-cyan-400">{asset.rsRating}/99</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase text-slate-400">Vol Dry-Up</div>
-                    <div className="font-bold text-emerald-400">{asset.volumeDryUpPct}%</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase text-slate-400">Models</div>
-                    <div className="font-bold text-purple-400 text-[10px] truncate">
-                      {asset.categories.join(', ')}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Catalyst */}
-                <div className="text-xs text-slate-300 flex items-start gap-1.5">
-                  <span className="text-amber-400 shrink-0 mt-0.5">⚡</span>
-                  <span className="line-clamp-2">{asset.catalyst}</span>
-                </div>
-              </div>
-
-              {/* Action Trigger */}
-              <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/60 text-emerald-400">
-                  {asset.executionStatus.replace(/_/g, ' ')}
-                </span>
-                <Link
-                  href="/setups"
-                  className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-                >
-                  <span>Setup Ticket</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </TerminalShell>

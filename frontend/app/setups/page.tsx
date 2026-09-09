@@ -125,23 +125,42 @@ export default function SetupsPage() {
               </div>
             </div>
 
-            {/* Core Trade Parameters (Available in all 3 modes) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-slate-400 uppercase text-[10px] block">Entry Pivot</span>
-                <span className="text-base font-bold text-white">${sizing.entryPivot.toFixed(2)}</span>
+            {/* Level 0: Asymmetric Execution Ticket Ladder */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+              {/* Risk Bracket: Entry Pivot & Stop Loss */}
+              <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <span>Risk Definition Bracket</span>
+                  <span className="text-rose-400">Stop: -{sizing.stopDistancePct.toFixed(2)}%</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">LMT $ (Entry)</span>
+                    <span className="text-xl font-bold text-white">${sizing.entryPivot.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">STP $ (Floor)</span>
+                    <span className="text-xl font-bold text-rose-400">${sizing.stopLoss.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-slate-400 uppercase text-[10px] block">Stop Loss</span>
-                <span className="text-base font-bold text-rose-400">${sizing.stopLoss.toFixed(2)}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-slate-400 uppercase text-[10px] block">Target 1 (2.0R)</span>
-                <span className="text-base font-bold text-emerald-400">${selectedSetup.target1.toFixed(2)}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-slate-400 uppercase text-[10px] block">Target 2 (3.8R)</span>
-                <span className="text-base font-bold text-purple-400">${selectedSetup.target2.toFixed(2)}</span>
+
+              {/* Reward Milestones: Target 1 & Target 2 */}
+              <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  <span>Asymmetric Reward Milestones</span>
+                  <span className="text-emerald-400">R:R {sizing.rMultipleTarget1}R+</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">TGT $ (Primary TP1)</span>
+                    <span className="text-xl font-bold text-emerald-400">${selectedSetup.target1.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase block">TGT $ (Runner TP2)</span>
+                    <span className="text-xl font-bold text-purple-400">${selectedSetup.target2.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -276,20 +295,16 @@ export default function SetupsPage() {
               {sizing.cleanRoomRationale}
             </div>
 
-            <div className="space-y-2">
+            <div>
               <button
                 onClick={handleCopyOrder}
-                className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs tracking-tight transition-colors shadow-md flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono font-black text-xs tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
               >
-                <span>{copiedOrder ? '✔ Order String Copied!' : `Authorize Order: ${sizing.recommendedShares} Shares ($${sizing.estimatedCapitalAllocated.toLocaleString()})`}</span>
+                <span>{copiedOrder ? '✔ ORDER COPIED TO CLIPBOARD' : `AUTHORIZE ORDER: ${sizing.recommendedShares} SHARES ($${sizing.estimatedCapitalAllocated.toLocaleString()}) [COPY STRING]`}</span>
               </button>
-
-              <button
-                onClick={handleCopyOrder}
-                className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] transition-colors"
-              >
-                Copy Broker Order String
-              </button>
+              <div className="text-[10px] font-mono text-slate-400 text-center mt-2">
+                Order String: BUY {sizing.recommendedShares} {selectedSetup.ticker} LMT ${sizing.entryPivot.toFixed(2)} | STP ${sizing.stopLoss.toFixed(2)} | TGT ${selectedSetup.target1.toFixed(2)}
+              </div>
             </div>
           </div>
         </div>

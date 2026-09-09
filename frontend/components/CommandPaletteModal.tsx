@@ -9,7 +9,7 @@ import MiniSparkline from "./MiniSparkline";
 
 interface CommandItem {
   id: string;
-  category: "ASSET" | "POLITICIAN" | "ACTION" | "NAVIGATION" | "DECISION" | "SIGNAL" | "FORECAST" | "SCENARIO" | "JOURNAL" | "WORKBENCH" | "HUB";
+  category: "HUB" | "ACTION" | "TICKET" | "ASSET" | "POLITICIAN" | "GOVERNOR" | "NAVIGATION";
   title: string;
   subtitle: string;
   badge?: string;
@@ -49,7 +49,227 @@ export default function CommandPaletteModal({
   const allCommands: CommandItem[] = useMemo(() => {
     const items: CommandItem[] = [];
 
-    // 1. Assets from Master Catalog
+    // 1. Flagship Terminal Hubs (INV-OI115-P)
+    items.push({
+      id: "hub-radar",
+      category: "HUB",
+      title: "Radar Confluence Screener",
+      subtitle: "Multi-factor VCP, Smart Money, and GARP screen",
+      badge: "Hub · Level 0",
+      icon: "📡",
+      action: () => {
+        router.push("/radar");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-setups",
+      category: "HUB",
+      title: "Tactical Setups & Execution Ticket",
+      subtitle: "Asymmetric trade ladder & Governor sizing",
+      badge: "Hub · Level 0",
+      icon: "⚡",
+      action: () => {
+        router.push("/setups");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-portfolio",
+      category: "HUB",
+      title: "Portfolio Risk Heat Map & Stop Loss Floors",
+      subtitle: "Exposure concentration & exit alerts",
+      badge: "Hub · Level 0",
+      icon: "💼",
+      action: () => {
+        router.push("/portfolio");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-journal",
+      category: "HUB",
+      title: "Execution Discipline & Brier Calibration Journal",
+      subtitle: "Rule adherence & anti-tilt monitor",
+      badge: "Hub · Level 0",
+      icon: "📖",
+      action: () => {
+        router.push("/journal");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-performance",
+      category: "HUB",
+      title: "Attribution Proof & Capital Preserved Engine",
+      subtitle: "+$5,225+ counterfactual ROI",
+      badge: "Hub · Level 0",
+      icon: "📈",
+      action: () => {
+        router.push("/performance");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-research",
+      category: "HUB",
+      title: "Institutional Research & Catalyst Dossiers",
+      subtitle: "13F whale clusters & SEC disclosures",
+      badge: "Hub · Level 0",
+      icon: "🔬",
+      action: () => {
+        router.push("/research");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-cockpit",
+      category: "GOVERNOR",
+      title: "Behavioral Governor Cockpit Portal",
+      subtitle: "Deep risk telemetry & regime controls",
+      badge: "Governor",
+      icon: "🛡️",
+      action: () => {
+        router.push("/cockpit");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "gov-risk-status",
+      category: "GOVERNOR",
+      title: "Behavioral Governor: View Active Sizing Clamps & Constraints",
+      subtitle: "Loss streak mitigation, capital floor defense, and risk telemetry",
+      badge: "-25% Clamp",
+      icon: "🛡️",
+      action: () => {
+        router.push("/cockpit");
+        onClose();
+      },
+    });
+
+    // 2. Primary Terminal Actions & Utilities
+    items.push({
+      id: "action-toggle-theme",
+      category: "ACTION",
+      title: "Toggle Theme (Obsidian Dark 🌑 ⇄ Paper Light 🌓)",
+      subtitle: "Switch between command-center dark and financial journal light theme",
+      badge: "Theme",
+      icon: "🌓",
+      action: () => {
+        const currentTheme = document.documentElement.getAttribute("data-theme");
+        const nextTheme = currentTheme === "paper" ? "dark" : "paper";
+        if (nextTheme === "paper") {
+          document.documentElement.setAttribute("data-theme", "paper");
+          localStorage.setItem("theme", "paper");
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          localStorage.setItem("theme", "dark");
+        }
+        window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: nextTheme }));
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "action-toggle-horizon",
+      category: "ACTION",
+      title: "Toggle Horizon (Day Trader ⚡ ⇄ Long-Term Investor 🏛️)",
+      subtitle: "Switch between intraday momentum setups and secular compounding",
+      badge: "Horizon",
+      icon: "⚡",
+      action: () => {
+        const current = localStorage.getItem("FINANCE_USER_ROLE") as "DAY_TRADER" | "LONG_TERM" | null;
+        const next = current === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER";
+        try { localStorage.setItem("FINANCE_USER_ROLE", next); } catch {}
+        window.dispatchEvent(new CustomEvent("finance:role-change", { detail: next }));
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "action-purge-cache",
+      category: "ACTION",
+      title: "Purge Cache & Re-sync Live Quotes",
+      subtitle: "Clear local cache and force live WebSocket/API re-sync",
+      badge: "Cache",
+      icon: "🔄",
+      action: () => {
+        try {
+          localStorage.removeItem("FINANCE_MARKET_SNAPSHOTS_V1");
+          sessionStorage.clear();
+          window.dispatchEvent(new CustomEvent("finance:cache-purge"));
+        } catch (err) {
+          console.warn("Failed to purge client cache:", err);
+        }
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "action-toggle-vernacular",
+      category: "ACTION",
+      title: "Toggle Vernacular Mode (Plain English ⚡ ⇄ Pro Quant 🏛️)",
+      subtitle: "Switch explanations between approachable terms and hedge fund metrics",
+      badge: "Instant",
+      icon: "⚡",
+      action: () => {
+        const current = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
+        const next = current === "PRO_QUANT" ? "PLAIN_ENGLISH" : "PRO_QUANT";
+        try { localStorage.setItem("ARX_VERNACULAR_MODE", next); } catch {}
+        window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: next }));
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "action-toggle-density",
+      category: "ACTION",
+      title: "Toggle Data Density Mode (Compact ⚡ ⇄ Comfortable 🖥️)",
+      subtitle: "Switch between ultra-dense command center layout and spacious cards",
+      badge: "Density",
+      icon: "🎚️",
+      action: () => {
+        const currentDensity = localStorage.getItem("ARX_DENSITY_MODE") || "COMFORTABLE";
+        const nextDensity = currentDensity === "COMPACT" ? "COMFORTABLE" : "COMPACT";
+        try { localStorage.setItem("ARX_DENSITY_MODE", nextDensity); } catch {}
+        window.dispatchEvent(new CustomEvent("finance:density-change", { detail: nextDensity }));
+        onClose();
+      },
+    });
+
+    // 3. Tactical Execution Tickets (Fast Execution Deep-Links)
+    const tacticalSetups = [
+      { ticker: "GOOGL", name: "Alphabet Inc", score: 94, pattern: "Stage 2 VCP 4T Breakout" },
+      { ticker: "NVDA", name: "NVIDIA Corp", score: 91, pattern: "Stage 2 Consolidation" },
+      { ticker: "ANET", name: "Arista Networks", score: 89, pattern: "Cup with Handle" },
+      { ticker: "META", name: "Meta Platforms", score: 88, pattern: "High Tight Flag" },
+      { ticker: "MSFT", name: "Microsoft Corp", score: 86, pattern: "Base on Base" },
+      { ticker: "AAPL", name: "Apple Inc", score: 85, pattern: "Flat Base Consolidation" },
+    ];
+
+    tacticalSetups.forEach((setup) => {
+      items.push({
+        id: `ticket-${setup.ticker.toLowerCase()}`,
+        category: "TICKET",
+        title: `${setup.name} (${setup.ticker}) — Tactical Execution Ticket`,
+        subtitle: `Confluence ${setup.score} · ${setup.pattern} · Governed Risk Sizing`,
+        badge: `Score ${setup.score}`,
+        icon: "🎯",
+        action: () => {
+          router.push(`/setups?ticker=${setup.ticker}`);
+          onClose();
+        },
+      });
+    });
+
+    // 4. Assets from Master Catalog
     Object.values(MASTER_ASSET_CATALOG).forEach((asset) => {
       const reg = SpotPriceRegistry.get(asset.symbol);
       const snap = getPersistedMarketSnapshot(asset.symbol);
@@ -84,7 +304,7 @@ export default function CommandPaletteModal({
       });
     });
 
-    // 2. Congressional & Committee Hubs
+    // 5. Congressional & Committee Hubs
     const politicians = [
       { slug: "nancy-pelosi", name: "Nancy Pelosi", chamber: "House", desc: "LEAPS Call Strategy & Tech Flow" },
       { slug: "dan-crenshaw", name: "Dan Crenshaw", chamber: "House", desc: "Energy & Commerce Committee Trades" },
@@ -106,368 +326,6 @@ export default function CommandPaletteModal({
           onClose();
         },
       });
-    });
-
-    // 3. Quick Actions
-    items.push({
-      id: "action-toggle-vernacular",
-      category: "ACTION",
-      title: "Toggle Vernacular Mode (Plain English ⚡ ⇄ Pro Quant 🏛️)",
-      subtitle: "Switch explanations between approachable terms and hedge fund metrics",
-      badge: "Instant",
-      icon: "⚡",
-      action: () => {
-        const current = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
-        const next = current === "PRO_QUANT" ? "PLAIN_ENGLISH" : "PRO_QUANT";
-        localStorage.setItem("ARX_VERNACULAR_MODE", next);
-        window.dispatchEvent(new CustomEvent("finance:vernacular-change", { detail: next }));
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "action-toggle-theme",
-      category: "ACTION",
-      title: "Toggle Theme (Obsidian Dark 🌑 ⇄ Paper Light 🌓)",
-      subtitle: "Switch between command-center dark and financial journal light theme",
-      badge: "Theme",
-      icon: "🌓",
-      action: () => {
-        const currentTheme = document.documentElement.getAttribute("data-theme");
-        const nextTheme = currentTheme === "paper" ? "dark" : "paper";
-        if (nextTheme === "paper") {
-          document.documentElement.setAttribute("data-theme", "paper");
-          localStorage.setItem("theme", "paper");
-        } else {
-          document.documentElement.removeAttribute("data-theme");
-          localStorage.setItem("theme", "dark");
-        }
-        window.dispatchEvent(new CustomEvent("finance:theme-change", { detail: nextTheme }));
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "action-toggle-density",
-      category: "ACTION",
-      title: "Toggle Data Density Mode (Compact ⚡ ⇄ Comfortable 🖥️)",
-      subtitle: "Switch between ultra-dense command center layout and spacious cards",
-      badge: "Density",
-      icon: "🎚️",
-      action: () => {
-        const currentDensity = localStorage.getItem("ARX_DENSITY_MODE") || "COMFORTABLE";
-        const nextDensity = currentDensity === "COMPACT" ? "COMFORTABLE" : "COMPACT";
-        localStorage.setItem("ARX_DENSITY_MODE", nextDensity);
-        window.dispatchEvent(new CustomEvent("finance:density-change", { detail: nextDensity }));
-        onClose();
-      },
-    });
-
-    // 4. Navigation Hubs
-    items.push({
-      id: "nav-screener",
-      category: "NAVIGATION",
-      title: "Market Scanner & Gem Screener",
-      subtitle: "Filter 60+ assets by Minervini VCP, Magic Formula, and Peter Lynch GARP",
-      badge: "Scanner",
-      icon: "💎",
-      action: () => {
-        router.push("/screener");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "nav-smart-money",
-      category: "NAVIGATION",
-      title: "Smart Money & Dark Pool Radar",
-      subtitle: "Track Congressional STOCK Act trades, SEC Form 4 sweeps, and options flow",
-      badge: "Radar",
-      icon: "📡",
-      action: () => {
-        router.push("/smart-money");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "nav-portfolio",
-      category: "NAVIGATION",
-      title: "Paper Portfolio & Macro Simulator",
-      subtitle: "Track simulated positions and test portfolio drawdowns under macro shocks",
-      badge: "Portfolio",
-      icon: "💼",
-      action: () => {
-        router.push("/portfolio");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "nav-compare",
-      category: "NAVIGATION",
-      title: "Multi-Asset Head-to-Head Compare",
-      subtitle: "Benchmark financial metrics, ROIC spreads, and beta correlations",
-      badge: "Benchmark",
-      icon: "📊",
-      action: () => {
-        router.push("/compare");
-        onClose();
-      },
-    });
-
-    // 5. Core Human Hubs
-    items.push({
-      id: "hub-today",
-      category: "HUB",
-      title: "Today & Execution (/today)",
-      subtitle: "Triad Index (LHI 84 · HHI 89 · IAI 61), Next Best Action, and Circadian Window",
-      badge: "Core Hub",
-      icon: "⚡",
-      action: () => {
-        router.push("/today");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-future",
-      category: "HUB",
-      title: "Future & Scenarios (/future)",
-      subtitle: "Runway Shield (14.2 Mo), 3-Year Wealth Compounding ($1.24M), and Future Paths",
-      badge: "Core Hub",
-      icon: "🔮",
-      action: () => {
-        router.push("/future");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-progress",
-      category: "HUB",
-      title: "Progress & Calibration (/progress)",
-      subtitle: "Identity Twin, Behavioral Drift (Public Influence 68d), and Brier Calibration",
-      badge: "Core Hub",
-      icon: "🎯",
-      action: () => {
-        router.push("/progress");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-household",
-      category: "HUB",
-      title: "Household & Relational (/household)",
-      subtitle: "Household Health Index (HHI 89), Partner Alignment (86%), and Shared Resources",
-      badge: "Core Hub",
-      icon: "🏡",
-      action: () => {
-        router.push("/household");
-        onClose();
-      },
-    });
-
-    // 6. Specialist Workbenches
-    items.push({
-      id: "wb-life-graph",
-      category: "WORKBENCH",
-      title: "Life Graph Workbench",
-      subtitle: "Causal node topology, multi-domain ripple propagation, and systemic friction",
-      badge: "Workbench",
-      icon: "🕸️",
-      action: () => {
-        router.push("/workbench/life-graph");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "wb-signals",
-      category: "WORKBENCH",
-      title: "Personal Signals Workbench",
-      subtitle: "High-frequency biometrics, telemetry streams, and circadian conviction signals",
-      badge: "Workbench",
-      icon: "📡",
-      action: () => {
-        router.push("/workbench/signals");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "wb-allocator",
-      category: "WORKBENCH",
-      title: "168-Hour Allocator Workbench",
-      subtitle: "Time, energy, and capital envelope budgeting with calendar collision resolution",
-      badge: "Workbench",
-      icon: "⏳",
-      action: () => {
-        router.push("/workbench/allocator");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "wb-journal",
-      category: "WORKBENCH",
-      title: "Decision Journal Workbench",
-      subtitle: "Probabilistic prediction auditing, Brier calibration (0.18), and post-mortems",
-      badge: "Workbench",
-      icon: "📓",
-      action: () => {
-        router.push("/workbench/journal");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "wb-simulation",
-      category: "WORKBENCH",
-      title: "Simulation & Trajectories Workbench",
-      subtitle: "Multi-year Monte Carlo trajectories, macroeconomic stress-testing, and future states",
-      badge: "Workbench",
-      icon: "🎲",
-      action: () => {
-        router.push("/workbench/simulation");
-        onClose();
-      },
-    });
-
-    // 7. Decisions
-    items.push({
-      id: "decision-nba-01",
-      category: "DECISION",
-      title: "Decision: Deep Work — AI Systems Architecture RFC",
-      subtitle: "45m high-cognitive block during peak morning chronotype window (+24 identity pts)",
-      badge: "Decision",
-      icon: "🧠",
-      action: () => {
-        router.push("/today");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "decision-zone2-run",
-      category: "DECISION",
-      title: "Decision: Zone 2 Aerobic Recovery Run (30m)",
-      subtitle: "Prevents cardiovascular fatigue and maintains autonomic nervous system HRV baseline",
-      badge: "Decision",
-      icon: "🏃",
-      action: () => {
-        router.push("/today");
-        onClose();
-      },
-    });
-
-    // 8. Signals
-    items.push({
-      id: "signal-hrv-optimal",
-      category: "SIGNAL",
-      title: "Signal: Autonomic Recovery Optimal (Sleep 84)",
-      subtitle: "Telemetry stream confirms prime cognitive bandwidth window 09:00 - 12:30",
-      badge: "Signal",
-      icon: "💓",
-      action: () => {
-        router.push("/workbench/signals");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "signal-telemetry-freshness",
-      category: "SIGNAL",
-      title: "Signal: Realtime Telemetry Connected (24 Streams)",
-      subtitle: "Confidence 91% • High conviction ratio 0.82 across biometrics and market data",
-      badge: "Signal",
-      icon: "📶",
-      action: () => {
-        router.push("/workbench/signals");
-        onClose();
-      },
-    });
-
-    // 9. Forecasts
-    items.push({
-      id: "forecast-net-worth",
-      category: "FORECAST",
-      title: "Forecast: 3-Year Net Liquid Wealth ($840k → $1.24M)",
-      subtitle: "88% confidence based on systematic equity allocation and executive compensation growth",
-      badge: "Forecast",
-      icon: "📈",
-      action: () => {
-        router.push("/future");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "forecast-exec-scope",
-      category: "FORECAST",
-      title: "Forecast: Executive AI Leadership Trajectory (VP Scope)",
-      subtitle: "82% confidence based on published enterprise RFCs and architecture board leadership",
-      badge: "Forecast",
-      icon: "🔭",
-      action: () => {
-        router.push("/future");
-        onClose();
-      },
-    });
-
-    // 10. Scenarios
-    items.push({
-      id: "scenario-pivot",
-      category: "SCENARIO",
-      title: "Scenario: Systematic AI Strategy Pivot (74% Prob)",
-      subtitle: "Recommended pathway: expected net worth $1.24M, identity fulfillment 92%",
-      badge: "Scenario",
-      icon: "🛤️",
-      action: () => {
-        router.push("/future");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "scenario-status-quo",
-      category: "SCENARIO",
-      title: "Scenario: Status Quo Analytics Management (18% Prob)",
-      subtitle: "Low near-term friction, but compounds career obsolescence ($1.02M net worth)",
-      badge: "Scenario",
-      icon: "⚠️",
-      action: () => {
-        router.push("/future");
-        onClose();
-      },
-    });
-
-    // 11. Journal Entries
-    items.push({
-      id: "journal-calibration",
-      category: "JOURNAL",
-      title: "Journal: Brier Score Calibration (0.18 Score)",
-      subtitle: "Audited across 42 decisions • Probabilities strictly match actual outcomes",
-      badge: "Journal",
-      icon: "📝",
-      action: () => {
-        router.push("/workbench/journal");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "journal-remedy-drift",
-      category: "JOURNAL",
-      title: "Journal: Identity Drift Remedy — Public Influence",
-      subtitle: "15m draft industry case note on autonomous decision engines",
-      badge: "Journal",
-      icon: "✍️",
-      action: () => {
-        router.push("/progress");
-        onClose();
-      },
     });
 
     return items;
@@ -546,7 +404,7 @@ export default function CommandPaletteModal({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tickers (NVDA, PLTR), politicians (Pelosi), or quick actions..."
+            placeholder="Jump to hub (/radar, /setups), search tickers (NVDA, GOOGL), actions..."
             className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-500 font-mono outline-none border-none"
             aria-label="Command search query"
           />
@@ -620,6 +478,18 @@ export default function CommandPaletteModal({
 
                   {cmd.category === "ACTION" && (
                     <span className="text-xs text-cyan-400 font-mono font-bold shrink-0">Run ↵</span>
+                  )}
+                  {cmd.category === "HUB" && (
+                    <span className="text-xs text-cyan-400 font-mono font-bold shrink-0">Jump ↵</span>
+                  )}
+                  {cmd.category === "TICKET" && (
+                    <span className="text-xs text-emerald-400 font-mono font-bold shrink-0">Order ↵</span>
+                  )}
+                  {cmd.category === "GOVERNOR" && (
+                    <span className="text-xs text-amber-400 font-mono font-bold shrink-0">View ↵</span>
+                  )}
+                  {cmd.category === "POLITICIAN" && (
+                    <span className="text-xs text-slate-400 font-mono font-bold shrink-0">Track ↵</span>
                   )}
                 </div>
               );

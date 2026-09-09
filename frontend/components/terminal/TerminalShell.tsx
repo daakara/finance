@@ -58,7 +58,7 @@ export default function TerminalShell({
       <section
         role="region"
         aria-label="Terminal Hub Header"
-        className="w-full bg-[#0b1019]/90 border-b border-[#1b2537] border-t border-[#1e293b] px-4 md:px-8 py-3"
+        className="w-full bg-[#0b1019]/90 border-b border-[#1b2537] border-t border-[#1e293b] px-4 md:px-8 py-2"
       >
         <div className="max-w-[1750px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
@@ -72,6 +72,17 @@ export default function TerminalShell({
             <span className="text-xs text-slate-300 font-medium hidden sm:inline italic">
               &quot;{currentHub.question}&quot;
             </span>
+            <span className="text-slate-700 hidden xl:inline">•</span>
+            <Link
+              href="/cockpit"
+              className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 hover:bg-emerald-900/40 transition-colors"
+              title="Live Behavioral Governor status and active sizing constraints"
+            >
+              <span>🛡️ Governor: Active</span>
+              <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded ml-0.5">
+                -25% Clamp
+              </span>
+            </Link>
           </div>
 
           {/* Direct Flagship Navigation Switching */}
@@ -99,10 +110,13 @@ export default function TerminalShell({
             <span className="text-slate-700">|</span>
             <Link
               href="/cockpit"
-              className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center space-x-1 font-semibold"
+              className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center space-x-1.5 font-semibold"
               title="View underlying Behavioral Governor intelligence"
             >
-              <span>🛡️ Governor</span>
+              <span>🛡️ Governor: Active</span>
+              <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded">
+                -25% Clamp
+              </span>
               <span className="text-[10px] text-slate-500 hover:text-slate-400">→</span>
             </Link>
             <span className="text-slate-700 hidden sm:inline">|</span>
@@ -122,42 +136,62 @@ export default function TerminalShell({
       <aside
         role="navigation"
         aria-label="Mobile Terminal Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1019]/95 backdrop-blur border-t border-[#1e293b] flex items-center justify-around py-2 px-1 text-[11px] font-mono shadow-2xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1019]/95 backdrop-blur-md border-t border-[#1e293b] flex items-center justify-around px-2 py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-[10px] font-mono shadow-2xl"
       >
         <Link
           href="/radar"
-          className={`flex flex-col items-center ${activeHub === 'radar' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'radar'
+              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
         >
-          <span>📡</span>
-          <span>Radar</span>
+          <span className="text-base mb-0.5 leading-none">📡</span>
+          <span className="truncate">Radar</span>
         </Link>
         <Link
           href="/setups"
-          className={`flex flex-col items-center ${activeHub === 'setups' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'setups'
+              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
         >
-          <span>⚡</span>
-          <span>Setups</span>
+          <span className="text-base mb-0.5 leading-none">⚡</span>
+          <span className="truncate">Setups</span>
         </Link>
         <Link
           href="/portfolio"
-          className={`flex flex-col items-center ${activeHub === 'portfolio' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'portfolio'
+              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
         >
-          <span>💼</span>
-          <span>Portfolio</span>
+          <span className="text-base mb-0.5 leading-none">💼</span>
+          <span className="truncate">Portfolio</span>
         </Link>
         <Link
           href="/journal"
-          className={`flex flex-col items-center ${activeHub === 'journal' ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'journal'
+              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
         >
-          <span>📖</span>
-          <span>Journal</span>
+          <span className="text-base mb-0.5 leading-none">📖</span>
+          <span className="truncate">Journal</span>
         </Link>
         <Link
           href="/performance"
-          className={`flex flex-col items-center ${activeHub === 'performance' ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'performance'
+              ? 'text-emerald-400 font-bold bg-emerald-950/50 border border-emerald-800/60 shadow-inner'
+              : 'text-emerald-400/80 hover:text-emerald-200 hover:bg-slate-900/60'
+          }`}
         >
-          <span>📈</span>
-          <span>Alpha</span>
+          <span className="text-base mb-0.5 leading-none">📈</span>
+          <span className="truncate">Alpha</span>
         </Link>
       </aside>
     </div>
