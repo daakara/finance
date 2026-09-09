@@ -17,6 +17,7 @@ import IntelligenceHeader from '../../components/ui/IntelligenceHeader';
 import HorizonCard from '../../components/ui/HorizonCard';
 import HorizonMetricCard from '../../components/ui/HorizonMetricCard';
 import SeverityBadge from '../../components/ui/SeverityBadge';
+import ThirtySecondCockpit from '../../components/cockpit/ThirtySecondCockpit';
 import {
   CANONICAL_PERSONAL_DRIFT_CARDS,
   getDriftGaugeProperties,
@@ -32,6 +33,7 @@ function LifeCommandCenterContent() {
   const [selectedStrategyId, setSelectedStrategyId] = useState<string>('STRAT-D-COMBINED');
   const [expandedDriftIndex, setExpandedDriftIndex] = useState<number | null>(0);
   const [selectedPortfolioPath, setSelectedPortfolioPath] = useState<string>('PATH-B');
+  const [viewMode, setViewMode] = useState<'COCKPIT' | 'DEEP_SIMULATION'>('COCKPIT');
 
   const recoveryData = CANONICAL_RECOVERY_PROJECTION;
   const rankedStrategies = rankRecoveryStrategies(
@@ -139,14 +141,54 @@ function LifeCommandCenterContent() {
       {/* Primary Header */}
       <IntelligenceHeader
         title="Personal Life Operating System"
-        subtitle="The individual personal intelligence layer. Real-time Life Health Index, future self trajectory navigation, personal strategy portfolio ranking, and adaptive recovery projections."
-        certification="HORIZON-9-CERTIFIED"
+        subtitle="Universal Human Intelligence Layer & 30-Second Life Cockpit. Real-time decision reduction, fail-closed behavioral guardrails, and quantitative trading companion."
+        certification="HORIZON-10-CERTIFIED"
         status="CERTIFIED"
         breadcrumbs={[
           { label: 'Life OS', href: '/me' },
-          { label: 'Command Center' },
+          { label: '30-Second Cockpit' },
         ]}
       />
+
+      {/* Horizon 10 View Mode Switcher */}
+      <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-2 px-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Experience View:</span>
+          <span className="text-xs text-emerald-400 font-semibold">
+            {viewMode === 'COCKPIT' ? '30-Second Life Cockpit (Calm Mode)' : 'Deep Multi-Layer Simulation Suite'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+          <button
+            onClick={() => setViewMode('COCKPIT')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+              viewMode === 'COCKPIT'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            30-Second Cockpit
+          </button>
+          <button
+            onClick={() => setViewMode('DEEP_SIMULATION')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+              viewMode === 'DEEP_SIMULATION'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Deep Simulation (H5-H9)
+          </button>
+        </div>
+      </div>
+
+      {/* 30-SECOND COCKPIT VIEW (DEFAULT) */}
+      {viewMode === 'COCKPIT' && (
+        <ThirtySecondCockpit />
+      )}
+
+      {viewMode === 'DEEP_SIMULATION' && (
+        <>
 
       {/* ========================================================================= */}
       {/* LAYER 1: LIFE COMMAND CENTER (Vital Signs) */}
@@ -635,6 +677,8 @@ function LifeCommandCenterContent() {
           </div>
         </HorizonCard>
       </div>
+        </>
+      )}
     </div>
   );
 }
