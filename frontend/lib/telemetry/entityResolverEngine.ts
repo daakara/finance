@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG', 'REL', 'ADP', 'SBX'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG', 'REL', 'ADP', 'SBX', 'ORC'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -893,6 +893,22 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { sandboxId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 45. ORC (Adaptive Strategy Orchestrator & Drift Engine)
+  if (prefix === 'ORC') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'STRATEGY_ORCHESTRATOR' as NavigationEntityType,
+      entityId: input,
+      title: `Adaptive Strategy Orchestrator (${input})`,
+      canonicalRoute: `/strategy-orchestrator`,
+      found: true,
+      suggestions: [],
+      targetParams: { orchestratorId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;

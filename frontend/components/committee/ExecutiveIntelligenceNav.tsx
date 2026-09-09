@@ -26,6 +26,7 @@ const STRATEGIC_LINKS = [
   { href: "/simulation-intelligence", label: "Simulation" },
   { href: "/executive-sandbox", label: "Sandbox" },
   { href: "/strategy-laboratory", label: "Strategy Lab" },
+  { href: "/strategy-orchestrator", label: "Orchestrator" },
 ];
 
 const OPERATIONAL_LINKS = [
