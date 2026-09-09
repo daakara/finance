@@ -122,9 +122,14 @@ export default function ThirtySecondCockpit() {
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
               1. How Am I Doing?
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-              Optimal State
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+                LHI 84 · HHI 89 · IAI 61
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                Optimal State
+              </span>
+            </div>
           </div>
           <div className="flex items-baseline gap-3 mb-2">
             <span className="text-3xl font-extrabold text-white tracking-tight">84 / 100</span>
@@ -381,6 +386,9 @@ export default function ThirtySecondCockpit() {
           </Link>
           <Link href="/me/patterns" className="px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-700/80 font-semibold">
             Behavioral Patterns (H12)
+          </Link>
+          <Link href="/me/identity" className="px-3 py-1.5 rounded-lg bg-indigo-950/90 hover:bg-indigo-900/90 text-indigo-200 border border-indigo-600/90 font-semibold">
+            Identity Intelligence (H13)
           </Link>
           <Link href="/screener" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
             Market Screener Terminal
