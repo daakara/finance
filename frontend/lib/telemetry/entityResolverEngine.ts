@@ -37,7 +37,7 @@ import { getRecommendations, getRecommendationById } from '../governance/collect
 import { getInterventionPlans, getInterventionPlanById } from '../governance/interventionPlanner';
 import { detectBiases, CANONICAL_BIAS_ALERTS } from '../governance/biasDetectionEngine';
 
-const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG', 'REL'] as const;
+const SUPPORTED_PREFIXES = ['DEC', 'OUT', 'DIS', 'COM', 'PROP', 'LRN', 'INC', 'RSK', 'GT', 'REC', 'PLAN', 'BIAS', 'OOS', 'OHI', 'REP', 'CSC', 'OPT', 'ALLOC', 'SIM', 'RECSTATE', 'FAIL', 'SURV', 'SCN', 'ACT', 'POL', 'OVR', 'EVAL', 'ERR', 'RB', 'GOV', 'NI', 'GRP', 'NODE', 'TWIN', 'LAB', 'WS', 'INBOX', 'BRF', 'FUT', 'CF', 'PKG', 'REL', 'ADP'] as const;
 
 const searchTelemetryLog: SearchTelemetry[] = [];
 
@@ -845,6 +845,22 @@ export function resolveEntityQuery(rawInput: string): EntityResolution {
       found: true,
       suggestions: [],
       targetParams: { packageId: input },
+    };
+    logTelemetry(rawInput, resolution, Date.now() - start);
+    return resolution;
+  }
+
+  // 43. ADP (Executive Adoption & Value Realization)
+  if (prefix === 'ADP') {
+    const resolution: EntityResolution = {
+      input: rawInput,
+      entityType: 'ADOPTION_CENTER' as NavigationEntityType,
+      entityId: input,
+      title: `Executive Adoption Center (${input})`,
+      canonicalRoute: `/adoption-center`,
+      found: true,
+      suggestions: [],
+      targetParams: { adoptionId: input },
     };
     logTelemetry(rawInput, resolution, Date.now() - start);
     return resolution;
@@ -1683,6 +1699,37 @@ export function buildRelatedArtifacts(entityId: string): RelatedArtifactsSummary
   }
 
   // If Institutional Simulation / Counterfactual (FUT-, CF-)
+  // If Adoption ID (ADP-xxx)
+  if (id.startsWith('ADP-') || id === 'ADP') {
+    items.push({
+      entityId: 'ADP-EXEC-2026',
+      entityType: 'ADOPTION_CENTER' as NavigationEntityType,
+      title: 'Executive Adoption Center',
+      subtitle: 'Value Realization & Usage Telemetry',
+      canonicalRoute: '/adoption-center',
+      relationship: 'SOURCE_DECISION',
+      statusBadge: 'CERTIFIED',
+    });
+
+    items.push({
+      entityId: 'WS-CIO-001',
+      entityType: 'EXECUTIVE_WORKSPACE',
+      title: 'CIO Mission Control Workspace',
+      subtitle: 'Primary Decision Station',
+      canonicalRoute: '/executive-workspace',
+      relationship: 'PARENT_COMMITTEE',
+      statusBadge: 'AUTHORIZING_BODY',
+    });
+
+    return {
+      primaryEntityId: id,
+      primaryEntityType: 'ADOPTION_CENTER' as NavigationEntityType,
+      items,
+      totalConnectedArtifacts: items.length,
+      auditReconstructible: true,
+    };
+  }
+
   // If Release ID (REL-xxx)
   if (id.startsWith('REL-') || id === 'REL') {
     items.push({

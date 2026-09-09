@@ -15,6 +15,7 @@ const WORKSPACE_LINKS = [
   { href: "/decision-inbox", label: "Inbox" },
   { href: "/intelligence-center", label: "Overview" },
   { href: "/action-center", label: "Actions" },
+  { href: "/adoption-center", label: "Adoption" },
   { href: "/graph-explorer", label: "Graph" },
 ];
 
