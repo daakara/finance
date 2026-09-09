@@ -182,77 +182,77 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 </div>
               </Link>
 
-              {/* Desktop Navigation Links (4 Core Human Hubs + Workbenches + Terminal) */}
+              {/* Desktop Navigation Links (6 Terminal Flagship Hubs) */}
               <nav
                 aria-label="Main Navigation"
                 data-testid="desktop-nav-links"
                 className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0"
               >
                 <Link
-                  href="/today"
-                  aria-current={pathname === "/today" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/today"
-                      ? "bg-[#1b2434] text-emerald-400 font-bold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  ⚡ Today
-                </Link>
-                <Link
-                  href="/future"
-                  aria-current={pathname === "/future" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/future"
-                      ? "bg-[#1b2434] text-cyan-400 font-bold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>🔮 Future</span>
-                </Link>
-                <Link
-                  href="/progress"
-                  aria-current={pathname === "/progress" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/progress"
-                      ? "bg-[#1b2434] text-purple-400 font-bold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>🎯 Progress</span>
-                </Link>
-                <Link
-                  href="/household"
-                  aria-current={pathname === "/household" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/household"
-                      ? "bg-[#1b2434] text-blue-400 font-bold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>🏡 Household</span>
-                </Link>
-                <Link
-                  href="/workbench/life-graph"
-                  aria-current={pathname?.startsWith("/workbench") ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname?.startsWith("/workbench")
-                      ? "bg-purple-950/80 text-purple-300 font-bold border border-purple-800"
-                      : "text-purple-400/90 hover:text-purple-200"
-                  }`}
-                >
-                  <span>⚙️ Workbenches</span>
-                </Link>
-                <Link
                   href="/radar"
-                  aria-current={pathname === "/radar" || pathname === "/setups" || pathname === "/portfolio" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/radar" || pathname === "/setups" || pathname === "/portfolio"
+                  aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/radar" || pathname === "/screener"
                       ? "bg-[#1b2434] text-cyan-400 font-semibold"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
-                  <span>Terminal</span>
+                  Radar
+                </Link>
+                <Link
+                  href="/setups"
+                  aria-current={pathname === "/setups" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/setups"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Setups</span>
+                </Link>
+                <Link
+                  href="/portfolio"
+                  aria-current={pathname === "/portfolio" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/portfolio"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Portfolio</span>
+                </Link>
+                <Link
+                  href="/journal"
+                  aria-current={pathname === "/journal" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/journal"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Journal</span>
+                </Link>
+                <Link
+                  href="/performance"
+                  aria-current={pathname === "/performance" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/performance"
+                      ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
+                      : "text-emerald-400/90 hover:text-emerald-200"
+                  }`}
+                >
+                  <span>Performance</span>
+                </Link>
+                <Link
+                  href="/research"
+                  aria-current={pathname?.startsWith("/research") || pathname?.startsWith("/compare") || pathname?.startsWith("/stock") ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname?.startsWith("/research") || pathname?.startsWith("/compare") || pathname?.startsWith("/stock")
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Research</span>
                 </Link>
                 <button
                   type="button"
@@ -315,6 +315,16 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
 
             {/* Adaptive Experience Mode Selector: Guided · Standard · Quant (URL-Synchronized per ADR-003) */}
             <ExperienceModeToggle />
+
+            {/* Behavioral Risk Governor Telemetry Portal */}
+            <Link
+              href="/cockpit"
+              className="hidden xl:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 hover:bg-emerald-900/40 transition-colors"
+              title="Behavioral Risk Governor & Telemetry Portal"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Governor</span>
+            </Link>
 
             {/* Theme Toggle */}
             <ThemeToggle />
@@ -388,58 +398,58 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
     >
       <Link
-        href="/today"
-        aria-current={pathname === "/today" ? "page" : undefined}
+        href="/radar"
+        aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
         className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-          pathname === "/today" ? "bg-[#1b2434] text-emerald-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          pathname === "/radar" || pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
         }`}
       >
-        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚡</span>
-        <span className="text-[9px] tracking-tight">Today</span>
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📡</span>
+        <span className="text-[9px] tracking-tight">Radar</span>
       </Link>
 
       <Link
-        href="/future"
-        aria-current={pathname === "/future" ? "page" : undefined}
+        href="/setups"
+        aria-current={pathname === "/setups" ? "page" : undefined}
         className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-          pathname === "/future" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-        }`}
-      >
-        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🔮</span>
-        <span className="text-[9px] tracking-tight">Future</span>
-      </Link>
-
-      <Link
-        href="/progress"
-        aria-current={pathname === "/progress" ? "page" : undefined}
-        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-          pathname === "/progress" ? "bg-[#1b2434] text-purple-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          pathname === "/setups" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
         }`}
       >
         <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🎯</span>
-        <span className="text-[9px] tracking-tight">Progress</span>
+        <span className="text-[9px] tracking-tight">Setups</span>
       </Link>
 
       <Link
-        href="/household"
-        aria-current={pathname === "/household" ? "page" : undefined}
+        href="/portfolio"
+        aria-current={pathname === "/portfolio" ? "page" : undefined}
         className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-          pathname === "/household" ? "bg-[#1b2434] text-blue-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
         }`}
       >
-        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🏡</span>
-        <span className="text-[9px] tracking-tight">Household</span>
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
+        <span className="text-[9px] tracking-tight">Portfolio</span>
       </Link>
 
       <Link
-        href="/radar"
-        aria-current={pathname === "/radar" || pathname === "/setups" || pathname === "/portfolio" ? "page" : undefined}
-        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-          pathname === "/radar" || pathname === "/setups" || pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+        href="/journal"
+        aria-current={pathname === "/journal" ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/journal" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
         }`}
       >
-        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📊</span>
-        <span className="text-[9px] tracking-tight">Terminal</span>
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📓</span>
+        <span className="text-[9px] tracking-tight">Journal</span>
+      </Link>
+
+      <Link
+        href="/performance"
+        aria-current={pathname === "/performance" ? "page" : undefined}
+        className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          pathname === "/performance" ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60" : "text-emerald-400/90 hover:text-emerald-200"
+        }`}
+      >
+        <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📈</span>
+        <span className="text-[9px] tracking-tight">Alpha</span>
       </Link>
 
       {/* Quick Horizon Toggle on Mobile Dock */}

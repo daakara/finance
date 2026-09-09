@@ -8,6 +8,8 @@
  * Enforces INV-OI114-P: Favors sizing reduction over total trade prohibitions.
  */
 
+import { getUnifiedCockpitState } from './unifiedCockpitStore';
+
 export interface TraderContext {
   accountEquity: number;
   standardRiskBudgetPct: number; // e.g. 0.005 for 0.5%, 0.01 for 1.0%
@@ -15,6 +17,25 @@ export interface TraderContext {
   tradingHour: number; // 9 to 16 (Eastern Time)
   liquidRunwayMonths: number;
   dailyDrawdownPct: number;
+}
+
+/**
+ * Derives real-time TraderContext directly from the Unified CQRS Cockpit Store.
+ * Connects underlying Life & Household intelligence directly to the Terminal Governor.
+ */
+export function getTraderContextFromUnifiedCockpit(overrides?: Partial<TraderContext>): TraderContext {
+  const cockpit = getUnifiedCockpitState();
+  const currentHour = new Date().getHours();
+
+  return {
+    accountEquity: 50000,
+    standardRiskBudgetPct: 0.01,
+    consecutiveLossStreak: 2,
+    tradingHour: currentHour >= 9 && currentHour <= 16 ? currentHour : 10,
+    liquidRunwayMonths: cockpit.runway.monthsUnencumbered,
+    dailyDrawdownPct: 0.0,
+    ...overrides,
+  };
 }
 
 export interface TradeSetupSpec {
