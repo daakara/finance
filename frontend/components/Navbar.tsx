@@ -189,29 +189,26 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                 className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0"
               >
                 <Link
-                  href="/"
-                  aria-current={pathname === "/" ? "page" : undefined}
+                  href="/radar"
+                  aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
                   className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/"
+                    pathname === "/radar" || pathname === "/screener"
                       ? "bg-[#1b2434] text-cyan-400 font-semibold"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
-                  Terminal
+                  Radar
                 </Link>
                 <Link
-                  href="/screener"
-                  aria-current={pathname === "/screener" || pathname === "/smart-money" ? "page" : undefined}
+                  href="/setups"
+                  aria-current={pathname === "/setups" ? "page" : undefined}
                   className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/screener" || pathname === "/smart-money"
+                    pathname === "/setups"
                       ? "bg-[#1b2434] text-cyan-400 font-semibold"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
-                  <svg aria-hidden="true" className="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  <span>Intelligence</span>
+                  <span>Setups</span>
                 </Link>
                 <Link
                   href="/portfolio"
@@ -225,26 +222,37 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                   <span>Portfolio</span>
                 </Link>
                 <Link
-                  href="/compare"
-                  aria-current={pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs") ? "page" : undefined}
+                  href="/journal"
+                  aria-current={pathname === "/journal" ? "page" : undefined}
                   className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname?.startsWith("/compare") || pathname?.startsWith("/strategy") || pathname?.startsWith("/vs")
+                    pathname === "/journal"
+                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span>Journal</span>
+                </Link>
+                <Link
+                  href="/performance"
+                  aria-current={pathname === "/performance" ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname === "/performance"
+                      ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
+                      : "text-emerald-400/90 hover:text-emerald-200"
+                  }`}
+                >
+                  <span>Performance</span>
+                </Link>
+                <Link
+                  href="/research"
+                  aria-current={pathname?.startsWith("/research") || pathname?.startsWith("/compare") || pathname?.startsWith("/stock") ? "page" : undefined}
+                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                    pathname?.startsWith("/research") || pathname?.startsWith("/compare") || pathname?.startsWith("/stock")
                       ? "bg-[#1b2434] text-cyan-400 font-semibold"
                       : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   <span>Research</span>
-                </Link>
-                <Link
-                  href="/guide"
-                  aria-current={pathname === "/guide" || pathname?.startsWith("/glossary") ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/guide" || pathname?.startsWith("/glossary")
-                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>Docs</span>
                 </Link>
                 <button
                   type="button"
