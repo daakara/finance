@@ -166,6 +166,44 @@ export function addPortfolioPosition(pos: {
   }
 }
 
+export function updatePortfolioPosition(pos: {
+  symbol: string;
+  shares: number;
+  entryPrice?: number;
+  currentPrice?: number;
+  targetPrice?: number;
+  stopLossPrice?: number;
+  name?: string;
+}): { success: boolean; message: string } {
+  if (typeof window === "undefined") return { success: false, message: "Window undefined" };
+  try {
+    const existing = loadPortfolioPositions();
+    const symUpper = (pos.symbol || "").toUpperCase().trim();
+    const idx = existing.findIndex((p) => p.symbol.toUpperCase() === symUpper);
+    if (idx < 0) {
+      return { success: false, message: `${symUpper} position not found in portfolio` };
+    }
+    const current = existing[idx];
+    const updatedPos: PortfolioPosition = {
+      ...current,
+      shares: pos.shares,
+      entryPrice: pos.entryPrice !== undefined ? pos.entryPrice : current.entryPrice,
+      currentPrice: pos.currentPrice !== undefined ? pos.currentPrice : current.currentPrice,
+      targetPrice: pos.targetPrice !== undefined ? pos.targetPrice : current.targetPrice,
+      stopLossPrice: pos.stopLossPrice !== undefined ? pos.stopLossPrice : current.stopLossPrice,
+      name: pos.name || current.name,
+    };
+    const updatedList = [...existing];
+    updatedList[idx] = updatedPos;
+    savePortfolioPositions(updatedList);
+    window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
+    return { success: true, message: `Updated ${symUpper} holding (${pos.shares} shares)!` };
+  } catch (err) {
+    console.error("Failed to update portfolio position:", err);
+    return { success: false, message: "Failed to update position" };
+  }
+}
+
 export function calculatePortfolioSummary(positions: PortfolioPosition[]): PortfolioSummary {
   let totalEquity = 0;
   let totalCost = 0;

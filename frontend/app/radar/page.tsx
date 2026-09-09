@@ -389,7 +389,7 @@ export default function RadarPage() {
 
               <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
                 <Link
-                  href="/setups"
+                  href={`/setups?ticker=${heroAsset.ticker}`}
                   className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <span>ARM EXECUTION TICKET IN /SETUPS</span>
@@ -560,7 +560,7 @@ export default function RadarPage() {
                       </td>
                       <td className="p-3 text-right">
                         <Link
-                          href="/setups"
+                          href={`/setups?ticker=${asset.ticker}`}
                           className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400 text-[10px] font-bold font-mono transition-colors inline-block"
                         >
                           Setup →

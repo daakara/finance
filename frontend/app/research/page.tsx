@@ -145,7 +145,7 @@ export default function ResearchPage() {
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
               <Link
-                href="/setups"
+                href={`/setups?ticker=${activeDossier.ticker}`}
                 className="px-5 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <span>OPEN TACTICAL SETUP</span>
@@ -233,7 +233,8 @@ export default function ResearchPage() {
                         <td className="p-3 text-right">
                           <button
                             type="button"
-                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400 text-[10px] font-bold font-mono transition-colors"
+                            onClick={(e) => { e.stopPropagation(); setSelectedTicker(item.ticker); }}
+                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400 text-[10px] font-bold font-mono transition-colors cursor-pointer"
                           >
                             Inspect
                           </button>

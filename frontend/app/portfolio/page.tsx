@@ -30,6 +30,8 @@ export default function PortfolioPage() {
     positionsCount: 0,
   });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [anonId, setAnonId] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
@@ -90,10 +92,26 @@ export default function PortfolioPage() {
   }, []);
 
   const handleOpenAddModal = (initialSymbol?: string) => {
-    const target = initialSymbol || newSymbol || "SEDG";
+    setIsEditing(false);
+    setModalError(null);
+    const target = initialSymbol || "SEDG";
     setNewSymbol(target);
+    setNewShares("10");
     setShowAddModal(true);
     populateTickerData(target);
+  };
+
+  const handleOpenEditModal = (pos: PortfolioPosition) => {
+    setIsEditing(true);
+    setModalError(null);
+    setNewSymbol(pos.symbol);
+    setNewShares(pos.shares.toString());
+    setNewEntryPrice(pos.entryPrice.toString());
+    setNewStopLoss(pos.stopLossPrice ? pos.stopLossPrice.toString() : "");
+    setNewTarget(pos.targetPrice ? pos.targetPrice.toString() : "");
+    setResolvedAssetName(pos.name);
+    setResolvedQuotePrice(pos.currentPrice);
+    setShowAddModal(true);
   };
 
   const refreshQuotes = useCallback(async (basePositions: PortfolioPosition[]) => {
@@ -162,20 +180,45 @@ export default function PortfolioPage() {
     };
   }, [refreshQuotes]);
 
-  const handleAddPosition = (e: React.FormEvent) => {
+  const handleSaveHolding = (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
     const trimmedSym = newSymbol.trim().toUpperCase();
     const aliasInfo = resolveAssetAlias(trimmedSym);
     const symUpper = (aliasInfo ? aliasInfo.canonicalTicker : trimmedSym).toUpperCase();
+
+    if (!symUpper) {
+      setModalError("Please specify a valid stock symbol or ticker.");
+      return;
+    }
+
     const sharesNum = parseFloat(newShares);
+    if (isNaN(sharesNum) || sharesNum <= 0) {
+      setModalError("Holding quantity must be a positive number greater than 0 (e.g. 0.25, 0.001, 10). Zero or negative quantities are not permitted.");
+      return;
+    }
+
     const entryNum = parseFloat(newEntryPrice);
+    if (isNaN(entryNum) || entryNum <= 0) {
+      setModalError("Entry price must be a positive number greater than $0.00.");
+      return;
+    }
+
     const stopNum = newStopLoss ? parseFloat(newStopLoss) : undefined;
+    if (newStopLoss && (isNaN(stopNum!) || stopNum! <= 0)) {
+      setModalError("Stop loss must be a positive price if specified.");
+      return;
+    }
+
     const targetNum = newTarget ? parseFloat(newTarget) : undefined;
+    if (newTarget && (isNaN(targetNum!) || targetNum! <= 0)) {
+      setModalError("Target price must be a positive price if specified.");
+      return;
+    }
 
-    if (!symUpper || isNaN(sharesNum) || isNaN(entryNum) || sharesNum <= 0 || entryNum <= 0) return;
-
-    const authenticName = getCanonicalAssetName(symUpper);
+    const authenticName = resolvedAssetName || getCanonicalAssetName(symUpper);
     const curPrice = resolvedQuotePrice && !isNaN(resolvedQuotePrice) ? resolvedQuotePrice : entryNum;
+    const existing = positions.find((p) => p.symbol === symUpper);
 
     const newPos: PortfolioPosition = {
       symbol: symUpper,
@@ -185,8 +228,8 @@ export default function PortfolioPage() {
       currentPrice: curPrice,
       targetPrice: targetNum,
       stopLossPrice: stopNum,
-      addedAt: new Date().toISOString().split("T")[0],
-      assetType: "Stock",
+      addedAt: existing?.addedAt || new Date().toISOString().split("T")[0],
+      assetType: existing?.assetType || "Stock",
     };
 
     const updated = [newPos, ...positions.filter((p) => p.symbol !== symUpper)];
@@ -194,8 +237,9 @@ export default function PortfolioPage() {
     setSummary(calculatePortfolioSummary(updated));
     savePortfolioPositions(updated);
     setShowAddModal(false);
+    setModalError(null);
 
-    trackMatomoEvent("User Journey", "Add Portfolio Position", `${symUpper} (${sharesNum} shares)`);
+    trackMatomoEvent("User Journey", isEditing ? "Edit Portfolio Position" : "Add Portfolio Position", `${symUpper} (${sharesNum} shares)`);
   };
 
   const handleRemovePosition = (symbol: string) => {
@@ -543,7 +587,7 @@ export default function PortfolioPage() {
                         </Link>
                       </td>
                       <td className="py-3 px-4">{statusBadge}</td>
-                      <td className="py-3 px-4 text-slate-200">{pos.shares}</td>
+                      <td className="py-3 px-4 text-slate-200">{typeof pos.shares === "number" ? Number(pos.shares.toFixed(6)) : pos.shares}</td>
                       <td className="py-3 px-4 text-slate-300">${pos.entryPrice.toFixed(2)}</td>
                       <td className="py-3 px-4 text-white font-bold">${pos.currentPrice.toFixed(2)}</td>
                       <td className="py-3 px-4 text-slate-100 font-bold">${mktVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -558,12 +602,22 @@ export default function PortfolioPage() {
                         <span className="text-emerald-400">Target: ${pos.targetPrice?.toFixed(2) || "None"}</span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleRemovePosition(pos.symbol)}
-                          className="px-2.5 py-1 text-[11px] rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 transition-colors"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(pos)}
+                            className="px-2.5 py-1 text-[11px] rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border border-slate-700 transition-colors cursor-pointer"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePosition(pos.symbol)}
+                            className="px-2.5 py-1 text-[11px] rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/80 transition-colors cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -601,7 +655,7 @@ export default function PortfolioPage() {
               </div>
 
               {/* Scrollable Form Body */}
-              <form onSubmit={handleAddPosition} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
+              <form onSubmit={handleSaveHolding} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
                 {/* Ticker Input & Quick Chips */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -670,13 +724,13 @@ export default function PortfolioPage() {
                     <input
                       type="number"
                       step="any"
-                      min="1"
+                      min="0.000001"
                       value={newShares}
                       onChange={(e) => setNewShares(e.target.value)}
                       className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                       required
                     />
-                    <span className="text-[10px] text-slate-500 block mt-0.5">Sized to ~$2,500</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Supports fractional quantities (e.g. 0.25, 0.001)</span>
                   </div>
                   <div>
                     <label className="block text-slate-300 font-bold mb-1">Entry Price ($)</label>
@@ -730,7 +784,7 @@ export default function PortfolioPage() {
                     type="submit"
                     className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer"
                   >
-                    Save Holding
+                    {isEditing ? "Update Holding" : "Save Holding"}
                   </button>
                 </div>
               </form>

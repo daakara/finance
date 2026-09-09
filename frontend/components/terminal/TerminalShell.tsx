@@ -193,6 +193,17 @@ export default function TerminalShell({
           <span className="text-base mb-0.5 leading-none">📈</span>
           <span className="truncate">Alpha</span>
         </Link>
+        <Link
+          href="/research"
+          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
+            activeHub === 'research'
+              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
+        >
+          <span className="text-base mb-0.5 leading-none">🔬</span>
+          <span className="truncate">Research</span>
+        </Link>
       </aside>
     </div>
   );
