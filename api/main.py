@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance
+from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 from api.middleware.api_key_auth import ApiKeyAuthMiddleware
 
@@ -141,6 +141,7 @@ app.include_router(regimes.router, prefix="/api/v1/regimes", tags=["Market Regim
 app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management"])
 app.include_router(smart_money.router, prefix="/api/v1/smart-money", tags=["Smart Money & Flow"])
 app.include_router(governance.router, prefix="/api/v1/governance", tags=["Model Governance & Prospective Evaluation"])
+app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio Holdings"])
 
 
 @app.get("/health", tags=["Health"])

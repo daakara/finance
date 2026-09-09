@@ -11,6 +11,7 @@ import {
   calculatePortfolioSummary,
   getAnonymousUserId,
   exportPortfolioToCsv,
+  syncPortfolioFromApi,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics, SpotPriceRegistry } from "../../lib/api";
@@ -150,7 +151,20 @@ export default function PortfolioPage() {
     const loaded = loadPortfolioPositions();
     setPositions(loaded);
     setSummary(calculatePortfolioSummary(loaded));
-    refreshQuotes(loaded);
+    if (loaded.length > 0) {
+      refreshQuotes(loaded);
+    }
+
+    // Sync authoritative API holdings in background
+    syncPortfolioFromApi().then((synced) => {
+      if (synced && synced.length > 0) {
+        setPositions(synced);
+        setSummary(calculatePortfolioSummary(synced));
+        refreshQuotes(synced);
+      }
+    }).catch((err) => {
+      console.warn("Portfolio API sync error:", err);
+    });
 
     // Auto-open add modal if ?add=SYMBOL query is present
     if (typeof window !== "undefined") {
@@ -543,7 +557,32 @@ export default function PortfolioPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1b2434] font-medium tabular-nums">
-                {positions.map((pos) => {
+                {positions.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 px-4 text-center">
+                      <div className="max-w-md mx-auto space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-2xl">
+                          💼
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-bold text-slate-200 font-mono">No Portfolio Holdings Stored</h3>
+                          <p className="text-xs text-slate-400 font-sans">
+                            Your portfolio is clean and private. Add your real or paper positions to monitor asymmetric stop-loss protection and automated risk ladders.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddModal()}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 cursor-pointer"
+                        >
+                          <span>➕</span>
+                          <span>Add First Holding</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  positions.map((pos) => {
                   const mktVal = pos.shares * pos.currentPrice;
                   const cost = pos.shares * pos.entryPrice;
                   const pnl = mktVal - cost;
@@ -621,7 +660,7 @@ export default function PortfolioPage() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>

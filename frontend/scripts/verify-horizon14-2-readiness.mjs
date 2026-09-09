@@ -148,15 +148,13 @@ if (fs.existsSync(radarPath)) {
   assert(rSrc.includes('matchesCategory'), 'Implements matchesCategory filtering logic');
   assert(rSrc.includes('matchesQuery'), 'Implements matchesQuery multi-field substring logic');
 
-  // Verify specific assets exist with correct multi-categories
-  assert(rSrc.includes("NVDA:") && rSrc.includes("categories: ['VCP', 'SMART_MONEY']"), 'NVDA is categorized in both VCP and SMART_MONEY');
-  assert(rSrc.includes("LNTH:") && rSrc.includes("categories: ['VALUE']"), 'LNTH is categorized strictly in VALUE (Greenblatt Magic Formula)');
-  assert(rSrc.includes("GOOGL:") && rSrc.includes("categories: ['VCP', 'SMART_MONEY']"), 'GOOGL is categorized in SMART_MONEY with Director buying');
-  assert(rSrc.includes("ANET:") && rSrc.includes("categories: ['SMART_MONEY', 'VCP']"), 'ANET is categorized in VCP and SMART_MONEY');
-
-  // Filter isolation unit assertions on raw data structure
-  assert(rSrc.includes('2 Corporate Directors purchased $1.2M at $178 floor'), 'Catalyst "Director" associated with GOOGL insider purchase');
-  assert(rSrc.includes('Magic Formula'), 'Magic Formula screening model indexed in universe');
+  // Verify live API-backed dynamic category mapping and zero hardcoded asset specs
+  assert(rSrc.includes('fetchScreenerGems'), 'Radar loads real screener candidates via fetchScreenerGems API');
+  assert(!rSrc.includes('ASSET_SPEC_MAP'), 'Eliminated hardcoded ASSET_SPEC_MAP from radar page');
+  assert(rSrc.includes('cat.push("VCP")'), 'Dynamic multi-category mapping classifies VCP setups');
+  assert(rSrc.includes('cat.push("VALUE")'), 'Dynamic multi-category mapping classifies Value & GARP setups');
+  assert(rSrc.includes('cat.push("SMART_MONEY")'), 'Dynamic multi-category mapping classifies Smart Money setups');
+  assert(!rSrc.includes('CANONICAL_RADAR_ASSETS'), 'Zero hardcoded CANONICAL_RADAR_ASSETS arrays in radar page');
 }
 
 // -------------------------------------------------------------

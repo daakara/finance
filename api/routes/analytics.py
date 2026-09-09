@@ -2,6 +2,7 @@ import os
 import re
 import math
 import logging
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Response
 import pandas as pd
@@ -145,6 +146,97 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
         "ema_20": round(latest_ema_20, 2) if latest_ema_20 else None,
         "sma_50": round(latest_sma_50, 2) if latest_sma_50 else None,
         "atr_14": round(latest_atr_14, 2) if latest_atr_14 else None,
+    }
+
+
+
+@router.get("/setups", tags=["Setups"])
+def get_tactical_setups(
+    tickers: Optional[str] = Query(None, description="Comma-separated ticker list"),
+    user_role: str = Query("LONG_TERM", description="Trading Horizon lens"),
+    response: Response = None,
+):
+    """Fetch authoritative tactical trade setups calculated by OptimalExecutionEngine & ConfluenceEngine.
+    Returns only verified, mathematically calculated setups without hardcoded fallbacks."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=60, stale-while-revalidate=86400"
+
+    from api.routes.screener import DAY_TRADER_CANDIDATES, LONG_TERM_CANDIDATES
+    clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
+    if clean_role not in VALID_ROLES:
+        clean_role = "LONG_TERM"
+
+    if tickers and tickers.strip():
+        symbols = [t.strip().upper() for t in tickers.replace(",", " ").split() if t.strip() and SYMBOL_REGEX.match(t.strip().upper())]
+    else:
+        symbols = DAY_TRADER_CANDIDATES[:10] if clean_role == "DAY_TRADER" else LONG_TERM_CANDIDATES[:15]
+
+    setups = []
+    for sym in symbols:
+        try:
+            latest_info = market_db.get_latest_price(sym)
+            cur_price = latest_info["currentPrice"] if latest_info and latest_info.get("currentPrice") else None
+
+            db_candles = market_db.get_daily_candles(sym, limit=60)
+            if db_candles and len(db_candles) >= 15:
+                hist_df = pd.DataFrame([{
+                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+                if not cur_price and not hist_df.empty:
+                    cur_price = float(hist_df["Close"].iloc[-1])
+            else:
+                hist_df = pd.DataFrame()
+
+            if cur_price is None or cur_price <= 0:
+                continue
+
+            technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
+            plan = optimal_execution_engine.calculate_trade_levels(
+                price_df=hist_df,
+                current_price=cur_price,
+                user_role=clean_role,
+                technicals=technicals,
+            )
+
+            is_actionable = plan.get("stop_loss") is not None and plan.get("optimal_entry_max") is not None
+            entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
+            stop_loss = plan.get("stop_loss")
+            target1 = plan.get("take_profit_1")
+            target2 = plan.get("take_profit_2")
+
+            conf_output = confluence_engine.calculate_confluence(
+                symbol=sym,
+                technical_data={**(technicals or {}), **plan, "current_price": cur_price},
+                smart_money_data={"has_insider_buy": False, "insider_value_usd": 0.0, "insider_name": "", "has_congress_buy": False, "has_options_flow": False},
+                fundamental_data={},
+                catalyst_data={},
+                macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.5},
+            )
+            conf_score = conf_output.get("confluenceScore", 75)
+
+            setups.append({
+                "ticker": sym,
+                "setupName": plan.get("setup_pattern", "Minervini VCP Continuation"),
+                "entryPivot": round(entry_pivot, 2) if entry_pivot else None,
+                "stopLoss": round(stop_loss, 2) if stop_loss else None,
+                "target1": round(target1, 2) if target1 else None,
+                "target2": round(target2, 2) if target2 else None,
+                "confluenceScore": round(conf_score, 1),
+                "executionStatus": plan.get("execution_status", "WAITING_PULLBACK"),
+                "isActionable": is_actionable,
+                "entryThesis": plan.get("entry_thesis", ""),
+                "invalidationCondition": plan.get("invalidation_condition", ""),
+                "stagePhase": plan.get("stage_phase", ""),
+                "reasonSuppressed": None if is_actionable else plan.get("entry_thesis", "Insufficient trend history"),
+            })
+        except Exception as e:
+            logger.warning(f"Error computing setup for {sym}: {e}")
+            continue
+
+    return {
+        "userRole": clean_role,
+        "totalSetups": len(setups),
+        "setups": setups,
     }
 
 

@@ -51,44 +51,8 @@ export function loadPortfolioPositions(): PortfolioPosition[] {
     if (raw) {
       return JSON.parse(raw);
     }
-    // High-quality starter portfolio
-    const defaultPositions: PortfolioPosition[] = [
-      {
-        symbol: "NVDA",
-        name: "NVIDIA Corporation",
-        shares: 25,
-        entryPrice: 208.50,
-        currentPrice: 224.41,
-        targetPrice: 260.00,
-        stopLossPrice: 198.00,
-        addedAt: "2026-08-01",
-        assetType: "Stock",
-      },
-      {
-        symbol: "AAPL",
-        name: "Apple Inc.",
-        shares: 15,
-        entryPrice: 295.00,
-        currentPrice: 319.64,
-        targetPrice: 355.00,
-        stopLossPrice: 282.00,
-        addedAt: "2026-08-10",
-        assetType: "Stock",
-      },
-      {
-        symbol: "LNTH",
-        name: "Lantheus Holdings",
-        shares: 40,
-        entryPrice: 92.20,
-        currentPrice: 100.78,
-        targetPrice: 115.00,
-        stopLossPrice: 88.50,
-        addedAt: "2026-08-15",
-        assetType: "Stock",
-      },
-    ];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultPositions));
-    return defaultPositions;
+    // Clean session policy: zero synthetic starter holdings
+    return [];
   } catch (err) {
     console.warn("Could not load portfolio from storage:", err);
     return [];
@@ -101,6 +65,86 @@ export function savePortfolioPositions(positions: PortfolioPosition[]): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
   } catch (err) {
     console.error("Failed to save portfolio positions:", err);
+  }
+}
+
+/**
+ * Syncs portfolio holdings from authoritative backend API (SQLite store).
+ * Automatically preserves and migrates existing local holdings.
+ */
+export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
+  if (typeof window === "undefined") return [];
+  const localPositions = loadPortfolioPositions();
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const anonId = getAnonymousUserId();
+    const res = await fetch(`${baseUrl}/portfolio`, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": anonId,
+      },
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (res.ok) {
+      const apiHoldings = await res.json();
+      if (Array.isArray(apiHoldings)) {
+        if (apiHoldings.length === 0 && localPositions.length > 0) {
+          // Transparent Migration: Local holdings exist but API store is empty, migrate them
+          fetch(`${baseUrl}/portfolio/migrate`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-User-Id": anonId,
+            },
+            body: JSON.stringify({ holdings: localPositions }),
+          }).catch((err) => console.warn("Background migration skipped:", err));
+          return localPositions;
+        }
+
+        // Save fresh authoritative holdings from API to local cache
+        savePortfolioPositions(apiHoldings);
+        return apiHoldings;
+      }
+    }
+  } catch (err) {
+    // Backend temporarily unreachable, return cached local positions
+  }
+  return localPositions;
+}
+
+export async function persistHoldingToApi(holding: PortfolioPosition): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const anonId = getAnonymousUserId();
+    await fetch(`${baseUrl}/portfolio`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": anonId,
+      },
+      body: JSON.stringify(holding),
+    });
+  } catch (err) {
+    console.warn("Could not persist holding to backend API:", err);
+  }
+}
+
+export async function removeHoldingFromApi(symbol: string): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const anonId = getAnonymousUserId();
+    await fetch(`${baseUrl}/portfolio/${encodeURIComponent(symbol)}`, {
+      method: "DELETE",
+      headers: {
+        "X-User-Id": anonId,
+      },
+    });
+  } catch (err) {
+    console.warn("Could not delete holding from backend API:", err);
   }
 }
 
@@ -153,6 +197,7 @@ export function addPortfolioPosition(pos: {
     };
 
     savePortfolioPositions([newPos, ...existing]);
+    persistHoldingToApi(newPos).catch(() => {});
     window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
     trackPortfolioPositionAdded(symUpper, newPos.shares * newPos.entryPrice);
     return {
@@ -196,6 +241,7 @@ export function updatePortfolioPosition(pos: {
     const updatedList = [...existing];
     updatedList[idx] = updatedPos;
     savePortfolioPositions(updatedList);
+    persistHoldingToApi(updatedPos).catch(() => {});
     window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
     return { success: true, message: `Updated ${symUpper} holding (${pos.shares} shares)!` };
   } catch (err) {

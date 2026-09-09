@@ -5,6 +5,7 @@ import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandle
 import { getCanonicalAssetCatalyst } from "./assetRegistry";
 import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "./masterCatalog";
 import { DecisionTrace, FreshnessInfo } from "../types/insight";
+import type { TradeSetupSpec } from "./simulation/governorSizingEngine";
 
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
@@ -1254,47 +1255,66 @@ export async function fetchAssetAnalytics(
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/screener?model=${encodeURIComponent(model)}`, {
+    const res = await fetch(`${baseUrl}/screener/run?filter_type=${encodeURIComponent(model)}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const data = await res.json();
-      if (data && data.results && data.results.length > 0) {
-        return data;
+      const rawCandidates = data.candidates || data.results || [];
+      if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
+        const candidates: GemCandidate[] = rawCandidates.map((r: any) => ({
+          ticker: r.ticker || r.companyName || "UNKNOWN",
+          composite_score: Math.round(r.confluenceScore || r.gemScore || 0),
+          expert_model: r.expertArchetype || "Minervini Stage 2 VCP",
+          peg_ratio: r.peg_ratio,
+          roic_pct: r.roic_pct,
+          gross_margin_pct: r.gross_margin_pct,
+          risk_rating: r.confluenceRating || "Medium",
+          investment_thesis: r.entryThesis || "",
+          primary_catalyst: r.catalyst || "",
+          factor_verdict: r.executionStatus || "WAITING_PULLBACK",
+          dna_verdict: r.confluenceRating || "",
+          current_price: r.currentPrice || r.current_price,
+          execution_status: r.executionStatus || r.execution_status,
+        }));
+        return {
+          total_candidates: candidates.length,
+          gems_found: candidates.length,
+          results: candidates,
+        };
       }
     }
   } catch (err) {
-    // Fallthrough to dynamic live catalog discovery
+    console.warn("Screener API error:", err);
   }
 
-  // Dynamic Live Catalog Discovery (Constructed from authentic multi-factor models & spot prices)
-  const catalogEntries = Object.entries(MASTER_ASSET_CATALOG);
-  const candidates: GemCandidate[] = catalogEntries.map(([ticker, asset]) => {
-    return {
-      ticker,
-      composite_score: Math.min(99, Math.max(70, Math.round(asset.compositeFactorScore))),
-      expert_model: asset.thesis.includes("GARP")
-        ? "Peter Lynch GARP"
-        : asset.thesis.includes("Magic")
-        ? "Greenblatt Magic Formula"
-        : "Minervini Stage 2 VCP",
-      peg_ratio: asset.peg,
-      roic_pct: asset.roic,
-      gross_margin_pct: asset.grossMargin,
-      risk_rating: asset.tailRiskScore > 80 ? "Low" : asset.tailRiskScore > 65 ? "Medium" : "High",
-      investment_thesis: asset.thesis,
-      primary_catalyst: asset.upcomingCatalyst || "Stage 2 accumulation breakout with institutional liquidity flow.",
-      factor_verdict: asset.verdict,
-      dna_verdict: asset.verdict,
-    };
-  });
-
+  // Epistemic Invariant: Zero synthetic fallback catalog data
   return {
-    total_candidates: candidates.length,
-    gems_found: candidates.length,
-    results: candidates,
+    total_candidates: 0,
+    gems_found: 0,
+    results: [],
   };
+}
+
+export async function fetchTacticalSetups(tickers?: string[], userRole: string = "LONG_TERM"): Promise<TradeSetupSpec[]> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const tickerParam = tickers && tickers.length > 0 ? `&tickers=${encodeURIComponent(tickers.join(","))}` : "";
+    const res = await fetch(`${baseUrl}/analytics/setups?user_role=${encodeURIComponent(userRole)}${tickerParam}`, {
+      headers: ARX_API_HEADERS,
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.setups)) {
+        return data.setups;
+      }
+    }
+  } catch (err) {
+    console.warn("Tactical setups API fetch failed:", err);
+  }
+  return [];
 }
 
 export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {

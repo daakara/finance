@@ -58,9 +58,10 @@ assert(fs.existsSync(researchPath), 'research/page.tsx exists');
 const researchSrc = fs.readFileSync(researchPath, 'utf8');
 
 assert(
+  researchSrc.includes('href={`/setups?ticker=${activeTicker}`}') ||
   researchSrc.includes('href={`/setups?ticker=${activeDossier.ticker}`}') ||
-  researchSrc.includes('href={"/setups?ticker=" + activeDossier.ticker}'),
-  'Research Level 0 Hero CTA links to /setups with exact activeDossier.ticker'
+  researchSrc.includes('href={"/setups?ticker=" + activeTicker}'),
+  'Research Level 0 Hero CTA links to /setups with exact activeTicker'
 );
 
 // -------------------------------------------------------------
@@ -87,34 +88,20 @@ assert(
   'Setups page provides explicit navigation return to /radar when ticker is unsupported'
 );
 
-// Verify canonical setups engine has wide coverage of Radar assets
+// Verify setups are API-backed and governor sizing engine has zero hardcoded setups
 const enginePath = path.join(projectRoot, 'frontend', 'lib', 'simulation', 'governorSizingEngine.ts');
 assert(fs.existsSync(enginePath), 'governorSizingEngine.ts exists');
 const engineSrc = fs.readFileSync(enginePath, 'utf8');
 
 assert(engineSrc.includes('getTacticalSetupForTicker'), 'Exports getTacticalSetupForTicker helper');
-assert(engineSrc.includes("'NVDA'") && engineSrc.includes("'ANET'") && engineSrc.includes("'PLTR'") && engineSrc.includes("'MSFT'"), 'Includes high-conviction Radar assets in canonical setups');
-
-// Dynamic import of governorSizingEngine to test actual lookup logic
-import('../lib/simulation/governorSizingEngine.js').then((engine) => {
-  const googSetup = engine.getTacticalSetupForTicker('GOOGL');
-  assert(googSetup !== null && googSetup.ticker === 'GOOGL', 'getTacticalSetupForTicker retrieves GOOGL accurately');
-
-  const nvdaSetup = engine.getTacticalSetupForTicker('NVDA');
-  assert(nvdaSetup !== null && nvdaSetup.ticker === 'NVDA', 'getTacticalSetupForTicker retrieves NVDA accurately');
-
-  const anetSetup = engine.getTacticalSetupForTicker('ANET');
-  assert(anetSetup !== null && anetSetup.ticker === 'ANET', 'getTacticalSetupForTicker retrieves ANET accurately');
-
-  const pltrSetup = engine.getTacticalSetupForTicker('PLTR');
-  assert(pltrSetup !== null && pltrSetup.ticker === 'PLTR', 'getTacticalSetupForTicker retrieves PLTR accurately');
-
-  const unsupportedSetup = engine.getTacticalSetupForTicker('UNKNOWN_XYZ');
-  assert(unsupportedSetup === null, 'getTacticalSetupForTicker returns null for unsupported assets without substituting GOOGL');
-}).catch(() => {
-  // If .js import is not mapped, verify via regex in engineSrc
-  assert(engineSrc.includes('CANONICAL_TACTICAL_SETUPS'), 'CANONICAL_TACTICAL_SETUPS defined');
-});
+assert(!engineSrc.includes('CANONICAL_TACTICAL_SETUPS'), 'Deleted CANONICAL_TACTICAL_SETUPS: zero hardcoded tactical setups');
+assert(setupsSrc.includes('fetchTacticalSetups'), 'Setups page fetches setups dynamically via authoritative API');
+assert(
+  engineSrc.includes('setup === null') ||
+  engineSrc.includes('!setup') ||
+  engineSrc.includes('unclampedShares: 0'),
+  'Governor sizing engine returns 0 shares and safe rationale when setup is null/unsupported'
+);
 
 // -------------------------------------------------------------
 // SECTION 3: Fractional Portfolio Holdings Support

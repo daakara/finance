@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import TerminalShell from '../../components/terminal/TerminalShell';
-import { MASTER_ASSET_CATALOG, CATALOG_BASELINE_PRICES } from '../../lib/masterCatalog';
-import { SpotPriceRegistry } from '../../lib/api';
+import { fetchScreenerGems } from '../../lib/api';
 
 interface RadarAsset {
   ticker: string;
@@ -20,281 +19,56 @@ interface RadarAsset {
   executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT';
 }
 
-// Full Dynamic Multi-Factor Universe Generator derived from Master Asset Catalog
-function generateRadarUniverse(): RadarAsset[] {
-  // Canonical reference slices for H15 backwards-compatibility:
-  const vcpTickers = ['NVDA', 'GOOGL', 'TMDX'];
-  const smartMoneyTickers = ['ANET', 'PLTR', 'MSFT'];
-  const valueTickers = ['LNTH', 'CPRX', 'NVO'];
-  void vcpTickers; void smartMoneyTickers; void valueTickers;
-
-  // Explicit categorization map guaranteeing zero cross-category false positives
-  const ASSET_SPEC_MAP: Record<string, {
-    categories: ('VCP' | 'SMART_MONEY' | 'VALUE')[];
-    catalyst: string;
-    vcpStage?: string;
-  }> = {
-    // Pure & Hybrid VCP Names
-    NVDA: {
-      categories: ['VCP', 'SMART_MONEY'],
-      catalyst: 'Congressional Commerce Committee Accumulation + High RVOL',
-      vcpStage: '3T (-2.4% on Pivot)',
-    },
-    GOOGL: {
-      categories: ['VCP', 'SMART_MONEY'],
-      catalyst: '2 Corporate Directors purchased $1.2M at $178 floor',
-      vcpStage: '4T (-1.8% on Pivot)',
-    },
-    AMD: {
-      categories: ['VCP'],
-      catalyst: 'Stage 2 Volatility Contraction Base Pivot Breakout',
-      vcpStage: '3T (-2.8% on Pivot)',
-    },
-    TMDX: {
-      categories: ['VCP'],
-      catalyst: 'Medtech Leader High-RS Base Pivot with Tight Closes',
-      vcpStage: '4T (-1.5% on Pivot)',
-    },
-    ISRG: {
-      categories: ['VCP'],
-      catalyst: 'Robotic Surgery Monopoly Stage 2 Breakout',
-      vcpStage: '3T (-2.1% on Pivot)',
-    },
-    VRT: {
-      categories: ['VCP', 'SMART_MONEY'],
-      catalyst: 'Datacenter Liquid Cooling Institutional Whale Accumulation',
-      vcpStage: '3T (-2.5% on Pivot)',
-    },
-    ACLS: {
-      categories: ['VCP'],
-      catalyst: 'Semiconductor Capital Equipment Tight Consolidation',
-      vcpStage: '2T (-3.4% on Pivot)',
-    },
-    POWI: {
-      categories: ['VCP'],
-      catalyst: 'Clean Tech Power Controller Stage 2 Pivot',
-      vcpStage: '3T (-2.0% on Pivot)',
-    },
-    PANW: {
-      categories: ['VCP'],
-      catalyst: 'Enterprise Cybersecurity Platform Volatility Contraction',
-      vcpStage: '3T (-2.2% on Pivot)',
-    },
-    NET: {
-      categories: ['VCP'],
-      catalyst: 'Edge Cloud Infrastructure 50-EMA Volume Dry-Up',
-      vcpStage: '2T (-3.5% on Pivot)',
-    },
-    DDOG: {
-      categories: ['VCP'],
-      catalyst: 'Observability Leader Low-Volume Base Contraction',
-      vcpStage: '3T (-2.4% on Pivot)',
-    },
-    MDB: {
-      categories: ['VCP'],
-      catalyst: 'Next-Gen Database Platform Tight Risk Pivot',
-      vcpStage: '3T (-2.6% on Pivot)',
-    },
-
-    // Pure & Hybrid Smart Money Names
-    ANET: {
-      categories: ['SMART_MONEY', 'VCP'],
-      catalyst: 'Institutional 13F Whale Cluster Inflow + High RVOL',
-      vcpStage: '2T (-3.1% on Pivot)',
-    },
-    PLTR: {
-      categories: ['SMART_MONEY', 'VCP'],
-      catalyst: 'Congressional Armed Services Committee Inflow + Defense Contract Flow',
-      vcpStage: '3T (-2.2% on Pivot)',
-    },
-    MSFT: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Congressional Tech Portfolio Accumulation + Cloud Monopoly',
-      vcpStage: '2T (-3.2% on Pivot)',
-    },
-    AVGO: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Institutional Whale Accumulation + AI ASIC Custom Silicon Demand',
-      vcpStage: '3T (-2.0% on Pivot)',
-    },
-    CRWD: {
-      categories: ['SMART_MONEY', 'VCP'],
-      catalyst: 'Cybersecurity Threat Response Institutional Volume Surge',
-      vcpStage: '3T (-2.3% on Pivot)',
-    },
-    ARM: {
-      categories: ['SMART_MONEY', 'VCP'],
-      catalyst: 'Semiconductor Architecture Licensee Whale Flow',
-      vcpStage: '3T (-2.7% on Pivot)',
-    },
-    SMCI: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'High RVOL Trend Momentum + Server Cluster Flow',
-      vcpStage: '2T (-3.9% on Pivot)',
-    },
-    TSLA: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Institutional Options Flow Surge + Autonomous AI Catalyst',
-      vcpStage: '2T (-4.1% on Pivot)',
-    },
-    COIN: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Crypto Custody Institutional Flow + Congressional Finance Committee Filings',
-      vcpStage: '2T (-3.8% on Pivot)',
-    },
-    MSTR: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Treasury Allocation Smart Money Inflow',
-      vcpStage: '2T (-4.2% on Pivot)',
-    },
-    HOOD: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Retail Flow Monetization + High RVOL Spike',
-      vcpStage: '3T (-2.9% on Pivot)',
-    },
-    DUOL: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'EdTech AI Monetization Whale Flow',
-      vcpStage: '3T (-2.1% on Pivot)',
-    },
-    CELH: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'Consumer Energy Beverage Smart Money Distribution Reversal',
-      vcpStage: '2T (-3.6% on Pivot)',
-    },
-    APP: {
-      categories: ['SMART_MONEY'],
-      catalyst: 'AdTech Machine Learning Monetization Inflow',
-      vcpStage: '3T (-2.5% on Pivot)',
-    },
-
-    // Pure & Hybrid Value / GARP Names
-    LNTH: {
-      categories: ['VALUE'],
-      catalyst: 'Joel Greenblatt Magic Formula Top Decile (ROIC 32.4%, PEG 0.78)',
-      vcpStage: '3T (-2.1% on Pivot)',
-    },
-    CPRX: {
-      categories: ['VALUE', 'VCP'],
-      catalyst: 'Magic Formula High-ROIC (38.1%) Compounder with Zero Long-Term Debt',
-      vcpStage: '4T (-1.6% on Pivot)',
-    },
-    MEDP: {
-      categories: ['VALUE', 'VCP'],
-      catalyst: 'Peter Lynch Fast Grower (PEG 0.85, ROIC 29.4%)',
-      vcpStage: '3T (-2.3% on Pivot)',
-    },
-    NVO: {
-      categories: ['VALUE'],
-      catalyst: 'GLP-1 Pharmaceutical Cash Flow Dynamo (PEG 0.94, ROIC 42.1%)',
-      vcpStage: '3T (-2.0% on Pivot)',
-    },
-    LLY: {
-      categories: ['VALUE', 'SMART_MONEY'],
-      catalyst: 'Institutional Accumulation + Magic Formula Quality compounder (PEG 1.1)',
-      vcpStage: '3T (-2.1% on Pivot)',
-    },
-    ON: {
-      categories: ['VALUE'],
-      catalyst: 'Automotive Silicon Carbide Value Play (PEG 0.82, FCF Yield 6.4%)',
-      vcpStage: '2T (-3.3% on Pivot)',
-    },
-    MPWR: {
-      categories: ['VALUE'],
-      catalyst: 'Power Management Compounder (ROIC 26.2%, Low Debt)',
-      vcpStage: '3T (-2.4% on Pivot)',
-    },
-    KLAC: {
-      categories: ['VALUE'],
-      catalyst: 'Process Control Monopoly (Magic Formula ROIC 36.8%, PEG 1.05)',
-      vcpStage: '3T (-2.2% on Pivot)',
-    },
-    LRCX: {
-      categories: ['VALUE'],
-      catalyst: 'Wafer Fab Equipment Cash Cow (ROIC 31.5%, FCF Yield 4.8%)',
-      vcpStage: '3T (-2.5% on Pivot)',
-    },
-    ASML: {
-      categories: ['VALUE'],
-      catalyst: 'EUV Lithography Monopoly (ROIC 41.2%, PEG 1.15)',
-      vcpStage: '3T (-2.1% on Pivot)',
-    },
-    FIX: {
-      categories: ['VALUE'],
-      catalyst: 'Infrastructure Engineering (Peter Lynch Stalwart, PEG 0.91)',
-      vcpStage: '2T (-3.5% on Pivot)',
-    },
-    EME: {
-      categories: ['VALUE'],
-      catalyst: 'Electrical Construction Compounder (ROIC 24.8%, PEG 0.88)',
-      vcpStage: '3T (-2.6% on Pivot)',
-    },
-    GEV: {
-      categories: ['VALUE'],
-      catalyst: 'Energy Transition Pure-Play (High FCF Yield Compounder)',
-      vcpStage: '3T (-2.7% on Pivot)',
-    },
-    PWR: {
-      categories: ['VALUE'],
-      catalyst: 'Utility Grid Modernization (Peter Lynch Compounder, PEG 1.08)',
-      vcpStage: '3T (-2.3% on Pivot)',
-    },
-    ETN: {
-      categories: ['VALUE'],
-      catalyst: 'Datacenter Power Management Leader (ROIC 22.4%, PEG 1.12)',
-      vcpStage: '3T (-2.2% on Pivot)',
-    },
-    DECK: {
-      categories: ['VALUE'],
-      catalyst: 'Premium Consumer Footwear Growth at Reasonable Price (ROIC 34.1%)',
-      vcpStage: '2T (-3.4% on Pivot)',
-    },
-    ULTA: {
-      categories: ['VALUE'],
-      catalyst: 'Beauty Retail Cash Machine (Deep Value Turnaround, FCF Yield 7.1%)',
-      vcpStage: '2T (-4.0% on Pivot)',
-    },
-  };
-
-  const tickers = Object.keys(ASSET_SPEC_MAP);
-
-  return tickers.map((sym, idx) => {
-    const spec = ASSET_SPEC_MAP[sym];
-    const entry = MASTER_ASSET_CATALOG[sym];
-    const spot = SpotPriceRegistry.get(sym);
-    const price = (spot?.price && spot.price > 0) ? spot.price : (CATALOG_BASELINE_PRICES[sym] || 150.0);
-
-    const rsRating = entry ? Math.min(99, Math.max(78, entry.momentumScore + 5)) : (85 + (idx % 12));
-    const volDryUp = entry ? -Math.abs(Math.round(40 + (entry.rvol * 8))) : -52;
-    const confluence = entry ? entry.compositeFactorScore : (86 + (idx % 10));
-
-    const statuses: ('IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT')[] = [
-      'NEAR_PIVOT', 'IN_BUY_ZONE', 'VOLUME_DRYUP', 'PULLBACK_SUPPORT'
-    ];
-    const executionStatus = statuses[idx % statuses.length];
-
-    return {
-      ticker: sym,
-      name: entry?.name || sym,
-      price: Number(price.toFixed(2)),
-      rsRating,
-      vcpStage: spec.vcpStage || '3T (-2.2% on Pivot)',
-      volumeDryUpPct: Math.max(-75, Math.min(-35, volDryUp)),
-      confluenceScore: Math.min(98, Math.max(82, confluence)),
-      catalyst: spec.catalyst,
-      categories: spec.categories,
-      sector: entry?.sector || 'Broad Market',
-      executionStatus,
-    };
-  });
-}
-
 export default function RadarPage() {
   const [activeFilter, setActiveFilter] = useState<'ALL' | 'VCP' | 'SMART_MONEY' | 'VALUE'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'SCORE' | 'RS' | 'PRICE'>('SCORE');
+  const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const allAssets = useMemo(() => generateRadarUniverse(), []);
+  useEffect(() => {
+    let isMounted = true;
+    fetchScreenerGems("all")
+      .then((res) => {
+        if (!isMounted) return;
+        const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
+          const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = [];
+          const modelStr = (gem.expert_model || "").toUpperCase();
+          if (modelStr.includes("VCP") || modelStr.includes("MINERVINI")) cat.push("VCP");
+          if (modelStr.includes("MAGIC") || modelStr.includes("GARP") || modelStr.includes("VALUE")) cat.push("VALUE");
+          if (cat.length === 0 || gem.composite_score >= 85) cat.push("SMART_MONEY");
+
+          const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
+          let executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' = 'PULLBACK_SUPPORT';
+          if (rawStatus.includes("BUY_ZONE")) executionStatus = 'IN_BUY_ZONE';
+          else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
+          else if (rawStatus.includes("DRYUP") || rawStatus.includes("WAITING")) executionStatus = 'VOLUME_DRYUP';
+
+          return {
+            ticker: gem.ticker,
+            name: gem.ticker,
+            price: Number((gem.current_price || 0).toFixed(2)),
+            rsRating: Math.min(99, Math.max(50, Math.round(gem.composite_score || 80))),
+            vcpStage: executionStatus === 'IN_BUY_ZONE' ? '3T Pivot Breakout' : 'Stage 2 Base',
+            volumeDryUpPct: -45,
+            confluenceScore: Math.round(gem.composite_score || 0),
+            catalyst: gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.",
+            categories: cat,
+            sector: "Broad Market",
+            executionStatus,
+          };
+        });
+        setAllAssets(mapped);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Category Counts
   const counts = useMemo(() => {
@@ -335,8 +109,24 @@ export default function RadarPage() {
   return (
     <TerminalShell activeHub="radar">
       <div className="space-y-6">
+        {/* Loading Indicator */}
+        {isLoading && (
+          <div className="p-12 text-center text-slate-400 font-mono text-xs animate-pulse">
+            ⏳ Scanning multi-factor equity tape and quantitative confluence filters...
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && allAssets.length === 0 && (
+          <div className="p-12 rounded-2xl border border-slate-800 bg-slate-900/30 text-center space-y-3 font-mono text-xs text-slate-400">
+            <span className="text-3xl">📡</span>
+            <div className="text-white font-bold text-sm">No Active Confluence Candidates</div>
+            <p>Exchange tape scan returned zero assets currently meeting strict multi-factor criteria.</p>
+          </div>
+        )}
+
         {/* Level 0: Asymmetric #1 High-Confluence Attention Leader Hero */}
-        {heroAsset && (
+        {!isLoading && heroAsset && (
           <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl">
             <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 border-b border-l border-emerald-500/40 text-[10px] font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-bl-xl">
               Level 0 · #1 Attention Leader Today
@@ -457,7 +247,7 @@ export default function RadarPage() {
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
               }`}
             >
-              <span>🏛️ Value &amp; GARP</span>
+              <span>💎 Value / GARP</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
                 {counts.VALUE}
               </span>
@@ -465,14 +255,14 @@ export default function RadarPage() {
           </div>
 
           {/* Search Input & Sort Controls */}
-          <div className="flex items-center gap-3">
-            <div className="relative w-full md:w-64">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex-1 sm:w-64">
               <input
                 type="text"
+                placeholder="Filter by ticker, catalyst..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search ticker, catalyst, model..."
-                className="w-full px-3 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#0b1019] border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
               {searchQuery && (
                 <button

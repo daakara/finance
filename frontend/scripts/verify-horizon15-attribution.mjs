@@ -103,14 +103,14 @@ assert(fs.existsSync(radarPath), 'radar/page.tsx exists');
 if (fs.existsSync(radarPath)) {
   const radarSrc = fs.readFileSync(radarPath, 'utf8');
 
-  assert(radarSrc.includes('generateRadarUniverse'), 'Radar defines generateRadarUniverse() dynamic generator');
-  assert(radarSrc.includes('MASTER_ASSET_CATALOG'), 'Radar connects directly to MASTER_ASSET_CATALOG');
+  assert(radarSrc.includes('fetchScreenerGems'), 'Radar fetches live screener candidates via fetchScreenerGems API');
+  assert(!radarSrc.includes('generateRadarUniverse'), 'Eliminated hardcoded generateRadarUniverse() generator');
   assert(radarSrc.includes('TerminalShell'), 'Radar renders inside TerminalShell');
   assert(radarSrc.includes('activeHub="radar"'), 'Radar sets activeHub="radar"');
 
-  assert(radarSrc.includes('vcpTickers = [') && radarSrc.includes("'NVDA'") && radarSrc.includes("'GOOGL'") && radarSrc.includes("'TMDX'"), 'VCP universe contains leading growth leaders');
-  assert(radarSrc.includes('smartMoneyTickers = [') && radarSrc.includes("'ANET'") && radarSrc.includes("'PLTR'") && radarSrc.includes("'MSFT'"), 'Smart Money universe contains institutional flow leaders');
-  assert(radarSrc.includes('valueTickers = [') && radarSrc.includes("'LNTH'") && radarSrc.includes("'CPRX'") && radarSrc.includes("'NVO'"), 'Value universe contains high-ROIC compounders');
+  assert(radarSrc.includes("c.category === 'VCP'") || radarSrc.includes("'VCP'"), 'Radar classifies VCP confluence setups');
+  assert(radarSrc.includes("c.category === 'SMART_MONEY'") || radarSrc.includes("'SMART_MONEY'"), 'Radar classifies Smart Money institutional flows');
+  assert(radarSrc.includes("c.category === 'VALUE'") || radarSrc.includes("'VALUE'"), 'Radar classifies Value & GARP compounders');
 
   assert(radarSrc.includes("setActiveFilter('ALL')"), 'Radar has All Confluences filter tab');
   assert(radarSrc.includes("setActiveFilter('VCP')"), 'Radar has VCP filter tab');

@@ -46,6 +46,11 @@ export interface TradeSetupSpec {
   target1: number;
   target2: number;
   confluenceScore: number;
+  isActionable?: boolean;
+  reasonSuppressed?: string | null;
+  executionStatus?: string;
+  entryThesis?: string;
+  invalidationCondition?: string;
 }
 
 export interface GovernorSizingOutput {
@@ -66,180 +71,55 @@ export interface GovernorSizingOutput {
   estimatedCapitalAllocated: number;
 }
 
-export const CANONICAL_TACTICAL_SETUPS: TradeSetupSpec[] = [
-  {
-    ticker: 'GOOGL',
-    setupName: 'Minervini VCP 4T Breakout Pivot',
-    entryPivot: 182.40,
-    stopLoss: 176.10,
-    target1: 195.00,
-    target2: 207.00,
-    confluenceScore: 94,
-  },
-  {
-    ticker: 'NVDA',
-    setupName: 'High-RS Volatility Contraction',
-    entryPivot: 128.50,
-    stopLoss: 123.80,
-    target1: 137.90,
-    target2: 145.00,
-    confluenceScore: 91,
-  },
-  {
-    ticker: 'ANET',
-    setupName: '20-EMA Institutional Bounce',
-    entryPivot: 312.10,
-    stopLoss: 301.50,
-    target1: 333.30,
-    target2: 348.00,
-    confluenceScore: 87,
-  },
-  {
-    ticker: 'PLTR',
-    setupName: 'Stage 2 Continuation Pivot',
-    entryPivot: 32.40,
-    stopLoss: 30.80,
-    target1: 35.60,
-    target2: 38.00,
-    confluenceScore: 89,
-  },
-  {
-    ticker: 'MSFT',
-    setupName: 'Base-on-Base Consolidation Breakout',
-    entryPivot: 448.20,
-    stopLoss: 432.50,
-    target1: 475.00,
-    target2: 495.00,
-    confluenceScore: 86,
-  },
-  {
-    ticker: 'COIN',
-    setupName: 'High RVOL Trend Contraction',
-    entryPivot: 238.00,
-    stopLoss: 224.00,
-    target1: 265.00,
-    target2: 285.00,
-    confluenceScore: 85,
-  },
-  {
-    ticker: 'MSTR',
-    setupName: 'Institutional Inflow Base Breakout',
-    entryPivot: 145.00,
-    stopLoss: 134.00,
-    target1: 168.00,
-    target2: 185.00,
-    confluenceScore: 84,
-  },
-  {
-    ticker: 'HOOD',
-    setupName: 'Retail Volume Dry-Up Pivot',
-    entryPivot: 24.50,
-    stopLoss: 22.80,
-    target1: 28.00,
-    target2: 31.00,
-    confluenceScore: 83,
-  },
-  {
-    ticker: 'DUOL',
-    setupName: 'EdTech AI High-Tight Flag',
-    entryPivot: 245.00,
-    stopLoss: 232.00,
-    target1: 272.00,
-    target2: 290.00,
-    confluenceScore: 82,
-  },
-  {
-    ticker: 'CELH',
-    setupName: 'Reversal Support Bounce',
-    entryPivot: 38.20,
-    stopLoss: 35.50,
-    target1: 43.50,
-    target2: 48.00,
-    confluenceScore: 81,
-  },
-  {
-    ticker: 'APP',
-    setupName: 'AdTech ML Momentum Base',
-    entryPivot: 96.00,
-    stopLoss: 89.50,
-    target1: 110.00,
-    target2: 122.00,
-    confluenceScore: 88,
-  },
-  {
-    ticker: 'LNTH',
-    setupName: 'Magic Formula GARP Value Pivot',
-    entryPivot: 88.50,
-    stopLoss: 83.20,
-    target1: 99.00,
-    target2: 108.00,
-    confluenceScore: 82,
-  },
-  {
-    ticker: 'CPRX',
-    setupName: 'High-ROIC Zero-Debt Contraction',
-    entryPivot: 15.80,
-    stopLoss: 14.90,
-    target1: 18.20,
-    target2: 20.00,
-    confluenceScore: 80,
-  },
-  {
-    ticker: 'NVO',
-    setupName: 'Secular Healthcare Compounder Base',
-    entryPivot: 136.00,
-    stopLoss: 128.50,
-    target1: 152.00,
-    target2: 164.00,
-    confluenceScore: 85,
-  },
-  {
-    ticker: 'TMDX',
-    setupName: 'MedTech High-RS VCP Breakout',
-    entryPivot: 142.00,
-    stopLoss: 133.50,
-    target1: 158.00,
-    target2: 172.00,
-    confluenceScore: 92,
-  },
-  {
-    ticker: 'META',
-    setupName: 'High-Tight Flag Consolidation',
-    entryPivot: 512.00,
-    stopLoss: 494.00,
-    target1: 545.00,
-    target2: 575.00,
-    confluenceScore: 88,
-  },
-  {
-    ticker: 'AAPL',
-    setupName: 'Flat Base Pivot Breakout',
-    entryPivot: 228.00,
-    stopLoss: 219.50,
-    target1: 245.00,
-    target2: 260.00,
-    confluenceScore: 85,
-  },
-];
-
-export function getTacticalSetupForTicker(ticker: string | null | undefined): TradeSetupSpec | null {
+/**
+ * Epistemic Invariant: Tactical setups are dynamic and API-backed.
+ * Hardcoded canonical setup lists are strictly eliminated from production.
+ */
+export function getTacticalSetupForTicker(
+  ticker: string | null | undefined,
+  availableSetups?: TradeSetupSpec[]
+): TradeSetupSpec | null {
   if (!ticker) return null;
   const upper = ticker.trim().toUpperCase();
-  return CANONICAL_TACTICAL_SETUPS.find((s) => s.ticker === upper) || null;
+  if (availableSetups && availableSetups.length > 0) {
+    return availableSetups.find((s) => s.ticker === upper) || null;
+  }
+  return null;
 }
 
 /**
  * Computes dynamic position sizing governed by behavioral risk factors
  */
 export function calculateGovernedPositionSize(
-  setup: TradeSetupSpec,
+  setup: TradeSetupSpec | null | undefined,
   context: TraderContext
 ): GovernorSizingOutput {
-  const stopDistanceDollar = Math.max(0.01, setup.entryPivot - setup.stopLoss);
-  const stopDistancePct = (stopDistanceDollar / setup.entryPivot) * 100;
+  if (!setup) {
+    return {
+      ticker: 'UNASSIGNED',
+      entryPivot: 0,
+      stopLoss: 0,
+      stopDistanceDollar: 0,
+      stopDistancePct: 0,
+      unclampedDollarRisk: 0,
+      unclampedShares: 0,
+      recommendedDollarRisk: 0,
+      recommendedShares: 0,
+      clampFactorPct: 0,
+      primaryGovernorCategory: 'UNCONSTRAINED',
+      cleanRoomRationale: 'No active trade setup provided. Capital allocation remains uncommitted.',
+      rMultipleTarget1: 0,
+      rMultipleTarget2: 0,
+      estimatedCapitalAllocated: 0,
+    };
+  }
+
+  const isActionable = setup.isActionable !== false && setup.entryPivot > 0 && setup.stopLoss > 0 && setup.entryPivot > setup.stopLoss;
+  const stopDistanceDollar = isActionable ? Math.max(0.01, setup.entryPivot - setup.stopLoss) : 1.0;
+  const stopDistancePct = isActionable ? (stopDistanceDollar / setup.entryPivot) * 100 : 0;
 
   const standardDollarRisk = Math.round(context.accountEquity * context.standardRiskBudgetPct);
-  const unclampedShares = Math.max(1, Math.floor(standardDollarRisk / stopDistanceDollar));
+  const unclampedShares = isActionable ? Math.max(1, Math.floor(standardDollarRisk / stopDistanceDollar)) : 0;
 
   // Determine Governor clamp penalties
   let clampPenalty = 0;
@@ -275,17 +155,21 @@ export function calculateGovernedPositionSize(
   const finalClampPct = Math.min(0.70, clampPenalty);
   const clampFactorPct = -Math.round(finalClampPct * 100);
 
-  const recommendedDollarRisk = Math.round(standardDollarRisk * (1 - finalClampPct));
-  const recommendedShares = Math.max(1, Math.floor(recommendedDollarRisk / stopDistanceDollar));
+  const recommendedDollarRisk = isActionable ? Math.round(standardDollarRisk * (1 - finalClampPct)) : 0;
+  const recommendedShares = isActionable ? Math.max(1, Math.floor(recommendedDollarRisk / stopDistanceDollar)) : 0;
 
-  const cleanRoomRationale =
-    clampFactorPct < 0
-      ? `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`
-      : `Standard position risk authorized ($${standardDollarRisk}). High confluence (${setup.confluenceScore}/100) and disciplined execution state verified.`;
+  let cleanRoomRationale = "";
+  if (!isActionable) {
+    cleanRoomRationale = setup.reasonSuppressed || "Actionable risk levels suppressed: authentic market discovery required.";
+  } else if (clampFactorPct < 0) {
+    cleanRoomRationale = `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`;
+  } else {
+    cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). High confluence (${setup.confluenceScore}/100) and disciplined execution state verified.`;
+  }
 
-  const rMultipleTarget1 = Number(((setup.target1 - setup.entryPivot) / stopDistanceDollar).toFixed(2));
-  const rMultipleTarget2 = Number(((setup.target2 - setup.entryPivot) / stopDistanceDollar).toFixed(2));
-  const estimatedCapitalAllocated = recommendedShares * setup.entryPivot;
+  const rMultipleTarget1 = isActionable && setup.target1 > setup.entryPivot ? Number(((setup.target1 - setup.entryPivot) / stopDistanceDollar).toFixed(2)) : 0;
+  const rMultipleTarget2 = isActionable && setup.target2 > setup.entryPivot ? Number(((setup.target2 - setup.entryPivot) / stopDistanceDollar).toFixed(2)) : 0;
+  const estimatedCapitalAllocated = isActionable ? recommendedShares * setup.entryPivot : 0;
 
   return {
     ticker: setup.ticker,
@@ -293,11 +177,11 @@ export function calculateGovernedPositionSize(
     stopLoss: setup.stopLoss,
     stopDistanceDollar: Number(stopDistanceDollar.toFixed(2)),
     stopDistancePct: Number(stopDistancePct.toFixed(2)),
-    unclampedDollarRisk: standardDollarRisk,
+    unclampedDollarRisk: isActionable ? standardDollarRisk : 0,
     unclampedShares,
     recommendedDollarRisk,
     recommendedShares,
-    clampFactorPct,
+    clampFactorPct: isActionable ? clampFactorPct : 0,
     primaryGovernorCategory: primaryCategory,
     cleanRoomRationale,
     rMultipleTarget1,
