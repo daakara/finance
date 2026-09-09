@@ -14,6 +14,7 @@ const WORKSPACE_LINKS = [
   { href: "/me", label: "Personal OS" },
   { href: "/me/twin", label: "Twin" },
   { href: "/me/household", label: "Household" },
+  { href: "/me/trajectories", label: "Trajectories" },
   { href: "/me/allocator", label: "Allocator" },
   { href: "/me/signals", label: "Signals" },
   { href: "/executive-workspace", label: "Workspace" },

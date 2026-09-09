@@ -447,3 +447,79 @@ export interface RelationalScenarioResult {
     unvarnishedTradeOffs: string[];
   };
 }
+
+
+/**
+ * Horizon 9: Multi-Year Household Trajectory Sequencing, Compounding & Copilot Contracts
+ */
+export interface TrajectoryStep {
+  stepId: string;
+  year: number;                 // 1, 2, 3...
+  interventionId: string;
+  title: string;
+  personalLhiImpact: number;
+  householdHhiImpact: number;
+  annualCapitalDelta: number;
+  discretionaryHoursDelta: number;
+  stateAfterStep: Record<string, number>;
+}
+
+export interface HouseholdTrajectory {
+  trajectoryId: string;
+  name: string;
+  description: string;
+  steps: TrajectoryStep[];
+  projectedLhi: number;
+  projectedHhi: number;
+  confidencePct: number;
+  totalCost: number;
+  riskScore: number;            // 0 to 100 (lower is better)
+  optionalityScore: number;     // 0 to 100 (future feasible opportunity sets)
+  recoveryScore: number;        // 0 to 100
+  multiCriteriaScore: number;   // 0 to 100 composite ranking score
+  stabilityScore: number;       // expectedOutcome / variance (INV-OI93-P)
+  isParetoOptimal: boolean;
+  unintendedConsequences: string[];
+}
+
+export interface ExplainableRecommendation {
+  recommendationId: string;
+  title: string;
+  whyNow: string;
+  triggerSignals: string[];
+  tracePath: string[];
+  expectedLhiImpact: number;
+  expectedHhiImpact: number;
+  confidencePct: number;
+  p10: number;
+  p50: number;
+  p90: number;
+  stabilityScore: number;
+  timestampUtc: string;
+}
+
+export interface RippleMapNode {
+  id: string;
+  label: string;
+  domain: string;
+  magnitude: number;           // Sizing
+  delta: number;
+  unit: string;
+}
+
+export interface RippleMapEdge {
+  id: string;
+  from: string;
+  to: string;
+  impact: number;              // Width
+  isPositive: boolean;         // Polarity
+  latencyWeeks: number;
+}
+
+export interface RippleMapData {
+  rootIntervention: string;
+  nodes: RippleMapNode[];
+  edges: RippleMapEdge[];
+  netHhiDelta: number;
+  netLhiDelta: number;
+}
