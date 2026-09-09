@@ -1,11 +1,11 @@
 "use client";
 
-import CockpitShell from "../../components/cockpit/CockpitShell";
+import CockpitShell from "../../../components/cockpit/CockpitShell";
 
 import React from "react";
 import Link from "next/link";
-import { getUnifiedCockpitState } from "../../lib/simulation/unifiedCockpitStore";
-import SemanticZoom from "../../components/cockpit/SemanticZoom";
+import { getUnifiedCockpitState } from "../../../lib/simulation/unifiedCockpitStore";
+import SemanticZoom from "../../../components/cockpit/SemanticZoom";
 
 export default function TodayHubPage() {
   const state = getUnifiedCockpitState();
