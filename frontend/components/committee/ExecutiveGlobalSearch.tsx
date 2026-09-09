@@ -62,8 +62,9 @@ export default function ExecutiveGlobalSearch({
     router.push(route);
   };
 
-  const QUICK_PREFIXES = ["SBX-", "ADP-", "REL-", "PKG-", "FUT-", "CF-", "WS-", "INBOX-", "BRF-", "DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
+  const QUICK_PREFIXES = ["ORC-", "SBX-", "ADP-", "REL-", "PKG-", "FUT-", "CF-", "WS-", "INBOX-", "BRF-", "DEC-", "OUT-", "DIS-", "COM-", "PROP-", "LRN-", "INC-", "RSK-", "GT-", "REC-", "PLAN-", "BIAS-", "OHI-", "REP-", "CSC-", "OPT-", "ALLOC-", "SIM-", "RECSTATE-", "FAIL-", "SURV-", "SCN-", "ACT-", "POL-", "OVR-", "EVAL-", "GOV-", "RB-", "NI-", "GRP-", "TWIN-", "LAB-"];
   const SAMPLE_ENTITIES = [
+    { id: "ORC-STRAT-001", label: "Adaptive Strategy Orchestrator & Drift Engine", type: "STRATEGY_ORCHESTRATOR" },
     { id: "SBX-SIM-001", label: "Executive Simulation & Digital Twin Sandbox", type: "EXECUTIVE_SANDBOX" },
     { id: "ADP-EXEC-2026", label: "Executive Adoption & Value Realization", type: "ADOPTION_CENTER" },
     { id: "REL-2026.09-PROD", label: "Executive Release Certification Dashboard", type: "RELEASE_DASHBOARD" },
