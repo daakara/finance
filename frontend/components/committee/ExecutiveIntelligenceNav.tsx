@@ -13,6 +13,7 @@ export interface ExecutiveIntelligenceNavProps {
 const WORKSPACE_LINKS = [
   { href: "/me", label: "Personal OS" },
   { href: "/me/allocator", label: "Allocator" },
+  { href: "/me/signals", label: "Signals" },
   { href: "/executive-workspace", label: "Workspace" },
   { href: "/decision-inbox", label: "Inbox" },
   { href: "/intelligence-center", label: "Overview" },

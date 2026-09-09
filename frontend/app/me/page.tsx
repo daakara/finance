@@ -103,6 +103,12 @@ function LifeCommandCenterContent() {
 
         <div className="flex items-center gap-3">
           <Link
+            href="/me/signals"
+            className="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
+          >
+            <span>📡</span> Signal Health (91%)
+          </Link>
+          <Link
             href="/me/allocator"
             className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
           >
@@ -116,7 +122,7 @@ function LifeCommandCenterContent() {
       <IntelligenceHeader
         title="Personal Life Operating System"
         subtitle="The individual personal intelligence layer. Real-time Life Health Index, future self trajectory navigation, personal strategy portfolio ranking, and adaptive recovery projections."
-        certification="HORIZON-5-CERTIFIED"
+        certification="HORIZON-6-CERTIFIED"
         status="CERTIFIED"
         breadcrumbs={[
           { label: 'Life OS', href: '/me' },
@@ -317,7 +323,7 @@ function LifeCommandCenterContent() {
             </div>
             <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-mono">
               <span className="text-emerald-400">+2.1 Career Impact</span>
-              <span className="text-slate-500">83% Conf</span>
+              <span className="text-cyan-400">94% Trust</span>
             </div>
           </div>
 
@@ -336,7 +342,7 @@ function LifeCommandCenterContent() {
             </div>
             <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-mono">
               <span className="text-emerald-400">+12% Focus Reserve</span>
-              <span className="text-slate-500">92% Conf</span>
+              <span className="text-cyan-400">96% Trust</span>
             </div>
           </div>
 
@@ -355,7 +361,7 @@ function LifeCommandCenterContent() {
             </div>
             <div className="pt-2 border-t border-slate-800 flex justify-between text-xs font-mono">
               <span className="text-emerald-400">+8ms HRV Lift</span>
-              <span className="text-slate-500">89% Conf</span>
+              <span className="text-cyan-400">98% Trust</span>
             </div>
           </div>
         </div>

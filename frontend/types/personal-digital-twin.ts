@@ -182,3 +182,95 @@ export interface LifeCommandSummary {
     months24: { role: string; probability: number };
   };
 }
+
+// =========================================================================
+// HORIZON 6: PERSONAL DATA INTEGRATION & REAL-WORLD SIGNAL LAYER
+// =========================================================================
+
+export type SignalCategory = "TIME" | "HEALTH" | "FINANCE" | "CAREER" | "LEARNING";
+
+export interface SignalMetadata {
+  source: string;              // e.g. "GOOGLE_CALENDAR", "APPLE_HEALTH", "PLAID"
+  observedAtUtc: string;       // ISO 8601 timestamp
+  confidencePct: number;       // 0 to 100
+  freshnessHours: number;      // Calculated: (now - observedAtUtc) in hours
+  maxAllowedAgeHours: number;  // Invariant ceiling for category
+}
+
+export interface PersonalSignal {
+  signalId: string;
+  category: SignalCategory;
+  metricId: string;            // e.g. "DEEP_WORK_HOURS", "SLEEP_DURATION", "SAVINGS_RATE"
+  value: number;
+  unit: string;
+  metadata: SignalMetadata;
+}
+
+export type SignalErrorCode =
+  | "SIGNAL_STALE"
+  | "SIGNAL_SOURCE_UNKNOWN"
+  | "SIGNAL_TIMESTAMP_MISSING";
+
+export interface SignalFreshnessResult {
+  isFresh: boolean;
+  freshnessScore: number;      // 0 to 100 calculated from decay formula
+  ageHours: number;
+  maxAgeHours: number;
+  status: "FRESH" | "AGING" | "STALE";
+  errorCode?: SignalErrorCode;
+}
+
+export interface SignalReliability {
+  source: string;
+  confidencePct: number;
+  priority: number;            // Lower number = higher authoritative rank (1 is highest)
+}
+
+export type ConflictResolutionMethod = "PRIORITY" | "WEIGHTED" | "USER_OVERRIDE";
+
+export interface SignalConflict {
+  conflictId: string;
+  metricId: string;
+  sourceA: string;
+  valueA: number;
+  confidenceA: number;
+  sourceB: string;
+  valueB: number;
+  confidenceB: number;
+  resolutionMethod: ConflictResolutionMethod;
+  resolvedValue: number;
+  auditReason: string;
+  resolvedAtUtc: string;
+}
+
+export interface DecisionOutcome {
+  decisionId: string;
+  recommendationTitle: string;
+  category: SignalCategory;
+  expectedMetricGain: number;
+  actualMetricGain: number;
+  calibrationDeltaPct: number;  // (actual - expected) / expected * 100
+  decidedAtUtc: string;
+  outcomeObservedAtUtc: string;
+  brierScoreContribution: number;
+}
+
+export interface SignalQualityComposite {
+  freshnessScore: number;      // Average freshness across all active signals (0-100)
+  coverageScore: number;       // Breadth across all 5 life categories (0-100)
+  confidenceScore: number;     // Average source confidence (0-100)
+  overallQualityScore: number; // (Freshness + Coverage + Confidence) / 3
+  status: "EXCELLENT" | "GOOD" | "DEGRADED" | "CRITICAL";
+}
+
+export interface ConnectedSource {
+  id: string;
+  name: string;
+  category: SignalCategory;
+  provider: string;
+  status: "SYNCED" | "SYNCING" | "ERROR" | "DISCONNECTED";
+  lastSyncUtc: string;
+  freshnessScore: number;
+  confidencePct: number;
+  totalSignalsTracked: number;
+}
