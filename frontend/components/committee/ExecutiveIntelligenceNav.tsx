@@ -24,6 +24,7 @@ const STRATEGIC_LINKS = [
   { href: "/learning-intelligence", label: "Learning" },
   { href: "/risks-and-groupthink", label: "Risks" },
   { href: "/simulation-intelligence", label: "Simulation" },
+  { href: "/executive-sandbox", label: "Sandbox" },
   { href: "/strategy-laboratory", label: "Strategy Lab" },
 ];
 

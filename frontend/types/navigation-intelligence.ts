@@ -53,7 +53,8 @@ export type NavigationEntityType =
   | 'DECISION_OPTION'
   | 'RELEASE_DASHBOARD'
   | 'RELEASE_GATE'
-  | 'ADOPTION_CENTER';
+  | 'ADOPTION_CENTER'
+  | 'EXECUTIVE_SANDBOX';
 
 export interface EntityResolution {
   input: string;
