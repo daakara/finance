@@ -274,3 +274,89 @@ export interface ConnectedSource {
   confidencePct: number;
   totalSignalsTracked: number;
 }
+
+
+/**
+ * Horizon 7: Integrated Life Twin & Unified Life Causal Graph Contracts
+ */
+export type LifeDomainType =
+  | "HEALTH"
+  | "CAREER"
+  | "LEARNING"
+  | "FINANCE"
+  | "RELATIONSHIPS"
+  | "TIME";
+
+export interface LifeDomainNode {
+  id: string;                  // e.g. "SLEEP_HOURS", "RECOVERY_SCORE", "SAVINGS_RATE"
+  name: string;
+  domain: LifeDomainType;
+  baselineValue: number;
+  unit: string;
+  currentValue: number;
+  minSafeValue: number;
+  maxSafeValue: number;
+  description: string;
+}
+
+export interface LifeEdge {
+  id: string;
+  fromNodeId: string;
+  toNodeId: string;
+  sensitivity: number;         // Rate of change multiplier (+ or -)
+  latencyWeeks: number;        // Time lag for propagation
+  confidencePct: number;
+  mechanism: string;           // Biological, financial, or cognitive explanation
+}
+
+export interface UnifiedLifeGraph {
+  nodes: Record<string, LifeDomainNode>;
+  edges: LifeEdge[];
+  topologicalOrder: string[];  // Computed cycle-free topological order
+  isAcyclic: boolean;
+}
+
+export interface CrossDomainScenario {
+  id: string;
+  title: string;
+  description: string;
+  leverChanges: Record<string, number>; // nodeId -> delta
+  horizonWeeks: number;
+  simulatedNodeDeltas: Record<string, number>;
+  lhiDelta: number;
+  domainContributions: Record<LifeDomainType, number>;
+  unintendedConsequences: string[];
+  isPlausible: boolean;
+}
+
+export interface CrossDomainTraceNode {
+  step: number;
+  nodeId: string;
+  nodeName: string;
+  domain: LifeDomainType;
+  priorValue: number;
+  newValue: number;
+  delta: number;
+  causedByEdgeId?: string;
+  mechanism?: string;
+  latencyWeeksCumulative: number;
+}
+
+export interface CrossDomainSimulationResult {
+  scenarioId: string;
+  scenarioTitle: string;
+  baselineLhi: number;
+  projectedLhi: number;
+  lhiDelta: number;
+  domainScores: Record<LifeDomainType, { baseline: number; projected: number; delta: number }>;
+  traceLineage: CrossDomainTraceNode[];
+  isTraceable: boolean;        // INV-OI88-P
+  isConsistent: boolean;       // INV-OI89-P
+  consistencyViolations: string[];
+  monteCarloDistribution: {
+    p10: number;
+    p50: number;
+    p90: number;
+    iterations: number;
+  };
+}
