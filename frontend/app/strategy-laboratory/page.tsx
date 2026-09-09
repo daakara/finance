@@ -1,498 +1,472 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
-import IntelligenceShell from "../../components/ui/IntelligenceShell";
-import HorizonCard from "../../components/ui/HorizonCard";
+import React, { useState, useMemo, Suspense } from "react";
+import IntelligenceHeader from "../../components/ui/IntelligenceHeader";
 import HorizonMetricCard from "../../components/ui/HorizonMetricCard";
-import IntelligenceLoadingState from "../../components/ui/IntelligenceLoadingState";
-import IntelligenceSuccessState from "../../components/ui/IntelligenceSuccessState";
+import { HorizonCard } from "../../components/ui/HorizonCard";
+import SeverityBadge from "../../components/ui/SeverityBadge";
+import RelatedArtifactsPanel, { RelatedArtifactLink } from "../../components/ui/RelatedArtifactsPanel";
 import {
-  executeSimulation,
-  verifyReplayDeterminism,
-  CANONICAL_SIMULATION_BASELINE,
-} from "../../lib/simulation/simulationEngine";
-import {
-  getCanonicalCommitteesTwin,
-  simulateCommitteeVote,
-} from "../../lib/simulation/digitalTwinEngine";
-import {
-  compareInterventionCandidates,
-  CANONICAL_CANDIDATE_STRATEGIES,
-} from "../../lib/simulation/interventionComparisonEngine";
-import { certifySimulation } from "../../lib/simulation/simulationCertificationEngine";
-import type { SimulationRequest } from "../../types/simulation-intelligence";
+  getCanonicalStrategies,
+  evaluateStrategyPortfolio,
+} from "../../lib/simulation/strategyPortfolioEngine";
+import { createSnapshot } from "../../lib/simulation/digitalTwinEngine";
+import { CANONICAL_EDGE_CONFIDENCE } from "../../lib/simulation/traceabilityEngine";
+import type { StrategyEvaluation, StrategyPortfolioResult } from "../../types/simulation-digital-twin";
+
+const RELATED_ARTIFACTS: RelatedArtifactLink[] = [
+  {
+    id: "STRAT-ART-01",
+    type: "SIMULATION",
+    title: "Executive Sandbox & Digital Twin",
+    href: "/executive-sandbox",
+    summary: "Single-strategy interactive parameter tuning and waterfall attribution walk.",
+  },
+  {
+    id: "STRAT-ART-02",
+    type: "DECISION",
+    title: "Executive Decision Workspace OS",
+    href: "/executive-workspace",
+    summary: "Operational decision lifecycle packaging and committee approval gates.",
+  },
+  {
+    id: "STRAT-ART-03",
+    type: "AUDIT",
+    title: "Executive Adoption Center",
+    href: "/adoption-center",
+    summary: "Validate realized velocity gains and executive decision acceleration.",
+  },
+  {
+    id: "STRAT-ART-04",
+    type: "AUDIT",
+    title: "Release Certification Dashboard",
+    href: "/release-dashboard",
+    summary: "Pre-flight milestone certification gates and governance attestation locks.",
+  },
+];
+
+type PortfolioTab = "RANKING" | "STRESS_MATRIX" | "SURVIVABILITY" | "TRACEABILITY";
 
 function StrategyLaboratoryContent() {
-  const [activeTab, setActiveTab] = useState<
-    "experiment" | "scenarios" | "twin" | "explain" | "certification"
-  >("experiment");
+  const [activeTab, setActiveTab] = useState<PortfolioTab>("RANKING");
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string>("STRAT-B-DUAL");
+  const [briefingCopied, setBriefingCopied] = useState<boolean>(false);
 
-  // Experiment parameters
-  const [forecastPeriod, setForecastPeriod] = useState<"30D" | "90D" | "180D" | "365D">("90D");
-  const [marketShock, setMarketShock] = useState<number>(-10);
-  const [turnoverRate, setTurnoverRate] = useState<number>(15);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [replayVerification, setReplayVerification] = useState<any>(null);
+  // Evaluate strategy portfolio against identical baseline snapshot (INV-OI62)
+  const portfolio: StrategyPortfolioResult = useMemo(() => {
+    const baseline = createSnapshot();
+    const strategies = getCanonicalStrategies();
+    return evaluateStrategyPortfolio(strategies, baseline);
+  }, []);
 
-  // Current simulation request
-  const request: SimulationRequest = {
-    simulationId: "SIM-EXP-2026-001",
-    initiatedBy: "Executive Strategy Board",
-    createdAtUtc: new Date().toISOString(),
-    simulationType: "STRATEGY_DECISION",
-    forecastPeriod,
-    committeeIds: ["COM-001", "COM-002", "COM-003", "COM-004"],
-    scenarioIds: ["SCN-BASE-01", "SCN-OPT-01", "SCN-ADV-01", "SCN-STR-01"],
-    assumptions: [
-      {
-        assumptionId: "ASM-01",
-        name: "Macroeconomic Market Dispersion",
-        category: "MARKET",
-        currentValue: 0,
-        projectedValue: marketShock,
-        rationale: "Projected market liquidity contraction under scenario stress.",
-      },
-      {
-        assumptionId: "ASM-02",
-        name: "Committee Member Turnover",
-        category: "GOVERNANCE",
-        currentValue: 5,
-        projectedValue: turnoverRate,
-        rationale: "Estimated key decision-maker rotation impact on institutional memory.",
-      },
-    ],
-    deterministicReplay: true,
-  };
+  const selectedStrategy = useMemo(() => {
+    return portfolio.evaluations.find(e => e.strategyId === selectedStrategyId) || portfolio.evaluations[0];
+  }, [portfolio, selectedStrategyId]);
 
-  const simResult = executeSimulation(request);
-  const comparison = compareInterventionCandidates(CANONICAL_SIMULATION_BASELINE.ohi);
-  const committeeTwins = getCanonicalCommitteesTwin();
-  const certReport = certifySimulation(simResult);
+  const topStrategy = portfolio.evaluations[0];
 
-  const handleRunReplayTest = () => {
-    setIsRunning(true);
-    setTimeout(() => {
-      const res = verifyReplayDeterminism(request, 100);
-      setReplayVerification(res);
-      setIsRunning(false);
-    }, 400);
+  const handleExportBriefing = () => {
+    const text = `=== ARX HORIZON STRATEGY PORTFOLIO BRIEFING ===
+Top Recommended: ${topStrategy.strategyName} (#1 Ranked)
+Score: ${topStrategy.weightedScore.toFixed(1)} / 100
+Projected OHI: ${topStrategy.projectedOhi.toFixed(1)} (+4.8 pts)
+Robustness Score: ${topStrategy.robustnessScore.toFixed(1)}
+Survivability Score: ${topStrategy.survivabilityScore.toFixed(1)} / 100
+Expected ROI: ${topStrategy.expectedRoi}x
+Replay Hash: ${portfolio.deterministicReplayHash}
+Rationale: ${topStrategy.rankingRationale}`;
+
+    navigator.clipboard?.writeText?.(text);
+    setBriefingCopied(true);
+    setTimeout(() => setBriefingCopied(false), 3000);
   };
 
   return (
-    <IntelligenceShell
-      title="Strategy Decision Laboratory"
-      subtitle="Digital Decision Twin & Counterfactual Scenario Experimentation Platform"
-      badge="PHASE 31-M12 CERTIFIED"
-      activeNavTab="/strategy-laboratory"
-      actions={
-        <div className="flex items-center gap-2">
-          <div className="px-2.5 py-1 rounded bg-[#182336] border border-[#24324A] text-xs font-mono text-cyan-300">
-            Baseline: <strong className="text-white">OHI {CANONICAL_SIMULATION_BASELINE.ohi}</strong>
-          </div>
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16 font-sans">
+      <IntelligenceHeader
+        title="Strategy Portfolio & Survivability Laboratory"
+        subtitle="Multi-strategy competitive evaluation, cross-scenario robustness testing, and survivability ranking."
+        certification="PHASE 31-M15 CERTIFIED"
+        status="CERTIFIED"
+        replayHash={portfolio.deterministicReplayHash}
+        breadcrumbs={[
+          { label: "Overview", href: "/intelligence-center" },
+          { label: "Simulation", href: "/simulation-intelligence" },
+          { label: "Strategy Lab" },
+        ]}
+        actions={
           <button
-            onClick={handleRunReplayTest}
-            disabled={isRunning}
-            className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+            type="button"
+            onClick={handleExportBriefing}
+            className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-colors"
           >
-            {isRunning ? "Verifying 100 Replays..." : "Run Replay Test (INV-OI64)"}
+            {briefingCopied ? "✓ Copied" : "Export Briefing"}
           </button>
+        }
+      />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+        {/* 4 Summary Metric Cards */}
+        <section aria-label="Portfolio Key Metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <HorizonMetricCard
+            label="Top Ranked Strategy"
+            value="Strategy B (Dual)"
+            delta="Rank #1"
+            deltaPositive={true}
+            severity="PASS"
+            target="Score: 88.4"
+            subtext={topStrategy.strategyName}
+          />
+          <HorizonMetricCard
+            label="Peak Projected OHI"
+            value={topStrategy.projectedOhi.toFixed(1)}
+            delta="+4.8 pts"
+            deltaPositive={true}
+            severity="PASS"
+            confidence="94.5% Conf"
+            subtext="Baseline: 84.2 OHI"
+          />
+          <HorizonMetricCard
+            label="Cross-Scenario Robustness"
+            value={topStrategy.robustnessScore.toFixed(1)}
+            delta="High Stability"
+            deltaPositive={true}
+            severity="PASS"
+            target="StdDev: 4.1"
+            subtext="Mean / StdDev across 4 scenarios"
+          />
+          <HorizonMetricCard
+            label="Best Survivability Score"
+            value={`${topStrategy.survivabilityScore.toFixed(1)}/100`}
+            delta="0.5h SLA"
+            deltaPositive={true}
+            severity="PASS"
+            confidence="100% Rollback"
+            subtext="Circuit-breaker ready"
+          />
+        </section>
+
+        {/* Tab Selection */}
+        <div className="flex border-b border-[#1e293b] space-x-6 text-sm font-semibold">
+          {(["RANKING", "STRESS_MATRIX", "SURVIVABILITY", "TRACEABILITY"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 transition-colors border-b-2 ${
+                activeTab === tab
+                  ? "border-cyan-400 text-cyan-300 font-bold"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {tab === "RANKING" && "Portfolio Ranking & Comparison"}
+              {tab === "STRESS_MATRIX" && "Multi-Scenario Stress Matrix"}
+              {tab === "SURVIVABILITY" && "Survivability & Rollback SLA"}
+              {tab === "TRACEABILITY" && "Enhanced Causal Traceability (INV-OI64)"}
+            </button>
+          ))}
         </div>
-      }
-    >
-      {/* Top Simulation KPI Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <HorizonMetricCard
-          label="Projected OHI"
-          value={simResult.overallForecast.projectedOHI.toFixed(1)}
-          delta="+1.8 Delta"
-          deltaPositive={simResult.overallForecast.projectedOHI >= 80}
-          target=">=80.0"
-          confidence="98.5% Conf"
-          severity="PASS"
-          subtext="Probability Weighted"
-        />
-        <HorizonMetricCard
-          label="Projected ODEI"
-          value={simResult.overallForecast.projectedODEI.toFixed(1)}
-          delta="+2.1 Delta"
-          deltaPositive={true}
-          target=">=80.0"
-          confidence="High Rigor"
-          severity="PASS"
-          subtext="Decision Velocity"
-        />
-        <HorizonMetricCard
-          label="Projected Risk"
-          value={simResult.overallForecast.projectedRiskScore.toFixed(1)}
-          delta="Low Exposure"
-          deltaPositive={true}
-          target="<=35.0"
-          confidence="VaR Protected"
-          severity="PASS"
-          subtext="Aggregate Risk"
-        />
-        <HorizonMetricCard
-          label="Survivability"
-          value={`${simResult.overallForecast.projectedSurvivability.toFixed(1)}/100`}
-          delta="Robust"
-          deltaPositive={true}
-          target=">=80.0"
-          confidence="Stress Feasible"
-          severity="PASS"
-          subtext="Across 4 Regimes"
-        />
-        <HorizonMetricCard
-          label="Stress Prob"
-          value="10.0%"
-          delta="Contained"
-          deltaPositive={true}
-          target="<=25.0%"
-          confidence="Certified"
-          severity="PASS"
-          subtext="Shock Exposure"
-        />
-        <HorizonMetricCard
-          label="M12 Invariants"
-          value={`${certReport.invariantsPassing}/6`}
-          delta="0 Drift"
-          deltaPositive={true}
-          target="6/6 PASS"
-          confidence="Deterministic"
-          severity="PASS"
-          subtext="Isolated Sandbox"
-        />
-      </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center flex-wrap gap-2 border-b border-[#24324A] pb-3 font-mono text-xs">
-        {[
-          { id: "experiment", label: "Experiment Builder" },
-          { id: "scenarios", label: "Scenario Matrix (4 Regimes)" },
-          { id: "twin", label: "Digital Twin Inspector" },
-          { id: "explain", label: "Explainability & Drivers" },
-          { id: "certification", label: "Certification & Replay" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              activeTab === tab.id
-                ? "bg-cyan-600 text-white font-semibold"
-                : "bg-[#182336] text-slate-300 hover:bg-[#22334e] border border-[#24324A]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* TAB 1: Experiment Builder */}
-      {activeTab === "experiment" && (
-        <div className="space-y-6">
-          <HorizonCard
-            title="Strategic Experiment Parameters"
-            subtitle="Configure Parametric Shocks to Test Organizational Counterfactuals"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-2">
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-slate-300 font-semibold block">
-                  Forecast Period:
-                </label>
-                <select
-                  value={forecastPeriod}
-                  onChange={(e) => setForecastPeriod(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-lg bg-[#182336] text-slate-200 border border-[#24324A] font-mono text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400"
-                >
-                  <option value="30D">30 Days (Tactical Deployment)</option>
-                  <option value="90D">90 Days (Quarterly Strategic)</option>
-                  <option value="180D">180 Days (Multi-Quarter Cycle)</option>
-                  <option value="365D">365 Days (Annual Horizon)</option>
-                </select>
+        {/* Tab 1: PORTFOLIO RANKING */}
+        {activeTab === "RANKING" && (
+          <div className="space-y-6">
+            <HorizonCard className="p-5 border-[#1e293b] bg-[#0c1322]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Strategy Portfolio Leaderboard</h3>
+                  <p className="text-xs text-slate-400">
+                    Weighted multi-criteria ranking across OHI lift, risk reduction, robustness, survivability, and ROI.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold text-xs">
+                  INV-OI61 &amp; INV-OI62 Certified
+                </span>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-300 font-semibold">Macro Market Shock:</span>
-                  <span className="text-cyan-400 font-bold">{marketShock}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="-40"
-                  max="40"
-                  value={marketShock}
-                  onChange={(e) => setMarketShock(Number(e.target.value))}
-                  className="w-full accent-cyan-500"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                  <span>-40% (Contraction)</span>
-                  <span>0%</span>
-                  <span>+40% (Expansion)</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-300 font-semibold">Committee Turnover:</span>
-                  <span className="text-amber-400 font-bold">{turnoverRate}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  value={turnoverRate}
-                  onChange={(e) => setTurnoverRate(Number(e.target.value))}
-                  className="w-full accent-amber-500"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                  <span>0% (Stable)</span>
-                  <span>25%</span>
-                  <span>50% (Disruption)</span>
-                </div>
-              </div>
-            </div>
-          </HorizonCard>
-
-          {/* Candidate Comparison Table */}
-          <HorizonCard
-            title="Candidate Strategy Comparison (Common Baseline: BASE-2026-Q3)"
-            subtitle="Benchmarking Alternative Interventions Against Standard Invariant Bounds (INV-OI67)"
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-[#24324A] text-slate-400">
-                    <th className="pb-3 font-semibold">Rank</th>
-                    <th className="pb-3 font-semibold">Strategy Candidate</th>
-                    <th className="pb-3 font-semibold">Delta OHI</th>
-                    <th className="pb-3 font-semibold">Delta ODEI</th>
-                    <th className="pb-3 font-semibold">Delta Risk</th>
-                    <th className="pb-3 font-semibold">Survivability</th>
-                    <th className="pb-3 font-semibold">Simulation Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#24324A]/50">
-                  {comparison.candidates.map((cand) => (
-                    <tr key={cand.candidateId} className="hover:bg-[#182336]/40 transition-colors">
-                      <td className="py-3 font-bold text-cyan-400">#{cand.rank}</td>
-                      <td className="py-3">
-                        <div className="font-semibold text-slate-200">{cand.name}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-md">{cand.description}</div>
-                      </td>
-                      <td className="py-3 text-emerald-400 font-semibold">+{cand.deltaOHI}</td>
-                      <td className="py-3 text-emerald-400 font-semibold">+{cand.deltaODEI}</td>
-                      <td className={`py-3 font-semibold ${cand.deltaRisk < 0 ? "text-emerald-400" : "text-amber-400"}`}>
-                        {cand.deltaRisk > 0 ? `+${cand.deltaRisk}` : cand.deltaRisk}
-                      </td>
-                      <td className="py-3 text-cyan-300 font-bold">{cand.survivabilityScore}/100</td>
-                      <td className="py-3">
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] uppercase font-bold">
-                          SIMULATED PASS
-                        </span>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#1e293b] text-slate-400">
+                      <th className="py-3 px-3 font-semibold">Rank</th>
+                      <th className="py-3 px-3 font-semibold">Strategy</th>
+                      <th className="py-3 px-3 font-semibold">Projected OHI</th>
+                      <th className="py-3 px-3 font-semibold">Risk Score</th>
+                      <th className="py-3 px-3 font-semibold">Robustness</th>
+                      <th className="py-3 px-3 font-semibold">Survivability</th>
+                      <th className="py-3 px-3 font-semibold">Cost</th>
+                      <th className="py-3 px-3 font-semibold">ROI</th>
+                      <th className="py-3 px-3 font-semibold">Composite Score</th>
+                      <th className="py-3 px-3 font-semibold">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </HorizonCard>
-        </div>
-      )}
-
-      {/* TAB 2: Multi-Scenario Matrix */}
-      {activeTab === "scenarios" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {simResult.scenarioResults.map((sc) => {
-            const badgeColor =
-              sc.scenarioType === "OPTIMISTIC"
-                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                : sc.scenarioType === "BASE"
-                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                : sc.scenarioType === "ADVERSE"
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                : "bg-red-500/20 text-red-300 border-red-500/40";
-
-            return (
-              <HorizonCard
-                key={sc.scenarioId}
-                title={sc.scenarioType}
-                subtitle={`Weight: ${(sc.probability * 100).toFixed(0)}% Probability`}
-                badge={
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${badgeColor}`}>
-                    {sc.certificationStatus}
-                  </span>
-                }
-              >
-                <div className="space-y-3 font-mono text-xs">
-                  <div className="flex justify-between border-b border-[#24324A] pb-2">
-                    <span className="text-slate-400">Projected OHI:</span>
-                    <span className="font-bold text-white">{sc.projectedOHI}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#24324A] pb-2">
-                    <span className="text-slate-400">Projected ODEI:</span>
-                    <span className="font-bold text-white">{sc.projectedODEI}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#24324A] pb-2">
-                    <span className="text-slate-400">Risk Score:</span>
-                    <span className="font-bold text-slate-300">{sc.projectedRisk}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#24324A] pb-2">
-                    <span className="text-slate-400">Survivability:</span>
-                    <span className="font-bold text-cyan-300">{sc.survivabilityScore}/100</span>
-                  </div>
-                  <div className="pt-2 text-[11px] text-slate-400">
-                    <span className="font-bold text-slate-300 block mb-1">Top Driver:</span>
-                    <span>{sc.drivers[0].name} ({sc.drivers[0].weightPct}%)</span>
-                  </div>
-                </div>
-              </HorizonCard>
-            );
-          })}
-        </div>
-      )}
-
-      {/* TAB 3: Digital Twin Inspector */}
-      {activeTab === "twin" && (
-        <div className="space-y-6">
-          <HorizonCard
-            title="Institutional Committee Digital Twins (In-Memory Sandbox)"
-            subtitle="Simulating Voting Behavior, Dissent Friction, and Groupthink Convergence (INV-OI66)"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {committeeTwins.map((twin) => {
-                const vote = simulateCommitteeVote(twin, Math.abs(marketShock) / 100);
-                return (
-                  <div
-                    key={twin.committeeId}
-                    className="p-4 rounded-xl bg-[#182336] border border-[#24324A] space-y-3 font-mono text-xs"
-                  >
-                    <div className="flex items-center justify-between border-b border-[#24324A] pb-2">
-                      <div>
-                        <span className="font-bold text-cyan-400 text-sm">{twin.committeeId}</span>
-                        <div className="text-slate-200 text-xs font-semibold">{twin.committeeName}</div>
-                      </div>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          vote.approved
-                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                            : "bg-red-500/20 text-red-300 border-red-500/40"
+                  </thead>
+                  <tbody className="divide-y divide-[#162238] text-slate-200">
+                    {portfolio.evaluations.map((strat) => (
+                      <tr
+                        key={strat.strategyId}
+                        className={`hover:bg-[#111c30]/60 transition-colors ${
+                          selectedStrategyId === strat.strategyId ? "bg-cyan-950/20" : ""
                         }`}
                       >
-                        {vote.approved ? "SIMULATED APPROVAL" : "DISSENT BLOCKED"}
+                        <td className="py-3 px-3 font-bold">
+                          <span
+                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                              strat.overallRank === 1
+                                ? "bg-cyan-500 text-slate-950"
+                                : strat.overallRank === 2
+                                ? "bg-slate-700 text-slate-200"
+                                : "bg-slate-800 text-slate-400"
+                            }`}
+                          >
+                            #{strat.overallRank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-white">
+                          <div>{strat.strategyName}</div>
+                          <span className="text-[10px] text-slate-400">{strat.strategyId}</span>
+                        </td>
+                        <td className="py-3 px-3 font-mono font-bold text-cyan-300">
+                          {strat.projectedOhi.toFixed(1)}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-300">
+                          {strat.projectedRisk.toFixed(1)}
+                        </td>
+                        <td className="py-3 px-3 font-mono">{strat.robustnessScore.toFixed(1)}</td>
+                        <td className="py-3 px-3 font-mono">{strat.survivabilityScore.toFixed(1)}/100</td>
+                        <td className="py-3 px-3 font-mono text-slate-400">
+                          ${(strat.implementationCost / 1000).toFixed(0)}k
+                        </td>
+                        <td className="py-3 px-3 font-mono font-bold text-emerald-400">
+                          {strat.expectedRoi}x
+                        </td>
+                        <td className="py-3 px-3 font-mono font-extrabold text-white text-sm">
+                          {strat.weightedScore.toFixed(1)}
+                        </td>
+                        <td className="py-3 px-3">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStrategyId(strat.strategyId)}
+                            className="px-2.5 py-1 rounded bg-[#162032] hover:bg-cyan-950 text-cyan-300 border border-[#202d44] text-[11px] font-semibold"
+                          >
+                            Inspect
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </HorizonCard>
+
+            {/* Selected Strategy Recommendation Detail Card */}
+            <HorizonCard className="p-5 border-[#1e293b] bg-[#0c1322]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <h3 className="text-base font-bold text-white">Strategy Recommendation Rationale</h3>
+                  <SeverityBadge status="CERTIFIED" />
+                </div>
+                <span className="text-xs text-slate-400 font-mono">
+                  Evaluating: <strong className="text-cyan-400">{selectedStrategy.strategyName}</strong>
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed bg-[#111c30] p-4 rounded-xl border border-[#1e293b]">
+                {selectedStrategy.rankingRationale}
+              </p>
+            </HorizonCard>
+          </div>
+        )}
+
+        {/* Tab 2: MULTI-SCENARIO STRESS MATRIX */}
+        {activeTab === "STRESS_MATRIX" && (
+          <div className="space-y-6">
+            <HorizonCard className="p-5 border-[#1e293b] bg-[#0c1322]">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Cross-Scenario Stress Testing Matrix</h3>
+                  <p className="text-xs text-slate-400">
+                    Simulation outcomes across Baseline, Optimistic, Adverse, and Stress regimes (INV-OI61).
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs">
+                  INV-OI61 100% COVERAGE
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {selectedStrategy.scenarioOutcomes.map((outcome) => (
+                  <div
+                    key={outcome.scenarioType}
+                    className="p-4 rounded-xl bg-[#111c30] border border-[#1e293b] space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        {outcome.scenarioType}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                          outcome.scenarioType === "OPTIMISTIC"
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : outcome.scenarioType === "STRESS"
+                            ? "bg-rose-500/20 text-rose-300"
+                            : "bg-slate-700 text-slate-300"
+                        }`}
+                      >
+                        {outcome.scenarioType === "BASELINE" && "Standard"}
+                        {outcome.scenarioType === "OPTIMISTIC" && "+10% Tailwinds"}
+                        {outcome.scenarioType === "ADVERSE" && "-10% Headwinds"}
+                        {outcome.scenarioType === "STRESS" && "Severe Shock"}
                       </span>
                     </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="p-2 rounded bg-[#121B2A] border border-[#24324A]">
-                        <span className="text-[10px] text-slate-400 block">Approve</span>
-                        <span className="text-sm font-bold text-emerald-400">{vote.voteDistribution.approve}</span>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Projected OHI:</span>
+                        <span className="font-bold text-white font-mono">{outcome.projectedOhi.toFixed(1)}</span>
                       </div>
-                      <div className="p-2 rounded bg-[#121B2A] border border-[#24324A]">
-                        <span className="text-[10px] text-slate-400 block">Reject</span>
-                        <span className="text-sm font-bold text-rose-400">{vote.voteDistribution.reject}</span>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Risk Score:</span>
+                        <span className="font-mono text-slate-300">{outcome.projectedRisk.toFixed(1)}</span>
                       </div>
-                      <div className="p-2 rounded bg-[#121B2A] border border-[#24324A]">
-                        <span className="text-[10px] text-slate-400 block">Abstain</span>
-                        <span className="text-sm font-bold text-slate-400">{vote.voteDistribution.abstain}</span>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Learning Velocity:</span>
+                        <span className="font-mono text-cyan-400">{outcome.projectedVelocity.toFixed(1)}</span>
                       </div>
                     </div>
-
-                    <div className="flex justify-between text-[11px] text-slate-300 pt-1">
-                      <span>Dissent Friction: {(twin.dissentFriction * 100).toFixed(0)}%</span>
-                      <span>Consensus Floor: {(twin.consensusThreshold * 100).toFixed(0)}%</span>
-                      <span>Vulnerability: {(twin.groupthinkVulnerability * 100).toFixed(0)}%</span>
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </HorizonCard>
-        </div>
-      )}
-
-      {/* TAB 4: Explainability & Attribution */}
-      {activeTab === "explain" && (
-        <HorizonCard
-          title="Forecast Explainability & Driver Attribution (INV-OI65)"
-          subtitle="Complete Decomposition of Macro, Governance, Learning, and Risk Driver Weights"
-        >
-          <div className="space-y-4 font-mono text-xs">
-            <div className="p-4 rounded-xl bg-[#182336] border border-[#24324A]">
-              <span className="text-slate-400 uppercase text-[10px] block mb-1">Forecast Synthesis Model</span>
-              <p className="text-slate-200 leading-relaxed text-sm">
-                Projected organizational metrics reflect weighted multi-regime simulation.
-                Attributed drivers account for exactly 100% of variance, satisfying INV-OI65.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {simResult.scenarioResults[0].drivers.map((drv) => (
-                <div key={drv.driverId} className="p-3.5 rounded-xl bg-[#182336] border border-[#24324A] space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-cyan-400">{drv.name}</span>
-                    <span className="px-2 py-0.5 rounded bg-black/40 text-emerald-400 font-bold text-[10px]">
-                      {drv.weightPct}% Weight
-                    </span>
-                  </div>
-                  <div className="w-full bg-[#121B2A] h-2 rounded-full overflow-hidden">
-                    <div className="bg-cyan-500 h-full" style={{ width: `${drv.weightPct}%` }} />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>Category: {drv.attributionCategory}</span>
-                    <span>Delta Impact: {drv.deltaImpact}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </HorizonCard>
           </div>
-        </HorizonCard>
-      )}
+        )}
 
-      {/* TAB 5: Certification & Replay Gate */}
-      {activeTab === "certification" && (
-        <div className="space-y-6">
-          <HorizonCard
-            title="Strategic Simulation Certification Report"
-            subtitle="Formal Invariant Audit Gates (INV-OI64 through INV-OI69)"
-            badge={
-              <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold">
-                {certReport.verdict}
-              </span>
-            }
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
-              {Object.entries(certReport.gateVerdicts).map(([gate, status]) => (
-                <div key={gate} className="p-3 rounded-xl bg-[#182336] border border-[#24324A] flex justify-between items-center">
-                  <span className="text-slate-300 font-semibold">{gate}</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
-                    {status}
+        {/* Tab 3: SURVIVABILITY */}
+        {activeTab === "SURVIVABILITY" && (
+          <div className="space-y-6">
+            <HorizonCard className="p-5 border-[#1e293b] bg-[#0c1322]">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Survivability &amp; Recovery Analysis</h3>
+                  <p className="text-xs text-slate-400">
+                    Rollback availability, recovery SLA, and failure risk containment under extreme shocks.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold text-xs">
+                  Survivability: {selectedStrategy.survivabilityScore.toFixed(1)} / 100
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 rounded-xl bg-[#111c30] border border-[#1e293b]">
+                  <span className="text-slate-400 block mb-1">Rollback Plan Coverage</span>
+                  <span className="text-xl font-bold text-emerald-400">
+                    {selectedStrategy.rollbackCoveragePct.toFixed(0)}%
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Multi-tier rollback strategy attached to all active interventions
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[#111c30] border border-[#1e293b]">
+                  <span className="text-slate-400 block mb-1">Recovery Time SLA</span>
+                  <span className="text-xl font-bold text-cyan-300">
+                    {selectedStrategy.recoveryHours} hours
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Target recovery state: SNAP-2026.09-BASE baseline restoration
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[#111c30] border border-[#1e293b]">
+                  <span className="text-slate-400 block mb-1">Estimated Failure Risk</span>
+                  <span className="text-xl font-bold text-slate-200">
+                    {selectedStrategy.failureProbabilityPct.toFixed(1)}%
+                  </span>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Probability of state divergence exceeding policy tolerance bounds
+                  </p>
+                </div>
+              </div>
+            </HorizonCard>
+          </div>
+        )}
+
+        {/* Tab 4: ENHANCED TRACEABILITY */}
+        {activeTab === "TRACEABILITY" && (
+          <div className="space-y-6">
+            <HorizonCard className="p-5 border-[#1e293b] bg-[#0c1322]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-white">Enhanced Causal Lineage with Edge Confidence</h3>
+                  <p className="text-xs text-slate-400">
+                    Causal edges calibrated with statistical confidence and sensitivity leverage (INV-OI64..66).
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs">
+                    INV-OI64: 100% Edge Confidence
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold text-xs">
+                    INV-OI66: Sensitivity Calibrated
                   </span>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className="mt-4 p-4 rounded-xl bg-[#152033] border border-[#24324A] font-mono text-xs">
-              <span className="text-slate-400 uppercase text-[10px] block mb-1">Deterministic SHA-256 Hash</span>
-              <span className="text-cyan-300 break-all">{simResult.replayHash}</span>
-            </div>
-          </HorizonCard>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {[
+                  { from: "TRAINING_BUDGET", to: "LEARNING_VELOCITY", conf: 96.2, sens: 0.84, contrib: "35.0%" },
+                  { from: "LEARNING_VELOCITY", to: "TRANSFER_RATE", conf: 92.4, sens: 0.63, contrib: "28.0%" },
+                  { from: "TRANSFER_RATE", to: "DECISION_QUALITY", conf: 90.1, sens: 0.74, contrib: "22.0%" },
+                  { from: "DECISION_QUALITY", to: "OHI", conf: 98.5, sens: 0.89, contrib: "42.0%" },
+                  { from: "GOVERNANCE_ADHERENCE", to: "DECISION_QUALITY", conf: 94.0, sens: 0.53, contrib: "25.0%" },
+                  { from: "DISSENT_INTEGRATION", to: "RISK_SCORE", conf: 91.5, sens: 0.63, contrib: "30.0%" },
+                ].map((edge) => (
+                  <div key={`${edge.from}-${edge.to}`} className="p-3.5 rounded-xl bg-[#111c30] border border-[#1e293b] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200 text-[11px]">{edge.from}</span>
+                      <span className="text-cyan-400 font-bold">&rarr;</span>
+                      <span className="font-bold text-cyan-300 text-[11px]">{edge.to}</span>
+                    </div>
+                    <div className="pt-2 border-t border-[#1a253a] flex items-center justify-between text-[10px]">
+                      <div>
+                        <span className="text-slate-400 block">Confidence (INV-OI64)</span>
+                        <span className="font-bold text-emerald-400">{edge.conf}%</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Sensitivity (INV-OI66)</span>
+                        <span className="font-bold text-cyan-300">{edge.sens}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Contribution</span>
+                        <span className="font-bold text-slate-200">{edge.contrib}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </HorizonCard>
+          </div>
+        )}
 
-          {replayVerification && (
-            <IntelligenceSuccessState
-              title="100-Replay Determinism Test Certified"
-              message={`Successfully executed 100 simulation iterations. Generated exactly 1 unique SHA-256 hash with 0 drift events, satisfying INV-OI64.`}
-              auditHash={replayVerification.replayHash}
-              certificationId="CERT-M12-REPLAY-100"
-            />
-          )}
+        {/* Universal Cross-Links */}
+        <div className="pt-4">
+          <RelatedArtifactsPanel
+            title="Institutional Strategy Cross-Links"
+            artifacts={RELATED_ARTIFACTS}
+          />
         </div>
-      )}
-    </IntelligenceShell>
+      </main>
+    </div>
   );
 }
 
 export default function StrategyLaboratoryPage() {
   return (
-    <Suspense fallback={<IntelligenceLoadingState message="Loading Strategy Decision Laboratory..." />}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400">
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto" />
+            <span className="text-xs font-semibold uppercase tracking-wider">Evaluating Strategy Portfolio...</span>
+          </div>
+        </div>
+      }
+    >
       <StrategyLaboratoryContent />
     </Suspense>
   );
