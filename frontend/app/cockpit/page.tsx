@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { getUnifiedCockpitState } from "../../lib/simulation/unifiedCockpitStore";
+import { getUnifiedCockpitState, useUnifiedCockpit } from "../../lib/simulation/unifiedCockpitStore";
 
 export default function GovernorPortalPage() {
   const state = getUnifiedCockpitState();

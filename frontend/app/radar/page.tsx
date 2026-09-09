@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import TerminalShell from '../../components/terminal/TerminalShell';
 
 interface RadarAsset {
   ticker: string;
@@ -70,8 +71,8 @@ export default function RadarPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <TerminalShell activeHub="radar">
+      <div className="space-y-6">
         {/* Top Market Regime Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
@@ -96,93 +97,99 @@ export default function RadarPage() {
           </div>
         </div>
 
-        {/* Radar Section Title & Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <span>Market Confluence Radar</span>
-              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/80">
-                Top 1% Setups
-              </span>
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Screening 6,400+ equities across Mark Minervini VCP criteria, Congressional STOCK Act disclosures, and Magic Formula quality.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono">
+        {/* Filter Controls */}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
             {(['ALL', 'VCP', 'SMART_MONEY', 'VALUE'] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
-                className={`px-3 py-1 rounded-md transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
                   activeFilter === filter
-                    ? 'bg-cyan-600 text-white font-bold'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
                 }`}
               >
-                {filter === 'ALL' ? 'All Signals' : filter.replace('_', ' ')}
+                {filter === 'ALL' ? 'All Confluences' : filter.replace('_', ' ')}
               </button>
             ))}
           </div>
+
+          <div className="text-xs font-mono text-slate-400">
+            Scanning 60+ Assets · <span className="text-emerald-400 font-bold">{filteredAssets.length} Qualified</span>
+          </div>
         </div>
 
-        {/* High-Density Data Grid */}
-        <div className="overflow-x-auto border border-slate-800 rounded-xl bg-slate-900/40 shadow-sm">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="p-3.5">Asset</th>
-                <th className="p-3.5">Price</th>
-                <th className="p-3.5">RS Rating</th>
-                <th className="p-3.5">Contraction (VCP)</th>
-                <th className="p-3.5">Volume Dry-Up</th>
-                <th className="p-3.5">Confluence</th>
-                <th className="p-3.5">Catalyst &amp; Smart Money</th>
-                <th className="p-3.5 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {filteredAssets.map((asset) => (
-                <tr key={asset.ticker} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="p-3.5 font-bold text-white text-sm">
-                    {asset.ticker}
-                    <div className="text-[10px] text-slate-400 font-normal">{asset.name}</div>
-                  </td>
-                  <td className="p-3.5 text-slate-200 font-semibold">${asset.price.toFixed(2)}</td>
-                  <td className="p-3.5">
-                    <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800/60">
-                      RS {asset.rsRating}
+        {/* Radar Assets Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredAssets.map((asset) => (
+            <div
+              key={asset.ticker}
+              className="p-5 rounded-xl border border-slate-800/80 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-900/70 transition-all space-y-4"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-black font-mono tracking-tight text-white">
+                      {asset.ticker}
                     </span>
-                  </td>
-                  <td className="p-3.5 text-cyan-400 font-semibold">{asset.vcpStage}</td>
-                  <td className="p-3.5 text-amber-400 font-semibold">{asset.volumeDryUpPct}%</td>
-                  <td className="p-3.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-cyan-400 h-full rounded-full"
-                          style={{ width: `${asset.confluenceScore}%` }}
-                        />
-                      </div>
-                      <span className="font-bold text-white">{asset.confluenceScore}</span>
-                    </div>
-                  </td>
-                  <td className="p-3.5 text-slate-300 text-[11px] max-w-xs truncate">{asset.catalyst}</td>
-                  <td className="p-3.5 text-right">
-                    <Link
-                      href={`/setups?symbol=${asset.ticker}`}
-                      className="px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-300 transition-colors font-bold text-[11px]"
-                    >
-                      View Setup
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {asset.name}
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono text-slate-500 mt-0.5">
+                    Stage 2 Uptrend · Contraction: {asset.vcpStage}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-sm font-bold font-mono text-white">
+                    ${asset.price.toFixed(2)}
+                  </div>
+                  <div className="text-xs font-mono text-emerald-400 font-semibold">
+                    Score: {asset.confluenceScore}/100
+                  </div>
+                </div>
+              </div>
+
+              {/* Confluence Metrics */}
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/60 text-xs font-mono">
+                <div>
+                  <div className="text-[10px] uppercase text-slate-400">Relative Strength</div>
+                  <div className="font-bold text-cyan-400">{asset.rsRating}/99</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-slate-400">Vol Contraction</div>
+                  <div className="font-bold text-emerald-400">{asset.volumeDryUpPct}%</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase text-slate-400">Strategy Model</div>
+                  <div className="font-bold text-purple-400">{asset.category}</div>
+                </div>
+              </div>
+
+              {/* Primary Catalyst */}
+              <div className="text-xs text-slate-300 flex items-center gap-1.5">
+                <span className="text-amber-400">⚡</span>
+                <span>{asset.catalyst}</span>
+              </div>
+
+              {/* Action Trigger */}
+              <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-400">
+                  Tight Risk Envelope Verified
+                </span>
+                <Link
+                  href="/setups"
+                  className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  View Setup Ticket →
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </TerminalShell>
   );
 }

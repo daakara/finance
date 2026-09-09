@@ -405,6 +405,13 @@ export function getUnifiedCockpitState(): UnifiedCockpitState {
   return CANONICAL_COCKPIT_STATE;
 }
 
+/**
+ * React hook returning the immutable Unified CQRS Cockpit State.
+ */
+export function useUnifiedCockpit(): UnifiedCockpitState {
+  return CANONICAL_COCKPIT_STATE;
+}
+
 export interface InvariantVerificationResult {
   compliant: boolean;
   invariantId: string;
