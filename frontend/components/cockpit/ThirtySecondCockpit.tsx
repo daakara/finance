@@ -379,6 +379,9 @@ export default function ThirtySecondCockpit() {
           <Link href="/me/decisions" className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/80 font-semibold">
             Decision Journal (H11)
           </Link>
+          <Link href="/me/patterns" className="px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-700/80 font-semibold">
+            Behavioral Patterns (H12)
+          </Link>
           <Link href="/screener" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
             Market Screener Terminal
           </Link>
