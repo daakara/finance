@@ -229,10 +229,16 @@ export default function ThirtySecondCockpit() {
         )}
 
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/me/execute"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg transition-all flex items-center gap-1.5"
+          >
+            <span>▶</span> Execute Now
+          </Link>
           {primary.actionPayload && (
             <Link
               href={primary.actionPayload.route}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg transition-all"
+              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-lg border border-slate-700 transition-all"
             >
               {primary.actionPayload.ctaLabel} →
             </Link>
@@ -366,6 +372,12 @@ export default function ThirtySecondCockpit() {
           </Link>
           <Link href="/me/strategy" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
             Household Strategy (H9/10)
+          </Link>
+          <Link href="/me/execute" className="px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/80 font-semibold">
+            Execution Cockpit (H11)
+          </Link>
+          <Link href="/me/decisions" className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/80 font-semibold">
+            Decision Journal (H11)
           </Link>
           <Link href="/screener" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
             Market Screener Terminal
