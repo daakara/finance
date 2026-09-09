@@ -11,6 +11,8 @@ export interface ExecutiveIntelligenceNavProps {
 
 // 4 Executive Nav Groups
 const WORKSPACE_LINKS = [
+  { href: "/me", label: "Personal OS" },
+  { href: "/me/allocator", label: "Allocator" },
   { href: "/executive-workspace", label: "Workspace" },
   { href: "/decision-inbox", label: "Inbox" },
   { href: "/intelligence-center", label: "Overview" },
