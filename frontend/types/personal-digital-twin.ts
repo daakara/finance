@@ -360,3 +360,90 @@ export interface CrossDomainSimulationResult {
     iterations: number;
   };
 }
+
+
+/**
+ * Horizon 8: Relational Twins & Household Intelligence Contracts
+ */
+export type RelationshipRole =
+  | "PARTNER"
+  | "CHILD"
+  | "PARENT"
+  | "FRIEND"
+  | "COFOUNDER";
+
+export interface RelationshipNode {
+  relationshipId: string;
+  name: string;
+  role: RelationshipRole;
+  relevanceWeight: number;        // 0.0 to 1.0 (e.g. Partner: 0.35, Child: 0.15)
+  impactSensitivity: number;      // Collateral multiplier (0.5 to 2.0)
+  sharedResources: string[];      // e.g. ["EVENING_HOURS", "WEEKEND_BLOCKS", "HOUSEHOLD_BUDGET"]
+  baselineWellbeing: number;      // 0 to 100
+  currentWellbeing: number;       // 0 to 100
+  sentimentAlignment: number;     // 0 to 100 agreement on strategic life trajectory
+  description: string;
+}
+
+export type SharedResourceType =
+  | "TIME_BLOCK"
+  | "FINANCIAL_CAPITAL"
+  | "CARETAKING_DUTY";
+
+export interface CommitmentAllocation {
+  commitmentId: string;
+  allocatedTo: string;          // e.g. "MY_WORK", "PARTNER_STUDY", "FAMILY_DINNER"
+  amount: number;
+  timeWindow?: string;          // e.g. "FRI_1900_2100" (for calendar collision detection)
+  priority: number;             // 1 = High, 3 = Flexible
+}
+
+export interface SharedResourceAllocation {
+  resourceId: string;
+  name: string;
+  type: SharedResourceType;
+  capacityUnits: number;        // e.g. 10 hours/week or $2000/month
+  unit: string;
+  allocatedCommitments: CommitmentAllocation[];
+  totalAllocated: number;
+  isDoubleBooked: boolean;      // Triggered by INV-OI90-P
+  conflictDetails: string[];
+}
+
+export interface HouseholdHealthIndex {
+  compositeHhi: number;         // 0 to 100
+  personalLhi: number;          // 0 to 100
+  relationalWeightedScore: number;
+  householdFinancialRunway: number; // months
+  sharedTimeFrictionPenalty: number;
+  delta: number;
+  trajectory: "STABLE" | "EXPANDING" | "STRAINED" | "CRITICAL";
+}
+
+export interface RelationalMemberImpact {
+  relationshipId: string;
+  name: string;
+  role: RelationshipRole;
+  wellbeingPrior: number;
+  wellbeingNew: number;
+  delta: number;
+  keyConcerns: string[];
+}
+
+export interface RelationalScenarioResult {
+  scenarioId: string;
+  scenarioTitle: string;
+  personalLhiDelta: number;
+  householdHhiDelta: number;
+  memberImpacts: RelationalMemberImpact[];
+  isSharedResourceIntegral: boolean;  // INV-OI90-P
+  sharedResourceViolations: string[];
+  isRelationalImpactVisible: boolean; // INV-OI91-P
+  visibilityViolations: string[];
+  relationalVisibilityCard: {
+    personalImpactSummary: string;
+    financialImpactSummary: string;
+    relationalImpactSummary: string;
+    unvarnishedTradeOffs: string[];
+  };
+}

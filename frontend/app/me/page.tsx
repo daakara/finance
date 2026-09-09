@@ -103,6 +103,12 @@ function LifeCommandCenterContent() {
 
         <div className="flex items-center gap-3">
           <Link
+            href="/me/household"
+            className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
+          >
+            <span>🏡</span> Household Twin
+          </Link>
+          <Link
             href="/me/twin"
             className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded text-xs font-semibold uppercase tracking-wider transition-colors flex items-center gap-2"
           >
@@ -128,7 +134,7 @@ function LifeCommandCenterContent() {
       <IntelligenceHeader
         title="Personal Life Operating System"
         subtitle="The individual personal intelligence layer. Real-time Life Health Index, future self trajectory navigation, personal strategy portfolio ranking, and adaptive recovery projections."
-        certification="HORIZON-7-CERTIFIED"
+        certification="HORIZON-8-CERTIFIED"
         status="CERTIFIED"
         breadcrumbs={[
           { label: 'Life OS', href: '/me' },
