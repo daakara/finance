@@ -154,9 +154,9 @@ export default function AdaptiveTerminal({
 
       {/* ⏱️ First-Class Time Horizon Selector & Evidence State Pill */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-slate-400 text-[11px] font-bold">Horizon Evaluation:</span>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {(["INTRADAY", "SWING", "POSITION", "LONG_TERM"] as TimeHorizon[]).map((hz) => (
               <button
                 key={hz}
