@@ -13,6 +13,7 @@ import ArxLogo from "./ArxLogo";
 import MarketCommandRibbon from "./nav/MarketCommandRibbon";
 import ExperienceModeToggle from "./experience/ExperienceModeToggle";
 import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
+import { CANONICAL_HUBS, buildHubHref, isHubActive, extractActiveSymbol } from "../lib/canonicalNav";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -29,6 +30,17 @@ export default function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  const [urlSymbolState, setUrlSymbolState] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sym = extractActiveSymbol(window.location.search);
+      setUrlSymbolState(sym);
+    }
+  }, [pathname]);
+
+  const effectiveSymbol = activeSymbol !== undefined ? activeSymbol : urlSymbolState;
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
@@ -104,11 +116,14 @@ export default function Navbar({
         const nextV = vernacularMode === "PLAIN_ENGLISH" ? "PRO_QUANT" : "PLAIN_ENGLISH";
         handleVernacularToggle(nextV);
       } else if (e.key === "s" || e.key === "S") {
-        if (pathname !== "/screener") router.push("/screener");
+        const radarHref = buildHubHref("radar", effectiveSymbol);
+        if (pathname !== "/radar") router.push(radarHref);
       } else if (e.key === "p" || e.key === "P") {
-        if (pathname !== "/portfolio") router.push("/portfolio");
+        const portfolioHref = buildHubHref("portfolio", effectiveSymbol);
+        if (pathname !== "/portfolio") router.push(portfolioHref);
       } else if (e.key === "t" || e.key === "T") {
-        if (pathname !== "/") router.push("/");
+        const analysisHref = buildHubHref("analysis", effectiveSymbol);
+        if (pathname !== "/") router.push(analysisHref);
       } else if (e.key === "?") {
         setIsShortcutsOpen((prev) => !prev);
       }
@@ -189,67 +204,32 @@ export default function Navbar({
                 </div>
               </Link>
 
-              {/* Desktop Navigation Links (5 Terminal Flagship Hubs) */}
+              {/* Desktop Navigation Links (Canonical 6 Hubs) */}
               <nav
                 aria-label="Main Navigation"
                 data-testid="desktop-nav-links"
                 className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0"
               >
-                <Link
-                  href="/radar"
-                  aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/radar" || pathname === "/screener"
-                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  Radar
-                </Link>
-                <Link
-                  href="/setups"
-                  aria-current={pathname === "/setups" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/setups"
-                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>Setups</span>
-                </Link>
-                <Link
-                  href="/portfolio"
-                  aria-current={pathname === "/portfolio" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/portfolio"
-                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>Portfolio</span>
-                </Link>
-                <Link
-                  href="/journal"
-                  aria-current={pathname === "/journal" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/journal"
-                      ? "bg-[#1b2434] text-cyan-400 font-semibold"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>Journal</span>
-                </Link>
-                <Link
-                  href="/performance"
-                  aria-current={pathname === "/performance" ? "page" : undefined}
-                  className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                    pathname === "/performance"
-                      ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <span>Performance</span>
-                </Link>
+                {CANONICAL_HUBS.map((hub) => {
+                  const href = buildHubHref(hub, effectiveSymbol);
+                  const active = isHubActive(hub.href, pathname);
+                  return (
+                    <Link
+                      key={hub.id}
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                        active
+                          ? hub.id === "performance"
+                            ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
+                            : "bg-[#1b2434] text-cyan-400 font-semibold"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span>{hub.label}</span>
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
 
@@ -341,76 +321,43 @@ export default function Navbar({
       </div>
     )}
 
-    {/* Floating Bottom Navigation Dock for Mobile Devices */}
+    {/* Floating Bottom Navigation Dock for Mobile Devices (Canonical 6 Hubs) */}
     {!hideMobileDock && (
       <nav
         role="navigation"
         aria-label="Mobile Navigation Dock"
         data-testid="mobile-nav-dock"
-        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1 py-1 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
       >
-        <Link
-          href="/radar"
-          aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/radar" || pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📡</span>
-          <span className="text-[9px] tracking-tight">Radar</span>
-        </Link>
-
-        <Link
-          href="/setups"
-          aria-current={pathname === "/setups" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/setups" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚡</span>
-          <span className="text-[9px] tracking-tight">Setups</span>
-        </Link>
-
-        <Link
-          href="/portfolio"
-          aria-current={pathname === "/portfolio" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
-          <span className="text-[9px] tracking-tight">Portfolio</span>
-        </Link>
-
-        <Link
-          href="/journal"
-          aria-current={pathname === "/journal" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/journal" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
-          <span className="text-[9px] tracking-tight">Journal</span>
-        </Link>
-
-        <Link
-          href="/performance"
-          aria-current={pathname === "/performance" ? "page" : undefined}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-            pathname === "/performance" ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60" : "text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📈</span>
-          <span className="text-[9px] tracking-tight">Alpha</span>
-        </Link>
+        {CANONICAL_HUBS.map((hub) => {
+          const href = buildHubHref(hub, effectiveSymbol);
+          const active = isHubActive(hub.href, pathname);
+          return (
+            <Link
+              key={hub.id}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                active
+                  ? hub.id === "performance"
+                    ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
+                    : "bg-[#1b2434] text-cyan-400 font-bold"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <span aria-hidden="true" className="text-sm mb-0.5 leading-none">{hub.icon}</span>
+              <span className="text-[8.5px] sm:text-[9px] tracking-tight">{hub.label}</span>
+            </Link>
+          );
+        })}
 
         {/* Quick Horizon Toggle on Mobile Dock */}
         <button
           type="button"
           onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
           aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
-          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all active:scale-[0.96] motion-reduce:transform-none min-w-[46px] min-h-[44px] border ${
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all active:scale-[0.96] motion-reduce:transform-none min-w-[44px] sm:min-w-[48px] min-h-[44px] border ${
             activeRole === "DAY_TRADER"
               ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
               : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
@@ -419,7 +366,7 @@ export default function Navbar({
           <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
             {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
           </span>
-          <span className="text-[8.5px] tracking-tight">
+          <span className="text-[8px] sm:text-[8.5px] tracking-tight">
             {activeRole === "DAY_TRADER" ? "Day" : "Long"}
           </span>
         </button>
