@@ -2,14 +2,31 @@
 
 import React from "react";
 import Link from "next/link";
-import { getUnifiedCockpitState } from "../../../lib/simulation/unifiedCockpitStore";
+import { useUnifiedCockpit, refreshUnifiedCockpit } from "../../../lib/simulation/unifiedCockpitStore";
 
 export default function SimulationWorkbench() {
-  const state = getUnifiedCockpitState();
-  const { triad, runway, futurePaths, outcomeForecasts } = state;
+  const state = useUnifiedCockpit();
+  const { status, errorMessage, triad, runway, futurePaths, outcomeForecasts } = state;
 
   return (
     <main className="min-h-screen bg-[#070b12] text-gray-100 p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+      {status === 'ERROR' && (
+        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800 text-xs font-mono text-rose-300 flex items-center justify-between">
+          <span>Failed to load cockpit telemetry: {errorMessage || "Network error"}</span>
+          <button
+            onClick={() => refreshUnifiedCockpit()}
+            className="px-3 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded font-bold transition-all"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+      {status === 'LOADING' && (
+        <div className="p-3 rounded-lg bg-blue-950/30 border border-blue-800/40 text-xs font-mono text-cyan-400 animate-pulse">
+          Synchronizing simulation telemetry stream...
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-gray-800 gap-4">
         <div>
           <div className="flex items-center space-x-3">
@@ -31,15 +48,15 @@ export default function SimulationWorkbench() {
         <div className="flex items-center space-x-3 bg-gray-900 border border-gray-800 p-3 rounded-xl">
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">LHI</span>
-            <span className="text-xl font-mono font-bold text-emerald-400">{triad.lhi}</span>
+            <span className="text-xl font-mono font-bold text-emerald-400">{triad?.lhi ?? "--"}</span>
           </div>
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">HHI</span>
-            <span className="text-xl font-mono font-bold text-blue-400">{triad.hhi}</span>
+            <span className="text-xl font-mono font-bold text-blue-400">{triad?.hhi ?? "--"}</span>
           </div>
           <div className="text-center px-3">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">IAI</span>
-            <span className="text-xl font-mono font-bold text-purple-400">{triad.iai}</span>
+            <span className="text-xl font-mono font-bold text-purple-400">{triad?.iai ?? "--"}</span>
           </div>
         </div>
       </header>
@@ -50,32 +67,38 @@ export default function SimulationWorkbench() {
           <div className="space-y-2 text-xs font-mono">
             <div className="flex justify-between border-b border-gray-800 pb-2">
               <span className="text-gray-400">Months Unencumbered</span>
-              <span className="text-emerald-400 font-bold">{runway.monthsUnencumbered} Months</span>
+              <span className="text-emerald-400 font-bold">{runway?.monthsUnencumbered ?? "--"} Months</span>
             </div>
             <div className="flex justify-between border-b border-gray-800 pb-2">
               <span className="text-gray-400">Liquid Cash Reserves</span>
-              <span className="text-white">${runway.liquidReserves.toLocaleString()}</span>
+              <span className="text-white">${runway?.liquidReserves?.toLocaleString() ?? "--"}</span>
             </div>
             <div className="flex justify-between border-b border-gray-800 pb-2">
               <span className="text-gray-400">Monthly Burn Rate</span>
-              <span className="text-white">${runway.burnRateMonthly.toLocaleString()}/mo</span>
+              <span className="text-white">${runway?.burnRateMonthly?.toLocaleString() ?? "--"}/mo</span>
             </div>
-            <p className="text-gray-400 pt-2 font-sans">{runway.capitalFloorRule}</p>
+            <p className="text-gray-400 pt-2 font-sans">{runway?.capitalFloorRule ?? "Capital preservation floors active."}</p>
           </div>
         </div>
 
         <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-4">
           <h3 className="text-sm font-bold text-white uppercase font-mono">3-Year Trajectory Paths</h3>
           <div className="space-y-3">
-            {futurePaths.map((p) => (
-              <div key={p.id} className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs space-y-1">
-                <div className="flex justify-between font-mono">
-                  <span className="text-white font-bold">{p.name}</span>
-                  <span className="text-cyan-400">{Math.round(p.probability * 100)}% Prob</span>
+            {futurePaths && futurePaths.length > 0 ? (
+              futurePaths.map((p) => (
+                <div key={p.id} className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs space-y-1">
+                  <div className="flex justify-between font-mono">
+                    <span className="text-white font-bold">{p.name}</span>
+                    <span className="text-cyan-400">{Math.round(p.probability * 100)}% Prob</span>
+                  </div>
+                  <p className="text-gray-400">Expected Net Worth: <strong className="text-emerald-400">{p.expectedNetWorth3Yr}</strong> • Downside buffer: {p.downsideBufferMonths} mo</p>
                 </div>
-                <p className="text-gray-400">Expected Net Worth: <strong className="text-emerald-400">{p.expectedNetWorth3Yr}</strong> • Downside buffer: {p.downsideBufferMonths} mo</p>
+              ))
+            ) : (
+              <div className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs text-gray-500 font-mono">
+                Zero trajectory paths projected.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

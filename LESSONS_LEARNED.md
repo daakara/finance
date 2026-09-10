@@ -259,5 +259,30 @@ Institutional finance software typically alienates retail users and non-finance 
 5. **Automated Quality Gate**:
    - Enforced via `test_security_guardian_and_ux_architect_contracts` in `tests/test_nextjs_frontend_structure.py`.
 
+---
 
+## 12. 🛡️ Senior Staff Reliability Remediation, Epistemic Truthfulness & Exception Boundary Integrity
 
+### 🚨 What Went Wrong
+1. **Mock-Bypassed Exception Testing**: A test patched `api.routes.cockpit.history_db.get_user_profile` to raise an `OperationalError`. This proved the route caught exceptions if they reached it, but masked that `HistoryDatabaseEngine.get_user_profile` swallowed exceptions internally (`except Exception: return None`), returning HTTP 200 with `status: UNAVAILABLE` instead of propagating an HTTP 500.
+2. **Decorator Subversion via Inner Catch Blocks**: Functions wrapped with `@retry_sqlite` contained inner `try...except Exception` blocks. When SQLite experienced transient contention or locks, the inner catch block consumed the exception immediately and returned a fallback value (e.g. `False` or `None`), preventing the `@retry_sqlite` decorator from ever seeing the error or executing retries.
+3. **Synthetic / Fabricated Metrics on Failure**: `get_setup_accuracy_summary` returned hardcoded mock numbers (`42` setups, `88.6%` target hit rate, `2.35` avg R:R) both on the zero-data path and inside the exception catch block, fabricating artificial institutional credibility when zero verified setup records existed.
+4. **False Premise on Weight Redistribution**: Conflating dynamic weight reweighting for verified disclosures (e.g., reallocating weights across 3 verified pillars when SEC Form 4 filings are unavailable for standard equities/ADRs) with unverified assets. Unverified assets with missing fundamental disclosures must mathematically compress below 50.0 to prevent recommending unvetted penny stocks.
+5. **Fetch Double Body-Read Runtime Traps**: In the frontend API client, calling `res.json()` on successful status and subsequently calling `res.text()` on a fallback branch caused runtime `TypeError: body already consumed` errors under the Fetch API spec.
+6. **False-Success Migration Semantics**: Portfolio bulk migration previously returned HTTP 200 `migrated` with `migratedCount: 0` when the database was locked, misleading frontend state into discarding local records under a false assumption of successful persistence.
+
+### 🛡️ The Preventive Standard
+1. **Test at the True Failure Boundary**:
+   - Never mock the route-level method to verify error propagation. Inject faults at the underlying engine connection (`_get_connection`) or use a genuinely locked/corrupted SQLite database instance to test end-to-end propagation through the real engine.
+2. **Clean `try...finally` Resource Management with Retries**:
+   - Engine methods wrapped by `@retry_sqlite` must only use `try...finally: conn.close()`. Retriable operational errors must propagate to the decorator without premature interception.
+3. **Zero Fabricated Default Metrics**:
+   - When zero setups exist, explicitly return `available: false`, `total_logged_setups: 0`, and `null` for hit rates and risk/reward ratios. Database exceptions must propagate truthfully as HTTP 500.
+4. **Epistemic Invariant Integrity**:
+   - Clearly separate "unobserved disclosure" for verified assets (which re-weights across available verified pillars) from "unverified asset" (where missing fundamentals strictly compress the score below 50.0 into defensive/capital-preservation mode).
+5. **Single Safe Body Consumption**:
+   - Always consume the response body once (e.g. via `const rawText = await res.text().catch(() => ""); const data = rawText ? JSON.parse(rawText) : null;`) to avoid stream double-consumption bugs.
+6. **Truthful Migration Accounting**:
+   - If zero records are persisted during migration of non-empty holdings, raise HTTP 500. Return `"partial"` when `saved_count < total_submitted` with explicit `migratedCount`, `totalSubmitted`, and `failedCount`.
+7. **Automated Quality Gate**:
+   - Enforced end-to-end via `scripts/verify_remediation_p1_p2.py` (52 checks), `frontend/scripts/verify-remediation-frontend.mjs` (18 checks), and full repository pytest suite (448 checks).

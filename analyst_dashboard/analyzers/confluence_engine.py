@@ -63,12 +63,16 @@ class ConfluenceEngine:
                 tech_plain = f"Sideways price action (RSI {rsi:.1f}). No clear direction yet."
 
         # ── 2. FUNDAMENTAL QUALITY & SOLVENCY (Weight: 25%) ──────────────────
-        has_fundamentals = bool(fundamental_data and any(k in fundamental_data for k in ["qualityScore", "piotroski_f", "piotroskiFScore", "roic"]))
+        has_fundamentals = bool(fundamental_data and any(fundamental_data.get(k) is not None for k in ["qualityScore", "piotroski_f", "piotroskiFScore", "roic"]))
         if has_fundamentals:
-            piotroski = int(fundamental_data.get("piotroski_f") or fundamental_data.get("piotroskiFScore", 7))
-            quality = float(fundamental_data.get("qualityScore", 70.0))
-            growth = float(fundamental_data.get("growthScore", 70.0))
-            valuation = float(fundamental_data.get("valuationScore", 65.0))
+            raw_p = fundamental_data.get("piotroski_f") if fundamental_data.get("piotroski_f") is not None else fundamental_data.get("piotroskiFScore")
+            piotroski = int(raw_p) if raw_p is not None else 7
+            raw_q = fundamental_data.get("qualityScore")
+            quality = float(raw_q) if raw_q is not None else 70.0
+            raw_g = fundamental_data.get("growthScore")
+            growth = float(raw_g) if raw_g is not None else 70.0
+            raw_v = fundamental_data.get("valuationScore")
+            valuation = float(raw_v) if raw_v is not None else 65.0
 
             fund_score = round(0.45 * quality + 0.30 * growth + 0.25 * valuation, 1)
 
@@ -108,84 +112,95 @@ class ConfluenceEngine:
             smart_score = 50.0
             smart_status = "neutral"
             smart_detail = "Foreign ADR (FPI): Executive transactions governed by local regulatory filings (e.g., BaFin Directors' Dealings, FCA DTR, TSE) rather than US SEC Form 4."
-            smart_plain = "Foreign Company (ADR): Executive trades are reported to European/overseas regulators rather than the US SEC."
-        elif smart_money_data is not None and len(smart_money_data) > 0:
-            has_insider_buy = smart_money_data.get("has_insider_buy", False)
-            insider_val = float(smart_money_data.get("insider_value_usd", 0))
+            smart_plain = "Foreign regulatory filings apply (FPI): Non-US corporate governance disclosures monitored via local stock exchanges."
+        elif smart_money_data:
+            has_insider_buy = bool(smart_money_data.get("has_insider_buy", False))
+            insider_val = float(smart_money_data.get("insider_value_usd", 0.0))
             insider_name = smart_money_data.get("insider_name", "")
-            has_congress_buy = smart_money_data.get("has_congress_buy", False)
-            has_options = smart_money_data.get("has_options_flow", False)
+            has_congress_buy = bool(smart_money_data.get("has_congress_buy", False))
+            has_options = bool(smart_money_data.get("has_options_flow", False))
+            net_institutional = float(smart_money_data.get("net_institutional_flow_mil", 0.0))
+            insider_buys = int(smart_money_data.get("insider_buy_count_90d", 0))
+            insider_sells = int(smart_money_data.get("insider_sell_count_90d", 0))
 
             if has_insider_buy and insider_val > 0:
                 smart_score = 90.0
                 smart_status = "positive"
                 smart_detail = f"{insider_name or 'C-Suite Executive'} purchased ${(insider_val / 1e6):.1f}M USD on open market."
                 smart_plain = f"Insider skin in the game: ${(insider_val / 1e6):.1f}M bought directly by corporate executives."
-            elif has_congress_buy:
-                smart_score = 80.0
+            elif has_insider_buy or has_congress_buy or has_options or net_institutional > 10.0 or insider_buys >= 2:
+                smart_score = 85.0 if (has_insider_buy or has_congress_buy) else 82.0
                 smart_status = "positive"
-                smart_detail = "Congressional STOCK Act filing: Capitol Hill committee member buy disclosure active."
-                smart_plain = "Congress buy reported: Lawmaker disclosed an open-market purchase in this stock/sector."
-            elif has_options:
-                smart_score = 70.0
-                smart_status = "positive"
-                smart_detail = "Unusual institutional order flow: High-volume call sweeps detected in options tape."
-                smart_plain = "Big money call options detected: Institutional traders positioning for upside."
+                if has_congress_buy:
+                    smart_detail = "Congressional STOCK Act filing: Capitol Hill committee member buy disclosure active."
+                    smart_plain = "Congress buy reported: Lawmaker disclosed an open-market purchase in this stock/sector."
+                elif has_options:
+                    smart_detail = "Unusual institutional order flow: High-volume call sweeps detected in options tape."
+                    smart_plain = "Big money call options detected: Institutional traders positioning for upside."
+                elif has_insider_buy:
+                    smart_detail = "Verified SEC Form 4 insider open-market purchases recorded."
+                    smart_plain = "Corporate insiders actively purchasing company stock."
+                else:
+                    smart_detail = f"Institutional accumulation (+${net_institutional:.1f}M net flow, {insider_buys} Form 4 insider buys)."
+                    smart_plain = f"Smart money accumulating: Net +${net_institutional:.1f}M institutional inflow and insider buying recorded."
+            elif net_institutional < -20.0 or (insider_sells > 4 and insider_buys == 0):
+                smart_score = 35.0
+                smart_status = "warning"
+                smart_detail = f"Institutional distribution (-${abs(net_institutional):.1f}M net flow, {insider_sells} Form 4 sales)."
+                smart_plain = f"Heavy insider selling: Net -${abs(net_institutional):.1f}M institutional outflow recorded."
             else:
-                smart_score = 50.0
+                smart_score = 55.0
                 smart_status = "neutral"
-                smart_detail = "No major C-Suite open-market purchases filed on SEC EDGAR in last 30 days."
+                smart_detail = "Neutral smart money flow. No significant directional cluster."
                 smart_plain = "No recent big boss insider purchases filed with the SEC this month."
 
         # ── 4. MACRO REGIME & DOWNSIDE SAFETY FLOOR (Weight: 25%) ────────────
-        macro_score = 60.0
-        macro_status = "neutral"
-        macro_detail = "Neutral macro liquidity regime with defined risk floor."
-        macro_plain = "Stable economic backdrop with defined safety exit floor."
+        has_macro = bool(macro_data and (macro_data.get("yield_curve_10y2y") is not None or macro_data.get("credit_spread") is not None))
 
-        stop_loss = 0.0
-        risk_pct = 5.0
         stop_loss = None
         if technical_data:
             raw_curr = technical_data.get("current_price")
-            current_p = float(raw_curr) if raw_curr is not None else 0.0
             raw_stop = technical_data.get("stop_loss")
-            stop_loss = float(raw_stop) if raw_stop is not None else None
-            if current_p > 0 and stop_loss is not None:
-                risk_pct = max(0.1, abs(current_p - stop_loss) / current_p * 100.0)
+            if raw_curr and raw_stop:
+                stop_loss = float(raw_stop)
+                risk_pct = max(1.0, round(((float(raw_curr) - stop_loss) / float(raw_curr)) * 100, 1))
             else:
                 risk_pct = 5.0
 
-        yield_curve = 0.25
-        credit_spread = 3.5
-        if macro_data:
-            yield_curve = float(macro_data.get("yield_curve_10y2y", 0.25))
-            credit_spread = float(macro_data.get("credit_spread", 3.5))
-
         stop_desc = f"at ${stop_loss:.2f}" if stop_loss is not None else "(stop unverified)"
-        if yield_curve >= 0.0 and credit_spread < 4.2:
-            macro_score = 85.0
-            macro_status = "positive"
-            macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight ({credit_spread:.2f}%). Exit floor {stop_desc}."
-            macro_plain = f"Macro green light: Credit markets healthy and treasury yield curve normal. Clear exit floor set {stop_desc}."
-        elif yield_curve < 0.0 or credit_spread >= 5.0:
-            macro_score = 38.0
-            macro_status = "warning"
-            macro_detail = f"Macro risk elevated: Inverted curve ({yield_curve:.2f}%) or credit spreads wide ({credit_spread:.2f}%). Defensive sizing required."
-            macro_plain = f"Macro warning flags: Tight financial conditions. Size down carefully."
+
+        if has_macro:
+            yield_curve = float(macro_data.get("yield_curve_10y2y", 0.0))
+            credit_spread = float(macro_data.get("credit_spread", 4.0))
+            if yield_curve >= 0.0 and credit_spread < 4.2:
+                macro_score = 85.0
+                macro_status = "positive"
+                macro_detail = f"FRED 10Y-2Y yield curve positive (+{yield_curve:.2f}%), credit spreads tight ({credit_spread:.2f}%). Exit floor {stop_desc}."
+                macro_plain = f"Macro green light: Credit markets healthy and treasury yield curve normal. Clear exit floor set {stop_desc}."
+            elif yield_curve < 0.0 or credit_spread >= 5.0:
+                macro_score = 38.0
+                macro_status = "warning"
+                macro_detail = f"Macro risk elevated: Inverted curve ({yield_curve:.2f}%) or credit spreads wide ({credit_spread:.2f}%). Defensive sizing required."
+                macro_plain = f"Macro warning flags: Tight financial conditions. Size down carefully."
+            else:
+                macro_score = 60.0
+                macro_status = "neutral"
+                macro_detail = f"Supportive liquidity background with stop floor {stop_desc}."
+                macro_plain = f"Stable economic background with safety exit floor set {stop_desc}."
         else:
-            macro_score = 60.0
-            macro_status = "neutral"
-            macro_detail = f"Supportive liquidity background with stop floor {stop_desc}."
-            macro_plain = f"Stable economic background with safety exit floor set {stop_desc}."
+            macro_score = 0.0
+            macro_status = "unavailable"
+            macro_detail = "Macro yield curve and credit spread telemetry unavailable."
+            macro_plain = "Macroeconomic liquidity indicators unavailable."
 
         # ── 5. CATALYST RUNWAY RISK ADJUSTMENT ────────────────────────────────
         catalyst_mod = 0.0
         warnings = []
         if catalyst_data:
-            days_to_earnings = catalyst_data.get("days_to_earnings")
-            if days_to_earnings is not None:
-                if days_to_earnings <= 1:
+            raw_dte = catalyst_data.get("days_to_earnings")
+            if raw_dte is not None:
+                days_to_earnings = float(raw_dte)
+                if days_to_earnings <= 1.0:
                     catalyst_mod -= 25.0
                     hours_left = int(days_to_earnings * 24) if days_to_earnings > 0 else 24
                     warnings.append(f"⚠️ HIGH BINARY GAP RISK: Earnings in <={hours_left}h! Limit position sizing.")
@@ -193,18 +208,29 @@ class ConfluenceEngine:
                     catalyst_mod -= 8.0
                     warnings.append(f"Caution: Earnings in {days_to_earnings} days.")
 
-        # ── COMPOSITE SYNTHESIS (Phase 22 Dynamic Normalized Reweighting) ─────
-        # If an asset has verified fundamentals but Smart Money regulatory filings are unavailable
-        # (e.g., standard equity with no recent Form 4 open-market buy, or broad ETF),
-        # dynamically re-weight across the 3 verified pillars (Tech: 35%, Fund: 35%, Macro: 30%)
-        # so missing insider trades do not act as an artificial 25-point penalty ceiling.
-        # Note: If fundamentals are also missing/empty, standard 4-pillar weighting applies to preserve
-        # mathematical compression below 50.0.
-        if smart_status == "unavailable" and has_fundamentals:
+        # ── COMPOSITE SYNTHESIS (Dynamic Normalized Reweighting) ─────────────
+        # If an asset has verified fundamentals but Smart Money regulatory filings or Macro are unavailable,
+        # dynamically re-weight across the verified pillars so missing disclosures do not act as an artificial penalty ceiling.
+        # Note: If fundamentals are missing/unverified, standard 4-pillar weighting applies (with unavailable pillars at 0)
+        # to strictly preserve mathematical compression below 50.0 (defensive posture for unverified assets).
+        if smart_status == "unavailable" and macro_status == "unavailable" and has_fundamentals:
+            raw_composite = (
+                0.50 * tech_score +
+                0.50 * fund_score +
+                catalyst_mod
+            )
+        elif smart_status == "unavailable" and has_fundamentals:
             raw_composite = (
                 0.35 * tech_score +
                 0.35 * fund_score +
                 0.30 * macro_score +
+                catalyst_mod
+            )
+        elif macro_status == "unavailable" and has_fundamentals:
+            raw_composite = (
+                0.35 * tech_score +
+                0.35 * fund_score +
+                0.30 * smart_score +
                 catalyst_mod
             )
         else:
@@ -314,6 +340,7 @@ class ConfluenceEngine:
             "positivesCount": positives,
             "warningsCount": warns,
             "warnings": warnings,
+            "coverageRatio": round(sum(1 for p in [tech_status, fund_status, smart_status, macro_status] if p != "unavailable") / 4.0, 2),
         }
 
     @staticmethod

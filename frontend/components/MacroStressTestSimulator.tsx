@@ -6,7 +6,7 @@ import { trackMacroShockSimulation } from "../lib/matomo";
 
 interface MacroStressTestSimulatorProps {
   positions: PortfolioPosition[];
-  totalEquity: number;
+  totalEquity: number | null;
 }
 
 export default function MacroStressTestSimulator({
@@ -58,7 +58,7 @@ export default function MacroStressTestSimulator({
     trackMacroShockSimulation(shockTitle, shockMagnitudePct);
   }, [selectedPreset, shockMagnitudePct]);
 
-  const effectiveEquity = totalEquity > 0 ? totalEquity : 25000;
+  const effectiveEquity = (totalEquity !== null && totalEquity > 0) ? totalEquity : 25000;
   const dollarImpact = (effectiveEquity * (shockMagnitudePct / 100));
   const postShockEquity = Math.max(0, effectiveEquity + dollarImpact);
   const recommendedCashPct = shockMagnitudePct < -5 ? 25 : shockMagnitudePct < 0 ? 15 : 5;

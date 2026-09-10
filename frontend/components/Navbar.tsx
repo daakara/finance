@@ -17,9 +17,10 @@ import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onRoleChange?: (role: "DAY_TRADER" | "LONG_TERM") => void;
+  hideMobileDock?: boolean;
 }
 
-export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarProps) {
+export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobileDock = false }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
@@ -238,7 +239,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
                   className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                     pathname === "/performance"
                       ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
-                      : "text-emerald-400/90 hover:text-emerald-200"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   <span>Performance</span>
@@ -316,6 +317,41 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
             {/* Adaptive Experience Mode Selector: Guided · Standard · Quant (URL-Synchronized per ADR-003) */}
             <ExperienceModeToggle />
 
+            {/* Vernacular Language Mode Switcher (Plain English vs Pro Quant) */}
+            <div role="toolbar" aria-label="Language Vernacular Mode Switcher" className="hidden 2xl:flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
+              <button
+                type="button"
+                onClick={() => handleVernacularToggle("PLAIN_ENGLISH")}
+                aria-pressed={vernacularMode === "PLAIN_ENGLISH"}
+                aria-label="Switch to Plain English explanation mode"
+                title="Plain English Mode: Clear, punchy, no-BS financial explanations"
+                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
+                  vernacularMode === "PLAIN_ENGLISH"
+                    ? "bg-emerald-500 text-slate-950 shadow-md font-extrabold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <span aria-hidden="true" className="text-xs">💬</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Plain English</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleVernacularToggle("PRO_QUANT")}
+                aria-pressed={vernacularMode === "PRO_QUANT"}
+                aria-label="Switch to Pro Quant mathematical mode"
+                title="Pro Quant Mode: Rigorous mathematical models, VaR metrics, and factor loadings"
+                className={`flex items-center space-x-1 px-2 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer ${
+                  vernacularMode === "PRO_QUANT"
+                    ? "bg-purple-600 text-white shadow-md font-extrabold"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <span aria-hidden="true" className="text-xs">🤓</span>
+                <span className="font-mono tracking-tight text-[10px] sm:text-xs">Pro Quant</span>
+              </button>
+            </div>
+
             {/* Behavioral Risk Governor Telemetry Portal */}
             <Link
               href="/cockpit"
@@ -389,6 +425,101 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange }: NavbarP
       </div>
     )}
 
+    {/* Floating Bottom Navigation Dock for Mobile Devices */}
+    {!hideMobileDock && (
+      <nav
+        role="navigation"
+        aria-label="Mobile Navigation Dock"
+        data-testid="mobile-nav-dock"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#0c1017]/95 backdrop-blur-xl border-t border-[#243044] px-1.5 py-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-around font-mono text-[10px] transform-gpu"
+        style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', zIndex: 999 }}
+      >
+        <Link
+          href="/radar"
+          aria-current={pathname === "/radar" || pathname === "/screener" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/radar" || pathname === "/screener" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📡</span>
+          <span className="text-[9px] tracking-tight">Radar</span>
+        </Link>
+
+        <Link
+          href="/setups"
+          aria-current={pathname === "/setups" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/setups" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">⚡</span>
+          <span className="text-[9px] tracking-tight">Setups</span>
+        </Link>
+
+        <Link
+          href="/portfolio"
+          aria-current={pathname === "/portfolio" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/portfolio" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">💼</span>
+          <span className="text-[9px] tracking-tight">Portfolio</span>
+        </Link>
+
+        <Link
+          href="/journal"
+          aria-current={pathname === "/journal" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[46px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/journal" ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📖</span>
+          <span className="text-[9px] tracking-tight">Journal</span>
+        </Link>
+
+        <Link
+          href="/performance"
+          aria-current={pathname === "/performance" ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname === "/performance" ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">📈</span>
+          <span className="text-[9px] tracking-tight">Alpha</span>
+        </Link>
+
+        <Link
+          href="/research"
+          aria-current={pathname?.startsWith("/research") ? "page" : undefined}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-colors min-w-[44px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+            pathname?.startsWith("/research") ? "bg-[#1b2434] text-cyan-400 font-bold" : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">🔬</span>
+          <span className="text-[9px] tracking-tight">Research</span>
+        </Link>
+
+        {/* Quick Horizon Toggle on Mobile Dock */}
+        <button
+          type="button"
+          onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
+          aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-w-[46px] min-h-[44px] border ${
+            activeRole === "DAY_TRADER"
+              ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
+              : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
+          }`}
+        >
+          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
+            {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
+          </span>
+          <span className="text-[8.5px] tracking-tight">
+            {activeRole === "DAY_TRADER" ? "Day" : "Long"}
+          </span>
+        </button>
+      </nav>
+    )}
 
       {/* Onboarding Tour Modal */}
       <OnboardingTourModal

@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
-import { SpotPriceRegistry } from "../lib/api";
+import { SpotPriceRegistry, fetchTacticalSetups } from "../lib/api";
 import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
+import { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import MiniSparkline from "./MiniSparkline";
 
 interface CommandItem {
@@ -32,9 +33,35 @@ export default function CommandPaletteModal({
 }: CommandPaletteModalProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
+  const [setupsLoading, setSetupsLoading] = useState(false);
+  const [setupsError, setSetupsError] = useState<string | null>(null);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Fetch dynamic setups whenever modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    setSetupsLoading(true);
+    setSetupsError(null);
+    fetchTacticalSetups()
+      .then((data) => {
+        if (!isMounted) return;
+        setTacticalSetups(data || []);
+        setSetupsLoading(false);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn("Failed to load dynamic setups for CommandPalette:", err);
+        setSetupsError(err?.message || "Failed to load setups");
+        setSetupsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   // Focus input when opened
   useEffect(() => {
@@ -244,30 +271,65 @@ export default function CommandPaletteModal({
       },
     });
 
-    // 3. Tactical Execution Tickets (Fast Execution Deep-Links)
-    const tacticalSetups = [
-      { ticker: "GOOGL", name: "Alphabet Inc", score: 94, pattern: "Stage 2 VCP 4T Breakout" },
-      { ticker: "NVDA", name: "NVIDIA Corp", score: 91, pattern: "Stage 2 Consolidation" },
-      { ticker: "ANET", name: "Arista Networks", score: 89, pattern: "Cup with Handle" },
-      { ticker: "META", name: "Meta Platforms", score: 88, pattern: "High Tight Flag" },
-      { ticker: "MSFT", name: "Microsoft Corp", score: 86, pattern: "Base on Base" },
-      { ticker: "AAPL", name: "Apple Inc", score: 85, pattern: "Flat Base Consolidation" },
-    ];
-
-    tacticalSetups.forEach((setup) => {
+    // 3. Tactical Execution Tickets (Dynamic API-Backed Setups)
+    if (tacticalSetups && tacticalSetups.length > 0) {
+      tacticalSetups.forEach((setup) => {
+        const score = typeof setup.confluenceScore === "number" ? Math.round(setup.confluenceScore) : null;
+        const pattern = setup.setupName || "Breakout Setup";
+        const status = setup.isActionable ? "Ready to Buy" : "Criteria Pending";
+        items.push({
+          id: `ticket-${setup.ticker.toLowerCase()}`,
+          category: "TICKET",
+          title: `${setup.ticker} — Tactical Execution Ticket`,
+          subtitle: `${score !== null ? `Confluence ${score} · ` : ""}${pattern} · ${status}`,
+          badge: score !== null ? `Score ${score}` : undefined,
+          icon: "🎯",
+          action: () => {
+            router.push(`/setups?ticker=${encodeURIComponent(setup.ticker)}`);
+            onClose();
+          },
+        });
+      });
+    } else if (setupsLoading) {
       items.push({
-        id: `ticket-${setup.ticker.toLowerCase()}`,
+        id: "ticket-loading",
         category: "TICKET",
-        title: `${setup.name} (${setup.ticker}) — Tactical Execution Ticket`,
-        subtitle: `Confluence ${setup.score} · ${setup.pattern} · Governed Risk Sizing`,
-        badge: `Score ${setup.score}`,
-        icon: "🎯",
+        title: "Scanning Live Tactical Setups...",
+        subtitle: "Querying exchange tape and multi-factor confluence engine",
+        badge: "Loading",
+        icon: "⏳",
         action: () => {
-          router.push(`/setups?ticker=${setup.ticker}`);
+          router.push("/setups");
           onClose();
         },
       });
-    });
+    } else if (setupsError) {
+      items.push({
+        id: "ticket-error",
+        category: "TICKET",
+        title: "Tactical Setups Tape Unavailable",
+        subtitle: `${setupsError} · Click to open Setups hub directly`,
+        badge: "Offline",
+        icon: "⚠️",
+        action: () => {
+          router.push("/setups");
+          onClose();
+        },
+      });
+    } else {
+      items.push({
+        id: "ticket-empty",
+        category: "TICKET",
+        title: "No Active Qualifying Setups on Tape",
+        subtitle: "No assets currently meet Stage 2 VCP breakout criteria · Open Setups hub to scan all",
+        badge: "0 Active",
+        icon: "⚡",
+        action: () => {
+          router.push("/setups");
+          onClose();
+        },
+      });
+    }
 
     // 4. Assets from Master Catalog
     Object.values(MASTER_ASSET_CATALOG).forEach((asset) => {
@@ -278,21 +340,15 @@ export default function CommandPaletteModal({
         : (snap?.currentPrice && snap.currentPrice > 0)
         ? snap.currentPrice
         : undefined;
-      const effectiveChange = (reg?.changePct !== undefined)
-        ? reg.changePct
-        : (snap?.priceChangePct24h !== undefined)
-        ? snap.priceChangePct24h
-        : undefined;
 
       items.push({
-        id: `asset-${asset.symbol}`,
+        id: `asset-${asset.symbol.toLowerCase()}`,
         category: "ASSET",
-        title: asset.symbol,
-        subtitle: `${asset.name} • ${asset.sector} (${asset.category})`,
-        badge: `${asset.piotroski}/9 Piotroski`,
-        icon: "📈",
+        title: `${asset.symbol} — ${asset.name}`,
+        subtitle: `${asset.type} • ${asset.sector || asset.category || "Asset"}`,
+        badge: asset.type,
+        icon: asset.type === "Crypto" ? "🪙" : "📊",
         price: effectivePrice,
-        changePct: effectiveChange,
         action: () => {
           if (onSelectSymbol) {
             onSelectSymbol(asset.symbol);
@@ -329,20 +385,58 @@ export default function CommandPaletteModal({
     });
 
     return items;
-  }, [router, onClose, onSelectSymbol]);
+  }, [router, onClose, onSelectSymbol, tacticalSetups, setupsLoading, setupsError]);
 
-  // Filter commands by query
+  // Filter commands by query with dynamic ticker navigation support
   const filteredCommands = useMemo(() => {
-    if (!query.trim()) return allCommands;
-    const q = query.toLowerCase().trim();
-    return allCommands.filter((cmd) => {
-      return (
-        cmd.title.toLowerCase().includes(q) ||
-        cmd.subtitle.toLowerCase().includes(q) ||
-        (cmd.badge && cmd.badge.toLowerCase().includes(q))
-      );
-    });
-  }, [allCommands, query]);
+    const q = query.trim().toUpperCase();
+    const isTickerQuery = /^[A-Z]{1,5}$/.test(q);
+
+    let base = allCommands;
+    if (query.trim()) {
+      const qLower = query.toLowerCase().trim();
+      base = allCommands.filter((cmd) => {
+        return (
+          cmd.title.toLowerCase().includes(qLower) ||
+          cmd.subtitle.toLowerCase().includes(qLower) ||
+          (cmd.badge && cmd.badge.toLowerCase().includes(qLower))
+        );
+      });
+    }
+
+    // If query looks like a ticker symbol, prepend explicit direct routes honoring the ticker parameter
+    if (isTickerQuery && !base.some((b) => b.id === `ticket-${q.toLowerCase()}`)) {
+      const dynamicTickerCommands: CommandItem[] = [
+        {
+          id: `dynamic-setup-${q.toLowerCase()}`,
+          category: "TICKET",
+          title: `${q} — Tactical Execution Ticket`,
+          subtitle: `Open tactical trade ladder and behavioral sizing for ${q}`,
+          badge: "Setups",
+          icon: "⚡",
+          action: () => {
+            router.push(`/setups?ticker=${encodeURIComponent(q)}`);
+            onClose();
+          },
+        },
+        {
+          id: `dynamic-research-${q.toLowerCase()}`,
+          category: "ASSET",
+          title: `${q} — Research & Multi-Factor Analysis`,
+          subtitle: `Open fundamentals, SEC filings, and factor model for ${q}`,
+          badge: "Research",
+          icon: "🔬",
+          action: () => {
+            router.push(`/research?ticker=${encodeURIComponent(q)}`);
+            onClose();
+          },
+        },
+      ];
+      return [...dynamicTickerCommands, ...base];
+    }
+
+    return base;
+  }, [allCommands, query, router, onClose]);
 
   // Reset selected index if results change
   useEffect(() => {

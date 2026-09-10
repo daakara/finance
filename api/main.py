@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio
+from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 from api.middleware.api_key_auth import ApiKeyAuthMiddleware
 
@@ -18,9 +18,8 @@ logger = logging.getLogger("api.main")
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
 
 
-async def warmup_core_assets():
-    """Background task to pre-fetch and warm up SQLite cache for core universe assets on container boot."""
-    await asyncio.sleep(2)
+def _warmup_worker():
+    """Execute synchronous database and provider warmup work off the main event loop."""
     try:
         from analyst_dashboard.data.market_db import MarketDatabaseEngine
         import yfinance as yf
@@ -30,30 +29,50 @@ async def warmup_core_assets():
             try:
                 existing = db.get_daily_candles(sym, limit=5)
                 if not existing:
-                    hist = yf.Ticker(sym).history(period="1y", interval="1d")
+                    hist = yf.Ticker(sym).history(period="1y", interval="1d", timeout=5)
                     if not hist.empty:
                         db.save_daily_candles(sym, hist)
                         logger.info(f"Successfully pre-warmed SQLite cache for {sym}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Warmup skipped for symbol {sym}: {e}")
     except Exception as e:
-        logger.warning(f"Pre-warming skipped: {e}")
+        logger.warning(f"Pre-warming database worker error: {e}")
 
     try:
-        logger.info("Initializing background universe pre-warming...")
         from api.routes import screener
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, screener.run_screener, None)
+        screener.run_screener(None)
         logger.info("Background universe pre-warming completed successfully.")
     except Exception as e:
-        logger.warning(f"Background pre-warming deferred: {e}")
+        logger.warning(f"Background pre-warming screener error: {e}")
+
+
+async def warmup_core_assets():
+    """Background task to pre-fetch and warm up SQLite cache for core universe assets on container boot without blocking the event loop."""
+    try:
+        await asyncio.sleep(2)
+        loop = asyncio.get_running_loop()
+        # Offload synchronous network & SQLite writes to threadpool executor
+        await asyncio.wait_for(loop.run_in_executor(None, _warmup_worker), timeout=45.0)
+    except asyncio.CancelledError:
+        logger.info("Warmup background task cancelled cleanly during shutdown.")
+        raise
+    except asyncio.TimeoutError:
+        logger.warning("Warmup background task reached deadline; terminating warmup cleanly.")
+    except Exception as e:
+        logger.warning(f"Pre-warming deferred or failed gracefully: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(warmup_core_assets())
-    yield
-    task.cancel()
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
@@ -91,8 +110,19 @@ app.add_middleware(
     # No longer matches arbitrary *.pages.dev or *.vercel.app wildcards.
     allow_origin_regex=r"https://(www\.)?arxterminal\.com|https://finance-xp8\.pages\.dev|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "X-API-Key", "Authorization", "Accept", "Origin", "User-Agent"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "X-API-Key",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "X-User-Id",
+        "X-Profile-Id",
+        "Cache-Control",
+        "Pragma",
+    ],
 )
 
 # 2. Backend Security Headers Middleware (HSTS, nosniff, frame protection)
@@ -142,6 +172,8 @@ app.include_router(cache.router, prefix="/api/v1/cache", tags=["Cache Management
 app.include_router(smart_money.router, prefix="/api/v1/smart-money", tags=["Smart Money & Flow"])
 app.include_router(governance.router, prefix="/api/v1/governance", tags=["Model Governance & Prospective Evaluation"])
 app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio Holdings"])
+app.include_router(macro.router, prefix="/api/v1/macro", tags=["Macro Telemetry"])
+app.include_router(cockpit.router, prefix="/api/v1/cockpit", tags=["Unified Cockpit"])
 
 
 @app.get("/health", tags=["Health"])

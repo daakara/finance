@@ -44,32 +44,6 @@ LONG_TERM_CANDIDATES = [
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 
-CANDIDATE_BASELINES = {
-    # Small & Mid-Cap Compounders
-    "CPRX": 23.40, "POWI": 68.50, "MEDP": 342.10, "TMDX": 92.60,
-    "ACLS": 84.20, "LNTH": 100.78, "ELF": 118.40, "DUOL": 284.50,
-    # High-Beta AI & Large Cap Momentum
-    "NVDA": 128.50, "TSLA": 218.40, "PLTR": 31.20, "ARM": 134.80,
-    "SMCI": 43.60, "AMD": 146.20, "META": 512.40, "AAPL": 226.50,
-    "MSFT": 418.20, "AMZN": 178.60, "GOOGL": 164.80,
-    # Cloud, Cyber & SaaS
-    "CRWD": 272.50, "PANW": 348.10, "NET": 82.40, "DDOG": 114.20, "MDB": 288.60,
-    # Crypto & FinTech
-    "COIN": 212.30, "MARA": 16.80, "MSTR": 134.20, "HOOD": 21.60,
-    # Growth Runners
-    "CELH": 38.40, "IONQ": 9.20, "RKLB": 7.10, "APP": 86.40,
-    # MedTech & Pharma Monopolies
-    "ISRG": 446.50, "VRTX": 482.10, "LLY": 924.50, "NVO": 136.40, "DXCM": 89.29, "PODD": 143.41,
-    # Semis & Equipment
-    "ON": 72.40, "MPWR": 812.30, "KLAC": 734.50, "LRCX": 792.10, "ASML": 824.60, "AVGO": 158.40,
-    # Consumer Compounders
-    "DECK": 86.33, "LULU": 264.50, "ONON": 44.20, "MNST": 46.70, "ULTA": 368.40,
-    # Power, Industrials & Infrastructure
-    "VRT": 88.40, "ETN": 312.50, "PWR": 268.10, "GEV": 224.60, "FIX": 346.20, "EME": 382.40,
-    # Enterprise Cloud & EDA
-    "ANET": 324.50, "NOW": 785.40, "SNPS": 464.89, "CDNS": 254.20,
-}
-
 
 class ScreenerRequest(BaseModel):
     tickers: Optional[List[str]] = None
@@ -125,18 +99,21 @@ def run_screener_get(
     # Map candidate fields with live optimal execution levels
     mapped_candidates = []
     for r in results:
-        sym = r.get("ticker", "NVDA" if is_day_trader else "LNTH").upper()
-        roic_val = r.get("roic_pct", 30.0)
-        margin_val = r.get("gross_margin_pct", 70.0)
+        raw_sym = r.get("ticker") or r.get("symbol")
+        if not raw_sym or not str(raw_sym).strip():
+            continue
+        sym = str(raw_sym).strip().upper()
+        roic_val = r.get("roic_pct")
+        margin_val = r.get("gross_margin_pct")
 
         # Retrieve current price and candles from market database
         latest_info = market_db.get_latest_price(sym)
-        current_price = latest_info["currentPrice"] if latest_info else CANDIDATE_BASELINES.get(sym)
+        current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
 
         if current_price is None or current_price <= 0:
-            current_price = 0.0
+            current_price = None
             execution = {
-                "current_price": 0.0,
+                "current_price": None,
                 "optimal_entry_min": None,
                 "optimal_entry_max": None,
                 "stop_loss": None,
@@ -178,7 +155,7 @@ def run_screener_get(
         atr_14 = execution.get("atr_14")
 
         # Pure Mathematical Execution State Determination
-        if execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price <= 0:
+        if execution.get("execution_status") == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
             execution_status = "UNVERIFIED_ASSET"
             status_label = "⚠️ Unverified Asset"
             status_color = "slate"
@@ -190,15 +167,15 @@ def run_screener_get(
             execution_status = "WAITING_PULLBACK"
             status_label = "⏳ Awaiting Base Formation"
             status_color = "cyan"
-        elif stop_loss is not None and current_price < stop_loss:
+        elif stop_loss is not None and current_price is not None and current_price < stop_loss:
             execution_status = "STOPPED_OUT"
             status_label = "🛑 Below Stop Loss"
             status_color = "rose"
-        elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price >= tp1 * 0.96):
+        elif execution.get("execution_status") == "APPROACHING_TARGET" or (tp1 is not None and current_price is not None and current_price >= tp1 * 0.96):
             execution_status = "APPROACHING_TARGET"
             status_label = "🚀 Session ORB Breakout" if is_day_trader else "🚀 Near TP Target"
             status_color = "amber"
-        elif entry_min is not None and entry_max is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
+        elif entry_min is not None and entry_max is not None and current_price is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
             execution_status = "IN_BUY_ZONE"
             status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Active Buy Zone"
             status_color = "emerald"
@@ -211,7 +188,7 @@ def run_screener_get(
         liq_def = execution.get("liquidity_defense")
 
         # Deterministic Smart Money & Catalyst Attributes
-        if execution_status == "UNVERIFIED_ASSET" or current_price <= 0:
+        if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
             confluence_res = {
                 "confluenceScore": 0.0,
                 "confluenceRating": "Unverified Asset / No Market Data",
@@ -245,14 +222,18 @@ def run_screener_get(
                         try:
                             insider_val += float(cleaned)
                         except ValueError:
-                            insider_val += 1500000.0
+                            pass
                     elif isinstance(val_raw, (int, float)):
                         insider_val += float(val_raw)
-                if insider_val <= 0.0:
-                    insider_val = 1500000.0
             days_to_earn = r.get("days_to_earnings")
-            if days_to_earn is None:
-                days_to_earn = 1 if sym in ["DUOL", "SMCI", "CELH"] else 30
+
+            smart_data = {
+                "has_insider_buy": has_insider,
+                "insider_value_usd": insider_val if has_insider else 0.0,
+                "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
+                "has_congress_buy": has_congress,
+                "has_options_flow": False,
+            } if (has_insider or has_congress) else None
 
             # Compute multi-factor confluence conviction score
             confluence_res = confluence_engine.calculate_confluence(
@@ -262,31 +243,23 @@ def run_screener_get(
                     "riskRewardRatio": rr_ratio,
                     "setup_pattern": setup_pat,
                     "stage_phase": "Stage 2 Breakout" if execution_status == "IN_BUY_ZONE" else "Institutional Accumulation",
-                    "rsi_14": 56.0,
+                    "rsi_14": execution.get("rsi_14"),
                     "stop_loss": stop_loss,
                     "current_price": current_price,
                 },
-                smart_money_data={
-                    "has_insider_buy": has_insider,
-                    "insider_value_usd": insider_val,
-                    "has_congress_buy": has_congress,
-                    "has_options_flow": is_day_trader,
-                },
+                smart_money_data=smart_data,
                 fundamental_data={
-                    "qualityScore": 88.0 if int(r.get("piotroski_f", 8)) >= 8 else 75.0,
-                    "growthScore": float(r.get("growth_score", 85.0)),
-                    "valuationScore": float(r.get("valuation_score", 70.0)),
-                    "piotroski_f": int(r.get("piotroski_f", 8)),
+                    "qualityScore": float(r.get("quality_score")) if r.get("quality_score") is not None else None,
+                    "growthScore": float(r.get("growth_score")) if r.get("growth_score") is not None else None,
+                    "valuationScore": float(r.get("valuation_score")) if r.get("valuation_score") is not None else None,
+                    "piotroski_f": int(r.get("piotroski_f")) if r.get("piotroski_f") is not None else None,
                     "roic": roic_val,
-                    "peg": float(r.get("peg_ratio", 0.85)),
-                },
+                    "peg": float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None,
+                } if any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"]) else None,
                 catalyst_data={
                     "days_to_earnings": days_to_earn,
-                },
-                macro_data={
-                    "yield_curve_10y2y": 0.25,
-                    "credit_spread": 3.5,
-                },
+                } if days_to_earn is not None else None,
+                macro_data=None,  # No fabricated yield curve 0.25 / credit spread 3.5
             )
 
             if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
@@ -309,11 +282,11 @@ def run_screener_get(
             "symbol": sym,
             "companyName": r.get("company_name", sym),
             "currentPrice": current_price,
-            "gemScore": int(r.get("composite_score", 0 if execution_status == "UNVERIFIED_ASSET" else 88)),
-            "expertArchetype": r.get("expert_model", "Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else ("High-Beta Momentum Leader" if is_day_trader else "Peter Lynch GARP Compounder")),
-            "roic": f"{roic_val}%",
-            "pegRatio": str(r.get("peg_ratio", 0.0 if execution_status == "UNVERIFIED_ASSET" else 0.82)),
-            "grossMargin": f"{margin_val}%",
+            "gemScore": int(r.get("composite_score")) if r.get("composite_score") is not None else (0 if execution_status == "UNVERIFIED_ASSET" else None),
+            "expertArchetype": r.get("expert_model") or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else ("High-Beta Momentum Leader" if is_day_trader else "Peter Lynch GARP Compounder")),
+            "roic": f"{roic_val}%" if roic_val is not None else "N/A",
+            "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else ("0.0" if execution_status == "UNVERIFIED_ASSET" else "N/A"),
+            "grossMargin": f"{margin_val}%" if margin_val is not None else "N/A",
             "atr14": f"${atr_14:.2f}" if (atr_14 is not None and execution_status not in ["UNVERIFIED_ASSET", "INSUFFICIENT_HISTORY"]) else "N/A",
             "rvol": rvol_val,
             "shortFloat": short_float_val,

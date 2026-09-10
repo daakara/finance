@@ -49,7 +49,14 @@ def get_portfolio(
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
     user_id = _resolve_user_id(x_user_id)
-    return history_db.get_user_portfolio(user_id)
+    try:
+        return history_db.get_user_portfolio(user_id)
+    except Exception as e:
+        logger.error(f"Database error retrieving portfolio for {user_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Persistent database failure retrieving portfolio holdings.",
+        )
 
 
 @router.post("", status_code=201)
@@ -66,21 +73,27 @@ def add_holding(
         )
 
     user_id = _resolve_user_id(x_user_id)
-    success = history_db.save_user_holding(
-        user_id=user_id,
-        holding={
-            "symbol": upper_sym,
-            "name": holding.name or upper_sym,
-            "shares": holding.shares,
-            "entryPrice": holding.entryPrice,
-            "currentPrice": holding.currentPrice,
-            "targetPrice": holding.targetPrice,
-            "stopLossPrice": holding.stopLossPrice,
-            "addedAt": holding.addedAt,
-            "assetType": holding.assetType or "Stock",
-        }
-    )
-    if not success:
+    try:
+        success = history_db.save_user_holding(
+            user_id=user_id,
+            holding={
+                "symbol": upper_sym,
+                "name": holding.name or upper_sym,
+                "shares": holding.shares,
+                "entryPrice": holding.entryPrice,
+                "currentPrice": holding.currentPrice,
+                "targetPrice": holding.targetPrice,
+                "stopLossPrice": holding.stopLossPrice,
+                "addedAt": holding.addedAt,
+                "assetType": holding.assetType or "Stock",
+            }
+        )
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save portfolio holding to persistent storage.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database error saving holding {upper_sym} for {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to save portfolio holding to persistent storage.")
 
     return {"status": "saved", "symbol": upper_sym, "shares": holding.shares}
@@ -98,21 +111,27 @@ def update_holding(
         raise HTTPException(status_code=400, detail="Invalid ticker symbol format.")
 
     user_id = _resolve_user_id(x_user_id)
-    success = history_db.save_user_holding(
-        user_id=user_id,
-        holding={
-            "symbol": upper_sym,
-            "name": holding.name or upper_sym,
-            "shares": holding.shares,
-            "entryPrice": holding.entryPrice,
-            "currentPrice": holding.currentPrice,
-            "targetPrice": holding.targetPrice,
-            "stopLossPrice": holding.stopLossPrice,
-            "addedAt": holding.addedAt,
-            "assetType": holding.assetType or "Stock",
-        }
-    )
-    if not success:
+    try:
+        success = history_db.save_user_holding(
+            user_id=user_id,
+            holding={
+                "symbol": upper_sym,
+                "name": holding.name or upper_sym,
+                "shares": holding.shares,
+                "entryPrice": holding.entryPrice,
+                "currentPrice": holding.currentPrice,
+                "targetPrice": holding.targetPrice,
+                "stopLossPrice": holding.stopLossPrice,
+                "addedAt": holding.addedAt,
+                "assetType": holding.assetType or "Stock",
+            }
+        )
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update holding in storage.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database error updating holding {upper_sym} for {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to update holding in storage.")
 
     return {"status": "updated", "symbol": upper_sym}
@@ -129,8 +148,14 @@ def delete_holding(
         raise HTTPException(status_code=400, detail="Invalid ticker symbol format.")
 
     user_id = _resolve_user_id(x_user_id)
-    success = history_db.delete_user_holding(user_id, upper_sym)
-    if not success:
+    try:
+        success = history_db.delete_user_holding(user_id, upper_sym)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to remove holding.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database error deleting holding {upper_sym} for {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to remove holding.")
 
     return {"status": "deleted", "symbol": upper_sym}
@@ -158,5 +183,24 @@ def migrate_holdings(
         for h in body.holdings
         if SYMBOL_REGEX.match(h.symbol.upper().strip()) and h.shares > 0 and h.entryPrice > 0
     ]
-    saved_count = history_db.bulk_save_holdings(user_id, items)
-    return {"status": "migrated", "migratedCount": saved_count, "totalSubmitted": len(body.holdings)}
+    try:
+        saved_count = history_db.bulk_save_holdings(user_id, items)
+    except Exception as e:
+        logger.error(f"Database error during portfolio migration for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to migrate holdings due to database error.")
+
+    total_submitted = len(body.holdings)
+    if total_submitted > 0 and saved_count == 0:
+        logger.error(f"Migration failed completely for {user_id}: 0 of {total_submitted} persisted.")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Migration failed: 0 of {total_submitted} holdings could be persisted.",
+        )
+
+    status = "migrated" if saved_count == total_submitted else ("partial" if saved_count > 0 else "no_op")
+    return {
+        "status": status,
+        "migratedCount": saved_count,
+        "totalSubmitted": total_submitted,
+        "failedCount": total_submitted - saved_count,
+    }

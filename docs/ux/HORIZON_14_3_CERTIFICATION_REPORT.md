@@ -7,6 +7,10 @@
 **Scope**: Institutional Design Audit, Signal-to-Noise Metrics, Decision Velocity Heuristics & Regression Guardrails  
 **Date**: 2026-09-09T18:25:00+02:00  
 
+> [!NOTE]
+> **Roadmap Reconciliation Notice**:
+> This report records an institutional sprint focused on the **Trading Terminal Workstation** (`/radar`, `/setups`, `/portfolio`, `/journal`, `/performance`, `/research`), corresponding to Roadmap Phase H17. It does **not** certify delivery of Phase H14 Foundation (Unified Cockpit CQRS Read Model & Core OS Semantic Zoom). The governing status of Phase H14 is tracked in `ROADMAP_GAP_AUDIT.md` and `H14_VERIFICATION_REPORT.md` and is classified as **PARTIAL**.
+
 ---
 
 ## 1. Executive Certification Overview

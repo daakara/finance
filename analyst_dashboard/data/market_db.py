@@ -30,9 +30,14 @@ def retry_sqlite(max_retries: int = 3, base_delay: float = 0.05):
                     return func(*args, **kwargs)
                 except sqlite3.OperationalError as e:
                     last_err = e
-                    if "locked" in str(e).lower() or "busy" in str(e).lower():
-                        time.sleep(base_delay * (2 ** attempt))
-                        continue
+                    err_msg = str(e).lower()
+                    if "locked" in err_msg or "busy" in err_msg:
+                        if attempt < max_retries - 1:
+                            logger.warning(
+                                f"SQLite contention on {func.__name__} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {base_delay * (2 ** attempt):.3f}s..."
+                            )
+                            time.sleep(base_delay * (2 ** attempt))
+                            continue
                     raise
                 except Exception:
                     raise
@@ -129,8 +134,6 @@ class MarketDatabaseEngine:
                     )
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_insider_sym ON insider_disclosures (symbol)")
-        except Exception as e:
-            logger.error(f"Failed to initialize market database schema: {e}")
         finally:
             conn.close()
 
@@ -176,8 +179,6 @@ class MarketDatabaseEngine:
                             round(float(item.get("close", item.get("Close", 0.0))), 2),
                             int(item.get("volume", item.get("Volume", 0))),
                         ))
-        except Exception as e:
-            logger.error(f"Error saving candles for {symbol}: {e}")
         finally:
             conn.close()
 
@@ -200,9 +201,6 @@ class MarketDatabaseEngine:
                 return []
             candles = [dict(row) for row in reversed(rows)]
             return candles
-        except Exception as e:
-            logger.error(f"Error retrieving candles for {symbol}: {e}")
-            return []
         finally:
             conn.close()
 
@@ -283,9 +281,6 @@ class MarketDatabaseEngine:
                 "freshnessStatus": freshness,
                 "stalenessDays": staleness_days,
             }
-        except Exception as e:
-            logger.error(f"Error retrieving latest price for {symbol}: {e}")
-            return None
         finally:
             conn.close()
 
@@ -316,8 +311,6 @@ class MarketDatabaseEngine:
                     int(snapshot.get("piotroskiFScore", 8)),
                     str(snapshot.get("verdict", "Strong Buy / Core Accumulation")),
                 ))
-        except Exception as e:
-            logger.error(f"Error saving factor snapshot for {symbol}: {e}")
         finally:
             conn.close()
 
@@ -333,9 +326,6 @@ class MarketDatabaseEngine:
             if not row:
                 return None
             return dict(row)
-        except Exception as e:
-            logger.error(f"Error retrieving factor snapshot for {symbol}: {e}")
-            return None
         finally:
             conn.close()
 
@@ -362,8 +352,6 @@ class MarketDatabaseEngine:
                     catalyst.get("efficacy_summary", "Strong operational leverage and continuous cash conversion."),
                     catalyst.get("competitive_edge", "Ecosystem network effects and high switching costs."),
                 ))
-        except Exception as e:
-            logger.error(f"Error saving catalyst for {symbol}: {e}")
         finally:
             conn.close()
 
@@ -379,9 +367,6 @@ class MarketDatabaseEngine:
             if not row:
                 return None
             return dict(row)
-        except Exception as e:
-            logger.error(f"Error retrieving catalyst for {symbol}: {e}")
-            return None
         finally:
             conn.close()
 
@@ -399,9 +384,6 @@ class MarketDatabaseEngine:
                 purged_count = cursor.rowcount
                 logger.info(f"Purged {purged_count} stale factor snapshots older than {max_factor_age_hours}h.")
                 return purged_count
-        except Exception as e:
-            logger.error(f"Error purging stale database records: {e}")
-            return 0
         finally:
             conn.close()
 

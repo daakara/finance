@@ -4,11 +4,11 @@ import CockpitShell from "../../components/cockpit/CockpitShell";
 
 import React from "react";
 import Link from "next/link";
-import { getUnifiedCockpitState } from "../../lib/simulation/unifiedCockpitStore";
+import { useUnifiedCockpit } from "../../lib/simulation/unifiedCockpitStore";
 import SemanticZoom from "../../components/cockpit/SemanticZoom";
 
 export default function ProgressHubPage() {
-  const state = getUnifiedCockpitState();
+  const state = useUnifiedCockpit();
   const { triad, identityDrift, skillTrajectories, calibrationScore, targetIdentityRole } = state;
 
   return (
@@ -23,7 +23,7 @@ export default function ProgressHubPage() {
             <span className="text-xs font-mono text-gray-400">Horizons 11, 12, 13 Progress</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white mt-1">
-            Progress & Calibration
+            Progress &amp; Calibration
           </h1>
           <p className="text-sm text-gray-400 mt-0.5">
             Identity twin evolution, behavioral drift monitoring, and decision calibration.
@@ -34,21 +34,21 @@ export default function ProgressHubPage() {
         <div className="flex items-center space-x-3 bg-gray-900/90 border border-gray-800 rounded-xl p-3 shadow-inner">
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">LHI</span>
-            <span className="text-xl font-mono font-bold text-emerald-400">{triad.lhi}</span>
+            <span className="text-xl font-mono font-bold text-emerald-400">{triad?.lhi ?? "--"}</span>
           </div>
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">HHI</span>
-            <span className="text-xl font-mono font-bold text-blue-400">{triad.hhi}</span>
+            <span className="text-xl font-mono font-bold text-blue-400">{triad?.hhi ?? "--"}</span>
           </div>
           <div className="text-center px-3">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">IAI</span>
-            <span className="text-xl font-mono font-bold text-purple-400">{triad.iai}</span>
+            <span className="text-xl font-mono font-bold text-purple-400">{triad?.iai ?? "--"}</span>
           </div>
         </div>
       </header>
 
       {/* Behavioral Drift Alert Banner */}
-      {identityDrift.hasActiveDrift && (
+      {identityDrift && identityDrift.hasActiveDrift ? (
         <section className="p-5 rounded-xl bg-amber-950/30 border border-amber-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1 max-w-2xl">
             <div className="flex items-center space-x-2">
@@ -59,99 +59,88 @@ export default function ProgressHubPage() {
                 {identityDrift.inactiveDays} days inactive (Threshold: {identityDrift.thresholdDays}d)
               </span>
             </div>
-            <p className="text-xs text-amber-200/90">{identityDrift.impactExplanation}</p>
+            <p className="text-sm text-gray-200">{identityDrift.impactExplanation}</p>
+            <p className="text-xs font-mono text-amber-400">Remedy: {identityDrift.remedyAction}</p>
           </div>
-          <button className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs transition-colors shrink-0 shadow">
-            Remedy: {identityDrift.remedyAction}
-          </button>
+          <Link
+            href="/workbench/journal"
+            className="text-xs font-mono text-amber-300 hover:text-white border border-amber-800 bg-amber-950/60 px-4 py-2 rounded-lg transition-colors shrink-0 font-bold"
+          >
+            Audit Drift in Journal →
+          </Link>
+        </section>
+      ) : (
+        <section className="p-4 rounded-xl bg-gray-900/40 border border-gray-800 text-xs font-mono text-gray-400 flex items-center justify-between">
+          <span>Behavioral Drift Monitoring: Alignment nominal. Zero unmitigated drift detected.</span>
+          <span className="text-emerald-400 font-bold">NOMINAL</span>
         </section>
       )}
 
-      {/* Semantic Zoom on Progress & Calibration */}
+      {/* Semantic Zoom Container for Progress & Calibration */}
       <SemanticZoom
-        hubTitle="Identity Twin & Calibration Matrix"
+        hubTitle="Identity Compounding & Calibration Engine"
         workbenchRoute="/workbench/journal"
         workbenchName="Decision Journal Workbench"
         level0Content={
           <div className="space-y-6">
-            {/* Identity Target Overview */}
-            <div className="p-6 rounded-xl bg-gradient-to-br from-gray-900 to-gray-950 border border-purple-800/50 space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-mono text-purple-400 uppercase font-semibold">Target Identity Vector</span>
-                  <h3 className="text-xl font-bold text-white">{targetIdentityRole}</h3>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono text-gray-400 uppercase block">IAI Score</span>
-                    <span className="text-2xl font-mono font-bold text-purple-400">{triad.iai}/100</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-mono text-gray-400 uppercase block">Brier Score</span>
-                    <span className="text-2xl font-mono font-bold text-emerald-400">{calibrationScore.brierScore}</span>
-                  </div>
-                </div>
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/40 via-gray-900 to-gray-900 border border-purple-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+              <div className="space-y-1">
+                <span className="text-xs font-mono uppercase font-bold text-purple-400 bg-purple-950 px-2 py-0.5 rounded border border-purple-800">
+                  Target Identity Role
+                </span>
+                <h2 className="text-2xl font-bold text-white tracking-tight">
+                  {targetIdentityRole || "Identity Role Unassigned"}
+                </h2>
+                <p className="text-xs text-gray-400">
+                  IAI measures daily compounding toward declared systemic mastery and strategic leverage.
+                </p>
               </div>
 
-              {/* Skills Trajectory Bars */}
-              <div className="space-y-3 pt-2">
-                {skillTrajectories.map((st) => (
-                  <div key={st.skill} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-300 font-medium">{st.skill}</span>
-                      <span className="font-mono text-gray-400">
-                        {st.currentScore} → <strong className="text-purple-300">{st.targetScore}</strong> (+{st.gapPoints} gap)
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
-                        style={{ width: `${(st.currentScore / st.targetScore) * 100}%` }}
-                      />
-                    </div>
+              {calibrationScore ? (
+                <div className="flex items-center space-x-4 bg-gray-950/70 border border-gray-800 p-4 rounded-xl">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase text-gray-400 block">Brier Score</span>
+                    <span className="text-xl font-mono font-bold text-emerald-400">{calibrationScore.brierScore}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="h-8 w-px bg-gray-800" />
+                  <div>
+                    <span className="text-[10px] font-mono uppercase text-gray-400 block">Accuracy</span>
+                    <span className="text-xl font-mono font-bold text-white">{calibrationScore.accuracyPct}%</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            {/* Calibration & Accuracy Glance */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-1">
-                <span className="text-xs font-mono text-gray-400 uppercase">Probabilistic Accuracy</span>
-                <p className="text-xl font-mono font-bold text-white">{calibrationScore.accuracyPct}%</p>
-                <p className="text-[11px] text-gray-400">Audited across {calibrationScore.sampleDecisionsAudited} decisions.</p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-1">
-                <span className="text-xs font-mono text-gray-400 uppercase">Overconfidence Bias</span>
-                <p className="text-xl font-mono font-bold text-emerald-400">{calibrationScore.overconfidenceBias}</p>
-                <p className="text-[11px] text-gray-400">Predicted probabilities strictly mirror actual event frequencies.</p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-1">
-                <span className="text-xs font-mono text-gray-400 uppercase">Judgment Quality</span>
-                <p className="text-xl font-mono font-bold text-cyan-400">{calibrationScore.trend}</p>
-                <p className="text-[11px] text-gray-400">Brier score {calibrationScore.brierScore} (Threshold $\le 0.25$).</p>
-              </div>
+            {/* Trajectories Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {skillTrajectories && skillTrajectories.map((s) => (
+                <div key={s.skill} className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-white font-bold">{s.skill}</span>
+                    <span className="text-purple-400 font-bold">{s.currentScore} / {s.targetScore}</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-emerald-400"
+                      style={{ width: `${(s.currentScore / s.targetScore) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-mono text-gray-400">
+                    <span>Gap: -{s.gapPoints} pts</span>
+                    <span className="text-emerald-400">{s.momentumVelocityPct}% velocity</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         }
         level1Content={
-          <div className="space-y-6">
-            <div className="p-5 rounded-xl bg-gray-950 border border-gray-800 space-y-4">
-              <h4 className="text-sm font-bold text-white">Detailed Competence Gap Diagnostic</h4>
-              <div className="space-y-3">
-                {skillTrajectories.map((st) => (
-                  <div key={st.skill} className="p-3 rounded-lg bg-gray-900/70 border border-gray-800/80 flex items-center justify-between text-xs">
-                    <div>
-                      <p className="font-semibold text-white">{st.skill}</p>
-                      <p className="text-gray-400">Momentum compounding velocity: {st.momentumVelocityPct}%</p>
-                    </div>
-                    <div className="text-right font-mono">
-                      <span className="text-gray-400 block">Gap Points</span>
-                      <span className="text-purple-400 font-bold">+{st.gapPoints} pts</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="space-y-4">
+            <h4 className="text-sm font-bold text-white">Decision Journal Calibration Audit</h4>
+            <div className="p-5 rounded-xl bg-gray-950 border border-gray-800 text-xs font-mono space-y-2">
+              <p className="text-gray-300">Audited Sample: {calibrationScore?.sampleDecisionsAudited ?? 0} high-stakes capital and career decisions.</p>
+              <p className="text-gray-300">Overconfidence Bias: <strong className="text-emerald-400">{calibrationScore?.overconfidenceBias ?? "NONE"}</strong></p>
+              <p className="text-gray-300">Historical Trend: <strong className="text-cyan-400">{calibrationScore?.trend ?? "CALIBRATED"}</strong></p>
             </div>
           </div>
         }

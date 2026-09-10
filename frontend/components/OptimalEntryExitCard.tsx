@@ -177,23 +177,31 @@ export default function OptimalEntryExitCard({
     return bearishOptions > bullishOptions && netSelling > netBuying;
   })();
 
-  const handleLogToPortfolio = () => {
+  const handleLogToPortfolio = async () => {
     if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
       setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
       return;
     }
-    const res = addPortfolioPosition({
+    const userSharesStr = window.prompt(`Enter quantity of ${symbol} shares to add:`, "10");
+    if (!userSharesStr) return;
+    const parsedShares = parseFloat(userSharesStr);
+    if (isNaN(parsedShares) || parsedShares <= 0) {
+      setLogStatus("❌ Invalid share quantity. Must be greater than 0.");
+      setTimeout(() => setLogStatus(null), 3000);
+      return;
+    }
+    const res = await addPortfolioPosition({
       symbol,
       name: symbol,
-      shares: Math.max(1, Math.round(2500 / current_price)),
+      shares: parsedShares,
       entryPrice: current_price,
       currentPrice: current_price,
       targetPrice: take_profit_1,
       stopLossPrice: stop_loss,
     });
-    setLogStatus(res.message);
-    setTimeout(() => setLogStatus(null), 3000);
+    setLogStatus(res.success ? res.message : `❌ ${res.message}`);
+    setTimeout(() => setLogStatus(null), 3500);
   };
 
   return (

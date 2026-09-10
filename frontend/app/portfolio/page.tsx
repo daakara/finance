@@ -12,6 +12,11 @@ import {
   getAnonymousUserId,
   exportPortfolioToCsv,
   syncPortfolioFromApi,
+  addPortfolioPosition,
+  updatePortfolioPosition,
+  removePortfolioPosition,
+  beginActivePortfolioEdit,
+  endActivePortfolioEdit,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics, SpotPriceRegistry } from "../../lib/api";
@@ -29,6 +34,8 @@ export default function PortfolioPage() {
     totalUnrealizedPnL: 0,
     totalUnrealizedPnLPct: 0,
     positionsCount: 0,
+    isComplete: true,
+    unpricedCount: 0,
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -77,7 +84,7 @@ export default function PortfolioPage() {
         setNewEntryPrice(price.toFixed(2));
         setNewStopLoss((price * 0.93).toFixed(2));
         setNewTarget((price * 1.25).toFixed(2));
-        setNewShares(Math.max(1, Math.round(2500 / price)).toString());
+        setNewShares((prev) => (prev && Number(prev) > 0 ? prev : "10"));
       } else {
         setResolvedQuotePrice(null);
         setNewEntryPrice("");
@@ -93,6 +100,7 @@ export default function PortfolioPage() {
   }, []);
 
   const handleOpenAddModal = (initialSymbol?: string) => {
+    beginActivePortfolioEdit();
     setIsEditing(false);
     setModalError(null);
     const target = initialSymbol || "SEDG";
@@ -103,6 +111,7 @@ export default function PortfolioPage() {
   };
 
   const handleOpenEditModal = (pos: PortfolioPosition) => {
+    beginActivePortfolioEdit();
     setIsEditing(true);
     setModalError(null);
     setNewSymbol(pos.symbol);
@@ -113,6 +122,12 @@ export default function PortfolioPage() {
     setResolvedAssetName(pos.name);
     setResolvedQuotePrice(pos.currentPrice);
     setShowAddModal(true);
+  };
+
+  const handleCloseModal = () => {
+    endActivePortfolioEdit();
+    setShowAddModal(false);
+    setModalError(null);
   };
 
   const refreshQuotes = useCallback(async (basePositions: PortfolioPosition[]) => {
@@ -194,7 +209,7 @@ export default function PortfolioPage() {
     };
   }, [refreshQuotes]);
 
-  const handleSaveHolding = (e: React.FormEvent) => {
+  const handleSaveHolding = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
     const trimmedSym = newSymbol.trim().toUpperCase();
@@ -231,37 +246,55 @@ export default function PortfolioPage() {
     }
 
     const authenticName = resolvedAssetName || getCanonicalAssetName(symUpper);
-    const curPrice = resolvedQuotePrice && !isNaN(resolvedQuotePrice) ? resolvedQuotePrice : entryNum;
-    const existing = positions.find((p) => p.symbol === symUpper);
+    const curPrice = (resolvedQuotePrice && !isNaN(resolvedQuotePrice) && resolvedQuotePrice > 0) ? resolvedQuotePrice : null;
 
-    const newPos: PortfolioPosition = {
-      symbol: symUpper,
-      name: authenticName,
-      shares: sharesNum,
-      entryPrice: entryNum,
-      currentPrice: curPrice,
-      targetPrice: targetNum,
-      stopLossPrice: stopNum,
-      addedAt: existing?.addedAt || new Date().toISOString().split("T")[0],
-      assetType: existing?.assetType || "Stock",
-    };
+    let res: { success: boolean; message: string; isDuplicate?: boolean };
+    if (isEditing) {
+      res = await updatePortfolioPosition({
+        symbol: symUpper,
+        name: authenticName,
+        shares: sharesNum,
+        entryPrice: entryNum,
+        currentPrice: curPrice,
+        targetPrice: targetNum,
+        stopLossPrice: stopNum,
+      });
+    } else {
+      res = await addPortfolioPosition({
+        symbol: symUpper,
+        name: authenticName,
+        shares: sharesNum,
+        entryPrice: entryNum,
+        currentPrice: curPrice,
+        targetPrice: targetNum,
+        stopLossPrice: stopNum,
+      });
+    }
 
-    const updated = [newPos, ...positions.filter((p) => p.symbol !== symUpper)];
-    setPositions(updated);
-    setSummary(calculatePortfolioSummary(updated));
-    savePortfolioPositions(updated);
+    if (!res.success) {
+      setModalError(res.message);
+      return;
+    }
+
+    const refreshed = loadPortfolioPositions();
+    setPositions(refreshed);
+    setSummary(calculatePortfolioSummary(refreshed));
+    endActivePortfolioEdit();
     setShowAddModal(false);
     setModalError(null);
 
     trackMatomoEvent("User Journey", isEditing ? "Edit Portfolio Position" : "Add Portfolio Position", `${symUpper} (${sharesNum} shares)`);
   };
 
-  const handleRemovePosition = (symbol: string) => {
-    const updated = positions.filter((p) => p.symbol !== symbol);
-    setPositions(updated);
-    setSummary(calculatePortfolioSummary(updated));
-    savePortfolioPositions(updated);
-
+  const handleRemovePosition = async (symbol: string) => {
+    const res = await removePortfolioPosition(symbol);
+    if (!res.success) {
+      alert(res.message);
+      return;
+    }
+    const refreshed = loadPortfolioPositions();
+    setPositions(refreshed);
+    setSummary(calculatePortfolioSummary(refreshed));
     trackMatomoEvent("User Journey", "Remove Portfolio Position", symbol);
   };
 
@@ -293,10 +326,10 @@ export default function PortfolioPage() {
   const effectiveCapital = Math.max(accountEquity, summary.totalCost);
   const investedEquity = summary.totalEquity;
   const cashReserves = Math.max(0, effectiveCapital - summary.totalCost);
-  const totalNetWorth = cashReserves + investedEquity;
-  const investedPct = totalNetWorth > 0 ? (investedEquity / totalNetWorth) * 100 : 0;
-  const cashPct = totalNetWorth > 0 ? (cashReserves / totalNetWorth) * 100 : 0;
-  const isPositive = summary.totalUnrealizedPnL >= 0;
+  const totalNetWorth = investedEquity !== null ? cashReserves + investedEquity : null;
+  const investedPct = totalNetWorth !== null && totalNetWorth > 0 && investedEquity !== null ? (investedEquity / totalNetWorth) * 100 : null;
+  const cashPct = totalNetWorth !== null && totalNetWorth > 0 ? (cashReserves / totalNetWorth) * 100 : null;
+  const isPositive = summary.totalUnrealizedPnL !== null ? summary.totalUnrealizedPnL >= 0 : null;
 
   // Level 0: Total Capital at Risk Calculation
   const totalRiskAtStop = positions.reduce((acc, p) => {
@@ -304,9 +337,9 @@ export default function PortfolioPage() {
     const currentOrEntry = p.entryPrice;
     return acc + Math.max(0, (currentOrEntry - stop) * p.shares);
   }, 0);
-  const riskPctOfEquity = totalNetWorth > 0 ? (totalRiskAtStop / totalNetWorth) * 100 : 0;
-  const stopBreaches = positions.filter((p) => p.currentPrice <= (p.stopLossPrice || p.entryPrice * 0.92));
-  const targetHits = positions.filter((p) => !!p.targetPrice && p.currentPrice >= p.targetPrice);
+  const riskPctOfEquity = totalNetWorth !== null && totalNetWorth > 0 ? (totalRiskAtStop / totalNetWorth) * 100 : null;
+  const stopBreaches = positions.filter((p) => p.currentPrice !== null && p.currentPrice <= (p.stopLossPrice || p.entryPrice * 0.92));
+  const targetHits = positions.filter((p) => p.currentPrice !== null && !!p.targetPrice && p.currentPrice >= p.targetPrice);
 
   return (
     <TerminalShell activeHub="portfolio">
@@ -380,7 +413,7 @@ export default function PortfolioPage() {
                   -${totalRiskAtStop.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-sm font-mono text-rose-300/80 font-bold">
-                  ({riskPctOfEquity.toFixed(2)}% Capital at Risk)
+                  ({riskPctOfEquity !== null ? `${riskPctOfEquity.toFixed(2)}% Capital at Risk` : "--"})
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-sans max-w-xl">
@@ -392,20 +425,26 @@ export default function PortfolioPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0 font-mono text-xs">
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Total Net Worth</span>
-                <span className="text-base font-bold text-white tabular-nums">${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-base font-bold text-white tabular-nums">
+                  {totalNetWorth !== null ? `$${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--"}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Active Holdings</span>
-                <span className="text-base font-bold text-cyan-400 tabular-nums">${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({investedPct.toFixed(0)}%)</span>
+                <span className="text-base font-bold text-cyan-400 tabular-nums">
+                  {investedEquity !== null ? `$${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${investedPct?.toFixed(0)}%)` : <span className="text-amber-400">Incomplete ({summary.unpricedCount} unpriced)</span>}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Cash Buying Power</span>
-                <span className="text-base font-bold text-emerald-400 tabular-nums">${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({cashPct.toFixed(0)}%)</span>
+                <span className="text-base font-bold text-emerald-400 tabular-nums">
+                  ${cashReserves.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {cashPct !== null ? `(${cashPct.toFixed(0)}%)` : ""}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Unrealized P&amp;L</span>
-                <span className={`text-base font-bold tabular-nums ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {isPositive ? `+$${summary.totalUnrealizedPnL.toFixed(2)}` : `-$${Math.abs(summary.totalUnrealizedPnL).toFixed(2)}`}
+                <span className={`text-base font-bold tabular-nums ${isPositive === true ? 'text-emerald-400' : isPositive === false ? 'text-rose-400' : 'text-slate-400'}`}>
+                  {summary.totalUnrealizedPnL !== null ? (isPositive ? `+$${summary.totalUnrealizedPnL.toFixed(2)}` : `-$${Math.abs(summary.totalUnrealizedPnL).toFixed(2)}`) : <span className="text-amber-400 font-normal text-xs">-- (Unpriced)</span>}
                 </span>
               </div>
             </div>
@@ -480,8 +519,8 @@ export default function PortfolioPage() {
           <div className="space-y-1.5">
             <div className="w-full h-3 bg-[#06090f] rounded-full overflow-hidden flex border border-[#1b2537]">
               {positions.map((pos, idx) => {
-                const posVal = pos.shares * pos.currentPrice;
-                const pct = totalNetWorth > 0 ? (posVal / totalNetWorth) * 100 : 0;
+                const posVal = pos.currentPrice !== null ? pos.shares * pos.currentPrice : null;
+                const pct = totalNetWorth !== null && totalNetWorth > 0 && posVal !== null ? (posVal / totalNetWorth) * 100 : 0;
                 const colors = ["bg-cyan-500", "bg-emerald-500", "bg-indigo-500", "bg-amber-500", "bg-purple-500"];
                 const color = colors[idx % colors.length];
                 return (
@@ -489,36 +528,36 @@ export default function PortfolioPage() {
                     key={pos.symbol}
                     style={{ width: `${pct}%` }}
                     className={`${color} h-full transition-all duration-300`}
-                    title={`${pos.symbol}: $${posVal.toFixed(2)} (${pct.toFixed(1)}%)`}
+                    title={posVal !== null ? `${pos.symbol}: $${posVal.toFixed(2)} (${pct.toFixed(1)}%)` : `${pos.symbol}: Unpriced`}
                   />
                 );
               })}
               <div
-                style={{ width: `${cashPct}%` }}
+                style={{ width: `${cashPct ?? 0}%` }}
                 className="bg-slate-700/60 h-full transition-all duration-300"
-                title={`Available Cash: $${cashReserves.toFixed(2)} (${cashPct.toFixed(1)}%)`}
+                title={`Available Cash: $${cashReserves.toFixed(2)} (${cashPct !== null ? cashPct.toFixed(1) : "--"}%)`}
               />
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
               <div className="flex items-center gap-3 flex-wrap">
                 {positions.map((pos, idx) => {
-                  const posVal = pos.shares * pos.currentPrice;
-                  const pct = totalNetWorth > 0 ? (posVal / totalNetWorth) * 100 : 0;
+                  const posVal = pos.currentPrice !== null ? pos.shares * pos.currentPrice : null;
+                  const pct = totalNetWorth !== null && totalNetWorth > 0 && posVal !== null ? (posVal / totalNetWorth) * 100 : 0;
                   const dotColors = ["bg-cyan-400", "bg-emerald-400", "bg-indigo-400", "bg-amber-400", "bg-purple-400"];
                   const dotColor = dotColors[idx % dotColors.length];
                   return (
                     <span key={pos.symbol} className="flex items-center gap-1">
                       <span className={`w-2 h-2 rounded-full ${dotColor}`} />
                       <strong className="text-slate-200">{pos.symbol}:</strong>
-                      <span>${posVal.toFixed(2)} ({pct.toFixed(1)}%)</span>
+                      <span>{posVal !== null ? `$${posVal.toFixed(2)} (${pct.toFixed(1)}%)` : "Unpriced"}</span>
                     </span>
                   );
                 })}
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-slate-500" />
                   <strong className="text-slate-300">Cash Reserves:</strong>
-                  <span>${cashReserves.toFixed(2)} ({cashPct.toFixed(1)}%)</span>
+                  <span>${cashReserves.toFixed(2)} ({cashPct !== null ? `${cashPct.toFixed(1)}%` : "--"})</span>
                 </span>
               </div>
 
@@ -583,27 +622,34 @@ export default function PortfolioPage() {
                   </tr>
                 ) : (
                   positions.map((pos) => {
-                  const mktVal = pos.shares * pos.currentPrice;
+                  const isPriced = pos.currentPrice !== null && !isNaN(pos.currentPrice) && pos.currentPrice > 0;
+                  const mktVal = isPriced ? pos.shares * pos.currentPrice! : null;
                   const cost = pos.shares * pos.entryPrice;
-                  const pnl = mktVal - cost;
-                  const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
-                  const posUp = pnl >= 0;
+                  const pnl = isPriced && mktVal !== null ? mktVal - cost : null;
+                  const pnlPct = isPriced && pnl !== null && cost > 0 ? (pnl / cost) * 100 : null;
+                  const posUp = pnl !== null ? pnl >= 0 : null;
 
                   // Execution state alert
                   let statusBadge = null;
-                  if (pos.targetPrice && pos.currentPrice >= pos.targetPrice) {
+                  if (!isPriced) {
+                    statusBadge = (
+                      <span className="px-2 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/60 font-bold text-[10px] whitespace-nowrap">
+                        UNPRICED
+                      </span>
+                    );
+                  } else if (pos.targetPrice && pos.currentPrice !== null && pos.currentPrice >= pos.targetPrice) {
                     statusBadge = (
                       <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold text-[10px] whitespace-nowrap animate-pulse">
                         🎯 TP1 TARGET HIT
                       </span>
                     );
-                  } else if (pos.stopLossPrice && pos.currentPrice <= pos.stopLossPrice) {
+                  } else if (pos.stopLossPrice && pos.currentPrice !== null && pos.currentPrice <= pos.stopLossPrice) {
                     statusBadge = (
                       <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold text-[10px] whitespace-nowrap">
                         🛑 STOP LOSS HIT
                       </span>
                     );
-                  } else if (pos.stopLossPrice && pos.currentPrice <= pos.stopLossPrice * 1.02) {
+                  } else if (pos.stopLossPrice && pos.currentPrice !== null && pos.currentPrice <= pos.stopLossPrice * 1.02) {
                     statusBadge = (
                       <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-bold text-[10px] whitespace-nowrap">
                         ⚠️ NEAR STOP FLOOR
@@ -628,12 +674,20 @@ export default function PortfolioPage() {
                       <td className="py-3 px-4">{statusBadge}</td>
                       <td className="py-3 px-4 text-slate-200">{typeof pos.shares === "number" ? Number(pos.shares.toFixed(6)) : pos.shares}</td>
                       <td className="py-3 px-4 text-slate-300">${pos.entryPrice.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-white font-bold">${pos.currentPrice.toFixed(2)}</td>
-                      <td className="py-3 px-4 text-slate-100 font-bold">${mktVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="py-3 px-4 text-white font-bold">
+                        {isPriced ? `$${pos.currentPrice!.toFixed(2)}` : <span className="text-amber-400 font-mono text-[11px] font-bold">Unpriced</span>}
+                      </td>
+                      <td className="py-3 px-4 text-slate-100 font-bold">
+                        {mktVal !== null ? `$${mktVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-slate-500 font-mono">--</span>}
+                      </td>
                       <td className="py-3 px-4">
-                        <span className={`font-bold ${posUp ? "text-emerald-400" : "text-rose-400"}`}>
-                          {posUp ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`} ({posUp ? `+${pnlPct.toFixed(2)}%` : `${pnlPct.toFixed(2)}%`})
-                        </span>
+                        {pnl !== null ? (
+                          <span className={`font-bold ${posUp ? "text-emerald-400" : "text-rose-400"}`}>
+                            {posUp ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`} ({posUp ? `+${pnlPct!.toFixed(2)}%` : `${pnlPct!.toFixed(2)}%`})
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 font-mono">--</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-[11px]">
                         <span className="text-rose-400">Stop: ${pos.stopLossPrice?.toFixed(2) || "None"}</span>
@@ -686,7 +740,7 @@ export default function PortfolioPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseModal}
                   className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   ✕
@@ -814,7 +868,7 @@ export default function PortfolioPage() {
                 <div className="pt-3.5 flex items-center justify-end space-x-2 border-t border-[#1b2434] shrink-0">
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={handleCloseModal}
                     className="px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
                   >
                     Cancel

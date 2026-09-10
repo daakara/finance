@@ -14,9 +14,11 @@
  * - /research: "Why does this opportunity exist?"
  */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "../Navbar";
+import { fetchMacroRibbon } from "../../lib/api";
+import { getTraderContextFromUnifiedCockpit } from "../../lib/simulation/governorSizingEngine";
 
 export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance" | "research";
 export type TerminalHub = TerminalHubId;
@@ -49,10 +51,42 @@ export default function TerminalShell({
 }: TerminalShellProps) {
   const currentHub = TERMINAL_HUBS.find((h) => h.id === activeHub) || TERMINAL_HUBS[0];
 
+  const [dynamicRegime, setDynamicRegime] = useState<string | null>(null);
+  const [governorClampText, setGovernorClampText] = useState<string>("-25% Clamp");
+
+  useEffect(() => {
+    fetchMacroRibbon().then((data) => {
+      if (data && data.regime) {
+        if (data.regime === "RISK_ON") setDynamicRegime("Confirmed Uptrend");
+        else if (data.regime === "DEFENSIVE") setDynamicRegime("Defensive / High Vol");
+        else if (data.regime === "NEUTRAL") setDynamicRegime("Neutral / Selective");
+        else if (data.regime === "UNAVAILABLE") setDynamicRegime("Regime Unavailable");
+        else setDynamicRegime(data.regime);
+      } else {
+        setDynamicRegime("Regime Unavailable");
+      }
+    }).catch(() => {
+      setDynamicRegime("Regime Unavailable");
+    });
+
+    try {
+      const traderContext = getTraderContextFromUnifiedCockpit();
+      if (!traderContext.isAvailable) {
+        setGovernorClampText("Unconfigured");
+      } else if (traderContext.consecutiveLossStreak !== null && traderContext.consecutiveLossStreak >= 2) {
+        setGovernorClampText("-25% Clamp");
+      } else if (traderContext.liquidRunwayMonths !== null && traderContext.liquidRunwayMonths < 6) {
+        setGovernorClampText("-25% Runway Clamp");
+      } else {
+        setGovernorClampText("Nominal");
+      }
+    } catch {}
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#070b12] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black flex flex-col transition-colors duration-200">
       {/* 1. Global Persistent Terminal Navbar */}
-      <Navbar />
+      <Navbar hideMobileDock={true} />
 
       {/* 2. Persistent Terminal Sub-Header & Question Breadcrumb (INV-OI115-P) */}
       <section
@@ -80,7 +114,7 @@ export default function TerminalShell({
             >
               <span>🛡️ Governor: Active</span>
               <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded ml-0.5">
-                -25% Clamp
+                {governorClampText}
               </span>
             </Link>
           </div>
@@ -104,8 +138,13 @@ export default function TerminalShell({
 
           <div className="flex items-center space-x-4 text-xs font-mono">
             <div className="flex items-center space-x-1.5 text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>REGIME: Confirmed Uptrend</span>
+              <span className={`w-2 h-2 rounded-full ${
+                !dynamicRegime ? 'bg-slate-600' :
+                dynamicRegime.includes('Defensive') ? 'bg-rose-400' :
+                dynamicRegime.includes('Neutral') ? 'bg-amber-400' :
+                dynamicRegime.includes('Unavailable') ? 'bg-slate-500' : 'bg-emerald-400'
+              } animate-pulse`}></span>
+              <span>REGIME: {dynamicRegime || "Market Discovery..."}</span>
             </div>
             <span className="text-slate-700">|</span>
             <Link
@@ -115,7 +154,7 @@ export default function TerminalShell({
             >
               <span>🛡️ Governor: Active</span>
               <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded">
-                -25% Clamp
+                {governorClampText}
               </span>
               <span className="text-[10px] text-slate-500 hover:text-slate-400">→</span>
             </Link>
@@ -136,7 +175,8 @@ export default function TerminalShell({
       <aside
         role="navigation"
         aria-label="Mobile Terminal Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1019]/95 backdrop-blur-md border-t border-[#1e293b] flex items-center justify-around px-2 py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-[10px] font-mono shadow-2xl"
+        data-testid="mobile-nav-dock"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1019]/95 backdrop-blur-md border-t border-[#1e293b] flex items-center justify-around px-2 py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-[10px] font-mono shadow-2xl"
       >
         <Link
           href="/radar"
@@ -187,7 +227,7 @@ export default function TerminalShell({
           className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
             activeHub === 'performance'
               ? 'text-emerald-400 font-bold bg-emerald-950/50 border border-emerald-800/60 shadow-inner'
-              : 'text-emerald-400/80 hover:text-emerald-200 hover:bg-slate-900/60'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
           }`}
         >
           <span className="text-base mb-0.5 leading-none">📈</span>

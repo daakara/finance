@@ -53,7 +53,7 @@ if (fs.existsSync(shellPath)) {
   assert(shellSrc.includes('border-t border-[#1e293b]'), 'Persistent terminal sub-header divider');
   assert(shellSrc.includes('Link') && shellSrc.includes('hub.route'), 'Sub-header renders navigational links for fast switching');
   assert(shellSrc.includes('activeHub === hub.id'), 'Sub-header provides visual active tab distinction');
-  assert(shellSrc.includes('REGIME: Confirmed Uptrend'), 'Persistent Market Regime status badge displayed');
+  assert(shellSrc.includes('REGIME:'), 'Persistent Market Regime status badge displayed');
   assert(shellSrc.includes('🛡️ Governor'), 'Persistent Behavioral Governor status link to /cockpit');
   assert(shellSrc.includes('⌘K') || shellSrc.includes('Cmd+K'), 'Command Palette shortcut indicator present');
   assert(shellSrc.includes('{children}'), 'Shell wraps page content children cleanly without re-mounting root shell');

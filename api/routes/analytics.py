@@ -150,6 +150,133 @@ def compute_intraday_technicals(df: pd.DataFrame) -> dict:
 
 
 
+def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
+    """Check if historical daily candles are stale relative to the authoritative NYSE trading session."""
+    if not db_candles or len(db_candles) < 15:
+        return True
+    try:
+        import exchange_calendars as xcals
+        import pandas as pd
+        cal = xcals.get_calendar("XNYS")
+        now_utc = pd.Timestamp.now("UTC")
+        prev_close = cal.previous_close(now_utc)
+        last_session = cal.minute_to_session(prev_close, direction="previous").strftime("%Y-%m-%d")
+        newest_candle_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10]
+        if not newest_candle_date:
+            return True
+        # If newest candle date is strictly prior to the last completed market session, history is stale
+        return newest_candle_date < last_session
+    except Exception as e:
+        logger.debug(f"Freshness calendar check error: {e}")
+        try:
+            from datetime import datetime, timezone, timedelta
+            raw_dt = db_candles[-1].get("time") or db_candles[-1].get("date") or ""
+            newest_date = datetime.strptime(str(raw_dt)[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - newest_date) > timedelta(days=4)
+        except Exception:
+            return True
+
+
+def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
+    """Build tactical trade setup from db_candles and staleness status."""
+    obs_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10] if db_candles else ""
+    if is_stale:
+        return {
+            "symbol": sym,
+            "ticker": sym,
+            "setupName": "Stale Market Tape",
+            "entryPivot": None,
+            "stopLoss": None,
+            "target1": None,
+            "target2": None,
+            "confluenceScore": 0.0,
+            "executionStatus": "STALE_MARKET_DATA",
+            "isActionable": False,
+            "isSuppressed": True,
+            "entryThesis": f"Market data is dated ({obs_date}) and live refresh failed. Dependent trade actions suppressed.",
+            "invalidationCondition": "Awaiting fresh market session observations.",
+            "stagePhase": "Stale Data",
+            "reasonSuppressed": "Market data is stale and could not be refreshed from exchange tape.",
+            "observationDate": obs_date,
+        }
+
+    hist_df = pd.DataFrame([{
+        "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+    } for c in db_candles], index=pd.to_datetime([c.get("time") or c.get("date") for c in db_candles]))
+    cur_price = float(hist_df["Close"].iloc[-1])
+
+    if cur_price is None or cur_price <= 0 or hist_df.empty:
+        return None
+
+    technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
+    plan = optimal_execution_engine.calculate_trade_levels(
+        price_df=hist_df,
+        current_price=cur_price,
+        user_role=clean_role,
+        technicals=technicals,
+    )
+
+    is_actionable = plan.get("stop_loss") is not None and plan.get("optimal_entry_max") is not None
+    entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
+    stop_loss = plan.get("stop_loss")
+    target1 = plan.get("take_profit_1")
+    target2 = plan.get("take_profit_2")
+
+    sec_trades = smart_money_engine.get_sec_insider_trades(sym)
+    cong_trades = smart_money_engine.get_congressional_trades(sym)
+    has_insider = len(sec_trades) > 0
+    has_congress = len(cong_trades) > 0
+    insider_val = 0.0
+    if has_insider:
+        for t in sec_trades:
+            val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
+            if isinstance(val_raw, str):
+                cleaned = val_raw.replace("$", "").replace(",", "").strip()
+                try:
+                    insider_val += float(cleaned)
+                except ValueError:
+                    pass
+            elif isinstance(val_raw, (int, float)):
+                insider_val += float(val_raw)
+
+    smart_data = {
+        "has_insider_buy": has_insider,
+        "insider_value_usd": insider_val if has_insider else 0.0,
+        "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
+        "has_congress_buy": has_congress,
+        "has_options_flow": False,
+    } if (has_insider or has_congress) else None
+
+    conf_output = confluence_engine.calculate_confluence(
+        symbol=sym,
+        technical_data={**(technicals or {}), **plan, "current_price": cur_price},
+        smart_money_data=smart_data,
+        fundamental_data=None,
+        catalyst_data=None,
+        macro_data=None,
+    )
+    conf_score = conf_output.get("confluenceScore", 0.0)
+
+    return {
+        "symbol": sym,
+        "ticker": sym,
+        "setupName": plan.get("setup_pattern") or "Consolidation Setup",
+        "entryPivot": round(entry_pivot, 2) if entry_pivot else None,
+        "stopLoss": round(stop_loss, 2) if stop_loss else None,
+        "target1": round(target1, 2) if target1 else None,
+        "target2": round(target2, 2) if target2 else None,
+        "confluenceScore": round(float(conf_score), 1) if conf_score is not None else 0.0,
+        "executionStatus": plan.get("execution_status", "WAITING_PULLBACK"),
+        "isActionable": is_actionable,
+        "isSuppressed": not is_actionable,
+        "entryThesis": plan.get("entry_thesis", ""),
+        "invalidationCondition": plan.get("invalidation_condition", ""),
+        "stagePhase": plan.get("stage_phase", ""),
+        "reasonSuppressed": None if is_actionable else plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria"),
+        "observationDate": obs_date,
+    }
+
+
 @router.get("/setups", tags=["Setups"])
 def get_tactical_setups(
     tickers: Optional[str] = Query(None, description="Comma-separated ticker list"),
@@ -159,76 +286,40 @@ def get_tactical_setups(
     """Fetch authoritative tactical trade setups calculated by OptimalExecutionEngine & ConfluenceEngine.
     Returns only verified, mathematically calculated setups without hardcoded fallbacks."""
     if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "public, max-age=30, s-maxage=60, stale-while-revalidate=86400"
+        response.headers["Cache-Control"] = "public, max-age=15, s-maxage=30, must-revalidate"
 
     from api.routes.screener import DAY_TRADER_CANDIDATES, LONG_TERM_CANDIDATES
     clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
     if clean_role not in VALID_ROLES:
         clean_role = "LONG_TERM"
 
-    if tickers and tickers.strip():
+    if tickers is not None and isinstance(tickers, str) and tickers.strip():
         symbols = [t.strip().upper() for t in tickers.replace(",", " ").split() if t.strip() and SYMBOL_REGEX.match(t.strip().upper())]
     else:
-        symbols = DAY_TRADER_CANDIDATES[:10] if clean_role == "DAY_TRADER" else LONG_TERM_CANDIDATES[:15]
+        symbols = DAY_TRADER_CANDIDATES if clean_role == "DAY_TRADER" else LONG_TERM_CANDIDATES
 
     setups = []
     for sym in symbols:
         try:
-            latest_info = market_db.get_latest_price(sym)
-            cur_price = latest_info["currentPrice"] if latest_info and latest_info.get("currentPrice") else None
-
             db_candles = market_db.get_daily_candles(sym, limit=60)
-            if db_candles and len(db_candles) >= 15:
-                hist_df = pd.DataFrame([{
-                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
-                if not cur_price and not hist_df.empty:
-                    cur_price = float(hist_df["Close"].iloc[-1])
-            else:
-                hist_df = pd.DataFrame()
+            is_stale = _is_history_stale(db_candles)
 
-            if cur_price is None or cur_price <= 0:
+            if not db_candles or len(db_candles) < 15 or is_stale:
+                try:
+                    hist_fetch = yf.Ticker(sym).history(period="6mo", interval="1d", timeout=5)
+                    if not hist_fetch.empty and len(hist_fetch) >= 15:
+                        market_db.save_daily_candles(sym, hist_fetch)
+                        db_candles = market_db.get_daily_candles(sym, limit=60)
+                        is_stale = _is_history_stale(db_candles)
+                except Exception as fetch_err:
+                    logger.debug(f"On-demand refresh failed for {sym}: {fetch_err}")
+
+            if not db_candles or len(db_candles) < 15:
                 continue
 
-            technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
-            plan = optimal_execution_engine.calculate_trade_levels(
-                price_df=hist_df,
-                current_price=cur_price,
-                user_role=clean_role,
-                technicals=technicals,
-            )
-
-            is_actionable = plan.get("stop_loss") is not None and plan.get("optimal_entry_max") is not None
-            entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
-            stop_loss = plan.get("stop_loss")
-            target1 = plan.get("take_profit_1")
-            target2 = plan.get("take_profit_2")
-
-            conf_output = confluence_engine.calculate_confluence(
-                symbol=sym,
-                technical_data={**(technicals or {}), **plan, "current_price": cur_price},
-                smart_money_data={"has_insider_buy": False, "insider_value_usd": 0.0, "insider_name": "", "has_congress_buy": False, "has_options_flow": False},
-                fundamental_data={},
-                catalyst_data={},
-                macro_data={"yield_curve_10y2y": 0.25, "credit_spread": 3.5},
-            )
-            conf_score = conf_output.get("confluenceScore", 75)
-
-            setups.append({
-                "ticker": sym,
-                "setupName": plan.get("setup_pattern", "Minervini VCP Continuation"),
-                "entryPivot": round(entry_pivot, 2) if entry_pivot else None,
-                "stopLoss": round(stop_loss, 2) if stop_loss else None,
-                "target1": round(target1, 2) if target1 else None,
-                "target2": round(target2, 2) if target2 else None,
-                "confluenceScore": round(conf_score, 1),
-                "executionStatus": plan.get("execution_status", "WAITING_PULLBACK"),
-                "isActionable": is_actionable,
-                "entryThesis": plan.get("entry_thesis", ""),
-                "invalidationCondition": plan.get("invalidation_condition", ""),
-                "stagePhase": plan.get("stage_phase", ""),
-                "reasonSuppressed": None if is_actionable else plan.get("entry_thesis", "Insufficient trend history"),
-            })
+            setup = _build_tactical_setup(sym, clean_role, db_candles, is_stale=is_stale)
+            if setup:
+                setups.append(setup)
         except Exception as e:
             logger.warning(f"Error computing setup for {sym}: {e}")
             continue
@@ -238,6 +329,103 @@ def get_tactical_setups(
         "totalSetups": len(setups),
         "setups": setups,
     }
+
+
+@router.get("/setups/{symbol}", tags=["Setups"])
+def get_tactical_setup_for_symbol(
+    symbol: str,
+    user_role: str = Query("LONG_TERM", description="Trading Horizon lens"),
+    response: Response = None,
+):
+    """Fetch authoritative tactical trade setup calculated specifically for a single symbol.
+    Returns authentic technical evaluation, execution status, and explicit rejection rationale if suppressed."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=15, s-maxage=30, must-revalidate"
+
+    upper = symbol.strip().upper()
+    if not SYMBOL_REGEX.match(upper):
+        raise HTTPException(status_code=400, detail=f"Invalid symbol format: {upper}")
+
+    clean_role = user_role.upper().strip() if isinstance(user_role, str) else "LONG_TERM"
+    if clean_role not in VALID_ROLES:
+        clean_role = "LONG_TERM"
+
+    db_candles = market_db.get_daily_candles(upper, limit=60)
+    is_stale = _is_history_stale(db_candles)
+
+    # Perform a single on-demand fetch if missing, insufficient, or stale
+    if not db_candles or len(db_candles) < 15 or is_stale:
+        try:
+            ticker_obj = yf.Ticker(upper)
+            hist_fetch = ticker_obj.history(period="6mo", interval="1d", timeout=5)
+        except Exception as e:
+            if db_candles and len(db_candles) >= 15 and is_stale:
+                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+            err_msg = str(e).lower()
+            if "429" in err_msg or "too many requests" in err_msg or "rate limit" in err_msg:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Market data provider rate limit encountered for {upper}. Please retry in 30 seconds.",
+                )
+            elif "timeout" in err_msg or "timed out" in err_msg:
+                raise HTTPException(
+                    status_code=504,
+                    detail=f"Gateway timeout contacting market data provider for {upper}.",
+                )
+            else:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Upstream market data provider failure for {upper}: {str(e)}",
+                )
+
+        if hist_fetch is None or hist_fetch.empty:
+            if db_candles and len(db_candles) >= 15 and is_stale:
+                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+            raise HTTPException(
+                status_code=404,
+                detail=f"Asset {upper} is not recognized on exchange tape or has zero trade records.",
+            )
+
+        if len(hist_fetch) < 15:
+            if db_candles and len(db_candles) >= 15 and is_stale:
+                return _build_tactical_setup(upper, clean_role, db_candles, is_stale=True)
+            raise HTTPException(
+                status_code=422,
+                detail=f"Asset {upper} has only {len(hist_fetch)} sessions on record. Minimum 15 daily sessions required for setup calculation.",
+            )
+
+        market_db.save_daily_candles(upper, hist_fetch)
+        db_candles = market_db.get_daily_candles(upper, limit=60)
+        if not db_candles and not hist_fetch.empty:
+            db_candles = [
+                {
+                    "time": idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx).split("T")[0],
+                    "open": float(row["Open"]),
+                    "high": float(row["High"]),
+                    "low": float(row["Low"]),
+                    "close": float(row["Close"]),
+                    "volume": int(row.get("Volume", 0)),
+                }
+                for idx, row in hist_fetch.iterrows()
+            ]
+        is_stale = False
+
+    try:
+        setup = _build_tactical_setup(upper, clean_role, db_candles, is_stale=is_stale)
+        if setup is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Calculation error occurred while computing trade levels or confluence for {upper}.",
+            )
+        return setup
+    except HTTPException:
+        raise
+    except Exception as calc_err:
+        logger.error(f"Calculation error for {upper}: {calc_err}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Calculation error occurred while computing trade levels or confluence for {upper}.",
+        )
 
 
 @router.get("/{symbol}")
@@ -533,9 +721,9 @@ def get_asset_analytics(
         # Enrich self-healing audit with persistent outcome stats
         try:
             acc_summary = history_db.get_setup_accuracy_summary(upper_sym)
-            if isinstance(self_healing_audit, dict):
-                self_healing_audit["totalLoggedSetups"] = acc_summary.get("total_logged_setups", 42)
-                self_healing_audit["persistentLedgerStatus"] = acc_summary.get("model_calibration_status", "Active")
+            if isinstance(self_healing_audit, dict) and acc_summary:
+                self_healing_audit["totalLoggedSetups"] = acc_summary.get("total_logged_setups", 0)
+                self_healing_audit["persistentLedgerStatus"] = acc_summary.get("model_calibration_status", "Awaiting Live Observations")
         except Exception:
             pass
 
@@ -545,6 +733,17 @@ def get_asset_analytics(
         congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
         # Curated historical STOCK Act records are informational and do not synthesize real-time intraday buy confluence
         has_congress_buy = False
+
+        # Macro inputs: Strictly authentic FRED observations; never fabricated 0.25 / 3.5 fallbacks
+        macro_inputs = None
+        if isinstance(macro_difficulty, dict):
+            yc = macro_difficulty.get("yield_curve_10y2y")
+            cs = macro_difficulty.get("high_yield_credit_spread")
+            if yc is not None or cs is not None:
+                macro_inputs = {
+                    "yield_curve_10y2y": yc,
+                    "credit_spread": cs,
+                }
 
         # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
         confluence_output = confluence_engine.calculate_confluence(
@@ -566,10 +765,7 @@ def get_asset_analytics(
                 "piotroski_f": piotroski,
             } if (has_fundamentals or upper_sym in KNOWN_ETFS) else {},
             catalyst_data=catalyst_report,
-            macro_data={
-                "yield_curve_10y2y": macro_difficulty.get("yield_curve_10y2y", 0.25) if isinstance(macro_difficulty, dict) else 0.25,
-                "credit_spread": macro_difficulty.get("high_yield_credit_spread", 3.5) if isinstance(macro_difficulty, dict) else 3.5,
-            },
+            macro_data=macro_inputs,
         )
 
         return {

@@ -2,14 +2,31 @@
 
 import React from "react";
 import Link from "next/link";
-import { getUnifiedCockpitState } from "../../../lib/simulation/unifiedCockpitStore";
+import { useUnifiedCockpit, refreshUnifiedCockpit } from "../../../lib/simulation/unifiedCockpitStore";
 
 export default function AllocatorWorkbench() {
-  const state = getUnifiedCockpitState();
-  const { triad, activeConstraints, nextBestAction, secondaryActions } = state;
+  const state = useUnifiedCockpit();
+  const { status, errorMessage, triad, activeConstraints, nextBestAction, secondaryActions } = state;
 
   return (
     <main className="min-h-screen bg-[#070b12] text-gray-100 p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+      {status === 'ERROR' && (
+        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800 text-xs font-mono text-rose-300 flex items-center justify-between">
+          <span>Failed to load allocation constraints telemetry: {errorMessage || "Network error"}</span>
+          <button
+            onClick={() => refreshUnifiedCockpit()}
+            className="px-3 py-1 bg-rose-800 hover:bg-rose-700 text-white rounded font-bold transition-all"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+      {status === 'LOADING' && (
+        <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-xs font-mono text-emerald-400 animate-pulse">
+          Synchronizing 168-hour allocation envelope and constraints...
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-gray-800 gap-4">
         <div>
           <div className="flex items-center space-x-3">
@@ -31,15 +48,15 @@ export default function AllocatorWorkbench() {
         <div className="flex items-center space-x-3 bg-gray-900 border border-gray-800 p-3 rounded-xl">
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">LHI</span>
-            <span className="text-xl font-mono font-bold text-emerald-400">{triad.lhi}</span>
+            <span className="text-xl font-mono font-bold text-emerald-400">{triad?.lhi ?? "--"}</span>
           </div>
           <div className="text-center px-3 border-r border-gray-800">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">HHI</span>
-            <span className="text-xl font-mono font-bold text-blue-400">{triad.hhi}</span>
+            <span className="text-xl font-mono font-bold text-blue-400">{triad?.hhi ?? "--"}</span>
           </div>
           <div className="text-center px-3">
             <span className="text-[10px] uppercase font-mono text-gray-400 block">IAI</span>
-            <span className="text-xl font-mono font-bold text-purple-400">{triad.iai}</span>
+            <span className="text-xl font-mono font-bold text-purple-400">{triad?.iai ?? "--"}</span>
           </div>
         </div>
       </header>
@@ -74,13 +91,19 @@ export default function AllocatorWorkbench() {
         <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-4">
           <h3 className="text-sm font-bold text-white uppercase font-mono">Active Constraints & Sizing Rules</h3>
           <div className="space-y-3">
-            {activeConstraints.map((c) => (
-              <div key={c.id} className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs space-y-1">
-                <span className="text-amber-400 font-bold">{c.type}: {c.currentUtilization}</span>
-                <p className="text-gray-300">{c.message}</p>
-                <p className="text-gray-500">{c.enforcementRule}</p>
+            {activeConstraints && activeConstraints.length > 0 ? (
+              activeConstraints.map((c) => (
+                <div key={c.id} className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs space-y-1">
+                  <span className="text-amber-400 font-bold">{c.type}: {c.currentUtilization}</span>
+                  <p className="text-gray-300">{c.message}</p>
+                  <p className="text-gray-500">{c.enforcementRule}</p>
+                </div>
+              ))
+            ) : (
+              <div className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-xs text-gray-500 font-mono">
+                Zero active constraints registered.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

@@ -1130,19 +1130,26 @@ export default function ScreenerPage() {
                       <button
                         type="button"
                         disabled={!gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY"}
-                        onClick={() => {
+                        onClick={async () => {
                           if (!gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY") return;
-                          const res = addPortfolioPosition({
+                          const userSharesStr = window.prompt(`Enter quantity of ${gem.symbol} shares to add:`, "10");
+                          if (!userSharesStr) return;
+                          const parsedShares = parseFloat(userSharesStr);
+                          if (isNaN(parsedShares) || parsedShares <= 0) {
+                            alert("Invalid share quantity. Must be a positive number.");
+                            return;
+                          }
+                          const res = await addPortfolioPosition({
                             symbol: gem.symbol,
                             name: gem.companyName,
-                            shares: Math.max(1, Math.round(2500 / gem.currentPrice)),
+                            shares: parsedShares,
                             entryPrice: gem.currentPrice,
                             currentPrice: gem.currentPrice,
                             targetPrice: gem.takeProfit1,
                             stopLossPrice: gem.stopLoss,
                           });
-                          setLoggedGemSymbol(`${gem.symbol}: ${res.isDuplicate ? "Already In Portfolio" : "Logged!"}`);
-                          setTimeout(() => setLoggedGemSymbol(null), 3000);
+                          setLoggedGemSymbol(`${gem.symbol}: ${res.isDuplicate ? "Already In Portfolio" : res.success ? "Logged!" : "Failed: " + res.message}`);
+                          setTimeout(() => setLoggedGemSymbol(null), 3500);
                         }}
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.96] border flex items-center gap-1 shadow ${
                           !gem.currentPrice || gem.currentPrice <= 0 || gem.executionStatus === "UNVERIFIED_ASSET" || gem.executionStatus === "INSUFFICIENT_HISTORY"

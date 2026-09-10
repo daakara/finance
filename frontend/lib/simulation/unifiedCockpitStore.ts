@@ -1,29 +1,39 @@
+"use client";
+
 /**
  * Horizon 14: Unified CQRS Read Model Store
  *
  * Implements the single source of truth for the ARX Unified Operating Cockpit.
- * Consolidates all intelligence metrics from Horizons 5–13 into an immutable,
- * unified read state.
+ * Consolidates all intelligence metrics from Horizons 5–13 into an authentic,
+ * API-backed read state.
  *
- * Enforces Invariant:
- * - INV-OI110-P: Single Source of Truth (Every route and component displays identical LHI/HHI/IAI values)
+ * Zero-Login Architecture:
+ * Profile identifiers are local record selectors, not proofs of identity.
+ * Default selector is "default". Never requires authentication.
+ *
+ * Epistemic Invariant:
+ * - INV-OI110-P: Single Source of Truth (All components and routes consume the shared state store).
+ * - Fictional snapshot (fake David, fake 84/89/61) is completely eliminated from production.
  */
 
+import { useState, useEffect } from "react";
+import { getAnonymousUserId } from "../portfolio";
+
 export interface TriadIndex {
-  lhi: number; // Life Health Index (Canonical: 84)
-  hhi: number; // Household Health Index (Canonical: 89)
-  iai: number; // Identity Alignment Index (Canonical: 61)
+  lhi: number;
+  hhi: number;
+  iai: number;
   compositeResilience: number;
   status: 'STABLE_COMPOUNDING' | 'AT_RISK' | 'DEGRADED';
   interpretation: string;
 }
 
 export interface SignalQualityState {
-  freshness: 'REALTIME' | 'DELAYED' | 'STALE';
-  confidence: number; // e.g. 91
+  freshness: 'REALTIME' | 'DELAYED' | 'STALE' | 'UNAVAILABLE';
+  confidence: number | null;
   activeSignalsCount: number;
-  highConvictionRatio: number; // e.g. 0.82
-  lastTelemetrySync: string;
+  highConvictionRatio: number | null;
+  lastTelemetrySync: string | null;
 }
 
 export interface ActionItem {
@@ -43,8 +53,10 @@ export interface OutcomeForecast {
   title: string;
   metric: string;
   currentValue: string;
-  projectedValue3Yr: string;
-  confidencePct: number;
+  projectedValue3Yr: string | null;
+  confidencePct: number | null;
+  runwayStatus?: string;
+  explanation?: string;
   primaryDriver: string;
   riskFactors: string[];
 }
@@ -62,17 +74,18 @@ export interface IdentityDriftAlert {
 export interface HouseholdHealthState {
   hhi: number;
   partnerAlignment: number;
-  sharedResourceLoad: number; // 0.0 - 1.0 (e.g. 0.68)
+  sharedResourceLoad: number;
   conflictRisk: 'LOW' | 'MEDIUM' | 'ELEVATED';
   keySyncItem: string;
   stakeholderCount: number;
 }
 
 export interface RunwayState {
-  monthsUnencumbered: number; // e.g. 14.2
-  liquidReserves: number; // e.g. 78500
-  burnRateMonthly: number; // e.g. 5500
-  runwayShieldStatus: 'PROTECTED' | 'CAUTION' | 'CRITICAL';
+  monthsUnencumbered: number | null;
+  liquidReserves: number | null;
+  burnRateMonthly: number | null;
+  runwayStatus?: 'CALCULATED' | 'ZERO_EXPENDITURE' | 'EXPENDITURE_UNRECORDED' | 'RESERVES_UNRECORDED' | 'UNAVAILABLE';
+  runwayShieldStatus: 'PROTECTED' | 'CAUTION' | 'CRITICAL' | 'UNCONFIGURED';
   capitalFloorRule: string;
 }
 
@@ -112,7 +125,7 @@ export interface SkillTrajectory {
 }
 
 export interface CalibrationState {
-  brierScore: number; // 0.0 - 1.0 (e.g. 0.18, calibrated <= 0.25)
+  brierScore: number;
   accuracyPct: number;
   overconfidenceBias: 'NONE' | 'SLIGHT' | 'ELEVATED';
   trend: 'CALIBRATED' | 'IMPROVING' | 'DEGRADED';
@@ -136,280 +149,333 @@ export interface SpecialistWorkbenchMeta {
   activeMetricsCount: number;
 }
 
+export const DEFAULT_WORKBENCHES: SpecialistWorkbenchMeta[] = [
+  {
+    id: 'wb-life-graph',
+    slug: 'life-graph',
+    name: 'Life Graph Workbench',
+    description: 'Causal dependencies, multi-domain ripple propagation, and systemic friction topology.',
+    category: 'GRAPH',
+    route: '/workbench/life-graph',
+    activeMetricsCount: 48,
+  },
+  {
+    id: 'wb-signals',
+    slug: 'signals',
+    name: 'Personal Signals Workbench',
+    description: 'High-frequency biometrics, telemetry streams, chronotype rhythms, and conviction signals.',
+    category: 'SIGNALS',
+    route: '/workbench/signals',
+    activeMetricsCount: 24,
+  },
+  {
+    id: 'wb-allocator',
+    slug: 'allocator',
+    name: '168-Hour Allocator Workbench',
+    description: 'Time, energy, and capital envelope modeling with calendar collision resolution.',
+    category: 'ALLOCATION',
+    route: '/workbench/allocator',
+    activeMetricsCount: 168,
+  },
+  {
+    id: 'wb-journal',
+    slug: 'journal',
+    name: 'Decision Journal Workbench',
+    description: 'Probabilistic prediction auditing, Brier score calibration, and post-mortem review.',
+    category: 'JOURNAL',
+    route: '/workbench/journal',
+    activeMetricsCount: 42,
+  },
+  {
+    id: 'wb-simulation',
+    slug: 'simulation',
+    name: 'Simulation & Trajectories Workbench',
+    description: 'Multi-year Monte Carlo trajectories, macroeconomic stress-testing, and future states.',
+    category: 'SIMULATION',
+    route: '/workbench/simulation',
+    activeMetricsCount: 1000,
+  },
+];
+
+export interface CockpitPortfolioSummary {
+  holdingsCount: number;
+  totalMarketValue: number | null;
+  totalCostBasis: number;
+  unrealizedPnL: number | null;
+  isComplete: boolean;
+  status: string;
+}
+
+export type UnifiedCockpitStatus = 'IDLE' | 'LOADING' | 'AVAILABLE' | 'UNAVAILABLE' | 'ERROR' | 'PERSISTED_STORE';
+
 export interface UnifiedCockpitState {
   version: string;
-  generatedAt: string;
+  generatedAt?: string;
+  status: UnifiedCockpitStatus;
+  available: boolean;
+  errorMessage: string | null;
   subjectId: string;
-  subjectName: string;
-  targetIdentityRole: string;
-  triad: TriadIndex;
-  signalQuality: SignalQualityState;
-  nextBestAction: ActionItem;
+  subjectName?: string;
+  targetIdentityRole?: string;
+  triad: TriadIndex | null;
+  portfolio: CockpitPortfolioSummary | null;
+  signalQuality: SignalQualityState | null;
+  nextBestAction: ActionItem | null;
   secondaryActions: ActionItem[];
-  primaryForecast: OutcomeForecast;
+  primaryForecast: OutcomeForecast | null;
   outcomeForecasts: OutcomeForecast[];
-  identityDrift: IdentityDriftAlert;
-  householdHealth: HouseholdHealthState;
-  runway: RunwayState;
+  identityDrift: IdentityDriftAlert | null;
+  householdHealth: HouseholdHealthState | null;
+  runway: RunwayState | null;
   activeConstraints: ConstraintAlert[];
-  recoveryIndicator: RecoveryIndicatorState;
+  recoveryIndicator: RecoveryIndicatorState | null;
   futurePaths: FuturePathway[];
   skillTrajectories: SkillTrajectory[];
-  calibrationScore: CalibrationState;
+  calibrationScore: CalibrationState | null;
   sharedResources: SharedResourceItem[];
   workbenches: SpecialistWorkbenchMeta[];
 }
 
-/**
- * Canonical immutable state snapshot for the ARX Unified Operating Cockpit.
- * Sourced deterministically from Horizons 5–13 intelligence outputs.
- */
-const CANONICAL_COCKPIT_STATE: UnifiedCockpitState = {
-  version: '14.0.0-CQRS',
-  generatedAt: '2026-09-09T14:00:00Z',
-  subjectId: 'david-trader-01',
-  subjectName: 'David',
-  targetIdentityRole: 'AI Strategy Leader & Systematic Investor',
-  triad: {
-    lhi: 84,
-    hhi: 89,
-    iai: 61,
-    compositeResilience: 81.2,
-    status: 'STABLE_COMPOUNDING',
-    interpretation: 'Life is stable (LHI 84), household is cohesive (HHI 89), and identity progression is actively developing (IAI 61).',
-  },
-  signalQuality: {
-    freshness: 'REALTIME',
-    confidence: 91,
-    activeSignalsCount: 24,
-    highConvictionRatio: 0.82,
-    lastTelemetrySync: '2 minutes ago',
-  },
-  nextBestAction: {
-    id: 'NBA-01',
-    title: 'Deep Work: AI Systems Architecture RFC',
-    domain: 'CAREER',
-    durationMinutes: 45,
-    priorityScore: 94,
-    identityContribution: 24,
-    rationale: 'Compounds declared AI Strategy Leader trajectory during morning peak chronotype window.',
-    energyRequired: 'HIGH_COGNITIVE',
-    scheduledTimeWindow: '09:30 - 10:15',
-  },
-  secondaryActions: [
-    {
-      id: 'NBA-02',
-      title: 'Zone 2 Aerobic Recovery Run',
-      domain: 'HEALTH',
-      durationMinutes: 30,
-      priorityScore: 82,
-      identityContribution: 12,
-      rationale: 'Prevents cardiovascular fatigue and maintains autonomic nervous system HRV baseline.',
-      energyRequired: 'LOW_RESTORATIVE',
-      scheduledTimeWindow: '17:00 - 17:30',
-    },
-    {
-      id: 'NBA-03',
-      title: 'Partner Weekly Schedule Alignment',
-      domain: 'HOUSEHOLD',
-      durationMinutes: 15,
-      priorityScore: 86,
-      identityContribution: 14,
-      rationale: 'Harmonizes weekend child logistics and shared vehicle capacity.',
-      energyRequired: 'MODERATE',
-      scheduledTimeWindow: '18:15 - 18:30',
-    },
-  ],
-  primaryForecast: {
-    id: 'FC-01',
-    title: '3-Year Net Liquid Wealth Compounding',
-    metric: 'Net Liquid Worth',
-    currentValue: '$840,000',
-    projectedValue3Yr: '$1,240,000',
-    confidencePct: 88,
-    primaryDriver: 'Systematic Equity Allocation + Executive Compensation Growth',
-    riskFactors: ['Severe tech equity multiple contraction (>35%)', 'Domestic burnout due to unmanaged capacity'],
-  },
-  outcomeForecasts: [
-    {
-      id: 'FC-01',
-      title: '3-Year Net Liquid Wealth Compounding',
-      metric: 'Net Liquid Worth',
-      currentValue: '$840,000',
-      projectedValue3Yr: '$1,240,000',
-      confidencePct: 88,
-      primaryDriver: 'Systematic Equity Allocation + Executive Compensation Growth',
-      riskFactors: ['Severe tech equity multiple contraction (>35%)'],
-    },
-    {
-      id: 'FC-02',
-      title: 'Executive AI Leadership Trajectory',
-      metric: 'Organizational Scope',
-      currentValue: 'Senior Manager (14 reports)',
-      projectedValue3Yr: 'VP / Head of AI Strategy (50+ reports)',
-      confidencePct: 82,
-      primaryDriver: 'Published Enterprise RFCs & Architecture Board Leadership',
-      riskFactors: ['Context switching across non-strategic operational firefights'],
-    },
-  ],
-  identityDrift: {
-    hasActiveDrift: true,
-    domain: 'Public Influence',
-    inactiveDays: 68,
-    thresholdDays: 60,
-    remedyAction: '15m Draft Industry Case Note on Autonomous Decision Engines',
-    status: 'ALERT',
-    impactExplanation: 'Zero external architecture publications in 68 days slows network compounding.',
-  },
-  householdHealth: {
-    hhi: 89,
-    partnerAlignment: 86,
-    sharedResourceLoad: 0.68,
-    conflictRisk: 'LOW',
-    keySyncItem: 'Saturday Childcare & Morning Workout Time Windows',
-    stakeholderCount: 3,
-  },
-  runway: {
-    monthsUnencumbered: 14.2,
-    liquidReserves: 78500,
-    burnRateMonthly: 5500,
-    runwayShieldStatus: 'PROTECTED',
-    capitalFloorRule: 'Mandatory 6-month ($33,000) liquid cash preservation boundary active.',
-  },
-  activeConstraints: [
-    {
-      id: 'C-01',
-      type: 'CAPACITY',
-      severity: 'WARNING',
-      message: '168-Hour Weekly Capacity: 142h committed / 26h restorative buffer.',
-      currentUtilization: '84.5% capacity allocated',
-      enforcementRule: 'Prohibits scheduling ad-hoc meetings exceeding 30 minutes without dropping equal commitment.',
-    },
-    {
-      id: 'C-02',
-      type: 'DRAWDOWN',
-      severity: 'INFO',
-      message: 'Governor Risk Clamp active on discretionary speculative accounts (-25%).',
-      currentUtilization: '$375 max risk per setup',
-      enforcementRule: 'INV-OI114-P dynamic risk scaling ensures capital preservation.',
-    },
-  ],
-  recoveryIndicator: {
-    sleepScore: 84,
-    hrvTrend: 'OPTIMAL',
-    energyCapacity: 88,
-    primeWindow: '09:00 - 12:30',
-    circadianPhase: 'Peak Cognitive Window',
-  },
-  futurePaths: [
-    {
-      id: 'PATH-01',
-      name: 'Systematic AI Strategy Pivot (Recommended)',
-      probability: 0.74,
-      expectedNetWorth3Yr: '$1,240,000',
-      identityFulfillmentPct: 92,
-      downsideBufferMonths: 14.2,
-      tradeoffs: 'Demands strict calendar boundaries; requires declining ad-hoc side projects.',
-    },
-    {
-      id: 'PATH-02',
-      name: 'Status Quo Analytics Management',
-      probability: 0.18,
-      expectedNetWorth3Yr: '$1,020,000',
-      identityFulfillmentPct: 64,
-      downsideBufferMonths: 14.2,
-      tradeoffs: 'Low friction today, but compounds career obsolescence and boredom.',
-    },
-    {
-      id: 'PATH-03',
-      name: 'Accelerated Liquid Reserve Focus',
-      probability: 0.08,
-      expectedNetWorth3Yr: '$950,000',
-      identityFulfillmentPct: 58,
-      downsideBufferMonths: 22.0,
-      tradeoffs: 'Maximizes short-term safety at the cost of long-term upside compounding.',
-    },
-  ],
-  skillTrajectories: [
-    { skill: 'AI & Systems Architecture', currentScore: 64, targetScore: 88, gapPoints: 24, momentumVelocityPct: 72 },
-    { skill: 'Strategic Technical Leadership', currentScore: 70, targetScore: 88, gapPoints: 18, momentumVelocityPct: 68 },
-    { skill: 'Systematic Capital Allocation', currentScore: 75, targetScore: 90, gapPoints: 15, momentumVelocityPct: 84 },
-    { skill: 'Public Industry Influence', currentScore: 41, targetScore: 50, gapPoints: 9, momentumVelocityPct: 38 },
-  ],
-  calibrationScore: {
-    brierScore: 0.18,
-    accuracyPct: 78.4,
-    overconfidenceBias: 'NONE',
-    trend: 'CALIBRATED',
-    sampleDecisionsAudited: 42,
-  },
-  sharedResources: [
-    { name: 'Vehicle A (Primary Family SUV)', capacityAllocatedPct: 62, primaryUsers: ['David', 'Sarah'], conflictStatus: 'CLEAR' },
-    { name: 'Home Office / Studio Acoustic Window', capacityAllocatedPct: 78, primaryUsers: ['David'], conflictStatus: 'CLEAR' },
-    { name: 'Shared Household Reserve Account', capacityAllocatedPct: 45, primaryUsers: ['David', 'Sarah'], conflictStatus: 'CLEAR' },
-  ],
-  workbenches: [
-    {
-      id: 'wb-life-graph',
-      slug: 'life-graph',
-      name: 'Life Graph Workbench',
-      description: 'Causal dependencies, multi-domain ripple propagation, and systemic friction topology.',
-      category: 'GRAPH',
-      route: '/workbench/life-graph',
-      activeMetricsCount: 48,
-    },
-    {
-      id: 'wb-signals',
-      slug: 'signals',
-      name: 'Personal Signals Workbench',
-      description: 'High-frequency biometrics, telemetry streams, chronotype rhythms, and conviction signals.',
-      category: 'SIGNALS',
-      route: '/workbench/signals',
-      activeMetricsCount: 24,
-    },
-    {
-      id: 'wb-allocator',
-      slug: 'allocator',
-      name: '168-Hour Allocator Workbench',
-      description: 'Time, energy, and capital envelope modeling with calendar collision resolution.',
-      category: 'ALLOCATION',
-      route: '/workbench/allocator',
-      activeMetricsCount: 168,
-    },
-    {
-      id: 'wb-journal',
-      slug: 'journal',
-      name: 'Decision Journal Workbench',
-      description: 'Probabilistic prediction auditing, Brier score calibration, and post-mortem review.',
-      category: 'JOURNAL',
-      route: '/workbench/journal',
-      activeMetricsCount: 42,
-    },
-    {
-      id: 'wb-simulation',
-      slug: 'simulation',
-      name: 'Simulation & Trajectories Workbench',
-      description: 'Multi-year Monte Carlo trajectories, macroeconomic stress-testing, and future states.',
-      category: 'SIMULATION',
-      route: '/workbench/simulation',
-      activeMetricsCount: 1000,
-    },
-  ],
+export const EMPTY_COCKPIT_STATE: UnifiedCockpitState = {
+  version: '14.1.0-CQRS',
+  status: 'UNAVAILABLE',
+  available: false,
+  errorMessage: null,
+  subjectId: 'default',
+  triad: null,
+  portfolio: null,
+  signalQuality: null,
+  nextBestAction: null,
+  secondaryActions: [],
+  primaryForecast: null,
+  outcomeForecasts: [],
+  identityDrift: null,
+  householdHealth: null,
+  runway: null,
+  activeConstraints: [],
+  recoveryIndicator: null,
+  futurePaths: [],
+  skillTrajectories: [],
+  calibrationScore: null,
+  sharedResources: [],
+  workbenches: DEFAULT_WORKBENCHES,
 };
 
-/**
- * Returns the immutable Unified CQRS Cockpit State.
- * All UI pages and components MUST consume ONLY this read model.
- */
-export function getUnifiedCockpitState(): UnifiedCockpitState {
-  return CANONICAL_COCKPIT_STATE;
+// Singleton reactive store state
+let globalCockpitState: UnifiedCockpitState = EMPTY_COCKPIT_STATE;
+const storeListeners = new Set<() => void>();
+let isFetching = false;
+let hasAttemptedInitialFetch = false;
+let activeRequestId = 0;
+let activeRecordSelector: string = "default";
+
+export function getActiveRecordSelector(): string {
+  return activeRecordSelector;
+}
+
+export function setActiveRecordSelector(selector: string): void {
+  activeRecordSelector = selector;
+}
+
+function notifyListeners(): void {
+  storeListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error("Store listener error:", err);
+    }
+  });
 }
 
 /**
- * React hook returning the immutable Unified CQRS Cockpit State.
+ * Fetches authoritative CQRS Cockpit Read Model from backend API.
+ * Sequence-tracked to prevent older asynchronous responses from overwriting newer context.
+ * Strictly re-checks request currency before committing data after await res.json().
+ */
+export async function fetchUnifiedCockpitState(profileId?: string, force = false): Promise<UnifiedCockpitState> {
+  if (typeof window === "undefined") return EMPTY_COCKPIT_STATE;
+
+  const resolvedSelector = (profileId && profileId.trim())
+    ? profileId.trim()
+    : activeRecordSelector || getAnonymousUserId() || "default";
+
+  const selectorChanged = resolvedSelector !== activeRecordSelector;
+  activeRecordSelector = resolvedSelector;
+
+  if (isFetching && !force && !selectorChanged) return globalCockpitState;
+
+  isFetching = true;
+  const requestId = ++activeRequestId;
+
+  // Prevent data from previous selector being presented as belonging to a newly selected record
+  if (selectorChanged || globalCockpitState.subjectId !== resolvedSelector) {
+    globalCockpitState = {
+      ...EMPTY_COCKPIT_STATE,
+      status: 'LOADING',
+      subjectId: resolvedSelector,
+      errorMessage: null,
+    };
+    notifyListeners();
+  } else if (globalCockpitState.status !== 'AVAILABLE') {
+    globalCockpitState = {
+      ...globalCockpitState,
+      status: 'LOADING',
+      errorMessage: null,
+    };
+    notifyListeners();
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const res = await fetch(`${baseUrl}/cockpit/state`, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Profile-Id": resolvedSelector,
+        "X-User-Id": resolvedSelector,
+        "Cache-Control": "no-cache",
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    // Prevent stale responses from overwriting newer context before reading body
+    if (requestId !== activeRequestId) {
+      return globalCockpitState;
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+
+      // Crucial: Re-verify request currency after awaiting res.json() before committing state
+      if (requestId !== activeRequestId) {
+        return globalCockpitState;
+      }
+
+      hasAttemptedInitialFetch = true;
+      globalCockpitState = {
+        version: data.version || '14.1.0-CQRS',
+        generatedAt: data.generatedAt,
+        status: data.status || (data.available ? 'AVAILABLE' : 'UNAVAILABLE'),
+        available: Boolean(data.available),
+        errorMessage: null,
+        subjectId: data.subjectId || resolvedSelector,
+        subjectName: data.subjectName,
+        targetIdentityRole: data.targetIdentityRole,
+        triad: data.triad || null,
+        portfolio: data.portfolio || null,
+        signalQuality: data.signalQuality || null,
+        nextBestAction: data.nextBestAction || null,
+        secondaryActions: Array.isArray(data.secondaryActions) ? data.secondaryActions : [],
+        primaryForecast: data.primaryForecast || null,
+        outcomeForecasts: Array.isArray(data.outcomeForecasts) ? data.outcomeForecasts : [],
+        identityDrift: data.identityDrift || null,
+        householdHealth: data.householdHealth || null,
+        runway: data.runway || null,
+        activeConstraints: Array.isArray(data.activeConstraints) ? data.activeConstraints : [],
+        recoveryIndicator: data.recoveryIndicator || null,
+        futurePaths: Array.isArray(data.futurePaths) ? data.futurePaths : [],
+        skillTrajectories: Array.isArray(data.skillTrajectories) ? data.skillTrajectories : [],
+        calibrationScore: data.calibrationScore || null,
+        sharedResources: Array.isArray(data.sharedResources) ? data.sharedResources : [],
+        workbenches: DEFAULT_WORKBENCHES,
+      };
+      notifyListeners();
+      return globalCockpitState;
+    } else {
+      // Re-verify request currency before committing error state
+      if (requestId !== activeRequestId) {
+        return globalCockpitState;
+      }
+
+      hasAttemptedInitialFetch = true;
+      globalCockpitState = {
+        ...globalCockpitState,
+        status: 'ERROR',
+        available: false,
+        errorMessage: `API request failed with HTTP status ${res.status}`,
+      };
+      notifyListeners();
+      return globalCockpitState;
+    }
+  } catch (err: any) {
+    if (requestId === activeRequestId) {
+      hasAttemptedInitialFetch = true;
+      globalCockpitState = {
+        ...globalCockpitState,
+        status: 'ERROR',
+        available: false,
+        errorMessage: err?.message || 'Network error fetching cockpit state',
+      };
+      notifyListeners();
+    }
+    console.warn("Could not fetch unified cockpit state from API:", err);
+  } finally {
+    if (requestId === activeRequestId) {
+      isFetching = false;
+    }
+  }
+  return globalCockpitState;
+}
+
+/**
+ * Triggers a forced reload/retry of the Unified Cockpit State.
+ * Retains the active record selector when called without arguments.
+ */
+export async function refreshUnifiedCockpit(profileId?: string): Promise<UnifiedCockpitState> {
+  const target = profileId || activeRecordSelector;
+  return fetchUnifiedCockpitState(target, true);
+}
+
+/**
+ * Invalidates current store state and requests a fresh background update.
+ * Retains the active record selector when called without arguments.
+ */
+export function invalidateCockpitState(profileId?: string): void {
+  hasAttemptedInitialFetch = false;
+  const target = profileId || activeRecordSelector;
+  fetchUnifiedCockpitState(target, true).catch(() => {});
+}
+
+// Auto-wire confirmed mutations (portfolio additions/edits/deletions) to refresh cockpit read state
+if (typeof window !== "undefined") {
+  window.addEventListener("finance:portfolio-updated", () => {
+    refreshUnifiedCockpit().catch(() => {});
+  });
+}
+
+/**
+ * Synchronously returns the current Unified CQRS Cockpit State.
+ * Automatically triggers background fetch if running in browser and uninitialized.
+ */
+export function getUnifiedCockpitState(): UnifiedCockpitState {
+  if (typeof window !== "undefined" && !hasAttemptedInitialFetch && !isFetching) {
+    fetchUnifiedCockpitState().catch(() => {});
+  }
+  return globalCockpitState;
+}
+
+/**
+ * React hook returning the reactive Unified CQRS Cockpit State.
+ * Automatically triggers background fetch and subscribes to updates.
  */
 export function useUnifiedCockpit(): UnifiedCockpitState {
-  return CANONICAL_COCKPIT_STATE;
+  const [state, setState] = useState<UnifiedCockpitState>(globalCockpitState);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setState(globalCockpitState);
+    };
+
+    storeListeners.add(handleUpdate);
+    if (!hasAttemptedInitialFetch && !isFetching) {
+      fetchUnifiedCockpitState().catch(() => {});
+    }
+
+    return () => {
+      storeListeners.delete(handleUpdate);
+    };
+  }, []);
+
+  return state;
 }
 
 export interface InvariantVerificationResult {
@@ -421,25 +487,34 @@ export interface InvariantVerificationResult {
 
 /**
  * INV-OI110-P: Single Source of Truth
- * Asserts that every view/route displays identical Triad values (LHI 84, HHI 89, IAI 61).
+ * Asserts cross-component consistency: all views must consume and display identical metrics.
  */
 export function verifyUnifiedSourceOfTruth(
   states: UnifiedCockpitState[]
 ): InvariantVerificationResult {
   const violations: string[] = [];
 
+  if (states.length === 0) {
+    return {
+      compliant: true,
+      invariantId: 'INV-OI110-P',
+      violations: [],
+    };
+  }
+
+  const first = states[0];
   states.forEach((s, idx) => {
-    if (s.triad.lhi !== 84) {
-      violations.push(`INV-OI110-P VIOLATION: State #${idx} has non-canonical LHI ${s.triad.lhi} (expected 84).`);
+    if (s.triad?.lhi !== first.triad?.lhi) {
+      violations.push(`INV-OI110-P VIOLATION: State #${idx} has desynced LHI (${s.triad?.lhi} vs ${first.triad?.lhi}).`);
     }
-    if (s.triad.hhi !== 89) {
-      violations.push(`INV-OI110-P VIOLATION: State #${idx} has non-canonical HHI ${s.triad.hhi} (expected 89).`);
+    if (s.triad?.hhi !== first.triad?.hhi) {
+      violations.push(`INV-OI110-P VIOLATION: State #${idx} has desynced HHI (${s.triad?.hhi} vs ${first.triad?.hhi}).`);
     }
-    if (s.triad.iai !== 61) {
-      violations.push(`INV-OI110-P VIOLATION: State #${idx} has non-canonical IAI ${s.triad.iai} (expected 61).`);
+    if (s.triad?.iai !== first.triad?.iai) {
+      violations.push(`INV-OI110-P VIOLATION: State #${idx} has desynced IAI (${s.triad?.iai} vs ${first.triad?.iai}).`);
     }
-    if (s.nextBestAction.id !== 'NBA-01') {
-      violations.push(`INV-OI110-P VIOLATION: State #${idx} has desynced Primary Action (expected NBA-01).`);
+    if (s.nextBestAction?.id !== first.nextBestAction?.id) {
+      violations.push(`INV-OI110-P VIOLATION: State #${idx} has desynced Primary Action.`);
     }
     if (s.secondaryActions.length > 2) {
       violations.push(`INV-OI110-P VIOLATION: State #${idx} exceeds secondary action limit (max 2).`);
@@ -452,7 +527,8 @@ export function verifyUnifiedSourceOfTruth(
     violations,
     metadata: {
       instancesAudited: states.length,
-      canonicalTriad: { lhi: 84, hhi: 89, iai: 61 },
+      status: first.status,
+      available: first.available,
     },
   };
 }

@@ -64,9 +64,41 @@ export default function CockpitShell({ children, activeHub }: CockpitShellProps)
       </nav>
 
       {/* Cockpit Canvas */}
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 pb-20 lg:pb-8 space-y-8">
         {children}
       </div>
+
+      {/* Mobile Navigation Dock */}
+      <nav
+        data-testid="mobile-nav-dock"
+        aria-label="Mobile Cockpit Navigation Dock"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#070b12]/95 backdrop-blur-md border-t border-slate-800 px-2 py-1 flex items-center justify-around"
+      >
+        <Link
+          href="/radar"
+          className="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] text-[10px] font-mono text-cyan-400 hover:text-cyan-200"
+        >
+          <span className="text-sm">⚡</span>
+          <span>Terminal</span>
+        </Link>
+        {hubs.map((h) => {
+          const isActive = activeHub === h.id || pathname === h.href;
+          return (
+            <Link
+              key={h.id}
+              href={h.href}
+              className={`flex flex-col items-center justify-center min-w-[48px] min-h-[44px] text-[10px] font-mono transition-colors ${
+                isActive
+                  ? 'text-purple-400 font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>{h.id === 'overview' ? '📊' : h.id === 'today' ? '🎯' : h.id === 'future' ? '🔮' : h.id === 'progress' ? '📈' : '👥'}</span>
+              <span>{h.label.split(' ')[0]}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

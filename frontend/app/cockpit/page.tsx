@@ -50,15 +50,15 @@ export default function GovernorPortalPage() {
           <div className="flex items-center space-x-3 bg-gray-900/90 border border-gray-800 rounded-xl p-3 shadow-inner shrink-0">
             <div className="text-center px-3 border-r border-gray-800">
               <span className="text-[10px] uppercase font-mono text-gray-400 block">LHI</span>
-              <span className="text-xl font-mono font-bold text-emerald-400">{triad.lhi}</span>
+              <span className="text-xl font-mono font-bold text-emerald-400">{triad?.lhi ?? "--"}</span>
             </div>
             <div className="text-center px-3 border-r border-gray-800">
               <span className="text-[10px] uppercase font-mono text-gray-400 block">HHI</span>
-              <span className="text-xl font-mono font-bold text-blue-400">{triad.hhi}</span>
+              <span className="text-xl font-mono font-bold text-blue-400">{triad?.hhi ?? "--"}</span>
             </div>
             <div className="text-center px-3">
               <span className="text-[10px] uppercase font-mono text-gray-400 block">IAI</span>
-              <span className="text-xl font-mono font-bold text-purple-400">{triad.iai}</span>
+              <span className="text-xl font-mono font-bold text-purple-400">{triad?.iai ?? "--"}</span>
             </div>
           </div>
         </header>
@@ -82,7 +82,7 @@ export default function GovernorPortalPage() {
                 <p className="text-xs text-gray-400 mt-1">Next Best Action prioritization, circadian execution windows, and active constraints.</p>
               </div>
               <div className="pt-2 border-t border-gray-800/80 text-[11px] font-mono text-gray-400">
-                Primary Action: <strong className="text-white">{state.nextBestAction.title}</strong>
+                Primary Action: <strong className="text-white">{state.nextBestAction?.title ?? "No Action Queued"}</strong>
               </div>
             </Link>
 
@@ -99,7 +99,7 @@ export default function GovernorPortalPage() {
                 <p className="text-xs text-gray-400 mt-1">Runway shield, 3-year trajectories, and downside capital preservation floors.</p>
               </div>
               <div className="pt-2 border-t border-gray-800/80 text-[11px] font-mono text-gray-400">
-                Runway: <strong className="text-white">{runway.monthsUnencumbered} Mo</strong> ({runway.runwayShieldStatus})
+                Runway: <strong className="text-white">{runway?.monthsUnencumbered ?? "--"} Mo</strong> ({runway?.runwayShieldStatus ?? "Unconfigured"})
               </div>
             </Link>
 
@@ -116,7 +116,7 @@ export default function GovernorPortalPage() {
                 <p className="text-xs text-gray-400 mt-1">Identity twin evolution, behavioral drift alerts, and Brier judgment scores.</p>
               </div>
               <div className="pt-2 border-t border-gray-800/80 text-[11px] font-mono text-gray-400">
-                Brier Score: <strong className="text-white">{state.calibrationScore.brierScore}</strong> (Calibrated)
+                Brier Score: <strong className="text-white">{state.calibrationScore?.brierScore ?? "--"}</strong>
               </div>
             </Link>
 
@@ -130,10 +130,10 @@ export default function GovernorPortalPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white group-hover:text-blue-300">Household &amp; Relational</h3>
-                <p className="text-xs text-gray-400 mt-1">Household Health Index (HHI 89), shared resources, and relational conflict radar.</p>
+                <p className="text-xs text-gray-400 mt-1">Household Health Index ({householdHealth?.hhi ?? "--"}), shared resources, and relational conflict radar.</p>
               </div>
               <div className="pt-2 border-t border-gray-800/80 text-[11px] font-mono text-gray-400">
-                Alignment: <strong className="text-white">{householdHealth.partnerAlignment}%</strong> (Zero Collisions)
+                Alignment: <strong className="text-white">{householdHealth?.partnerAlignment ?? "--"}%</strong>
               </div>
             </Link>
           </div>

@@ -236,22 +236,30 @@ export default function WeeklyConfluenceSpotlight({
     return scored.slice(0, 3);
   }, [liveQuotes, isDayTrader]);
 
-  const handleQuickLog = (e: React.MouseEvent, cand: ConfluenceCandidate) => {
+  const handleQuickLog = async (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const res = addPortfolioPosition({
+    const userSharesStr = window.prompt(`Enter quantity of ${cand.entry.symbol} shares to add:`, "10");
+    if (!userSharesStr) return;
+    const parsedShares = parseFloat(userSharesStr);
+    if (isNaN(parsedShares) || parsedShares <= 0) {
+      alert("Invalid share quantity. Must be a positive number.");
+      return;
+    }
+
+    const res = await addPortfolioPosition({
       symbol: cand.entry.symbol,
       name: cand.entry.name,
-      shares: Math.max(1, Math.round(2500 / cand.livePrice)),
+      shares: parsedShares,
       entryPrice: cand.livePrice,
       currentPrice: cand.livePrice,
       targetPrice: cand.target1Price,
       stopLossPrice: cand.stopPrice,
     });
 
-    setLoggedSymbol(`${cand.entry.symbol}: ${res.isDuplicate ? "Already in Portfolio" : "Logged!"}`);
-    setTimeout(() => setLoggedSymbol(null), 3000);
+    setLoggedSymbol(`${cand.entry.symbol}: ${res.isDuplicate ? "Already in Portfolio" : res.success ? "Logged!" : "Failed: " + res.message}`);
+    setTimeout(() => setLoggedSymbol(null), 3500);
   };
 
   const handleCardClick = (e: React.MouseEvent, symbol: string) => {

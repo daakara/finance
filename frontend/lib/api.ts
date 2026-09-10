@@ -1298,23 +1298,90 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
 }
 
 export async function fetchTacticalSetups(tickers?: string[], userRole: string = "LONG_TERM"): Promise<TradeSetupSpec[]> {
+  const baseUrl = getApiBaseUrl();
+  const tickerParam = tickers && tickers.length > 0 ? `&tickers=${encodeURIComponent(tickers.join(","))}` : "";
+  const res = await fetch(`${baseUrl}/analytics/setups?user_role=${encodeURIComponent(userRole)}${tickerParam}`, {
+    headers: ARX_API_HEADERS,
+    signal: AbortSignal.timeout(6000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Failed to fetch tactical setups (${res.status}): ${errText || res.statusText}`);
+  }
+
+  const data = await res.json();
+  if (data && Array.isArray(data.setups)) {
+    return data.setups;
+  }
+  throw new Error("Malformed tactical setups response from API");
+}
+
+export async function fetchTacticalSetupForTicker(ticker: string, userRole: string = "LONG_TERM"): Promise<TradeSetupSpec | null> {
+  const upper = ticker.trim().toUpperCase();
+  if (!upper) return null;
+  const baseUrl = getApiBaseUrl();
+
+  const res = await fetch(`${baseUrl}/analytics/setups/${encodeURIComponent(upper)}?user_role=${encodeURIComponent(userRole)}`, {
+    headers: ARX_API_HEADERS,
+    signal: AbortSignal.timeout(6000),
+  });
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  const rawText = await res.text().catch(() => "");
+  let data: any = null;
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      // Body is plain text or non-JSON
+    }
+  }
+
+  if (res.ok) {
+    if (data && typeof data === "object" && data.ticker) {
+      return data as TradeSetupSpec;
+    }
+    throw new Error(`Malformed tactical setup response for ${upper}: missing ticker field`);
+  }
+
+  const errorDetail = (data && data.detail) ? data.detail : (rawText || res.statusText);
+  throw new Error(`Failed to fetch tactical setup for ${upper} (${res.status}): ${errorDetail}`);
+}
+
+export async function fetchMacroRibbon(): Promise<any> {
   try {
     const baseUrl = getApiBaseUrl();
-    const tickerParam = tickers && tickers.length > 0 ? `&tickers=${encodeURIComponent(tickers.join(","))}` : "";
-    const res = await fetch(`${baseUrl}/analytics/setups?user_role=${encodeURIComponent(userRole)}${tickerParam}`, {
+    const res = await fetch(`${baseUrl}/macro/ribbon`, {
       headers: ARX_API_HEADERS,
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(4000),
     });
     if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.setups)) {
-        return data.setups;
-      }
+      return await res.json();
     }
   } catch (err) {
-    console.warn("Tactical setups API fetch failed:", err);
+    console.warn("Macro ribbon API fetch failed:", err);
   }
-  return [];
+  return null;
+}
+
+export async function fetchUnifiedCockpitStateFromApi(): Promise<any> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/cockpit/state`, {
+      headers: ARX_API_HEADERS,
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn("Unified cockpit state API fetch failed:", err);
+  }
+  return null;
 }
 
 export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
