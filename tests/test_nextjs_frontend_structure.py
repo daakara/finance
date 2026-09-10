@@ -53,18 +53,20 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("setSelectedSymbol", content)
 
     def test_cross_page_links_match_destination_parameters(self):
-        """Verify all Link href destinations in screener and compare pages pass valid symbol query format."""
-        for subpage in ["screener", "compare"]:
+        """Verify all Link href destinations in radar and compare pages pass valid symbol query format.
+        Note: Screener was merged into Radar during core refocus.
+        """
+        for subpage in ["radar", "compare"]:
             page_path = os.path.join("frontend", "app", subpage, "page.tsx")
             self.assertTrue(os.path.exists(page_path))
 
             with open(page_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            # Must contain links to root terminal with symbol query
-            link_pattern = re.compile(r'href=\{`/\?symbol=\${[a-zA-Z0-9_\.]+\}(?:&[^`]+)?`\}')
+            # Must contain links to root terminal with symbol query or setups with ticker query
+            link_pattern = re.compile(r'href=\{`/(?:\?symbol=|setups\?ticker=)\$\{[a-zA-Z0-9_\.]+\}(?:&[^`]+)?`\}')
             matches = link_pattern.findall(content)
-            self.assertTrue(len(matches) > 0, f"Page {subpage} must contain dynamic deep links in format /?symbol=${{...}}")
+            self.assertTrue(len(matches) > 0, f"Page {subpage} must contain dynamic deep links in format /?symbol=${{...}} or /setups?ticker=${{...}}")
 
     def test_dual_horizon_lens_implementation_on_all_views(self):
         """Verify that all core interactive views implement the Dual-Horizon role toggle."""
@@ -154,7 +156,10 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("https://www.arxterminal.com/", sitemap_content)
 
     def test_brand_tone_and_progressive_clarity_vernacular_engine(self):
-        """Regression Quality Gate: Ensure Brand Tone, Vernacular Switcher, Bottom Line summaries, and Jargon Buster exist."""
+        """Regression Quality Gate: Ensure Brand Tone, Bottom Line summaries, and Jargon Buster exist.
+        Note: Vernacular switcher was removed from Navbar during core refocus but the vernacular
+        event system still operates in individual components (ConvictionCard, RiskMetrics, etc.).
+        """
         navbar_path = os.path.join("frontend", "components", "Navbar.tsx")
         conviction_path = os.path.join("frontend", "components", "CompositeConvictionCard.tsx")
         sizer_path = os.path.join("frontend", "components", "DayTraderPositionSizer.tsx")
@@ -166,10 +171,6 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             nav_content = f.read()
         self.assertIn("ARX TERMINAL", nav_content)
         self.assertIn("No-BS Market Intel", nav_content)
-        self.assertIn("ARX_VERNACULAR_MODE", nav_content)
-        self.assertIn("finance:vernacular-change", nav_content)
-        self.assertIn("Plain English", nav_content)
-        self.assertIn("Pro Quant", nav_content)
 
         with open(conviction_path, "r", encoding="utf-8") as f:
             conv_content = f.read()
@@ -213,9 +214,8 @@ class TestNextJsFrontendStructure(unittest.TestCase):
 
         with open(screener_path, "r", encoding="utf-8") as f:
             screener_content = f.read()
-        self.assertIn("finance:vernacular-change", screener_content)
-        self.assertIn("plainLongTermTabs", screener_content)
-        self.assertIn("All Quality Stocks", screener_content)
+        self.assertIn("router.replace", screener_content)
+        self.assertIn("/radar", screener_content)
 
     def test_security_hardening_contracts(self):
         """Regression Quality Gate: Ensure API key auth, error masking, CSP, and symbol validation are enforced."""

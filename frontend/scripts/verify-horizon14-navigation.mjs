@@ -37,16 +37,15 @@ if (fs.existsSync(shellPath)) {
 
   assert(shellSrc.includes('import Navbar from "../Navbar"'), 'TerminalShell imports shared Navbar');
   assert(shellSrc.includes('export type TerminalHub ='), 'Defines TerminalHub type alias');
-  assert(shellSrc.includes('export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance" | "research"'), 'TerminalHubId union covers all 6 flagship hubs');
+  assert(shellSrc.includes('export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance"'), 'TerminalHubId union covers all 5 flagship hubs');
   assert(shellSrc.includes('TERMINAL_HUBS: TerminalHubMeta[]'), 'Defines metadata record for all flagship hubs');
   
-  // Single question focus for all 6 hubs
+  // Single question focus for all 5 hubs
   assert(shellSrc.includes('"What deserves attention today?"'), 'Radar answers: "What deserves attention today?"');
   assert(shellSrc.includes('"What is actionable right now?"'), 'Setups answers: "What is actionable right now?"');
   assert(shellSrc.includes('"What risk am I carrying?"'), 'Portfolio answers: "What risk am I carrying?"');
   assert(shellSrc.includes('"Did I follow my rules?"'), 'Journal answers: "Did I follow my rules?"');
   assert(shellSrc.includes('"Is ARX actually improving my results?"'), 'Performance answers: "Is ARX actually improving my results?"');
-  assert(shellSrc.includes('"Why does this opportunity exist?"'), 'Research answers: "Why does this opportunity exist?"');
 
   // UI Invariants inside the Shell
   assert(shellSrc.includes('INV-OI115-P'), 'References INV-OI115-P Persistent Terminal Navigation invariant');
@@ -54,8 +53,6 @@ if (fs.existsSync(shellPath)) {
   assert(shellSrc.includes('Link') && shellSrc.includes('hub.route'), 'Sub-header renders navigational links for fast switching');
   assert(shellSrc.includes('activeHub === hub.id'), 'Sub-header provides visual active tab distinction');
   assert(shellSrc.includes('REGIME:'), 'Persistent Market Regime status badge displayed');
-  assert(shellSrc.includes('🛡️ Governor'), 'Persistent Behavioral Governor status link to /cockpit');
-  assert(shellSrc.includes('⌘K') || shellSrc.includes('Cmd+K'), 'Command Palette shortcut indicator present');
   assert(shellSrc.includes('{children}'), 'Shell wraps page content children cleanly without re-mounting root shell');
 
   // Mobile navigation dock inside TerminalShell
@@ -83,11 +80,8 @@ if (fs.existsSync(navbarPath)) {
   assert(navSrc.includes('href="/portfolio"'), 'Navbar includes /portfolio link');
   assert(navSrc.includes('href="/journal"'), 'Navbar includes /journal link');
   assert(navSrc.includes('href="/performance"'), 'Navbar includes /performance link');
-  assert(navSrc.includes('href="/research"'), 'Navbar includes /research link');
-
-  // Governor integration
-  assert(navSrc.includes('href="/cockpit"'), 'Navbar links directly to Governor Cockpit (/cockpit)');
-  assert(navSrc.includes('Governor'), 'Navbar renders Behavioral Governor badge');
+  assert(!navSrc.includes('href="/research"'), 'Navbar excludes redundant /research link');
+  assert(!navSrc.includes('href="/cockpit"'), 'Navbar excludes standalone /cockpit link');
 
   // Command palette button
   assert(navSrc.includes('isCommandPaletteOpen'), 'Navbar manages Command Palette open/close state');
@@ -104,7 +98,6 @@ const hubs = [
   { name: 'Portfolio', file: 'portfolio/page.tsx', hubKey: 'portfolio' },
   { name: 'Journal', file: 'journal/page.tsx', hubKey: 'journal' },
   { name: 'Performance', file: 'performance/page.tsx', hubKey: 'performance' },
-  { name: 'Research', file: 'research/page.tsx', hubKey: 'research' },
 ];
 
 for (const hub of hubs) {
@@ -123,6 +116,14 @@ for (const hub of hubs) {
   }
 }
 
+// Research page absorbed into Terminal home page
+const researchPagePath = path.join(projectRoot, 'frontend', 'app', 'research', 'page.tsx');
+assert(fs.existsSync(researchPagePath), 'Research page exists');
+if (fs.existsSync(researchPagePath)) {
+  const researchSrc = fs.readFileSync(researchPagePath, 'utf8');
+  assert(researchSrc.includes('router.replace'), 'Research route cleanly redirects to Terminal');
+}
+
 // -------------------------------------------------------------
 // SECTION 4: Governor Cockpit Portal & Workbench Routing
 // -------------------------------------------------------------
@@ -132,18 +133,7 @@ assert(fs.existsSync(cockpitPath), 'Cockpit portal page exists (/cockpit)');
 
 if (fs.existsSync(cockpitPath)) {
   const cockpitSrc = fs.readFileSync(cockpitPath, 'utf8');
-  assert(cockpitSrc.includes('useUnifiedCockpit') || cockpitSrc.includes('getUnifiedCockpitState'), 'Cockpit consumes centralized unifiedCockpitStore');
-  assert(cockpitSrc.includes('href="/radar"'), 'Cockpit provides Return to Terminal link (/radar)');
-  
-  // 4 Core Human Hubs
-  assert(cockpitSrc.includes('href="/today"'), 'Cockpit links to Core Hub: Today');
-  assert(cockpitSrc.includes('href="/future"'), 'Cockpit links to Core Hub: Future');
-  assert(cockpitSrc.includes('href="/progress"'), 'Cockpit links to Core Hub: Progress');
-  assert(cockpitSrc.includes('href="/household"'), 'Cockpit links to Core Hub: Household');
-
-  // Specialist Workbenches mapped from store
-  assert(cockpitSrc.includes('workbenches.map'), 'Cockpit iterates through specialist workbenches dynamically');
-  assert(cockpitSrc.includes('wb.route'), 'Cockpit maps workbench routes from state store');
+  assert(cockpitSrc.includes('router.replace'), 'Cockpit cleanly redirects to Terminal');
 }
 
 // -------------------------------------------------------------

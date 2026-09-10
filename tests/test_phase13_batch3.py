@@ -49,9 +49,9 @@ class TestPhase13Batch3Remediations(unittest.TestCase):
         self.assertIn('e.key === "Tab"', self.sizer_modal_content)
 
     def test_p2_4_screener_card_header_context_preservation(self):
-        """FINDING-13-02: Screener card header link must preserve fromGoal and fromCount."""
-        self.assertIn("fromGoal=${selectedFilter}", self.screener_content)
-        self.assertIn("fromCount=${displayGems.length}", self.screener_content)
+        """FINDING-13-02: Screener route redirected to /radar during core refocus."""
+        self.assertIn("router.replace", self.screener_content)
+        self.assertIn("/radar", self.screener_content)
 
 
 if __name__ == "__main__":

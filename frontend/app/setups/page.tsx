@@ -474,10 +474,10 @@ function SetupsContent() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-amber-800/40">
                   <Link
-                    href={`/research?ticker=${effectiveSetup.ticker}`}
+                    href={`/?symbol=${effectiveSetup.ticker}`}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold font-mono border border-slate-700"
                   >
-                    Open Research &amp; Fundamentals (/research?ticker={effectiveSetup.ticker}) →
+                    Open in Terminal (/?symbol={effectiveSetup.ticker}) →
                   </Link>
                   <Link
                     href="/radar"

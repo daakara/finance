@@ -5,22 +5,20 @@
  *
  * Enforces INV-OI115-P: Persistent Terminal Navigation.
  * Encapsulates the global Navbar, persistent sub-header, live market regime,
- * behavioral governor link (/cockpit), and persistent mobile dock across all 6 flagship hubs:
+ * and persistent mobile dock across all 5 flagship hubs:
  * - /radar: "What deserves attention today?"
  * - /setups: "What is actionable right now?"
  * - /portfolio: "What risk am I carrying?"
  * - /journal: "Did I follow my rules?"
  * - /performance: "Is ARX actually improving my results?"
- * - /research: "Why does this opportunity exist?"
  */
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "../Navbar";
 import { fetchMacroRibbon } from "../../lib/api";
-import { getTraderContextFromUnifiedCockpit } from "../../lib/simulation/governorSizingEngine";
 
-export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance" | "research";
+export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance";
 export type TerminalHub = TerminalHubId;
 
 export interface TerminalHubMeta {
@@ -37,7 +35,6 @@ export const TERMINAL_HUBS: TerminalHubMeta[] = [
   { id: "portfolio", route: "/portfolio", name: "Portfolio", question: "What risk am I carrying?", badge: "RISK HEAT" },
   { id: "journal", route: "/journal", name: "Journal", question: "Did I follow my rules?", badge: "DISCIPLINE" },
   { id: "performance", route: "/performance", name: "Performance", question: "Is ARX actually improving my results?", badge: "PROOF OF EDGE" },
-  { id: "research", route: "/research", name: "Research", question: "Why does this opportunity exist?", badge: "CATALYSTS" },
 ];
 
 interface TerminalShellProps {
@@ -52,7 +49,6 @@ export default function TerminalShell({
   const currentHub = TERMINAL_HUBS.find((h) => h.id === activeHub) || TERMINAL_HUBS[0];
 
   const [dynamicRegime, setDynamicRegime] = useState<string | null>(null);
-  const [governorClampText, setGovernorClampText] = useState<string>("-25% Clamp");
 
   useEffect(() => {
     fetchMacroRibbon().then((data) => {
@@ -68,19 +64,6 @@ export default function TerminalShell({
     }).catch(() => {
       setDynamicRegime("Regime Unavailable");
     });
-
-    try {
-      const traderContext = getTraderContextFromUnifiedCockpit();
-      if (!traderContext.isAvailable) {
-        setGovernorClampText("Unconfigured");
-      } else if (traderContext.consecutiveLossStreak !== null && traderContext.consecutiveLossStreak >= 2) {
-        setGovernorClampText("-25% Clamp");
-      } else if (traderContext.liquidRunwayMonths !== null && traderContext.liquidRunwayMonths < 6) {
-        setGovernorClampText("-25% Runway Clamp");
-      } else {
-        setGovernorClampText("Nominal");
-      }
-    } catch {}
   }, []);
 
   return (
@@ -106,17 +89,6 @@ export default function TerminalShell({
             <span className="text-xs text-slate-300 font-medium hidden sm:inline italic">
               &quot;{currentHub.question}&quot;
             </span>
-            <span className="text-slate-700 hidden xl:inline">•</span>
-            <Link
-              href="/cockpit"
-              className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-800/60 hover:bg-emerald-900/40 transition-colors"
-              title="Live Behavioral Governor status and active sizing constraints"
-            >
-              <span>🛡️ Governor: Active</span>
-              <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded ml-0.5">
-                {governorClampText}
-              </span>
-            </Link>
           </div>
 
           {/* Direct Flagship Navigation Switching */}
@@ -146,18 +118,6 @@ export default function TerminalShell({
               } animate-pulse`}></span>
               <span>REGIME: {dynamicRegime || "Market Discovery..."}</span>
             </div>
-            <span className="text-slate-700">|</span>
-            <Link
-              href="/cockpit"
-              className="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center space-x-1.5 font-semibold"
-              title="View underlying Behavioral Governor intelligence"
-            >
-              <span>🛡️ Governor: Active</span>
-              <span className="text-[10px] text-amber-300 font-bold bg-amber-950/60 border border-amber-800/60 px-1 rounded">
-                {governorClampText}
-              </span>
-              <span className="text-[10px] text-slate-500 hover:text-slate-400">→</span>
-            </Link>
             <span className="text-slate-700 hidden sm:inline">|</span>
             <span className="hidden sm:inline text-slate-500 text-[11px]">
               <kbd className="px-1.5 py-0.5 bg-[#162030] border border-[#23334d] rounded text-cyan-400">⌘K</kbd> Palette
@@ -232,17 +192,6 @@ export default function TerminalShell({
         >
           <span className="text-base mb-0.5 leading-none">📈</span>
           <span className="truncate">Alpha</span>
-        </Link>
-        <Link
-          href="/research"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'research'
-              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">🔬</span>
-          <span className="truncate">Research</span>
         </Link>
       </aside>
     </div>

@@ -183,7 +183,7 @@ export function verifyPersistentTerminalNavigation(
   activeHubs: string[]
 ): InvariantResult {
   const violations: string[] = [];
-  const requiredHubs = ['radar', 'setups', 'portfolio', 'journal', 'performance', 'research'];
+  const requiredHubs = ['radar', 'setups', 'portfolio', 'journal', 'performance'];
 
   for (const hub of requiredHubs) {
     if (!activeHubs.includes(hub)) {
@@ -218,7 +218,7 @@ export function auditHorizon14Master(payload: {
   const proof = verifyCounterfactualProofDeterminism(payload.attributionRecords);
   const agency = verifyHumanAgencySizingBounds(payload.sizingDecisions);
   const navigation = verifyPersistentTerminalNavigation(
-    payload.activeHubs || ['radar', 'setups', 'portfolio', 'journal', 'performance', 'research']
+    payload.activeHubs || ['radar', 'setups', 'portfolio', 'journal', 'performance']
   );
 
   const totalViolations =

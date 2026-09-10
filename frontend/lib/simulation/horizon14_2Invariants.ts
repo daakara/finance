@@ -185,7 +185,7 @@ export function verifyNavigationContinuity(
 ): InvariantResult {
   const violations: string[] = [];
 
-  const requiredTerminalRoutes = ['/radar', '/setups', '/portfolio', '/journal', '/performance', '/research'];
+  const requiredTerminalRoutes = ['/radar', '/setups', '/portfolio', '/journal', '/performance'];
   const requiredCockpitRoutes = ['/cockpit', '/cockpit/today', '/cockpit/future', '/cockpit/progress', '/cockpit/household'];
 
   for (const route of routes) {

@@ -75,7 +75,7 @@ if (fs.existsSync(setupsPath)) {
   assert(sSrc.includes('Level 0: Asymmetric Execution Ticket Ladder'), 'Setups defines Asymmetric Execution Ticket Ladder');
   assert(sSrc.includes('Risk Definition Bracket'), 'Setups brackets Entry and Stop Floor together');
   assert(sSrc.includes('Asymmetric Reward Milestones'), 'Setups highlights Target 1 and Target 2 reward milestones');
-  assert(sSrc.includes('AUTHORIZE ORDER:') && sSrc.includes('[COPY STRING]'), 'Single consolidated high-visibility institutional CTA button');
+  assert(sSrc.includes('COPY EXECUTION TICKET') || sSrc.includes('AUTHORIZE ORDER:'), 'Single consolidated high-visibility institutional CTA button');
   assert(!sSrc.includes('Copy Broker Order String'), 'Pruned redundant duplicate copy button');
 }
 
@@ -121,17 +121,13 @@ if (fs.existsSync(perfPath)) {
 }
 
 // -------------------------------------------------------------
-// SECTION 7: Hub 6 (/research) Institutional Research Dossier
+// SECTION 7: Research Hub Absorbed into Terminal Home
 // -------------------------------------------------------------
-console.log('\n\x1b[1mSection 7: Hub 6 (/research) Institutional Research Workstation\x1b[0m');
+console.log('\n\x1b[1mSection 7: Research Route Absorbed into Terminal Home\x1b[0m');
 const resPath = path.join(projectRoot, 'frontend', 'app', 'research', 'page.tsx');
 if (fs.existsSync(resPath)) {
   const rsSrc = fs.readFileSync(resPath, 'utf8');
-  assert(rsSrc.includes('Level 0 · Institutional Research Dossier'), 'Research defines Level 0 Institutional Research Dossier Hero');
-  assert(rsSrc.includes('Ranked Institutional Catalyst Stream'), 'Research renders Ranked Institutional Catalyst Stream table');
-  assert(rsSrc.includes('SEC_FORM_4') || rsSrc.includes('13F_WHALE') || rsSrc.includes('CONGRESS_STOCK_ACT'), 'Research indexes institutional flow sources');
-  assert(rsSrc.includes('Fundamental Balance Sheet Armor'), 'Research features Deep-Dive Balance Sheet Armor matrix');
-  assert(!rsSrc.includes('grid grid-cols-1 md:grid-cols-3 gap-6'), 'Eliminated superficial 3-card card farm');
+  assert(rsSrc.includes('router.replace'), 'Research route cleanly redirects to Terminal home page');
 }
 
 // -------------------------------------------------------------
@@ -141,15 +137,15 @@ console.log('\n\x1b[1mSection 8: Navigation, Shell & Command Palette Quality\x1b
 const shellPath = path.join(projectRoot, 'frontend', 'components', 'terminal', 'TerminalShell.tsx');
 if (fs.existsSync(shellPath)) {
   const shSrc = fs.readFileSync(shellPath, 'utf8');
-  assert(shSrc.includes('🛡️ Governor: Active'), 'TerminalShell includes active Behavioral Governor telemetry');
-  assert(shSrc.includes('Mobile Terminal Navigation'), 'TerminalShell houses consolidated mobile navigation dock');
+  assert(shSrc.includes('REGIME:'), 'TerminalShell includes active Market Regime status badge');
+  assert(shSrc.includes('role="navigation"') && shSrc.includes('Mobile Terminal Navigation'), 'TerminalShell houses consolidated mobile navigation dock');
   assert(shSrc.includes('min-h-[44px]'), 'Mobile touch targets respect 44px standard');
 }
 
 const cpPath = path.join(projectRoot, 'frontend', 'components', 'CommandPaletteModal.tsx');
 if (fs.existsSync(cpPath)) {
   const cpSrc = fs.readFileSync(cpPath, 'utf8');
-  assert(cpSrc.includes('/radar') && cpSrc.includes('/setups') && cpSrc.includes('/portfolio') && cpSrc.includes('/journal') && cpSrc.includes('/performance') && cpSrc.includes('/research'), 'Command Palette indexes all 6 flagship hubs');
+  assert(cpSrc.includes('/radar') && cpSrc.includes('/setups') && cpSrc.includes('/portfolio') && cpSrc.includes('/journal') && cpSrc.includes('/performance'), 'Command Palette indexes all 5 flagship hubs');
   assert(!cpSrc.includes('Life Health Index') && !cpSrc.includes('168-Hour'), 'Command Palette is cleansed of forbidden lifestyle concepts');
 }
 

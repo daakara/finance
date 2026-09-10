@@ -57,7 +57,6 @@ const terminalHubs = [
   { id: 'portfolio', file: 'portfolio/page.tsx' },
   { id: 'journal', file: 'journal/page.tsx' },
   { id: 'performance', file: 'performance/page.tsx' },
-  { id: 'research', file: 'research/page.tsx' },
 ];
 
 for (const hub of terminalHubs) {
@@ -70,14 +69,21 @@ for (const hub of terminalHubs) {
   }
 }
 
+// Research page absorbed into Terminal home page
+const researchPath = path.join(projectRoot, 'frontend', 'app', 'research', 'page.tsx');
+assert(fs.existsSync(researchPath), 'Terminal route /research exists');
+if (fs.existsSync(researchPath)) {
+  const rSrc = fs.readFileSync(researchPath, 'utf8');
+  assert(rSrc.includes('router.replace'), '/research cleanly redirects to Terminal');
+}
+
 // Check TerminalShell contains persistent components
 const shellPath = path.join(projectRoot, 'frontend', 'components', 'terminal', 'TerminalShell.tsx');
 if (fs.existsSync(shellPath)) {
   const shellSrc = fs.readFileSync(shellPath, 'utf8');
   assert(shellSrc.includes('Navbar'), 'TerminalShell includes top Navbar');
-  assert(shellSrc.includes('🛡️ Governor'), 'TerminalShell includes Governor link badge');
-  assert(shellSrc.includes('⌘K') || shellSrc.includes('Cmd+K'), 'TerminalShell includes Command Palette prompt');
-  assert(shellSrc.includes('FixedMobileDock') || shellSrc.includes('sm:hidden') || shellSrc.includes('dock'), 'TerminalShell includes mobile dock support');
+  assert(shellSrc.includes('REGIME:'), 'TerminalShell includes Market Regime status badge');
+  assert(shellSrc.includes('FixedMobileDock') || shellSrc.includes('sm:hidden') || shellSrc.includes('dock') || shellSrc.includes('role="navigation"'), 'TerminalShell includes mobile dock support');
 }
 
 // -------------------------------------------------------------
@@ -95,7 +101,7 @@ if (fs.existsSync(cockpitShellPath)) {
   assert(cSrc.includes('/cockpit/today') && cSrc.includes('/cockpit/future') && cSrc.includes('/cockpit/progress') && cSrc.includes('/cockpit/household'), 'CockpitShell navigation tabs link all nested hubs');
 }
 
-// Check all Cockpit routes are wrapped in CockpitShell
+// Check all archived Cockpit routes cleanly redirect to Terminal
 const cockpitRoutes = [
   'cockpit/page.tsx',
   'cockpit/today/page.tsx',
@@ -113,7 +119,7 @@ for (const cr of cockpitRoutes) {
   assert(fs.existsSync(cPath), `Cockpit route ${cr} exists`);
   if (fs.existsSync(cPath)) {
     const cSrc = fs.readFileSync(cPath, 'utf8');
-    assert(cSrc.includes('CockpitShell'), `${cr} is wrapped inside CockpitShell`);
+    assert(cSrc.includes('router.replace'), `${cr} cleanly redirects to Terminal`);
   }
 }
 

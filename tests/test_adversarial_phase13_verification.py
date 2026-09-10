@@ -60,11 +60,16 @@ class TestAdversarialPhase13Verification(unittest.TestCase):
         self.assertIn("profitRiskRatio: isTrendAvailable ? profitRisk : undefined", content)
 
     def test_adv_4_screener_unification_and_no_stale_prices(self):
-        """Attack: Verify screener eliminated decoupled BASE_PRICES ($346.20 FIX bug)."""
-        content = self.read_file("frontend", "app", "screener", "page.tsx")
-        self.assertNotIn("const BASE_PRICES", content)
-        self.assertNotIn("FIX: { price: 346.20", content)
-        self.assertIn("CATALOG_BASELINE_PRICES[sym]", content)
+        """Attack: Verify screener/radar eliminated decoupled BASE_PRICES ($346.20 FIX bug).
+        Note: Screener was merged into Radar as part of core refocus. Screener route now redirects to /radar.
+        """
+        # The screener page is now a redirect stub pointing to /radar
+        screener_content = self.read_file("frontend", "app", "screener", "page.tsx")
+        self.assertIn("router.replace", screener_content, "Screener should redirect to Radar")
+        # The radar page (canonical discovery page) must not have hardcoded stale prices
+        radar_content = self.read_file("frontend", "app", "radar", "page.tsx")
+        self.assertNotIn("const BASE_PRICES", radar_content)
+        self.assertNotIn("FIX: { price: 346.20", radar_content)
 
     def test_adv_5_strategy_unification_and_no_stale_prices(self):
         """Attack: Verify strategy candidates hydrate from master catalog baseline."""

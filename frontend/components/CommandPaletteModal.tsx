@@ -145,12 +145,12 @@ export default function CommandPaletteModal({
     items.push({
       id: "hub-research",
       category: "HUB",
-      title: "Institutional Research & Catalyst Dossiers",
-      subtitle: "13F whale clusters & SEC disclosures",
-      badge: "Hub · Level 0",
-      icon: "🔬",
+      title: "Terminal & Research Intelligence",
+      subtitle: "Unified market overview, multi-factor analysis & catalyst dossiers",
+      badge: "Terminal",
+      icon: "🖥️",
       action: () => {
-        router.push("/research");
+        router.push("/");
         onClose();
       },
     });
@@ -158,12 +158,12 @@ export default function CommandPaletteModal({
     items.push({
       id: "hub-cockpit",
       category: "GOVERNOR",
-      title: "Behavioral Governor Cockpit Portal",
-      subtitle: "Deep risk telemetry & regime controls",
+      title: "Behavioral Governor & Risk Guardrails",
+      subtitle: "Deep risk telemetry, sizing clamps & regime controls in Setups",
       badge: "Governor",
       icon: "🛡️",
       action: () => {
-        router.push("/cockpit");
+        router.push("/setups");
         onClose();
       },
     });
@@ -172,11 +172,11 @@ export default function CommandPaletteModal({
       id: "gov-risk-status",
       category: "GOVERNOR",
       title: "Behavioral Governor: View Active Sizing Clamps & Constraints",
-      subtitle: "Loss streak mitigation, capital floor defense, and risk telemetry",
+      subtitle: "Loss streak mitigation, capital floor defense, and risk telemetry in Setups",
       badge: "-25% Clamp",
       icon: "🛡️",
       action: () => {
-        router.push("/cockpit");
+        router.push("/setups");
         onClose();
       },
     });
@@ -424,10 +424,10 @@ export default function CommandPaletteModal({
           category: "ASSET",
           title: `${q} — Research & Multi-Factor Analysis`,
           subtitle: `Open fundamentals, SEC filings, and factor model for ${q}`,
-          badge: "Research",
+          badge: "Terminal",
           icon: "🔬",
           action: () => {
-            router.push(`/research?ticker=${encodeURIComponent(q)}`);
+            router.push(`/?symbol=${encodeURIComponent(q)}`);
             onClose();
           },
         },

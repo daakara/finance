@@ -26,6 +26,7 @@ class TestPhase13Batch2Remediations(unittest.TestCase):
         self.guided_view_path = os.path.join("frontend", "components", "terminal", "GuidedTerminalView.tsx")
         self.insight_path = os.path.join("frontend", "lib", "insightGenerator.ts")
         self.screener_path = os.path.join("frontend", "app", "screener", "page.tsx")
+        self.radar_path = os.path.join("frontend", "app", "radar", "page.tsx")
         self.strategy_path = os.path.join("frontend", "app", "strategy", "[type]", "page.tsx")
         self.home_path = os.path.join("frontend", "app", "page.tsx")
 
@@ -39,6 +40,8 @@ class TestPhase13Batch2Remediations(unittest.TestCase):
             self.insight_content = f.read()
         with open(self.screener_path, "r", encoding="utf-8") as f:
             self.screener_content = f.read()
+        with open(self.radar_path, "r", encoding="utf-8") as f:
+            self.radar_content = f.read()
         with open(self.strategy_path, "r", encoding="utf-8") as f:
             self.strategy_content = f.read()
         with open(self.home_path, "r", encoding="utf-8") as f:
@@ -63,10 +66,10 @@ class TestPhase13Batch2Remediations(unittest.TestCase):
         self.assertIn("profitRiskRatio: isTrendAvailable ? profitRisk : undefined", self.insight_content)
 
     def test_p1_4_screener_catalog_unification(self):
-        """FINDING-13-01: Screener must eliminate BASE_PRICES and unify with MASTER_ASSET_CATALOG."""
-        self.assertNotIn("FIX: { price: 346.20", self.screener_content)
-        self.assertNotIn("const BASE_PRICES: Record<string", self.screener_content)
-        self.assertIn("MASTER_ASSET_CATALOG[sym]", self.screener_content)
+        """FINDING-13-01: Screener redirects to Radar and Radar eliminates stale BASE_PRICES."""
+        self.assertIn("router.replace", self.screener_content)
+        self.assertNotIn("FIX: { price: 346.20", self.radar_content)
+        self.assertNotIn("const BASE_PRICES: Record<string", self.radar_content)
 
     def test_p1_5_strategy_catalog_unification(self):
         """FINDING-13-12: Strategy page must hydrate candidate prices from MASTER_ASSET_CATALOG."""

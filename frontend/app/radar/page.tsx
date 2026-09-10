@@ -37,7 +37,7 @@ export default function RadarPage() {
           const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = [];
           const modelStr = (gem.expert_model || "").toUpperCase();
           if (modelStr.includes("VCP") || modelStr.includes("MINERVINI")) cat.push("VCP");
-          if (modelStr.includes("MAGIC") || modelStr.includes("GARP") || modelStr.includes("VALUE")) cat.push("VALUE");
+          if (modelStr.includes("MAGIC") || modelStr.includes("GARP") || modelStr.includes("VALUE") || modelStr.includes("GREENBLATT") || modelStr.includes("LYNCH") || modelStr.includes("GARDNER")) cat.push("VALUE");
           if (cat.length === 0 || gem.composite_score >= 85) cat.push("SMART_MONEY");
 
           const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
@@ -513,10 +513,10 @@ export default function RadarPage() {
 
                           {isTickerQuery && (
                             <Link
-                              href={`/research?ticker=${cleanQ}`}
+                              href={`/?symbol=${cleanQ}`}
                               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold font-mono border border-slate-700"
                             >
-                              Open in /research →
+                              Open in Terminal →
                             </Link>
                           )}
 
