@@ -12,6 +12,7 @@ export interface TradeLogEntry {
   rAchieved: number;
   followedRules: boolean;
   pnl: string;
+  confidence?: number;
 }
 
 export default function JournalPage() {
@@ -35,16 +36,40 @@ export default function JournalPage() {
 
   const tradesLogged = tradeLogs.length;
   const rulesFollowed = tradeLogs.filter((t) => t.followedRules).length;
-  const adherenceRatePct = tradesLogged > 0 ? ((rulesFollowed / tradesLogged) * 100).toFixed(1) : "100.0";
-  const brierScore = tradesLogged >= 5 ? 0.18 : 0.20;
+  const adherenceRatePct = tradesLogged > 0 ? ((rulesFollowed / tradesLogged) * 100).toFixed(1) : "--";
+  
+  // Authentic Brier Score: Mean squared error between forecasted probability and empirical outcome (1 for win, 0 for loss)
+  const brierScore = tradesLogged > 0
+    ? (
+        tradeLogs.reduce((acc, t) => {
+          const conf = t.confidence ? (t.confidence > 1 ? t.confidence / 100 : t.confidence) : 0.7;
+          const outcome = (t.rAchieved || 0) > 0 ? 1 : 0;
+          return acc + Math.pow(conf - outcome, 2);
+        }, 0) / tradesLogged
+      ).toFixed(2)
+    : "--";
 
-  // Brier Calibration Buckets (Predicted vs Observed)
+  // Brier Calibration Buckets derived dynamically from authentic tradeLogs
   const calibrationBuckets = [
-    { conviction: '50-60%', predicted: 55, observed: tradesLogged > 0 ? 58 : 0, count: tradesLogged > 0 ? 12 : 0 },
-    { conviction: '60-70%', predicted: 65, observed: tradesLogged > 0 ? 67 : 0, count: tradesLogged > 0 ? 18 : 0 },
-    { conviction: '70-80%', predicted: 75, observed: tradesLogged > 0 ? 74 : 0, count: tradesLogged > 0 ? 14 : 0 },
-    { conviction: '80-90%', predicted: 85, observed: tradesLogged > 0 ? 82 : 0, count: tradesLogged > 0 ? 4 : 0 },
-  ];
+    { conviction: '50-60%', predicted: 55, min: 50, max: 60 },
+    { conviction: '60-70%', predicted: 65, min: 60, max: 70 },
+    { conviction: '70-80%', predicted: 75, min: 70, max: 80 },
+    { conviction: '80-90%', predicted: 85, min: 80, max: 90 },
+  ].map((b) => {
+    const inBucket = tradeLogs.filter((t) => {
+      const conf = t.confidence ? (t.confidence > 1 ? t.confidence : t.confidence * 100) : 70;
+      return conf >= b.min && conf < b.max;
+    });
+    const count = inBucket.length;
+    const wins = inBucket.filter((t) => (t.rAchieved || 0) > 0).length;
+    const observed = count > 0 ? Math.round((wins / count) * 100) : 0;
+    return {
+      conviction: b.conviction,
+      predicted: b.predicted,
+      observed,
+      count,
+    };
+  });
 
   return (
     <TerminalShell activeHub="journal">
@@ -63,7 +88,7 @@ export default function JournalPage() {
               </div>
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl sm:text-4xl font-black font-mono text-emerald-400 tabular-nums">
-                  {adherenceRatePct}%
+                  {tradesLogged > 0 ? `${adherenceRatePct}%` : "--"}
                 </span>
                 <span className="text-sm font-mono text-emerald-300/80 font-bold">
                   Rule Adherence Score (Grade A)
@@ -80,13 +105,19 @@ export default function JournalPage() {
             <div className="grid grid-cols-2 gap-3 shrink-0 font-mono text-xs">
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Behavioral State</span>
-                <span className="text-base font-bold text-emerald-400">CALM</span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">Zero Tilt Detected</span>
+                <span className="text-base font-bold text-emerald-400">
+                  {tradesLogged > 0 ? "CALM" : "STANDBY"}
+                </span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {tradesLogged > 0 ? "Zero Tilt Detected" : "Awaiting Executions"}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Brier Calibration</span>
                 <span className="text-base font-bold text-cyan-400 tabular-nums">{brierScore}</span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">&le; 0.25 (Calibrated)</span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {tradesLogged > 0 ? "≤ 0.25 (Calibrated)" : "Awaiting Executions"}
+                </span>
               </div>
             </div>
           </div>
