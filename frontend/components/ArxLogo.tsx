@@ -114,7 +114,7 @@ export default function ArxLogo({
               ARX <span className="text-cyan-400 font-black">TERMINAL</span>
             </span>
             {showSubtitle && (
-              <span className="text-[9px] text-slate-400 font-mono tracking-wider uppercase mt-0.5">
+              <span className="text-xs text-slate-300 font-mono tracking-wider uppercase mt-1 leading-none">
                 No-BS Market Intel
               </span>
             )}
@@ -137,7 +137,7 @@ export default function ArxLogo({
             ARX <span className="text-cyan-400 font-black">TERMINAL</span>
           </span>
           {showSubtitle && (
-            <span className="text-[9px] text-slate-400 font-mono tracking-wider uppercase mt-0.5">
+            <span className="text-xs text-slate-300 font-mono tracking-wider uppercase mt-1 leading-none">
               No-BS Market Intel
             </span>
           )}

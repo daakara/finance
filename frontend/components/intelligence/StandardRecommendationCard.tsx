@@ -9,21 +9,21 @@ interface StandardRecommendationCardProps {
   onDismiss?: (recommendation: StandardRecommendationData) => void;
 }
 
-const CATEGORY_STYLES: Record<RecommendationCategory, { label: string; badge: string; border: string }> = {
+const CATEGORY_STYLES: Record<RecommendationCategory, { label: string; badge: string; cardTint: string }> = {
   DO_MORE: {
     label: 'DO MORE',
     badge: 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60',
-    border: 'border-l-emerald-500',
+    cardTint: 'border-emerald-500/20 bg-slate-900',
   },
   STOP_DOING: {
     label: 'STOP DOING',
     badge: 'bg-rose-950/60 text-rose-300 border-rose-700/60',
-    border: 'border-l-rose-500',
+    cardTint: 'border-rose-500/20 bg-slate-900',
   },
   CALIBRATE: {
     label: 'CALIBRATE',
     badge: 'bg-amber-950/60 text-amber-300 border-amber-700/60',
-    border: 'border-l-amber-500',
+    cardTint: 'border-amber-500/20 bg-slate-900',
   },
 };
 
@@ -44,7 +44,7 @@ export const StandardRecommendationCard: React.FC<StandardRecommendationCardProp
     <div
       role="region"
       aria-label={`Recommendation: ${recommendation.action}`}
-      className={`bg-slate-900 border border-slate-800 border-l-4 ${style.border} rounded-xl p-4 shadow-sm transition-all duration-150`}
+      className={`border ${style.cardTint} rounded-xl p-4 shadow-sm transition-colors duration-150`}
     >
       {/* Top row: Category, Urgency, Projected Impact */}
       <div className="flex items-center justify-between gap-2 mb-2">

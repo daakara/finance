@@ -487,9 +487,10 @@ function OOSContent() {
                 </div>
               </div>
 
-              {/* Executive Summary Quote */}
-              <div className="p-4 bg-[#0c1017] border-l-4 border-cyan-400 rounded-r-lg">
-                <div className="text-xs font-mono uppercase text-cyan-400 font-semibold mb-1">
+              {/* Executive Summary Callout */}
+              <div className="p-4 bg-cyan-950/20 border border-cyan-500/30 rounded-xl shadow-sm">
+                <div className="text-xs font-mono uppercase text-cyan-400 font-semibold mb-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />
                   Executive Summary
                 </div>
                 <p className="text-sm text-slate-200 leading-relaxed">

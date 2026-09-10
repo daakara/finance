@@ -161,7 +161,7 @@ export default function AdaptiveTerminal({
               <button
                 key={hz}
                 onClick={() => setTimeHorizon(hz)}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                className={`min-h-[44px] sm:min-h-[32px] px-3 py-2 sm:py-1 rounded-md text-xs font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer flex items-center justify-center ${
                   timeHorizon === hz
                     ? "bg-cyan-600 text-slate-950 font-black"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#131d2c]"

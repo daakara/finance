@@ -543,6 +543,61 @@ class TestNextJsFrontendStructure(unittest.TestCase):
         self.assertIn("window.removeEventListener(\"keydown\", handleKeyDown)", w_src)
         self.assertIn("role=\"dialog\"", w_src)
 
+    def test_accessibility_touch_target_and_tab_semantics(self):
+        """Quality Gate AC13 & AC14: Verify 44x44px touch targets, WAI-ARIA tab roving tabindex, keyboard navigation, and Paper contrast."""
+        eval_path = os.path.join("frontend", "app", "evaluation", "page.tsx")
+        toggle_path = os.path.join("frontend", "components", "ThemeToggle.tsx")
+        navbar_path = os.path.join("frontend", "components", "Navbar.tsx")
+        sizer_path = os.path.join("frontend", "components", "DayTraderPositionSizer.tsx")
+        logo_path = os.path.join("frontend", "components", "ArxLogo.tsx")
+        terminal_path = os.path.join("frontend", "components", "AdaptiveTerminal.tsx")
+        globals_path = os.path.join("frontend", "app", "globals.css")
+
+        # 1. Evaluation Tabs WAI-ARIA Semantics & Keyboard Navigation
+        with open(eval_path, "r", encoding="utf-8") as f:
+            eval_src = f.read()
+        self.assertIn('role="tablist"', eval_src)
+        self.assertIn('aria-orientation="horizontal"', eval_src)
+        self.assertIn('role="tab"', eval_src)
+        self.assertIn('tabIndex={active ? 0 : -1}', eval_src)
+        self.assertIn("handleTabKeyDown", eval_src)
+        self.assertIn("ArrowRight", eval_src)
+        self.assertIn("ArrowLeft", eval_src)
+        self.assertIn("min-h-[44px]", eval_src)
+        self.assertIn('role="tabpanel"', eval_src)
+
+        # 2. 44x44px Touch Targets on Critical Controls
+        with open(toggle_path, "r", encoding="utf-8") as f:
+            toggle_src = f.read()
+        self.assertIn("min-w-[44px]", toggle_src)
+        self.assertIn("min-h-[44px]", toggle_src)
+
+        with open(navbar_path, "r", encoding="utf-8") as f:
+            nav_src = f.read()
+        self.assertIn("min-h-[44px] min-w-[44px]", nav_src)
+        self.assertIn("min-h-[44px] sm:min-h-[38px]", nav_src)
+
+        with open(sizer_path, "r", encoding="utf-8") as f:
+            sizer_src = f.read()
+        self.assertIn("min-h-[44px] sm:min-h-[38px]", sizer_src)
+
+        with open(terminal_path, "r", encoding="utf-8") as f:
+            term_src = f.read()
+        self.assertIn("min-h-[44px] sm:min-h-[32px]", term_src)
+
+        # 3. Logo Typography Standard (canonical text-xs, no arbitrary sub-11px)
+        with open(logo_path, "r", encoding="utf-8") as f:
+            logo_src = f.read()
+        self.assertIn("text-xs text-slate-300 font-mono tracking-wider uppercase", logo_src)
+        self.assertNotIn("text-[9px]", logo_src)
+        self.assertNotIn("text-[10px]", logo_src)
+
+        # 4. Paper Theme Focus Ring Harmonization
+        with open(globals_path, "r", encoding="utf-8") as f:
+            glob_src = f.read()
+        self.assertIn('[data-theme="paper"] .focus-ring', glob_src)
+        self.assertIn('--tw-ring-offset-color: #ffffff', glob_src)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,9 +18,15 @@ interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onRoleChange?: (role: "DAY_TRADER" | "LONG_TERM") => void;
   hideMobileDock?: boolean;
+  activeSymbol?: string | null;
 }
 
-export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobileDock = false }: NavbarProps) {
+export default function Navbar({
+  userRole = "LONG_TERM",
+  onRoleChange,
+  hideMobileDock = false,
+  activeSymbol,
+}: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [activeRole, setActiveRole] = useState<"DAY_TRADER" | "LONG_TERM">(userRole);
@@ -260,7 +266,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobil
               onClick={handlePurgeCache}
               aria-label="Purge Local Cache & Re-sync Live Feeds"
               title="Purge Local Cache & Force Live Quote Refresh"
-              className={`p-1.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[32px] min-w-[32px] active:scale-90 ${
+              className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
                 isPurging ? "animate-spin text-cyan-400 border-cyan-500" : ""
               }`}
             >
@@ -283,7 +289,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobil
                 aria-pressed={activeRole === "DAY_TRADER"}
                 aria-label="Switch to Day Trader mode"
                 title="Day Trader Mode (Intraday Momentum & Quick Scalps)"
-                className={`flex items-center space-x-1 px-2 2xl:px-2.5 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1 px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -302,7 +308,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobil
                 aria-pressed={activeRole === "LONG_TERM"}
                 aria-label="Switch to Long-Term Investor mode"
                 title="Long-Term Mode (Value Compounding & Secular Growth)"
-                className={`flex items-center space-x-1 px-2 2xl:px-2.5 py-1 min-h-[30px] sm:min-h-[32px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1 px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -404,7 +410,7 @@ export default function Navbar({ userRole = "LONG_TERM", onRoleChange, hideMobil
           type="button"
           onClick={() => handleRoleToggle(activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
           aria-label={`Toggle Trading Horizon: currently ${activeRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"}`}
-          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all min-w-[46px] min-h-[44px] border ${
+          className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all active:scale-[0.96] motion-reduce:transform-none min-w-[46px] min-h-[44px] border ${
             activeRole === "DAY_TRADER"
               ? "bg-amber-950/40 border-amber-500/50 text-amber-400 font-bold"
               : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"

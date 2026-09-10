@@ -104,7 +104,11 @@ body {
 [data-theme="paper"] [class*="bg-[#111722]"],
 [data-theme="paper"] [class*="bg-[#0b1019]"],
 [data-theme="paper"] [class*="bg-[#0d131f]"],
-[data-theme="paper"] [class*="bg-[#0e131d]"] {
+[data-theme="paper"] [class*="bg-[#0e131d]"],
+[data-theme="paper"] [class*="bg-[#141d2d]"],
+[data-theme="paper"] [class*="bg-[#182336]"],
+[data-theme="paper"] [class*="bg-[#101827]"],
+[data-theme="paper"] [class*="bg-[#081322]"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
 }
@@ -138,6 +142,9 @@ body {
 [data-theme="paper"] [class*="border-[#1b2434]"],
 [data-theme="paper"] [class*="border-[#1e293b]"],
 [data-theme="paper"] [class*="border-[#2b3a52]"],
+[data-theme="paper"] [class*="border-[#23334d]"],
+[data-theme="paper"] [class*="border-[#263750]"],
+[data-theme="paper"] [class*="border-[#1f2c42]"],
 [data-theme="paper"] [class*="border-[#162030]"],
 [data-theme="paper"] [class*="border-[#192334]"],
 [data-theme="paper"] [class*="border-[#1d2636]"],
@@ -318,6 +325,11 @@ body {
 /* Accessible focus ring utility */
 .focus-ring {
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
+}
+
+[data-theme="paper"] .focus-ring {
+  --tw-ring-offset-color: #ffffff !important;
+  --tw-ring-color: #0284c7 !important;
 }
 
 /* 14. 🎯 WCAG AA CONTRAST HARMONIZATION IN PAPER LIGHT MODE */

@@ -137,6 +137,41 @@ export default function ProspectiveEvaluationPage() {
     setTimeout(() => setCopiedHash(null), 2500);
   };
 
+  const EVAL_TABS = [
+    { id: "overview", label: "Overview & Health", icon: Activity },
+    { id: "milestones", label: "Milestone Gates", icon: Award },
+    { id: "ledger", label: "Prediction Ledger", icon: Database },
+    { id: "benchmarks", label: "Benchmark Baselines", icon: TrendingUp },
+    { id: "diagnostics", label: "Cluster Diagnostics", icon: Layers },
+    { id: "integrity", label: "Engine Manifest", icon: ShieldCheck },
+  ] as const;
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let targetIndex = -1;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      targetIndex = (currentIndex + 1) % EVAL_TABS.length;
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      targetIndex = (currentIndex - 1 + EVAL_TABS.length) % EVAL_TABS.length;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      targetIndex = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      targetIndex = EVAL_TABS.length - 1;
+    }
+
+    if (targetIndex >= 0) {
+      const targetTab = EVAL_TABS[targetIndex];
+      setActiveTab(targetTab.id as any);
+      const tabElement = document.getElementById(`tab-${targetTab.id}`);
+      if (tabElement) {
+        tabElement.focus();
+      }
+    }
+  };
+
   // Filtered Ledger Records
   const filteredLedger = useMemo(() => {
     return ledgerData.filter((r) => {
@@ -191,8 +226,9 @@ export default function ProspectiveEvaluationPage() {
 
                   <button
                     onClick={handleLockSession}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-xs font-medium transition-colors"
+                    className="flex items-center gap-1.5 min-h-[44px] sm:min-h-[38px] px-3.5 py-2 sm:py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-xs font-medium transition-all active:scale-[0.96] motion-reduce:transform-none duration-100 ease-out focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none cursor-pointer"
                     title="Lock session and purge key from memory"
+                    aria-label="Lock session and purge key from memory"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Lock Session</span>
@@ -212,24 +248,28 @@ export default function ProspectiveEvaluationPage() {
               </div>
 
               {/* Navigation Tabs */}
-              <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-800/80 pb-2">
-                {[
-                  { id: "overview", label: "Overview & Health", icon: Activity },
-                  { id: "milestones", label: "Milestone Gates", icon: Award },
-                  { id: "ledger", label: "Prediction Ledger", icon: Database },
-                  { id: "benchmarks", label: "Benchmark Baselines", icon: TrendingUp },
-                  { id: "diagnostics", label: "Cluster Diagnostics", icon: Layers },
-                  { id: "integrity", label: "Engine Manifest", icon: ShieldCheck },
-                ].map((tab) => {
+              <div
+                role="tablist"
+                aria-label="Prospective Evaluation Dashboard Navigation"
+                aria-orientation="horizontal"
+                className="mt-6 flex flex-wrap gap-2 border-b border-slate-800/80 pb-2"
+              >
+                {EVAL_TABS.map((tab, idx) => {
                   const Icon = tab.icon;
                   const active = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
+                      id={`tab-${tab.id}`}
+                      role="tab"
+                      tabIndex={active ? 0 : -1}
+                      aria-selected={active}
+                      aria-controls={`panel-${tab.id}`}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                      onKeyDown={(e) => handleTabKeyDown(e, idx)}
+                      className={`flex items-center gap-2 min-h-[44px] sm:min-h-[38px] px-4 py-2.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all active:scale-[0.96] motion-reduce:transform-none duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
                         active
-                          ? "bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shadow-sm shadow-cyan-950"
+                          ? "bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shadow-sm shadow-cyan-950 font-semibold"
                           : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent"
                       }`}
                     >
@@ -243,7 +283,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 1: OVERVIEW & COHORT HEALTH */}
             {activeTab === "overview" && (
-              <div className="space-y-8">
+              <div
+                role="tabpanel"
+                id="panel-overview"
+                aria-labelledby="tab-overview"
+                tabIndex={0}
+                className="space-y-8 focus-visible:outline-none"
+              >
                 {/* Cohort Classification Firewall Breakdown */}
                 <section>
                   <div className="flex items-center justify-between mb-4">
@@ -461,7 +507,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 2: MILESTONES */}
             {activeTab === "milestones" && (
-              <div className="space-y-6">
+              <div
+                role="tabpanel"
+                id="panel-milestones"
+                aria-labelledby="tab-milestones"
+                tabIndex={0}
+                className="space-y-6 focus-visible:outline-none"
+              >
                 <div>
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Award className="w-5 h-5 text-amber-400" />
@@ -635,7 +687,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 3: PREDICTION LEDGER TABLE */}
             {activeTab === "ledger" && (
-              <div className="space-y-4">
+              <div
+                role="tabpanel"
+                id="panel-ledger"
+                aria-labelledby="tab-ledger"
+                tabIndex={0}
+                className="space-y-4 focus-visible:outline-none"
+              >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -823,7 +881,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 4: BENCHMARK BASELINES */}
             {activeTab === "benchmarks" && (
-              <div className="space-y-6">
+              <div
+                role="tabpanel"
+                id="panel-benchmarks"
+                aria-labelledby="tab-benchmarks"
+                tabIndex={0}
+                className="space-y-6 focus-visible:outline-none"
+              >
                 <div>
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-cyan-400" />
@@ -935,7 +999,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 5: CLUSTER & DEPENDENCE DIAGNOSTICS */}
             {activeTab === "diagnostics" && (
-              <div className="space-y-6">
+              <div
+                role="tabpanel"
+                id="panel-diagnostics"
+                aria-labelledby="tab-diagnostics"
+                tabIndex={0}
+                className="space-y-6 focus-visible:outline-none"
+              >
                 <div>
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Layers className="w-5 h-5 text-amber-400" />
@@ -1002,7 +1072,13 @@ export default function ProspectiveEvaluationPage() {
 
             {/* TAB 6: ENGINE MANIFEST & MEASUREMENT INTEGRITY */}
             {activeTab === "integrity" && (
-              <div className="space-y-6">
+              <div
+                role="tabpanel"
+                id="panel-integrity"
+                aria-labelledby="tab-integrity"
+                tabIndex={0}
+                className="space-y-6 focus-visible:outline-none"
+              >
                 <div>
                   <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-emerald-400" />

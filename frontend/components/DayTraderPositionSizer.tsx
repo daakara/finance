@@ -207,7 +207,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
               role="radio"
               aria-checked={tradeDirection === "LONG"}
               onClick={() => setTradeDirection("LONG")}
-              className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none ${
+              className={`px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
                 tradeDirection === "LONG"
                   ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
                   : "text-slate-400 hover:text-slate-200"
@@ -219,7 +219,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
               role="radio"
               aria-checked={tradeDirection === "SHORT"}
               onClick={() => setTradeDirection("SHORT")}
-              className={`px-3 py-1.5 min-h-[32px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] transition-transform duration-100 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none ${
+              className={`px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none cursor-pointer ${
                 tradeDirection === "SHORT"
                   ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
                   : "text-slate-400 hover:text-slate-200"
