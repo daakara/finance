@@ -3663,3 +3663,121 @@ export function prefetchAssetAnalytics(symbol: string, period: string = "1y", in
   // Background non-blocking prefetch
   fetchAssetAnalytics(symbol, period, interval).catch(() => {});
 }
+
+export interface UserRiskTelemetry {
+  available: boolean;
+  userId: string;
+  accountEquity: number | null;
+  consecutiveLossStreak: number;
+  dailyDrawdownPct: number;
+  ruleAdherencePct: number | null;
+  brierScore: number | null;
+  totalTrades: number;
+  isCalibrated: boolean;
+  source: string;
+}
+
+export interface JournalTradeRecord {
+  id: string;
+  ticker: string;
+  symbol: string;
+  setup: string;
+  setupName: string;
+  entryPrice: number;
+  exitPrice?: number | null;
+  shares: number;
+  rAchieved: number;
+  followedRules: boolean;
+  confidence?: number;
+  pnl: string;
+  pnlRaw?: number;
+  status: string;
+  date: string;
+  entryDate: string;
+  createdAt?: string;
+}
+
+/**
+ * Fetch authoritative behavioral risk telemetry derived directly from persistent database records.
+ */
+export async function fetchUserRiskTelemetry(userId?: string): Promise<UserRiskTelemetry | null> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/telemetry`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, { headers, credentials: "omit" });
+    if (!res.ok) {
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Failed to fetch user risk telemetry from API:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch chronological trade execution journal from persistent database.
+ */
+export async function fetchJournalTrades(limit: number = 50, userId?: string): Promise<JournalTradeRecord[]> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/trades?limit=${Math.min(Math.max(1, limit), 500)}`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, { headers, credentials: "omit" });
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.warn("Failed to fetch journal trades from API:", err);
+    return [];
+  }
+}
+
+/**
+ * Record a completed trade execution or authorized trade plan in the persistent journal.
+ */
+export async function saveJournalTrade(
+  trade: {
+    symbol: string;
+    setupName?: string;
+    entryPrice: number;
+    exitPrice?: number;
+    shares: number;
+    rAchieved?: number;
+    followedRules?: boolean;
+    confidence?: number;
+    pnl?: number;
+    status?: string;
+    entryDate?: string;
+  },
+  userId?: string
+): Promise<JournalTradeRecord | null> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/trades`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(trade),
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Failed to save journal trade to API:", err);
+    return null;
+  }
+}
+

@@ -68,7 +68,14 @@ export function getEasternTradingHour(dateInput?: Date | string | number | null)
  * and authentic Eastern Time. Zero manufactured $50,000 equity or fake loss streaks.
  * Sizing is strictly unavailable if account equity or risk history is unconfigured.
  */
-export function getTraderContextFromUnifiedCockpit(overrides?: Partial<TraderContext>): TraderContext {
+export function getTraderContextFromUnifiedCockpit(
+  overrides?: Partial<TraderContext>,
+  serverTelemetry?: {
+    consecutiveLossStreak?: number | null;
+    dailyDrawdownPct?: number | null;
+    accountEquity?: number | null;
+  } | null
+): TraderContext {
   const cockpit = getUnifiedCockpitState();
   const tradingHour = getEasternTradingHour();
 
@@ -77,6 +84,8 @@ export function getTraderContextFromUnifiedCockpit(overrides?: Partial<TraderCon
   // 1. Authoritative API-backed data path: /api/v1/cockpit/state portfolio summary takes precedence
   if (cockpit.portfolio?.isComplete && cockpit.portfolio?.totalMarketValue !== null && cockpit.portfolio.totalMarketValue > 0) {
     accountEquity = cockpit.portfolio.totalMarketValue;
+  } else if (serverTelemetry?.accountEquity && serverTelemetry.accountEquity > 0) {
+    accountEquity = serverTelemetry.accountEquity;
   } else if (typeof window !== "undefined") {
     // 2. Fallback to locally loaded portfolio from /portfolio API only when cockpit portfolio summary is unpopulated
     const positions = loadPortfolioPositions();
@@ -103,33 +112,48 @@ export function getTraderContextFromUnifiedCockpit(overrides?: Partial<TraderCon
   let consecutiveLossStreak: number | null = null;
   let dailyDrawdownPct: number | null = null;
 
+  // 1. Authoritative server telemetry from /api/v1/journal/telemetry takes absolute precedence
+  if (serverTelemetry) {
+    if (serverTelemetry.consecutiveLossStreak !== undefined && serverTelemetry.consecutiveLossStreak !== null) {
+      consecutiveLossStreak = Math.max(0, serverTelemetry.consecutiveLossStreak);
+    }
+    if (serverTelemetry.dailyDrawdownPct !== undefined && serverTelemetry.dailyDrawdownPct !== null) {
+      dailyDrawdownPct = Math.max(0, serverTelemetry.dailyDrawdownPct);
+    }
+  }
+
+  // 2. Client-side storage fallback only when server telemetry is absent
   if (typeof window !== "undefined") {
-    const savedLoss = localStorage.getItem("FINANCE_JOURNAL_LOSS_STREAK");
-    if (savedLoss !== null && savedLoss.trim() !== "" && !isNaN(Number(savedLoss))) {
-      consecutiveLossStreak = Math.max(0, parseInt(savedLoss, 10));
-    } else {
-      try {
-        const rawLogs = localStorage.getItem("FINANCE_JOURNAL_LOGS");
-        if (rawLogs) {
-          const parsed = JSON.parse(rawLogs);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            let streak = 0;
-            for (let i = parsed.length - 1; i >= 0; i--) {
-              if (parsed[i].rAchieved < 0) {
-                streak++;
-              } else {
-                break;
+    if (consecutiveLossStreak === null) {
+      const savedLoss = localStorage.getItem("FINANCE_JOURNAL_LOSS_STREAK");
+      if (savedLoss !== null && savedLoss.trim() !== "" && !isNaN(Number(savedLoss))) {
+        consecutiveLossStreak = Math.max(0, parseInt(savedLoss, 10));
+      } else {
+        try {
+          const rawLogs = localStorage.getItem("FINANCE_JOURNAL_LOGS");
+          if (rawLogs) {
+            const parsed = JSON.parse(rawLogs);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              let streak = 0;
+              for (let i = parsed.length - 1; i >= 0; i--) {
+                if (parsed[i].rAchieved < 0) {
+                  streak++;
+                } else {
+                  break;
+                }
               }
+              consecutiveLossStreak = streak;
             }
-            consecutiveLossStreak = streak;
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
 
-    const savedDd = localStorage.getItem("FINANCE_DAILY_DRAWDOWN_PCT");
-    if (savedDd !== null && savedDd.trim() !== "" && !isNaN(Number(savedDd))) {
-      dailyDrawdownPct = Math.max(0, parseFloat(savedDd));
+    if (dailyDrawdownPct === null) {
+      const savedDd = localStorage.getItem("FINANCE_DAILY_DRAWDOWN_PCT");
+      if (savedDd !== null && savedDd.trim() !== "" && !isNaN(Number(savedDd))) {
+        dailyDrawdownPct = Math.max(0, parseFloat(savedDd));
+      }
     }
   }
 

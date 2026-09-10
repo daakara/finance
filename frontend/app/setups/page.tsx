@@ -12,6 +12,9 @@ import {
 import {
   fetchTacticalSetups,
   fetchTacticalSetupForTicker,
+  fetchUserRiskTelemetry,
+  saveJournalTrade,
+  UserRiskTelemetry,
   getApiBaseUrl,
   ARX_API_HEADERS,
 } from '../../lib/api';
@@ -35,6 +38,7 @@ function SetupsContent() {
 
   const [availableSetups, setAvailableSetups] = useState<TradeSetupSpec[]>([]);
   const [selectedSetup, setSelectedSetup] = useState<TradeSetupSpec | null>(null);
+  const [riskTelemetry, setRiskTelemetry] = useState<UserRiskTelemetry | null>(null);
   const [loadState, setLoadState] = useState<SetupLoadState>('LOADING');
   const [unsupportedError, setUnsupportedError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,7 +48,16 @@ function SetupsContent() {
   const [copyErrorMessage, setCopyErrorMessage] = useState<string | null>(null);
   const latestRequestRef = useRef<string | null>(null);
 
-  // 1. Initial load of all available setups from API
+  // 1. Initial load of risk telemetry from authoritative backend API
+  useEffect(() => {
+    fetchUserRiskTelemetry()
+      .then((telemetry) => {
+        if (telemetry) setRiskTelemetry(telemetry);
+      })
+      .catch((err) => console.warn("Failed to load user risk telemetry:", err));
+  }, []);
+
+  // 2. Initial load of all available setups from API
   const loadAvailableSetups = useCallback(() => {
     setBrowseError(null);
     fetchTacticalSetups()
@@ -61,7 +74,7 @@ function SetupsContent() {
     loadAvailableSetups();
   }, [loadAvailableSetups]);
 
-  // 2. Synchronize or fetch setup for requested tickerParam
+  // 3. Synchronize or fetch setup for requested tickerParam
   useEffect(() => {
     if (!tickerParam) {
       latestRequestRef.current = null;
@@ -187,7 +200,7 @@ function SetupsContent() {
     router.replace('/setups');
   };
 
-  const context = getTraderContextFromUnifiedCockpit();
+  const context = getTraderContextFromUnifiedCockpit(undefined, riskTelemetry);
   const effectiveSetup: TradeSetupSpec = selectedSetup || {
     ticker: tickerParam?.toUpperCase() || "AWAITING_SELECTION",
     setupName: "Awaiting Setup Selection",
@@ -220,6 +233,19 @@ function SetupsContent() {
       await navigator.clipboard.writeText(orderStr);
       setCopyStatus('SUCCESS');
       setCopyErrorMessage(null);
+
+      // Record trade plan execution to server-authoritative trade journal
+      saveJournalTrade({
+        symbol: effectiveSetup.ticker,
+        setupName: effectiveSetup.setupName,
+        entryPrice: sizing.entryPivot,
+        exitPrice: effectiveSetup.target1 || sizing.entryPivot,
+        shares: sizing.recommendedShares,
+        confidence: effectiveSetup.confluenceScore || 70,
+        followedRules: true,
+        status: "OPEN",
+      }).catch((err) => console.warn("Auto-save journal trade execution failed:", err));
+
       setTimeout(() => setCopyStatus('IDLE'), 2500);
     } catch (err: any) {
       console.warn("Failed to copy execution ticket:", err);

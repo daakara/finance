@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import TerminalShell from "../../components/terminal/TerminalShell";
+import { fetchJournalTrades, fetchUserRiskTelemetry, UserRiskTelemetry } from "../../lib/api";
 
 export interface TradeLogEntry {
   id: string;
@@ -17,37 +18,91 @@ export interface TradeLogEntry {
 
 export default function JournalPage() {
   const [tradeLogs, setTradeLogs] = useState<TradeLogEntry[]>([]);
+  const [telemetry, setTelemetry] = useState<UserRiskTelemetry | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    let isMounted = true;
+
+    async function loadJournalData() {
+      setIsLoading(true);
       try {
-        const raw = localStorage.getItem("FINANCE_JOURNAL_LOGS");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            setTradeLogs(parsed);
+        const [apiTrades, apiTelemetry] = await Promise.all([
+          fetchJournalTrades(100),
+          fetchUserRiskTelemetry(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (apiTrades && apiTrades.length > 0) {
+          const mapped: TradeLogEntry[] = apiTrades.map((t) => ({
+            id: String(t.id),
+            ticker: t.ticker || t.symbol,
+            date: t.date || t.entryDate || "",
+            setup: t.setup || t.setupName || "Breakout",
+            rAchieved: t.rAchieved,
+            followedRules: t.followedRules,
+            pnl: t.pnl,
+            confidence: t.confidence,
+          }));
+          setTradeLogs(mapped);
+        } else if (typeof window !== "undefined") {
+          const raw = localStorage.getItem("FINANCE_JOURNAL_LOGS");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              setTradeLogs(parsed);
+            }
           }
         }
+
+        if (apiTelemetry) {
+          setTelemetry(apiTelemetry);
+        }
       } catch (err) {
-        console.warn("Could not load journal trade logs:", err);
+        console.warn("Could not load journal trade logs or telemetry from API:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
+
+    loadJournalData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const tradesLogged = tradeLogs.length;
   const rulesFollowed = tradeLogs.filter((t) => t.followedRules).length;
-  const adherenceRatePct = tradesLogged > 0 ? ((rulesFollowed / tradesLogged) * 100).toFixed(1) : "--";
+  const adherenceRatePct = telemetry?.ruleAdherencePct !== null && telemetry?.ruleAdherencePct !== undefined
+    ? telemetry.ruleAdherencePct.toFixed(1)
+    : (tradesLogged > 0 ? ((rulesFollowed / tradesLogged) * 100).toFixed(1) : "--");
   
   // Authentic Brier Score: Mean squared error between forecasted probability and empirical outcome (1 for win, 0 for loss)
-  const brierScore = tradesLogged > 0
-    ? (
-        tradeLogs.reduce((acc, t) => {
-          const conf = t.confidence ? (t.confidence > 1 ? t.confidence / 100 : t.confidence) : 0.7;
-          const outcome = (t.rAchieved || 0) > 0 ? 1 : 0;
-          return acc + Math.pow(conf - outcome, 2);
-        }, 0) / tradesLogged
-      ).toFixed(2)
-    : "--";
+  const brierScore = telemetry?.brierScore !== null && telemetry?.brierScore !== undefined
+    ? telemetry.brierScore.toFixed(2)
+    : (tradesLogged > 0
+        ? (
+            tradeLogs.reduce((acc, t) => {
+              const conf = t.confidence ? (t.confidence > 1 ? t.confidence / 100 : t.confidence) : 0.7;
+              const outcome = (t.rAchieved || 0) > 0 ? 1 : 0;
+              return acc + Math.pow(conf - outcome, 2);
+            }, 0) / tradesLogged
+          ).toFixed(2)
+        : "--");
+
+  const activeLossStreak = telemetry?.consecutiveLossStreak ?? (() => {
+    let streak = 0;
+    for (let i = 0; i < tradeLogs.length; i++) {
+      if (tradeLogs[i].rAchieved < 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  })();
 
   // Brier Calibration Buckets derived dynamically from authentic tradeLogs
   const calibrationBuckets = [
@@ -105,18 +160,18 @@ export default function JournalPage() {
             <div className="grid grid-cols-2 gap-3 shrink-0 font-mono text-xs">
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Behavioral State</span>
-                <span className="text-base font-bold text-emerald-400">
-                  {tradesLogged > 0 ? "CALM" : "STANDBY"}
+                <span className={`text-base font-bold ${activeLossStreak >= 2 ? 'text-amber-400' : (tradesLogged > 0 ? 'text-emerald-400' : 'text-slate-400')}`}>
+                  {tradesLogged > 0 ? (activeLossStreak >= 2 ? "DEFENSIVE" : "CALM") : "STANDBY"}
                 </span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">
-                  {tradesLogged > 0 ? "Zero Tilt Detected" : "Awaiting Executions"}
+                  {tradesLogged > 0 ? (activeLossStreak >= 2 ? "Sizing Clamp Active" : "Zero Tilt Detected") : "Awaiting Executions"}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Brier Calibration</span>
                 <span className="text-base font-bold text-cyan-400 tabular-nums">{brierScore}</span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">
-                  {tradesLogged > 0 ? "≤ 0.25 (Calibrated)" : "Awaiting Executions"}
+                  {tradesLogged > 0 ? (telemetry?.isCalibrated || (brierScore !== "--" && Number(brierScore) <= 0.25) ? "≤ 0.25 (Calibrated)" : "> 0.25 (Under-calibrated)") : "Awaiting Executions"}
                 </span>
               </div>
             </div>
@@ -175,16 +230,20 @@ export default function JournalPage() {
                 <span className="text-xs font-bold text-white uppercase">4-Quadrant Anti-Tilt Monitor</span>
                 <p className="text-[11px] text-slate-400 font-sans mt-0.5">Live telemetry on psychological biases and tilt drivers</p>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                Status: Nominal
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeLossStreak >= 2 ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}`}>
+                Status: {activeLossStreak >= 2 ? "Defensive" : "Nominal"}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 uppercase block">Active Loss Streak</span>
-                <span className="text-base font-bold text-emerald-400">0 Losses</span>
-                <span className="text-[10px] text-slate-500 block">Clamp triggers at 2 losses</span>
+                <span className={`text-base font-bold tabular-nums ${activeLossStreak >= 2 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {activeLossStreak} {activeLossStreak === 1 ? "Loss" : "Losses"}
+                </span>
+                <span className="text-[10px] text-slate-500 block">
+                  {activeLossStreak >= 2 ? "Clamp active (-50% sizing)" : "Clamp triggers at 2 losses"}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 uppercase block">Execution Window</span>

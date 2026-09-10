@@ -163,6 +163,27 @@ class HistoryDatabaseEngine:
                     )
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_act ON user_cockpit_actions (user_id)")
+
+                # User Trade Journal & Behavioral Risk Telemetry table (Option A Canonical)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS user_trade_journal (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        symbol TEXT NOT NULL,
+                        setup_name TEXT,
+                        entry_price REAL NOT NULL,
+                        exit_price REAL,
+                        shares REAL NOT NULL,
+                        r_achieved REAL DEFAULT 0.0,
+                        followed_rules INTEGER NOT NULL DEFAULT 1,
+                        confidence REAL DEFAULT 70.0,
+                        pnl REAL DEFAULT 0.0,
+                        status TEXT NOT NULL DEFAULT 'CLOSED',
+                        entry_date TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_user_date ON user_trade_journal (user_id, created_at)")
         finally:
             conn.close()
 
@@ -500,3 +521,147 @@ class HistoryDatabaseEngine:
             return True
         finally:
             conn.close()
+
+    @retry_sqlite()
+    def save_journal_trade(self, user_id: str, trade: Dict[str, Any]) -> Dict[str, Any]:
+        """Save a trade execution record to user's journal."""
+        conn = self._get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                entry_date = trade.get("entryDate") or trade.get("date") or datetime.utcnow().strftime("%Y-%m-%d")
+                cursor.execute(
+                    """
+                    INSERT INTO user_trade_journal (
+                        user_id, symbol, setup_name, entry_price, exit_price, shares, r_achieved, followed_rules, confidence, pnl, status, entry_date, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (
+                        user_id,
+                        trade["symbol"].upper(),
+                        trade.get("setupName") or trade.get("setup") or "Stage 2 Breakout",
+                        float(trade["entryPrice"]),
+                        float(trade.get("exitPrice") or trade.get("entryPrice")),
+                        float(trade["shares"]),
+                        float(trade.get("rAchieved", 0.0)),
+                        1 if trade.get("followedRules", True) else 0,
+                        float(trade.get("confidence", 70.0)),
+                        float(trade.get("pnl", 0.0)),
+                        trade.get("status", "CLOSED"),
+                        entry_date,
+                    ),
+                )
+                trade_id = cursor.lastrowid
+                return {
+                    "id": trade_id,
+                    "userId": user_id,
+                    "symbol": trade["symbol"].upper(),
+                    "setupName": trade.get("setupName") or trade.get("setup") or "Stage 2 Breakout",
+                    "entryPrice": float(trade["entryPrice"]),
+                    "exitPrice": float(trade.get("exitPrice") or trade.get("entryPrice")),
+                    "shares": float(trade["shares"]),
+                    "rAchieved": float(trade.get("rAchieved", 0.0)),
+                    "followedRules": bool(trade.get("followedRules", True)),
+                    "confidence": float(trade.get("confidence", 70.0)),
+                    "pnl": float(trade.get("pnl", 0.0)),
+                    "status": trade.get("status", "CLOSED"),
+                    "entryDate": entry_date,
+                }
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_journal_trades(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve chronological trade log for a user."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT id, user_id, symbol, setup_name, entry_price, exit_price, shares, r_achieved, followed_rules, confidence, pnl, status, entry_date, created_at
+                FROM user_trade_journal
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (user_id, limit),
+            )
+            rows = cursor.fetchall()
+            return [
+                {
+                    "id": str(row["id"]),
+                    "ticker": row["symbol"],
+                    "symbol": row["symbol"],
+                    "setup": row["setup_name"],
+                    "setupName": row["setup_name"],
+                    "entryPrice": float(row["entry_price"]),
+                    "exitPrice": float(row["exit_price"]) if row["exit_price"] is not None else None,
+                    "shares": float(row["shares"]),
+                    "rAchieved": float(row["r_achieved"]),
+                    "followedRules": bool(row["followed_rules"]),
+                    "confidence": float(row["confidence"]),
+                    "pnl": f"+${row['pnl']:.2f}" if row["pnl"] >= 0 else f"-${abs(row['pnl']):.2f}",
+                    "pnlRaw": float(row["pnl"]),
+                    "status": row["status"],
+                    "date": row["entry_date"],
+                    "entryDate": row["entry_date"],
+                    "createdAt": str(row["created_at"]),
+                }
+                for row in rows
+            ]
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_risk_telemetry(self, user_id: str) -> Dict[str, Any]:
+        """Derive authoritative behavioral risk telemetry directly from persistent trade journal and portfolio holdings."""
+        trades = self.get_journal_trades(user_id, limit=200)
+        holdings = self.get_user_portfolio(user_id)
+
+        account_equity: Optional[float] = None
+        if holdings:
+            total_eq = sum(h["shares"] * (h.get("currentPrice") or h.get("entryPrice", 0.0)) for h in holdings)
+            if total_eq > 0:
+                account_equity = round(total_eq, 2)
+
+        total_trades = len(trades)
+        consecutive_loss_streak = 0
+        for t in trades:
+            if t["pnlRaw"] < 0 or t["rAchieved"] < 0:
+                consecutive_loss_streak += 1
+            else:
+                break
+
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+        today_trades = [t for t in trades if t["date"] == today_str or (t.get("createdAt") and t["createdAt"][:10] == today_str)]
+        today_loss_dollars = sum(abs(t["pnlRaw"]) for t in today_trades if t["pnlRaw"] < 0)
+
+        daily_drawdown_pct = 0.0
+        if account_equity and account_equity > 0:
+            daily_drawdown_pct = round((today_loss_dollars / account_equity) * 100.0, 2)
+
+        rule_adherence_pct: Optional[float] = None
+        brier_score: Optional[float] = None
+
+        if total_trades > 0:
+            rules_followed = sum(1 for t in trades if t["followedRules"])
+            rule_adherence_pct = round((rules_followed / total_trades) * 100.0, 1)
+
+            brier_sum = sum(
+                ((t["confidence"] / 100.0) - (1.0 if t["pnlRaw"] > 0 or t["rAchieved"] > 0 else 0.0)) ** 2
+                for t in trades
+            )
+            brier_score = round(brier_sum / total_trades, 2)
+
+        return {
+            "available": True,
+            "userId": user_id,
+            "accountEquity": account_equity,
+            "consecutiveLossStreak": consecutive_loss_streak,
+            "dailyDrawdownPct": daily_drawdown_pct,
+            "ruleAdherencePct": rule_adherence_pct,
+            "brierScore": brier_score,
+            "totalTrades": total_trades,
+            "isCalibrated": brier_score is not None and brier_score <= 0.25,
+            "source": "AUTHORITATIVE_API",
+        }

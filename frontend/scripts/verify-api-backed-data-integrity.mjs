@@ -129,19 +129,19 @@ assert(journalSrc.includes('Awaiting verified trade executions'), 'Informs user 
 assert(journalSrc.includes('FINANCE_JOURNAL_LOGS'), 'Connects to persistent journal storage key');
 
 // -------------------------------------------------------------
-// SECTION 6: Research Hub Authoritative Sources
+// SECTION 6: Research Route Option A Canonical Redirection
 // -------------------------------------------------------------
-console.log('\n\x1b[1mSection 6: Research Hub SEC EDGAR & Capitol Trades Feeds\x1b[0m');
+console.log('\n\x1b[1mSection 6: Research Hub Query-Preserving Redirection to Terminal\x1b[0m');
 
 const researchPath = path.join(projectRoot, 'frontend', 'app', 'research', 'page.tsx');
 assert(fs.existsSync(researchPath), 'research/page.tsx exists');
 const researchSrc = fs.readFileSync(researchPath, 'utf8');
 
-assert(researchSrc.includes('/smart-money/sec-filings/'), 'Queries backend SEC EDGAR filings route');
-assert(researchSrc.includes('/smart-money/congress'), 'Queries backend Capitol Trades disclosures route');
-assert(researchSrc.includes('href={`/setups?ticker=${activeTicker}`}'), 'Deep link continuity preserves activeTicker to /setups');
-assert(researchSrc.includes('Ranked Institutional Catalyst Stream'), 'Renders Ranked Institutional Catalyst Stream');
-assert(researchSrc.includes('Fundamental Balance Sheet Armor'), 'Renders Fundamental Balance Sheet Armor');
+assert(researchSrc.includes('router.replace'), 'Research route cleanly redirects via router.replace');
+assert(researchSrc.includes('searchParams.get("symbol")') || researchSrc.includes('searchParams.get("ticker")'), 'Extracts symbol/ticker query parameter');
+assert(researchSrc.includes('?symbol='), 'Preserves asset continuity to Terminal root (?symbol=)');
+assert(researchSrc.includes('<Suspense'), 'Wraps query reading in Suspense boundary for static export safety');
+
 
 // -------------------------------------------------------------
 // SECTION 7: Backend Portfolio API Contract & DB Schema

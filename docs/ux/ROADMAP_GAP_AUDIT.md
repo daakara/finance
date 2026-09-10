@@ -1,63 +1,58 @@
 # ARX Horizon Redesign Roadmap: Evidence-Based Gap Audit
 **Document Reference**: ARX Horizon Redesign Roadmap: From Engine Collection → Unified Intelligence Operating System  
 **Audit Scope**: Foundation (H14.1, H14.2), Core Hubs (H15.1, H15.2), Narrative & Personalization (H16.1, H16.2), Trading & Discipline (H17, H17.2), Specialist Workbenches (H18), and Design System v2  
-**Audit Date**: September 10, 2026  
+**Audit Date**: September 10, 2026 (Updated Post Option A Formal Consolidation)  
 **Auditor**: Antigravity Autonomous Systems Auditor  
-**Certification Status**: Phase H14 Foundation is **PARTIAL** (Remediated API-only foundation with zero fabrication; broker/telemetry ingestion in H15+)
+**Certification Status**: **CONSOLIDATED (Option A Approved)** — Personal Life OS decommissioned; core institutional trading workstation canonized.
 
 ---
 
 ## Executive Summary
 
-This audit evaluates the codebase against the governing product specification: *"ARX Horizon Redesign Roadmap: From Engine Collection → Unified Intelligence Operating System"*. 
+This audit evaluates the codebase against the governing product roadmap. Following executive review on September 10, 2026, **Option A was approved**: the bifurcated dual-product model has been formally consolidated into a single **Institutional Trading Workstation**.
 
-Past test reports bearing numbers like "H14.3" and "H15" represent **institutional trading terminal sprints** within H17, not proof of complete OS roadmap delivery. The codebase presently houses **two coexisting interfaces**:
-1. **The Life & Intelligence Operating System (Core Executive Hubs)**: `/today`, `/future`, `/progress`, `/household`, supported by the Unified CQRS Cockpit Read Model and 3-level Semantic Zoom.
-2. **The Institutional Trading Terminal Workstation**: `/radar`, `/setups`, `/portfolio`, `/journal`, `/performance`, `/research`, supported by quantitative screener engines, asymmetric order ladders, counterfactual proof of edge, and the Behavioral Governor.
-
-These universes are bridged by the **Behavioral Governor** (`governorSizingEngine.ts`, `unifiedCockpitStore.ts`, and `GET /api/v1/cockpit/state`), which clamps risk and enforces cognitive discipline across all decisions.
+1. **Decommissioned & Archived (Personal Life OS)**: The exploratory life-OS routes (`/today`, `/future`, `/progress`, `/household`, and `/workbench/*`) have been retired into client-side redirect stubs. These routes were largely dependent on mock frontend state and diluted the core quantitative proposition.
+2. **Canonized Core (The 6-Step Institutional Trading Journey)**:
+   - **1. Radar (`/radar`)**: Multi-model confluence discovery (Minervini VCP, Smart Money flow, Greenblatt Magic Formula / GARP).
+   - **2. Terminal (`/` or `/?symbol=...`)**: Deep single-asset conviction analysis, SEC Form 4 insider flow, Congressional trades, Piotroski & Altman Z health, price charts with execution markers.
+   - **3. Setups (`/setups`)**: Actionable Stage 2 breakout tickets, risk brackets (LMT / STP / TP1 / TP2), and server-authoritative Behavioral Governor sizing clamps.
+   - **4. Portfolio (`/portfolio`)**: Risk-first capital heat map, stop loss capital at risk calculations, and exit rule trigger monitor.
+   - **5. Journal (`/journal`)**: Empirical discipline ledger, dynamic Brier probabilistic calibration, and 4-quadrant anti-tilt monitoring.
+   - **6. Performance (`/performance`)**: Counterfactual proof of edge (Governed vs. Naive baseline), capital preservation decomposition, and institutional attribution.
 
 ---
 
 ## PART 1: Nomenclature & Architecture Reconciliation
 
-### 1.1 Roadmap Milestones vs. Sprint History
-| Identifier | Document / Test Context | True Architectural Scope | Reconciliation Ruling |
+### 1.1 Architectural Convergence (Option A)
+| Roadmap Item | Prior Status | Consolidated Status (Option A) | Rationale |
 | :--- | :--- | :--- | :--- |
-| **H14.1** | Governing Roadmap | Unified Cockpit CQRS Read Model (<12 kB, single source of truth for Triad LHI/HHI/IAI) | **PARTIAL**. Remediated API-only foundation; local record selector SQLite persistence; zero fabricated default scores; honest UNAVAILABLE states. Real HTTP wire payload: 574 bytes uninitialized, 1,651 bytes initialized. Full broker ingestion scheduled for H15+. |
-| **H14.2** | Governing Roadmap | Semantic Zoom across all 4 hubs (Level 1 30-sec Overview → Level 2 Context Drawer → Level 3 Workbench) | **Substantially Complete** (Architectural & Functional); empirical 30-second timing unverified by human testing. |
-| **H14.3** | Historical Sprint Report (`HORIZON_14_3_CERTIFICATION_REPORT.md`) | Institutional Trading Workstation Taste & Density Redesign across the 6 trading hubs (`/radar`, `/setups`, `/portfolio`, `/journal`, `/performance`, `/research`) | **Sub-phase of H17**. Does not supersede H14.1/H14.2; represents visual and workflow hardening of trading hubs. |
-| **H15.1** | Governing Roadmap | Four Core Hubs (`/today`, `/future`, `/progress`, `/household`) | **Governing Baseline**. Implemented in `frontend/app/{today,future,progress,household}` and `frontend/app/cockpit/*`. |
-| **H15.2** | Governing Roadmap | Global Command Palette with unified navigation | **Governing Baseline**. Implemented in `components/CommandPaletteModal.tsx`. |
-| **H15 (Terminal)**| Historical Sprint Report (`verify-horizon15-attribution.mjs`) | Proof of Edge & Counterfactual Attribution Engine in `/performance` and dynamic multi-factor screener in `/radar` | **Sub-phase of H17**. Milestone history for trading performance attribution. |
-| **H16.1** | Governing Roadmap | Narrative Intelligence (Daily debrief, weekly synthesis, scenario narrative) | **Future Phase**. Rule-based deterministic templates present. Note: H16 does not inherently require GenAI; deterministic heuristic synthesis is fully valid. |
-| **H16.2** | Governing Roadmap | Adaptive Personalization (Cognitive load adaptation, domain prioritization) | **Future Phase**. Plain English vs Pro Quant toggle implemented; automated load adaptation pending. |
-| **H17** | Governing Roadmap | Trading & Investment Experience (Full-lifecycle trading, portfolio heat, discipline) | **Substantially Complete**. 6 flagship hubs active and verified with 1,172 assertions. |
-| **H17.2** | Governing Roadmap | Trader Discipline Engine (Pre-trade friction, loss cooldown, brier calibration) | **Substantially Complete**. Implemented via `governorSizingEngine.ts` and `/journal`. |
-| **H18** | Governing Roadmap | Specialist Workbenches (Monte Carlo / Simulation, Allocator, Life Graph, Signals, Journal) | **Partially Implemented**. 5 workbenches created in `frontend/app/workbench/*` (Allocator, Simulation, Life Graph, Signals, Journal). Note: H18 specification does not include a Tax workbench. |
+| **Personal Life OS** (`/today`, `/future`, `/progress`, `/household`) | Active mock hubs | **DEPRECATED & RETIRED** (Redirect to `/`) | Eliminated conceptual drift and ungrounded mock calculations. |
+| **Specialist Workbenches** (`/workbench/*`) | Standalone pages | **DEPRECATED & RETIRED** (Redirect to `/` or `/journal`) | Workbenches folded into core hubs. |
+| **Research Hub** (`/research`) | Duplicate page | **ABSORBED INTO TERMINAL** (Redirect to `/?symbol=...`) | Terminal's Smart Money and Fundamentals tabs provide superior depth. |
+| **Screener Hub** (`/screener`) | Duplicate page | **ABSORBED INTO RADAR** (Redirect to `/radar`) | Radar now handles multi-model scanning and on-demand tape inspection. |
+| **Behavioral Governor** | Client-side store | **SERVER-AUTHORITATIVE API** | Telemetry backed by persistent SQLite `user_trade_journal` table. |
 
-### 1.2 The Dual-Universe Relationship
+### 1.2 The Consolidated Single-Universe Architecture
 ```
 +---------------------------------------------------------------------------------------------------+
-|                                 ARX UNIFIED INTELLIGENCE PLATFORM                                 |
+|                         ARX TERMINAL: INSTITUTIONAL TRADING WORKSTATION                           |
 +---------------------------------------------------------------------------------------------------+
                                                   |
-                         +------------------------+------------------------+
-                         |                                                 |
-                         v                                                 v
-    +------------------------------------------+      +------------------------------------------+
-    |       EXECUTIVE / LIFE OS UNIVERSE       |      |     INSTITUTIONAL TRADING WORKSTATION    |
-    +------------------------------------------+      +------------------------------------------+
-    | Hub 1: /today     (Execution & Actions)  |      | Hub 1: /radar       (Multi-Factor Screener) |
-    | Hub 2: /future    (Projections & Scenarios) |   | Hub 2: /setups      (Asymmetric Execution)|
-    | Hub 3: /progress  (Velocity & Trajectory)|      | Hub 3: /portfolio   (Risk Heat & Stops)  |
-    | Hub 4: /household (Capital & Entities)   |      | Hub 4: /journal     (Discipline & Brier) |
-    +------------------------------------------+      | Hub 5: /performance (Attribution & Proof)|
-                         |                            | Hub 6: /research    (13F & SEC Dossiers) |
-                         |                            +------------------------------------------+
-                         |                                                 |
-                         +------------------------+------------------------+
-                                                  |
+         +------------------+---------------------+--------------------+------------------+
+         |                  |                     |                    |                  |
+         v                  v                     v                    v                  v
+  +--------------+   +--------------+      +--------------+     +--------------+   +--------------+
+  |  1. RADAR    |-->| 2. TERMINAL  |----->|  3. SETUPS   |---->| 4. PORTFOLIO |---> 5. JOURNAL   |
+  |  (Discovery) |   |  (Deep-Dive) |      | (Execution)  |     |  (Risk Heat) |   | (Discipline) |
+  +--------------+   +--------------+      +--------------+     +--------------+   +--------------+
+                                                                                          |
+                                                                                          v
+                                                                                   +--------------+
+                                                                                   |6. PERFORMANCE|
+                                                                                   |  (Attribution|
+                                                                                   +--------------+
+```
                                                   v
                       +-------------------------------------------------------+
                       |         CENTRAL CQRS BRIDGE & BEHAVIORAL GOVERNOR     |

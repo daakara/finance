@@ -20,7 +20,7 @@ A professional-grade, institutional financial intelligence platform featuring re
 - **⚡ Day Trader Scalp Sessions**: `1m`, `5m`, `15m`, `1h` timeframes with live **Volume-Weighted Average Price (VWAP)** indicator overlay and Unix epoch time scaling.
 - **🏛️ Long-Term Macro Horizons**: `1M`, `6M`, `1Y`, `3Y`, `5Y` timeframes with **20 Exponential Moving Average (20 EMA)** trend support overlay and ISO calendar date scaling.
 - **🎯 Metric Disambiguation**: Clear separation between the Watchlist **24H Daily Return** and the Chart Header **Active Horizon Return** with explicit date baseline tooltips.
-- **⚡ Fast Fallback Resilience**: 1.5s API timeout with high-fidelity instant (<1ms) fallback generator (`generateFallbackAnalytics`).
+- **⚡ Production Reliability**: 2.5s network timeout with explicit error-retry states and strict zero-mock data integrity.
 
 ### 2. 🏛️ Congressional STOCK Act, Legislative Alignment & Staleness Decay
 - **Public Law 112-105 Tracking**: Real-time disclosures from US House and Senate members (e.g. Nancy Pelosi LEAPS call purchases).
@@ -32,7 +32,7 @@ A professional-grade, institutional financial intelligence platform featuring re
 - **Volatility Contraction Pattern (VCP)**: 3-stage contraction detection with volume dry-up confirmations.
 - **⚡ 4 Mathematical ATR States**: Real-time state tagging (`IN_BUY_ZONE`, `APPROACHING_TARGET`, `WAITING_PULLBACK`, `STOPPED_OUT`).
 - **Strict Execution Invariant**: `Stop Loss < Optimal Entry Min <= Optimal Entry Max <= Current Spot < Target 1 < Target 2`.
-- **Intraday Position Sizer**: 1-click execution calculation risking $1\%–2\%$ account equity into persistent local storage tracking.
+- **Intraday Position Sizer**: 1-click execution calculation risking $1\%–2\%$ account equity with server-authoritative Behavioral Governor sizing clamps.
 
 ### 4. 🛡️ Cornish-Fisher Modified VaR & Self-Healing Engine
 - **Non-Normal Fat-Tail VaR**: Polynomial Cornish-Fisher expansion adjusting for skewness and kurtosis with monotonic 99% $\le$ 95% safety floors.
@@ -47,26 +47,25 @@ A professional-grade, institutional financial intelligence platform featuring re
 finance/
 ├── frontend/                     # Next.js 14 App Router + TailwindCSS (Cloudflare Pages)
 │   ├── app/
-│   │   ├── page.tsx             # Main Terminal with 4 Modular Workspaces
-│   │   ├── compare/page.tsx     # Normalized Multi-Asset Benchmarking
-│   │   ├── screener/page.tsx    # Expert Model Stock Screener (Magic Formula, Lynch, VCP)
-│   │   ├── smart-money/page.tsx # Congressional STOCK Act & Dark Pool Feeds
-│   │   ├── portfolio/page.tsx   # Local Anonymous Portfolio & Execution Tracker
-│   │   └── guide/page.tsx       # Institutional Field Manual & Math Specification
+│   │   ├── page.tsx             # ARX Terminal: Single-Asset Workstation (Execution, Flow, Fundamentals, Risk)
+│   │   ├── radar/page.tsx       # Hub 1: Confluence Radar (Minervini VCP, Smart Money, Value/GARP)
+│   │   ├── setups/page.tsx      # Hub 2: Tactical Breakouts & Server-Governed Execution Tickets
+│   │   ├── portfolio/page.tsx   # Hub 3: Risk-First Capital Heat & Active Stop Floor Triggers
+│   │   ├── journal/page.tsx     # Hub 4: Operational Discipline & Empirical Brier Score
+│   │   └── performance/page.tsx # Hub 5: Counterfactual Proof of Edge & Attribution
 │   ├── components/
 │   │   ├── PriceChart.tsx       # Dual-Horizon TradingView Lightweight Charts
-│   │   ├── Navbar.tsx           # Global Navigation & Role Switcher
-│   │   ├── WatchlistSidebar.tsx # Real-Time 24H Watchlist & Search
-│   │   └── ...                  # Workspace Cards (Execution, Factors, Risk, Smart Money)
+│   │   ├── Navbar.tsx           # 5 Flagship Hub Navigation
+│   │   └── terminal/            # Shared Persistent TerminalShell & Sub-Header
 │   └── lib/
-│       ├── api.ts               # Analytics Engine, Timeout Budgets & Horizon Fallback
-│       ├── constants.ts         # Shared Factor Scores & Multi-Period Baselines
-│       └── institutionalFeeds.ts# FRED Macro & SEC Form 4 Ingestion
+│       ├── api.ts               # Analytics Engine & Authoritative REST Endpoints
+│       └── simulation/          # Invariant Ledger & Behavioral Governor Math
 ├── api/                          # FastAPI Backend Services (Railway Container)
-│   └── main.py                  # Analytical Endpoints, Lifespan Warmup & Invariant Gates
+│   ├── main.py                  # API Entrypoint, Lifespan Warmup & Invariant Gates
+│   └── routes/                  # Analytics, Regimes, Screener, Portfolio, Journal
 ├── analyst_dashboard/            # Quantitative Analyzers, Database & Control Loops
 │   ├── analyzers/               # VaR, Minervini VCP, Factors & Optimal Execution
-│   └── data/                    # MarketDatabaseEngine & HistoryDatabaseEngine (SQLite NVMe)
+│   └── data/                    # MarketDatabaseEngine & HistoryDatabaseEngine (SQLite WAL)
 └── requirements.txt
 ```
 
@@ -75,14 +74,13 @@ finance/
 ### Prerequisites
 - Python 3.8 or higher
 - Git
+- Node.js 18+
 
-### 🚨 SSL Certificate Issue Fix
-This platform includes comprehensive SSL certificate handling to resolve common connection issues. If you experience SSL certificate errors, the system will automatically:
-- Use proper certificate configuration
-- Retry with different SSL approaches  
-- Fall back to realistic sample data for demonstration
-
-See `SSL_FIX_GUIDE.md` for detailed troubleshooting.
+### 🚨 Strict Zero-Mock Data Policy
+This platform enforces mathematical and empirical data integrity:
+- Missing market or macro indicators emit explicit `UNAVAILABLE` states.
+- Synthetic price fallbacks, hardcoded macro inputs, and fabricated trade histories are strictly forbidden.
+- Zero local mock state: all sizing, risk, and journal metrics are anchored in authoritative API feeds.
 
 ### Quick Start
 
