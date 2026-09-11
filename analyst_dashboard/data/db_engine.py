@@ -174,16 +174,46 @@ class HistoryDatabaseEngine:
                         entry_price REAL NOT NULL,
                         exit_price REAL,
                         shares REAL NOT NULL,
-                        r_achieved REAL DEFAULT 0.0,
-                        followed_rules INTEGER NOT NULL DEFAULT 1,
-                        confidence REAL DEFAULT 70.0,
-                        pnl REAL DEFAULT 0.0,
-                        status TEXT NOT NULL DEFAULT 'CLOSED',
+                        remaining_shares REAL,
+                        r_achieved REAL,
+                        followed_rules INTEGER NOT NULL DEFAULT -1,
+                        confidence REAL,
+                        pnl REAL,
+                        status TEXT NOT NULL,
                         entry_date TEXT NOT NULL,
+                        exit_date TEXT,
+                        parent_trade_id INTEGER,
+                        execution_role TEXT DEFAULT 'ENTRY',
+                        idempotency_key TEXT,
+                        notes TEXT,
+                        target1 REAL,
+                        stop_loss REAL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_user_date ON user_trade_journal (user_id, created_at)")
+
+                # Safe backward-compatible column migration for existing SQLite databases
+                cursor.execute("PRAGMA table_info(user_trade_journal)")
+                existing_cols = {row["name"] for row in cursor.fetchall()}
+                migration_cols = [
+                    ("remaining_shares", "REAL"),
+                    ("exit_date", "TEXT"),
+                    ("parent_trade_id", "INTEGER"),
+                    ("execution_role", "TEXT DEFAULT 'ENTRY'"),
+                    ("idempotency_key", "TEXT"),
+                    ("notes", "TEXT"),
+                    ("target1", "REAL"),
+                    ("stop_loss", "REAL"),
+                ]
+                for col_name, col_type in migration_cols:
+                    if col_name not in existing_cols:
+                        cursor.execute(f"ALTER TABLE user_trade_journal ADD COLUMN {col_name} {col_type}")
+                cursor.execute("UPDATE user_trade_journal SET remaining_shares = shares WHERE remaining_shares IS NULL AND status = 'OPEN'")
+                cursor.execute("UPDATE user_trade_journal SET remaining_shares = 0 WHERE remaining_shares IS NULL AND status = 'CLOSED'")
+
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_idempotency ON user_trade_journal (user_id, idempotency_key)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_parent ON user_trade_journal (parent_trade_id)")
         finally:
             conn.close()
 
@@ -522,6 +552,64 @@ class HistoryDatabaseEngine:
         finally:
             conn.close()
 
+    def _format_journal_row(self, row: Any) -> Dict[str, Any]:
+        """Format a user_trade_journal row into the canonical Journal trade dictionary."""
+        if not row:
+            return {}
+        keys = set(row.keys()) if hasattr(row, "keys") else set()
+        pnl_raw = float(row["pnl"]) if (row["pnl"] is not None) else None
+        pnl_str = None
+        if pnl_raw is not None:
+            pnl_str = f"+${pnl_raw:.2f}" if pnl_raw >= 0 else f"-${abs(pnl_raw):.2f}"
+
+        fr = row["followed_rules"]
+        followed_rules = True if fr == 1 else (False if fr == 0 else None)
+
+        status = row["status"]
+        shares = float(row["shares"])
+        rem_shares_val = row["remaining_shares"] if "remaining_shares" in keys else None
+        if rem_shares_val is not None:
+            remaining_shares = float(rem_shares_val)
+        else:
+            remaining_shares = 0.0 if status == "CLOSED" else shares
+
+        exit_date = row["exit_date"] if "exit_date" in keys else None
+        parent_id = str(row["parent_trade_id"]) if ("parent_trade_id" in keys and row["parent_trade_id"] is not None) else None
+        role = row["execution_role"] if ("execution_role" in keys and row["execution_role"]) else "ENTRY"
+        notes = row["notes"] if "notes" in keys else None
+        target1 = float(row["target1"]) if ("target1" in keys and row["target1"] is not None) else None
+        stop_loss = float(row["stop_loss"]) if ("stop_loss" in keys and row["stop_loss"] is not None) else None
+        idempotency_key = row["idempotency_key"] if "idempotency_key" in keys else None
+
+        return {
+            "id": str(row["id"]),
+            "userId": row["user_id"],
+            "ticker": row["symbol"],
+            "symbol": row["symbol"],
+            "setup": row["setup_name"],
+            "setupName": row["setup_name"],
+            "entryPrice": float(row["entry_price"]),
+            "exitPrice": float(row["exit_price"]) if row["exit_price"] is not None else None,
+            "shares": shares,
+            "remainingShares": remaining_shares,
+            "rAchieved": float(row["r_achieved"]) if row["r_achieved"] is not None else None,
+            "followedRules": followed_rules,
+            "confidence": float(row["confidence"]) if row["confidence"] is not None else None,
+            "pnl": pnl_str,
+            "pnlRaw": pnl_raw,
+            "status": status,
+            "date": exit_date if (status == "CLOSED" and exit_date) else row["entry_date"],
+            "entryDate": row["entry_date"],
+            "exitDate": exit_date,
+            "parentTradeId": parent_id,
+            "executionRole": role,
+            "notes": notes,
+            "target1": target1,
+            "stopLoss": stop_loss,
+            "idempotencyKey": idempotency_key,
+            "createdAt": str(row["created_at"]),
+        }
+
     @retry_sqlite()
     def save_journal_trade(self, user_id: str, trade: Dict[str, Any]) -> Dict[str, Any]:
         """Save a trade execution record to user's journal."""
@@ -530,43 +618,369 @@ class HistoryDatabaseEngine:
             with conn:
                 cursor = conn.cursor()
                 entry_date = trade.get("entryDate") or trade.get("date") or datetime.utcnow().strftime("%Y-%m-%d")
+                exit_date = trade.get("exitDate")
+
+                status_raw = trade.get("status")
+                if status_raw:
+                    status = str(status_raw).strip().upper()
+                    if status not in ("OPEN", "CLOSED"):
+                        raise ValueError(f"Invalid trade status: {status}. Must be 'OPEN' or 'CLOSED'.")
+                else:
+                    status = "CLOSED" if (trade.get("exitPrice") is not None or trade.get("pnl") is not None or trade.get("rAchieved") is not None) else "OPEN"
+
+                setup_name = (trade.get("setupName") or trade.get("setup") or "").strip() or None
+                exit_price = float(trade["exitPrice"]) if trade.get("exitPrice") is not None else None
+                r_achieved = float(trade["rAchieved"]) if trade.get("rAchieved") is not None else None
+
+                # followed_rules in SQLite schema has NOT NULL DEFAULT 1.
+                # 1 = True (followed rules), 0 = False (violated rules), -1 = Missing / Unrecorded
+                fr_val = trade.get("followedRules")
+                followed_rules = 1 if fr_val is True else (0 if fr_val is False else -1)
+
+                confidence = float(trade["confidence"]) if trade.get("confidence") is not None else None
+                pnl = float(trade["pnl"]) if trade.get("pnl") is not None else None
+                entry_price = float(trade["entryPrice"])
+                shares = float(trade["shares"])
+                remaining_shares = float(trade["remainingShares"]) if trade.get("remainingShares") is not None else (0.0 if status == "CLOSED" else shares)
+                parent_trade_id = int(trade["parentTradeId"]) if trade.get("parentTradeId") is not None else None
+                execution_role = trade.get("executionRole") or ("FULL_EXIT" if status == "CLOSED" else "ENTRY")
+                idempotency_key = trade.get("idempotencyKey")
+                notes = trade.get("notes")
+                target1 = float(trade["target1"]) if trade.get("target1") is not None else None
+                stop_loss = float(trade["stopLoss"]) if trade.get("stopLoss") is not None else None
+
                 cursor.execute(
                     """
                     INSERT INTO user_trade_journal (
-                        user_id, symbol, setup_name, entry_price, exit_price, shares, r_achieved, followed_rules, confidence, pnl, status, entry_date, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                        r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
+                        parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
                     (
                         user_id,
-                        trade["symbol"].upper(),
-                        trade.get("setupName") or trade.get("setup") or "Stage 2 Breakout",
-                        float(trade["entryPrice"]),
-                        float(trade.get("exitPrice") or trade.get("entryPrice")),
-                        float(trade["shares"]),
-                        float(trade.get("rAchieved", 0.0)),
-                        1 if trade.get("followedRules", True) else 0,
-                        float(trade.get("confidence", 70.0)),
-                        float(trade.get("pnl", 0.0)),
-                        trade.get("status", "CLOSED"),
+                        trade["symbol"].upper().strip(),
+                        setup_name,
+                        entry_price,
+                        exit_price,
+                        shares,
+                        remaining_shares,
+                        r_achieved,
+                        followed_rules,
+                        confidence,
+                        pnl,
+                        status,
                         entry_date,
+                        exit_date,
+                        parent_trade_id,
+                        execution_role,
+                        idempotency_key,
+                        notes,
+                        target1,
+                        stop_loss,
                     ),
                 )
                 trade_id = cursor.lastrowid
-                return {
-                    "id": trade_id,
-                    "userId": user_id,
-                    "symbol": trade["symbol"].upper(),
-                    "setupName": trade.get("setupName") or trade.get("setup") or "Stage 2 Breakout",
-                    "entryPrice": float(trade["entryPrice"]),
-                    "exitPrice": float(trade.get("exitPrice") or trade.get("entryPrice")),
-                    "shares": float(trade["shares"]),
-                    "rAchieved": float(trade.get("rAchieved", 0.0)),
-                    "followedRules": bool(trade.get("followedRules", True)),
-                    "confidence": float(trade.get("confidence", 70.0)),
-                    "pnl": float(trade.get("pnl", 0.0)),
-                    "status": trade.get("status", "CLOSED"),
-                    "entryDate": entry_date,
-                }
+                cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (trade_id,))
+                row = cursor.fetchone()
+                return self._format_journal_row(row)
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def record_trade_fill(self, user_id: str, fill_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record an executed trade plan fill in the persistent journal and update portfolio holdings."""
+        conn = self._get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                idempotency_key = fill_data.get("idempotencyKey")
+                if idempotency_key:
+                    cursor.execute(
+                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND idempotency_key = ? LIMIT 1",
+                        (user_id, str(idempotency_key)),
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        return self._format_journal_row(row)
+
+                symbol = fill_data["symbol"].upper().strip()
+                entry_price = float(fill_data["entryPrice"])
+                shares = float(fill_data["shares"])
+                if entry_price <= 0:
+                    raise ValueError("Entry price must be positive.")
+                if shares <= 0:
+                    raise ValueError("Shares count must be positive.")
+
+                stop_loss = float(fill_data["stopLoss"]) if fill_data.get("stopLoss") is not None else None
+                target1 = float(fill_data["target1"]) if fill_data.get("target1") is not None else None
+                setup_name = (fill_data.get("setupName") or fill_data.get("setup") or "").strip() or None
+                confidence = float(fill_data["confidence"]) if fill_data.get("confidence") is not None else None
+                if confidence is not None and (confidence < 0.0 or confidence > 100.0):
+                    raise ValueError("Confidence must be between 0 and 100.")
+
+                entry_date = fill_data.get("entryDate") or datetime.utcnow().strftime("%Y-%m-%d")
+                notes = (fill_data.get("notes") or "").strip() or None
+
+                cursor.execute(
+                    """
+                    INSERT INTO user_trade_journal (
+                        user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                        r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
+                        parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
+                    ) VALUES (?, ?, ?, ?, NULL, ?, ?, NULL, -1, ?, NULL, 'OPEN', ?, NULL, NULL, 'ENTRY', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (
+                        user_id,
+                        symbol,
+                        setup_name,
+                        entry_price,
+                        shares,
+                        shares,
+                        confidence,
+                        entry_date,
+                        idempotency_key,
+                        notes,
+                        target1,
+                        stop_loss,
+                    ),
+                )
+                trade_id = cursor.lastrowid
+
+                # Synchronize with portfolio_holdings
+                cursor.execute(
+                    "SELECT shares, entry_price FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
+                    (user_id, symbol),
+                )
+                existing_holding = cursor.fetchone()
+                if existing_holding:
+                    old_shares = float(existing_holding["shares"])
+                    old_entry = float(existing_holding["entry_price"])
+                    new_shares = old_shares + shares
+                    new_entry = round(((old_shares * old_entry) + (shares * entry_price)) / new_shares, 4)
+                    cursor.execute(
+                        """
+                        UPDATE portfolio_holdings
+                        SET shares = ?, entry_price = ?,
+                            stop_loss_price = COALESCE(?, stop_loss_price),
+                            target_price = COALESCE(?, target_price),
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE user_id = ? AND symbol = ?
+                        """,
+                        (new_shares, new_entry, stop_loss, target1, user_id, symbol),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO portfolio_holdings (
+                            user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Stock', CURRENT_TIMESTAMP)
+                        """,
+                        (user_id, symbol, symbol, shares, entry_price, entry_price, target1, stop_loss, entry_date),
+                    )
+
+                cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (trade_id,))
+                created_row = cursor.fetchone()
+                return self._format_journal_row(created_row)
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def record_trade_exit(self, user_id: str, exit_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record a partial or complete exit of an active open trade."""
+        conn = self._get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                idempotency_key = exit_data.get("idempotencyKey")
+                if idempotency_key:
+                    cursor.execute(
+                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND idempotency_key = ? LIMIT 1",
+                        (user_id, str(idempotency_key)),
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        return self._format_journal_row(row)
+
+                trade_id = exit_data.get("tradeId")
+                symbol = exit_data.get("symbol", "").upper().strip()
+                exit_price = float(exit_data["exitPrice"])
+                if exit_price <= 0:
+                    raise ValueError("Exit price must be positive.")
+
+                # Locate target trade
+                if trade_id is not None:
+                    cursor.execute(
+                        "SELECT * FROM user_trade_journal WHERE id = ? AND user_id = ?",
+                        (int(trade_id), user_id),
+                    )
+                else:
+                    cursor.execute(
+                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND symbol = ? AND status = 'OPEN' ORDER BY created_at DESC LIMIT 1",
+                        (user_id, symbol),
+                    )
+                parent = cursor.fetchone()
+                if not parent:
+                    raise ValueError(f"No active open trade found for symbol '{symbol}' or ID '{trade_id}'.")
+
+                if parent["status"] != "OPEN":
+                    raise ValueError(f"Trade #{parent['id']} is already CLOSED. Cannot record exit on a closed trade.")
+
+                parent_remaining = float(parent["remaining_shares"] if parent["remaining_shares"] is not None else parent["shares"])
+                if parent_remaining <= 0:
+                    raise ValueError(f"Trade #{parent['id']} has zero remaining shares.")
+
+                exit_shares = float(exit_data.get("shares") or parent_remaining)
+                if exit_shares <= 0:
+                    raise ValueError("Exit shares count must be positive.")
+                if exit_shares > parent_remaining + 1e-6:
+                    raise ValueError(f"Exit quantity ({exit_shares}) exceeds remaining open shares ({parent_remaining}).")
+
+                exit_date = exit_data.get("exitDate") or datetime.utcnow().strftime("%Y-%m-%d")
+                fr_val = exit_data.get("followedRules")
+                followed_rules = 1 if fr_val is True else (0 if fr_val is False else -1)
+                notes = (exit_data.get("notes") or "").strip() or None
+
+                entry_price = float(parent["entry_price"])
+                leg_pnl = round((exit_price - entry_price) * exit_shares, 2)
+
+                stop_loss = float(parent["stop_loss"]) if parent["stop_loss"] is not None else None
+                r_achieved = None
+                if stop_loss is not None and entry_price != stop_loss:
+                    risk_per_share = entry_price - stop_loss
+                    r_achieved = round((exit_price - entry_price) / risk_per_share, 2)
+
+                is_partial = (parent_remaining - exit_shares) > 1e-6
+
+                if is_partial:
+                    new_remaining = round(parent_remaining - exit_shares, 6)
+                    cursor.execute(
+                        "UPDATE user_trade_journal SET remaining_shares = ? WHERE id = ?",
+                        (new_remaining, parent["id"]),
+                    )
+                    cursor.execute(
+                        """
+                        INSERT INTO user_trade_journal (
+                            user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                            r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
+                            parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        """,
+                        (
+                            user_id,
+                            parent["symbol"],
+                            parent["setup_name"],
+                            entry_price,
+                            exit_price,
+                            exit_shares,
+                            r_achieved,
+                            followed_rules,
+                            parent["confidence"],
+                            leg_pnl,
+                            parent["entry_date"],
+                            exit_date,
+                            parent["id"],
+                            idempotency_key,
+                            notes,
+                            parent["target1"],
+                            stop_loss,
+                        ),
+                    )
+                    leg_id = cursor.lastrowid
+
+                    # Decrement portfolio_holdings
+                    cursor.execute(
+                        "SELECT shares FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
+                        (user_id, parent["symbol"]),
+                    )
+                    h_row = cursor.fetchone()
+                    if h_row:
+                        h_shares = float(h_row["shares"])
+                        if h_shares > exit_shares + 1e-6:
+                            cursor.execute(
+                                "UPDATE portfolio_holdings SET shares = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND symbol = ?",
+                                (round(h_shares - exit_shares, 6), user_id, parent["symbol"]),
+                            )
+                        else:
+                            cursor.execute(
+                                "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
+                                (user_id, parent["symbol"]),
+                            )
+
+                    cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (leg_id,))
+                    result_row = cursor.fetchone()
+                    return self._format_journal_row(result_row)
+
+                else:
+                    # Full close
+                    cursor.execute("SELECT COUNT(*) as count FROM user_trade_journal WHERE parent_trade_id = ?", (parent["id"],))
+                    prior_legs = cursor.fetchone()["count"]
+
+                    if prior_legs > 0:
+                        cursor.execute(
+                            "UPDATE user_trade_journal SET remaining_shares = 0, status = 'CLOSED' WHERE id = ?",
+                            (parent["id"],),
+                        )
+                        cursor.execute(
+                            """
+                            INSERT INTO user_trade_journal (
+                                user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                                r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
+                                parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            """,
+                            (
+                                user_id,
+                                parent["symbol"],
+                                parent["setup_name"],
+                                entry_price,
+                                exit_price,
+                                exit_shares,
+                                r_achieved,
+                                followed_rules,
+                                parent["confidence"],
+                                leg_pnl,
+                                parent["entry_date"],
+                                exit_date,
+                                parent["id"],
+                                idempotency_key,
+                                notes,
+                                parent["target1"],
+                                stop_loss,
+                            ),
+                        )
+                        final_id = cursor.lastrowid
+                    else:
+                        cursor.execute(
+                            """
+                            UPDATE user_trade_journal
+                            SET exit_price = ?, remaining_shares = 0, status = 'CLOSED', exit_date = ?,
+                                pnl = ?, r_achieved = ?, followed_rules = ?, execution_role = 'FULL_EXIT',
+                                notes = COALESCE(?, notes), idempotency_key = COALESCE(?, idempotency_key)
+                            WHERE id = ?
+                            """,
+                            (
+                                exit_price,
+                                exit_date,
+                                leg_pnl,
+                                r_achieved,
+                                followed_rules,
+                                notes,
+                                idempotency_key,
+                                parent["id"],
+                            ),
+                        )
+                        final_id = parent["id"]
+
+                    # Remove holding from portfolio_holdings
+                    cursor.execute(
+                        "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
+                        (user_id, parent["symbol"]),
+                    )
+
+                    cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (final_id,))
+                    result_row = cursor.fetchone()
+                    return self._format_journal_row(result_row)
         finally:
             conn.close()
 
@@ -578,7 +992,7 @@ class HistoryDatabaseEngine:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT id, user_id, symbol, setup_name, entry_price, exit_price, shares, r_achieved, followed_rules, confidence, pnl, status, entry_date, created_at
+                SELECT *
                 FROM user_trade_journal
                 WHERE user_id = ?
                 ORDER BY created_at DESC
@@ -587,28 +1001,7 @@ class HistoryDatabaseEngine:
                 (user_id, limit),
             )
             rows = cursor.fetchall()
-            return [
-                {
-                    "id": str(row["id"]),
-                    "ticker": row["symbol"],
-                    "symbol": row["symbol"],
-                    "setup": row["setup_name"],
-                    "setupName": row["setup_name"],
-                    "entryPrice": float(row["entry_price"]),
-                    "exitPrice": float(row["exit_price"]) if row["exit_price"] is not None else None,
-                    "shares": float(row["shares"]),
-                    "rAchieved": float(row["r_achieved"]),
-                    "followedRules": bool(row["followed_rules"]),
-                    "confidence": float(row["confidence"]),
-                    "pnl": f"+${row['pnl']:.2f}" if row["pnl"] >= 0 else f"-${abs(row['pnl']):.2f}",
-                    "pnlRaw": float(row["pnl"]),
-                    "status": row["status"],
-                    "date": row["entry_date"],
-                    "entryDate": row["entry_date"],
-                    "createdAt": str(row["created_at"]),
-                }
-                for row in rows
-            ]
+            return [self._format_journal_row(row) for row in rows]
         finally:
             conn.close()
 
@@ -627,14 +1020,18 @@ class HistoryDatabaseEngine:
         total_trades = len(trades)
         consecutive_loss_streak = 0
         for t in trades:
-            if t["pnlRaw"] < 0 or t["rAchieved"] < 0:
+            pnl_val = t.get("pnlRaw")
+            r_val = t.get("rAchieved")
+            is_loss = (pnl_val is not None and pnl_val < 0) or (r_val is not None and r_val < 0)
+            is_win = (pnl_val is not None and pnl_val > 0) or (r_val is not None and r_val > 0)
+            if is_loss:
                 consecutive_loss_streak += 1
-            else:
+            elif is_win:
                 break
 
         today_str = datetime.utcnow().strftime("%Y-%m-%d")
         today_trades = [t for t in trades if t["date"] == today_str or (t.get("createdAt") and t["createdAt"][:10] == today_str)]
-        today_loss_dollars = sum(abs(t["pnlRaw"]) for t in today_trades if t["pnlRaw"] < 0)
+        today_loss_dollars = sum(abs(t["pnlRaw"]) for t in today_trades if t.get("pnlRaw") is not None and t["pnlRaw"] < 0)
 
         daily_drawdown_pct = 0.0
         if account_equity and account_equity > 0:
@@ -643,15 +1040,24 @@ class HistoryDatabaseEngine:
         rule_adherence_pct: Optional[float] = None
         brier_score: Optional[float] = None
 
-        if total_trades > 0:
-            rules_followed = sum(1 for t in trades if t["followedRules"])
-            rule_adherence_pct = round((rules_followed / total_trades) * 100.0, 1)
+        trades_with_rule_evidence = [t for t in trades if t.get("followedRules") is not None]
+        if len(trades_with_rule_evidence) > 0:
+            rules_followed = sum(1 for t in trades_with_rule_evidence if t["followedRules"] is True)
+            rule_adherence_pct = round((rules_followed / len(trades_with_rule_evidence)) * 100.0, 1)
 
-            brier_sum = sum(
-                ((t["confidence"] / 100.0) - (1.0 if t["pnlRaw"] > 0 or t["rAchieved"] > 0 else 0.0)) ** 2
-                for t in trades
+        brier_eligible_trades = [
+            t for t in trades
+            if t.get("confidence") is not None and (
+                (t.get("pnlRaw") is not None and t["pnlRaw"] != 0) or
+                (t.get("rAchieved") is not None and t["rAchieved"] != 0)
             )
-            brier_score = round(brier_sum / total_trades, 2)
+        ]
+        if len(brier_eligible_trades) > 0:
+            brier_sum = sum(
+                ((t["confidence"] / 100.0) - (1.0 if (t.get("pnlRaw") or 0) > 0 or (t.get("rAchieved") or 0) > 0 else 0.0)) ** 2
+                for t in brier_eligible_trades
+            )
+            brier_score = round(brier_sum / len(brier_eligible_trades), 2)
 
         return {
             "available": True,

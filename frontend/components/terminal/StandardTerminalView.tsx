@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
 
@@ -171,12 +172,12 @@ export default function StandardTerminalView({
                 📋 Open Research & Evidence Ledger
               </button>
             ) : insight.terminalState.posture === "AVOID" ? (
-              <a
-                href="/screener"
+              <Link
+                href="/radar"
                 className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold font-mono rounded-xl text-xs transition-all active:scale-95 block text-center shadow-md cursor-pointer"
               >
                 🔎 Explore Screened Alternatives
-              </a>
+              </Link>
             ) : (
               <button
                 onClick={onOpenWhy}

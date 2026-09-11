@@ -6,6 +6,7 @@ import { getCanonicalAssetCatalyst } from "./assetRegistry";
 import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "./masterCatalog";
 import { DecisionTrace, FreshnessInfo } from "../types/insight";
 import type { TradeSetupSpec } from "./simulation/governorSizingEngine";
+import type { TradeFillInput, TradeExitInput, TradeCloseInput } from "./tradeLifecycle";
 
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
@@ -3679,22 +3680,31 @@ export interface UserRiskTelemetry {
 
 export interface JournalTradeRecord {
   id: string;
-  ticker: string;
-  symbol: string;
-  setup: string;
-  setupName: string;
+  ticker?: string | null;
+  symbol?: string | null;
+  setup?: string | null;
+  setupName?: string | null;
   entryPrice: number;
   exitPrice?: number | null;
   shares: number;
-  rAchieved: number;
-  followedRules: boolean;
-  confidence?: number;
-  pnl: string;
-  pnlRaw?: number;
+  remainingShares?: number | null;
+  rAchieved?: number | null;
+  followedRules?: boolean | null;
+  confidence?: number | null;
+  pnl?: string | null;
+  pnlRaw?: number | null;
   status: string;
-  date: string;
-  entryDate: string;
-  createdAt?: string;
+  date?: string | null;
+  entryDate?: string | null;
+  exitDate?: string | null;
+  closedAt?: string | null;
+  parentTradeId?: string | null;
+  executionRole?: string | null;
+  notes?: string | null;
+  target1?: number | null;
+  stopLoss?: number | null;
+  idempotencyKey?: string | null;
+  createdAt?: string | null;
 }
 
 /**
@@ -3754,8 +3764,9 @@ export async function saveJournalTrade(
     followedRules?: boolean;
     confidence?: number;
     pnl?: number;
-    status?: string;
+    status: string;
     entryDate?: string;
+    exitDate?: string;
   },
   userId?: string
 ): Promise<JournalTradeRecord | null> {
@@ -3780,4 +3791,98 @@ export async function saveJournalTrade(
     return null;
   }
 }
+
+/**
+ * Record an actual broker execution fill in the persistent journal and sync active portfolio holding.
+ */
+export async function recordBrokerFill(
+  fill: TradeFillInput,
+  userId?: string
+): Promise<JournalTradeRecord | null> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/fill`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(fill),
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.warn("Failed to record broker fill:", errData.detail || res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Network error recording broker fill:", err);
+    return null;
+  }
+}
+
+/**
+ * Record a partial scale-out or complete exit on an active open trade.
+ */
+export async function recordTradeExit(
+  exitReq: TradeExitInput,
+  userId?: string
+): Promise<JournalTradeRecord | null> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/exit`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(exitReq),
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.warn("Failed to record trade exit:", errData.detail || res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Network error recording trade exit:", err);
+    return null;
+  }
+}
+
+/**
+ * Convenience method to close 100% of an active holding.
+ */
+export async function recordTradeClose(
+  closeReq: TradeCloseInput,
+  userId?: string
+): Promise<JournalTradeRecord | null> {
+  try {
+    const url = `${getApiBaseUrl()}/journal/close`;
+    const headers: Record<string, string> = { ...(ARX_API_HEADERS as Record<string, string>) };
+    if (userId) {
+      headers["X-User-Id"] = userId;
+    }
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(closeReq),
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.warn("Failed to close trade position:", errData.detail || res.statusText);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Network error closing trade position:", err);
+    return null;
+  }
+}
+
 

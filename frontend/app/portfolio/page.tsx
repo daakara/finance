@@ -1,8 +1,11 @@
 "use client";
 
+// Storage architecture: AUTHORITATIVE API PERSISTENCE with local fallback (FastAPI sync)
+
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import TerminalShell from "../../components/terminal/TerminalShell";
+import PageIntro from "../../components/PageIntro";
 import {
   PortfolioPosition,
   PortfolioSummary,
@@ -19,7 +22,13 @@ import {
   endActivePortfolioEdit,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
-import { fetchAssetAnalytics, SpotPriceRegistry } from "../../lib/api";
+import { fetchAssetAnalytics, SpotPriceRegistry, recordTradeExit, recordTradeClose } from "../../lib/api";
+import {
+  validateExitParams,
+  generateIdempotencyKey,
+  calculateRealizedPnL,
+  calculateRealizedR,
+} from "../../lib/tradeLifecycle";
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
 import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
@@ -43,6 +52,7 @@ export default function PortfolioPage() {
   const [anonId, setAnonId] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
+  const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
 
   // Form State for Adding Position with Real-Time Auto-Population
   const [newSymbol, setNewSymbol] = useState("SEDG");
@@ -53,6 +63,24 @@ export default function PortfolioPage() {
   const [isResolvingQuote, setIsResolvingQuote] = useState(false);
   const [resolvedAssetName, setResolvedAssetName] = useState("SolarEdge Technologies");
   const [resolvedQuotePrice, setResolvedQuotePrice] = useState<number | null>(33.51);
+
+  // Exit / Close Position Modal State
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [exitTargetPosition, setExitTargetPosition] = useState<PortfolioPosition | null>(null);
+  const [exitMode, setExitMode] = useState<"FULL" | "PARTIAL">("FULL");
+  const [exitShares, setExitShares] = useState<string>("");
+  const [exitPrice, setExitPrice] = useState<string>("");
+  const [exitDate, setExitDate] = useState<string>("");
+  const [exitFollowedRules, setExitFollowedRules] = useState<boolean | null>(null);
+  const [exitNotes, setExitNotes] = useState<string>("");
+  const [exitSubmitting, setExitSubmitting] = useState(false);
+  const [exitError, setExitError] = useState<string | null>(null);
+  const [exitSuccess, setExitSuccess] = useState<boolean>(false);
+  const [exitResultSummary, setExitResultSummary] = useState<{
+    realizedPnL: number;
+    returnPct: number;
+    exitType: string;
+  } | null>(null);
 
   const populateTickerData = useCallback(async (rawTicker: string) => {
     const trimmed = rawTicker.trim();
@@ -181,10 +209,14 @@ export default function PortfolioPage() {
       console.warn("Portfolio API sync error:", err);
     });
 
-    // Auto-open add modal if ?add=SYMBOL query is present
+    // Parse search parameters: preserve activeSymbol without opening add modal
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const addSym = params.get("add") || params.get("symbol");
+      const sym = params.get("symbol") || params.get("ticker");
+      if (sym) {
+        setActiveSymbol(sym.trim().toUpperCase());
+      }
+      const addSym = params.get("add");
       if (addSym) {
         handleOpenAddModal(addSym);
       }
@@ -298,6 +330,130 @@ export default function PortfolioPage() {
     trackMatomoEvent("User Journey", "Remove Portfolio Position", symbol);
   };
 
+  const handleOpenExitModal = (pos: PortfolioPosition) => {
+    setExitTargetPosition(pos);
+    setExitMode("FULL");
+    setExitShares(pos.shares.toString());
+    const defaultPrice = (pos.currentPrice && !isNaN(pos.currentPrice) && pos.currentPrice > 0)
+      ? pos.currentPrice.toFixed(2)
+      : pos.entryPrice.toFixed(2);
+    setExitPrice(defaultPrice);
+    setExitDate(new Date().toISOString().slice(0, 10));
+    setExitFollowedRules(null);
+    setExitNotes("");
+    setExitError(null);
+    setExitSuccess(false);
+    setExitResultSummary(null);
+    setShowExitModal(true);
+  };
+
+  const handleCloseExitModal = () => {
+    setShowExitModal(false);
+    setExitTargetPosition(null);
+    setExitError(null);
+    setExitSuccess(false);
+    setExitResultSummary(null);
+  };
+
+  const handleQuickSharesFraction = (fraction: number) => {
+    if (!exitTargetPosition) return;
+    const targetShares = Number((exitTargetPosition.shares * fraction).toFixed(6));
+    setExitShares(targetShares.toString());
+    if (fraction === 1) {
+      setExitMode("FULL");
+    } else {
+      setExitMode("PARTIAL");
+    }
+  };
+
+  const handleSubmitExit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!exitTargetPosition) return;
+
+    setExitError(null);
+    const sharesNum = parseFloat(exitShares);
+    const priceNum = parseFloat(exitPrice);
+
+    const valResult = validateExitParams(exitTargetPosition.shares, sharesNum, priceNum);
+    if (!valResult.valid) {
+      setExitError(valResult.error || "Invalid exit parameters.");
+      return;
+    }
+
+    setExitSubmitting(true);
+    const isFull = Math.abs(sharesNum - exitTargetPosition.shares) < 1e-6 || exitMode === "FULL";
+    const idemKey = generateIdempotencyKey(isFull ? "close" : "exit", exitTargetPosition.symbol, anonId || "anon");
+
+    try {
+      let res;
+      if (isFull) {
+        res = await recordTradeClose({
+          symbol: exitTargetPosition.symbol,
+          exitPrice: priceNum,
+          exitDate: exitDate || new Date().toISOString().slice(0, 10),
+          followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
+          idempotencyKey: idemKey,
+          notes: exitNotes.trim() || undefined,
+        }, anonId);
+      } else {
+        res = await recordTradeExit({
+          symbol: exitTargetPosition.symbol,
+          shares: sharesNum,
+          exitPrice: priceNum,
+          exitDate: exitDate || new Date().toISOString().slice(0, 10),
+          followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
+          idempotencyKey: idemKey,
+          notes: exitNotes.trim() || undefined,
+        }, anonId);
+      }
+
+      if (!res) {
+        setExitError("Failed to record exit. Server rejected or returned an error.");
+        setExitSubmitting(false);
+        return;
+      }
+
+      const pnl = calculateRealizedPnL(exitTargetPosition.entryPrice, priceNum, sharesNum);
+      const retPct = ((priceNum - exitTargetPosition.entryPrice) / exitTargetPosition.entryPrice) * 100;
+
+      // Update local storage portfolio to reflect change
+      if (isFull) {
+        await removePortfolioPosition(exitTargetPosition.symbol);
+      } else {
+        const remaining = exitTargetPosition.shares - sharesNum;
+        await updatePortfolioPosition({
+          ...exitTargetPosition,
+          shares: Number(remaining.toFixed(6)),
+        });
+      }
+
+      const refreshed = loadPortfolioPositions();
+      setPositions(refreshed);
+      setSummary(calculatePortfolioSummary(refreshed));
+
+      setExitSuccess(true);
+      setExitResultSummary({
+        realizedPnL: pnl,
+        returnPct: Number(retPct.toFixed(2)),
+        exitType: isFull ? "Full Close (100%)" : `Partial Scale-Out (${sharesNum} shares)`,
+      });
+
+      trackMatomoEvent(
+        "User Journey",
+        isFull ? "Full Close Trade" : "Partial Scale-Out Trade",
+        `${exitTargetPosition.symbol} (${sharesNum} @ $${priceNum})`
+      );
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("finance:portfolio-updated"));
+      }
+    } catch (err: any) {
+      setExitError(err?.message || "An unexpected error occurred while recording exit.");
+    } finally {
+      setExitSubmitting(false);
+    }
+  };
+
   const [accountEquity, setAccountEquity] = useState<number>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
@@ -342,35 +498,30 @@ export default function PortfolioPage() {
   const targetHits = positions.filter((p) => p.currentPrice !== null && !!p.targetPrice && p.currentPrice >= p.targetPrice);
 
   return (
-    <TerminalShell activeHub="portfolio">
+    <TerminalShell activeHub="portfolio" activeSymbol={activeSymbol}>
       <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
-        {/* Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#243044] pb-4">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800">
-                🔒 ZERO-LOGIN PRIVATE STORAGE
-              </span>
-              <span className="text-slate-500 text-xs hidden sm:inline">• Persistent in Client Storage</span>
-              {lastSyncTime && (
-                <span className="text-slate-400 text-xs hidden md:inline">
-                  • Synced: <span className="text-slate-300 font-bold">{lastSyncTime}</span>
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-              My Portfolio & Holdings
-            </h1>
-            <p className="text-xs text-slate-400 font-sans mt-0.5">
-              Track your real-time holdings, profit/loss, stop-loss protection floors, and profit targets — 100% private to your browser.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC6, Finding T02) */}
+        <PageIntro
+          hubId="portfolio"
+          title="Portfolio"
+          purpose="Monitor active capital at risk, protective stop floors, and current risk heat."
+          badge="Live Risk Ledger"
+          symbol={activeSymbol}
+          primaryAction={{
+            label: "Explore Setups →",
+            href: "/setups",
+          }}
+          secondaryAction={{
+            label: "Add Holding",
+            onClick: () => handleOpenAddModal(),
+          }}
+        >
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => refreshQuotes(positions)}
               disabled={isRefreshing}
-              className={`px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
+              className={`px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer ${
                 isRefreshing ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
@@ -379,22 +530,15 @@ export default function PortfolioPage() {
             </button>
 
             <button
+              type="button"
               onClick={handleExportCsv}
-              className="px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+              className="px-3 py-2 bg-[#162030] hover:bg-[#1f2d44] border border-[#243044] text-slate-200 rounded-xl text-xs font-mono font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <span>📥</span>
               <span className="hidden sm:inline">Export CSV</span>
             </button>
-
-            <button
-              onClick={() => handleOpenAddModal()}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
-            >
-              <span>➕</span>
-              <span>Add Position</span>
-            </button>
           </div>
-        </div>
+        </PageIntro>
 
         {/* Level 0: Asymmetric Capital at Risk & Portfolio Heat Hero */}
         <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl space-y-4">
@@ -599,24 +743,31 @@ export default function PortfolioPage() {
                 {positions.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 px-4 text-center">
-                      <div className="max-w-md mx-auto space-y-3">
+                      <div className="max-w-md mx-auto space-y-3 font-mono">
                         <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-2xl">
                           💼
                         </div>
                         <div className="space-y-1">
-                          <h3 className="text-sm font-bold text-slate-200 font-mono">No Portfolio Holdings Stored</h3>
-                          <p className="text-xs text-slate-400 font-sans">
-                            Your portfolio is clean and private. Add your real or paper positions to monitor asymmetric stop-loss protection and automated risk ladders.
+                          <h3 className="text-sm font-bold text-slate-200 font-mono">No Active Portfolio Holdings Recorded</h3>
+                          <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                            No open positions are currently recorded. Holdings appear here automatically when you record an execution fill in Setups, or you can add an existing position manually.
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAddModal()}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 cursor-pointer"
-                        >
-                          <span>➕</span>
-                          <span>Add First Holding</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2.5 pt-2">
+                          <Link
+                            href="/setups"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-sans transition-transform active:scale-95 shadow-lg shadow-cyan-950/50 cursor-pointer"
+                          >
+                            <span>Explore Setups →</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAddModal()}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold font-sans transition-colors border border-slate-700 cursor-pointer"
+                          >
+                            <span>➕ Add Manual Holding</span>
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -639,7 +790,7 @@ export default function PortfolioPage() {
                     );
                   } else if (pos.targetPrice && pos.currentPrice !== null && pos.currentPrice >= pos.targetPrice) {
                     statusBadge = (
-                      <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold text-[10px] whitespace-nowrap animate-pulse">
+                      <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold text-[10px] whitespace-nowrap">
                         🎯 TP1 TARGET HIT
                       </span>
                     );
@@ -664,7 +815,14 @@ export default function PortfolioPage() {
                   }
 
                   return (
-                    <tr key={pos.symbol} className="hover:bg-[#151e2d] transition-colors">
+                    <tr
+                      key={pos.symbol}
+                      className={`hover:bg-[#151e2d] transition-colors ${
+                        activeSymbol && pos.symbol.toUpperCase() === activeSymbol.toUpperCase()
+                          ? "bg-cyan-950/40 ring-1 ring-cyan-500/50"
+                          : ""
+                      }`}
+                    >
                       <td className="py-3 px-4">
                         <Link href={`/?symbol=${pos.symbol}&ownership=OWNED`} className="font-bold text-cyan-400 hover:text-cyan-300 text-sm flex items-center gap-1.5">
                           <span>{pos.symbol}</span>
@@ -696,6 +854,13 @@ export default function PortfolioPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenExitModal(pos)}
+                            className="px-2.5 py-1 text-[11px] rounded bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/80 transition-colors cursor-pointer font-bold"
+                          >
+                            Record Exit
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(pos)}
@@ -881,6 +1046,302 @@ export default function PortfolioPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Record Exit / Scale-Out Modal */}
+        {showExitModal && exitTargetPosition && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
+            <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden max-h-[92vh] flex flex-col my-auto text-slate-100">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-[#1b2434] bg-[#0e1422] shrink-0">
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg">🎯</span>
+                  <div>
+                    <h3 className="text-base font-bold text-white tracking-tight">Record Trade Exit / Scale-Out</h3>
+                    <p className="text-[10px] text-slate-400">
+                      {exitTargetPosition.symbol} · {exitTargetPosition.shares} shares @ ${exitTargetPosition.entryPrice.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseExitModal}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {exitSuccess && exitResultSummary ? (
+                /* Success Card */
+                <div className="p-6 space-y-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center mx-auto text-2xl">
+                    ✅
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-white font-mono">Trade Exit Recorded</h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {exitResultSummary.exitType} on {exitTargetPosition.symbol} has been recorded to your persistent Journal.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-[#090d14] border border-[#1b2434] space-y-2 max-w-xs mx-auto text-left text-xs font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Realized P&amp;L:</span>
+                      <span className={`font-bold ${exitResultSummary.realizedPnL >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {exitResultSummary.realizedPnL >= 0 ? `+$${exitResultSummary.realizedPnL.toFixed(2)}` : `-$${Math.abs(exitResultSummary.realizedPnL).toFixed(2)}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Return:</span>
+                      <span className={`font-bold ${exitResultSummary.returnPct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {exitResultSummary.returnPct >= 0 ? `+${exitResultSummary.returnPct.toFixed(2)}%` : `${exitResultSummary.returnPct.toFixed(2)}%`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCloseExitModal}
+                      className="px-4 py-2 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <Link
+                      href="/journal"
+                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      View Journal →
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                /* Exit Form */
+                <form onSubmit={handleSubmitExit} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
+                  {/* Mode Selector */}
+                  <div className="flex items-center gap-2 p-1 bg-[#090d14] border border-[#1b2434] rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExitMode("FULL");
+                        setExitShares(exitTargetPosition.shares.toString());
+                      }}
+                      className={`flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                        exitMode === "FULL"
+                          ? "bg-cyan-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      Full Close (100%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExitMode("PARTIAL");
+                        setExitShares((exitTargetPosition.shares * 0.5).toFixed(4));
+                      }}
+                      className={`flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                        exitMode === "PARTIAL"
+                          ? "bg-cyan-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      Partial Scale-Out
+                    </button>
+                  </div>
+
+                  {/* Quick Chips for Scale-Out */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] text-slate-400 font-bold">Quick Fraction:</span>
+                      <span className="text-[10px] text-slate-500">Max: {exitTargetPosition.shares} shares</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { label: "25%", frac: 0.25 },
+                        { label: "50%", frac: 0.5 },
+                        { label: "75%", frac: 0.75 },
+                        { label: "100%", frac: 1.0 },
+                      ].map(({ label, frac }) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => handleQuickSharesFraction(frac)}
+                          className="px-2 py-1 rounded bg-[#090d14] border border-[#1b2537] text-slate-300 hover:border-cyan-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Quantity and Exit Price */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Shares to Exit</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.000001"
+                        max={exitTargetPosition.shares}
+                        value={exitShares}
+                        onChange={(e) => {
+                          setExitShares(e.target.value);
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && Math.abs(val - exitTargetPosition.shares) < 1e-6) {
+                            setExitMode("FULL");
+                          } else {
+                            setExitMode("PARTIAL");
+                          }
+                        }}
+                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Exit Price ($)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0.01"
+                        value={exitPrice}
+                        onChange={(e) => setExitPrice(e.target.value)}
+                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date and Rule Adherence */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Exit Date</label>
+                      <input
+                        type="date"
+                        value={exitDate}
+                        onChange={(e) => setExitDate(e.target.value)}
+                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1">Followed Plan Rules?</label>
+                      <div className="grid grid-cols-3 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setExitFollowedRules(true)}
+                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                            exitFollowedRules === true
+                              ? "bg-emerald-950 border-emerald-500 text-emerald-300"
+                              : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExitFollowedRules(false)}
+                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                            exitFollowedRules === false
+                              ? "bg-rose-950 border-rose-500 text-rose-300"
+                              : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
+                          }`}
+                        >
+                          No
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExitFollowedRules(null)}
+                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                            exitFollowedRules === null
+                              ? "bg-slate-800 border-slate-500 text-slate-200"
+                              : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
+                          }`}
+                          title="Preserve missing evidence (zero fabrication)"
+                        >
+                          Unrecorded
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes / Reason */}
+                  <div>
+                    <label className="block text-slate-300 font-bold mb-1">Exit Notes / Execution Thesis (Optional)</label>
+                    <textarea
+                      value={exitNotes}
+                      onChange={(e) => setExitNotes(e.target.value)}
+                      rows={2}
+                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white text-xs focus:outline-none resize-none"
+                      placeholder="e.g. Scaled 50% at Target 1, remaining shares moved to breakeven stop."
+                    />
+                  </div>
+
+                  {/* Live Accounting Preview */}
+                  {(() => {
+                    const sharesNum = parseFloat(exitShares) || 0;
+                    const priceNum = parseFloat(exitPrice) || 0;
+                    const pnl = calculateRealizedPnL(exitTargetPosition.entryPrice, priceNum, sharesNum);
+                    const retPct = exitTargetPosition.entryPrice > 0
+                      ? ((priceNum - exitTargetPosition.entryPrice) / exitTargetPosition.entryPrice) * 100
+                      : 0;
+                    const rAchieved = calculateRealizedR(exitTargetPosition.entryPrice, priceNum, exitTargetPosition.stopLossPrice);
+                    const remaining = Math.max(0, exitTargetPosition.shares - sharesNum);
+
+                    return (
+                      <div className="p-3 rounded-xl bg-[#090d14] border border-cyan-950/80 space-y-1.5 text-xs font-mono">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Realized P&amp;L Preview:</span>
+                          <span className={`font-bold ${pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                            {pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`} ({retPct >= 0 ? `+${retPct.toFixed(2)}%` : `${retPct.toFixed(2)}%`})
+                          </span>
+                        </div>
+                        {rAchieved !== null && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400">Realized R-Multiple:</span>
+                            <span className={`font-bold ${rAchieved >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                              {rAchieved >= 0 ? `+${rAchieved.toFixed(2)}R` : `${rAchieved.toFixed(2)}R`}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span>Remaining Shares:</span>
+                          <span className="text-slate-200 font-bold">{Number(remaining.toFixed(6))}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {exitError && (
+                    <div className="p-2.5 rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-sans">
+                      ⚠️ {exitError}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="pt-3 flex items-center justify-end space-x-2 border-t border-[#1b2434] shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleCloseExitModal}
+                      className="px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={exitSubmitting}
+                      className={`px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer ${
+                        exitSubmitting ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      {exitSubmitting ? "Recording Exit..." : "Confirm Trade Exit"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

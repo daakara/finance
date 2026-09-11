@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense, useRef } from 'react
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import TerminalShell from '../../components/terminal/TerminalShell';
+import PageIntro from '../../components/PageIntro';
 import {
   calculateGovernedPositionSize,
   getTraderContextFromUnifiedCockpit,
@@ -13,11 +14,13 @@ import {
   fetchTacticalSetups,
   fetchTacticalSetupForTicker,
   fetchUserRiskTelemetry,
-  saveJournalTrade,
   UserRiskTelemetry,
   getApiBaseUrl,
   ARX_API_HEADERS,
+  recordBrokerFill,
 } from '../../lib/api';
+import { formatOrderPlanString, copyOrderPlanToClipboard } from '../../lib/orderClipboard';
+import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifecycle';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -34,7 +37,7 @@ function formatPct(val: number | null | undefined, suffix = "%"): string {
 function SetupsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tickerParam = searchParams.get('ticker');
+  const tickerParam = searchParams.get('symbol') || searchParams.get('ticker');
 
   const [availableSetups, setAvailableSetups] = useState<TradeSetupSpec[]>([]);
   const [selectedSetup, setSelectedSetup] = useState<TradeSetupSpec | null>(null);
@@ -224,33 +227,22 @@ function SetupsContent() {
 
   const handleCopyOrder = async () => {
     if (!isActionable || !sizing.entryPivot || !sizing.stopLoss || !sizing.isAvailable || sizing.recommendedShares <= 0) return;
-    const t1 = effectiveSetup.target1 ? `$${effectiveSetup.target1.toFixed(2)}` : "--";
-    const orderStr = `BUY ${sizing.recommendedShares} ${effectiveSetup.ticker} LMT $${sizing.entryPivot.toFixed(2)} | STP $${sizing.stopLoss.toFixed(2)} | TGT ${t1}`;
-    try {
-      if (!navigator?.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable in this browser context.");
-      }
-      await navigator.clipboard.writeText(orderStr);
+    const orderStr = formatOrderPlanString({
+      recommendedShares: sizing.recommendedShares,
+      ticker: effectiveSetup.ticker,
+      entryPivot: sizing.entryPivot,
+      stopLoss: sizing.stopLoss,
+      target1: effectiveSetup.target1,
+    });
+    const result = await copyOrderPlanToClipboard(orderStr, typeof navigator !== 'undefined' ? navigator.clipboard : undefined);
+    if (result.success) {
       setCopyStatus('SUCCESS');
       setCopyErrorMessage(null);
-
-      // Record trade plan execution to server-authoritative trade journal
-      saveJournalTrade({
-        symbol: effectiveSetup.ticker,
-        setupName: effectiveSetup.setupName,
-        entryPrice: sizing.entryPivot,
-        exitPrice: effectiveSetup.target1 || sizing.entryPivot,
-        shares: sizing.recommendedShares,
-        confidence: effectiveSetup.confluenceScore || 70,
-        followedRules: true,
-        status: "OPEN",
-      }).catch((err) => console.warn("Auto-save journal trade execution failed:", err));
-
       setTimeout(() => setCopyStatus('IDLE'), 2500);
-    } catch (err: any) {
-      console.warn("Failed to copy execution ticket:", err);
+    } else {
+      console.warn("Failed to copy execution ticket:", result.error);
       setCopyStatus('FAILED');
-      setCopyErrorMessage(err?.message || "Clipboard write permission denied.");
+      setCopyErrorMessage(result.error || "Clipboard write permission denied.");
       setTimeout(() => {
         setCopyStatus('IDLE');
         setCopyErrorMessage(null);
@@ -258,30 +250,113 @@ function SetupsContent() {
     }
   };
 
+  const [showFillModal, setShowFillModal] = useState(false);
+  const [fillPrice, setFillPrice] = useState<string>("");
+  const [fillShares, setFillShares] = useState<string>("");
+  const [fillDate, setFillDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [fillConfidence, setFillConfidence] = useState<string>("");
+  const [fillNotes, setFillNotes] = useState<string>("");
+  const [fillSubmitting, setFillSubmitting] = useState(false);
+  const [fillError, setFillError] = useState<string | null>(null);
+  const [fillSuccess, setFillSuccess] = useState<boolean>(false);
+
+  const handleOpenFillModal = () => {
+    setFillPrice(sizing.entryPivot ? sizing.entryPivot.toFixed(2) : "");
+    setFillShares(sizing.recommendedShares ? sizing.recommendedShares.toString() : "");
+    setFillDate(new Date().toISOString().slice(0, 10));
+    setFillConfidence(effectiveSetup.confluenceScore ? effectiveSetup.confluenceScore.toString() : "");
+    setFillNotes("");
+    setFillError(null);
+    setFillSuccess(false);
+    setShowFillModal(true);
+  };
+
+  const handleSubmitFill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFillError(null);
+    const p = parseFloat(fillPrice);
+    const s = parseFloat(fillShares);
+    const c = fillConfidence ? parseFloat(fillConfidence) : undefined;
+
+    const validation = validateFillParams({
+      symbol: effectiveSetup.ticker,
+      entryPrice: p,
+      shares: s,
+      stopLoss: sizing.stopLoss,
+      target1: effectiveSetup.target1,
+      confidence: c,
+    });
+
+    if (!validation.valid) {
+      setFillError(validation.error || "Invalid fill parameters.");
+      return;
+    }
+
+    setFillSubmitting(true);
+    try {
+      const idempKey = generateIdempotencyKey('fill', effectiveSetup.ticker);
+      const res = await recordBrokerFill({
+        symbol: effectiveSetup.ticker,
+        setupName: effectiveSetup.setupName,
+        entryPrice: p,
+        shares: s,
+        stopLoss: sizing.stopLoss,
+        target1: effectiveSetup.target1,
+        confidence: c,
+        entryDate: fillDate,
+        idempotencyKey: idempKey,
+        notes: fillNotes.trim() || undefined,
+      });
+
+      if (!res) {
+        setFillError("Failed to record broker fill to API. Please check server connection.");
+        setFillSubmitting(false);
+        return;
+      }
+
+      setFillSuccess(true);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("finance:portfolio-updated"));
+      }
+    } catch (err: any) {
+      setFillError(err.message || "An error occurred recording execution fill.");
+    } finally {
+      setFillSubmitting(false);
+    }
+  };
+
   return (
-    <TerminalShell activeHub="setups">
+    <TerminalShell
+      activeHub="setups"
+      activeSymbol={selectedSetup?.ticker || (tickerParam ? tickerParam.trim().toUpperCase() : null)}
+    >
       <div className="space-y-6">
-        {/* Top Control & Guidance Banner */}
-        <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">
-                Tactical Execution Ticket
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                One Product · 3 Detail Levels
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-slate-200 mt-0.5">
-              Strict Minervini pivot entries, maximum 8% stop losses, and dynamic Behavioral Governor sizing.
-            </div>
-          </div>
-          
+        {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC5) */}
+        <PageIntro
+          hubId="setups"
+          title={selectedSetup?.ticker ? `Setups — ${selectedSetup.ticker}` : "Setups"}
+          purpose="Prepare and size your execution ticket according to risk limits."
+          badge={selectedSetup?.isActionable ? "Actionable Setup" : "Setup Sizing"}
+          symbol={selectedSetup?.ticker || (tickerParam ? tickerParam.trim().toUpperCase() : null)}
+          primaryAction={
+            isActionable && sizing.isAvailable && sizing.recommendedShares > 0
+              ? {
+                  label: "Record Broker Fill →",
+                  onClick: handleOpenFillModal,
+                }
+              : undefined
+          }
+          secondaryAction={{
+            label: "Explore Radar Candidates →",
+            href: "/radar",
+          }}
+        >
           {/* Mode Switcher */}
           <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
             <button
+              type="button"
               onClick={() => setExecutionMode('STANDARD')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'STANDARD'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -290,8 +365,9 @@ function SetupsContent() {
               Standard
             </button>
             <button
+              type="button"
               onClick={() => setExecutionMode('GUIDED')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'GUIDED'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -300,8 +376,9 @@ function SetupsContent() {
               🛡️ Guided (Recommended)
             </button>
             <button
+              type="button"
               onClick={() => setExecutionMode('QUANT')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'QUANT'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -310,7 +387,7 @@ function SetupsContent() {
               🔬 Quant
             </button>
           </div>
-        </div>
+        </PageIntro>
 
         {/* Loading Indicator */}
         {loadState === 'LOADING' && (
@@ -736,18 +813,14 @@ function SetupsContent() {
                         : !isActionable
                         ? 'EXECUTION TICKET SUPPRESSED (CRITERIA NOT MET)'
                         : copyStatus === 'SUCCESS'
-                        ? '✔ EXECUTION TICKET COPIED TO CLIPBOARD'
+                        ? '✔ TRADE PLAN COPIED TO CLIPBOARD'
                         : copyStatus === 'FAILED'
                         ? `✖ FAILED TO COPY: ${copyErrorMessage || 'CLIPBOARD ERROR'}`
-                        : `COPY EXECUTION TICKET: ${sizing.recommendedShares} SHARES ($${sizing.estimatedCapitalAllocated.toLocaleString()})`}
+                        : `COPY TRADE PLAN: ${sizing.recommendedShares} SHARES ($${sizing.estimatedCapitalAllocated.toLocaleString()})`}
                     </span>
                   </button>
                   <div className="text-[10px] font-mono text-slate-400 text-center mt-2">
-                    {isActionable && sizing.isAvailable && sizing.entryPivot > 0 && sizing.stopLoss > 0
-                      ? `Formats execution order string to clipboard (does not route to broker): BUY ${sizing.recommendedShares} ${effectiveSetup.ticker} LMT $${sizing.entryPivot.toFixed(2)} | STP $${sizing.stopLoss.toFixed(2)} | TGT ${formatPrice(effectiveSetup.target1)}`
-                      : !sizing.isAvailable
-                      ? 'Execution ticket copy disabled: Risk parameter dependencies unresolved (intraday drawdown and loss streak tracking lack automated API telemetry writers). Sizing remains safely locked until authoritative risk inputs are supplied.'
-                      : 'Trade levels suppressed: Stage criteria or volume dry-up not met.'}
+                    Copying plan does NOT create a position. Positions only exist when an execution is logged via Record Broker Fill.
                   </div>
                 </div>
               </div>

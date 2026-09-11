@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Canonical ARX Navigation & Journey Architecture (Phase A2)
  *
  * Defines the authoritative 6-hub trading journey:
@@ -116,7 +116,7 @@ export function extractActiveSymbol(
   } else if (searchParams instanceof URLSearchParams) {
     raw = searchParams.get("symbol") || searchParams.get("ticker") || searchParams.get("q");
   } else if (typeof searchParams === "object") {
-    const val = searchParams.symbol || searchParams.ticker || searchParams.q;
+    const val = searchParams.symbol || searchParams.ticker || (searchParams as any).q;
     raw = Array.isArray(val) ? val[0] : (val ?? null);
   }
 

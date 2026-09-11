@@ -6,6 +6,7 @@ import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
 import { SpotPriceRegistry, fetchTacticalSetups } from "../lib/api";
 import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
 import { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
+import { CANONICAL_HUBS } from "../lib/canonicalNav";
 import MiniSparkline from "./MiniSparkline";
 
 interface CommandItem {
@@ -76,83 +77,20 @@ export default function CommandPaletteModal({
   const allCommands: CommandItem[] = useMemo(() => {
     const items: CommandItem[] = [];
 
-    // 1. Flagship Terminal Hubs (INV-OI115-P)
-    items.push({
-      id: "hub-radar",
-      category: "HUB",
-      title: "Radar Confluence Screener",
-      subtitle: "Multi-factor VCP, Smart Money, and GARP screen",
-      badge: "Hub · Level 0",
-      icon: "📡",
-      action: () => {
-        router.push("/radar");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-setups",
-      category: "HUB",
-      title: "Tactical Setups & Execution Ticket",
-      subtitle: "Asymmetric trade ladder & Governor sizing",
-      badge: "Hub · Level 0",
-      icon: "⚡",
-      action: () => {
-        router.push("/setups");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-portfolio",
-      category: "HUB",
-      title: "Portfolio Risk Heat Map & Stop Loss Floors",
-      subtitle: "Exposure concentration & exit alerts",
-      badge: "Hub · Level 0",
-      icon: "💼",
-      action: () => {
-        router.push("/portfolio");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-journal",
-      category: "HUB",
-      title: "Execution Discipline & Brier Calibration Journal",
-      subtitle: "Rule adherence & anti-tilt monitor",
-      badge: "Hub · Level 0",
-      icon: "📖",
-      action: () => {
-        router.push("/journal");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-performance",
-      category: "HUB",
-      title: "Attribution Proof & Capital Preserved Engine",
-      subtitle: "+$5,225+ counterfactual ROI",
-      badge: "Hub · Level 0",
-      icon: "📈",
-      action: () => {
-        router.push("/performance");
-        onClose();
-      },
-    });
-
-    items.push({
-      id: "hub-research",
-      category: "HUB",
-      title: "Terminal & Research Intelligence",
-      subtitle: "Unified market overview, multi-factor analysis & catalyst dossiers",
-      badge: "Terminal",
-      icon: "🖥️",
-      action: () => {
-        router.push("/");
-        onClose();
-      },
+    // 1. Canonical 6 Flagship Trading Hubs (Radar → Analysis → Setups → Portfolio → Journal → Performance)
+    CANONICAL_HUBS.forEach((hub) => {
+      items.push({
+        id: `hub-${hub.id}`,
+        category: "HUB",
+        title: `${hub.name} Hub`,
+        subtitle: hub.question,
+        badge: hub.badge,
+        icon: hub.icon,
+        action: () => {
+          router.push(hub.href);
+          onClose();
+        },
+      });
     });
 
     items.push({

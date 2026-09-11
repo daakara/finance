@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import TerminalShell from "../../components/terminal/TerminalShell";
+import PageIntro from "../../components/PageIntro";
 import { fetchJournalTrades, fetchUserRiskTelemetry, UserRiskTelemetry } from "../../lib/api";
 
 export interface TradeLogEntry {
@@ -10,16 +11,30 @@ export interface TradeLogEntry {
   ticker: string;
   date: string;
   setup: string;
-  rAchieved: number;
-  followedRules: boolean;
-  pnl: string;
-  confidence?: number;
+  rAchieved?: number | null;
+  followedRules?: boolean | null;
+  pnl?: string | null;
+  confidence?: number | null;
+  status?: string;
+  executionRole?: string | null;
+  remainingShares?: number | null;
 }
 
 export default function JournalPage() {
   const [tradeLogs, setTradeLogs] = useState<TradeLogEntry[]>([]);
   const [telemetry, setTelemetry] = useState<UserRiskTelemetry | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [urlSymbol, setUrlSymbol] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const sym = params.get("symbol") || params.get("ticker");
+      if (sym) {
+        setUrlSymbol(sym.trim().toUpperCase());
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -37,13 +52,16 @@ export default function JournalPage() {
         if (apiTrades && apiTrades.length > 0) {
           const mapped: TradeLogEntry[] = apiTrades.map((t) => ({
             id: String(t.id),
-            ticker: t.ticker || t.symbol,
+            ticker: t.ticker || t.symbol || "",
             date: t.date || t.entryDate || "",
             setup: t.setup || t.setupName || "Breakout",
             rAchieved: t.rAchieved,
             followedRules: t.followedRules,
             pnl: t.pnl,
             confidence: t.confidence,
+            status: t.status,
+            executionRole: t.executionRole,
+            remainingShares: t.remainingShares,
           }));
           setTradeLogs(mapped);
         } else if (typeof window !== "undefined") {
@@ -74,10 +92,12 @@ export default function JournalPage() {
   }, []);
 
   const tradesLogged = tradeLogs.length;
-  const rulesFollowed = tradeLogs.filter((t) => t.followedRules).length;
+  const tradesWithRuleEvidence = tradeLogs.filter((t) => typeof t.followedRules === 'boolean');
+  const rulesFollowed = tradesWithRuleEvidence.filter((t) => t.followedRules === true).length;
+  const ruleViolations = tradesWithRuleEvidence.filter((t) => t.followedRules === false).length;
   const adherenceRatePct = telemetry?.ruleAdherencePct !== null && telemetry?.ruleAdherencePct !== undefined
     ? telemetry.ruleAdherencePct.toFixed(1)
-    : (tradesLogged > 0 ? ((rulesFollowed / tradesLogged) * 100).toFixed(1) : "--");
+    : (tradesWithRuleEvidence.length > 0 ? ((rulesFollowed / tradesWithRuleEvidence.length) * 100).toFixed(1) : "--");
   
   // Authentic Brier Score: Mean squared error between forecasted probability and empirical outcome (1 for win, 0 for loss)
   const brierScore = telemetry?.brierScore !== null && telemetry?.brierScore !== undefined
@@ -95,7 +115,8 @@ export default function JournalPage() {
   const activeLossStreak = telemetry?.consecutiveLossStreak ?? (() => {
     let streak = 0;
     for (let i = 0; i < tradeLogs.length; i++) {
-      if (tradeLogs[i].rAchieved < 0) {
+      const r = tradeLogs[i].rAchieved;
+      if (r !== null && r !== undefined && r < 0) {
         streak++;
       } else {
         break;
@@ -127,15 +148,32 @@ export default function JournalPage() {
   });
 
   return (
-    <TerminalShell activeHub="journal">
+    <TerminalShell activeHub="journal" activeSymbol={urlSymbol}>
       <div className="space-y-6">
-        {/* Level 0: Asymmetric Discipline Status Hero */}
+        {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC7) */}
+        <PageIntro
+          hubId="journal"
+          title="Journal"
+          purpose="Audit trade execution discipline, rule adherence, and calibration."
+          badge="Discipline Audit"
+          symbol={urlSymbol}
+          primaryAction={{
+            label: "Review Setups →",
+            href: "/setups",
+          }}
+          secondaryAction={{
+            label: "View Performance →",
+            href: "/performance",
+          }}
+        />
+
+        {/* Operational Discipline Status Hero */}
         <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
-                  Level 0 · Operational Discipline
+                  Operational Discipline · Verified Edge Compliance
                 </span>
                 <span className="text-xs text-slate-400 font-sans">
                   Did I execute according to my verified statistical edge?
@@ -288,6 +326,7 @@ export default function JournalPage() {
                   <th className="pb-3">Date</th>
                   <th className="pb-3">Ticker</th>
                   <th className="pb-3">Setup Archetype</th>
+                  <th className="pb-3 text-center">Lifecycle State</th>
                   <th className="pb-3 text-center">R-Multiple</th>
                   <th className="pb-3 text-center">Rule Verification</th>
                   <th className="pb-3 text-right">Realized P&amp;L</th>
@@ -296,44 +335,81 @@ export default function JournalPage() {
               <tbody className="divide-y divide-slate-800/60">
                 {tradeLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 px-4 text-center">
-                      <div className="max-w-md mx-auto space-y-3">
+                    <td colSpan={8} className="py-12 px-4 text-center">
+                      <div className="max-w-md mx-auto space-y-3 font-mono">
                         <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-xl">
                           📓
                         </div>
                         <div className="space-y-1">
-                          <h4 className="text-sm font-bold text-slate-200 font-mono">0 Completed Trades Logged</h4>
-                          <p className="text-xs text-slate-400 font-sans">
-                            No executions have been committed yet. When you copy an asymmetric trade ticket or execute orders, your rule adherence and R-multiple will be tracked here.
+                          <h4 className="text-sm font-bold text-slate-200 font-mono">No Completed or Open Trades Logged Yet</h4>
+                          <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                            No executions have been committed yet. When you record a broker fill in Setups or record an exit in Portfolio, your rule adherence, partial scale-outs, and R-multiples will be tracked here.
                           </p>
                         </div>
                         <Link
                           href="/setups"
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-sans transition-transform active:scale-95 cursor-pointer shadow-lg shadow-cyan-950/50"
                         >
-                          <span>⚡</span>
-                          <span>Review Tactical Setups</span>
+                          <span>Review Tactical Setups →</span>
                         </Link>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   tradeLogs.map((log) => (
-                    <tr key={log.id} className="text-slate-300 hover:bg-slate-900/60 transition-colors">
+                    <tr
+                      key={log.id}
+                      className={`text-slate-300 hover:bg-slate-900/60 transition-colors ${
+                        urlSymbol && log.ticker === urlSymbol
+                          ? "bg-cyan-950/40 ring-1 ring-cyan-500/50"
+                          : ""
+                      }`}
+                    >
                       <td className="py-3 font-semibold text-white">{log.id}</td>
                       <td className="py-3 text-slate-400">{log.date}</td>
                       <td className="py-3 font-bold text-white">{log.ticker}</td>
                       <td className="py-3 text-slate-300">{log.setup}</td>
-                      <td className={`py-3 text-center font-bold ${log.rAchieved >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {log.rAchieved > 0 ? `+${log.rAchieved}R` : `${log.rAchieved}R`}
+                      <td className="py-3 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            log.status === "OPEN"
+                              ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                              : "bg-slate-900 text-slate-300 border border-slate-700"
+                          }`}>
+                            {log.status === "OPEN" ? "OPEN HOLDING" : "CLOSED"}
+                          </span>
+                          {log.executionRole && log.executionRole !== "ENTRY" && (
+                            <span className="text-[9px] text-amber-400 font-mono">
+                              {log.executionRole}
+                            </span>
+                          )}
+                          {log.status === "OPEN" && typeof log.remainingShares === "number" && (
+                            <span className="text-[9px] text-slate-400 font-mono">
+                              {log.remainingShares} sh open
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className={`py-3 text-center font-bold ${log.rAchieved !== null && log.rAchieved !== undefined ? (log.rAchieved >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-slate-500'}`}>
+                        {log.rAchieved !== null && log.rAchieved !== undefined ? (log.rAchieved > 0 ? `+${log.rAchieved}R` : `${log.rAchieved}R`) : '--'}
                       </td>
                       <td className="py-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                          VERIFIED
-                        </span>
+                        {log.followedRules === true ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            VERIFIED
+                          </span>
+                        ) : log.followedRules === false ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            VIOLATION
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
+                            UNRECORDED
+                          </span>
+                        )}
                       </td>
-                      <td className={`py-3 text-right font-bold ${log.pnl.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {log.pnl}
+                      <td className={`py-3 text-right font-bold ${log.pnl ? (log.pnl.startsWith('+') ? 'text-emerald-400' : (log.pnl.startsWith('-') ? 'text-rose-400' : 'text-slate-300')) : 'text-slate-500'}`}>
+                        {log.status === "OPEN" && !log.pnl ? <span className="text-slate-500 font-normal">-- (Open)</span> : (log.pnl ?? '--')}
                       </td>
                     </tr>
                   ))

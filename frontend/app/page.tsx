@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Navbar from "../components/Navbar";
 import WatchlistSidebar from "../components/WatchlistSidebar";
 import PriceChart from "../components/PriceChart";
@@ -20,6 +21,7 @@ import OptimalEntryExitCard from "../components/OptimalEntryExitCard";
 import DataSourceBadge from "../components/DataSourceBadge";
 import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
+import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
@@ -33,6 +35,7 @@ function TerminalContent() {
   const urlSymbol = searchParams.get("symbol");
   const urlTab = searchParams.get("tab")?.toUpperCase();
 
+  const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
   const [selectedSymbol, setSelectedSymbol] = useState<string>(urlSymbol ? urlSymbol.toUpperCase() : "AAPL");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -68,8 +71,11 @@ function TerminalContent() {
 
   // Sync URL search params when navigated from Screener, Compare, or Smart Money pages
   useEffect(() => {
-    if (urlSymbol && urlSymbol.toUpperCase() !== selectedSymbol) {
-      setSelectedSymbol(urlSymbol.toUpperCase());
+    if (urlSymbol) {
+      setHasExplicitSymbol(true);
+      if (urlSymbol.toUpperCase() !== selectedSymbol) {
+        setSelectedSymbol(urlSymbol.toUpperCase());
+      }
     }
   }, [urlSymbol]);
 
@@ -95,6 +101,7 @@ function TerminalContent() {
   const handleSelectSymbol = useCallback((newSym: string) => {
     const clean = newSym.trim().toUpperCase();
     if (!clean) return;
+    setHasExplicitSymbol(true);
     setSelectedSymbol(clean);
     trackSymbolSearch(clean, "OmniSearch");
     if (typeof window !== "undefined") {
@@ -219,12 +226,35 @@ function TerminalContent() {
         Skip to main content
       </a>
 
-      <Navbar userRole={userRole} onRoleChange={handleRoleChange} />
+      <Navbar
+        userRole={userRole}
+        onRoleChange={handleRoleChange}
+        activeSymbol={urlSymbol ? urlSymbol.toUpperCase() : (hasExplicitSymbol ? selectedSymbol : null)}
+      />
 
       {/* Semantic Main Content Landmark */}
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
         {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
+          {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC4, A3-AC14) */}
+          <PageIntro
+            hubId="analysis"
+            title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
+            purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+            badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
+            symbol={hasExplicitSymbol ? selectedSymbol : null}
+            isDemo={!hasExplicitSymbol}
+            demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+            primaryAction={{
+              label: `Prepare Trade Setup (${selectedSymbol}) →`,
+              href: `/setups?symbol=${selectedSymbol}`,
+            }}
+            secondaryAction={{
+              label: "Scan Radar Candidates →",
+              href: "/radar",
+            }}
+          />
+
           {/* Intent-First Home Hero: "What are you looking to do today?" */}
           <IntentHero onSelectSymbol={handleSelectSymbol} />
 
@@ -266,12 +296,12 @@ function TerminalContent() {
                 >
                   Analyze NVDA
                 </button>
-                <a
-                  href="/screener"
+                <Link
+                  href={urlSymbol || hasExplicitSymbol ? `/radar?q=${selectedSymbol}` : "/radar"}
                   className="px-3 py-1.5 bg-[#0e1420] hover:bg-[#182335] border border-[#24334a] text-cyan-400 rounded-lg text-xs font-bold transition-all hover:underline"
                 >
-                  Explore Screener Candidates →
-                </a>
+                  Explore Radar Candidates →
+                </Link>
               </div>
             </div>
           ) : (

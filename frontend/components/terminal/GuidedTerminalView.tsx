@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
 
@@ -172,12 +173,12 @@ export default function GuidedTerminalView({
               📋 Open Research
             </button>
           ) : insight.terminalState.posture === "AVOID" ? (
-            <a
-              href="/screener"
+            <Link
+              href="/radar"
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
             >
               🔎 Find Setups
-            </a>
+            </Link>
           ) : (
             <button
               onClick={onOpenWhy}

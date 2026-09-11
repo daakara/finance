@@ -14,39 +14,28 @@
  */
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import Navbar from "../Navbar";
 import { fetchMacroRibbon } from "../../lib/api";
 
-export type TerminalHubId = "radar" | "setups" | "portfolio" | "journal" | "performance";
+import { CANONICAL_HUBS, CanonicalHubId, CanonicalHubMeta } from "../../lib/canonicalNav";
+
+export type TerminalHubId = CanonicalHubId;
 export type TerminalHub = TerminalHubId;
-
-export interface TerminalHubMeta {
-  id: TerminalHubId;
-  route: string;
-  name: string;
-  question: string;
-  badge: string;
-}
-
-export const TERMINAL_HUBS: TerminalHubMeta[] = [
-  { id: "radar", route: "/radar", name: "Radar", question: "What deserves attention today?", badge: "CONFLUENCE" },
-  { id: "setups", route: "/setups", name: "Setups", question: "What is actionable right now?", badge: "EXECUTION" },
-  { id: "portfolio", route: "/portfolio", name: "Portfolio", question: "What risk am I carrying?", badge: "RISK HEAT" },
-  { id: "journal", route: "/journal", name: "Journal", question: "Did I follow my rules?", badge: "DISCIPLINE" },
-  { id: "performance", route: "/performance", name: "Performance", question: "Is ARX actually improving my results?", badge: "PROOF OF EDGE" },
-];
+export type TerminalHubMeta = CanonicalHubMeta;
+export const TERMINAL_HUBS = CANONICAL_HUBS;
 
 interface TerminalShellProps {
-  activeHub: TerminalHubId;
+  activeHub: CanonicalHubId;
+  activeSymbol?: string | null;
   children: React.ReactNode;
 }
 
 export default function TerminalShell({
   activeHub,
+  activeSymbol,
   children,
 }: TerminalShellProps) {
-  const currentHub = TERMINAL_HUBS.find((h) => h.id === activeHub) || TERMINAL_HUBS[0];
+  const currentHub = CANONICAL_HUBS.find((h) => h.id === activeHub) || CANONICAL_HUBS[0];
 
   const [dynamicRegime, setDynamicRegime] = useState<string | null>(null);
 
@@ -69,7 +58,7 @@ export default function TerminalShell({
   return (
     <div className="min-h-screen bg-[#070b12] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black flex flex-col transition-colors duration-200">
       {/* 1. Global Persistent Terminal Navbar */}
-      <Navbar hideMobileDock={true} />
+      <Navbar activeSymbol={activeSymbol} hideMobileDock={false} />
 
       {/* 2. Persistent Terminal Sub-Header & Question Breadcrumb (INV-OI115-P) */}
       <section
@@ -90,23 +79,6 @@ export default function TerminalShell({
               &quot;{currentHub.question}&quot;
             </span>
           </div>
-
-          {/* Direct Flagship Navigation Switching */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {TERMINAL_HUBS.map((hub) => (
-              <Link
-                key={hub.id}
-                href={hub.route}
-                className={`px-2.5 py-1 rounded text-xs font-mono font-semibold transition-colors ${
-                  activeHub === hub.id
-                    ? "bg-cyan-950/80 text-cyan-300 border border-cyan-700/60"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#151f30]"
-                }`}
-              >
-                {hub.name}
-              </Link>
-            ))}
-          </nav>
 
           <div className="flex items-center space-x-4 text-xs font-mono">
             <div className="flex items-center space-x-1.5 text-slate-400">
@@ -130,70 +102,6 @@ export default function TerminalShell({
       <main className="flex-1 w-full max-w-[1750px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-12">
         {children}
       </main>
-
-      {/* 4. Persistent Mobile Bottom Navigation Dock (INV-OI115-P) */}
-      <aside
-        role="navigation"
-        aria-label="Mobile Terminal Navigation"
-        data-testid="mobile-nav-dock"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0b1019]/95 backdrop-blur-md border-t border-[#1e293b] flex items-center justify-around px-2 py-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] text-[10px] font-mono shadow-2xl"
-      >
-        <Link
-          href="/radar"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'radar'
-              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">📡</span>
-          <span className="truncate">Radar</span>
-        </Link>
-        <Link
-          href="/setups"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'setups'
-              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">⚡</span>
-          <span className="truncate">Setups</span>
-        </Link>
-        <Link
-          href="/portfolio"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'portfolio'
-              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">💼</span>
-          <span className="truncate">Portfolio</span>
-        </Link>
-        <Link
-          href="/journal"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'journal'
-              ? 'text-cyan-400 font-bold bg-cyan-950/50 border border-cyan-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">📖</span>
-          <span className="truncate">Journal</span>
-        </Link>
-        <Link
-          href="/performance"
-          className={`flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-1.5 py-1 rounded-lg transition-colors ${
-            activeHub === 'performance'
-              ? 'text-emerald-400 font-bold bg-emerald-950/50 border border-emerald-800/60 shadow-inner'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-          }`}
-        >
-          <span className="text-base mb-0.5 leading-none">📈</span>
-          <span className="truncate">Alpha</span>
-        </Link>
-      </aside>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import TerminalShell from '../../components/terminal/TerminalShell';
+import PageIntro from '../../components/PageIntro';
 import { fetchScreenerGems, fetchAssetAnalytics } from '../../lib/api';
 
 interface RadarAsset {
@@ -169,8 +170,28 @@ export default function RadarPage() {
   const heroAsset = isSearching ? (filteredAssets[0] || null) : (filteredAssets[0] || allAssets[0]);
 
   return (
-    <TerminalShell activeHub="radar">
+    <TerminalShell
+      activeHub="radar"
+      activeSymbol={searchQuery.trim() ? searchQuery.trim().toUpperCase() : null}
+    >
       <div className="space-y-6">
+        {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC3) */}
+        <PageIntro
+          hubId="radar"
+          title="Radar"
+          purpose="Scan and filter the market universe for momentum and breakout candidates that warrant further analysis."
+          badge="Market Discovery"
+          symbol={cleanQ || null}
+          primaryAction={{
+            label: heroAsset ? `Analyze ${heroAsset.ticker} →` : "Analyze Candidate →",
+            href: heroAsset ? `/?symbol=${heroAsset.ticker}` : "/",
+          }}
+          secondaryAction={{
+            label: "Review Setups →",
+            href: heroAsset ? `/setups?symbol=${heroAsset.ticker}` : "/setups",
+          }}
+        />
+
         {/* Loading Indicator */}
         {isLoading && (
           <div className="p-12 text-center text-slate-400 font-mono text-xs animate-pulse">
@@ -178,12 +199,30 @@ export default function RadarPage() {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Actionable Empty State */}
         {!isLoading && allAssets.length === 0 && (
-          <div className="p-12 rounded-2xl border border-slate-800 bg-slate-900/30 text-center space-y-3 font-mono text-xs text-slate-400">
+          <div className="p-12 rounded-2xl border border-slate-800 bg-slate-900/30 text-center space-y-4 font-mono text-xs text-slate-400">
             <span className="text-3xl">📡</span>
-            <div className="text-white font-bold text-sm">No Active Confluence Candidates</div>
-            <p>Exchange tape scan returned zero assets currently meeting strict multi-factor criteria.</p>
+            <div className="space-y-1">
+              <div className="text-white font-bold text-sm">No Active Confluence Candidates</div>
+              <p className="text-slate-400 max-w-lg mx-auto font-sans">
+                No market assets currently meet the combined Minervini Stage 2, volume dry-up, and relative strength thresholds. This is normal during market pullbacks or broad consolidation regimes.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Link
+                href="/"
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs font-sans transition-transform active:scale-95"
+              >
+                Analyze Any Ticker →
+              </Link>
+              <Link
+                href="/setups"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs font-sans transition-colors"
+              >
+                Review Active Setups →
+              </Link>
+            </div>
           </div>
         )}
 
@@ -235,11 +274,11 @@ export default function RadarPage() {
           </div>
         )}
 
-        {/* Level 0: Asymmetric #1 High-Confluence Attention Leader Hero */}
+        {/* Attention Candidate Hero Card */}
         {!isLoading && heroAsset && (
           <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl">
             <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 border-b border-l border-emerald-500/40 text-[10px] font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-bl-xl">
-              Level 0 · #1 Attention Leader Today
+              Attention Candidate · Top Pre-Screened Confluence
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -251,12 +290,17 @@ export default function RadarPage() {
                   <span className="text-sm md:text-base text-slate-300 font-medium">
                     {heroAsset.name}
                   </span>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+                    ATTENTION CANDIDATE
+                  </span>
                   <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50">
                     {heroAsset.executionStatus.replace(/_/g, ' ')}
                   </span>
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                    Stage 2 · {heroAsset.vcpStage}
-                  </span>
+                  {heroAsset.vcpStage && (
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {heroAsset.vcpStage}
+                    </span>
+                  )}
                 </div>
 
                 <p className="text-xs md:text-sm text-slate-200 font-sans leading-relaxed">
@@ -277,30 +321,33 @@ export default function RadarPage() {
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-slate-400">RS Rating:</span>
-                    <span className="text-white font-bold">{heroAsset.rsRating}/99</span>
+                    <span className="text-white font-bold">{heroAsset.rsRating !== null ? `${heroAsset.rsRating}/99` : "--"}</span>
                   </div>
                   <span className="text-slate-700">•</span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-slate-400">Vol Dry-Up:</span>
-                    <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct}%</span>
+                    <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct !== null ? `${heroAsset.volumeDryUpPct}%` : "--"}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
                 <Link
-                  href={`/setups?ticker=${heroAsset.ticker}`}
-                  className="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                  href={`/?symbol=${heroAsset.ticker}`}
+                  className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <span>
-                    {heroAsset.executionStatus === 'IN_BUY_ZONE' || heroAsset.executionStatus === 'NEAR_PIVOT'
-                      ? 'ARM EXECUTION TICKET IN /SETUPS'
-                      : 'INSPECT TACTICAL SETUP IN /SETUPS'}
-                  </span>
+                  <span>Analyze {heroAsset.ticker}</span>
+                  <span>→</span>
+                </Link>
+                <Link
+                  href={`/setups?symbol=${heroAsset.ticker}`}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600"
+                >
+                  <span>Inspect Setup in /setups</span>
                   <span>→</span>
                 </Link>
                 <div className="text-[10px] font-mono text-slate-400 text-center">
-                  Verified S&P 500 Uptrend · 3-Model Convergence
+                  Discovery Candidate · Not an Execution Recommendation
                 </div>
               </div>
             </div>
