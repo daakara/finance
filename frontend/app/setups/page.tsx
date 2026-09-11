@@ -325,6 +325,41 @@ function SetupsContent() {
     }
   };
 
+  useEffect(() => {
+    if (!showFillModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowFillModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showFillModal]);
+
+  const handleModeKeyDown = (e: React.KeyboardEvent, current: 'STANDARD' | 'GUIDED' | 'QUANT') => {
+    const modes: ('STANDARD' | 'GUIDED' | 'QUANT')[] = ['STANDARD', 'GUIDED', 'QUANT'];
+    const idx = modes.indexOf(current);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = modes[(idx + 1) % modes.length];
+      setExecutionMode(next);
+      document.getElementById(`tab-mode-${next.toLowerCase()}`)?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = modes[(idx - 1 + modes.length) % modes.length];
+      setExecutionMode(prev);
+      document.getElementById(`tab-mode-${prev.toLowerCase()}`)?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setExecutionMode(modes[0]);
+      document.getElementById(`tab-mode-${modes[0].toLowerCase()}`)?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setExecutionMode(modes[modes.length - 1]);
+      document.getElementById(`tab-mode-${modes[modes.length - 1].toLowerCase()}`)?.focus();
+    }
+  };
+
   return (
     <TerminalShell
       activeHub="setups"

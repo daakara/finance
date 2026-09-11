@@ -89,6 +89,30 @@ export default function PerformancePage() {
     });
   }, [eligibleLiveTrades, searchTicker]);
 
+  const handleTabKeyDown = (e: React.KeyboardEvent, current: 'OVERVIEW' | 'EDGE' | 'LEDGER') => {
+    const tabs: ('OVERVIEW' | 'EDGE' | 'LEDGER')[] = ['OVERVIEW', 'EDGE', 'LEDGER'];
+    const idx = tabs.indexOf(current);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = tabs[(idx + 1) % tabs.length];
+      setActiveTab(next);
+      document.getElementById(`tab-${next.toLowerCase()}`)?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = tabs[(idx - 1 + tabs.length) % tabs.length];
+      setActiveTab(prev);
+      document.getElementById(`tab-${prev.toLowerCase()}`)?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActiveTab(tabs[0]);
+      document.getElementById(`tab-${tabs[0].toLowerCase()}`)?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActiveTab(tabs[tabs.length - 1]);
+      document.getElementById(`tab-${tabs[tabs.length - 1].toLowerCase()}`)?.focus();
+    }
+  };
+
   return (
     <TerminalShell
       activeHub="performance"
@@ -246,11 +270,18 @@ export default function PerformancePage() {
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            {/* Navigation Tabs (WAI-ARIA Tablist) */}
+            <div role="tablist" aria-label="Performance Analysis Views" className="flex items-center gap-2 border-b border-slate-800 pb-3">
               <button
+                type="button"
+                role="tab"
+                id="tab-overview"
+                aria-selected={activeTab === 'OVERVIEW'}
+                aria-controls="panel-overview"
+                tabIndex={activeTab === 'OVERVIEW' ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 'OVERVIEW')}
                 onClick={() => setActiveTab('OVERVIEW')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all focus-ring ${
                   activeTab === 'OVERVIEW'
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -259,8 +290,15 @@ export default function PerformancePage() {
                 📊 Attribution Overview
               </button>
               <button
+                type="button"
+                role="tab"
+                id="tab-edge"
+                aria-selected={activeTab === 'EDGE'}
+                aria-controls="panel-edge"
+                tabIndex={activeTab === 'EDGE' ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 'EDGE')}
                 onClick={() => setActiveTab('EDGE')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all focus-ring ${
                   activeTab === 'EDGE'
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -269,8 +307,15 @@ export default function PerformancePage() {
                 🎯 Personal Edge Discovery
               </button>
               <button
+                type="button"
+                role="tab"
+                id="tab-ledger"
+                aria-selected={activeTab === 'LEDGER'}
+                aria-controls="panel-ledger"
+                tabIndex={activeTab === 'LEDGER' ? 0 : -1}
+                onKeyDown={(e) => handleTabKeyDown(e, 'LEDGER')}
                 onClick={() => setActiveTab('LEDGER')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 focus-ring ${
                   activeTab === 'LEDGER'
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -285,7 +330,7 @@ export default function PerformancePage() {
 
             {/* Tab 1: Attribution Overview */}
             {activeTab === 'OVERVIEW' && (
-              <div className="space-y-6">
+              <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabIndex={0} className="space-y-6 focus:outline-none">
                 {/* Capital Preserved Breakdown Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2">
@@ -380,7 +425,7 @@ export default function PerformancePage() {
 
             {/* Tab 2: Personal Edge Discovery */}
             {activeTab === 'EDGE' && (
-              <div className="space-y-6">
+              <div role="tabpanel" id="panel-edge" aria-labelledby="tab-edge" tabIndex={0} className="space-y-6 focus:outline-none">
                 {/* Live Setup Performance (Grouped strictly by recorded setupName) */}
                 <div className="space-y-3">
                   <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400">
@@ -439,7 +484,7 @@ export default function PerformancePage() {
 
             {/* Tab 3: Realized Trades Ledger */}
             {activeTab === 'LEDGER' && (
-              <div className="space-y-4">
+              <div role="tabpanel" id="panel-ledger" aria-labelledby="tab-ledger" tabIndex={0} className="space-y-4 focus:outline-none">
                 {/* Filter Toolbar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                   <div className="text-xs font-mono text-slate-400">
@@ -452,7 +497,8 @@ export default function PerformancePage() {
                       value={searchTicker}
                       onChange={(e) => setSearchTicker(e.target.value)}
                       placeholder="Filter ticker or setup..."
-                      className="w-full px-3 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500"
+                      aria-label="Filter realized trades by ticker or setup pattern"
+                      className="w-full px-3 py-1.5 bg-[#0b1019] border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500 focus-ring"
                     />
                   </div>
                 </div>
