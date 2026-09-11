@@ -35,16 +35,27 @@ const TOUR_SLIDES = [
   },
   {
     step: 4,
-    badge: "ZERO-LOGIN PRIVATE STORAGE",
-    title: "🔒 Client-Side Encrypted Risk & Cornish-Fisher VaR",
+    badge: "AUTHORITATIVE RISK PERSISTENCE",
+    title: "🔒 Authoritative Risk Telemetry & Cornish-Fisher VaR",
     icon: "💼",
-    content: "Your portfolio and watchlists are saved entirely in your local browser storage. We compute Cornish-Fisher Modified Value-at-Risk (M-VaR) to protect your capital from fat-tailed black swan market crashes.",
+    content: "Your portfolio and watchlists are backed by authoritative persistence. We compute Cornish-Fisher Modified Value-at-Risk (M-VaR) to protect your capital from fat-tailed black swan market crashes.",
     highlight: "1-Click 'Save to Portfolio' directly from the Position Sizer modal."
   }
 ];
 
 export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourModalProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -68,7 +79,12 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
   };
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tour-modal-title"
+      className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono"
+    >
       <div className="bg-[#0b101b] border border-[#223147] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden text-slate-100 flex flex-col justify-between">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#1b2537] bg-[#0e1422]">
@@ -78,14 +94,16 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
               <span className="text-[10px] text-cyan-400 font-bold tracking-wider uppercase block">
                 {slide.badge} ({slide.step}/4)
               </span>
-              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+              <h2 id="tour-modal-title" className="text-sm sm:text-base font-bold text-white tracking-tight">
                 ARX Terminal Quick Tour
               </h2>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all text-sm"
+            aria-label="Close tour modal"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all text-sm focus-ring"
           >
             ✕
           </button>
