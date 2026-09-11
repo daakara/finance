@@ -40,6 +40,8 @@ htmlcov/
 
 # Sample data & databases
 data/
+!analyst_dashboard/data/
+!analyst_dashboard/data/paper_trading_ledger.json
 *.csv
 *.xlsx
 *.db

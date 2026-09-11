@@ -20,8 +20,10 @@ interface RadarAsset {
   executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT';
 }
 
+type CategoryFilter = 'ALL' | 'VCP' | 'SMART_MONEY' | 'VALUE';
+
 export default function RadarPage() {
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'VCP' | 'SMART_MONEY' | 'VALUE'>('ALL');
+  const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'SCORE' | 'RS' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
@@ -164,6 +166,30 @@ export default function RadarPage() {
       setOnDemandError(`Asset "${clean}" is not recognized on the exchange tape: ${err.message || 'Data unavailable'}.`);
     } finally {
       setIsOnDemandLoading(false);
+    }
+  };
+
+  const handleFilterKeyDown = (e: React.KeyboardEvent, current: CategoryFilter) => {
+    const filters: CategoryFilter[] = ['ALL', 'VCP', 'SMART_MONEY', 'VALUE'];
+    const idx = filters.indexOf(current);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = filters[(idx + 1) % filters.length];
+      setActiveFilter(next);
+      document.getElementById(`tab-radar-filter-${next.toLowerCase()}`)?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = filters[(idx - 1 + filters.length) % filters.length];
+      setActiveFilter(prev);
+      document.getElementById(`tab-radar-filter-${prev.toLowerCase()}`)?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActiveFilter(filters[0]);
+      document.getElementById(`tab-radar-filter-${filters[0].toLowerCase()}`)?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActiveFilter(filters[filters.length - 1]);
+      document.getElementById(`tab-radar-filter-${filters[filters.length - 1].toLowerCase()}`)?.focus();
     }
   };
 
@@ -356,11 +382,22 @@ export default function RadarPage() {
 
         {/* Search & Filter Toolbar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          {/* Category Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          {/* Category Filter Tabs (WAI-ARIA Tablist) */}
+          <div
+            role="tablist"
+            aria-label="Radar Confluence Categories"
+            className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
+          >
             <button
+              type="button"
+              role="tab"
+              id="tab-radar-filter-all"
+              aria-selected={activeFilter === 'ALL'}
+              aria-controls="panel-radar-candidates"
+              tabIndex={activeFilter === 'ALL' ? 0 : -1}
+              onKeyDown={(e) => handleFilterKeyDown(e, 'ALL')}
               onClick={() => setActiveFilter('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeFilter === 'ALL'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -373,8 +410,15 @@ export default function RadarPage() {
             </button>
 
             <button
+              type="button"
+              role="tab"
+              id="tab-radar-filter-vcp"
+              aria-selected={activeFilter === 'VCP'}
+              aria-controls="panel-radar-candidates"
+              tabIndex={activeFilter === 'VCP' ? 0 : -1}
+              onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
               onClick={() => setActiveFilter('VCP')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeFilter === 'VCP'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -387,8 +431,15 @@ export default function RadarPage() {
             </button>
 
             <button
+              type="button"
+              role="tab"
+              id="tab-radar-filter-smart_money"
+              aria-selected={activeFilter === 'SMART_MONEY'}
+              aria-controls="panel-radar-candidates"
+              tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
+              onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
               onClick={() => setActiveFilter('SMART_MONEY')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeFilter === 'SMART_MONEY'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -401,8 +452,15 @@ export default function RadarPage() {
             </button>
 
             <button
+              type="button"
+              role="tab"
+              id="tab-radar-filter-value"
+              aria-selected={activeFilter === 'VALUE'}
+              aria-controls="panel-radar-candidates"
+              tabIndex={activeFilter === 'VALUE' ? 0 : -1}
+              onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE')}
               onClick={() => setActiveFilter('VALUE')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                 activeFilter === 'VALUE'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
@@ -428,13 +486,14 @@ export default function RadarPage() {
             >
               <input
                 type="text"
+                aria-label="Search candidate, ticker, or catalyst"
                 placeholder="Search candidate, ticker (e.g. NVDA, TSLA)..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setOnDemandError(null);
                 }}
-                className="w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
               />
               <div className="absolute right-2 top-1.5 flex items-center gap-1">
                 {searchQuery && (
@@ -444,8 +503,9 @@ export default function RadarPage() {
                       setSearchQuery('');
                       setOnDemandError(null);
                     }}
-                    className="text-xs text-slate-500 hover:text-slate-300 font-mono px-1"
+                    className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-1 rounded"
                     title="Clear filter"
+                    aria-label="Clear search"
                   >
                     ✕
                   </button>
@@ -454,7 +514,7 @@ export default function RadarPage() {
                   <button
                     type="submit"
                     disabled={isOnDemandLoading}
-                    className="text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
+                    className="focus-ring text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
                     title="Scan on-demand"
                   >
                     {isOnDemandLoading ? "..." : "Scan ↵"}
@@ -472,20 +532,23 @@ export default function RadarPage() {
             <div className="flex items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-0.5 text-xs font-mono shrink-0">
               <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
               <button
+                type="button"
                 onClick={() => setSortBy('SCORE')}
-                className={`px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`focus-ring px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Score
               </button>
               <button
+                type="button"
                 onClick={() => setSortBy('RS')}
-                className={`px-2 py-1 rounded ${sortBy === 'RS' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`focus-ring px-2 py-1 rounded ${sortBy === 'RS' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 RS
               </button>
               <button
+                type="button"
                 onClick={() => setSortBy('PRICE')}
-                className={`px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                className={`focus-ring px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Price
               </button>
@@ -493,8 +556,14 @@ export default function RadarPage() {
           </div>
         </div>
 
-        {/* Level 1: Dense Confluence Stream Table */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl">
+        {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
+        <div
+          role="tabpanel"
+          id="panel-radar-candidates"
+          aria-label="Radar Confluence Candidates"
+          tabIndex={0}
+          className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden shadow-xl focus-ring"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
               <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">

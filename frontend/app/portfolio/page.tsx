@@ -355,6 +355,18 @@ export default function PortfolioPage() {
     setExitResultSummary(null);
   };
 
+  useEffect(() => {
+    if (!showAddModal && !showExitModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showAddModal) handleCloseModal();
+        if (showExitModal) handleCloseExitModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showAddModal, showExitModal]);
+
   const handleQuickSharesFraction = (fraction: number) => {
     if (!exitTargetPosition) return;
     const targetShares = Number((exitTargetPosition.shares * fraction).toFixed(6));
@@ -892,21 +904,29 @@ export default function PortfolioPage() {
 
         {/* Add Position Modal (Fluid Adaptive & Real-Time Auto-Populated) */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-position-modal-title"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono"
+          >
             <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden max-h-[92vh] flex flex-col my-auto text-slate-100">
               {/* Fixed Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#1b2434] bg-[#0e1422] shrink-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">💼</span>
                   <div>
-                    <h3 className="text-base font-bold text-white tracking-tight">Add Portfolio Holding</h3>
+                    <h3 id="add-position-modal-title" className="text-base font-bold text-white tracking-tight">
+                      {isEditing ? "Edit Portfolio Holding" : "Add Portfolio Holding"}
+                    </h3>
                     <p className="text-[10px] text-slate-400">Live quantitative auto-population enabled</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="focus-ring text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  aria-label="Close modal"
                 >
                   ✕
                 </button>
@@ -917,12 +937,13 @@ export default function PortfolioPage() {
                 {/* Ticker Input & Quick Chips */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-slate-300 font-bold">Ticker Symbol</label>
+                    <label htmlFor="add-ticker-input" className="block text-slate-300 font-bold">Ticker Symbol</label>
                     <span className="text-[10px] text-cyan-400 font-mono">
                       {isResolvingQuote ? "⏳ Syncing Quote..." : `Verified: ${resolvedAssetName}`}
                     </span>
                   </div>
                   <input
+                    id="add-ticker-input"
                     type="text"
                     value={newSymbol}
                     onChange={(e) => {
@@ -930,7 +951,7 @@ export default function PortfolioPage() {
                       setNewSymbol(val);
                       populateTickerData(val);
                     }}
-                    className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2.5 text-white font-bold tracking-wider uppercase text-sm focus:outline-none"
+                    className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2.5 text-white font-bold tracking-wider uppercase text-sm focus:outline-none"
                     placeholder="e.g. SEDG, NVDA, AAPL, FDX"
                     required
                   />
@@ -946,7 +967,7 @@ export default function PortfolioPage() {
                           setNewSymbol(sym);
                           populateTickerData(sym);
                         }}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                        className={`focus-ring px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                           newSymbol.toUpperCase() === sym
                             ? "bg-cyan-600 border-cyan-400 text-white"
                             : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-white"
@@ -978,26 +999,28 @@ export default function PortfolioPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Shares Count</label>
+                    <label htmlFor="add-shares-input" className="block text-slate-300 font-bold mb-1">Shares Count</label>
                     <input
+                      id="add-shares-input"
                       type="number"
                       step="any"
                       min="0.000001"
                       value={newShares}
                       onChange={(e) => setNewShares(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                      className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                       required
                     />
                     <span className="text-[10px] text-slate-500 block mt-0.5">Supports fractional quantities (e.g. 0.25, 0.001)</span>
                   </div>
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Entry Price ($)</label>
+                    <label htmlFor="add-entry-price-input" className="block text-slate-300 font-bold mb-1">Entry Price ($)</label>
                     <input
+                      id="add-entry-price-input"
                       type="number"
                       step="any"
                       value={newEntryPrice}
                       onChange={(e) => setNewEntryPrice(e.target.value)}
-                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                      className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                       required
                     />
                     <span className="text-[10px] text-slate-500 block mt-0.5">Live market execution</span>
@@ -1006,24 +1029,26 @@ export default function PortfolioPage() {
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-rose-300 font-bold mb-1">Stop Loss ($)</label>
+                    <label htmlFor="add-stop-loss-input" className="block text-rose-300 font-bold mb-1">Stop Loss ($)</label>
                     <input
+                      id="add-stop-loss-input"
                       type="number"
                       step="any"
                       value={newStopLoss}
                       onChange={(e) => setNewStopLoss(e.target.value)}
-                      className="w-full bg-[#090d14] border border-rose-950/80 focus:border-rose-500 rounded-lg p-2 text-rose-300 font-bold focus:outline-none"
+                      className="focus-ring w-full bg-[#090d14] border border-rose-950/80 focus:border-rose-500 rounded-lg p-2 text-rose-300 font-bold focus:outline-none"
                     />
                     <span className="text-[10px] text-rose-400/80 block mt-0.5">-7% Risk Cut Floor</span>
                   </div>
                   <div>
-                    <label className="block text-emerald-300 font-bold mb-1">Target Price ($)</label>
+                    <label htmlFor="add-target-input" className="block text-emerald-300 font-bold mb-1">Target Price ($)</label>
                     <input
+                      id="add-target-input"
                       type="number"
                       step="any"
                       value={newTarget}
                       onChange={(e) => setNewTarget(e.target.value)}
-                      className="w-full bg-[#090d14] border border-emerald-950/80 focus:border-emerald-500 rounded-lg p-2 text-emerald-300 font-bold focus:outline-none"
+                      className="focus-ring w-full bg-[#090d14] border border-emerald-950/80 focus:border-emerald-500 rounded-lg p-2 text-emerald-300 font-bold focus:outline-none"
                     />
                     <span className="text-[10px] text-emerald-400/80 block mt-0.5">+25% Upside Target (TP1)</span>
                   </div>
@@ -1034,13 +1059,13 @@ export default function PortfolioPage() {
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
+                    className="focus-ring px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer"
+                    className="focus-ring px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer"
                   >
                     {isEditing ? "Update Holding" : "Save Holding"}
                   </button>
@@ -1052,14 +1077,19 @@ export default function PortfolioPage() {
 
         {/* Record Exit / Scale-Out Modal */}
         {showExitModal && exitTargetPosition && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exit-modal-title"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-mono"
+          >
             <div className="bg-[#111722] border border-[#243044] rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden max-h-[92vh] flex flex-col my-auto text-slate-100">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#1b2434] bg-[#0e1422] shrink-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-lg">🎯</span>
                   <div>
-                    <h3 className="text-base font-bold text-white tracking-tight">Record Trade Exit / Scale-Out</h3>
+                    <h3 id="exit-modal-title" className="text-base font-bold text-white tracking-tight">Record Trade Exit / Scale-Out</h3>
                     <p className="text-[10px] text-slate-400">
                       {exitTargetPosition.symbol} · {exitTargetPosition.shares} shares @ ${exitTargetPosition.entryPrice.toFixed(2)}
                     </p>
@@ -1068,7 +1098,8 @@ export default function PortfolioPage() {
                 <button
                   type="button"
                   onClick={handleCloseExitModal}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="focus-ring text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  aria-label="Close exit modal"
                 >
                   ✕
                 </button>
@@ -1106,13 +1137,13 @@ export default function PortfolioPage() {
                     <button
                       type="button"
                       onClick={handleCloseExitModal}
-                      className="px-4 py-2 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                      className="focus-ring px-4 py-2 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                     >
                       Close
                     </button>
                     <Link
                       href="/journal"
-                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                      className="focus-ring px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                     >
                       View Journal →
                     </Link>
@@ -1129,7 +1160,7 @@ export default function PortfolioPage() {
                         setExitMode("FULL");
                         setExitShares(exitTargetPosition.shares.toString());
                       }}
-                      className={`flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                      className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
                         exitMode === "FULL"
                           ? "bg-cyan-600 text-white shadow-sm"
                           : "text-slate-400 hover:text-slate-200"
@@ -1143,7 +1174,7 @@ export default function PortfolioPage() {
                         setExitMode("PARTIAL");
                         setExitShares((exitTargetPosition.shares * 0.5).toFixed(4));
                       }}
-                      className={`flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                      className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
                         exitMode === "PARTIAL"
                           ? "bg-cyan-600 text-white shadow-sm"
                           : "text-slate-400 hover:text-slate-200"
@@ -1170,7 +1201,7 @@ export default function PortfolioPage() {
                           key={label}
                           type="button"
                           onClick={() => handleQuickSharesFraction(frac)}
-                          className="px-2 py-1 rounded bg-[#090d14] border border-[#1b2537] text-slate-300 hover:border-cyan-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                          className="focus-ring px-2 py-1 rounded bg-[#090d14] border border-[#1b2537] text-slate-300 hover:border-cyan-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
                         >
                           {label}
                         </button>
@@ -1181,8 +1212,9 @@ export default function PortfolioPage() {
                   {/* Quantity and Exit Price */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Shares to Exit</label>
+                      <label htmlFor="exit-shares-input" className="block text-slate-300 font-bold mb-1">Shares to Exit</label>
                       <input
+                        id="exit-shares-input"
                         type="number"
                         step="any"
                         min="0.000001"
@@ -1197,19 +1229,20 @@ export default function PortfolioPage() {
                             setExitMode("PARTIAL");
                           }
                         }}
-                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Exit Price ($)</label>
+                      <label htmlFor="exit-price-input" className="block text-slate-300 font-bold mb-1">Exit Price ($)</label>
                       <input
+                        id="exit-price-input"
                         type="number"
                         step="any"
                         min="0.01"
                         value={exitPrice}
                         onChange={(e) => setExitPrice(e.target.value)}
-                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                         required
                       />
                     </div>
@@ -1218,12 +1251,13 @@ export default function PortfolioPage() {
                   {/* Date and Rule Adherence */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-slate-300 font-bold mb-1">Exit Date</label>
+                      <label htmlFor="exit-date-input" className="block text-slate-300 font-bold mb-1">Exit Date</label>
                       <input
+                        id="exit-date-input"
                         type="date"
                         value={exitDate}
                         onChange={(e) => setExitDate(e.target.value)}
-                        className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
+                        className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white font-bold focus:outline-none"
                         required
                       />
                     </div>
@@ -1233,7 +1267,7 @@ export default function PortfolioPage() {
                         <button
                           type="button"
                           onClick={() => setExitFollowedRules(true)}
-                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`focus-ring py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                             exitFollowedRules === true
                               ? "bg-emerald-950 border-emerald-500 text-emerald-300"
                               : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
@@ -1244,7 +1278,7 @@ export default function PortfolioPage() {
                         <button
                           type="button"
                           onClick={() => setExitFollowedRules(false)}
-                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`focus-ring py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                             exitFollowedRules === false
                               ? "bg-rose-950 border-rose-500 text-rose-300"
                               : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
@@ -1255,7 +1289,7 @@ export default function PortfolioPage() {
                         <button
                           type="button"
                           onClick={() => setExitFollowedRules(null)}
-                          className={`py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`focus-ring py-2 rounded text-[10px] font-bold border transition-all cursor-pointer ${
                             exitFollowedRules === null
                               ? "bg-slate-800 border-slate-500 text-slate-200"
                               : "bg-[#090d14] border-[#1b2537] text-slate-400 hover:text-slate-200"
@@ -1270,12 +1304,13 @@ export default function PortfolioPage() {
 
                   {/* Notes / Reason */}
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Exit Notes / Execution Thesis (Optional)</label>
+                    <label htmlFor="exit-notes-input" className="block text-slate-300 font-bold mb-1">Exit Notes / Execution Thesis (Optional)</label>
                     <textarea
+                      id="exit-notes-input"
                       value={exitNotes}
                       onChange={(e) => setExitNotes(e.target.value)}
                       rows={2}
-                      className="w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white text-xs focus:outline-none resize-none"
+                      className="focus-ring w-full bg-[#090d14] border border-[#243044] focus:border-cyan-400 rounded-lg p-2 text-white text-xs focus:outline-none resize-none"
                       placeholder="e.g. Scaled 50% at Target 1, remaining shares moved to breakeven stop."
                     />
                   </div>
@@ -1326,14 +1361,14 @@ export default function PortfolioPage() {
                     <button
                       type="button"
                       onClick={handleCloseExitModal}
-                      className="px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
+                      className="focus-ring px-3.5 py-1.5 bg-[#162030] hover:bg-[#1e2a3c] text-slate-300 rounded-lg font-bold transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={exitSubmitting}
-                      className={`px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer ${
+                      className={`focus-ring px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow transition-all active:scale-95 cursor-pointer ${
                         exitSubmitting ? "opacity-60 cursor-not-allowed" : ""
                       }`}
                     >

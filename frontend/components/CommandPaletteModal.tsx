@@ -444,7 +444,7 @@ export default function CommandPaletteModal({
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="text-xs font-mono text-slate-400 hover:text-white px-2 py-1"
+              className="focus-ring text-xs font-mono text-slate-400 hover:text-white px-2 py-1 rounded"
             >
               Clear
             </button>

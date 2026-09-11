@@ -386,12 +386,22 @@ function SetupsContent() {
             href: "/radar",
           }}
         >
-          {/* Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0">
+          {/* Mode Switcher (WAI-ARIA Tablist) */}
+          <div
+            role="tablist"
+            aria-label="Execution Modes"
+            className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0"
+          >
             <button
               type="button"
+              role="tab"
+              id="tab-mode-standard"
+              aria-selected={executionMode === 'STANDARD'}
+              aria-controls="panel-mode-standard"
+              tabIndex={executionMode === 'STANDARD' ? 0 : -1}
+              onKeyDown={(e) => handleModeKeyDown(e, 'STANDARD')}
               onClick={() => setExecutionMode('STANDARD')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'STANDARD'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -401,8 +411,14 @@ function SetupsContent() {
             </button>
             <button
               type="button"
+              role="tab"
+              id="tab-mode-guided"
+              aria-selected={executionMode === 'GUIDED'}
+              aria-controls="panel-mode-guided"
+              tabIndex={executionMode === 'GUIDED' ? 0 : -1}
+              onKeyDown={(e) => handleModeKeyDown(e, 'GUIDED')}
               onClick={() => setExecutionMode('GUIDED')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'GUIDED'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -412,8 +428,14 @@ function SetupsContent() {
             </button>
             <button
               type="button"
+              role="tab"
+              id="tab-mode-quant"
+              aria-selected={executionMode === 'QUANT'}
+              aria-controls="panel-mode-quant"
+              tabIndex={executionMode === 'QUANT' ? 0 : -1}
+              onKeyDown={(e) => handleModeKeyDown(e, 'QUANT')}
               onClick={() => setExecutionMode('QUANT')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'QUANT'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -691,7 +713,13 @@ function SetupsContent() {
 
                 {/* Mode-Specific Information Panels */}
                 {executionMode === 'STANDARD' && (
-                  <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3 text-xs font-mono">
+                  <div
+                    role="tabpanel"
+                    id="panel-mode-standard"
+                    aria-labelledby="tab-mode-standard"
+                    tabIndex={0}
+                    className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3 text-xs font-mono focus-ring"
+                  >
                     <div className="text-xs font-bold text-slate-300">Order Execution Summary</div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="flex justify-between border-b border-slate-900 pb-1.5">
@@ -715,7 +743,13 @@ function SetupsContent() {
                 )}
 
                 {executionMode === 'GUIDED' && (
-                  <div className="space-y-4">
+                  <div
+                    role="tabpanel"
+                    id="panel-mode-guided"
+                    aria-labelledby="tab-mode-guided"
+                    tabIndex={0}
+                    className="space-y-4 focus-ring"
+                  >
                     {/* Confluence Rationale */}
                     <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5 text-xs font-mono">
                       <div className="text-xs font-bold text-cyan-400 uppercase">Why Take This Trade?</div>
@@ -749,7 +783,13 @@ function SetupsContent() {
                 )}
 
                 {executionMode === 'QUANT' && (
-                  <div className="space-y-4 font-mono text-xs">
+                  <div
+                    role="tabpanel"
+                    id="panel-mode-quant"
+                    aria-labelledby="tab-mode-quant"
+                    tabIndex={0}
+                    className="space-y-4 font-mono text-xs focus-ring"
+                  >
                     <div className="p-4 rounded-xl bg-slate-950/90 border border-purple-800/60 space-y-3">
                       <div className="flex justify-between items-center text-purple-400 font-bold uppercase">
                         <span>🔬 Quantitative Modeling &amp; Risk Metrics</span>
@@ -836,7 +876,7 @@ function SetupsContent() {
                     onClick={handleCopyOrder}
                     disabled={!isActionable || !sizing.isAvailable || sizing.recommendedShares <= 0}
                     /* disabled={!isActionable} */
-                    className={`w-full py-3 rounded-xl font-mono font-black text-xs tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 ${
+                    className={`focus-ring w-full py-3 rounded-xl font-mono font-black text-xs tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 ${
                       isActionable && sizing.isAvailable && sizing.recommendedShares > 0
                         ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 cursor-pointer hover:scale-[1.01] active:scale-[0.99]'
                         : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
@@ -857,10 +897,171 @@ function SetupsContent() {
                   <div className="text-[10px] font-mono text-slate-400 text-center mt-2">
                     Copying plan does NOT create a position. Positions only exist when an execution is logged via Record Broker Fill.
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenFillModal}
+                    className="focus-ring w-full mt-3 py-2.5 px-4 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-700/50 cursor-pointer transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>📝 Record Broker Fill (Log Real Execution)</span>
+                  </button>
                 </div>
               </div>
             </div>
           </>
+        )}
+
+        {/* Record Broker Fill Modal (A1b / A4 WAI-ARIA Dialog) */}
+        {showFillModal && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fill-modal-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 font-mono text-xs space-y-4 relative">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="fill-modal-title" className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>📝</span> Record Broker Fill — {effectiveSetup.ticker}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowFillModal(false)}
+                  className="focus-ring text-slate-400 hover:text-white p-1 rounded-lg"
+                  aria-label="Close fill modal"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {fillSuccess ? (
+                <div className="py-6 text-center space-y-3">
+                  <div className="text-2xl">🎉</div>
+                  <div className="text-sm font-bold text-emerald-400">Broker Fill Recorded Successfully!</div>
+                  <p className="text-slate-300 text-[11px]">
+                    Position added to your active portfolio and logged to the trade journal.
+                  </p>
+                  <div className="pt-2 flex justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowFillModal(false)}
+                      className="focus-ring px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold"
+                    >
+                      Close
+                    </button>
+                    <a
+                      href="/portfolio"
+                      className="focus-ring px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold"
+                    >
+                      View in Portfolio →
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitFill} className="space-y-4">
+                  {fillError && (
+                    <div className="p-3 bg-rose-950/50 border border-rose-800 text-rose-300 rounded-lg text-[11px]">
+                      {fillError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="fill-price-input" className="block text-slate-400 mb-1">
+                        Fill Price ($) <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        id="fill-price-input"
+                        type="number"
+                        step="0.01"
+                        required
+                        value={fillPrice}
+                        onChange={(e) => setFillPrice(e.target.value)}
+                        placeholder="e.g. 150.00"
+                        className="focus-ring w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="fill-shares-input" className="block text-slate-400 mb-1">
+                        Shares Executed <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        id="fill-shares-input"
+                        type="number"
+                        step="1"
+                        required
+                        value={fillShares}
+                        onChange={(e) => setFillShares(e.target.value)}
+                        placeholder="e.g. 50"
+                        className="focus-ring w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="fill-date-input" className="block text-slate-400 mb-1">
+                        Execution Date
+                      </label>
+                      <input
+                        id="fill-date-input"
+                        type="date"
+                        value={fillDate}
+                        onChange={(e) => setFillDate(e.target.value)}
+                        className="focus-ring w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="fill-conf-input" className="block text-slate-400 mb-1">
+                        Confidence (0-100)
+                      </label>
+                      <input
+                        id="fill-conf-input"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={fillConfidence}
+                        onChange={(e) => setFillConfidence(e.target.value)}
+                        placeholder="e.g. 85"
+                        className="focus-ring w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="fill-notes-input" className="block text-slate-400 mb-1">
+                      Execution Notes (Optional)
+                    </label>
+                    <input
+                      id="fill-notes-input"
+                      type="text"
+                      value={fillNotes}
+                      onChange={(e) => setFillNotes(e.target.value)}
+                      placeholder="e.g. Filled on morning breakout with low slippage"
+                      className="focus-ring w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowFillModal(false)}
+                      className="focus-ring px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={fillSubmitting}
+                      className="focus-ring px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold disabled:opacity-50"
+                    >
+                      {fillSubmitting ? "Recording..." : "Record Fill →"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </TerminalShell>
