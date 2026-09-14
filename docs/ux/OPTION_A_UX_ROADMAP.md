@@ -580,10 +580,30 @@ Primary action: **Review evidence**, opening Analysis with the selected asset an
 - **Validation Boundary:** A3 Formative Human Usability Validation remains **OPEN** (N=5 study required downstream).
 
 #### Next Milestone: Phase A3 Formative Human Comprehension Validation
-- **Status:** **NEXT ACTIVE TASK**
+- **Status:** **READY FOR HUMAN EXECUTION**
+- **Canonical Pre-Study State:**
+  ```text
+  A3_STATUS = READY_FOR_HUMAN_EXECUTION
+
+  A3_TEST_BUILD_COMMIT = 42ab9b572ce3264958d5c2cdf519cba437502eb3
+  A3_TEST_ENVIRONMENT = STAGING OR LAN BUILD
+
+  PARTICIPANTS_REQUIRED = 5
+  MOBILE_REQUIRED >= 2
+  DESKTOP_REQUIRED >= 2
+
+  AI_SIMULATION_ALLOWED = false
+  MID_STUDY_UI_CHANGES_ALLOWED = false
+
+  CORE_COMPREHENSION_THRESHOLD >= 80%
+  SAFETY_MISCONCEPTION_THRESHOLD = 0% (HARD FAIL BOUNDARY)
+
+  A5 = BLOCKED_PENDING_A3
+  UX_R3_PLUS = BLOCKED_PENDING_A3
+  ```
 - **Objective:** Evaluate whether representative first-time users can explain page purpose, identify the primary action, and describe expected outcomes within 30 seconds across direct landing URLs without evaluator assistance.
 - **Protocol:** Defined in `docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md`.
-- **Pre-requisite:** UX-R1 and UX-R2 automated simplifications deployed to testing environment.
+- **Pre-requisite:** UX-R1 and UX-R2 automated simplifications deployed to testing environment. Pinned to commit `42ab9b572ce3264958d5c2cdf519cba437502eb3`.
 - **Remaining UX Phases (UX-R3 through UX-R6):** Paused until A3 participant feedback is captured.
 
 #### Phase UX-R3: Progressive Jargon Management (Priority 3 — HIGH)

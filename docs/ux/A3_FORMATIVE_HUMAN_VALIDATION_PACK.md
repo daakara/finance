@@ -13,8 +13,10 @@
 This package is a ready-to-run instrument for a human moderator conducting direct-entry usability sessions with 5 real first-time human participants.
 
 ### Repository & Environment Binding
-- **Target Git Revision**: Bound to current commit SHA (`HEAD`)
-- **Execution Target**: `http://localhost:3000` (Production static build)
+- **Target Git Revision**: `42ab9b572ce3264958d5c2cdf519cba437502eb3` (Pinned before Session 1)
+- **Execution Target**: Fixed Staging URL or Local LAN (`http://<YOUR-PC-LAN-IP>:3000`)
+  > [!IMPORTANT]
+  > **Physical Mobile Access**: Do NOT use `localhost:3000` for physical mobile devices (it resolves to the phone itself). Use either a fixed staging deployment or your host workstation's LAN IP (e.g., `http://192.168.x.x:3000`).
 - **Data State**: **POPULATED** (pre-loaded with representative active holdings for NVDA/AAPL, authentic trade log history, and active setups; participants must evaluate operational affordances, not empty states).
 
 ### Release 1 Scope Clarification
@@ -27,6 +29,7 @@ Under the deliberate product-scope revision for ARX Release 1:
 1. **Zero AI/Automated Surrogates**: Automated scripts, LLM role-play, synthetic personas, and headless audits are strictly forbidden as substitutes for real participant observation.
 2. **Direct Entry Only**: Participants must land directly on each target URL without prior product walkthroughs, four-hub explanations, or guided tours.
 3. **Strict Objective Status**: Until real participant observations are collected, all hubs remain classified as `NOT TESTED — NO HUMAN EVIDENCE`.
+4. **Mid-Study Code Freeze**: Zero code, UI, copy, or model changes allowed during participant sessions (`MID_STUDY_UI_CHANGES_ALLOWED = false`).
 
 ---
 
@@ -60,7 +63,11 @@ Under the deliberate product-scope revision for ARX Release 1:
 
 ## 3. Participant Eligibility & Device Profile
 
-### Target Sample: N = 5 First-Time Participants
+### Target Sample: N = 5 First-Time Participants (Tightened Distribution)
+The target audience is representative first-time users with basic trading literacy. The participant distribution is strictly calibrated to avoid knowledge bias:
+- **1 Experienced Trader**
+- **2 Intermediate Investors**
+- **2 Beginner / Basic-Trading-Literate Users**
 
 ### Screening Criteria
 - **Inclusion**:
@@ -74,40 +81,46 @@ Under the deliberate product-scope revision for ARX Release 1:
 ### Device Coverage & Demographic Matrix
 Record non-sensitive identifiers, viewport width, and experience bands:
 
-| Participant ID | Viewport Width / Device Class | Experience Band | Direct-Entry Initial Condition |
-| :--- | :--- | :--- | :--- |
-| **P01** | 1440 CSS px (Desktop) | Experienced Trader | Populated State |
-| **P02** | 375 CSS px (Mobile Portrait / iPhone SE) | Intermediate Investor | Populated State |
-| **P03** | 1280 CSS px (Laptop / Desktop) | Beginner Investor | Populated State |
-| **P04** | 390 CSS px (Mobile Portrait / iPhone 14) | Intermediate Investor | Populated State |
-| **P05** | 1440 CSS px (Desktop) | Experienced Trader | Populated State |
+| Participant ID | Viewport Width / Device Class | Experience Band | Direct-Entry Initial Condition | First-Entry Hub |
+| :--- | :--- | :--- | :--- | :--- |
+| **P01** | 1440 CSS px (Desktop) | Experienced Trader | Populated State | **Radar** |
+| **P02** | 375 CSS px (Mobile Portrait / iPhone SE) | Intermediate Investor | Populated State | **Analysis** |
+| **P03** | 1280 CSS px (Laptop / Desktop) | Beginner / Basic Literate | Populated State | **Trade Plan** |
+| **P04** | 390 CSS px (Mobile Portrait / iPhone 14) | Beginner / Basic Literate | Populated State | **Portfolio** |
+| **P05** | 1440 CSS px (Desktop) | Intermediate Investor | Populated State | **Analysis** |
 
 ---
 
 ## 4. Test Routes & Direct-Entry URLs (Release 1 Retained Hubs)
 
-Test the four primary Release 1 hubs via direct URL entry:
+Test the four primary Release 1 hubs via direct URL entry (using `<HOST-OR-LAN-IP>:3000` or staging):
 
-1. **Radar (`Find`)**: `http://localhost:3000/radar`
-2. **Analysis (`Understand`)**: `http://localhost:3000/?symbol=NVDA` *(Note: `?ticker=NVDA` is also accepted as legacy fallback)*
-3. **Trade Plan (`Plan`)**: `http://localhost:3000/setups?ticker=NVDA` *(or `/setups` for catalog browse)*
-4. **Portfolio (`Manage`)**: `http://localhost:3000/portfolio`
+1. **Radar (`Find`)**: `http://<HOST>:3000/radar`
+2. **Analysis (`Understand`)**: `http://<HOST>:3000/?symbol=NVDA` *(Note: `?ticker=NVDA` is also accepted as legacy fallback)*
+3. **Trade Plan (`Plan`)**: `http://<HOST>:3000/setups?ticker=NVDA` *(or `/setups` for catalog browse)*
+4. **Portfolio (`Manage`)**: `http://<HOST>:3000/portfolio`
 
 *(Note: `/journal` and `/performance` are deferred to post-R1 and excluded from active task validation).*
 
 ---
 
-## 5. Counterbalanced Cyclic Rotation (Complete First-Position Balance across 4 Hubs with N=5)
+## 5. Counterbalanced Cyclic Rotation & First-Page Separation
 
-With exactly 4 canonical hubs and $N=5$ participants, complete first-position balance is mathematically achieved. Each of the 4 hubs appears as the first tested page for at least one participant, with P05 cycling back to Radar on desktop:
+### First-Page vs. Subsequent-Page Disambiguation
+To prevent learning effects from skewing the evaluation, analysis must strictly separate:
+- **`FIRST_PAGE_RESULT`**: The initial direct-entry page for each participant. This constitutes the cleanest, uncontaminated comprehension evidence.
+- **`SUBSEQUENT_PAGE_RESULT`**: Subsequent pages evaluated in sequence, which may reflect cross-page learning.
 
-| Participant ID | Device Class | Target Experience | Route Presentation Order |
-| :--- | :--- | :--- | :--- |
-| **P01** | 1440px Desktop | Experienced Trader | `Radar → Analysis → Trade Plan → Portfolio` |
-| **P02** | 375px Mobile | Intermediate Investor | `Analysis → Trade Plan → Portfolio → Radar` |
-| **P03** | 1280px Desktop | Beginner Investor | `Trade Plan → Portfolio → Radar → Analysis` |
-| **P04** | 390px Mobile | Intermediate Investor | `Portfolio → Radar → Analysis → Trade Plan` |
-| **P05** | 1440px Desktop | Experienced Trader | `Radar → Analysis → Trade Plan → Portfolio` |
+### Balanced Starting Positions
+Analysis is evaluated twice as a first-entry hub because it was materially updated in Phase UX-R2:
+
+| Participant ID | Device Class | Target Experience | First-Entry Hub | Full Route Presentation Order |
+| :--- | :--- | :--- | :--- | :--- |
+| **P01** | 1440px Desktop | Experienced Trader | **Radar** | `Radar → Analysis → Trade Plan → Portfolio` |
+| **P02** | 375px Mobile | Intermediate Investor | **Analysis** | `Analysis → Trade Plan → Portfolio → Radar` |
+| **P03** | 1280px Desktop | Beginner / Basic Literate | **Trade Plan** | `Trade Plan → Portfolio → Radar → Analysis` |
+| **P04** | 390px Mobile | Beginner / Basic Literate | **Portfolio** | `Portfolio → Radar → Analysis → Trade Plan` |
+| **P05** | 1440px Desktop | Intermediate Investor | **Analysis** | `Analysis → Radar → Trade Plan → Portfolio` |
 
 ---
 
@@ -141,7 +154,7 @@ Each question is evaluated independently using `PASS`, `FAIL`, or `AMBIGUOUS`:
 
 ## 8. Critical Safety Checks
 
-### Safety Check 1: Copy Plan ≠ Trade Execution (`Trade Plan / Setups`)
+#### Safety Check 1: Copy Plan ≠ Trade Execution (`Trade Plan / Setups`)
 When the participant evaluates the **Trade Plan** hub (`/setups?ticker=NVDA`), the moderator must ask:
 > *"What do you think will happen if you press 'Copy Trade Plan'?"*
 
@@ -149,7 +162,7 @@ When the participant evaluates the **Trade Plan** hub (`/setups?ticker=NVDA`), t
 - **FAIL**: Participant believes it places a trade, routes an order, records an execution, or mutates their portfolio (e.g., *"It executes the trade for me"*, *"It buys the stock"*).
 
 > [!CAUTION]
-> **Zero Misconception Tolerance**: The acceptance threshold requires **0 of 5 participants** to mistake copying a trade plan for trade execution. A single execution misconception constitutes a material safety defect.
+> **Hard Fail Condition**: The acceptance threshold requires **0 of 5 participants (0%)** to mistake copying a trade plan for trade execution. A single execution misconception is an automatic phase fail.
 
 ### Safety Check 2: Setup Score ≠ Guaranteed Win Rate (`Trade Plan / Setups`)
 When the participant evaluates the **Trade Plan** hub (`/setups?ticker=NVDA`), the moderator must ask:
@@ -158,6 +171,9 @@ When the participant evaluates the **Trade Plan** hub (`/setups?ticker=NVDA`), t
 - **PASS**: Interpreted as relative setup quality, confluence strength, multi-factor evaluation rating, or systematic attractiveness score.
 - **FAIL**: Interpreted as guaranteed win probability, promised percentage return, or mathematical certainty that the trade will be profitable (e.g., *"73% chance this trade wins"*).
 
+> [!CAUTION]
+> **Hard Fail Condition**: The acceptance threshold requires **0 of 5 participants (0%)** to interpret the score as guaranteed win probability. A single misconception is an automatic phase fail.
+
 ### Safety Check 3: Portfolio ≠ Live Broker Account (`Portfolio`)
 When the participant evaluates the **Portfolio** hub (`/portfolio`), the moderator must ask:
 > *"Does this page automatically execute orders with your brokerage or show your live broker cash balance?"*
@@ -165,34 +181,37 @@ When the participant evaluates the **Portfolio** hub (`/portfolio`), the moderat
 - **PASS**: Interpreted as an institutional risk management and position tracking system where positions and stop floors are recorded and monitored.
 - **FAIL**: Believes ARX is custodial or executing trades directly through an invisible broker integration without manual record/fill confirmation.
 
+> [!CAUTION]
+> **Hard Fail Condition**: The acceptance threshold requires **0 of 5 participants (0%)** to mistake portfolio tracking for live broker custody. A single misconception is an automatic phase fail.
+
 ---
 
 ## 9. Observation Recording Template
 
-Use this table to record observations live during the sessions:
+Use this table to record observations live during the sessions. Note whether each observation represents a clean direct-entry (`FIRST_PAGE`) or subsequent exposure (`SUBSEQUENT`):
 
-| Participant | Experience | Hub | Purpose Quote | Purpose | Next Action Quote | Next Action | Outcome Quote | Outcome | ≤30s | Copy≠Exec | Score Realism | Port≠Broker | Notes |
-| :--- | :--- | :--- | :--- | :---: | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| P01 | Experienced | Radar | | | | | | | | N/A | N/A | N/A | |
-| P01 | Experienced | Analysis | | | | | | | | N/A | N/A | N/A | |
-| P01 | Experienced | Trade Plan | | | | | | | | | | N/A | |
-| P01 | Experienced | Portfolio | | | | | | | | N/A | N/A | | |
-| P02 | Intermediate | Analysis | | | | | | | | N/A | N/A | N/A | |
-| P02 | Intermediate | Trade Plan | | | | | | | | | | N/A | |
-| P02 | Intermediate | Portfolio | | | | | | | | N/A | N/A | | |
-| P02 | Intermediate | Radar | | | | | | | | N/A | N/A | N/A | |
-| P03 | Beginner | Trade Plan | | | | | | | | | | N/A | |
-| P03 | Beginner | Portfolio | | | | | | | | N/A | N/A | | |
-| P03 | Beginner | Radar | | | | | | | | N/A | N/A | N/A | |
-| P03 | Beginner | Analysis | | | | | | | | N/A | N/A | N/A | |
-| P04 | Intermediate | Portfolio | | | | | | | | N/A | N/A | | |
-| P04 | Intermediate | Radar | | | | | | | | N/A | N/A | N/A | |
-| P04 | Intermediate | Analysis | | | | | | | | N/A | N/A | N/A | |
-| P04 | Intermediate | Trade Plan | | | | | | | | | | N/A | |
-| P05 | Experienced | Radar | | | | | | | | N/A | N/A | N/A | |
-| P05 | Experienced | Analysis | | | | | | | | N/A | N/A | N/A | |
-| P05 | Experienced | Trade Plan | | | | | | | | | | N/A | |
-| P05 | Experienced | Portfolio | | | | | | | | N/A | N/A | | |
+| Participant | Experience | Hub | Entry Type | Purpose Quote | Purpose | Next Action Quote | Next Action | Outcome Quote | Outcome | ≤30s | Copy≠Exec | Score Realism | Port≠Broker | Notes |
+| :--- | :--- | :--- | :---: | :--- | :---: | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| P01 | Experienced | Radar | **FIRST_PAGE** | | | | | | | | N/A | N/A | N/A | |
+| P01 | Experienced | Analysis | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P01 | Experienced | Trade Plan | SUBSEQUENT | | | | | | | | | | N/A | |
+| P01 | Experienced | Portfolio | SUBSEQUENT | | | | | | | | N/A | N/A | | |
+| P02 | Intermediate | Analysis | **FIRST_PAGE** | | | | | | | | N/A | N/A | N/A | |
+| P02 | Intermediate | Trade Plan | SUBSEQUENT | | | | | | | | | | N/A | |
+| P02 | Intermediate | Portfolio | SUBSEQUENT | | | | | | | | N/A | N/A | | |
+| P02 | Intermediate | Radar | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P03 | Beginner / Basic | Trade Plan | **FIRST_PAGE** | | | | | | | | | | N/A | |
+| P03 | Beginner / Basic | Portfolio | SUBSEQUENT | | | | | | | | N/A | N/A | | |
+| P03 | Beginner / Basic | Radar | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P03 | Beginner / Basic | Analysis | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P04 | Beginner / Basic | Portfolio | **FIRST_PAGE** | | | | | | | | N/A | N/A | | |
+| P04 | Beginner / Basic | Radar | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P04 | Beginner / Basic | Analysis | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P04 | Beginner / Basic | Trade Plan | SUBSEQUENT | | | | | | | | | | N/A | |
+| P05 | Intermediate | Analysis | **FIRST_PAGE** | | | | | | | | N/A | N/A | N/A | |
+| P05 | Intermediate | Radar | SUBSEQUENT | | | | | | | | N/A | N/A | N/A | |
+| P05 | Intermediate | Trade Plan | SUBSEQUENT | | | | | | | | | | N/A | |
+| P05 | Intermediate | Portfolio | SUBSEQUENT | | | | | | | | N/A | N/A | | |
 
 ---
 
@@ -202,10 +221,34 @@ Use this table to record observations live during the sessions:
 A participant passes a hub if and only if they demonstrate understanding across **Purpose**, **Next Action**, and **Expected Outcome** within **30 seconds** without assistance.
 
 ### Overall Phase A3 Gate Closure Criteria
-1. **Comprehension**: At least **4 of 5 participants (>= 80%)** achieve a full PASS across all 4 tested hubs.
-2. **Safety Integrity**: Exactly **0 of 5 participants (0%)** confuse `Copy Trade Plan` with order execution.
-3. **Score Realism**: Exactly **0 of 5 participants (0%)** interpret the setup score as guaranteed win probability.
-4. **Portfolio Independence**: Exactly **0 of 5 participants (0%)** mistake portfolio tracking for live automated broker custody.
+1. **Core Comprehension Gate**: At least **4 of 5 participants (>= 80%)** achieve a full PASS across all tested hubs.
+2. **First-Page Direct-Entry Pure Gate**: First-page direct-entry results (`FIRST_PAGE_RESULT`) must independently confirm comprehension without reliance on subsequent cross-page learning.
+3. **Hard-Fail Safety Boundaries (Independent Zero-Tolerance Gating)**:
+   - `COPY TRADE PLAN MISUNDERSTOOD AS ORDER EXECUTION = 0 / 5`
+   - `SETUP SCORE MISUNDERSTOOD AS WIN PROBABILITY = 0 / 5`
+   - `PORTFOLIO MISUNDERSTOOD AS LIVE BROKER CUSTODY = 0 / 5`
+   *(Any single failure on these 3 checks triggers an automatic phase FAIL regardless of overall score).*
+
+### Canonical Frozen Pre-Study State
+```text
+A3_STATUS = READY_FOR_HUMAN_EXECUTION
+
+A3_TEST_BUILD_COMMIT = 42ab9b572ce3264958d5c2cdf519cba437502eb3
+A3_TEST_ENVIRONMENT = STAGING OR LAN BUILD
+
+PARTICIPANTS_REQUIRED = 5
+MOBILE_REQUIRED >= 2
+DESKTOP_REQUIRED >= 2
+
+AI_SIMULATION_ALLOWED = false
+MID_STUDY_UI_CHANGES_ALLOWED = false
+
+CORE_COMPREHENSION_THRESHOLD >= 80%
+SAFETY_MISCONCEPTION_THRESHOLD = 0% (HARD FAIL BOUNDARY)
+
+A5 = BLOCKED_PENDING_A3
+UX_R3_PLUS = BLOCKED_PENDING_A3
+```
 
 ---
 
@@ -227,36 +270,33 @@ A participant passes a hub if and only if they demonstrate understanding across 
 ```text
 ## Participants
 N: [5]
-experience distribution: [X Beginner, Y Intermediate, Z Experienced]
+experience distribution: [2 Beginner/Basic, 2 Intermediate, 1 Experienced]
 study date: [YYYY-MM-DD]
+test build commit: 42ab9b572ce3264958d5c2cdf519cba437502eb3
+environment: [LAN Build / Staging URL]
 
 ## Overall Gate
 participants meeting full comprehension threshold: [X / 5]
 required: [4 / 5]
 PASS/FAIL: [PASS | FAIL]
 
-## Copy ≠ Execution
-participants tested: [5]
-misconceptions: [0]
-PASS/FAIL: [PASS | FAIL]
+## First-Page Pure Direct-Entry Gate
+first-page pure passes: [X / 5]
+subsequent-page passes: [Y / 15]
 
-## Setup Score Realism
-correct interpretations: [X / 5]
-material misconceptions: [0]
-PASS/FAIL: [PASS | FAIL]
-
-## Portfolio Independence
-correct interpretations: [X / 5]
-material misconceptions: [0]
-PASS/FAIL: [PASS | FAIL]
+## Hard-Fail Safety Checks
+copy trade plan misunderstood as order execution: [0 / 5] (Required: 0)
+setup score misunderstood as win probability: [0 / 5] (Required: 0)
+portfolio misunderstood as live broker custody: [0 / 5] (Required: 0)
+SAFETY GATE: [PASS | FAIL]
 
 ## Hub Summary
-| Hub | Observations | Pass Rate | Repeated Misconception | Status |
-| :--- | :---: | :---: | :--- | :---: |
-| Radar (Find) | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
-| Analysis (Understand) | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
-| Trade Plan (Plan) | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
-| Portfolio (Manage) | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
+| Hub | First-Page Obs | Total Obs | Pass Rate | Repeated Misconception | Status |
+| :--- | :---: | :---: | :---: | :--- | :---: |
+| Radar (Find) | 1 | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
+| Analysis (Understand) | 2 | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
+| Trade Plan (Plan) | 1 | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
+| Portfolio (Manage) | 1 | 5 | % | None | [CLEAR | MINOR_FRICTION | MATERIAL_FAILURE] |
 
 ## Deferred Hubs (Post-R1)
 | Hub | Status | Reason |
@@ -269,7 +309,7 @@ material: [None | Specific findings]
 minor: [None | Specific findings]
 participant-specific: [None | Idiosyncratic observations]
 
-## Roadmap
-A3 before: A3: IMPLEMENTATION VERIFIED — FORMATIVE COMPREHENSION VALIDATION OPEN (4-Hub R1 Scope)
-A3 after:  [COMPLETE / CLOSED — FORMATIVE COMPREHENSION VALIDATION PASSED | REMAINS OPEN]
+## Roadmap Gate Verdict
+A3 Verdict: [PASS | PASS WITH REMEDIATION | FAIL / REMEDIATION REQUIRED]
+A5 Release Gate: [UNBLOCKED | BLOCKED]
 ```
