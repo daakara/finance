@@ -179,10 +179,27 @@ export default function PriceChart({
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
+    const ensureAccessibleAttribution = () => {
+      if (chartContainerRef.current) {
+        const tvLinks = chartContainerRef.current.querySelectorAll("a");
+        tvLinks.forEach((a) => {
+          if (!a.getAttribute("aria-label")) {
+            a.setAttribute("aria-label", "TradingView Charts");
+          }
+        });
+      }
+    };
+    ensureAccessibleAttribution();
+    const tvObserver = new MutationObserver(ensureAccessibleAttribution);
+    if (chartContainerRef.current) {
+      tvObserver.observe(chartContainerRef.current, { childList: true, subtree: true });
+    }
+
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("finance:theme-change", handleThemeChange);
       observer.disconnect();
+      tvObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       candlestickSeriesRef.current = null;
@@ -368,7 +385,7 @@ export default function PriceChart({
         <div className="space-y-1.5 w-full sm:w-auto">
                 {/* Left: Symbol & Live Tabular Price */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <h1 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h1>
+          <h2 id="chart-header-symbol" className="text-lg sm:text-2xl font-bold text-white tracking-tight">{symbol}</h2>
           {(() => {
             const clean = symbol.toUpperCase().replace("-USD", "");
             const isAdr = (clean.length === 5 && (clean.endsWith("Y") || clean.endsWith("F"))) || ["DHLGY", "NVO", "ASML", "TSM", "BABA", "AZN", "BP", "SHEL", "SAP", "SNY", "TM", "HMC", "VALE", "BTI", "RIO", "UL", "LVMUY", "TCEHY"].includes(clean);
@@ -465,23 +482,6 @@ export default function PriceChart({
                 {item.label}
               </button>
             ))}
-
-            {onRoleChange && (
-              <button
-                type="button"
-                onClick={() => onRoleChange(userRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER")}
-                aria-label={`Switch Trading Horizon Mode (currently ${userRole === "DAY_TRADER" ? "Day Trader" : "Long-Term Investor"})`}
-                title={`Click to switch to ${userRole === "DAY_TRADER" ? "Long-Term Macro Investor" : "Day Trader Scalp"} mode`}
-                className={`ml-1 px-2 py-1 min-h-[30px] rounded text-[11px] font-mono font-bold transition-all border flex items-center gap-1 cursor-pointer active:scale-95 ${
-                  userRole === "DAY_TRADER"
-                    ? "bg-amber-950/40 text-amber-300 border-amber-500/50 hover:bg-amber-900/50"
-                    : "bg-cyan-950/40 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/50"
-                }`}
-              >
-                <span>{userRole === "DAY_TRADER" ? "⚡ Day" : "🏛️ Long"}</span>
-                <span className="text-[9px] opacity-75">⇄</span>
-              </button>
-            )}
           </div>
         </div>
       </div>

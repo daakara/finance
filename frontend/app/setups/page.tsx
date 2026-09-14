@@ -41,6 +41,7 @@ function SetupsContent() {
 
   const [availableSetups, setAvailableSetups] = useState<TradeSetupSpec[]>([]);
   const [selectedSetup, setSelectedSetup] = useState<TradeSetupSpec | null>(null);
+  const [showMobileCatalog, setShowMobileCatalog] = useState(false);
   const [riskTelemetry, setRiskTelemetry] = useState<UserRiskTelemetry | null>(null);
   const [loadState, setLoadState] = useState<SetupLoadState>('LOADING');
   const [unsupportedError, setUnsupportedError] = useState<string | null>(null);
@@ -195,13 +196,17 @@ function SetupsContent() {
 
   const handleSelectSetup = (setup: TradeSetupSpec) => {
     setSelectedSetup(setup);
+    setShowMobileCatalog(false);
     router.replace(`/setups?ticker=${setup.ticker}`);
   };
 
   const handleClearSelection = () => {
     setSelectedSetup(null);
+    setShowMobileCatalog(false);
     router.replace('/setups');
   };
+
+  const actionableCount = availableSetups.filter((s) => s.isActionable).length;
 
   const context = getTraderContextFromUnifiedCockpit(undefined, riskTelemetry);
   const effectiveSetup: TradeSetupSpec = selectedSetup || {
@@ -259,8 +264,10 @@ function SetupsContent() {
   const [fillSubmitting, setFillSubmitting] = useState(false);
   const [fillError, setFillError] = useState<string | null>(null);
   const [fillSuccess, setFillSuccess] = useState<boolean>(false);
+  const fillTriggerRef = useRef<HTMLElement | null>(null);
 
   const handleOpenFillModal = () => {
+    fillTriggerRef.current = (document.activeElement as HTMLElement) || null;
     setFillPrice(sizing.entryPivot ? sizing.entryPivot.toFixed(2) : "");
     setFillShares(sizing.recommendedShares ? sizing.recommendedShares.toString() : "");
     setFillDate(new Date().toISOString().slice(0, 10));
@@ -327,13 +334,33 @@ function SetupsContent() {
 
   useEffect(() => {
     if (!showFillModal) return;
+    const triggerEl = fillTriggerRef.current;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setShowFillModal(false);
+      } else if (e.key === "Tab") {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (!dialog) return;
+        const focusables = Array.from(dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')).filter(
+          el => !el.hasAttribute('disabled') && el.tabIndex !== -1
+        );
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      setTimeout(() => triggerEl?.focus(), 20);
+    };
   }, [showFillModal]);
 
   const handleModeKeyDown = (e: React.KeyboardEvent, current: 'STANDARD' | 'GUIDED' | 'QUANT') => {
@@ -390,7 +417,7 @@ function SetupsContent() {
           <div
             role="tablist"
             aria-label="Execution Modes"
-            className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 shrink-0"
+            className="flex flex-wrap items-center gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800 max-w-full"
           >
             <button
               type="button"
@@ -401,7 +428,7 @@ function SetupsContent() {
               tabIndex={executionMode === 'STANDARD' ? 0 : -1}
               onKeyDown={(e) => handleModeKeyDown(e, 'STANDARD')}
               onClick={() => setExecutionMode('STANDARD')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-2 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'STANDARD'
                   ? 'bg-slate-800 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -418,13 +445,13 @@ function SetupsContent() {
               tabIndex={executionMode === 'GUIDED' ? 0 : -1}
               onKeyDown={(e) => handleModeKeyDown(e, 'GUIDED')}
               onClick={() => setExecutionMode('GUIDED')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-2 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'GUIDED'
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              🛡️ Guided (Recommended)
+              <span>🛡️ Guided<span className="hidden sm:inline"> (Recommended)</span></span>
             </button>
             <button
               type="button"
@@ -435,7 +462,7 @@ function SetupsContent() {
               tabIndex={executionMode === 'QUANT' ? 0 : -1}
               onKeyDown={(e) => handleModeKeyDown(e, 'QUANT')}
               onClick={() => setExecutionMode('QUANT')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`focus-ring px-2 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 executionMode === 'QUANT'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -584,23 +611,53 @@ function SetupsContent() {
             {/* Tactical Setup Selector Strip (API-Backed) */}
             {availableSetups.length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono text-slate-400 px-1">
-                  <span className="uppercase font-bold">Active Tactical Setups ({availableSetups.length})</span>
+                {/* Mobile Selected Setup Compact Bar (S01 / AC8 / AC9) */}
+                <div className="sm:hidden flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-900/60 font-mono text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-white font-bold text-sm">{effectiveSetup.ticker}</span>
+                    <span className="text-cyan-400 font-bold">{effectiveSetup.confluenceScore}/100</span>
+                    <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{effectiveSetup.setupName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setShowMobileCatalog(!showMobileCatalog)}
+                      className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-bold border border-slate-700 cursor-pointer"
+                      aria-expanded={showMobileCatalog}
+                    >
+                      {showMobileCatalog ? "Hide Catalog ↑" : "Change Setup ▾"}
+                    </button>
+                    <button
+                      onClick={handleClearSelection}
+                      className="text-slate-400 hover:text-white text-[11px] font-mono underline cursor-pointer"
+                    >
+                      All Setups
+                    </button>
+                  </div>
+                </div>
+
+                {/* Header (Desktop + Reopened Mobile) */}
+                <div className={`items-center justify-between text-xs font-mono text-slate-400 px-1 ${showMobileCatalog ? 'flex' : 'hidden sm:flex'}`}>
+                  <span className="uppercase font-bold">
+                    Evaluated Tactical Setups ({availableSetups.length})
+                    {actionableCount > 0 && <span className="text-emerald-400 font-normal ml-2">({actionableCount} Actionable)</span>}
+                  </span>
                   <button
                     onClick={handleClearSelection}
-                    className="text-cyan-400 hover:underline text-[11px] font-mono"
+                    className="text-cyan-400 hover:underline text-[11px] font-mono cursor-pointer"
                   >
                     View All Setups Catalog →
                   </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[260px] overflow-y-auto p-1">
+
+                {/* Catalog Grid: Hidden on mobile unless showMobileCatalog is toggled, always visible on desktop (sm:) */}
+                <div className={`grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[260px] overflow-y-auto p-1 ${showMobileCatalog ? 'grid' : 'hidden sm:grid'}`}>
                   {availableSetups.map((setup) => {
                     const isSelected = setup.ticker === effectiveSetup.ticker;
                     return (
                       <button
                         key={setup.ticker}
                         onClick={() => handleSelectSetup(setup)}
-                        className={`p-3.5 rounded-xl text-left transition-all border ${
+                        className={`p-3.5 rounded-xl text-left transition-all border cursor-pointer ${
                           isSelected
                             ? 'border-cyan-500/80 bg-cyan-950/30 shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-400/50'
                             : 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 hover:border-slate-700'
@@ -637,7 +694,7 @@ function SetupsContent() {
                     href={`/?symbol=${effectiveSetup.ticker}`}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold font-mono border border-slate-700"
                   >
-                    Open in Terminal (/?symbol={effectiveSetup.ticker}) →
+                    Open in Analysis (/?symbol={effectiveSetup.ticker}) →
                   </Link>
                   <Link
                     href="/radar"
@@ -972,6 +1029,7 @@ function SetupsContent() {
                       </label>
                       <input
                         id="fill-price-input"
+                        autoFocus
                         type="number"
                         step="0.01"
                         required

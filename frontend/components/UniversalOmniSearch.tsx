@@ -12,6 +12,12 @@ export default function UniversalOmniSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const handleOpen = (e?: React.MouseEvent) => {
+    triggerRef.current = (e?.currentTarget as HTMLElement) || (document.activeElement as HTMLElement) || null;
+    setIsOpen(true);
+  };
 
   // Global hotkey: Press "/" or "Cmd+K" / "Ctrl+K" anywhere to open omni-search
   useEffect(() => {
@@ -22,9 +28,26 @@ export default function UniversalOmniSearch() {
         document.activeElement?.tagName !== "TEXTAREA"
       ) {
         e.preventDefault();
+        triggerRef.current = (document.activeElement as HTMLElement) || null;
         setIsOpen(true);
       } else if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
+      } else if (e.key === "Tab" && isOpen) {
+        const dialog = document.querySelector('[role="dialog"][aria-label="Universal Asset Search"]');
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+        ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -36,6 +59,7 @@ export default function UniversalOmniSearch() {
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
+      setTimeout(() => triggerRef.current?.focus(), 20);
     }
   }, [isOpen]);
 
@@ -79,7 +103,7 @@ export default function UniversalOmniSearch() {
     <>
       {/* 🖥️ Desktop / Tablet: Full Wide Search Trigger */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         type="button"
         aria-label="Search ticker, crypto, ETF or company across global markets (Press Slash or Command-K)"
         className="hidden md:flex w-full items-center justify-between bg-[#090d14] hover:bg-[#131b29] border border-[#2b3a52] hover:border-cyan-400 text-slate-200 hover:text-white px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-mono transition-all shadow-inner group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
@@ -106,7 +130,7 @@ export default function UniversalOmniSearch() {
 
       {/* 📱 Mobile: High-Visibility Accessible Search Button (Min 44x44px Touch Target) */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpen}
         type="button"
         aria-label="Search any asset or ticker"
         className="md:hidden flex items-center justify-center min-w-[40px] min-h-[40px] p-2 rounded-lg bg-[#111722] hover:bg-[#1b2537] border border-cyan-400/70 text-cyan-300 hover:text-white active:scale-95 shadow-md shrink-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"

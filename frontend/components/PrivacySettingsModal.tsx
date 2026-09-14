@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toggleMatomoOptOut, isMatomoUserOptedOut } from "../lib/matomo";
 
 interface PrivacySettingsModalProps {
@@ -14,12 +14,51 @@ export default function PrivacySettingsModal({
 }: PrivacySettingsModalProps) {
   const [optedOut, setOptedOut] = useState<boolean>(false);
   const [toast, setToast] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setOptedOut(isMatomoUserOptedOut());
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+
+    triggerRef.current = (document.activeElement as HTMLElement) || null;
+    setOptedOut(isMatomoUserOptedOut());
+    const timer = setTimeout(() => {
+      closeBtnRef.current?.focus();
+    }, 20);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "Tab") {
+        const dialog = document.querySelector('[role="dialog"][aria-label="Privacy and Data Telemetry Settings"]');
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+        ).filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+      const trigger = triggerRef.current;
+      if (trigger) {
+        setTimeout(() => trigger.focus(), 10);
+      }
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -32,7 +71,12 @@ export default function PrivacySettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Privacy and Data Telemetry Settings"
+      className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150"
+    >
       <div className="bg-[#0b1019] border border-cyan-800/80 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 font-sans text-slate-200 relative">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1e293b] pb-3.5">
@@ -48,10 +92,12 @@ export default function PrivacySettingsModal({
             </div>
           </div>
           <button
+            ref={closeBtnRef}
+            id="privacy-close-x-btn"
             type="button"
             onClick={onClose}
             aria-label="Close Privacy Settings"
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
             ✕
           </button>
@@ -98,6 +144,7 @@ export default function PrivacySettingsModal({
             </div>
           </div>
           <button
+            id="privacy-toggle-btn"
             type="button"
             onClick={handleToggle}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition shrink-0 border ${
@@ -122,6 +169,7 @@ export default function PrivacySettingsModal({
             Engine: Self-Hosted Matomo (EU-Isolated & Cookieless)
           </span>
           <button
+            id="privacy-done-btn"
             type="button"
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition"

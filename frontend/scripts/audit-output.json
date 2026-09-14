@@ -1,0 +1,2206 @@
+﻿Auditing: Analysis / Workstation (/?symbol=NVDA&mode=standard)...
+Auditing: Radar / Screener (/radar/?mode=standard)...
+Auditing: Trade Plan / Setups (/setups/?ticker=NVDA&mode=standard)...
+Auditing: Portfolio / Risk Manager (/portfolio/?mode=standard)...
+Auditing: Platform Guide (/guide/?mode=standard)...
+Auditing: Journal (Deferred R1) (/journal/?mode=standard)...
+Auditing: Performance (Deferred R1) (/performance/?mode=standard)...
+{
+  "pagesAudited": [
+    {
+      "pageId": "root",
+      "pageName": "Analysis / Workstation",
+      "domNodes": 998,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Analysis ÔÇö NVDA"
+        },
+        {
+          "tag": "H2",
+          "text": "What are you looking to do today?"
+        },
+        {
+          "tag": "H3",
+          "text": "Find an investment"
+        },
+        {
+          "tag": "H3",
+          "text": "Understand a stock"
+        },
+        {
+          "tag": "H3",
+          "text": "Check my portfolio"
+        },
+        {
+          "tag": "H2",
+          "text": "Evidence Incomplete ÔÇö In-Depth Research "
+        },
+        {
+          "tag": "H2",
+          "text": "Top 3 High-Confluence Plays of the Week"
+        },
+        {
+          "tag": "H1",
+          "text": "NVDA"
+        },
+        {
+          "tag": "H2",
+          "text": "­ƒÆí SOLID ACCUMULATION SETUP"
+        },
+        {
+          "tag": "H2",
+          "text": "Watchlist & Signals"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [
+        {
+          "tag": "INPUT",
+          "className": "focus-ring w-full bg-[#090d14] border border-[#243044] rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500 transition-colors",
+          "outerHTML": "<input placeholder=\"Search ticker, name, or '/'...\" class=\"focus-ring w-full bg-[#090d14] border bor"
+        }
+      ],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Skip to main content",
+          "width": 1,
+          "height": 1,
+          "className": "sr-only focus:not-sr-only focus:absolute"
+        },
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒöì Considering buying",
+          "width": 152,
+          "height": 26,
+          "className": "px-2.5 py-1 rounded-lg bg-[#141d2d] hove"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÆ╝ I already own it",
+          "width": 140,
+          "height": 26,
+          "className": "px-2.5 py-1 rounded-lg bg-[#141d2d] hove"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒôè Just researching",
+          "width": 112,
+          "height": 24,
+          "className": "px-2 py-1 text-slate-400 hover:text-slat"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Why Score 40? ÔåÆ",
+          "width": 91,
+          "height": 16,
+          "className": "text-[11px] text-cyan-400 hover:text-cya"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒöì Inspect Why Score 40",
+          "width": 256,
+          "height": 30,
+          "className": "w-full py-1.5 bg-[#090e18] hover:bg-[#14"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "View Full Setups Ôû╝",
+          "width": 141,
+          "height": 26,
+          "className": "text-xs px-2.5 py-1 rounded-md font-mono"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "#1NVO$45.61",
+          "width": 97,
+          "height": 26,
+          "className": "px-2.5 py-1 rounded-lg text-xs font-mono"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "#2CPRX$22.85",
+          "width": 103,
+          "height": 26,
+          "className": "px-2.5 py-1 rounded-lg text-xs font-mono"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "#3ANET$320.00",
+          "width": 109,
+          "height": 26,
+          "className": "px-2.5 py-1 rounded-lg text-xs font-mono"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "View Full SetupsÔû╝",
+          "width": 107,
+          "height": 17,
+          "className": "text-[11px] font-mono text-cyan-400 hove"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "1M",
+          "width": 37,
+          "height": 30,
+          "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36p"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "6M",
+          "width": 37,
+          "height": 30,
+          "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36p"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "1Y",
+          "width": 37,
+          "height": 30,
+          "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36p"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "3Y",
+          "width": 37,
+          "height": 30,
+          "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36p"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "5Y",
+          "width": 37,
+          "height": 30,
+          "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[36p"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÅø´©Å LongÔçä",
+          "width": 75,
+          "height": 30,
+          "className": "ml-1 px-2 py-1 min-h-[30px] rounded text"
+        },
+        {
+          "tag": "A",
+          "text": "",
+          "width": 35,
+          "height": 19,
+          "className": ""
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "width": 261,
+          "height": 30,
+          "className": "focus-ring w-full bg-[#090d14] border bo"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "All",
+          "width": 54,
+          "height": 23,
+          "className": "focus-ring flex-1 min-w-[54px] py-1 px-1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ô¡ÉPinned",
+          "width": 54,
+          "height": 23,
+          "className": "focus-ring flex-1 min-w-[54px] py-1 px-1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Stock",
+          "width": 54,
+          "height": 23,
+          "className": "focus-ring flex-1 min-w-[54px] py-1 px-1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ETF",
+          "width": 54,
+          "height": 23,
+          "className": "focus-ring flex-1 min-w-[54px] py-1 px-1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Crypto",
+          "width": 54,
+          "height": 23,
+          "className": "focus-ring flex-1 min-w-[54px] py-1 px-1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Ôÿà",
+          "width": 14,
+          "height": 20,
+          "className": "text-xs hover:scale-125 transition-trans"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(2px)",
+            "className": "absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-[2px] flex fl"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "radar",
+      "pageName": "Radar / Screener",
+      "domNodes": 329,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Radar"
+        },
+        {
+          "tag": "H4",
+          "text": "No candidates currently in \"ALL\""
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "All Confluences0",
+          "width": 148,
+          "height": 30,
+          "className": "focus-ring px-3 py-1.5 rounded-lg text-x"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ÔÜí Minervini VCP0",
+          "width": 158,
+          "height": 30,
+          "className": "focus-ring px-3 py-1.5 rounded-lg text-x"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÉï Smart Money0",
+          "width": 145,
+          "height": 30,
+          "className": "focus-ring px-3 py-1.5 rounded-lg text-x"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÆÄ Value / GARP0",
+          "width": 152,
+          "height": 30,
+          "className": "focus-ring px-3 py-1.5 rounded-lg text-x"
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "width": 288,
+          "height": 30,
+          "className": "focus-ring w-full bg-[#0b1019] border bo"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Score",
+          "width": 49,
+          "height": 24,
+          "className": "focus-ring px-2 py-1 rounded bg-slate-80"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "RS",
+          "width": 29,
+          "height": 24,
+          "className": "focus-ring px-2 py-1 rounded text-slate-"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Price",
+          "width": 49,
+          "height": 24,
+          "className": "focus-ring px-2 py-1 rounded text-slate-"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "setups",
+      "pageName": "Trade Plan / Setups",
+      "domNodes": 291,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Setups"
+        },
+        {
+          "tag": "H2",
+          "text": "Tactical Analysis Request Timeout for NV"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Standard",
+          "width": 77,
+          "height": 28,
+          "className": "focus-ring px-2 sm:px-3 py-1.5 rounded-l"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒøí´©Å Guided (Recommended)",
+          "width": 181,
+          "height": 30,
+          "className": "focus-ring px-2 sm:px-3 py-1.5 rounded-l"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒö¼ Quant",
+          "width": 80,
+          "height": 28,
+          "className": "focus-ring px-2 sm:px-3 py-1.5 rounded-l"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "portfolio",
+      "pageName": "Portfolio / Risk Manager",
+      "domNodes": 393,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Portfolio"
+        },
+        {
+          "tag": "H2",
+          "text": "­ƒôèOpen Quant Holdings"
+        },
+        {
+          "tag": "H3",
+          "text": "No Active Portfolio Holdings Recorded"
+        },
+        {
+          "tag": "H2",
+          "text": "Crash Test & What-If Stress Simulator"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "INPUT",
+          "text": "",
+          "width": 80,
+          "height": 16,
+          "className": "w-20 bg-transparent text-xs text-cyan-30"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "$10k",
+          "width": 40,
+          "height": 21,
+          "className": "px-2 py-0.5 rounded text-[10px] font-mon"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "$25k",
+          "width": 40,
+          "height": 21,
+          "className": "px-2 py-0.5 rounded text-[10px] font-mon"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "$50k",
+          "width": 40,
+          "height": 21,
+          "className": "px-2 py-0.5 rounded text-[10px] font-mon"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "$100k",
+          "width": 46,
+          "height": 21,
+          "className": "px-2 py-0.5 rounded text-[10px] font-mon"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "$250k",
+          "width": 46,
+          "height": 21,
+          "className": "px-2 py-0.5 rounded text-[10px] font-mon"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒôë QQQ -5%",
+          "width": 89,
+          "height": 24,
+          "className": "px-2.5 py-1 rounded-lg transition bg-cya"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒôê +50bps Yield",
+          "width": 122,
+          "height": 24,
+          "className": "px-2.5 py-1 rounded-lg transition text-s"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÆÑ VIX 35",
+          "width": 83,
+          "height": 24,
+          "className": "px-2.5 py-1 rounded-lg transition text-s"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "­ƒÄø´©Å Custom",
+          "width": 83,
+          "height": 24,
+          "className": "px-2.5 py-1 rounded-lg transition text-s"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "guide",
+      "pageName": "Platform Guide",
+      "domNodes": 636,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "The No-BS Trader Field Manual: How to Us"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 1: The 4 Power Workspaces & Mobi"
+        },
+        {
+          "tag": "H3",
+          "text": "­ƒô▒ Mobile Experience & Fast Ticker Switc"
+        },
+        {
+          "tag": "H3",
+          "text": "­ƒîÉ Asset Coverage: Pre-Built High-Convic"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 2: The Live Interactive Chart (D"
+        },
+        {
+          "tag": "H3",
+          "text": "­ƒÄ» Never Mix Up Today's Change vs. Your "
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 3: Where to Buy, Sizing Your Tra"
+        },
+        {
+          "tag": "H3",
+          "text": "­ƒôÉ 1. The Position Sizing Safety Formula"
+        },
+        {
+          "tag": "H3",
+          "text": "ÔÜí 2. The 4 Clear Trade Zones (When to Bu"
+        },
+        {
+          "tag": "H3",
+          "text": "­ƒöì 3. The 6 Screener Presets Explained"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 4: Tracking US Politicians & The"
+        },
+        {
+          "tag": "H3",
+          "text": "ÔÜû´©Å 1. The Politician Alignment Score (0 "
+        },
+        {
+          "tag": "H3",
+          "text": "ÔÅ▒´©Å 2. The Delay Penalty (Don't Buy Stale"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 5: The 5-Point Quality Score & C"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 6: Managing Crash Risk & Worst-C"
+        },
+        {
+          "tag": "H3",
+          "text": "The Worst-Case Day Crash Formula (VaR 95"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 7: Fed Interest Rates, Real Insi"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 8: The No-BS Plain-English Jargo"
+        },
+        {
+          "tag": "H2",
+          "text": "Chapter 9: The 4 Trade Co-Pilots (Your S"
+        },
+        {
+          "tag": "H3",
+          "text": "ÔÜí One-Click Language Switcher & Speed Sh"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Field Manual",
+          "width": 73,
+          "height": 16,
+          "className": "text-cyan-400 hover:text-cyan-300 underl"
+        },
+        {
+          "tag": "A",
+          "text": "Quant Glossary",
+          "width": 85,
+          "height": 16,
+          "className": "text-cyan-400 hover:text-cyan-300 underl"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 1: The 4 Workspaces",
+          "width": 133,
+          "height": 21,
+          "className": "text-cyan-400 hover:underline"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 2: Live Chart Guide",
+          "width": 133,
+          "height": 21,
+          "className": "text-amber-400 hover:underline font-bold"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 3: Buy Zones & Sizing",
+          "width": 145,
+          "height": 21,
+          "className": "text-cyan-400 hover:underline"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 4: Politician Trades",
+          "width": 139,
+          "height": 21,
+          "className": "text-amber-400 hover:underline font-bold"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 5: Quality & BS Detect",
+          "width": 163,
+          "height": 17,
+          "className": "text-emerald-400 hover:underline"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 6: Crash Risk & Safety",
+          "width": 151,
+          "height": 17,
+          "className": "text-purple-400 hover:underline"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 7: Fed Rates & Insider",
+          "width": 157,
+          "height": 17,
+          "className": "text-cyan-400 hover:underline font-bold"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 8: Jargon Cheat Sheet",
+          "width": 145,
+          "height": 17,
+          "className": "text-emerald-400 hover:underline font-bo"
+        },
+        {
+          "tag": "A",
+          "text": "Ch 9: The 4 Trade Co-Pilo",
+          "width": 163,
+          "height": 17,
+          "className": "text-amber-400 hover:underline font-bold"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "journal",
+      "pageName": "Journal (Deferred R1)",
+      "domNodes": 313,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Trade Journal & Discipline Log"
+        },
+        {
+          "tag": "H2",
+          "text": "Dedicated Journal Surface Deferred to Po"
+        },
+        {
+          "tag": "H3",
+          "text": "Active Release 1 Destinations"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(8px)",
+            "className": "p-6 md:p-8 rounded-2xl bg-slate-900/80 border border-amber-5"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    },
+    {
+      "pageId": "performance",
+      "pageName": "Performance (Deferred R1)",
+      "domNodes": 311,
+      "headings": [
+        {
+          "tag": "H1",
+          "text": "Performance & Realized Attribution"
+        },
+        {
+          "tag": "H2",
+          "text": "Dedicated Performance Analytics Surface "
+        },
+        {
+          "tag": "H3",
+          "text": "Active Release 1 Destinations"
+        },
+        {
+          "tag": "H4",
+          "text": "Core Platform"
+        },
+        {
+          "tag": "H4",
+          "text": "Smart Money"
+        },
+        {
+          "tag": "H4",
+          "text": "Quant Glossary"
+        },
+        {
+          "tag": "H4",
+          "text": "Platform Benchmarks"
+        }
+      ],
+      "missingLabels": [],
+      "missingAlt": [],
+      "touchTargetsUnder40": [
+        {
+          "tag": "A",
+          "text": "Radar",
+          "width": 53,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Analysis",
+          "width": 73,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Trade Plan",
+          "width": 86,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Portfolio",
+          "width": 79,
+          "height": 28,
+          "className": "px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded"
+        },
+        {
+          "tag": "A",
+          "text": "Live Terminal",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Multi-Factor Screener",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Asset Comparison",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Risk Allocator",
+          "width": 85,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Congressional STOCK Act R",
+          "width": 175,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Late-Filer Hall of Shame",
+          "width": 145,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Nancy Pelosi Portfolio",
+          "width": 133,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Committee Jurisdictions",
+          "width": 139,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX Econometric Model",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Minervini VCP Pattern",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "Cornish-Fisher VaR",
+          "width": 109,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Quantitative Terms ÔåÆ",
+          "width": 145,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Quiver Quant",
+          "width": 115,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Unusual Whales",
+          "width": 127,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Koyfin",
+          "width": 79,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "ARX vs Bloomberg",
+          "width": 97,
+          "height": 24,
+          "className": "hover:text-cyan-400 transition-colors in"
+        },
+        {
+          "tag": "A",
+          "text": "All Comparisons ÔåÆ",
+          "width": 103,
+          "height": 24,
+          "className": "text-cyan-400 hover:underline inline-blo"
+        }
+      ],
+      "antiPatterns": {
+        "sideStripeBorders": [],
+        "gradientText": [],
+        "backdropBlur": [
+          {
+            "tag": "HEADER",
+            "backdropFilter": "blur(8px)",
+            "className": "border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14"
+          },
+          {
+            "tag": "ASIDE",
+            "backdropFilter": "blur(8px)",
+            "className": "h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-["
+          },
+          {
+            "tag": "NAV",
+            "backdropFilter": "blur(24px)",
+            "className": "lg:hidden fixed bottom-0 left-0 right-0 w-full z-[999] bg-[#"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(12px)",
+            "className": "p-4 md:p-5 rounded-2xl border border-slate-800 bg-slate-900/"
+          },
+          {
+            "tag": "DIV",
+            "backdropFilter": "blur(8px)",
+            "className": "p-6 md:p-8 rounded-2xl bg-slate-900/80 border border-amber-5"
+          }
+        ]
+      },
+      "responsiveOverflows": [],
+      "colorTokens": {
+        "inlineStyles": 0
+      },
+      "mobileOverflow": {
+        "scrollWidth": 375,
+        "clientWidth": 375,
+        "hasHorizontalScroll": false
+      }
+    }
+  ],
+  "findings": {
+    "a11y": [],
+    "performance": [],
+    "theming": [],
+    "responsive": [],
+    "antiPatterns": []
+  },
+  "metrics": {}
+}

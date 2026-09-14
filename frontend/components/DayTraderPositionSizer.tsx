@@ -162,7 +162,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
               role="radio"
               aria-checked={accountType === "CASH"}
               onClick={() => setAccountType("CASH")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] ${
+              className={`px-2.5 py-2 sm:py-1 min-h-[40px] sm:min-h-0 text-[11px] font-bold rounded transition-colors active:scale-[0.96] flex items-center justify-center ${
                 accountType === "CASH"
                   ? "bg-cyan-500 text-slate-950 font-extrabold shadow-sm"
                   : "text-slate-400 hover:text-slate-200"
@@ -175,7 +175,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
               role="radio"
               aria-checked={accountType === "MARGIN"}
               onClick={() => setAccountType("MARGIN")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] ${
+              className={`px-2.5 py-2 sm:py-1 min-h-[40px] sm:min-h-0 text-[11px] font-bold rounded transition-colors active:scale-[0.96] flex items-center justify-center ${
                 accountType === "MARGIN"
                   ? "bg-purple-500 text-white font-extrabold shadow-sm"
                   : "text-slate-400 hover:text-slate-200"
@@ -190,7 +190,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             <button
               type="button"
               onClick={() => setAllowFractional(!allowFractional)}
-              className={`px-2 py-1 text-[11px] font-bold rounded transition-colors active:scale-[0.96] flex items-center gap-1 ${
+              className={`px-2.5 py-2 sm:py-1 min-h-[40px] sm:min-h-0 text-[11px] font-bold rounded transition-colors active:scale-[0.96] flex items-center justify-center gap-1 ${
                 allowFractional
                   ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
                   : "text-slate-500 hover:text-slate-300"
@@ -238,7 +238,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
           <button
             type="button"
             onClick={() => setAccountType("MARGIN")}
-            className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded shrink-0 cursor-pointer"
+            className="px-2.5 py-2 sm:py-1 min-h-[40px] sm:min-h-0 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold rounded shrink-0 cursor-pointer flex items-center justify-center"
           >
             Switch to Margin Mode →
           </button>
@@ -287,7 +287,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
                 key={preset}
                 type="button"
                 onClick={() => handleAccountSizeChange(preset)}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all cursor-pointer ${
+                className={`relative before:absolute before:-inset-1 px-2 py-2 sm:px-1.5 sm:py-0.5 min-h-[36px] sm:min-h-0 rounded text-[10px] sm:text-[9px] font-mono font-bold border transition-all cursor-pointer flex items-center justify-center ${
                   accountSize === preset
                     ? "bg-amber-500 border-amber-400 text-slate-950"
                     : "bg-[#0c121e] border-[#1f2c42] text-slate-400 hover:text-slate-200"

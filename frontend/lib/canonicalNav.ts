@@ -1,11 +1,14 @@
 /**
- * Canonical ARX Navigation & Journey Architecture (Phase A2)
+ * Canonical ARX Navigation & Journey Architecture (Release 1 Scope)
  *
- * Defines the authoritative 6-hub trading journey:
- * Radar → Analysis → Setups → Portfolio → Journal → Performance
+ * Defines the authoritative 4-hub Release 1 trading journey:
+ * Radar → Analysis → Trade Plan → Portfolio
+ * (Find → Understand → Plan → Manage)
+ *
+ * Dedicated surfaces for Journal and Performance are DEFERRED TO POST-R1.
  *
  * Enforces:
- * - 100% desktop and mobile parity
+ * - 100% desktop and mobile parity across the 4 core hubs
  * - First-class routing for Analysis at '/'
  * - Active asset context preservation across all hubs without synthetic fallback
  * - Query parameter classification into Global, Discovery, Route-local, and Transient
@@ -15,15 +18,31 @@ export type CanonicalHubId =
   | "radar"
   | "analysis"
   | "setups"
-  | "portfolio"
+  | "portfolio";
+
+export type DeferredHubId =
   | "journal"
   | "performance";
+
+export type AllHubId = CanonicalHubId | DeferredHubId;
 
 export interface CanonicalHubMeta {
   id: CanonicalHubId;
   href: string;
   name: string;
   label: string;
+  mentalModel: "Find" | "Understand" | "Plan" | "Manage";
+  question: string;
+  badge: string;
+  icon: string;
+}
+
+export interface DeferredHubMeta {
+  id: DeferredHubId;
+  href: string;
+  name: string;
+  label: string;
+  status: "DEFERRED_POST_R1";
   question: string;
   badge: string;
   icon: string;
@@ -35,6 +54,7 @@ export const CANONICAL_HUBS: readonly CanonicalHubMeta[] = [
     href: "/radar",
     name: "Radar",
     label: "Radar",
+    mentalModel: "Find",
     question: "What deserves attention today?",
     badge: "CONFLUENCE",
     icon: "📡",
@@ -44,6 +64,7 @@ export const CANONICAL_HUBS: readonly CanonicalHubMeta[] = [
     href: "/",
     name: "Analysis",
     label: "Analysis",
+    mentalModel: "Understand",
     question: "Is this asset worthy of capital?",
     badge: "DEEP DIVE",
     icon: "🔬",
@@ -51,8 +72,9 @@ export const CANONICAL_HUBS: readonly CanonicalHubMeta[] = [
   {
     id: "setups",
     href: "/setups",
-    name: "Setups",
-    label: "Setups",
+    name: "Trade Plan",
+    label: "Trade Plan",
+    mentalModel: "Plan",
     question: "What is actionable right now?",
     badge: "EXECUTION",
     icon: "⚡",
@@ -62,17 +84,22 @@ export const CANONICAL_HUBS: readonly CanonicalHubMeta[] = [
     href: "/portfolio",
     name: "Portfolio",
     label: "Portfolio",
+    mentalModel: "Manage",
     question: "What risk am I carrying?",
     badge: "RISK HEAT",
     icon: "💼",
   },
+] as const;
+
+export const DEFERRED_POST_R1_HUBS: readonly DeferredHubMeta[] = [
   {
     id: "journal",
     href: "/journal",
     name: "Journal",
     label: "Journal",
+    status: "DEFERRED_POST_R1",
     question: "Did I follow my rules?",
-    badge: "DISCIPLINE",
+    badge: "DEFERRED",
     icon: "📖",
   },
   {
@@ -80,8 +107,9 @@ export const CANONICAL_HUBS: readonly CanonicalHubMeta[] = [
     href: "/performance",
     name: "Performance",
     label: "Performance",
+    status: "DEFERRED_POST_R1",
     question: "Is ARX actually improving my results?",
-    badge: "PROOF OF EDGE",
+    badge: "DEFERRED",
     icon: "📈",
   },
 ] as const;
@@ -109,14 +137,14 @@ export function extractActiveSymbol(
   if (typeof searchParams === "string") {
     try {
       const q = new URLSearchParams(searchParams.startsWith("?") ? searchParams.slice(1) : searchParams);
-      raw = q.get("symbol") || q.get("ticker") || q.get("q");
+      raw = q.get("symbol") || q.get("ticker");
     } catch {
       raw = null;
     }
   } else if (searchParams instanceof URLSearchParams) {
-    raw = searchParams.get("symbol") || searchParams.get("ticker") || searchParams.get("q");
+    raw = searchParams.get("symbol") || searchParams.get("ticker");
   } else if (typeof searchParams === "object") {
-    const val = searchParams.symbol || searchParams.ticker || (searchParams as any).q;
+    const val = searchParams.symbol || searchParams.ticker;
     raw = Array.isArray(val) ? val[0] : (val ?? null);
   }
 
@@ -139,7 +167,9 @@ export function buildHubHref(
   additionalParams?: Record<string, string>
 ): string {
   const hubId = typeof hub === "string" ? hub : hub.id;
-  const targetMeta = CANONICAL_HUBS.find((h) => h.id === hubId || h.href === hubId);
+  const targetMeta =
+    CANONICAL_HUBS.find((h) => h.id === hubId || h.href === hubId) ||
+    DEFERRED_POST_R1_HUBS.find((h) => h.id === hubId || h.href === hubId);
   const baseHref = targetMeta ? targetMeta.href : (typeof hub === "string" ? hub : hub.href);
 
   const cleanSymbol = activeSymbol ? activeSymbol.trim().toUpperCase() : null;

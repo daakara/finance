@@ -44,7 +44,8 @@
   --accent-neutral: #64748b;
 }
 
-[data-theme="paper"] {
+[data-theme="paper"],
+.paper {
   /* Editorial Paper Light Terminal */
   --bg-app: #f4f6f9;
   --bg-surface: #ffffff;
@@ -115,9 +116,14 @@ body {
 
 /* 2. Primary Cards, Sidebar & Container Panels */
 [data-theme="paper"] header,
+[data-theme="paper"] footer,
 [data-theme="paper"] aside,
 [data-theme="paper"] section,
 [data-theme="paper"] nav[aria-label="Mobile Navigation Dock"],
+[data-theme="paper"] [class*="bg-slate-800"],
+[data-theme="paper"] [class*="bg-slate-900"],
+[data-theme="paper"] [class*="bg-slate-950"],
+[data-theme="paper"] [class*="bg-black/"],
 [data-theme="paper"] [class*="bg-[#0c1017]"],
 [data-theme="paper"] [class*="bg-[#111722]"],
 [data-theme="paper"] [class*="bg-[#0b1019]"],
@@ -126,7 +132,22 @@ body {
 [data-theme="paper"] [class*="bg-[#141d2d]"],
 [data-theme="paper"] [class*="bg-[#182336]"],
 [data-theme="paper"] [class*="bg-[#101827]"],
-[data-theme="paper"] [class*="bg-[#081322]"] {
+[data-theme="paper"] [class*="bg-[#081322]"],
+[data-theme="paper"] [class*="bg-[#060a12]"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="paper"] footer a {
+  color: #334155 !important;
+}
+
+[data-theme="paper"] footer a:hover {
+  color: #0284c7 !important;
+}
+
+[data-theme="paper"] th,
+[data-theme="paper"] td {
   background-color: #ffffff !important;
   color: #0f172a !important;
 }
@@ -269,13 +290,21 @@ body {
   color: #0f172a !important;
 }
 
-/* 10. Workspace Tab Inactive States */
+/* 10. Workspace Tab Inactive & Active States */
 [data-theme="paper"] button[role="tab"][aria-selected="false"] {
   color: #475569 !important;
 }
 [data-theme="paper"] button[role="tab"][aria-selected="false"]:hover {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
+}
+[data-theme="paper"] button[role="tab"][aria-selected="true"] {
+  color: #0c4a6e !important;
+  background-color: #e0f2fe !important;
+}
+[data-theme="paper"] input::placeholder,
+[data-theme="paper"] textarea::placeholder {
+  color: #475569 !important;
 }
 
 /* 11. Modals, Popovers & Dialogs */
@@ -342,13 +371,148 @@ body {
 
 /* Accessible focus ring utility */
 .focus-ring {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
+  @apply focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-[#090d14] focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#090d14];
 }
 
-[data-theme="paper"] .focus-ring {
+.focus-ring:focus,
+.focus-ring:focus-visible,
+a.focus-ring:focus,
+a.focus-ring:focus-visible,
+button.focus-ring:focus,
+button.focus-ring:focus-visible,
+input.focus-ring:focus,
+input.focus-ring:focus-visible {
+  outline: 2px solid #06b6d4 !important;
+  outline-color: #06b6d4 !important;
+  outline-offset: 2px !important;
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px #090d14, 0 0 0 4px #06b6d4 !important;
+}
+
+[data-theme="paper"] .focus-ring,
+.paper .focus-ring,
+[data-theme="paper"] [class*="ring-cyan"],
+.paper [class*="ring-cyan"] {
   --tw-ring-offset-color: #ffffff !important;
   --tw-ring-color: #0284c7 !important;
 }
+
+[data-theme="paper"] .focus-ring:focus,
+[data-theme="paper"] .focus-ring:focus-visible,
+[data-theme="paper"] a.focus-ring:focus,
+[data-theme="paper"] a.focus-ring:focus-visible,
+[data-theme="paper"] button.focus-ring:focus,
+[data-theme="paper"] button.focus-ring:focus-visible,
+[data-theme="paper"] input.focus-ring:focus,
+[data-theme="paper"] input.focus-ring:focus-visible,
+.paper .focus-ring:focus,
+.paper .focus-ring:focus-visible,
+.paper a.focus-ring:focus,
+.paper a.focus-ring:focus-visible,
+.paper button.focus-ring:focus,
+.paper button.focus-ring:focus-visible,
+.paper input.focus-ring:focus,
+.paper input.focus-ring:focus-visible {
+  outline: 2px solid #0284c7 !important;
+  outline-color: #0284c7 !important;
+  outline-offset: 2px !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #0284c7 !important;
+}
+
+/* Global accessible focus styling for interactive controls (WCAG 2.2 1.4.11 Non-Text Contrast >= 3.0:1) */
+:focus,
+:focus-visible {
+  transition: none !important;
+}
+
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[role="button"]:focus,
+[role="tab"]:focus,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid #06b6d4 !important;
+  outline-offset: 2px !important;
+}
+
+[data-theme="paper"] a:focus,
+[data-theme="paper"] button:focus,
+[data-theme="paper"] input:focus,
+[data-theme="paper"] select:focus,
+[data-theme="paper"] textarea:focus,
+[data-theme="paper"] [role="button"]:focus,
+[data-theme="paper"] [role="tab"]:focus,
+[data-theme="paper"] a:focus-visible,
+[data-theme="paper"] button:focus-visible,
+[data-theme="paper"] input:focus-visible,
+[data-theme="paper"] select:focus-visible,
+[data-theme="paper"] textarea:focus-visible,
+[data-theme="paper"] [role="button"]:focus-visible,
+[data-theme="paper"] [role="tab"]:focus-visible,
+.paper a:focus,
+.paper button:focus,
+.paper input:focus,
+.paper select:focus,
+.paper textarea:focus,
+.paper [role="button"]:focus,
+.paper [role="tab"]:focus,
+.paper a:focus-visible,
+.paper button:focus-visible,
+.paper input:focus-visible,
+.paper select:focus-visible,
+.paper textarea:focus-visible,
+.paper [role="button"]:focus-visible,
+.paper [role="tab"]:focus-visible {
+  outline: 2px solid #0284c7 !important;
+  outline-offset: 2px !important;
+}
+
+
+/* Active form input boundaries (WCAG 2.2 1.4.11 Non-Text Contrast >= 3.0:1) */
+input:focus,
+select:focus,
+textarea:focus,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: #06b6d4 !important;
+  outline: 2px solid #06b6d4 !important;
+  outline-offset: 2px !important;
+}
+
+[data-theme="paper"] input:focus,
+[data-theme="paper"] select:focus,
+[data-theme="paper"] textarea:focus,
+[data-theme="paper"] input:focus-visible,
+[data-theme="paper"] select:focus-visible,
+[data-theme="paper"] textarea:focus-visible,
+.paper input:focus,
+.paper select:focus,
+.paper textarea:focus,
+.paper input:focus-visible,
+.paper select:focus-visible,
+.paper textarea:focus-visible {
+  border-color: #0284c7 !important;
+  outline: 2px solid #0284c7 !important;
+  outline-offset: 2px !important;
+}
+
+/* Selected tab state indicator contrast in Paper light mode */
+[data-theme="paper"] [role="tab"][aria-selected="true"],
+.paper [role="tab"][aria-selected="true"] {
+  border-color: #0284c7 !important;
+}
+
+
 
 /* 14. 🎯 WCAG AA CONTRAST HARMONIZATION IN PAPER LIGHT MODE */
 [data-theme="paper"] [class*="text-cyan-300"],

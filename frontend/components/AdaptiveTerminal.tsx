@@ -28,6 +28,7 @@ interface AdaptiveTerminalProps {
   decisionTrace?: DecisionTrace;
   optimalExecution?: OptimalExecutionPlan;
   freshness?: FreshnessInfo;
+  userRole?: "DAY_TRADER" | "LONG_TERM";
 }
 
 export default function AdaptiveTerminal({
@@ -43,6 +44,7 @@ export default function AdaptiveTerminal({
   decisionTrace,
   optimalExecution,
   freshness,
+  userRole = "LONG_TERM",
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -52,7 +54,7 @@ export default function AdaptiveTerminal({
   const { experienceMode } = useExperienceMode();
   const [isWhyOpen, setIsWhyOpen] = useState(false);
   const [isSizerOpen, setIsSizerOpen] = useState(false);
-  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>("SWING");
+  const effectiveHorizon: TimeHorizon = userRole === "DAY_TRADER" ? "INTRADAY" : "SWING";
 
   const initialOwnership: OwnershipState =
     urlOwnership === "OWNED" || urlOwnership === "NOT_OWNED"
@@ -88,7 +90,7 @@ export default function AdaptiveTerminal({
     changePct,
     setupScore,
     isStage4 !== undefined ? (isStage4 ? 4 : 2) : undefined,
-    timeHorizon,
+    effectiveHorizon,
     ownership,
     "USER_DECLARED",
     candles,
@@ -123,54 +125,16 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* 💼 Ownership Context Prompt (When Ownership is UNKNOWN) */}
-      {ownership === "UNKNOWN" && (
-        <div className="bg-[#0c121d] border border-[#223147] p-3 rounded-xl flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-300">
-          <span className="font-semibold text-slate-200">
-            What is your current relationship with <span className="text-cyan-400 font-mono font-bold">{symbol}</span>?
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleSetOwnership("NOT_OWNED")}
-              className="px-2.5 py-1 rounded-lg bg-[#141d2d] hover:bg-cyan-900/60 border border-[#263750] text-cyan-200 font-mono font-bold text-[11px] transition-all cursor-pointer"
-            >
-              🔍 Considering buying
-            </button>
-            <button
-              onClick={() => handleSetOwnership("OWNED")}
-              className="px-2.5 py-1 rounded-lg bg-[#141d2d] hover:bg-emerald-900/60 border border-[#263750] text-emerald-200 font-mono font-bold text-[11px] transition-all cursor-pointer"
-            >
-              💼 I already own it
-            </button>
-            <button
-              onClick={() => handleSetOwnership("NOT_OWNED")}
-              className="px-2 py-1 text-slate-400 hover:text-slate-200 text-[11px] cursor-pointer"
-            >
-              📊 Just researching
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ⏱️ First-Class Time Horizon Selector & Evidence State Pill */}
+      {/* ⏱️ Authoritative Trading Horizon & Evidence Provenance Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-slate-400 text-[11px] font-bold">Horizon Evaluation:</span>
-          <div className="flex flex-wrap items-center gap-1">
-            {(["INTRADAY", "SWING", "POSITION", "LONG_TERM"] as TimeHorizon[]).map((hz) => (
-              <button
-                key={hz}
-                onClick={() => setTimeHorizon(hz)}
-                className={`min-h-[44px] sm:min-h-[32px] px-3 py-2 sm:py-1 rounded-md text-xs font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer flex items-center justify-center ${
-                  timeHorizon === hz
-                    ? "bg-cyan-600 text-slate-950 font-black"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#131d2c]"
-                }`}
-              >
-                {hz}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-[11px] font-bold">Horizon:</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold font-mono bg-[#131d2c] border border-cyan-900/60 text-cyan-300">
+            <span>{userRole === "DAY_TRADER" ? "⚡ INTRADAY (Day Scalp)" : "🏛️ SWING (Multi-Day)"}</span>
+          </span>
+          <span className="text-[10px] text-slate-500 hidden md:inline">
+            (Governed by Trading Horizon switch)
+          </span>
         </div>
 
         {/* 🛡️ Evidence State Provenance Badge */}
@@ -200,7 +164,7 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* 3 Presentation Lenses */}
+      {/* 3 Presentation Lenses — Unblocked Initial Assessment */}
       {experienceMode === "GUIDED" && (
         <GuidedTerminalView
           insight={insight}
@@ -224,6 +188,52 @@ export default function AdaptiveTerminal({
           onOpenWhy={() => setIsWhyOpen(true)}
         />
       )}
+
+      {/* 💼 Contextual Portfolio Refinement (Non-blocking Progressive Disclosure) */}
+      <div className="bg-[#090e17] border border-[#1b2537] rounded-xl p-2.5 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-300 font-medium">Portfolio Relationship:</span>
+            <span className="font-mono font-semibold text-cyan-300">
+              {ownership === "OWNED" ? "💼 Currently Owned" : ownership === "NOT_OWNED" ? "🔍 Researching / Considering" : "Unspecified"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleSetOwnership("NOT_OWNED")}
+              className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                ownership === "NOT_OWNED"
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
+                  : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
+              }`}
+            >
+              Considering
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetOwnership("OWNED")}
+              className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                ownership === "OWNED"
+                  ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
+                  : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
+              }`}
+            >
+              I Own It
+            </button>
+            {ownership !== "UNKNOWN" && (
+              <button
+                type="button"
+                onClick={() => handleSetOwnership("UNKNOWN")}
+                className="px-2 py-1 text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer"
+                title="Reset relationship"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Why Score Attribution Modal with Full Provenance */}
       <WhyInspectModal

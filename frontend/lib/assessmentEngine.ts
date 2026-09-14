@@ -19,6 +19,7 @@ import {
   ModelProvenance,
   ARXAction,
 } from "../types/insight";
+import { evaluateLevelRelation } from "./reclaimSemantics";
 
 export interface AssessmentEngineInput {
   symbol: string;
@@ -198,18 +199,26 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     } else {
       posture = "WATCH";
       uiStateLabel = "Wait for Trigger";
-      headlineExplanation = reclaimMilestonePrice !== undefined
-        ? `Awaiting constructive base confirmation and reclaim of $${reclaimMilestonePrice.toFixed(2)}.`
-        : "Awaiting constructive consolidation and volume confirmation before trigger.";
+      const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
+      headlineExplanation = levelRel.status === "UNAVAILABLE"
+        ? "Awaiting constructive consolidation and volume confirmation before trigger."
+        : levelRel.headlineExplanationWatch;
     }
   }
 
   // 5. Derive Contextual Actions
+  const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
+  const alertActionLabel = reclaimMilestonePrice !== undefined
+    ? (levelRel.status === "BELOW"
+        ? `Set Alert for Reclaim ($${reclaimMilestonePrice.toFixed(2)})`
+        : `Set Alert for $${reclaimMilestonePrice.toFixed(2)}`)
+    : "Set Price Alert";
+
   const availableActions: ARXAction[] = [
     {
       id: "set_alert",
       type: "SET_ALERT",
-      label: reclaimMilestonePrice !== undefined ? `Set Alert for $${reclaimMilestonePrice.toFixed(2)}` : "Set Price Alert",
+      label: alertActionLabel,
       enabled: overallEligibility !== "INELIGIBLE",
     },
     {
@@ -276,8 +285,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
     whatWouldChangeAssessment: posture === "ACQUIRE"
       ? `A daily close below $${stopLevel.toFixed(2)} (${distancePct}%) would invalidate the setup and downgrade posture to AVOID.`
-      : reclaimMilestonePrice !== undefined
-      ? `Reclaiming and holding above $${reclaimMilestonePrice.toFixed(2)} (50D SMA) with volume expansion would upgrade posture to ACQUIRE.`
+      : levelRel.status !== "UNAVAILABLE"
+      ? levelRel.whatWouldChangeAssessment
       : "Sufficient historical trading data and constructive base formation required to evaluate potential upgrade.",
     primaryAction: {
       label: posture === "ACQUIRE"
@@ -286,9 +295,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         ? "Review Exit Criteria"
         : posture === "RESEARCH"
         ? "Conduct Fundamental Research"
-        : reclaimMilestonePrice !== undefined
-        ? `Set Alert for $${reclaimMilestonePrice.toFixed(2)}`
-        : "Set Price Alert",
+        : alertActionLabel,
       actionType: posture === "ACQUIRE"
         ? "SIZE_TRADE"
         : posture === "EXIT_REVIEW"

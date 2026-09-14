@@ -2,7 +2,7 @@
 
 // Storage architecture: AUTHORITATIVE API PERSISTENCE with local fallback (FastAPI sync)
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import TerminalShell from "../../components/terminal/TerminalShell";
 import PageIntro from "../../components/PageIntro";
@@ -55,14 +55,14 @@ export default function PortfolioPage() {
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
 
   // Form State for Adding Position with Real-Time Auto-Population
-  const [newSymbol, setNewSymbol] = useState("SEDG");
-  const [newShares, setNewShares] = useState("75");
-  const [newEntryPrice, setNewEntryPrice] = useState("33.51");
-  const [newStopLoss, setNewStopLoss] = useState("31.16");
-  const [newTarget, setNewTarget] = useState("41.89");
+  const [newSymbol, setNewSymbol] = useState("");
+  const [newShares, setNewShares] = useState("");
+  const [newEntryPrice, setNewEntryPrice] = useState("");
+  const [newStopLoss, setNewStopLoss] = useState("");
+  const [newTarget, setNewTarget] = useState("");
   const [isResolvingQuote, setIsResolvingQuote] = useState(false);
-  const [resolvedAssetName, setResolvedAssetName] = useState("SolarEdge Technologies");
-  const [resolvedQuotePrice, setResolvedQuotePrice] = useState<number | null>(33.51);
+  const [resolvedAssetName, setResolvedAssetName] = useState("");
+  const [resolvedQuotePrice, setResolvedQuotePrice] = useState<number | null>(null);
 
   // Exit / Close Position Modal State
   const [showExitModal, setShowExitModal] = useState(false);
@@ -127,11 +127,15 @@ export default function PortfolioPage() {
     }
   }, []);
 
+  const addTriggerRef = useRef<HTMLElement | null>(null);
+  const exitTriggerRef = useRef<HTMLElement | null>(null);
+
   const handleOpenAddModal = (initialSymbol?: string) => {
+    addTriggerRef.current = (document.activeElement as HTMLElement) || null;
     beginActivePortfolioEdit();
     setIsEditing(false);
     setModalError(null);
-    const target = initialSymbol || "SEDG";
+    const target = initialSymbol || "";
     setNewSymbol(target);
     setNewShares("10");
     setShowAddModal(true);
@@ -139,6 +143,7 @@ export default function PortfolioPage() {
   };
 
   const handleOpenEditModal = (pos: PortfolioPosition) => {
+    addTriggerRef.current = (document.activeElement as HTMLElement) || null;
     beginActivePortfolioEdit();
     setIsEditing(true);
     setModalError(null);
@@ -331,6 +336,7 @@ export default function PortfolioPage() {
   };
 
   const handleOpenExitModal = (pos: PortfolioPosition) => {
+    exitTriggerRef.current = (document.activeElement as HTMLElement) || null;
     setExitTargetPosition(pos);
     setExitMode("FULL");
     setExitShares(pos.shares.toString());
@@ -357,14 +363,37 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     if (!showAddModal && !showExitModal) return;
+    const addTrigger = addTriggerRef.current;
+    const exitTrigger = exitTriggerRef.current;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showAddModal) handleCloseModal();
         if (showExitModal) handleCloseExitModal();
+      } else if (e.key === "Tab") {
+        const dialog = document.querySelector('[role="dialog"]');
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+        ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (showAddModal) setTimeout(() => addTrigger?.focus(), 20);
+      if (showExitModal) setTimeout(() => exitTrigger?.focus(), 20);
+    };
   }, [showAddModal, showExitModal]);
 
   const handleQuickSharesFraction = (fraction: number) => {
@@ -638,16 +667,18 @@ export default function PortfolioPage() {
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400">Total Wallet:</span>
-              <div className="flex items-center gap-1 bg-[#06090f] border border-[#24334b] rounded-lg px-2 py-1">
+              <label htmlFor="portfolio-total-wallet-input" className="text-[11px] text-slate-400">Total Wallet:</label>
+              <div className="flex items-center gap-1 bg-[#06090f] border border-[#24334b] rounded-lg px-2 py-1.5 min-h-[32px] sm:min-h-0">
                 <span className="text-xs text-slate-500 font-bold">$</span>
                 <input
+                  id="portfolio-total-wallet-input"
+                  aria-label="Total Wallet Capital"
                   type="number"
                   min="1"
                   step="10"
                   value={accountEquity}
                   onChange={(e) => handleAccountEquityChange(Number(e.target.value))}
-                  className="w-20 bg-transparent text-xs text-cyan-300 font-bold focus:outline-none"
+                  className="w-20 min-h-[24px] sm:min-h-0 bg-transparent text-xs text-cyan-300 font-bold focus:outline-none py-0.5"
                 />
               </div>
 
@@ -944,6 +975,7 @@ export default function PortfolioPage() {
                   </div>
                   <input
                     id="add-ticker-input"
+                    autoFocus
                     type="text"
                     value={newSymbol}
                     onChange={(e) => {
@@ -1114,7 +1146,7 @@ export default function PortfolioPage() {
                   <div>
                     <h4 className="text-base font-bold text-white font-mono">Trade Exit Recorded</h4>
                     <p className="text-xs text-slate-400 mt-1">
-                      {exitResultSummary.exitType} on {exitTargetPosition.symbol} has been recorded to your persistent Journal.
+                      {exitResultSummary.exitType} on {exitTargetPosition.symbol} has been recorded to your persistent trade log.
                     </p>
                   </div>
 
@@ -1142,10 +1174,10 @@ export default function PortfolioPage() {
                       Close
                     </button>
                     <Link
-                      href="/journal"
-                      className="focus-ring px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                      href="/setups"
+                      className="focus-ring px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black rounded-lg text-xs transition-colors cursor-pointer"
                     >
-                      View Journal →
+                      Explore Setups →
                     </Link>
                   </div>
                 </div>
@@ -1215,6 +1247,7 @@ export default function PortfolioPage() {
                       <label htmlFor="exit-shares-input" className="block text-slate-300 font-bold mb-1">Shares to Exit</label>
                       <input
                         id="exit-shares-input"
+                        autoFocus
                         type="number"
                         step="any"
                         min="0.000001"

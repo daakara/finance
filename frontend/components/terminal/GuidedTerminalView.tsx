@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { QuantitativeInsight } from "../../types/insight";
 import FinancialDisclaimer from "../FinancialDisclaimer";
+import { evaluateLevelRelation } from "../../lib/reclaimSemantics";
 
 interface GuidedTerminalViewProps {
   insight: QuantitativeInsight;
@@ -18,12 +19,27 @@ export default function GuidedTerminalView({
 }: GuidedTerminalViewProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null);
 
+  const smaRel = evaluateLevelRelation(
+    insight.price,
+    insight.standard.keyLevels.sma50,
+    "50D SMA",
+    insight.symbol
+  );
+
   const steps = [
     { title: "1. What's Happening?", text: `${insight.symbol} is trading at $${insight.price.toFixed(2)}, ${insight.changePct >= 0 ? "+" : ""}${insight.changePct.toFixed(2)}% today. ${insight.human.assessmentDescription}` },
     { title: "2. What's the Setup?", text: `ARX identifies the current structure as ${insight.standard.setupSummary}. ${insight.advanced.relativeStrengthScore !== undefined ? `Relative strength score is ${insight.advanced.relativeStrengthScore}/100.` : "Relative strength score is unverified for this security."}` },
     { title: "3. Why does ARX like/caution it?", text: insight.human.reclaimMilestone },
     { title: "4. What could go wrong?", text: `Every thesis has downside risk. If price breaks below $${insight.standard.keyLevels.stopLoss.toFixed(2)}, the setup is invalidated.` },
-    { title: "5. How could I trade it?", text: `Plan: Watch for reclaim of ${insight.standard.keyLevels.sma50 !== undefined ? `$${insight.standard.keyLevels.sma50.toFixed(2)}` : "key technical levels"}. Target 1 is ${insight.standard.keyLevels.target1 !== undefined ? `$${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%)` : "N/A (< 50 sessions)"}.` },
+    { title: "5. How could I trade it?", text: `Plan: ${
+      smaRel.status === "BELOW"
+        ? `Watch for reclaim of $${(insight.standard.keyLevels.sma50 as number).toFixed(2)} (50D SMA).`
+        : smaRel.status === "AT_LEVEL"
+        ? `Testing 50D SMA at $${(insight.standard.keyLevels.sma50 as number).toFixed(2)}. Watch for decisive volume expansion.`
+        : smaRel.status === "ABOVE"
+        ? `Holding constructively above 50D SMA ($${(insight.standard.keyLevels.sma50 as number).toFixed(2)}). Watch for base confirmation.`
+        : "Watch key technical levels."
+    } Target 1 is ${insight.standard.keyLevels.target1 !== undefined ? `$${insight.standard.keyLevels.target1.toFixed(2)} (+${insight.standard.keyLevels.target1Pct}%)` : "N/A (< 50 sessions)"}.` },
     { title: "6. What should I monitor?", text: `Volume surges, 50-day moving average crossovers, and broader market regime stability.` },
   ];
 
@@ -127,7 +143,9 @@ export default function GuidedTerminalView({
           <div className="bg-[#080d16] p-3 rounded-xl border border-[#182335]">
             <span className="text-[10px] text-slate-500 uppercase block font-semibold">Key Level (50D SMA)</span>
             <span className="text-sm font-black text-cyan-300 mt-0.5 block">{insight.human.watchLevels.keyLevel}</span>
-            <span className="text-[10px] text-slate-400 mt-0.5 block">Must reclaim</span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              {smaRel.uiBadgeLabel}
+            </span>
           </div>
 
           <div className="bg-[#080d16] p-3 rounded-xl border border-rose-950/60">

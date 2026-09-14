@@ -29,7 +29,7 @@ export default function StandardTerminalView({
         </div>
         <button
           onClick={onOpenWhy}
-          className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer"
+          className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer py-2 px-2 sm:py-0 sm:px-0 min-h-[36px] sm:min-h-0 inline-flex items-center"
         >
           Why Score {insight.setupScore}? →
         </button>

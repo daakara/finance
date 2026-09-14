@@ -238,7 +238,7 @@ export default function RadarPage() {
             <div className="flex items-center justify-center gap-3 pt-2">
               <Link
                 href="/"
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs font-sans transition-transform active:scale-95"
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black rounded-xl text-xs font-sans transition-transform active:scale-95"
               >
                 Analyze Any Ticker →
               </Link>
@@ -586,11 +586,11 @@ export default function RadarPage() {
                       <div className="max-w-md mx-auto space-y-3">
                         <span className="text-3xl block">🔍</span>
                         <div className="space-y-1">
-                          <h4 className="text-sm font-bold text-white">
+                          <p className="text-sm font-bold text-white">
                             {searchQuery
                               ? `No assets match "${searchQuery}" in current confluence scan`
                               : `No candidates currently in "${activeFilter}"`}
-                          </h4>
+                          </p>
                           <p className="text-xs text-slate-400 font-sans leading-relaxed">
                             {searchQuery
                               ? (isTickerQuery

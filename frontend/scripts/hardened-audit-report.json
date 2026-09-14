@@ -1,0 +1,4713 @@
+[
+  {
+    "id": "root",
+    "name": "Analysis / Workstation",
+    "path": "/?symbol=NVDA&mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Analysis — NVDA"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "What are you looking to do today?"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "Find an investment"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "Understand a stock"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "Check my portfolio"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Evidence Incomplete — In-Depth Research Required"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Top 3 High-Confluence Plays of the Week"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "NVDA"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "💡 SOLID ACCUMULATION SETUP"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Watchlist & Signals"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Analysis — NVDA"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 94,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Skip to main content",
+            "width": 1,
+            "height": 1,
+            "id": "",
+            "className": "sr-only focus:not-sr-only focu"
+          },
+          {
+            "tag": "A",
+            "text": "TradingView Charts",
+            "width": 35,
+            "height": 19,
+            "id": "tv-attr-logo",
+            "className": ""
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Scan Radar Candidates →",
+            "width": 182,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Prepare Trade Setup (NVD",
+            "width": 210,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Why Score 40? →",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] text-cyan-400 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📋 Open Research & Evide",
+            "width": 266,
+            "height": 32,
+            "id": "",
+            "className": "w-full py-2 bg-purple-600 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔍 Inspect Why Score 40",
+            "width": 266,
+            "height": 30,
+            "id": "",
+            "className": "w-full py-1.5 bg-[#090e18] hov"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups ▼",
+            "width": 141,
+            "height": 36,
+            "id": "",
+            "className": "text-xs px-2.5 py-2 sm:py-1 mi"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#1NVO$45.61",
+            "width": 97,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#2CPRX$22.85",
+            "width": 103,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#3ANET$320.00",
+            "width": 109,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups▼",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] font-mono text-cya"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "6M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "3Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "5Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎯ExecutionExecution & L",
+            "width": 140,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🏛️Smart Money",
+            "width": 140,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📊FactorsFactors & Macro",
+            "width": 140,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️RiskRisk & Contagion",
+            "width": 140,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Show (20)",
+            "width": 99,
+            "height": 26,
+            "id": "",
+            "className": "sm:hidden flex items-center sp"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Filter watchlist assets",
+            "width": 274,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#090d14]"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Skip to main content",
+            "width": 1,
+            "height": 1,
+            "id": "",
+            "className": "sr-only focus:not-sr-only focu"
+          },
+          {
+            "tag": "A",
+            "text": "TradingView Charts",
+            "width": 35,
+            "height": 19,
+            "id": "tv-attr-logo",
+            "className": ""
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Scan Radar Candidates →",
+            "width": 182,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Prepare Trade Setup (NVD",
+            "width": 210,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Why Score 40? →",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] text-cyan-400 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📋 Open Research & Evide",
+            "width": 321,
+            "height": 32,
+            "id": "",
+            "className": "w-full py-2 bg-purple-600 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔍 Inspect Why Score 40",
+            "width": 321,
+            "height": 30,
+            "id": "",
+            "className": "w-full py-1.5 bg-[#090e18] hov"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups ▼",
+            "width": 141,
+            "height": 36,
+            "id": "",
+            "className": "text-xs px-2.5 py-2 sm:py-1 mi"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#1NVO$45.61",
+            "width": 97,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#2CPRX$22.85",
+            "width": 103,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#3ANET$320.00",
+            "width": 109,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups▼",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] font-mono text-cya"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "6M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "3Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "5Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🏛️ Long⇄",
+            "width": 75,
+            "height": 30,
+            "id": "",
+            "className": "ml-1 px-2 py-1 min-h-[30px] ro"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎯ExecutionExecution & L",
+            "width": 168,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🏛️Smart Money",
+            "width": 168,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📊FactorsFactors & Macro",
+            "width": 168,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️RiskRisk & Contagion",
+            "width": 168,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Show (20)",
+            "width": 99,
+            "height": 26,
+            "id": "",
+            "className": "sm:hidden flex items-center sp"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Filter watchlist assets",
+            "width": 329,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#090d14]"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Skip to main content",
+            "width": 1,
+            "height": 1,
+            "id": "",
+            "className": "sr-only focus:not-sr-only focu"
+          },
+          {
+            "tag": "A",
+            "text": "TradingView Charts",
+            "width": 35,
+            "height": 19,
+            "id": "tv-attr-logo",
+            "className": ""
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Scan Radar Candidates →",
+            "width": 182,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Prepare Trade Setup (NVD",
+            "width": 210,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Why Score 40? →",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] text-cyan-400 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📋 Open Research & Evide",
+            "width": 336,
+            "height": 32,
+            "id": "",
+            "className": "w-full py-2 bg-purple-600 hove"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔍 Inspect Why Score 40",
+            "width": 336,
+            "height": 30,
+            "id": "",
+            "className": "w-full py-1.5 bg-[#090e18] hov"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups ▼",
+            "width": 141,
+            "height": 36,
+            "id": "",
+            "className": "text-xs px-2.5 py-2 sm:py-1 mi"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#1NVO$45.61",
+            "width": 97,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#2CPRX$22.85",
+            "width": 103,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "#3ANET$320.00",
+            "width": 109,
+            "height": 26,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg text-xs"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "View Full Setups▼",
+            "width": 107,
+            "height": 36,
+            "id": "",
+            "className": "text-[11px] font-mono text-cya"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "6M",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "1Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "3Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "5Y",
+            "width": 33,
+            "height": 36,
+            "id": "",
+            "className": "px-2.5 sm:px-3 py-1 sm:py-1.5 "
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🏛️ Long⇄",
+            "width": 75,
+            "height": 30,
+            "id": "",
+            "className": "ml-1 px-2 py-1 min-h-[30px] ro"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎯ExecutionExecution & L",
+            "width": 175,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🏛️Smart Money",
+            "width": 175,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📊FactorsFactors & Macro",
+            "width": 175,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️RiskRisk & Contagion",
+            "width": 175,
+            "height": 32,
+            "id": "",
+            "className": "focus-ring flex items-center j"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Show (20)",
+            "width": 99,
+            "height": 26,
+            "id": "",
+            "className": "sm:hidden flex items-center sp"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Filter watchlist assets",
+            "width": 344,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#090d14]"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 5
+    }
+  },
+  {
+    "id": "radar",
+    "name": "Radar / Screener",
+    "path": "/radar/?mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Radar"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Radar"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 47,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Review Setups →",
+            "width": 129,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Analyze Candidate →",
+            "width": 154,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "All Confluences0",
+            "width": 148,
+            "height": 30,
+            "id": "tab-radar-filter-all",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "⚡ Minervini VCP0",
+            "width": 158,
+            "height": 30,
+            "id": "tab-radar-filter-vcp",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🐋 Smart Money0",
+            "width": 145,
+            "height": 30,
+            "id": "tab-radar-filter-smart_money",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💎 Value / GARP0",
+            "width": 152,
+            "height": 30,
+            "id": "tab-radar-filter-value",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Search candidate, ticker",
+            "width": 288,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#0b1019]"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Score",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "RS",
+            "width": 29,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Price",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "✕ Clear Filter (Show All",
+            "width": 211,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Review Setups →",
+            "width": 129,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Analyze Candidate →",
+            "width": 154,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "All Confluences0",
+            "width": 148,
+            "height": 30,
+            "id": "tab-radar-filter-all",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "⚡ Minervini VCP0",
+            "width": 158,
+            "height": 30,
+            "id": "tab-radar-filter-vcp",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🐋 Smart Money0",
+            "width": 145,
+            "height": 30,
+            "id": "tab-radar-filter-smart_money",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💎 Value / GARP0",
+            "width": 152,
+            "height": 30,
+            "id": "tab-radar-filter-value",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Search candidate, ticker",
+            "width": 343,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#0b1019]"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Score",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "RS",
+            "width": 29,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Price",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "✕ Clear Filter (Show All",
+            "width": 211,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Review Setups →",
+            "width": 129,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Analyze Candidate →",
+            "width": 154,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "All Confluences0",
+            "width": 148,
+            "height": 30,
+            "id": "tab-radar-filter-all",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "⚡ Minervini VCP0",
+            "width": 158,
+            "height": 30,
+            "id": "tab-radar-filter-vcp",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🐋 Smart Money0",
+            "width": 145,
+            "height": 30,
+            "id": "tab-radar-filter-smart_money",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💎 Value / GARP0",
+            "width": 152,
+            "height": 30,
+            "id": "tab-radar-filter-value",
+            "className": "focus-ring px-3 py-1.5 rounded"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Search candidate, ticker",
+            "width": 358,
+            "height": 30,
+            "id": "",
+            "className": "focus-ring w-full bg-[#0b1019]"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Score",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "RS",
+            "width": 29,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Price",
+            "width": 49,
+            "height": 24,
+            "id": "",
+            "className": "focus-ring px-2 py-1 rounded t"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "✕ Clear Filter (Show All",
+            "width": 211,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 4
+    }
+  },
+  {
+    "id": "setups",
+    "name": "Trade Plan / Setups",
+    "path": "/setups/?ticker=NVDA&mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Setups"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Setups"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 40,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Standard",
+            "width": 69,
+            "height": 28,
+            "id": "tab-mode-standard",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️ Guided (Recommended)",
+            "width": 81,
+            "height": 30,
+            "id": "tab-mode-guided",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔬 Quant",
+            "width": 72,
+            "height": 28,
+            "id": "tab-mode-quant",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Radar Candidates",
+            "width": 202,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Standard",
+            "width": 69,
+            "height": 28,
+            "id": "tab-mode-standard",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️ Guided (Recommended)",
+            "width": 81,
+            "height": 30,
+            "id": "tab-mode-guided",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔬 Quant",
+            "width": 72,
+            "height": 28,
+            "id": "tab-mode-quant",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Radar Candidates",
+            "width": 202,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Standard",
+            "width": 69,
+            "height": 28,
+            "id": "tab-mode-standard",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🛡️ Guided (Recommended)",
+            "width": 81,
+            "height": 30,
+            "id": "tab-mode-guided",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔬 Quant",
+            "width": 72,
+            "height": 28,
+            "id": "tab-mode-quant",
+            "className": "focus-ring px-2 sm:px-3 py-1.5"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Radar Candidates",
+            "width": 202,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 4
+    }
+  },
+  {
+    "id": "portfolio",
+    "name": "Portfolio / Risk Manager",
+    "path": "/portfolio/?mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Portfolio"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "📊Open Quant Holdings"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "No Active Portfolio Holdings Recorded"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Crash Test & What-If Stress Simulator"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Portfolio"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 52,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔄Refresh Quotes",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📥Export CSV",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Add Holding",
+            "width": 103,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-3.5 py-2 rounded"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 135,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Total Wallet Capital",
+            "width": 80,
+            "height": 24,
+            "id": "portfolio-total-wallet-input",
+            "className": "w-20 min-h-[24px] sm:min-h-0 b"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 129,
+            "height": 32,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "➕ Add Manual Holding",
+            "width": 172,
+            "height": 34,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📉 QQQ -5%",
+            "width": 89,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📈 +50bps Yield",
+            "width": 122,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💥 VIX 35",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎛️ Custom",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔄Refresh Quotes",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📥Export CSV",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Add Holding",
+            "width": 103,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-3.5 py-2 rounded"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 135,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Total Wallet Capital",
+            "width": 80,
+            "height": 24,
+            "id": "portfolio-total-wallet-input",
+            "className": "w-20 min-h-[24px] sm:min-h-0 b"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 129,
+            "height": 32,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "➕ Add Manual Holding",
+            "width": 172,
+            "height": 34,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📉 QQQ -5%",
+            "width": 89,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📈 +50bps Yield",
+            "width": 122,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💥 VIX 35",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎛️ Custom",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🔄Refresh Quotes",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📥Export CSV",
+            "width": 42,
+            "height": 34,
+            "id": "",
+            "className": "px-3 py-2 bg-[#162030] hover:b"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "Add Holding",
+            "width": 103,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-3.5 py-2 rounded"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 135,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "INPUT",
+            "text": "Total Wallet Capital",
+            "width": 80,
+            "height": 24,
+            "id": "portfolio-total-wallet-input",
+            "className": "w-20 min-h-[24px] sm:min-h-0 b"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 129,
+            "height": 32,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "➕ Add Manual Holding",
+            "width": 172,
+            "height": 34,
+            "id": "",
+            "className": "inline-flex items-center gap-1"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📉 QQQ -5%",
+            "width": 89,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "📈 +50bps Yield",
+            "width": 122,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "💥 VIX 35",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "BUTTON",
+            "text": "🎛️ Custom",
+            "width": 83,
+            "height": 24,
+            "id": "",
+            "className": "px-2.5 py-1 rounded-lg transit"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 4
+    }
+  },
+  {
+    "id": "guide",
+    "name": "Platform Guide",
+    "path": "/guide/?mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "The No-BS Trader Field Manual: How to Use This Terminal"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 1: The 4 Power Workspaces & Mobile Navigation"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "📱 Mobile Experience & Fast Ticker Switching"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "🌐 Asset Coverage: Pre-Built High-Conviction Stocks vs. Sear"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 2: The Live Interactive Chart (Day Trader vs. Long-T"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "🎯 Never Mix Up Today's Change vs. Your Total Multi-Month Re"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 3: Where to Buy, Sizing Your Trades & The 4 Zones"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "📐 1. The Position Sizing Safety Formula (Never Risk >1%)"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "⚡ 2. The 4 Clear Trade Zones (When to Buy & When to Walk Awa"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "🔍 3. The 6 Screener Presets Explained"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 4: Tracking US Politicians & The 45-Day Delay Penalt"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "⚖️ 1. The Politician Alignment Score (0 to 100)"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "⏱️ 2. The Delay Penalty (Don't Buy Stale Old Trades!)"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 5: The 5-Point Quality Score & Clean Accounting Chec"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 6: Managing Crash Risk & Worst-Case Downside"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "The Worst-Case Day Crash Formula (VaR 95% & 99%):"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 7: Fed Interest Rates, Real Insiders & Live Alerts"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 8: The No-BS Plain-English Jargon Buster"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Chapter 9: The 4 Trade Co-Pilots (Your Safety Check Before B"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "⚡ One-Click Language Switcher & Speed Shield"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "The No-BS Trader Field Manual: How to Use This Terminal"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 48,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Field Manual",
+            "width": 73,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Quant Glossary",
+            "width": 85,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 1: The 4 Workspaces",
+            "width": 133,
+            "height": 21,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 2: Live Chart Guide",
+            "width": 133,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 3: Buy Zones & Sizing",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 4: Politician Trades",
+            "width": 139,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 5: Quality & BS Detec",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 6: Crash Risk & Safet",
+            "width": 151,
+            "height": 17,
+            "id": "",
+            "className": "text-purple-400 hover:underlin"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 7: Fed Rates & Inside",
+            "width": 157,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "Ch 8: Jargon Cheat Sheet",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 9: The 4 Trade Co-Pil",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "← Return to ARX Terminal",
+            "width": 190,
+            "height": 32,
+            "id": "",
+            "className": "px-4 py-2 bg-cyan-600 hover:bg"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Field Manual",
+            "width": 73,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Quant Glossary",
+            "width": 85,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 1: The 4 Workspaces",
+            "width": 133,
+            "height": 21,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 2: Live Chart Guide",
+            "width": 133,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 3: Buy Zones & Sizing",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 4: Politician Trades",
+            "width": 139,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 5: Quality & BS Detec",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 6: Crash Risk & Safet",
+            "width": 151,
+            "height": 17,
+            "id": "",
+            "className": "text-purple-400 hover:underlin"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 7: Fed Rates & Inside",
+            "width": 157,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "Ch 8: Jargon Cheat Sheet",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 9: The 4 Trade Co-Pil",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "← Return to ARX Terminal",
+            "width": 190,
+            "height": 32,
+            "id": "",
+            "className": "px-4 py-2 bg-cyan-600 hover:bg"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [
+          {
+            "tag": "A",
+            "text": "Field Manual",
+            "width": 73,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Quant Glossary",
+            "width": 85,
+            "height": 16,
+            "id": "",
+            "className": "text-cyan-400 hover:text-cyan-"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 1: The 4 Workspaces",
+            "width": 133,
+            "height": 21,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 2: Live Chart Guide",
+            "width": 133,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 3: Buy Zones & Sizing",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 4: Politician Trades",
+            "width": 139,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 5: Quality & BS Detec",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 6: Crash Risk & Safet",
+            "width": 151,
+            "height": 17,
+            "id": "",
+            "className": "text-purple-400 hover:underlin"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 7: Fed Rates & Inside",
+            "width": 157,
+            "height": 17,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "Ch 8: Jargon Cheat Sheet",
+            "width": 145,
+            "height": 17,
+            "id": "",
+            "className": "text-emerald-400 hover:underli"
+          },
+          {
+            "tag": "A",
+            "text": "Ch 9: The 4 Trade Co-Pil",
+            "width": 163,
+            "height": 17,
+            "id": "",
+            "className": "text-amber-400 hover:underline"
+          }
+        ],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "← Return to ARX Terminal",
+            "width": 190,
+            "height": 32,
+            "id": "",
+            "className": "px-4 py-2 bg-cyan-600 hover:bg"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 3
+    }
+  },
+  {
+    "id": "journal",
+    "name": "Journal (Deferred R1)",
+    "path": "/journal/?mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Trade Journal & Discipline Log"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Dedicated Journal Surface Deferred to Post-R1"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "Active Release 1 Destinations"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Trade Journal & Discipline Log"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 42,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 5
+    }
+  },
+  {
+    "id": "performance",
+    "name": "Performance (Deferred R1)",
+    "path": "/performance/?mode=standard",
+    "headings": {
+      "tree": [
+        {
+          "level": 1,
+          "tag": "H1",
+          "text": "Performance & Realized Attribution"
+        },
+        {
+          "level": 2,
+          "tag": "H2",
+          "text": "Dedicated Performance Analytics Surface Deferred to Post-R1"
+        },
+        {
+          "level": 3,
+          "tag": "H3",
+          "text": "Active Release 1 Destinations"
+        }
+      ],
+      "h1Count": 1,
+      "h1Titles": [
+        "Performance & Realized Attribution"
+      ],
+      "skips": []
+    },
+    "accessibleNames": {
+      "auditedCount": 42,
+      "missingCount": 0,
+      "missingLabels": []
+    },
+    "touchTargets": {
+      "320px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "375px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      },
+      "390px": {
+        "wcagFailures": [],
+        "ergonomicsWarnings": [
+          {
+            "tag": "A",
+            "text": "ARX TERMINALNo-BS Market",
+            "width": 36,
+            "height": 36,
+            "id": "",
+            "className": "flex items-center space-x-2 gr"
+          },
+          {
+            "tag": "A",
+            "text": "Explore Setups →",
+            "width": 136,
+            "height": 34,
+            "id": "",
+            "className": "px-3.5 py-2 rounded-xl bg-slat"
+          },
+          {
+            "tag": "A",
+            "text": "Manage Portfolio →",
+            "width": 147,
+            "height": 34,
+            "id": "",
+            "className": "focus-ring px-4 py-2 rounded-x"
+          },
+          {
+            "tag": "A",
+            "text": "Live Terminal",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Multi-Factor Screener",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Asset Comparison",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Risk Allocator",
+            "width": 85,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Late-Filer Hall of Shame",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Nancy Pelosi Portfolio",
+            "width": 133,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Committee Jurisdictions",
+            "width": 139,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX Econometric Model",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Minervini VCP Pattern",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "Cornish-Fisher VaR",
+            "width": 109,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Quantitative Terms →",
+            "width": 145,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Quiver Quant",
+            "width": 115,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Unusual Whales",
+            "width": 127,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Koyfin",
+            "width": 79,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "ARX vs Bloomberg",
+            "width": 97,
+            "height": 24,
+            "id": "",
+            "className": "hover:text-cyan-400 transition"
+          },
+          {
+            "tag": "A",
+            "text": "All Comparisons →",
+            "width": 103,
+            "height": 24,
+            "id": "",
+            "className": "text-cyan-400 hover:underline "
+          }
+        ]
+      }
+    },
+    "antiPatterns": {
+      "sideStripes": 0,
+      "gradientTexts": 0,
+      "backdropBlurs": 5
+    }
+  }
+]

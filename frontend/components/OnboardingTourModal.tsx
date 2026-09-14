@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trackOnboardingCompleted } from "../lib/matomo";
 
 interface OnboardingTourModalProps {
@@ -11,50 +11,81 @@ interface OnboardingTourModalProps {
 const TOUR_SLIDES = [
   {
     step: 1,
-    badge: "DUAL-HORIZON ADAPTIVE WORKSPACE",
-    title: "⚡ Day Trader vs. 🏛️ Long-Term Compounder",
-    icon: "🎛️",
-    content: "Switch execution lenses instantly. Day Trader mode activates intraday ATR stops, 5m VWAP anchors, and opening range breakout scalps. Long-Term mode prioritizes Minervini Stage 2 setups, ROIC capital efficiency, and Piotroski F-Scores.",
-    highlight: "Toggle anytime via the lens switcher in the navbar or execution cards."
+    badge: "1. FIND · RADAR",
+    title: "📡 Radar: Find Opportunities",
+    icon: "📡",
+    content: "Scan and filter the market universe for momentum leaders, volume contraction, and Minervini Stage 2 breakouts that warrant further investigation.",
+    highlight: "Use confluence scoring and multi-factor filters to isolate high-probability candidates.",
   },
   {
     step: 2,
-    badge: "EXECUTION & RISK INLINE MATH",
-    title: "🎯 4 Mathematical ATR Execution States",
-    icon: "📐",
-    content: "Every tracked asset is categorized into an explicit mathematical execution state: 🟢 IN_BUY_ZONE, 🔵 APPROACHING_TARGET, 🟡 WAITING_PULLBACK, or 🛑 STOPPED_OUT, backed by Mark Minervini VCP invalidation ladders.",
-    highlight: "Stop losses are strictly pinned to 1.25x ATR below structural accumulation pivots."
+    badge: "2. UNDERSTAND · ANALYSIS",
+    title: "🔬 Analysis: Understand the Asset",
+    icon: "🔬",
+    content: "Evaluate fundamental strength, market regime bias, multi-factor scores, and institutional accumulation footprints to determine if an asset is worthy of capital.",
+    highlight: "Inspect the multi-factor confluence trace and macroeconomic regime context before committing capital.",
   },
   {
     step: 3,
-    badge: "CONGRESSIONAL ALPHA ENGINE",
-    title: "🏛️ STOCK Act Legislative Alignment Index",
-    icon: "⚖️",
-    content: "We track US House & Senate disclosures under Public Law 112-105. Trades are scored (0–100) on committee jurisdiction oversight conflicts and penalized up to -32 points for late filings exceeding the statutory 45-day window.",
-    highlight: "Filter by Fresh (<15d lag) vs. Aging/Late Filers in the Smart Money feed."
+    badge: "3. PLAN · TRADE PLAN",
+    title: "⚡ Trade Plan: Define the Plan",
+    icon: "⚡",
+    content: "Prepare and size your execution ticket according to governed risk limits. The Behavioral Governor clamps position size during drawdowns and establishes asymmetric R:R brackets.",
+    highlight: "Stop losses and profit targets are strictly pinned before trade execution is recorded.",
   },
   {
     step: 4,
-    badge: "AUTHORITATIVE RISK PERSISTENCE",
-    title: "🔒 Authoritative Risk Telemetry & Cornish-Fisher VaR",
+    badge: "4. MANAGE · PORTFOLIO",
+    title: "💼 Portfolio: Manage the Position",
     icon: "💼",
-    content: "Your portfolio and watchlists are backed by authoritative persistence. We compute Cornish-Fisher Modified Value-at-Risk (M-VaR) to protect your capital from fat-tailed black swan market crashes.",
-    highlight: "1-Click 'Save to Portfolio' directly from the Position Sizer modal."
-  }
+    content: "Track live capital at risk, monitor Cornish-Fisher Value-at-Risk (M-VaR), and manage the full trade lifecycle with disciplined execution exits.",
+    highlight: "Reconcile manual holdings with recorded fills and monitor active risk heat.",
+  },
 ];
 
 export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourModalProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+    triggerRef.current = (document.activeElement as HTMLElement) || null;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
+      } else if (e.key === "Tab") {
+        const dialog = document.querySelector('[role="dialog"][aria-labelledby="tour-modal-title"]');
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+        ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    // Initial focus on the next button or close button
+    setTimeout(() => {
+      const dialog = document.querySelector('[role="dialog"][aria-labelledby="tour-modal-title"]');
+      const focusTarget = dialog?.querySelector<HTMLElement>('#tour-next-btn') || dialog?.querySelector<HTMLElement>('button');
+      focusTarget?.focus();
+    }, 50);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      const trigger = triggerRef.current;
+      setTimeout(() => trigger?.focus(), 20);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -167,6 +198,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
               Skip
             </button>
             <button
+              id="tour-next-btn"
               type="button"
               onClick={handleNext}
               className="px-5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold rounded-xl text-xs transition-transform active:scale-95 shadow"

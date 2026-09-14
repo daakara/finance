@@ -32,7 +32,7 @@ type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGI
 
 function TerminalContent() {
   const searchParams = useSearchParams();
-  const urlSymbol = searchParams.get("symbol");
+  const urlSymbol = searchParams.get("symbol") || searchParams.get("ticker");
   const urlTab = searchParams.get("tab")?.toUpperCase();
 
   const [hasExplicitSymbol, setHasExplicitSymbol] = useState<boolean>(!!urlSymbol);
@@ -120,6 +120,17 @@ function TerminalContent() {
       if (saved === "DAY_TRADER") setInterval("5m");
       else setInterval("1y_hist");
     }
+
+    const handleRoleEvent = (e: Event) => {
+      const custom = e as CustomEvent<"DAY_TRADER" | "LONG_TERM">;
+      if (custom.detail === "DAY_TRADER" || custom.detail === "LONG_TERM") {
+        setUserRole(custom.detail);
+        if (custom.detail === "DAY_TRADER") setInterval("5m");
+        else setInterval("1y_hist");
+      }
+    };
+    window.addEventListener("finance:role-change", handleRoleEvent);
+    return () => window.removeEventListener("finance:role-change", handleRoleEvent);
   }, []);
 
   const handleRoleChange = useCallback((role: "DAY_TRADER" | "LONG_TERM") => {
@@ -255,8 +266,10 @@ function TerminalContent() {
             }}
           />
 
-          {/* Intent-First Home Hero: "What are you looking to do today?" */}
-          <IntentHero onSelectSymbol={handleSelectSymbol} />
+          {/* Intent-First Home Hero: only when no explicit asset is being analyzed */}
+          {!hasExplicitSymbol && (
+            <IntentHero onSelectSymbol={handleSelectSymbol} />
+          )}
 
           {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
           {error && !data ? (
@@ -318,6 +331,7 @@ function TerminalContent() {
               decisionTrace={data?.decisionTrace}
               optimalExecution={data?.optimalExecution}
               freshness={data?.freshness}
+              userRole={userRole}
             />
           )}
 
@@ -467,9 +481,9 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "EXECUTION"}
               onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
                 activeTab === "EXECUTION"
-                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
+                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -481,9 +495,9 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "SMART_MONEY"}
               onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
                 activeTab === "SMART_MONEY"
-                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
+                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -495,9 +509,9 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "FUNDAMENTALS"}
               onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
                 activeTab === "FUNDAMENTALS"
-                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
+                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
@@ -509,9 +523,9 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "RISK_CONTAGION"}
               onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
                 activeTab === "RISK_CONTAGION"
-                  ? "bg-cyan-600 text-white shadow-sm font-extrabold"
+                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >

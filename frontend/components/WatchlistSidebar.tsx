@@ -267,6 +267,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
+            aria-hidden="true"
           >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -277,13 +278,14 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search ticker, name, or '/'..."
-            className="w-full bg-[#090d14] border border-[#243044] rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
+            aria-label="Filter watchlist assets"
+            className="focus-ring w-full bg-[#090d14] border border-[#243044] rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500 transition-colors"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2 text-slate-400 hover:text-white text-xs font-bold"
+              className="focus-ring absolute right-2 text-slate-400 hover:text-white text-xs font-bold"
               aria-label="Clear search"
             >
               ✕
@@ -300,7 +302,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
             role="tab"
             aria-selected={activeCategory === cat}
             onClick={() => handleCategoryClick(cat)}
-            className={`flex-1 min-w-[54px] py-1 px-1.5 rounded font-bold transition-all active:scale-[0.96] flex items-center justify-center gap-0.5 shrink-0 sm:shrink ${
+            className={`focus-ring flex-1 min-w-[54px] min-h-[40px] sm:min-h-0 py-2 sm:py-1 px-2 sm:px-1.5 rounded font-bold transition-all active:scale-[0.96] flex items-center justify-center gap-0.5 shrink-0 sm:shrink ${
               activeCategory === cat
                 ? "bg-cyan-500 text-slate-950 shadow-sm font-extrabold"
                 : "text-slate-400 hover:text-slate-200"

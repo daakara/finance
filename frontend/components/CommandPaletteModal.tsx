@@ -64,12 +64,17 @@ export default function CommandPaletteModal({
     };
   }, [isOpen]);
 
-  // Focus input when opened
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  // Focus input when opened & restore on close
   useEffect(() => {
     if (isOpen) {
+      triggerRef.current = (document.activeElement as HTMLElement) || null;
       setQuery("");
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
+    } else {
+      setTimeout(() => triggerRef.current?.focus(), 20);
     }
   }, [isOpen]);
 
@@ -77,13 +82,13 @@ export default function CommandPaletteModal({
   const allCommands: CommandItem[] = useMemo(() => {
     const items: CommandItem[] = [];
 
-    // 1. Canonical 6 Flagship Trading Hubs (Radar → Analysis → Setups → Portfolio → Journal → Performance)
+    // 1. Canonical 4 Flagship Release 1 Hubs (Radar → Analysis → Trade Plan → Portfolio)
     CANONICAL_HUBS.forEach((hub) => {
       items.push({
         id: `hub-${hub.id}`,
         category: "HUB",
         title: `${hub.name} Hub`,
-        subtitle: hub.question,
+        subtitle: `${hub.mentalModel} — ${hub.question}`,
         badge: hub.badge,
         icon: hub.icon,
         action: () => {
@@ -398,6 +403,22 @@ export default function CommandPaletteModal({
       } else if (e.key === "Escape") {
         e.preventDefault();
         onClose();
+      } else if (e.key === "Tab") {
+        const dialog = document.querySelector('[role="dialog"][aria-label="Command Palette"]');
+        if (!dialog) return;
+        const focusables = Array.from(
+          dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+        ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     },
     [filteredCommands, selectedIndex, onClose]

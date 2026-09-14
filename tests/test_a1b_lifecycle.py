@@ -317,6 +317,185 @@ class TestTradeLifecycleA1b(unittest.TestCase):
         )
         self.assertEqual(res_fail.status_code, 400)
 
+    def test_multi_fill_portfolio_preservation_on_single_closure(self):
+        """Closing one fill preserves remaining open fills and their weighted cost basis in portfolio_holdings."""
+        # 1. Fill #1: 10 shares NVDA at $100
+        fill1 = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'NVDA', 'entryPrice': 100.0, 'shares': 10.0, 'stopLoss': 90.0, 'target1': 130.0},
+        )
+        # 2. Fill #2: 10 shares NVDA at $120
+        fill2 = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'NVDA', 'entryPrice': 120.0, 'shares': 10.0, 'stopLoss': 110.0, 'target1': 140.0},
+        )
+
+        holdings_before = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings_before), 1)
+        self.assertEqual(holdings_before[0]['shares'], 20.0)
+        self.assertEqual(holdings_before[0]['entryPrice'], 110.0)
+
+        # 3. Close Fill #1 explicitly by tradeId
+        exit1 = self.db.record_trade_exit(
+            self.user_id,
+            {'tradeId': int(fill1['id']), 'exitPrice': 130.0, 'shares': 10.0},
+        )
+        self.assertEqual(exit1['status'], 'CLOSED')
+
+        # 4. Verify Fill #2 remains OPEN and portfolio holding is preserved with correct basis
+        trades = self.db.get_journal_trades(self.user_id)
+        open_trades = [t for t in trades if t['status'] == 'OPEN']
+        self.assertEqual(len(open_trades), 1)
+        self.assertEqual(open_trades[0]['id'], fill2['id'])
+        self.assertEqual(open_trades[0]['remainingShares'], 10.0)
+
+        holdings_after = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings_after), 1, "Portfolio holding should NOT be deleted when other fills are open")
+        self.assertEqual(holdings_after[0]['symbol'], 'NVDA')
+        self.assertEqual(holdings_after[0]['shares'], 10.0)
+        self.assertEqual(holdings_after[0]['entryPrice'], 120.0)
+
+        # 5. Close Fill #2 -> portfolio holding is now removed
+        exit2 = self.db.record_trade_exit(
+            self.user_id,
+            {'tradeId': int(fill2['id']), 'exitPrice': 140.0, 'shares': 10.0},
+        )
+        self.assertEqual(exit2['status'], 'CLOSED')
+        holdings_final = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings_final), 0)
+
+    def test_fractional_share_partial_exit_and_cost_preservation(self):
+        """Fractional share fills and partial exits calculate precise weighted average costs and quantities."""
+        # Fill 1: 10.5 shares at $100
+        fill1 = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'TSLA', 'entryPrice': 100.0, 'shares': 10.5},
+        )
+        # Fill 2: 5.5 shares at $130
+        fill2 = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'TSLA', 'entryPrice': 130.0, 'shares': 5.5},
+        )
+
+        holdings = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings), 1)
+        self.assertAlmostEqual(holdings[0]['shares'], 16.0, places=4)
+        # Avg = (10.5*100 + 5.5*130) / 16 = (1050 + 715) / 16 = 1765 / 16 = 110.3125
+        self.assertAlmostEqual(holdings[0]['entryPrice'], 110.3125, places=4)
+
+        # Partial exit of 5.25 shares from Fill 1
+        part_exit = self.db.record_trade_exit(
+            self.user_id,
+            {'tradeId': int(fill1['id']), 'exitPrice': 115.0, 'shares': 5.25},
+        )
+        self.assertEqual(part_exit['executionRole'], 'PARTIAL_EXIT')
+
+        holdings_mid = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings_mid), 1)
+        # Remaining: 5.25 shares at $100 + 5.5 shares at $130 = 10.75 shares
+        # Cost: 525 + 715 = 1240 / 10.75 = 115.3488
+        self.assertAlmostEqual(holdings_mid[0]['shares'], 10.75, places=4)
+        self.assertAlmostEqual(holdings_mid[0]['entryPrice'], 115.3488, places=4)
+
+    def test_fill_and_exit_independent_idempotency_keys(self):
+        """Fill and exit maintain independent idempotency keys; replaying either after closure creates zero writes."""
+        fill_key = f"fill-key-{uuid.uuid4()}"
+        exit_key = f"exit-key-{uuid.uuid4()}"
+
+        fill = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'AVGO', 'entryPrice': 150.0, 'shares': 10.0, 'idempotencyKey': fill_key},
+        )
+        self.assertEqual(fill['idempotencyKey'], fill_key)
+
+        # Close trade with distinct exit idempotency key
+        exit_res = self.db.record_trade_exit(
+            self.user_id,
+            {'tradeId': int(fill['id']), 'exitPrice': 165.0, 'shares': 10.0, 'idempotencyKey': exit_key},
+        )
+        self.assertEqual(exit_res['idempotencyKey'], fill_key, "Original fill idempotency_key must be preserved")
+        self.assertEqual(exit_res['exitIdempotencyKey'], exit_key, "Exit idempotency key must be recorded")
+
+        # Replay Fill
+        replayed_fill = self.db.record_trade_fill(
+            self.user_id,
+            {'symbol': 'AVGO', 'entryPrice': 150.0, 'shares': 10.0, 'idempotencyKey': fill_key},
+        )
+        self.assertEqual(replayed_fill['id'], fill['id'])
+
+        # Replay Exit
+        replayed_exit = self.db.record_trade_exit(
+            self.user_id,
+            {'tradeId': int(fill['id']), 'exitPrice': 165.0, 'shares': 10.0, 'idempotencyKey': exit_key},
+        )
+        self.assertEqual(replayed_exit['id'], exit_res['id'])
+
+        # Total journal rows should be exactly 1
+        trades = self.db.get_journal_trades(self.user_id)
+        self.assertEqual(len(trades), 1)
+
+        # Portfolio should remain empty (zero duplicate holding writes)
+        holdings = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings), 0)
+
+    def test_manual_holding_reconciliation_preserves_quantity_and_basis(self):
+        """Holding reconciliation preserves manually entered holdings when fills and exits occur."""
+        # 1. User records a manual holding: AAPL, 50 shares @ $150.0
+        self.db.save_user_holding(
+            self.user_id,
+            {
+                'symbol': 'AAPL',
+                'name': 'Apple Inc.',
+                'shares': 50.0,
+                'entryPrice': 150.0,
+                'stopLossPrice': 140.0,
+                'targetPrice': 180.0,
+            },
+        )
+        holdings = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings), 1)
+        self.assertEqual(holdings[0]['symbol'], 'AAPL')
+        self.assertEqual(holdings[0]['shares'], 50.0)
+        self.assertEqual(holdings[0]['entryPrice'], 150.0)
+
+        # 2. User executes a broker fill: AAPL, 10 shares @ $160.0
+        fill = self.db.record_trade_fill(
+            self.user_id,
+            {
+                'symbol': 'AAPL',
+                'entryPrice': 160.0,
+                'shares': 10.0,
+                'stopLoss': 152.0,
+                'target1': 175.0,
+            },
+        )
+        self.assertEqual(fill['status'], 'OPEN')
+
+        # 3. Blended position: 50 + 10 = 60 shares; Basis: (50*150 + 10*160) / 60 = 9100 / 60 = 151.6667
+        holdings = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings), 1)
+        self.assertEqual(holdings[0]['symbol'], 'AAPL')
+        self.assertAlmostEqual(holdings[0]['shares'], 60.0, places=4)
+        self.assertAlmostEqual(holdings[0]['entryPrice'], 151.6667, places=4)
+
+        # 4. User exits 10 shares @ $170.0 (closing the journal trade fill)
+        exit_res = self.db.record_trade_exit(
+            self.user_id,
+            {
+                'tradeId': int(fill['id']),
+                'exitPrice': 170.0,
+                'shares': 10.0,
+            },
+        )
+        self.assertEqual(exit_res['status'], 'CLOSED')
+
+        # 5. Holding must NOT be wiped: exactly 50 manual shares @ $150.0 remain intact
+        holdings = self.db.get_user_portfolio(self.user_id)
+        self.assertEqual(len(holdings), 1)
+        self.assertEqual(holdings[0]['symbol'], 'AAPL')
+        self.assertAlmostEqual(holdings[0]['shares'], 50.0, places=4)
+        self.assertAlmostEqual(holdings[0]['entryPrice'], 150.0, places=4)
+
 
 if __name__ == '__main__':
     unittest.main()

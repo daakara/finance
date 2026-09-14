@@ -185,6 +185,7 @@ class HistoryDatabaseEngine:
                         parent_trade_id INTEGER,
                         execution_role TEXT DEFAULT 'ENTRY',
                         idempotency_key TEXT,
+                        exit_idempotency_key TEXT,
                         notes TEXT,
                         target1 REAL,
                         stop_loss REAL,
@@ -202,6 +203,7 @@ class HistoryDatabaseEngine:
                     ("parent_trade_id", "INTEGER"),
                     ("execution_role", "TEXT DEFAULT 'ENTRY'"),
                     ("idempotency_key", "TEXT"),
+                    ("exit_idempotency_key", "TEXT"),
                     ("notes", "TEXT"),
                     ("target1", "REAL"),
                     ("stop_loss", "REAL"),
@@ -213,7 +215,25 @@ class HistoryDatabaseEngine:
                 cursor.execute("UPDATE user_trade_journal SET remaining_shares = 0 WHERE remaining_shares IS NULL AND status = 'CLOSED'")
 
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_idempotency ON user_trade_journal (user_id, idempotency_key)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_exit_idempotency ON user_trade_journal (user_id, exit_idempotency_key)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_journal_parent ON user_trade_journal (parent_trade_id)")
+
+                # Safe backward-compatible column migration for portfolio_holdings manual quantities
+                cursor.execute("PRAGMA table_info(portfolio_holdings)")
+                existing_port_cols = {row["name"] for row in cursor.fetchall()}
+                for col_name, col_type in [("manual_shares", "REAL DEFAULT 0.0"), ("manual_entry_price", "REAL DEFAULT 0.0")]:
+                    if col_name not in existing_port_cols:
+                        cursor.execute(f"ALTER TABLE portfolio_holdings ADD COLUMN {col_name} {col_type}")
+
+                # Populate manual baseline for existing holdings without open journal trades
+                cursor.execute("""
+                    UPDATE portfolio_holdings
+                    SET manual_shares = shares, manual_entry_price = entry_price
+                    WHERE (manual_shares IS NULL OR manual_shares = 0)
+                      AND symbol NOT IN (
+                          SELECT symbol FROM user_trade_journal WHERE user_trade_journal.user_id = portfolio_holdings.user_id AND status = 'OPEN'
+                      )
+                """)
         finally:
             conn.close()
 
@@ -347,16 +367,52 @@ class HistoryDatabaseEngine:
 
     @retry_sqlite()
     def save_user_holding(self, user_id: str, holding: Dict[str, Any]) -> bool:
-        """Add or update a single holding for a user."""
+        """Add or update a single holding for a user, reconciling manual quantity with open journal fills."""
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                symbol = holding["symbol"].upper().strip()
+                m_shares = float(holding["shares"])
+                m_entry = float(holding["entryPrice"])
+                if m_shares < 0:
+                    raise ValueError("Shares count cannot be negative.")
+                if m_entry < 0:
+                    raise ValueError("Entry price cannot be negative.")
+
+                # Reconcile with any active journal fills for this symbol
+                cursor.execute(
+                    """
+                    SELECT remaining_shares, entry_price, stop_loss, target1
+                    FROM user_trade_journal
+                    WHERE user_id = ? AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+                    ORDER BY id ASC
+                    """,
+                    (user_id, symbol),
+                )
+                open_trades = cursor.fetchall()
+                journal_shares = sum(float(t["remaining_shares"]) for t in open_trades) if open_trades else 0.0
+                journal_cost = sum(float(t["remaining_shares"]) * float(t["entry_price"]) for t in open_trades) if open_trades else 0.0
+
+                total_shares = round(m_shares + journal_shares, 6)
+                if total_shares > 1e-6:
+                    total_cost = (m_shares * m_entry) + journal_cost
+                    blended_entry = round(total_cost / total_shares, 4)
+                else:
+                    blended_entry = m_entry
+
+                stop_loss = float(holding["stopLossPrice"]) if holding.get("stopLossPrice") is not None else (
+                    float(open_trades[-1]["stop_loss"]) if open_trades and open_trades[-1]["stop_loss"] is not None else None
+                )
+                target1 = float(holding["targetPrice"]) if holding.get("targetPrice") is not None else (
+                    float(open_trades[-1]["target1"]) if open_trades and open_trades[-1]["target1"] is not None else None
+                )
+
                 cursor.execute(
                     """
                     INSERT INTO portfolio_holdings (
-                        user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(user_id, symbol) DO UPDATE SET
                         name = excluded.name,
                         shares = excluded.shares,
@@ -365,20 +421,24 @@ class HistoryDatabaseEngine:
                         target_price = excluded.target_price,
                         stop_loss_price = excluded.stop_loss_price,
                         asset_type = excluded.asset_type,
+                        manual_shares = excluded.manual_shares,
+                        manual_entry_price = excluded.manual_entry_price,
                         updated_at = CURRENT_TIMESTAMP
                     """,
                     (
                         user_id,
-                        holding["symbol"].upper().strip(),
-                        holding.get("name", holding["symbol"]),
-                        float(holding["shares"]),
-                        float(holding["entryPrice"]),
+                        symbol,
+                        holding.get("name", symbol),
+                        total_shares,
+                        blended_entry,
                         float(holding["currentPrice"]) if holding.get("currentPrice") is not None else None,
-                        float(holding["targetPrice"]) if holding.get("targetPrice") is not None else None,
-                        float(holding["stopLossPrice"]) if holding.get("stopLossPrice") is not None else None,
+                        target1,
+                        stop_loss,
                         holding.get("addedAt") or datetime.utcnow().strftime("%Y-%m-%d"),
                         holding.get("assetType") or "Stock",
-                    )
+                        m_shares,
+                        m_entry,
+                    ),
                 )
             return True
         finally:
@@ -386,15 +446,21 @@ class HistoryDatabaseEngine:
 
     @retry_sqlite()
     def delete_user_holding(self, user_id: str, symbol: str) -> bool:
-        """Delete a holding for a user."""
+        """Delete manual holding for a user/symbol, reconciling with any remaining open journal fills."""
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                sym = symbol.upper().strip()
                 cursor.execute(
-                    "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                    (user_id, symbol.upper().strip())
+                    """
+                    UPDATE portfolio_holdings
+                    SET manual_shares = 0.0, manual_entry_price = 0.0
+                    WHERE user_id = ? AND symbol = ?
+                    """,
+                    (user_id, sym),
                 )
+                self._sync_portfolio_holding_for_symbol(cursor, user_id, sym)
             return True
         finally:
             conn.close()
@@ -580,6 +646,7 @@ class HistoryDatabaseEngine:
         target1 = float(row["target1"]) if ("target1" in keys and row["target1"] is not None) else None
         stop_loss = float(row["stop_loss"]) if ("stop_loss" in keys and row["stop_loss"] is not None) else None
         idempotency_key = row["idempotency_key"] if "idempotency_key" in keys else None
+        exit_idempotency_key = row["exit_idempotency_key"] if "exit_idempotency_key" in keys else None
 
         return {
             "id": str(row["id"]),
@@ -607,6 +674,7 @@ class HistoryDatabaseEngine:
             "target1": target1,
             "stopLoss": stop_loss,
             "idempotencyKey": idempotency_key,
+            "exitIdempotencyKey": exit_idempotency_key,
             "createdAt": str(row["created_at"]),
         }
 
@@ -687,6 +755,100 @@ class HistoryDatabaseEngine:
         finally:
             conn.close()
 
+    def _sync_portfolio_holding_for_symbol(self, cursor: Any, user_id: str, symbol: str) -> None:
+        """Synchronize portfolio_holdings for a user/symbol reconciling manual holdings and open journal fills."""
+        # 1. Fetch current manual holding baseline from portfolio_holdings if exists
+        cursor.execute(
+            """
+            SELECT shares, entry_price, manual_shares, manual_entry_price, name, current_price, target_price, stop_loss_price, added_at, asset_type
+            FROM portfolio_holdings
+            WHERE user_id = ? AND symbol = ?
+            """,
+            (user_id, symbol),
+        )
+        existing = cursor.fetchone()
+
+        m_shares = 0.0
+        m_entry = 0.0
+        h_name = symbol
+        c_price = None
+        t_price = None
+        s_price = None
+        a_date = datetime.utcnow().strftime("%Y-%m-%d")
+        a_type = "Stock"
+
+        if existing:
+            h_name = existing["name"] or symbol
+            c_price = float(existing["current_price"]) if existing["current_price"] is not None else None
+            t_price = float(existing["target_price"]) if existing["target_price"] is not None else None
+            s_price = float(existing["stop_loss_price"]) if existing["stop_loss_price"] is not None else None
+            a_date = existing["added_at"] or a_date
+            a_type = existing["asset_type"] or a_type
+
+            # Check if manual shares are recorded
+            if existing["manual_shares"] is not None and float(existing["manual_shares"]) > 1e-6:
+                m_shares = float(existing["manual_shares"])
+                m_entry = float(existing["manual_entry_price"] or existing["entry_price"])
+            elif existing["manual_shares"] is None and float(existing["shares"] or 0) > 1e-6:
+                m_shares = float(existing["shares"])
+                m_entry = float(existing["entry_price"])
+
+        # 2. Fetch open journal trades
+        cursor.execute(
+            """
+            SELECT remaining_shares, entry_price, stop_loss, target1
+            FROM user_trade_journal
+            WHERE user_id = ? AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+            ORDER BY id ASC
+            """,
+            (user_id, symbol),
+        )
+        open_trades = cursor.fetchall()
+        journal_shares = sum(float(t["remaining_shares"]) for t in open_trades) if open_trades else 0.0
+        journal_cost = sum(float(t["remaining_shares"]) * float(t["entry_price"]) for t in open_trades) if open_trades else 0.0
+
+        total_shares = round(m_shares + journal_shares, 6)
+
+        if total_shares > 1e-6:
+            total_cost = (m_shares * m_entry) + journal_cost
+            blended_entry = round(total_cost / total_shares, 4)
+
+            # Use stop_loss / target from latest open trade if available, otherwise keep existing
+            if open_trades:
+                latest_trade = open_trades[-1]
+                if latest_trade["stop_loss"] is not None:
+                    s_price = float(latest_trade["stop_loss"])
+                if latest_trade["target1"] is not None:
+                    t_price = float(latest_trade["target1"])
+
+            if existing:
+                cursor.execute(
+                    """
+                    UPDATE portfolio_holdings
+                    SET shares = ?, entry_price = ?,
+                        manual_shares = ?, manual_entry_price = ?,
+                        stop_loss_price = ?, target_price = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = ? AND symbol = ?
+                    """,
+                    (total_shares, blended_entry, m_shares, m_entry, s_price, t_price, user_id, symbol),
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO portfolio_holdings (
+                        user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    """,
+                    (user_id, symbol, h_name, total_shares, blended_entry, c_price or blended_entry, t_price, s_price, a_date, a_type, m_shares, m_entry),
+                )
+        else:
+            # Both manual shares and journal shares are 0: remove holding
+            cursor.execute(
+                "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
+                (user_id, symbol),
+            )
+
     @retry_sqlite()
     def record_trade_fill(self, user_id: str, fill_data: Dict[str, Any]) -> Dict[str, Any]:
         """Record an executed trade plan fill in the persistent journal and update portfolio holdings."""
@@ -748,36 +910,7 @@ class HistoryDatabaseEngine:
                 trade_id = cursor.lastrowid
 
                 # Synchronize with portfolio_holdings
-                cursor.execute(
-                    "SELECT shares, entry_price FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                    (user_id, symbol),
-                )
-                existing_holding = cursor.fetchone()
-                if existing_holding:
-                    old_shares = float(existing_holding["shares"])
-                    old_entry = float(existing_holding["entry_price"])
-                    new_shares = old_shares + shares
-                    new_entry = round(((old_shares * old_entry) + (shares * entry_price)) / new_shares, 4)
-                    cursor.execute(
-                        """
-                        UPDATE portfolio_holdings
-                        SET shares = ?, entry_price = ?,
-                            stop_loss_price = COALESCE(?, stop_loss_price),
-                            target_price = COALESCE(?, target_price),
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE user_id = ? AND symbol = ?
-                        """,
-                        (new_shares, new_entry, stop_loss, target1, user_id, symbol),
-                    )
-                else:
-                    cursor.execute(
-                        """
-                        INSERT INTO portfolio_holdings (
-                            user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Stock', CURRENT_TIMESTAMP)
-                        """,
-                        (user_id, symbol, symbol, shares, entry_price, entry_price, target1, stop_loss, entry_date),
-                    )
+                self._sync_portfolio_holding_for_symbol(cursor, user_id, symbol)
 
                 cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (trade_id,))
                 created_row = cursor.fetchone()
@@ -795,7 +928,7 @@ class HistoryDatabaseEngine:
                 idempotency_key = exit_data.get("idempotencyKey")
                 if idempotency_key:
                     cursor.execute(
-                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND idempotency_key = ? LIMIT 1",
+                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND exit_idempotency_key = ? LIMIT 1",
                         (user_id, str(idempotency_key)),
                     )
                     row = cursor.fetchone()
@@ -863,8 +996,8 @@ class HistoryDatabaseEngine:
                         INSERT INTO user_trade_journal (
                             user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                             r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
-                            parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         """,
                         (
                             user_id,
@@ -888,24 +1021,8 @@ class HistoryDatabaseEngine:
                     )
                     leg_id = cursor.lastrowid
 
-                    # Decrement portfolio_holdings
-                    cursor.execute(
-                        "SELECT shares FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                        (user_id, parent["symbol"]),
-                    )
-                    h_row = cursor.fetchone()
-                    if h_row:
-                        h_shares = float(h_row["shares"])
-                        if h_shares > exit_shares + 1e-6:
-                            cursor.execute(
-                                "UPDATE portfolio_holdings SET shares = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND symbol = ?",
-                                (round(h_shares - exit_shares, 6), user_id, parent["symbol"]),
-                            )
-                        else:
-                            cursor.execute(
-                                "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                                (user_id, parent["symbol"]),
-                            )
+                    # Synchronize portfolio_holdings across all remaining open positions
+                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"])
 
                     cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (leg_id,))
                     result_row = cursor.fetchone()
@@ -926,8 +1043,8 @@ class HistoryDatabaseEngine:
                             INSERT INTO user_trade_journal (
                                 user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                                 r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
-                                parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                                parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                             """,
                             (
                                 user_id,
@@ -956,7 +1073,7 @@ class HistoryDatabaseEngine:
                             UPDATE user_trade_journal
                             SET exit_price = ?, remaining_shares = 0, status = 'CLOSED', exit_date = ?,
                                 pnl = ?, r_achieved = ?, followed_rules = ?, execution_role = 'FULL_EXIT',
-                                notes = COALESCE(?, notes), idempotency_key = COALESCE(?, idempotency_key)
+                                notes = COALESCE(?, notes), exit_idempotency_key = COALESCE(?, exit_idempotency_key)
                             WHERE id = ?
                             """,
                             (
@@ -972,11 +1089,8 @@ class HistoryDatabaseEngine:
                         )
                         final_id = parent["id"]
 
-                    # Remove holding from portfolio_holdings
-                    cursor.execute(
-                        "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                        (user_id, parent["symbol"]),
-                    )
+                    # Synchronize portfolio_holdings across all remaining open positions
+                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"])
 
                     cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (final_id,))
                     result_row = cursor.fetchone()

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
@@ -49,6 +49,17 @@ export default function Navbar({
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+  const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
+  const shortcutsCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (isShortcutsOpen) {
+      shortcutsTriggerRef.current = (document.activeElement as HTMLElement) || null;
+      setTimeout(() => shortcutsCloseBtnRef.current?.focus(), 50);
+    } else {
+      setTimeout(() => shortcutsTriggerRef.current?.focus(), 20);
+    }
+  }, [isShortcutsOpen]);
 
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
@@ -162,14 +173,24 @@ export default function Navbar({
     const handleOnboardingEvent = () => {
       setIsOnboardingOpen(true);
     };
+    const handleShortcutsEvent = () => {
+      setIsShortcutsOpen(true);
+    };
+    const handlePrivacyEvent = () => {
+      setIsPrivacyOpen(true);
+    };
 
     window.addEventListener("finance:role-change", handleRoleEvent);
     window.addEventListener("finance:vernacular-change", handleVernacularEvent);
     window.addEventListener("open-onboarding", handleOnboardingEvent);
+    window.addEventListener("open-shortcuts", handleShortcutsEvent);
+    window.addEventListener("open-privacy", handlePrivacyEvent);
     return () => {
       window.removeEventListener("finance:role-change", handleRoleEvent);
       window.removeEventListener("finance:vernacular-change", handleVernacularEvent);
       window.removeEventListener("open-onboarding", handleOnboardingEvent);
+      window.removeEventListener("open-shortcuts", handleShortcutsEvent);
+      window.removeEventListener("open-privacy", handlePrivacyEvent);
     };
   }, []);
 
@@ -183,11 +204,11 @@ export default function Navbar({
         <header
           role="banner"
           data-testid="navbar"
-          className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14 flex items-center"
+          className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14 flex items-center overflow-x-clip max-w-full"
         >
-          <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full h-14 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-4">
+          <div className="max-w-[1750px] mx-auto px-2 sm:px-3 xl:px-6 w-full h-14 flex items-center justify-between gap-1 xl:gap-4 min-w-0">
             {/* Left: Brand Logo & Title */}
-            <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
+            <div className="flex items-center space-x-1 sm:space-x-2.5 shrink-0 min-w-0">
               <Link
                 href="/"
                 aria-label="ARX Terminal Home"
@@ -195,10 +216,10 @@ export default function Navbar({
               >
                 <ArxLogo size="sm" variant="badge" />
                 <div className="min-w-0 hidden sm:block">
-                  <span className="font-bold tracking-tight text-white font-mono text-sm sm:text-base block leading-none">
+                  <span className="font-bold tracking-tight text-white font-mono text-xs sm:text-sm xl:text-base block leading-none">
                     ARX TERMINAL
                   </span>
-                  <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden xl:block mt-0.5">
+                  <span className="text-[9px] text-cyan-400 font-mono tracking-wider uppercase hidden 2xl:block mt-0.5">
                     No-BS Market Intel
                   </span>
                 </div>
@@ -208,7 +229,7 @@ export default function Navbar({
               <nav
                 aria-label="Main Navigation"
                 data-testid="desktop-nav-links"
-                className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-xs shrink-0"
+                className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 font-mono text-[11px] xl:text-xs shrink min-w-0"
               >
                 {CANONICAL_HUBS.map((hub) => {
                   const href = buildHubHref(hub, effectiveSymbol);
@@ -218,11 +239,9 @@ export default function Navbar({
                       key={hub.id}
                       href={href}
                       aria-current={active ? "page" : undefined}
-                      className={`px-2 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+                      className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                         active
-                          ? hub.id === "performance"
-                            ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
-                            : "bg-[#1b2434] text-cyan-400 font-semibold"
+                          ? "bg-[#1b2434] text-cyan-400 font-semibold"
                           : "text-slate-400 hover:text-slate-200"
                       }`}
                     >
@@ -234,19 +253,19 @@ export default function Navbar({
             </div>
 
           {/* Center: Global Omni-Search Bar */}
-          <div className="flex-1 min-w-0 md:min-w-[140px] max-w-xs xl:max-w-sm 2xl:max-w-md mx-1.5 sm:mx-2 flex items-center justify-center">
+          <div className="flex-1 min-w-0 max-w-[140px] xl:max-w-sm 2xl:max-w-md mx-1 xl:mx-2 flex items-center justify-center">
             <UniversalOmniSearch />
           </div>
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
-          <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+          <div className="flex items-center space-x-1 shrink-0">
             {/* Purge Cache & Refresh Live Feeds Button */}
             <button
               type="button"
               onClick={handlePurgeCache}
               aria-label="Purge Local Cache & Re-sync Live Feeds"
               title="Purge Local Cache & Force Live Quote Refresh"
-              className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
+              className={`hidden xl:flex p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
                 isPurging ? "animate-spin text-cyan-400 border-cyan-500" : ""
               }`}
             >
@@ -261,6 +280,45 @@ export default function Navbar({
             {/* Theme Toggle */}
             <ThemeToggle />
 
+            {/* Experience Mode Selector (Guided / Standard / Quant) */}
+            <ExperienceModeToggle />
+
+            {/* Keyboard Shortcuts Help Button */}
+            <button
+              id="shortcuts-help-btn"
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              aria-label="Pro-Trader Keyboard Shortcuts Guide (?)"
+              title="Keyboard Shortcuts Cheatsheet (?)"
+              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+            >
+              <span aria-hidden="true" className="font-mono font-bold text-sm">?</span>
+            </button>
+
+            {/* Guided Onboarding Tour Button */}
+            <button
+              id="onboarding-tour-btn"
+              type="button"
+              onClick={handleOpenOnboarding}
+              aria-label="Guided Onboarding Tour"
+              title="Guided Onboarding Tour"
+              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+            >
+              <span aria-hidden="true" className="text-sm">🧭</span>
+            </button>
+
+            {/* Privacy & Telemetry Settings Button */}
+            <button
+              id="privacy-settings-btn"
+              type="button"
+              onClick={() => setIsPrivacyOpen(true)}
+              aria-label="Privacy & Telemetry Settings"
+              title="Privacy & Telemetry Settings"
+              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+            >
+              <span aria-hidden="true" className="text-sm">🛡️</span>
+            </button>
+
             {/* Trading Horizon Switcher (Always 100% visible and unclipped across all viewports) */}
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="hidden sm:flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">
               <button
@@ -269,7 +327,7 @@ export default function Navbar({
                 aria-pressed={activeRole === "DAY_TRADER"}
                 aria-label="Switch to Day Trader mode"
                 title="Day Trader Mode (Intraday Momentum & Quick Scalps)"
-                className={`flex items-center space-x-1 px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -278,7 +336,7 @@ export default function Navbar({
                 <span aria-hidden="true" className="text-xs">⚡</span>
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">
                   <span className="hidden 2xl:inline">Day Trade</span>
-                  <span className="2xl:hidden">Day</span>
+                  <span className="hidden xl:inline 2xl:hidden">Day</span>
                 </span>
               </button>
 
@@ -288,7 +346,7 @@ export default function Navbar({
                 aria-pressed={activeRole === "LONG_TERM"}
                 aria-label="Switch to Long-Term Investor mode"
                 title="Long-Term Mode (Value Compounding & Secular Growth)"
-                className={`flex items-center space-x-1 px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
@@ -297,7 +355,7 @@ export default function Navbar({
                 <span aria-hidden="true" className="text-xs">🏛️</span>
                 <span className="font-mono tracking-tight text-[10px] sm:text-xs">
                   <span className="hidden 2xl:inline">Long Term</span>
-                  <span className="2xl:hidden">Long</span>
+                  <span className="hidden xl:inline 2xl:hidden">Long</span>
                 </span>
               </button>
             </div>
@@ -340,9 +398,7 @@ export default function Navbar({
               aria-current={active ? "page" : undefined}
               className={`flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-colors min-w-[44px] sm:min-w-[48px] min-h-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 active
-                  ? hub.id === "performance"
-                    ? "bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60"
-                    : "bg-[#1b2434] text-cyan-400 font-bold"
+                  ? "bg-[#1b2434] text-cyan-400 font-bold"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -393,6 +449,28 @@ export default function Navbar({
           aria-label="Keyboard Shortcuts Guide"
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
           onClick={() => setIsShortcutsOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setIsShortcutsOpen(false);
+            } else if (e.key === "Tab") {
+              const dialog = document.querySelector('[role="dialog"][aria-label="Keyboard Shortcuts Guide"]');
+              if (!dialog) return;
+              const focusables = Array.from(
+                dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex="0"]')
+              ).filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+              if (!focusables.length) return;
+              const first = focusables[0];
+              const last = focusables[focusables.length - 1];
+              if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+          }}
         >
           <div
             className="bg-[#0f1520] border border-[#223149] rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 font-sans"
@@ -404,9 +482,12 @@ export default function Navbar({
                 <h3 className="text-base font-black text-white">Pro-Trader Shortcuts</h3>
               </div>
               <button
+                ref={shortcutsCloseBtnRef}
+                id="shortcuts-close-x-btn"
                 type="button"
+                aria-label="Close keyboard shortcuts modal"
                 onClick={() => setIsShortcutsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1b2537] text-sm"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1b2537] text-sm focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               >
                 ✕
               </button>
@@ -433,9 +514,10 @@ export default function Navbar({
 
             <div className="text-right pt-2">
               <button
+                id="shortcuts-got-it-btn"
                 type="button"
                 onClick={() => setIsShortcutsOpen(false)}
-                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow"
+                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               >
                 Got It (Esc)
               </button>

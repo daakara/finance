@@ -337,7 +337,7 @@ export default function WeeklyConfluenceSpotlight({
           <button
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-xs px-2.5 py-1 rounded-md font-mono text-slate-400 hover:text-slate-200 border border-[#243044] hover:bg-[#162030] transition-colors"
+            className="text-xs px-2.5 py-2 sm:py-1 min-h-[36px] sm:min-h-0 rounded-md font-mono text-slate-400 hover:text-slate-200 border border-[#243044] hover:bg-[#162030] transition-colors inline-flex items-center"
             aria-label={isCollapsed ? "Expand Weekly Spotlight" : "Collapse Weekly Spotlight"}
           >
             {isCollapsed ? "View Full Setups ▼" : "Collapse ▲"}
@@ -379,7 +379,7 @@ export default function WeeklyConfluenceSpotlight({
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold"
+            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold py-2 sm:py-0 min-h-[36px] sm:min-h-0"
           >
             <span>View Full Setups</span>
             <span>▼</span>

@@ -10,6 +10,7 @@ import {
 import { deriveAssessmentState } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { MASTER_ASSET_CATALOG } from "./masterCatalog";
+import { evaluateLevelRelation } from "./reclaimSemantics";
 
 export function generateQuantitativeInsight(
   symbol: string,
@@ -336,7 +337,11 @@ export function generateQuantitativeInsight(
     if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
       terminalState.posture = "WATCH";
       terminalState.uiStateLabel = decisionTrace.stateLabel || "Valid Setup — Awaiting Trigger";
-      terminalState.headlineExplanation = decisionTrace.disqualificationReason || "Price is outside the optimal entry corridor; awaiting pullback to buy zone.";
+      terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
+        decisionTrace.stateLabel
+          ? `Setup state: ${decisionTrace.stateLabel}; awaiting confirmed entry trigger.`
+          : "Asset structure is under evaluation; awaiting confirmed entry trigger in buy zone."
+      );
       terminalState.primaryAction = {
         label: sma50 !== undefined ? `Set Alert for $${sma50.toFixed(2)}` : "Set Price Alert",
         actionType: "SET_ALERT",
@@ -377,6 +382,8 @@ export function generateQuantitativeInsight(
     ? (decisionTrace.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER")
     : (terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
 
+  const smaLevelRelation = evaluateLevelRelation(safePrice, sma50, "50-day moving average", symbol);
+
   return {
     id: `insight_${symbol.toLowerCase()}`,
     symbol: symbol.toUpperCase(),
@@ -410,30 +417,50 @@ export function generateQuantitativeInsight(
         },
         {
           category: "Price Trend",
-          status: !isTrendAvailable ? "Unavailable" : (isStage4 ? "Weak" : "Healthy"),
-          description: !isTrendAvailable
+          status: (!isTrendAvailable || smaLevelRelation.status === "UNAVAILABLE")
+            ? "Unavailable"
+            : (smaLevelRelation.status === "BELOW"
+                ? "Weak"
+                : (smaLevelRelation.status === "AT_LEVEL" ? "Neutral" : "Healthy")),
+          description: (!isTrendAvailable || smaLevelRelation.status === "UNAVAILABLE")
             ? "Insufficient daily sessions (< 50) to evaluate 50-day moving average trend."
-            : (isStage4
+            : (smaLevelRelation.status === "BELOW"
                 ? `Price is below the 50-day moving average ($${(sma50 as number).toFixed(2)}) and currently falling.`
-                : `Price is holding firmly above 50-day moving average ($${(sma50 as number).toFixed(2)}).`),
-          sentiment: !isTrendAvailable ? "neutral" : (isStage4 ? "negative" : "positive"),
+                : (smaLevelRelation.status === "AT_LEVEL"
+                    ? `Price is testing the 50-day moving average ($${(sma50 as number).toFixed(2)}).`
+                    : `Price is holding firmly above 50-day moving average ($${(sma50 as number).toFixed(2)}).`)),
+          sentiment: (!isTrendAvailable || smaLevelRelation.status === "UNAVAILABLE")
+            ? "neutral"
+            : (smaLevelRelation.status === "BELOW" ? "negative" : (smaLevelRelation.status === "AT_LEVEL" ? "neutral" : "positive")),
         },
         {
           category: "Smart Money",
-          status: "Neutral",
-          description: "No significant institutional dumping or insider accumulation this month.",
+          status: (() => {
+            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("institutional"));
+            if (!flowPillar) return "Unavailable";
+            return flowPillar.status === "positive" ? "Supportive" : flowPillar.status === "warning" ? "Caution" : "Neutral";
+          })(),
+          description: (() => {
+            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("institutional"));
+            return flowPillar?.plainDetail || "Institutional order flow telemetry is unassessed for this session.";
+          })(),
           sentiment: "neutral",
         },
         {
           category: "Market Outlook",
-          status: "Supportive",
-          description: "Broader market regime tailwinds are favorable for this sector.",
-          sentiment: "positive",
+          status: (() => {
+            const macroPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("macro") || p.pillar.toLowerCase().includes("regime"));
+            if (!macroPillar) return "Unavailable";
+            return macroPillar.status === "positive" ? "Supportive" : macroPillar.status === "warning" ? "Caution" : "Neutral";
+          })(),
+          description: (() => {
+            const macroPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("macro") || p.pillar.toLowerCase().includes("regime"));
+            return macroPillar?.plainDetail || "Broader market regime telemetry is unassessed; evaluate sector trend independently.";
+          })(),
+          sentiment: "neutral",
         },
       ],
-      reclaimMilestone: isTrendAvailable
-        ? `${symbol} needs to reclaim $${(sma50 as number).toFixed(2)} (50-Day SMA) and show strong base formation on higher volume.`
-        : `Historical trend milestone unavailable (${symbol} has insufficient trading history).`,
+      reclaimMilestone: smaLevelRelation.reclaimMilestone,
       watchLevels: {
         watchZone: (isPriceValid && !isExecutionSuppressed) ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (< 50 sessions)",
         keyLevel: sma50 !== undefined ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
@@ -455,10 +482,12 @@ export function generateQuantitativeInsight(
           ? "Unfavorable technical trend or fundamental risks present unfavorable risk/reward."
           : terminalState.posture === "EXIT_REVIEW"
           ? `Price has fallen below the setup invalidation floor ($${stopLoss.toFixed(2)}). Review position.`
-          : isStage4
+          : smaLevelRelation.status === "BELOW"
           ? (isTrendAvailable
               ? `Watch for a strong reversal and reclaim of $${(sma50 as number).toFixed(2)} with volume. Don't rush—wait for the trigger.`
               : `Trend evidence incomplete. Wait for market structure confirmation.`)
+          : smaLevelRelation.status === "AT_LEVEL"
+          ? `Testing 50-day moving average ($${(sma50 as number).toFixed(2)}). Wait for decisive volume confirmation before entry.`
           : `Setup confirmed within the optimal buy zone. Setup invalidation level at $${stopLoss.toFixed(2)}.`,
       },
     },

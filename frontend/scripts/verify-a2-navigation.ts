@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Phase A2 Navigation & Context Preservation Verification Suite
  * Verifies all 16 Acceptance Criteria (AC1 - AC16)
  */
@@ -7,6 +7,7 @@ import fs from "fs";
 import path from "path";
 import {
   CANONICAL_HUBS,
+  DEFERRED_POST_R1_HUBS,
   QUERY_PARAM_CLASSES,
   buildHubHref,
   isHubActive,
@@ -35,22 +36,29 @@ console.log("===================================================================
 // -----------------------------------------------------------------------------
 console.log("[Group 1] Canonical Hubs Structure & Route Parity");
 
-assert(CANONICAL_HUBS.length === 6, "CANONICAL_HUBS has exactly 6 hubs", `Got ${CANONICAL_HUBS.length}`);
+assert(CANONICAL_HUBS.length === 4, "CANONICAL_HUBS has exactly 4 Release 1 hubs", `Got ${CANONICAL_HUBS.length}`);
 
-const expectedIds = ["radar", "analysis", "setups", "portfolio", "journal", "performance"];
+const expectedIds = ["radar", "analysis", "setups", "portfolio"];
 const actualIds = CANONICAL_HUBS.map((h) => h.id);
 assert(
   JSON.stringify(actualIds) === JSON.stringify(expectedIds),
-  "Canonical hubs strictly follow: Radar → Analysis → Setups → Portfolio → Journal → Performance",
+  "Canonical hubs strictly follow: Radar → Analysis → Trade Plan (Setups) → Portfolio",
   `Got ${JSON.stringify(actualIds)}`
 );
 
-const expectedRoutes = ["/radar", "/", "/setups", "/portfolio", "/journal", "/performance"];
+const expectedRoutes = ["/radar", "/", "/setups", "/portfolio"];
 const actualRoutes = CANONICAL_HUBS.map((h) => h.href);
 assert(
   JSON.stringify(actualRoutes) === JSON.stringify(expectedRoutes),
   "Canonical hub routes match specifications with Analysis at '/'",
   `Got ${JSON.stringify(actualRoutes)}`
+);
+
+assert(
+  DEFERRED_POST_R1_HUBS.length === 2 &&
+  DEFERRED_POST_R1_HUBS.some((h) => h.id === "journal") &&
+  DEFERRED_POST_R1_HUBS.some((h) => h.id === "performance"),
+  "Journal and Performance are explicitly tracked in DEFERRED_POST_R1_HUBS"
 );
 
 const analysisHub = CANONICAL_HUBS.find((h) => h.id === "analysis");
@@ -169,7 +177,8 @@ assert(
 
 assert(extractActiveSymbol("?symbol=TSLA") === "TSLA", "extractActiveSymbol from query string");
 assert(extractActiveSymbol("?ticker=msft") === "MSFT", "extractActiveSymbol from ticker param uppercase");
-assert(extractActiveSymbol("?q=nvda") === "NVDA", "extractActiveSymbol from q param");
+assert(extractActiveSymbol("?q=nvda") === null, "extractActiveSymbol rejects discovery search context 'q'");
+assert(extractActiveSymbol("?q=growth") === null, "extractActiveSymbol never treats search query as active symbol");
 assert(extractActiveSymbol("?foo=bar") === null, "extractActiveSymbol returns null when no symbol");
 assert(extractActiveSymbol(null) === null, "extractActiveSymbol handles null safely");
 assert(extractActiveSymbol("?symbol=INVALID$$$NAME") === null, "extractActiveSymbol rejects invalid symbols");

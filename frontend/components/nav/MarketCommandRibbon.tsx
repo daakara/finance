@@ -41,17 +41,16 @@ export function MarketCommandRibbonSkeleton() {
       role="region"
       aria-label="Market Command Ribbon Loading"
       data-testid="market-command-ribbon-skeleton"
-      className="h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur flex items-center overflow-hidden"
+      className="h-6 sm:h-9 min-h-[24px] sm:min-h-[36px] max-h-[36px] border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur flex items-center overflow-hidden"
     >
       <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center space-x-4 sm:space-x-6">
-          <div className="h-4 w-20 bg-slate-800/80 rounded animate-pulse" />
-          <div className="h-4 w-20 bg-slate-800/80 rounded animate-pulse" />
-          <div className="h-4 w-16 bg-slate-800/80 rounded animate-pulse" />
-          <div className="h-4 w-20 bg-slate-800/80 rounded animate-pulse hidden sm:block" />
+          <div className="h-3 sm:h-4 w-16 sm:w-20 bg-slate-800/80 rounded animate-pulse" />
+          <div className="h-3 sm:h-4 w-16 sm:w-20 bg-slate-800/80 rounded animate-pulse hidden sm:block" />
+          <div className="h-3 sm:h-4 w-12 sm:w-16 bg-slate-800/80 rounded animate-pulse hidden sm:block" />
         </div>
         <div className="flex items-center space-x-2">
-          <div className="h-5 w-24 bg-slate-800/80 rounded-full animate-pulse" />
+          <div className="h-4 sm:h-5 w-20 sm:w-24 bg-slate-800/80 rounded-full animate-pulse" />
         </div>
       </div>
     </div>
@@ -66,6 +65,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
   const [data, setData] = useState<MacroRibbonPayload | null>(initialData || null);
   const [isLoading, setIsLoading] = useState<boolean>(!initialData);
   const [isCachedFallback, setIsCachedFallback] = useState<boolean>(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     if (initialData) {
@@ -175,20 +175,24 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
       role="region"
       aria-label="Market Command Ribbon"
       data-testid="market-command-ribbon"
-      className="h-9 min-h-[36px] max-h-[36px] border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur z-40 overflow-x-auto no-scrollbar flex items-center"
+      className={`${
+        isMobileExpanded
+          ? "min-h-[36px] py-1"
+          : "h-6 sm:h-9 min-h-[24px] sm:min-h-[36px] max-h-[24px] sm:max-h-[36px]"
+      } border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur z-40 overflow-x-auto no-scrollbar flex items-center transition-all duration-150`}
     >
-      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-2 sm:gap-4 shrink-0">
+      <div className="max-w-[1750px] mx-auto px-2 sm:px-4 lg:px-4 xl:px-6 w-full flex items-center justify-between gap-1.5 sm:gap-4 shrink-0">
         {/* Left: Benchmark Indexes & Yields */}
-        <div className="flex items-center space-x-3 sm:space-x-5 shrink-0">
-          {/* SPY */}
+        <div className="flex items-center space-x-2 sm:space-x-5 shrink-0">
+          {/* SPY (Always visible on mobile & desktop) */}
           <div
-            className="flex items-center gap-1 sm:gap-1.5 font-mono text-xs shrink-0"
+            className="flex items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0"
             aria-label="S&P 500"
           >
-            <span className="text-slate-400 font-semibold text-[11px]">SPY</span>
-            <span className="text-white font-medium text-[11px]">${spyPrice.toFixed(2)}</span>
+            <span className="text-slate-400 font-semibold">SPY</span>
+            <span className="text-white font-medium">${spyPrice.toFixed(2)}</span>
             <span
-              className={`text-[11px] font-medium ${
+              className={`font-medium ${
                 spyChangePct >= 0 ? "text-emerald-400" : "text-rose-400"
               }`}
             >
@@ -196,17 +200,13 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          <span className="text-slate-700 select-none text-xs">|</span>
-
-          {/* QQQ */}
-          <div
-            className="flex items-center gap-1 sm:gap-1.5 font-mono text-xs shrink-0"
-            aria-label="NASDAQ 100"
-          >
-            <span className="text-slate-400 font-semibold text-[11px]">QQQ</span>
-            <span className="text-white font-medium text-[11px]">${qqqPrice.toFixed(2)}</span>
+          {/* QQQ - visible on desktop, or when mobile is expanded */}
+          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+            <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
+            <span className="text-slate-400 font-semibold">QQQ</span>
+            <span className="text-white font-medium">${qqqPrice.toFixed(2)}</span>
             <span
-              className={`text-[11px] font-medium ${
+              className={`font-medium ${
                 qqqChangePct >= 0 ? "text-emerald-400" : "text-rose-400"
               }`}
             >
@@ -214,17 +214,13 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          <span className="text-slate-700 select-none text-xs">|</span>
-
-          {/* VIX */}
-          <div
-            className="flex items-center gap-1 sm:gap-1.5 font-mono text-xs shrink-0"
-            aria-label="CBOE Volatility Index"
-          >
-            <span className="text-slate-400 font-semibold text-[11px]">VIX</span>
-            <span className="text-white font-medium text-[11px]">{vixLevel.toFixed(2)}</span>
+          {/* VIX - visible on desktop, or when mobile is expanded */}
+          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+            <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
+            <span className="text-slate-400 font-semibold">VIX</span>
+            <span className="text-white font-medium">{vixLevel.toFixed(2)}</span>
             <span
-              className={`text-[11px] font-medium ${
+              className={`font-medium ${
                 vixChangePct <= 0 ? "text-emerald-400" : "text-rose-400"
               }`}
             >
@@ -232,15 +228,11 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             </span>
           </div>
 
-          <span className="text-slate-700 select-none text-xs hidden sm:inline">|</span>
-
-          {/* 10Y Yield */}
-          <div
-            className="hidden sm:flex items-center gap-1.5 font-mono text-xs shrink-0"
-            aria-label="10-Year Treasury Yield"
-          >
-            <span className="text-slate-400 font-semibold text-[11px]">10Y</span>
-            <span className="text-white font-medium text-[11px]">{tenYearYield.toFixed(2)}%</span>
+          {/* 10Y Yield - visible on desktop, or when mobile is expanded */}
+          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+            <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
+            <span className="text-slate-400 font-semibold">10Y</span>
+            <span className="text-white font-medium">{tenYearYield.toFixed(2)}%</span>
             <span className="text-[10px] text-slate-400 font-mono">
               {changeBps >= 0 ? `+${changeBps.toFixed(1)}bp` : `${changeBps.toFixed(1)}bp`}
             </span>
@@ -248,7 +240,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
         </div>
 
         {/* Right: Regime Badge & Session / Cache Indicators */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           {/* Pinned Settlement Indicator */}
           {isSettlementPinned && (
             <span
@@ -264,10 +256,10 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           {isCachedFallback && (
             <span
               data-testid="cached-snapshot-badge"
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-medium"
+              className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-medium"
             >
               <span className="w-1 h-1 rounded-full bg-amber-400" aria-hidden="true" />
-              [Cached Market Snapshot]
+              [Cached]
             </span>
           )}
 
@@ -276,11 +268,22 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
             role="status"
             aria-label="Market regime"
             data-testid="market-regime-badge"
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 rounded border text-[10px] sm:text-[11px] font-mono font-bold tracking-tight uppercase ${regimeBadgeClass}`}
+            className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded border text-[9px] sm:text-[11px] font-mono font-bold tracking-tight uppercase ${regimeBadgeClass}`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${regimeDotClass}`} aria-hidden="true" />
             <span>{regimeText}</span>
           </div>
+
+          {/* Mobile Tape Expand/Collapse Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileExpanded((prev) => !prev)}
+            aria-expanded={isMobileExpanded}
+            aria-label={isMobileExpanded ? "Collapse Market Command Ribbon tape" : "Expand full Market Command Ribbon tape"}
+            className="sm:hidden px-1.5 py-0.5 rounded bg-[#162030] hover:bg-[#1f2d44] border border-[#2a3c58] text-slate-300 text-[9px] font-mono font-bold flex items-center gap-0.5 cursor-pointer"
+          >
+            <span>{isMobileExpanded ? "▴ Less" : "▾ Tape"}</span>
+          </button>
         </div>
       </div>
     </aside>

@@ -85,7 +85,7 @@ export default function PageIntro({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 max-w-full">
         {children}
 
         {secondaryAction && (
@@ -101,7 +101,7 @@ export default function PageIntro({
             <button
               type="button"
               onClick={secondaryAction.onClick}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
+              className="focus-ring px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer hover:border-slate-600 active:scale-95"
             >
               {secondaryAction.icon}
               <span>{secondaryAction.label}</span>
@@ -113,7 +113,7 @@ export default function PageIntro({
           primaryAction.href ? (
             <Link
               href={primaryAction.href}
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold tracking-tight transition-all shadow-md shadow-cyan-950/50 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="focus-ring px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               {primaryAction.icon}
               <span>{primaryAction.label}</span>
@@ -122,7 +122,7 @@ export default function PageIntro({
             <button
               type="button"
               onClick={primaryAction.onClick}
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold tracking-tight transition-all shadow-md shadow-cyan-950/50 flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="focus-ring px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-black tracking-tight transition-all border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               {primaryAction.icon}
               <span>{primaryAction.label}</span>

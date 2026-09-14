@@ -1,0 +1,2711 @@
+{
+  "timestamp": "2026-09-11T08:48:17.859Z",
+  "overflowMatrix": [
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "dark",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "320x568 (iPhone SE)",
+      "width": 320,
+      "theme": "paper",
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "dark",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "375x667 (iPhone 8)",
+      "width": 375,
+      "theme": "paper",
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "dark",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "390x844 (iPhone 12/14)",
+      "width": 390,
+      "theme": "paper",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "dark",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "768x1024 (iPad Portrait)",
+      "width": 768,
+      "theme": "paper",
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "dark",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "1024x768 (iPad Landscape)",
+      "width": 1024,
+      "theme": "paper",
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "dark",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "viewport": "1440x900 (Desktop)",
+      "width": 1440,
+      "theme": "paper",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "passed": true
+    }
+  ],
+  "reflowAudit": [
+    {
+      "hub": "Opportunity Radar",
+      "path": "/radar",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "path": "/",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "path": "/setups",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "path": "/portfolio",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "path": "/journal",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "headerBottom": 92,
+      "isObscured": false,
+      "passed": true
+    }
+  ],
+  "touchTargets": [
+    {
+      "hub": "Opportunity Radar",
+      "evaluatedCount": 39,
+      "wcagPassedCount": 39,
+      "arxTargetCount": 38,
+      "wcagComplianceRate": "100.0%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "evaluatedCount": 65,
+      "wcagPassedCount": 57,
+      "arxTargetCount": 65,
+      "wcagComplianceRate": "87.7%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": false
+    },
+    {
+      "hub": "Trade Setups",
+      "evaluatedCount": 32,
+      "wcagPassedCount": 32,
+      "arxTargetCount": 32,
+      "wcagComplianceRate": "100.0%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "evaluatedCount": 39,
+      "wcagPassedCount": 38,
+      "arxTargetCount": 39,
+      "wcagComplianceRate": "97.4%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": false
+    },
+    {
+      "hub": "Journal",
+      "evaluatedCount": 31,
+      "wcagPassedCount": 31,
+      "arxTargetCount": 31,
+      "wcagComplianceRate": "100.0%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "evaluatedCount": 33,
+      "wcagPassedCount": 33,
+      "arxTargetCount": 33,
+      "wcagComplianceRate": "100.0%",
+      "sample": [
+        {
+          "tag": "a",
+          "text": "ARX Terminal Home",
+          "width": 36,
+          "height": 36,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Search any asset or ticker",
+          "width": 40,
+          "height": 40,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "Purge Local Cache & Re-sync Li",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "button",
+          "text": "🌙",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "📡\nRadar",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "🔬\nAnalysis",
+          "width": 48,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "⚡\nSetups",
+          "width": 44,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        },
+        {
+          "tag": "a",
+          "text": "💼\nPortfolio",
+          "width": 52,
+          "height": 44,
+          "meetsWcag": true,
+          "meetsArx": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "focusRings": [
+    {
+      "theme": "dark",
+      "elementsTested": 6,
+      "allVisible": true,
+      "samples": [
+        {
+          "tag": "a",
+          "name": "Radar",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Analysis",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Setups",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Portfolio",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Journal",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Performance",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        }
+      ]
+    },
+    {
+      "theme": "paper",
+      "elementsTested": 6,
+      "allVisible": true,
+      "samples": [
+        {
+          "tag": "a",
+          "name": "Radar",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Analysis",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Setups",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Portfolio",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Journal",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        },
+        {
+          "tag": "a",
+          "name": "Performance",
+          "outlineStyle": "solid",
+          "outlineWidth": 2,
+          "outlineColor": "rgba(0, 0, 0, 0)",
+          "boxShadow": "rgb(255, 255, 255) 0px 0px 0px",
+          "hasVisibleIndicator": true
+        }
+      ]
+    }
+  ],
+  "tabsAudit": [
+    {
+      "hub": "Radar",
+      "path": "/radar",
+      "hasTablist": true,
+      "tabsCount": 4,
+      "rovingTabindexValid": true,
+      "keyboardNavPassed": true,
+      "passed": true
+    },
+    {
+      "hub": "Setups",
+      "path": "/setups",
+      "hasTablist": true,
+      "tabsCount": 3,
+      "rovingTabindexValid": true,
+      "keyboardNavPassed": true,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "path": "/performance",
+      "hasTablist": true,
+      "tabsCount": 3,
+      "rovingTabindexValid": true,
+      "keyboardNavPassed": true,
+      "passed": true
+    }
+  ],
+  "modalsAudit": [
+    {
+      "modal": "Setups Broker Fill Modal",
+      "triggerFound": false,
+      "escapeDismissal": false,
+      "focusRestored": false
+    },
+    {
+      "modal": "Command Palette (Ctrl+K)",
+      "dialogFound": true,
+      "initialFocusInside": false,
+      "passed": false
+    }
+  ],
+  "formLabels": [
+    {
+      "hub": "Opportunity Radar",
+      "totalInputs": 1,
+      "labeledCount": 1,
+      "orphanCount": 0,
+      "passed": true
+    },
+    {
+      "hub": "Terminal / Cockpit",
+      "totalInputs": 1,
+      "labeledCount": 1,
+      "orphanCount": 0,
+      "passed": true
+    },
+    {
+      "hub": "Trade Setups",
+      "totalInputs": 0,
+      "labeledCount": 0,
+      "orphanCount": 0,
+      "passed": true
+    },
+    {
+      "hub": "Portfolio",
+      "totalInputs": 1,
+      "labeledCount": 1,
+      "orphanCount": 0,
+      "passed": true
+    },
+    {
+      "hub": "Journal",
+      "totalInputs": 0,
+      "labeledCount": 0,
+      "orphanCount": 0,
+      "passed": true
+    },
+    {
+      "hub": "Performance",
+      "totalInputs": 0,
+      "labeledCount": 0,
+      "orphanCount": 0,
+      "passed": true
+    }
+  ],
+  "contrastRatios": [
+    {
+      "theme": "dark",
+      "sampleSize": 15,
+      "passedCount": 15,
+      "passRate": "100.0%",
+      "samples": [
+        {
+          "element": "<span> ARX TERMINAL",
+          "ratio": "19.05:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> NO-BS MARKET INTEL",
+          "ratio": "10.54:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Radar",
+          "ratio": "8.62:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Analysis",
+          "ratio": "7.43:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Setups",
+          "ratio": "7.43:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Portfolio",
+          "ratio": "7.43:1",
+          "required": "4.5:1",
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "theme": "paper",
+      "sampleSize": 15,
+      "passedCount": 14,
+      "passRate": "93.3%",
+      "samples": [
+        {
+          "element": "<span> ARX TERMINAL",
+          "ratio": "17.85:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> NO-BS MARKET INTEL",
+          "ratio": "5.93:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Radar",
+          "ratio": "3.76:1",
+          "required": "4.5:1",
+          "passed": false
+        },
+        {
+          "element": "<span> Analysis",
+          "ratio": "9.14:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Setups",
+          "ratio": "9.14:1",
+          "required": "4.5:1",
+          "passed": true
+        },
+        {
+          "element": "<span> Portfolio",
+          "ratio": "9.14:1",
+          "required": "4.5:1",
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "reducedMotion": [
+    {
+      "feature": "prefers-reduced-motion: reduce",
+      "elementsEvaluated": 10,
+      "allSuppressed": true,
+      "samples": [
+        {
+          "tag": "html",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "head",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "link",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "link",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "link",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "link",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "script",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "script",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "script",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        },
+        {
+          "tag": "script",
+          "className": "",
+          "animDur": "1e-05s",
+          "transDur": "1e-05s",
+          "isMotionSuppressed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "themeSwitching": [
+    {
+      "themeToggleAudit": {
+        "foundButton": true,
+        "initialTheme": "dark",
+        "toggledTheme": "paper",
+        "restoredTheme": "dark",
+        "cyclesCleanly": true
+      },
+      "passed": true
+    }
+  ],
+  "consoleHealth": {
+    "errors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED",
+      "Failed to load resource: net::ERR_FAILED"
+    ],
+    "warnings": [],
+    "requestFailures": [
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ACLS?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CELH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LULU?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TMDX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CPRX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MEDP?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LNTH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DHLGY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/IREN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/FIX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CIEN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GLD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/VRTX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DECK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SMCI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ON?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ULTA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ARM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ISRG?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ELF?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LRCX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MPWR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SMH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CRWD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/COIN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ANET?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/POWI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TLT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/XLK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DUOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/XLE?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/KLAC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/VRT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/IWM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TMDX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ACLS?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LULU?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CELH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CPRX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MEDP?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LNTH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/IREN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/DHLGY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/GLD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/DECK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SMH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/FIX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CIEN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ON?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/VRTX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SMCI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ULTA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ISRG?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ARM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/AMD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ELF?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LRCX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MPWR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SMH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CRWD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/POWI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/XLE?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/DUOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/VRT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ANET?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MSTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/COIN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TLT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/XLK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/IWM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/KLAC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SMH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LNTH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CPRX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MEDP?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TMDX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/VRT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DUOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SMCI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ULTA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LULU?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/FIX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CELH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/POWI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ACLS?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ELF?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ISRG?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/VRTX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/COIN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CRWD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ANET?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ARM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AMD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DECK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ON?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MPWR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/KLAC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LRCX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/IREN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/DHLGY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/CIEN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SMH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/XLK?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/IWM?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GLD?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TLT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/XLE?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVDA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/GOOGL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TSLA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LNTH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/PLTR?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/NVO?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CPRX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/MEDP?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SMCI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/DUOL?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/TMDX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/VRT?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ULTA?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LULU?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/CELH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ISRG?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ELF?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/VRTX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/ACLS?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/COIN?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/POWI?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/LLY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/FIX?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/BTC?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query1.finance.yahoo.com/v8/finance/chart/ETH?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/QQQ?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      },
+      {
+        "url": "https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=1mo",
+        "errorText": "net::ERR_FAILED"
+      }
+    ]
+  },
+  "scopeReconciliation": {
+    "mutatingRequestsCount": 0,
+    "fillModalVisibleInitially": false,
+    "originClassification": "PREEXISTING_DOMAIN_NOW_EXPOSED",
+    "rationale": "A1b commit 2278271 established the domain contract for trade fill recording. A4 exposed the accessible UI modal to allow recording fills without auto-executing on page load.",
+    "passed": true
+  },
+  "summary": {
+    "totalTests": 102,
+    "passed": 98,
+    "failed": 4
+  }
+}

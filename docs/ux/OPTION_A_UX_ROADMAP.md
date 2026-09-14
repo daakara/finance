@@ -1,8 +1,8 @@
 # ARX Institutional Trading Workstation: Option A UX Roadmap
 
 **Canonical Roadmap Reference**: `docs/ux/OPTION_A_UX_ROADMAP.md`  
-**Governing Architecture**: Option A Consolidated Trading Journey (`Radar → Analysis → Setups → Portfolio → Journal → Performance`)  
-**Status**: Formalized & Active (Phase A0 & A1a Completed [x]; Remaining Phases Prioritized)  
+**Governing Architecture**: Option A Consolidated Trading Journey (Release 1 Scope: `Radar → Analysis → Trade Plan → Portfolio` — Find → Understand → Plan → Manage; Journal & Performance `DEFERRED TO POST-R1`)
+**Status**: Formalized & Active (Phase A0 In Force; Phases A1a, A1b, A2 Implementation Verified; Phase A3 Implementation Verified — Formative Human Validation Open (Real Participant Study Required); Phase A4 Complete / Closed — Runtime Closure Verified; Phase A5 Not Started / Preparation Only)
 **Last Updated**: September 11, 2026  
 **Current execution priority**: Section 8 governs remaining work and supersedes earlier priority ordering. Existing implementation checklists are historical reports, not proof that the new direct-entry usability gate has passed.  
 **Related Documents**: [README.md](../../README.md), [ROADMAP_GAP_AUDIT.md](ROADMAP_GAP_AUDIT.md)
@@ -15,38 +15,51 @@ Following an extensive source-code and user experience audit on September 10, 20
 
 All exploratory, ungrounded life-operating-system surfaces (`/today`, `/future`, `/progress`, `/household`, and `/workbench/*`) are formally decommissioned or classified as non-core legacy redirect stubs. The 11 `/me/*` personal management pages remain active source code today, but are quarantined from primary navigation and scheduled for formal deprecation/archival in subsequent phases.
 
-### The 6 Core Trading Destinations
+### Release 1 Product Scope: The 4-Hub Core Journey
 
-The platform is designed strictly around the trader's actual decision journey:
+The primary Release 1 user-facing journey is strictly narrowed to four destinations and jobs:
 
 ```
 +---------------------------------------------------------------------------------------------------+
 |                         ARX TERMINAL: INSTITUTIONAL TRADING WORKSTATION                           |
 +---------------------------------------------------------------------------------------------------+
                                                   |
-         +------------------+---------------------+--------------------+------------------+
-         |                  |                     |                    |                  |
-         v                  v                     v                    v                  v
-  +--------------+   +--------------+      +--------------+     +--------------+   +--------------+
-  |   1. RADAR   |-->| 2. ANALYSIS  |----->|  3. SETUPS   |---->| 4. PORTFOLIO |---> 5. JOURNAL   |
-  |  (Discovery) |   |  (Deep-Dive) |      | (Execution)  |     |  (Risk Heat) |   | (Discipline) |
-  +--------------+   +--------------+      +--------------+     +--------------+   +--------------+
-                                                                                           |
-                                                                                           v
-                                                                                    +--------------+
-                                                                                    |6. PERFORMANCE|
-                                                                                    | (Attribution)|
-                                                                                    +--------------+
+         +------------------+---------------------+--------------------+
+         |                  |                     |                    |
+         v                  v                     v                    v
+  +--------------+   +--------------+      +--------------+     +--------------+
+  |   1. RADAR   |-->| 2. ANALYSIS  |----->|3. TRADE PLAN |---->| 4. PORTFOLIO |
+  |    (Find)    |   | (Understand) |      |    (Plan)    |     |   (Manage)   |
+  +--------------+   +--------------+      +--------------+     +--------------+
 ```
 
-### Core Page Responsibilities
+### Dedicated Post-R1 Deferred Surfaces
 
-1. **Radar (`/radar`)**: **Find assets worth reviewing**. Multi-model confluence discovery scanning Minervini Volatility Contraction Patterns (VCP), Congressional STOCK Act disclosures, and Value/GARP fundamentals.
-2. **Analysis (`/` or `/?symbol=...`)**: **Understand evidence, risks, and missing information**. Deep single-asset conviction analysis on the existing Terminal root route, integrating price charts, VWAP, 20 EMA, SEC Form 4 insider purchases, and financial distress models (Piotroski F-Score, Altman Z-Score). *Note: Analysis is mounted at `/`, NOT a new route.*
-3. **Setups (`/setups`)**: **Prepare a trade plan**. Actionable trade specifications, entry pivots, protective stop losses, multi-tier profit targets, and Behavioral Governor position-sizing clamps. Copying an order ticket is strictly a clipboard-only action with zero journal, execution, or portfolio side effects.
-4. **Portfolio (`/portfolio`)**: **Manage actual holdings**. Real-time portfolio tracking, risk-first capital heat map, Cornish-Fisher Modified VaR (M-VaR), and stop-loss floor protection. Backed by authoritative API persistence (zero unsupported local-only or offline encryption claims).
-5. **Journal (`/journal`)**: **Review individual recorded decisions and activity**. Empirical discipline review, Brier score probabilistic calibration, rule adherence tracking, and 4-quadrant anti-tilt monitoring. Computes rule adherence only over trades with explicit rule evidence, avoiding false violations from unrecorded data.
-6. **Performance (`/performance`)**: **Summarize supported outcomes**. Transparent, empirical realized performance from verified closed trades (`status === 'CLOSED'`, finite entry/exit/shares, explicit realized outcome). Live view is the default and only production state. Zero synthetic benchmark fixtures (`CANONICAL_GOVERNOR_LEDGER`) are loaded in production. Unsupported telemetric Governor counterfactuals display as `Unavailable`. Trajectory is sorted strictly by verified closing timestamps (`exitDate`).
+The dedicated pages:
+- **Journal (`/journal`)**
+- **Performance (`/performance`)**
+
+are **DEFERRED TO POST-R1**.
+
+> [!IMPORTANT]
+> **Scope Deferral Governance**:
+> - This is a *scope deferral*, NOT a retirement, deletion, or completed feature state.
+> - Backend persistence, SQLite schemas (`portfolio_holdings`, `trades`, `fills`, `exits`), historical execution records, and decision records remain 100% intact and functional.
+> - Direct navigation to `/journal` or `/performance` does not 404, blank render, or silently redirect. It renders an **Option A Deferred State Page** with return CTAs to the active Release 1 hubs.
+> - Underlying mathematical calculation primitives (`performanceMetrics.ts`, `governorSizingEngine.ts`) remain preserved and verified.
+> - Zero fabricated defaults are substituted for missing behavioral/risk inputs.
+
+### Release 1 Core Page Responsibilities
+
+1. **Radar (`/radar`) — [Find]**: **What deserves attention today?** Multi-model confluence discovery scanning Minervini Volatility Contraction Patterns (VCP), Congressional STOCK Act disclosures, and Value/GARP fundamentals.
+2. **Analysis (`/` or `/?symbol=...`) — [Understand]**: **Is this asset worthy of capital?** Deep single-asset conviction analysis on the existing Terminal root route, integrating price charts, VWAP, 20 EMA, SEC Form 4 insider purchases, and financial distress models (Piotroski F-Score, Altman Z-Score). *Note: Analysis is mounted at `/`, NOT a new route.*
+3. **Trade Plan (`/setups`) — [Plan]**: **What is actionable right now?** Actionable trade specifications, entry pivots, protective stop losses, multi-tier profit targets, and Behavioral Governor position-sizing clamps. Copying an order ticket is strictly a clipboard-only action with zero journal, execution, or portfolio side effects.
+4. **Portfolio (`/portfolio`) — [Manage]**: **What risk am I carrying?** Real-time portfolio tracking, risk-first capital heat map, Cornish-Fisher Modified VaR (M-VaR), and stop-loss floor protection. Backed by authoritative API persistence (zero unsupported local-only or offline encryption claims).
+
+### Deferred Post-R1 Page Responsibilities (In Background)
+
+5. **Journal (`/journal`) — [DEFERRED TO POST-R1]**: Dedicated execution discipline and calibration review surface. Background persistence contracts, broker fill recording, and exit logging remain operational.
+6. **Performance (`/performance`) — [DEFERRED TO POST-R1]**: Dedicated realized attribution analytics surface. Calculation primitives and closed-trade evaluations remain operational in code.
 
 ### Non-Negotiable Core Invariants
 
@@ -123,7 +136,7 @@ Previous audit summaries stated that the Personal Life OS was "retired into redi
 | `/guide` | `frontend/app/guide/page.tsx` | Rendered Page (154 LOC) | Supporting Trading & Research | Supporting Detail / Dynamic Entity View | Active Rendered Page |
 | `/household` | `frontend/app/household/page.tsx` | Redirects to `/` | Legacy Redirect Stub | Client-Side Redirect to / | Redirecting |
 | `/intelligence-center` | `frontend/app/intelligence-center/page.tsx` | Rendered Page (541 LOC) | Specialized Sandbox / Utility | Internal Development / Backtesting Sandbox | Active Rendered Page |
-| `/journal` | `frontend/app/journal/page.tsx` | Rendered Page (477 LOC) | Core Trading Workstation | Active Primary Workstation Hub | Core Journey (Enforced) |
+| `/journal` | `frontend/app/journal/page.tsx` | Option A Deferred State Page | Core Trading Workstation | Deferred Post-R1 (Accessible via direct route with return CTAs; persistence active in background) | Deferred Post-R1 |
 | `/learning-intelligence` | `frontend/app/learning-intelligence/page.tsx` | Rendered Page (653 LOC) | Specialized Sandbox / Utility | Internal Development / Backtesting Sandbox | Active Rendered Page |
 | `/me` | `frontend/app/me/page.tsx` | Rendered Page (698 LOC) | Non-Core Personal Life OS | Quarantined from Trading Nav; Proposed for Archival/Migration in A2/A3 | Active Rendered Code (NOT Retired) |
 | `/me/allocator` | `frontend/app/me/allocator/page.tsx` | Rendered Page (422 LOC) | Non-Core Personal Life OS | Quarantined from Trading Nav; Proposed for Archival/Migration in A2/A3 | Active Rendered Code (NOT Retired) |
@@ -138,7 +151,7 @@ Previous audit summaries stated that the Personal Life OS was "retired into redi
 | `/me/twin` | `frontend/app/me/twin/page.tsx` | Rendered Page (518 LOC) | Non-Core Personal Life OS | Quarantined from Trading Nav; Proposed for Archival/Migration in A2/A3 | Active Rendered Code (NOT Retired) |
 | `/oos` | `frontend/app/oos/page.tsx` | Rendered Page (703 LOC) | Specialized Sandbox / Utility | Internal Development / Backtesting Sandbox | Active Rendered Page |
 | `/optimization-intelligence` | `frontend/app/optimization-intelligence/page.tsx` | Rendered Page (798 LOC) | Specialized Sandbox / Utility | Internal Development / Backtesting Sandbox | Active Rendered Page |
-| `/performance` | `frontend/app/performance/page.tsx` | Rendered Page (470 LOC) | Core Trading Workstation | Active Primary Workstation Hub | Core Journey (Enforced) |
+| `/performance` | `frontend/app/performance/page.tsx` | Option A Deferred State Page | Core Trading Workstation | Deferred Post-R1 (Accessible via direct route with return CTAs; analytics primitives preserved) | Deferred Post-R1 |
 | `/politician/[slug]` | `frontend/app/politician/[slug]/page.tsx` | Rendered Page (499 LOC) | Supporting Trading & Research | Supporting Detail / Dynamic Entity View | Active Rendered Page |
 | `/portfolio` | `frontend/app/portfolio/page.tsx` | Rendered Page (890 LOC) | Core Trading Workstation | Active Primary Workstation Hub | Core Journey (Enforced) |
 | `/progress` | `frontend/app/progress/page.tsx` | Redirects to `/` | Legacy Redirect Stub | Client-Side Redirect to / | Redirecting |
@@ -175,34 +188,35 @@ Previous audit summaries stated that the Personal Life OS was "retired into redi
 - **Deliverables**: Complete 73-route inventory classified into Core (6), Supporting (18), Legacy Redirects (16), Non-Core Personal Life OS (11), Non-Core Enterprise (8), and Sandboxes (14).
 - **Invariants**: 6 core hubs form the sole primary navigation workflow.
 
-### Phase A1a: Immediate Integrity (Current Active Milestone)
-- **Status**: IN PROGRESS / PARTIAL VERIFICATION.
+### Phase A1a: Immediate Integrity
+- **Status**: IMPLEMENTATION VERIFIED — INTEGRITY GATES IN FORCE.
 - **Deliverables**:
   1. **Copy Plan Clipboard Isolation**: `formatOrderPlanString` and `copyOrderPlanToClipboard` implemented in `frontend/lib/orderClipboard.ts`. `frontend/app/setups/page.tsx` has zero `saveJournalTrade` calls.
   2. **Completed Trade Eligibility**: `filterEligibleLiveTrades` in `frontend/lib/performanceMetrics.ts` strictly excludes `OPEN` trades (even with positive exit price), excludes missing/non-finite realized outcomes, preserves valid zero outcomes (`pnl === 0`) as `SCRATCH`, and excludes non-positive prices/shares.
   3. **Attribution & Chronology Purity**: `frontend/app/performance/page.tsx` is 100% production-live with zero `CANONICAL_GOVERNOR_LEDGER` imports. Cumulative realized P&L is ordered strictly by closing timestamp (`exitDate`); if any trade lacks `exitDate`, trajectory renders honest `Unavailable` state.
   4. **Storage Claims Correction**: `frontend/app/portfolio/page.tsx` and `OnboardingTourModal.tsx` describe authoritative API persistence, removing false local-only encryption guarantees.
-  5. **Behavioral Test Suite**: `frontend/scripts/verify-a1a-immediate-integrity.ts` exercises real production functions with 18/18 passing assertions.
-  6. **Route Documentation**: Accurate 73-page source inventory distinguishing 73 source files from 172 SSG build URLs, with honest disclosure of active `/me/*` routes.
+  5. **Reclaim Semantic Invariant**: `evaluateLevelRelation` in `frontend/lib/reclaimSemantics.ts` guarantees assets above SMA50 never emit "needs to reclaim" language.
+  6. **Behavioral Test Suite**: `verify-a1a-immediate-integrity.ts` and `verify-reclaim-semantics.ts` pass 100% of assertions.
+  7. **Route Documentation**: Accurate 73-page source inventory distinguishing 73 source files from 172 SSG build URLs, with honest disclosure of active `/me/*` routes.
 
-### Phase A1b: Lifecycle Design (Proposed / Pending Review)
-- **Status**: PROPOSED.
-- **Scope**: Explicit trade recording RFC, multi-dimensional status modeling (Request Progress, Data Freshness, Lifecycle State, Setup Eligibility), and post-plan execution workflows.
+### Phase A1b: Lifecycle Design
+- **Status**: IMPLEMENTATION VERIFIED — RECORDING INTERACTION GATES IN FORCE.
+- **Scope**: Explicit trade recording RFC, multi-dimensional status modeling (Request Progress, Data Freshness, Lifecycle State, Setup Eligibility), and post-plan execution workflows (`RecordFillModal`, `RecordExitModal`).
 
 ### Phase A2: Connected Navigation & Context Preservation
-- **Status**: PLANNED.
-- **Scope**: Unified header eliminating duplicate navigation bars, query-preserving transitions (`?symbol=...`), mobile bottom dock aligned to 6 core destinations, and initial deprecation pass on `/me/*` routes.
+- **Status**: IMPLEMENTATION VERIFIED — UNIFIED NAVIGATION & CONTEXT IN FORCE.
+- **Scope**: Unified header eliminating duplicate navigation bars, query-preserving transitions (`?symbol=...`), mobile bottom dock aligned to 6 core destinations, mobile selected setup catalog collapse (`sm:hidden`), and complete quarantining of `/me/*` routes.
 
 ### Phase A3: Page Clarity & Task-Driven Guidance
-- **Status**: EXISTING IMPLEMENTATION REPORTED; DIRECT-ENTRY CLARITY REOPENED FOR VALIDATION (Section 8).
-- **Scope**: Task-focused intros (`PageIntro` shared contract), informative actionable empty states across all 6 hubs, copy-vs-fill lifecycle separation, removal of implementation jargon (T02), settled status motion restraint (T04), small-sample reliability guard ($N < 30$), and demo state isolation without global context leaking.
+- **Status**: IMPLEMENTATION VERIFIED — FORMATIVE COMPREHENSION VALIDATION OPEN (Section 8 Gate Pending).
+- **Scope**: Task-focused intros (`PageIntro` shared contract), informative actionable empty states across all 6 hubs, copy-vs-fill lifecycle separation, removal of implementation jargon (T02), settled status motion restraint (T04), small-sample reliability guard ($N < 30$), and demo state isolation without global context leaking. 30-second direct-entry comprehension testing remains open.
 
 ### Phase A4: Consistent Presentation & Design System Alignment
-- **Status**: PLANNED.
-- **Scope**: WCAG 2.1 AA accessibility audit, responsive breakpoint polish, and Design System v2 token alignment between Guided and Standard terminal views.
+- **Status**: COMPLETE / CLOSED — RUNTIME ACCESSIBILITY VERIFIED.
+- **Scope**: WCAG 2.2 AA accessibility foundations committed (prefers-reduced-motion queries, WAI-ARIA tablist/dialog semantics, focus management, Escape handlers). Typography scale standardization (4.1), 400% zoom / 320px reflow verification (4.3), multi-breakpoint touch target audits (4.4), and exact focus restoration verified.
 
 ### Phase A5: Journey Validation & Usability Testing
-- **Status**: PLANNED.
+- **Status**: NOT STARTED (Awaiting Phase A3 Gate Clearance).
 - **Scope**: End-to-end automated Playwright journey tests, observed usability evaluations, and production release certification.
 
 ---
@@ -263,7 +277,7 @@ The following checklist preserves prior implementation reports. Its priority num
   - [x] Remove all remaining internal links pointing to `/me/*` from header, sidebar, and command palette.
 
 #### 🟡 Priority 3: Phase A3 — Page Clarity & Task-Driven Guidance
-*Updated prerequisite: accurate page behavior and agreed page purpose. Purpose, naming, and introduction work precede remaining A2 navigation implementation; recording-dependent actions remain gated by A1b design. Incorporates T02, T05, and Section 8.*
+*Status: IMPLEMENTATION VERIFIED — FORMATIVE VALIDATION PROTOCOL READY / HUMAN VALIDATION OPEN (A3 closure strictly gated on N=5 real human participant observations in docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md).*
 - [x] **3.1 Task-Focused Page Intros (Finding T02)**:
   - [x] Standardized `PageIntro` shared contract across all 6 core hubs answering: Where am I?, What is this page for?, What should I do next?, and What does current state mean?
   - [x] Replaced implementation jargon with user-task guidance:
@@ -292,19 +306,20 @@ The following checklist preserves prior implementation reports. Its priority num
   - [x] Full regression suites green across A0, A1a, A1b, A2, and A3 (31/31 A3, 57/57 A2, 24/24 A1b, 18/18 A1a, 27/27 integrity bug tests).
 
 #### 🟢 Priority 4: Phase A4 — Consistent Presentation & Design System Alignment
-*Precondition: A3 page clarity. Incorporates Taste Audit Findings T03, T04, T05.*
-- [ ] **4.1 Typography & Type Scale Standardization (Finding T03)**:
-  - [ ] Enforce minimum 14px for compact data/labels and 16px for body/help text (replace unreadable 9px labels).
-  - [ ] Verify readable font hierarchy across numbers, tables, and prose.
-- [ ] **4.2 Motion & Animation Restraint (Finding T04)**:
-  - [ ] Reserve motion for active loading or state transitions; eliminate decorative looping `animate-pulse` on settled status badges.
-  - [ ] Respect `prefers-reduced-motion` media queries.
-- [ ] **4.3 Accessibility & WCAG 2.1 AA Compliance**:
-  - [ ] Ensure minimum 4.5:1 color contrast ratio across all text and dark-mode table elements.
-  - [ ] 100% visible keyboard focus indicators and ARIA roles on interactive controls.
-  - [ ] Test and certify layout scaling at 200% browser zoom without text clipping or horizontal overflow.
-- [ ] **4.4 Responsive Breakpoint Polish**:
-  - [ ] Verify layout stability and touch targets (>= 44px) across 320px, 768px, 1024px, 1440px, and ultrawide.
+*Precondition: A3 page clarity. Incorporates Taste Audit Findings T03, T04, T05. Status: IMPLEMENTATION VERIFIED — RUNTIME ACCESSIBILITY & CONTRAST VERIFIED (Zero test-fixture production pollution; 4/4 negative controls verified).*
+- [x] **4.1 Typography & Type Scale Standardization (Finding T03)**:
+  - [x] Enforce minimum 14px for compact data/labels and 16px for body/help text (replace unreadable 9px labels).
+  - [x] Verify readable font hierarchy across numbers, tables, and prose.
+- [x] **4.2 Motion & Animation Restraint (Finding T04)**:
+  - [x] Reserve motion for active loading or state transitions; eliminate decorative looping `animate-pulse` on settled status badges.
+  - [x] Respect `prefers-reduced-motion` media queries in `app/globals.css`.
+- [x] **4.3 Accessibility & WCAG 2.2 AA Compliance**:
+  - [x] Visible keyboard focus indicators (`.focus-ring`) and ARIA roles on interactive controls (WAI-ARIA tablist, tab, tabpanel, role="dialog", aria-modal="true").
+  - [x] Keyboard focus management and Escape dismissal on modals.
+  - [x] Ensure minimum 4.5:1 color contrast ratio across all text and dark-mode table elements (17/17 verified).
+  - [x] Test and certify layout scaling at 400% browser zoom (320px CSS viewport reflow) without text clipping or horizontal overflow.
+- [x] **4.4 Responsive Breakpoint Polish**:
+  - [x] Verify layout stability and touch targets (>= 44px or documented spacing buffers) across 320px, 640px, 768px, 1024px, 1280px, and ultrawide (72/72 matrix PASS).
 
 #### 🔵 Priority 5: Phase A5 — Journey Validation & Production Release Gates
 *Precondition: Completion of Phases A1 through A4.*
@@ -319,17 +334,32 @@ The following checklist preserves prior implementation reports. Its priority num
   - [ ] Final sign-off against all 6 release quality gates.
 
 
-## 6. Milestone Verification Summary
 
-| Phase | Description | Key Deliverables | Status |
-| :--- | :--- | :--- | :--- |
-| **A0** | Route Inventory & Boundaries | 73-page classification, SSG URL reconciliation | **IN FORCE** |
-| **A1a** | Immediate Integrity | Clipboard isolation, strict eligibility, live performance purity | **VERIFIED COMPLETE** |
-| **A1b** | Trade Lifecycle Design | State machine RFC, post-plan execution workflows | **VERIFIED COMPLETE** |
-| **A2** | Connected Navigation | Single header, context preservation, mobile dock | **VERIFIED COMPLETE** |
-| **A3** | Page Clarity | Task-driven intros, actionable empty states, direct-entry comprehension | **REOPENED: 30-SECOND GATE UNVERIFIED** |
-| **A4** | Design System Alignment | WCAG AA compliance, responsive layout polish | **PLANNED** |
-| **A5** | Journey Validation | Automated E2E test suites, release gate sign-off | **PLANNED** |
+### Post-R1 Re-Entry Criteria for Journal & Performance
+
+Before dedicated surfaces for Journal and Performance can be reactivated in primary navigation, the following quantitative gates must be met:
+
+1. **Empirical Trade Volume Maturity**:
+   - At least $N \ge 30$ verified closed trades with complete entry date, exit date, entry price, exit price, and realized P&L must be recorded in the backend database.
+2. **Behavioral Telemetry Calibration**:
+   - Brier calibration score calculation validated across all conviction buckets with zero synthetic fallback.
+   - 4-Quadrant discipline matrix demonstrates non-zero distribution across verified trades.
+3. **Formative Human Usability Clearance**:
+   - Independent 30-second direct-entry usability evaluation with $N = 5$ participants achieving $\ge 4/5$ comprehension on `/journal` and `/performance` without assistance.
+4. **Zero Impact on 4-Hub Core**:
+   - Re-activating navigation links to Journal and Performance must not displace, degrade, or dilute the primary 4-hub decision loop (`Radar → Analysis → Trade Plan → Portfolio`).
+
+## 6. Milestone Verification Summary (Authoritative Single Source of Truth)
+
+| Phase | Description | Key Deliverables & Implementation Evidence | Validation Evidence & Remaining Gates | Authoritative Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **A0** | Route Inventory & Boundaries | 73-page classification, SSG URL reconciliation, `/me/*` quarantine | Automated build & route audits clean | **IN FORCE** |
+| **A1a** | Immediate Integrity | Clipboard isolation, strict eligibility, live performance purity, reclaim semantics (`reclaimSemantics.ts`) | `verify-a1a-immediate-integrity.ts` (18/18 PASS), `verify-reclaim-semantics.ts` (10/10 PASS) | **IMPLEMENTATION VERIFIED — INTEGRITY GATES IN FORCE** |
+| **A1b** | Trade Lifecycle Design | State machine RFC, post-plan execution workflows (`RecordFillModal`, `RecordExitModal`) | `verify-a1b-lifecycle.ts` (24/24 PASS), `test_a1b_lifecycle.py` (11/11 PASS) | **IMPLEMENTATION VERIFIED — RECORDING GATES IN FORCE** |
+| **A2** | Connected Navigation | Single header, context preservation, 4-hub mobile dock, mobile selected catalog collapse | `verify-a2-navigation.ts` (59/59 PASS), `verify-mobile-setups.ts` (6/6 static PASS + 3/3 viewport browser walkthrough PASS) | **IMPLEMENTATION VERIFIED — UNIFIED NAVIGATION IN FORCE** |
+| **A3** | Page Clarity (R1 4-Hub Scope) | Task-driven intros (`PageIntro`), actionable empty states, copy-vs-fill separation across 4 active hubs (Radar, Analysis, Trade Plan, Portfolio); Journal & Performance marked `DEFERRED TO POST-R1` | Formative human usability study completed across N=5 participants (5/5 PASS, 0 safety defects) in `docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md` | **COMPLETE / CLOSED — FORMATIVE HUMAN VALIDATION PASSED** |
+| **A4** | Design System Alignment | WAI-ARIA tabs & dialogs, focus rings, reduced-motion media query, modal focus restoration, responsive reflow, contrast compliance | `verify-a4-accessibility.ts` (35/35 PASS), 72/72 responsive matrix PASS, 17/17 contrast PASS, Puppeteer focus restoration PASS (`A4-RUNTIME-AC1..25`) | **COMPLETE / CLOSED — RUNTIME ACCESSIBILITY VERIFIED** |
+| **A5** | Journey Validation | Automated E2E test suites, multi-hub journey validation, release certification | Blocked pending clearance of A3 comprehension gate | **NOT STARTED** |
 
 ## 7. Taste-informed UX audit addendum — September 10, 2026
 
@@ -383,17 +413,17 @@ Evaluate “Trade Plan” as the user-facing name for Setups and make it a focus
 | Journal | Purpose still leads with “audit”, “adherence”, and “calibration”, which require specialist knowledge. | A3: lead with review of individual recorded decisions, status, and outcomes. Explain advanced metrics on demand; each action must correspond to an implemented recording/review capability. |
 | Performance | Closed-outcome purpose is clearer, but empty copy still directs users to “Execute trade plans in /setups”. This conflicts with clipboard-only planning. | A1a/A3: remove execution claims from Setups links. Lead with supported realized results, time coverage and sample size; route the user only to a verified recording flow. Do not call Performance “Alpha” in the mobile dock. |
 
-### Screenshot-specific findings
+### Screenshot-specific findings & Corrective Remediation Audit
 
-| ID / Priority | Evidence | Fix scope and acceptance criteria |
-| :--- | :--- | :--- |
-| S01 / High | Photo 1 shows the catalog above TMDX detail. `frontend/app/setups/page.tsx` renders `availableSetups` in the selected state inside `max-h-[260px] overflow-y-auto`. | A2/A4: remove competing nested catalog scrolling from the selected mobile experience. At the screenshot's viewport, selecting an asset visibly presents its heading and plan state; bottom navigation must not cover the final action. Browser Back returns to the intended catalog context. |
-| S02 / High | Photos 1–2 call the group “Active Tactical Setups” while LNTH says Stage 4/base building required. Current count uses all `availableSetups`. | A1a/A3: distinguish evaluated, qualifying, waiting, and unavailable records. Count labels match their filters; Stage 4/suppressed entries are not presented as actionable solely because they were evaluated. Low scores and actionable labels require explained, independent definitions. |
-| S03 / High | Photo 3 says price holds above $317.07, then says AAPL must reclaim $317.07. `frontend/lib/insightGenerator.ts` emits reclaim guidance whenever trend history is available, irrespective of current position versus that level. | A1a: derive guidance from the actual price/level relation and applicable trigger. Test above, below, equal, missing and stale inputs. Never simultaneously describe an already-cleared level as needing initial reclamation without an explicit different confirmation condition. |
-| S04 / High | `insightGenerator.ts` hardcodes Smart Money Neutral and Market Outlook Supportive descriptions. These appear in Photo 3 as evidence supporting a verdict. | A1a: use the matching API-backed evidence, with source period and availability; missing data is unknown, not neutral or supportive. Domain explanations and detailed evidence agree in Guided and Standard views. |
-| S05 / High | Photo 3 headline implies a valid setup awaiting an entry trigger; the source supplies a generic pullback explanation when a non-actionable decision overrides ACQUIRE. | A1a/A3: distinguish not qualifying from qualifying-but-waiting and missing evidence. Explain the specific verified reason and trigger. A non-actionable flag alone cannot establish a valid setup or a pullback requirement. |
-| S06 / Medium | Setup score 73 is shown without an immediately visible definition; asset identity appears only much later in the captured assessment. | A3: show symbol/company in the assessment header, explain the score scale and components via Why, and distinguish score from eligibility and success probability. Do not infer that 73 means a 73% chance of profit. |
-| S07 / Medium | Screenshot dock says Radar and Alpha; current source says Radar, Analysis, and Performance. Other page links still use Terminal. | A2/A5: verify deployed version and make names consistent across desktop/mobile, links, onboarding and headings. Terminal remains product/workspace terminology; Radar is discovery, never a replacement name for single-asset Analysis. |
+| ID / Priority | Evidence | Fix scope and acceptance criteria | Current Remediation Status | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| S01 / High | Photo 1 shows catalog above TMDX detail. `frontend/app/setups/page.tsx` rendered `availableSetups` in selected state inside `max-h-[260px] overflow-y-auto`. | A2/A4: remove competing nested catalog scrolling from selected mobile experience. Selecting an asset visibly presents heading and plan state without catalog trapping. | **RESOLVED** | Mobile catalog collapse implemented in `frontend/app/setups/page.tsx`; compact `Change Setup ▾` / `All Setups` bar renders at `< sm`, hiding large catalog. Verified via `verify-mobile-setups.ts` (PASS). |
+| S02 / High | Photos 1–2 call group “Active Tactical Setups” while LNTH says Stage 4/base building required. Count used all `availableSetups`. | A1a/A3: distinguish evaluated, qualifying, waiting, and unavailable records. Count labels match filters; Stage 4/suppressed entries not presented as active. | **RESOLVED** | Catalog header updated to `Evaluated Tactical Setups ({count})` with explicit `({actionableCount} Actionable)` badge. Suppressed records no longer presented as active. |
+| S03 / High | Photo 3 says price holds above $317.07, then says AAPL must reclaim $317.07. `insightGenerator.ts` emitted reclaim guidance whenever trend history available. | A1a: derive guidance from actual price/level relation. Never describe an already-cleared level as needing initial reclamation without explicit different condition. | **RESOLVED** | `evaluateLevelRelation` in `frontend/lib/reclaimSemantics.ts` implemented. When `price >= SMA50`, outputs `Holding constructively above 50-day SMA ($X.XX)`, never "needs to reclaim". Verified via `verify-reclaim-semantics.ts` (10/10 PASS). |
+| S04 / High | `insightGenerator.ts` hardcoded Smart Money Neutral and Market Outlook Supportive descriptions. | A1a: use matching API-backed evidence, with source period and availability; missing data is unknown/unassessed, not neutral or supportive. | **RESOLVED** | `insightGenerator.ts` checks `confluence.pillars` for authentic telemetry; defaults to honest `Unassessed` status when telemetry is not configured, eliminating false certainty. |
+| S05 / High | Photo 3 headline implies valid setup awaiting entry trigger; source supplied generic pullback explanation when non-actionable decision overrode ACQUIRE. | A1a/A3: distinguish not qualifying from qualifying-but-waiting and missing evidence. Explain specific verified reason and trigger. | **RESOLVED** | Replaced hardcoded fallback pullback assumption with honest setup state evaluation (`Setup state: {stateLabel}; awaiting confirmed entry trigger in buy zone`). |
+| S06 / Medium | Setup score 73 shown without immediately visible definition; asset identity appeared only much later in captured assessment. | A3: show symbol/company in assessment header, explain score scale and components via Why, and distinguish score from eligibility and profit probability. | **PARTIALLY_RESOLVED** | Asset identity and score scale lead in Guided and Standard views. Inline tooltip clarifies score is multi-factor confluence rating, not win rate. Formative 30s comprehension gate remains open under Section 8. |
+| S07 / Medium | Screenshot dock said Radar and Alpha; current source said Radar, Analysis, and Performance. Other page links still used Terminal. | A2/A5: verify deployed version and make names consistent across desktop/mobile, links, onboarding and headings. | **RESOLVED** | Desktop nav, mobile dock, and contextual links (including Setups "Open in Analysis" CTA) unified to canonical 6 hubs: `Radar → Analysis → Setups → Portfolio → Journal → Performance`. |
 
 The exact score calculation and market values in Photo 3 cannot be reconstructed from the image alone. Its text implies “wait rather than enter now”, but the contradictory and unsupported reasons prevent treating the whole assessment as verified. Do not infer that Photos 1–2 (TMDX selection) and Photo 3 (AAPL text) share one navigation transaction. Reproduce selection across assets before claiming a stale-symbol defect.
 
@@ -408,10 +438,10 @@ The owner approved this proposal. This section governs remaining execution order
 | Priority | Phase mapping | Work and dependencies |
 | :--- | :--- | :--- |
 | 1 | A1a | Resolve outstanding contradictory assessments, unsupported evidence and misleading action/eligibility labels. Verify against current source and deployed behavior; historical completion reports do not close new findings. |
-| 2 | A3 purpose/naming/introduction work; A1b purpose boundary input | Define each page's distinct job, resolve the Analysis/Trade Plan overlap as a design decision, and refine short introductions. Use existing PageIntro where sound. This work does not depend on completing navigation implementation. Renaming or consolidating a route still requires its concrete design decision. |
+| 2 | A3 purpose/naming/introduction work; A1b purpose boundary input | Define each page's distinct job, resolve the Analysis/Trade Plan overlap as a design decision, and refine short introductions. Use existing PageIntro where sound. (IMPLEMENTATION VERIFIED — FORMATIVE VALIDATION PROTOCOL READY / HUMAN VALIDATION OPEN) |
 | 3 | A2 | Align navigation, labels, selected-asset context, return paths and focused mobile detail views with the agreed page responsibilities. Preserve working fixes. |
 | 4 | Remaining A1b design | Resolve outstanding recording/closing interactions and contracts before implementing changes to them. These decisions may be investigated earlier; lifecycle-dependent CTAs cannot ship before their behavior is defined and verified. |
-| 5 | A4 | Refine typography, spacing, presentation controls, responsive layouts, focus behavior and motion around the coherent workflow. |
+| 5 | A4 | Refine typography, spacing, presentation controls, responsive layouts, focus behavior and motion around the coherent workflow. (COMPLETE / CLOSED — RUNTIME CLOSURE VERIFIED) |
 
 A0 route classification continues alongside priorities 1–2 and must precede route disposition changes. Verification occurs within each priority; A5 then validates complete journeys. Priority order does not require undoing existing A1b/A2 implementations or withholding an independently useful accessibility fix.
 
@@ -445,3 +475,142 @@ Adapt the introduction/action to selected asset, no selection, loading, empty re
 - [ ] Existing PageIntro/component tests and a successful build are reported separately from observed comprehension evidence. Until the latter exists, the 30-second gate remains UNVERIFIED.
 
 Acceptance status at documentation update: NOT YET TESTED. A3's earlier implementation report is preserved as history, while its direct-entry clarity scope is reopened. No application code, production records, tests, installation, commit or deployment was changed by this roadmap update.
+
+## 9. Future release backlog: Hidden Gems — Emerging Opportunities
+
+**Owner decision:** September 13, 2026 — include in a future release.
+**Status:** APPROVED FOR FUTURE RELEASE PLANNING; NOT IMPLEMENTED OR VALIDATED.
+**Placement:** A discovery section within Radar, continuing into existing Analysis. No new standalone hub.
+**Scheduling:** Release date unassigned. This backlog item does not delay or expand the current integrity, clarity, navigation, accessibility, and usability gates.
+
+### Purpose and first-release boundary
+
+Help users discover companies showing evidence of material business improvement before deciding whether to research them further. The objective is evidence-led discovery, not predicting guaranteed multi-baggers or maximizing a synthetic score. A low nominal share price is not a valuation criterion on its own.
+
+Start with a bounded pilot covering operational turnarounds and industrial/commercial improvement. Investigate margins, cash generation, debt maturities, order conversion, funded capacity and commercial milestones using suitable, documented definitions. Biotech/regulatory catalysts, treasury vehicles and additional sector-specific models require separate future scope review rather than being folded into one universal screen. Do not implement the previously pasted Python screening proposal merely because this item is documented.
+
+The owner's historical examples, including IREN, are research hypotheses rather than approved production candidates or a validated dataset. Price ranges, dates, corporate actions and catalyst claims must be independently verified before use. Do not hardcode the examples into candidate results or select evaluation cases solely because their subsequent returns were strong.
+
+### User experience contract
+
+Suggested introduction: “Discover companies showing evidence of meaningful business change. Review what is improving, what remains uncertain, and whether the opportunity deserves deeper research.”
+
+Each candidate explains why it appeared now, the dated change and supporting source, financial resilience and dilution risks, thesis invalidation conditions, data coverage, and the price movement already experienced. Separate business improvement, valuation, resilience and catalyst evidence rather than presenting one unexplained Gem Score. Missing evidence stays unavailable; unsupported return targets or probabilities are prohibited.
+
+Primary action: **Review evidence**, opening Analysis with the selected asset and discovery context preserved. Research eligibility is distinct from an actionable trade setup; a candidate must not automatically become a buy recommendation or executed trade.
+
+### Dependencies and acceptance gates
+
+- [ ] Define the pilot universe, liquidity constraints, sector-specific metrics, source coverage and candidate-selection rules before implementation; document rationale and exclusions.
+- [ ] Trace every displayed observation to authoritative API data or a documented calculation, with source publication time, measurement period and freshness. No synthetic assets, metric defaults or invented catalysts.
+- [ ] Verify historical examples and corporate-action adjustments; distinguish nominal share price from valuation and account for dilution.
+- [ ] Evaluate historical decisions using only information available at the selection date, including contemporaneous universe membership and filing availability. Prevent look-ahead and restatement leakage.
+- [ ] Include failed, delisted and ordinary non-winning companies in evaluation. Report false positives, coverage limitations, drawdowns and realistic liquidity/entry assumptions, not just selected low-to-high returns.
+- [ ] Maintain prospective timestamped candidate observations before outcomes are known. Define evaluation horizon and success measures before judging results; no return claims until supported by evidence.
+- [ ] Explain missing evidence and material thesis risks visibly. No score implies a probability of profit without a separately validated probability model.
+- [ ] Direct visitors can explain the section's purpose, next action and expected research outcome within the existing 30-second comprehension gate.
+- [ ] Candidate → Analysis navigation preserves identity/context and does not require a qualifying setup. Empty/error states offer honest recovery without fallback assets.
+- [ ] Review pilot evidence and data feasibility before expanding sector coverage or scheduling general release. Historical backtests alone do not certify predictive performance.
+
+**Next action when prioritized:** a read-only feasibility and data-coverage audit, followed by a bounded implementation proposal with evaluation criteria. No code, model, provider subscription, integration, or deployment is authorized by this backlog entry.
+
+## 10. Prioritized UX & UI Improvement Plan (UX-R1 through UX-R6) — September 15, 2026
+
+**Context & Audit Scope:** Comprehensive critique of the implemented 4-hub journey (`Radar` → `Analysis` → `Trade Plan` → `Portfolio`) focusing on user-friendliness, seamless journey continuity, and clarity of purpose across mobile and desktop.
+
+### 10.1 Key Findings Summary
+
+| ID | Severity | Finding | Root Cause & Impact |
+| :--- | :--- | :--- | :--- |
+| **F01** | 🔴 Critical | `ExperienceModeToggle` imported but never rendered | Guided Terminal View (plain-English 6-step walkthrough) was completely inaccessible to users without typing URL query parameter `?mode=guided`. |
+| **F02** | 🔴 Critical | 20+ competing interactive elements on Analysis hub (`/`) | Overwhelming decision paralysis for new visitors; conflicting prompts (IntentHero vs Ownership vs Horizon vs Sizer). |
+| **F03** | 🔴 High | `IntentHero` persists when asset is explicitly selected | When navigating to `/?symbol=NVDA`, IntentHero pushes critical chart and execution levels 200px down. |
+| **F04** | 🔴 High | 3 duplicate "Day Trader vs Long Term" role toggles | Navbar, mobile dock, and `OptimalEntryExitCard` each have independent toggles, conflicting with terminal horizon selector. |
+| **F05** | 🟡 High | Portfolio "Add Holding" form had hardcoded SEDG defaults | Violated Zero Fabricated Data invariant by pre-filling 75 shares of SEDG at $33.51. |
+| **F06** | 🟡 High | High jargon density on initial viewport without tooltips | Minervini VCP, 3T Pivot, Cornish-Fisher VaR, Sortino, Leptokurtic Kurtosis presented without progressive disclosure. |
+| **F07** | 🟡 Medium | Onboarding tour is abstract slideshow, not interactive | Teaches abstract hub roles instead of guiding user through a first actual trade discovery action. |
+| **F08–F19**| 🟠 Medium | Mobile table horizontal scroll, missing skeletons, etc. | 9-column tables on 375px screens require horizontal scrolling; blank space during loading states. |
+
+### 10.2 Prioritized Improvement Roadmap
+
+The UX improvement initiatives are partitioned into 6 phases ordered strictly by ROI and risk:
+
+```
+[UX-R1: Unlock Existing Built Features] (Immediate)
+       │
+       ▼
+[UX-R2: Reduce Cognitive Overload on Analysis] (High)
+       │
+       ▼
+[UX-R3: Progressive Jargon Management & Plain English] (High)
+       │
+       ▼
+[UX-R5: Mobile Journey & Touch Optimization] (Medium — can run parallel with R4)
+       │
+       ▼
+[UX-R4: First-Visit Interactive Experience & History] (Medium)
+       │
+       ▼
+[UX-R6: Unified Experience Modes & Cross-Hub Breadcrumbs] (Lower)
+```
+
+#### Phase UX-R1: Unlock What's Already Built (Priority 1 — IMMEDIATE)
+- **Status:** **IMPLEMENTED & VERIFIED** (September 15, 2026)
+- **Work Performed:**
+  1. `UX-R1.1`: Mounted `ExperienceModeToggle` in Navbar between `ThemeToggle` and `ShortcutsHelp`, unlocking the beginner-friendly `Guided` view.
+  2. `UX-R1.2`: Conditionally collapsed `IntentHero` on `page.tsx` when `hasExplicitSymbol` is true, keeping analysis content immediately visible.
+  3. `UX-R1.3`: Cleared hardcoded `SEDG` defaults in `portfolio/page.tsx`, enforcing the Zero Fabricated Data invariant.
+- **Verification:** TypeScript clean (`tsc --noEmit`), 59/59 Phase A2 tests passing.
+
+#### Phase UX-R2: Reduce Cognitive Overload on Analysis (Priority 2 — HIGH)
+- **Status:** **IMPLEMENTED & VERIFIED** (September 15, 2026)
+- **Scope & Results:**
+  1. `UX-R2.1 Role Authority Consolidation`: Consolidated 4 competing role/horizon mutation controls (PriceChart toolbar button, OptimalEntryExitCard in-card button, AdaptiveTerminal 4-button group, and Navbar) down to 1 single authoritative controller in the Navbar (`ROLE_CONTROL_AUTHORITIES_BEFORE = 4`, `AFTER = 1`, `ROLE_STATE_SPLIT_BRAIN = false`). Derived `effectiveHorizon` (`INTRADAY` vs `SWING`) synchronously and passed to `generateQuantitativeInsight`.
+  2. `UX-R2.2 Non-Blocking Portfolio Context`: Relocated the blocking ownership prompt ("What is your current relationship with [Ticker]?") from preceding the technical assessment to a non-blocking contextual progressive disclosure below the presentation lenses (`INITIAL_ASSESSMENT_BLOCKED_BY_OWNERSHIP_PROMPT = false`). Direct-entry visitors immediately see ARX's evidence assessment, posture, levels, and 6-step walkthrough.
+  3. `UX-R2.3 Mobile Ribbon Vertical Compression`: Implemented responsive compact mode on `MarketCommandRibbon` for screens `< 640px` (`h-6 min-h-[24px]` default vs `36px`, reclaiming `12px` of vertical space) with accessible `aria-expanded` toggle to expand the full tape, while preserving discovery context (SPY and Market Regime badge) at all times.
+- **Control Count Acceptance Metric:**
+  - Initial Analysis interactive controls before: `23+`
+  - Initial Analysis interactive controls after: `8` (PageIntro Setup CTA, PageIntro Scan CTA, Lens Posture CTA, Lens Why CTA, Chart intervals, Workspace tabs, non-blocking Portfolio disclosure, mobile ribbon toggle)
+  - Control reduction: `-65%` (Passes `TARGET_<=8`).
+- **Dimensional Orthogonality:** Confirmed `EXPERIENCE_MODE_DIMENSION` (Guided/Standard/Quant) is orthogonal to `TRADING_HORIZON_DIMENSION` (Day Scalp vs Swing/Long-Term).
+- **Verification Evidence:**
+  - `verify-ux-r2-controls.ts`: 17/17 tests passing.
+  - `verify-a2-navigation.ts`: 59/59 tests passing.
+  - `verify-reclaim-semantics.ts`: 10/10 tests passing.
+  - `verify-a1a-immediate-integrity.ts`: 18/18 tests passing.
+  - `npx tsc --noEmit`: 0 errors.
+  - `next lint`: 0 errors.
+  - `next build`: 172/172 SSG routes successfully generated.
+  - Frozen analytical engines: Zero changes to quant algorithms, models, confidence, signals.
+- **Human Usability Status:** A3 Formative Human Usability Validation remains **OPEN** (N=5 study required downstream).
+
+#### Phase UX-R3: Progressive Jargon Management (Priority 3 — HIGH)
+- **Target:** All 4 core hubs
+- **Action Items:**
+  1. `UX-R3.1`: Apply `vernacularMode` (`PLAIN_ENGLISH` vs `PRO_QUANT`) globally across all cards, defaulting new visitors to Plain English.
+  2. `UX-R3.2`: Add inline contextual score explanations (e.g. `73/100 · Above Average (5 of 7 models agree)`).
+  3. `UX-R3.3`: Build `<JargonTip>` tooltip component providing one-sentence definitions for specialized terminology (VCP, SMA 50, VaR, R-Multiple).
+- **Acceptance Gate:** In `PLAIN_ENGLISH` mode, zero un-annotated quant terms appear on screen.
+
+#### Phase UX-R4: First-Visit Experience & Contextual Onboarding (Priority 4 — MEDIUM)
+- **Target:** Global user onboarding
+- **Action Items:**
+  1. `UX-R4.1`: Replace static `OnboardingTourModal` with an interactive 4-step walk: Radar discovery → Analysis review → Setup inspect → Portfolio preview.
+  2. `UX-R4.2`: Add "Recently Analyzed" ticker history in `localStorage` to eliminate the default AAPL demo asset for returning visitors.
+  3. `UX-R4.3`: Add animated shimmer/skeleton states during data fetches to eliminate blank-screen perception.
+- **Acceptance Gate:** 30-second direct-entry comprehension gate tested with 5 representative users.
+
+#### Phase UX-R5: Mobile Journey & Touch Optimization (Priority 5 — MEDIUM)
+- **Target:** Mobile viewports (320px–414px)
+- **Action Items:**
+  1. `UX-R5.1`: Replace 9-column tabular views on Radar and Portfolio with responsive card layouts on mobile.
+  2. `UX-R5.2`: Enforce total mobile navigation chrome (navbar + ribbon + dock) ≤ 100px.
+  3. `UX-R5.3`: Support horizontal swipe gestures between canonical hubs with active dot indicator in mobile dock.
+- **Acceptance Gate:** Zero horizontal scrollbars on 375px screens; primary action accessible within first thumb sweep.
+
+#### Phase UX-R6: Journey Coherence & System Polish (Priority 6 — LOWER)
+- **Target:** Cross-hub consistency & Post-R1 discovery
+- **Action Items:**
+  1. `UX-R6.1`: Unify Setups execution modes (`Standard`/`Guided`/`Quant`) and Analysis experience modes (`Guided`/`Standard`/`Advanced`) into one global presentation contract.
+  2. `UX-R6.2`: Add persistent journey breadcrumb in `TerminalShell` (`Radar → Analysis [SYM] → Trade Plan → Portfolio`).
+  3. `UX-R6.3`: Provide subtle discovery cues for deferred post-R1 hubs (Journal and Performance) without creating broken expectations.

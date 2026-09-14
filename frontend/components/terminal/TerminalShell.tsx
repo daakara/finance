@@ -17,15 +17,15 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
 import { fetchMacroRibbon } from "../../lib/api";
 
-import { CANONICAL_HUBS, CanonicalHubId, CanonicalHubMeta } from "../../lib/canonicalNav";
+import { CANONICAL_HUBS, DEFERRED_POST_R1_HUBS, CanonicalHubId, AllHubId, CanonicalHubMeta } from "../../lib/canonicalNav";
 
-export type TerminalHubId = CanonicalHubId;
+export type TerminalHubId = AllHubId;
 export type TerminalHub = TerminalHubId;
 export type TerminalHubMeta = CanonicalHubMeta;
 export const TERMINAL_HUBS = CANONICAL_HUBS;
 
 interface TerminalShellProps {
-  activeHub: CanonicalHubId;
+  activeHub: AllHubId;
   activeSymbol?: string | null;
   children: React.ReactNode;
 }
@@ -35,7 +35,10 @@ export default function TerminalShell({
   activeSymbol,
   children,
 }: TerminalShellProps) {
-  const currentHub = CANONICAL_HUBS.find((h) => h.id === activeHub) || CANONICAL_HUBS[0];
+  const currentHub =
+    CANONICAL_HUBS.find((h) => h.id === activeHub) ||
+    DEFERRED_POST_R1_HUBS.find((h) => h.id === activeHub) ||
+    CANONICAL_HUBS[0];
 
   const [dynamicRegime, setDynamicRegime] = useState<string | null>(null);
 

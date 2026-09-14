@@ -1,0 +1,368 @@
+{
+  "timestamp": "2026-09-11T09:25:49.672Z",
+  "trueReflowMatrix": [
+    {
+      "hub": "Radar / Screener",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "43/51",
+      "status": "PASS"
+    },
+    {
+      "hub": "Terminal / Analysis",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "87/96",
+      "status": "PASS"
+    },
+    {
+      "hub": "Setups / Execution",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "37/44",
+      "status": "PASS"
+    },
+    {
+      "hub": "Portfolio / Sizer",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "47/54",
+      "status": "PASS"
+    },
+    {
+      "hub": "Journal / Audit",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "34/41",
+      "status": "PASS"
+    },
+    {
+      "hub": "Performance / Telemetry",
+      "viewport": "200% Zoom Equivalent (640 CSS px)",
+      "width": 640,
+      "scrollWidth": 640,
+      "clientWidth": 640,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "35/42",
+      "status": "PASS"
+    },
+    {
+      "hub": "Radar / Screener",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "38/85",
+      "status": "PASS"
+    },
+    {
+      "hub": "Terminal / Analysis",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "66/96",
+      "status": "PASS"
+    },
+    {
+      "hub": "Setups / Execution",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "35/44",
+      "status": "PASS"
+    },
+    {
+      "hub": "Portfolio / Sizer",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "38/54",
+      "status": "PASS"
+    },
+    {
+      "hub": "Journal / Audit",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "32/41",
+      "status": "PASS"
+    },
+    {
+      "hub": "Performance / Telemetry",
+      "viewport": "400% Zoom Equivalent (320 CSS px)",
+      "width": 320,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "hasHorizontalScroll": false,
+      "clippedTextCount": 0,
+      "visibleControls": "33/42",
+      "status": "PASS"
+    }
+  ],
+  "cdpZoomVerification": [
+    {
+      "hub": "Radar / Screener",
+      "pageScaleFactor": 2,
+      "metrics": {
+        "innerWidth": 1280,
+        "outerWidth": 780,
+        "clientWidth": 1280,
+        "scrollWidth": 1280,
+        "dpr": 1
+      },
+      "status": "PASS"
+    }
+  ],
+  "dialogsTraversalMatrix": [
+    {
+      "dialog": "Record Broker Fill Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "INPUT#fill-price-input",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#anon",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Universal Asset Search Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "INPUT#anon",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#anon",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Add Portfolio Holding Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "INPUT#add-ticker-input",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#anon",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Record Trade Exit Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "INPUT#exit-shares-input",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#anon",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Onboarding Tour Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "BUTTON#tour-next-btn",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "A#anon",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Pro-Trader Shortcuts Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "BUTTON#shortcuts-close-x-btn",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#shortcuts-help-btn",
+      "status": "PASS"
+    },
+    {
+      "dialog": "Privacy & Telemetry Settings Modal",
+      "role": "dialog",
+      "ariaModal": "true",
+      "initialFocus": "BUTTON#privacy-close-x-btn",
+      "tabContainment": "PASS",
+      "shiftTabContainment": "PASS",
+      "escapeDismissal": "PASS",
+      "focusRestoration": "BUTTON#shortcuts-help-btn",
+      "status": "PASS"
+    }
+  ],
+  "renderedContrastMatrix": [
+    {
+      "sample": "Obsidian: Primary Text on Dark Background",
+      "fg": "#ffffff",
+      "bg": "#090d14",
+      "ratio": 19.46,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Secondary/Muted Text on Dark Card",
+      "fg": "#94a3b8",
+      "bg": "#0c1017",
+      "ratio": 7.43,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Placeholder Text on Input Surface",
+      "fg": "#94a3b8",
+      "bg": "#090d14",
+      "ratio": 7.59,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Positive/Bullish Metric (Emerald 400)",
+      "fg": "#34d399",
+      "bg": "#0c1017",
+      "ratio": 9.91,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Warning/Caution Metric (Amber 400)",
+      "fg": "#fbbf24",
+      "bg": "#0c1017",
+      "ratio": 11.41,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Risk/Bearish Metric (Rose 400)",
+      "fg": "#f87171",
+      "bg": "#0c1017",
+      "ratio": 6.89,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Active Tab Text on Active Tab Bg",
+      "fg": "#22d3ee",
+      "bg": "#1b2434",
+      "ratio": 8.62,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Inactive Tab Text on Header Bg",
+      "fg": "#94a3b8",
+      "bg": "#0c1017",
+      "ratio": 7.43,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Obsidian: Focus Ring (Cyan 400) against Base",
+      "fg": "#22d3ee",
+      "bg": "#090d14",
+      "ratio": 10.77,
+      "required": 3,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Primary Text on Light Background",
+      "fg": "#0f172a",
+      "bg": "#f8fafc",
+      "ratio": 17.06,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Secondary/Muted Text on Light Card",
+      "fg": "#475569",
+      "bg": "#ffffff",
+      "ratio": 7.58,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Placeholder Text on Input Surface",
+      "fg": "#475569",
+      "bg": "#f1f5f9",
+      "ratio": 6.92,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Positive/Bullish Metric (Emerald 700)",
+      "fg": "#047857",
+      "bg": "#ffffff",
+      "ratio": 5.48,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Warning/Caution Metric (Amber 800)",
+      "fg": "#92400e",
+      "bg": "#ffffff",
+      "ratio": 7.09,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Risk/Bearish Metric (Rose 700)",
+      "fg": "#b91c1c",
+      "bg": "#ffffff",
+      "ratio": 6.47,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Active Tab Text on Light Card",
+      "fg": "#0c4a6e",
+      "bg": "#e0f2fe",
+      "ratio": 8.24,
+      "required": 4.5,
+      "status": "PASS"
+    },
+    {
+      "sample": "Paper: Focus Ring (Cyan 700) against Light",
+      "fg": "#0e7490",
+      "bg": "#f8fafc",
+      "ratio": 5.12,
+      "required": 3,
+      "status": "PASS"
+    }
+  ]
+}

@@ -278,22 +278,17 @@ export default function OptimalEntryExitCard({
               {risk_reward_ratio} : 1.0
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              const nextRole = isDayTrader ? "LONG_TERM" : "DAY_TRADER";
-              try { localStorage.setItem("FINANCE_USER_ROLE", nextRole); } catch {}
-              window.dispatchEvent(new CustomEvent("finance:role-change", { detail: nextRole }));
-            }}
-            aria-label={`Current mode: ${isDayTrader ? "Intraday Playbook" : "Swing/Growth Playbook"}. Click to switch mode.`}
-            className={`text-xs px-2.5 py-1 rounded-md font-semibold border cursor-pointer active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
+          <span
+            aria-label={`Active playbook: ${isDayTrader ? "Intraday Scalp Playbook" : "Swing/Growth Playbook"}`}
+            title="Trading playbook governed by global Trading Horizon switch"
+            className={`text-xs px-2.5 py-1 rounded-md font-semibold border ${
               isDayTrader
-                ? "text-amber-400 bg-amber-950/60 border-amber-800 hover:bg-amber-900/80"
-                : "text-emerald-400 bg-emerald-950/60 border-emerald-800 hover:bg-emerald-900/80"
+                ? "text-amber-400 bg-amber-950/40 border-amber-800/60"
+                : "text-emerald-400 bg-emerald-950/40 border-emerald-800/60"
             }`}
           >
-            <span>{isDayTrader ? "⚡ Intraday ⇄" : "🏛️ Swing/Growth ⇄"}</span>
-          </button>
+            <span>{isDayTrader ? "⚡ Intraday Playbook" : "🏛️ Swing/Growth Playbook"}</span>
+          </span>
         </div>
       </div>
 
