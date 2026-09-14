@@ -531,31 +531,27 @@ Primary action: **Review evidence**, opening Analysis with the selected asset an
 | **F07** | 🟡 Medium | Onboarding tour is abstract slideshow, not interactive | Teaches abstract hub roles instead of guiding user through a first actual trade discovery action. |
 | **F08–F19**| 🟠 Medium | Mobile table horizontal scroll, missing skeletons, etc. | 9-column tables on 375px screens require horizontal scrolling; blank space during loading states. |
 
-### 10.2 Prioritized Improvement Roadmap
+### 10.2 Prioritized Improvement Roadmap & Active Sequencing
 
-The UX improvement initiatives are partitioned into 6 phases ordered strictly by ROI and risk:
-
-```
-[UX-R1: Unlock Existing Built Features] (Immediate)
+**Governing Sequence (Frozen September 15, 2026):**
+```text
+[Phase UX-R1: Unlock What's Already Built] (CLOSED)
        │
        ▼
-[UX-R2: Reduce Cognitive Overload on Analysis] (High)
+[Phase UX-R2: Reduce Cognitive Overload on Analysis] (CLOSED)
        │
        ▼
-[UX-R3: Progressive Jargon Management & Plain English] (High)
+[Phase A3: Formative Human Comprehension Validation] (NEXT — PRIORITY 1)
+       │  (N=5 real representative participants: ≥2 mobile, ≥2 desktop; no tour hints)
+       ▼
+[Phase A5: Complete Journey Validation & Production Release Gates] (DOWNSTREAM)
        │
        ▼
-[UX-R5: Mobile Journey & Touch Optimization] (Medium — can run parallel with R4)
-       │
-       ▼
-[UX-R4: First-Visit Interactive Experience & History] (Medium)
-       │
-       ▼
-[UX-R6: Unified Experience Modes & Cross-Hub Breadcrumbs] (Lower)
+[Post-Validation Polish: UX-R3 Vernacular, UX-R4 First-Visit, UX-R5 Mobile Tables, UX-R6 Coherence]
 ```
 
 #### Phase UX-R1: Unlock What's Already Built (Priority 1 — IMMEDIATE)
-- **Status:** **IMPLEMENTED & VERIFIED** (September 15, 2026)
+- **Status:** **CLOSED / IMPLEMENTED / AUTOMATED-VERIFIED / PUSHED**
 - **Work Performed:**
   1. `UX-R1.1`: Mounted `ExperienceModeToggle` in Navbar between `ThemeToggle` and `ShortcutsHelp`, unlocking the beginner-friendly `Guided` view.
   2. `UX-R1.2`: Conditionally collapsed `IntentHero` on `page.tsx` when `hasExplicitSymbol` is true, keeping analysis content immediately visible.
@@ -563,26 +559,32 @@ The UX improvement initiatives are partitioned into 6 phases ordered strictly by
 - **Verification:** TypeScript clean (`tsc --noEmit`), 59/59 Phase A2 tests passing.
 
 #### Phase UX-R2: Reduce Cognitive Overload on Analysis (Priority 2 — HIGH)
-- **Status:** **IMPLEMENTED & VERIFIED** (September 15, 2026)
-- **Scope & Results:**
+- **Status:** **CLOSED / IMPLEMENTED / AUTOMATED-VERIFIED / PUSHED**
+- **Canonical Implementation Scope:**
   1. `UX-R2.1 Role Authority Consolidation`: Consolidated 4 competing role/horizon mutation controls (PriceChart toolbar button, OptimalEntryExitCard in-card button, AdaptiveTerminal 4-button group, and Navbar) down to 1 single authoritative controller in the Navbar (`ROLE_CONTROL_AUTHORITIES_BEFORE = 4`, `AFTER = 1`, `ROLE_STATE_SPLIT_BRAIN = false`). Derived `effectiveHorizon` (`INTRADAY` vs `SWING`) synchronously and passed to `generateQuantitativeInsight`.
   2. `UX-R2.2 Non-Blocking Portfolio Context`: Relocated the blocking ownership prompt ("What is your current relationship with [Ticker]?") from preceding the technical assessment to a non-blocking contextual progressive disclosure below the presentation lenses (`INITIAL_ASSESSMENT_BLOCKED_BY_OWNERSHIP_PROMPT = false`). Direct-entry visitors immediately see ARX's evidence assessment, posture, levels, and 6-step walkthrough.
   3. `UX-R2.3 Mobile Ribbon Vertical Compression`: Implemented responsive compact mode on `MarketCommandRibbon` for screens `< 640px` (`h-6 min-h-[24px]` default vs `36px`, reclaiming `12px` of vertical space) with accessible `aria-expanded` toggle to expand the full tape, while preserving discovery context (SPY and Market Regime badge) at all times.
 - **Control Count Acceptance Metric:**
-  - Initial Analysis interactive controls before: `23+`
+  - Initial Analysis interactive controls before: `23`
   - Initial Analysis interactive controls after: `8` (PageIntro Setup CTA, PageIntro Scan CTA, Lens Posture CTA, Lens Why CTA, Chart intervals, Workspace tabs, non-blocking Portfolio disclosure, mobile ribbon toggle)
   - Control reduction: `-65%` (Passes `TARGET_<=8`).
 - **Dimensional Orthogonality:** Confirmed `EXPERIENCE_MODE_DIMENSION` (Guided/Standard/Quant) is orthogonal to `TRADING_HORIZON_DIMENSION` (Day Scalp vs Swing/Long-Term).
 - **Verification Evidence:**
-  - `verify-ux-r2-controls.ts`: 17/17 tests passing.
-  - `verify-a2-navigation.ts`: 59/59 tests passing.
-  - `verify-reclaim-semantics.ts`: 10/10 tests passing.
-  - `verify-a1a-immediate-integrity.ts`: 18/18 tests passing.
-  - `npx tsc --noEmit`: 0 errors.
-  - `next lint`: 0 errors.
-  - `next build`: 172/172 SSG routes successfully generated.
+  - `FOCUSED_UX_R2_TESTS`: 17/17 PASS (`scripts/verify-ux-r2-controls.ts`)
+  - `UX_R2_REGRESSION_BUNDLE`: 104/104 PASS (17 UX-R2 + 59 A2 navigation + 10 Reclaim semantics + 18 A1a integrity)
+  - `TYPECHECK`: PASS (`tsc --noEmit`, 0 errors)
+  - `LINT`: PASS (`next lint`, 0 errors)
+  - `BUILD`: PASS (172/172 SSG routes successfully generated)
+  - `DIFF_CHECK`: PASS (0 whitespace errors)
   - Frozen analytical engines: Zero changes to quant algorithms, models, confidence, signals.
-- **Human Usability Status:** A3 Formative Human Usability Validation remains **OPEN** (N=5 study required downstream).
+- **Validation Boundary:** A3 Formative Human Usability Validation remains **OPEN** (N=5 study required downstream).
+
+#### Next Milestone: Phase A3 Formative Human Comprehension Validation
+- **Status:** **NEXT ACTIVE TASK**
+- **Objective:** Evaluate whether representative first-time users can explain page purpose, identify the primary action, and describe expected outcomes within 30 seconds across direct landing URLs without evaluator assistance.
+- **Protocol:** Defined in `docs/ux/A3_FORMATIVE_HUMAN_VALIDATION_PACK.md`.
+- **Pre-requisite:** UX-R1 and UX-R2 automated simplifications deployed to testing environment.
+- **Remaining UX Phases (UX-R3 through UX-R6):** Paused until A3 participant feedback is captured.
 
 #### Phase UX-R3: Progressive Jargon Management (Priority 3 — HIGH)
 - **Target:** All 4 core hubs
