@@ -34,6 +34,27 @@ class DecisionHierarchyEngine:
     """Deterministic, pure evaluator of institutional decision states."""
 
     @staticmethod
+    def normalize_stage(stage_val: Optional[Any]) -> Optional[int]:
+        """Normalize integer, string, or descriptive stage phases into standard Minervini 1-4 integers."""
+        if stage_val is None:
+            return None
+        if isinstance(stage_val, int):
+            return stage_val
+        if isinstance(stage_val, str):
+            clean = stage_val.strip().lower()
+            if "stage 4" in clean or "markdown" in clean or "correction" in clean:
+                return 4
+            elif "stage 2" in clean or "advancing" in clean or "growth" in clean or "vcp" in clean:
+                return 2
+            elif "stage 1" in clean or "basing" in clean or "accumulation" in clean:
+                return 1
+            elif "stage 3" in clean or "topping" in clean or "distribution" in clean:
+                return 3
+            elif clean.isdigit():
+                return int(clean)
+        return None
+
+    @staticmethod
     def resolve_decision_state(
         symbol: str,
         current_price: float,
@@ -41,7 +62,7 @@ class DecisionHierarchyEngine:
         freshness_status: str,
         has_fundamentals: bool,
         confluence_score: float,
-        stage_phase: Optional[int] = None,
+        stage_phase: Optional[Any] = None,
         is_in_buy_zone: bool = False,
         risk_reward_ratio: Optional[float] = None,
         is_cataloged: bool = True,
@@ -100,8 +121,9 @@ class DecisionHierarchyEngine:
 
         # ── Precedence 6: ACTIONABLE_SETUP (Highest criteria) ─────────────────
         # Requires: Full evidence + Stage 2 accumulation + Confluence >= 75 + in buy zone + confirmed trigger + R:R >= 2.0
+        norm_stage = DecisionHierarchyEngine.normalize_stage(stage_phase)
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
-        is_stage_2 = stage_phase == 2 or stage_phase is None
+        is_stage_2 = norm_stage == 2 or norm_stage is None
         if (
             confluence_score >= 75.0
             and is_in_buy_zone
@@ -122,8 +144,12 @@ class DecisionHierarchyEngine:
         # ── Precedence 5: VALID_SETUP (Default when verified data is sound) ───
         # Sound verified data, but currently awaiting breakout, in Stage 4, or outside buy zone
         reason = "Awaiting volume breakout confirmation."
-        if stage_phase == 4:
+        if norm_stage == 4:
             reason = "Stage 4 distribution: price below 50-day SMA; wait for floor formation."
+        elif norm_stage == 1:
+            reason = "Stage 1 structural basing phase: price establishing floor; awaiting Stage 2 breakout."
+        elif norm_stage == 3:
+            reason = "Stage 3 distribution phase: topping pattern detected; protect capital."
         elif not is_in_buy_zone:
             reason = "Price is outside the optimal entry corridor; awaiting pullback to buy zone."
         elif not is_confirmed:

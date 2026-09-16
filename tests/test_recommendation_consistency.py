@@ -44,8 +44,8 @@ def test_global_status_taxonomy_actionability(status, expected_actionable):
             "optimal_entry_max": 100.0,
             "take_profit_1": 115.0,
             "risk_reward_ratio": 2.5,
-            "stage_phase": 2,
-            "setup_pattern": "VCP Setup",
+            "stage_phase": "Stage 2 Advancing Growth Phase",
+            "setup_pattern": "Minervini VCP (Volatility Contraction Pattern)",
             "entry_thesis": "Test thesis",
         }
         
@@ -182,3 +182,93 @@ def test_low_risk_reward_disqualifies_setup_even_in_buy_zone():
         assert setup['isSuppressed'] is True
         assert setup['decisionState'] == "VALID_SETUP"
         assert "risk/reward" in setup['reasonSuppressed'].lower()
+
+
+def test_stage_normalization_and_string_description_support():
+    """Verify that descriptive stage strings (e.g. from OptimalExecutionEngine) normalize and qualify correctly."""
+    from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
+
+    assert DecisionHierarchyEngine.normalize_stage("Stage 2 Advancing Growth Phase") == 2
+    assert DecisionHierarchyEngine.normalize_stage("Stage 4 Markdown (Awaiting New Base)") == 4
+    assert DecisionHierarchyEngine.normalize_stage("Stage 1 Structural Basing Phase") == 1
+    assert DecisionHierarchyEngine.normalize_stage("Stage 3 Topping Distribution") == 3
+    assert DecisionHierarchyEngine.normalize_stage(2) == 2
+    assert DecisionHierarchyEngine.normalize_stage(None) is None
+
+    # Verify Stage 2 descriptive string qualifies for ACTIONABLE_SETUP
+    state_s2 = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=100.0,
+        candle_count=60,
+        freshness_status="LIVE",
+        has_fundamentals=True,
+        confluence_score=80.0,
+        stage_phase="Stage 2 Advancing Growth Phase",
+        is_in_buy_zone=True,
+        risk_reward_ratio=2.5,
+        is_confirmed=True,
+    )
+    assert state_s2["state"] == DecisionState.ACTIONABLE_SETUP.value
+    assert state_s2["isActionable"] is True
+
+    # Verify Stage 4 descriptive string suppresses to VALID_SETUP with Stage 4 reason
+    state_s4 = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=100.0,
+        candle_count=60,
+        freshness_status="LIVE",
+        has_fundamentals=True,
+        confluence_score=80.0,
+        stage_phase="Stage 4 Markdown (Awaiting New Base)",
+        is_in_buy_zone=True,
+        risk_reward_ratio=2.5,
+        is_confirmed=True,
+    )
+    assert state_s4["state"] == DecisionState.VALID_SETUP.value
+    assert state_s4["isActionable"] is False
+    assert "stage 4" in state_s4["disqualificationReason"].lower()
+
+
+def test_analysis_and_trade_plan_decision_parity():
+    """Verify that Analysis (DecisionTraceEngine) and Trade Plan (_build_tactical_setup) yield identical decisions."""
+    from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
+
+    with patch('api.routes.analytics.optimal_execution_engine.calculate_trade_levels') as mock_calc, \
+         patch('api.routes.analytics.confluence_engine.calculate_confluence') as mock_conf, \
+         patch('api.routes.analytics.market_db.get_factor_snapshot', return_value={"quality_score": 85}), \
+         patch('api.routes.analytics.market_db.get_catalyst', return_value=None), \
+         patch('api.routes.analytics.fred_fetcher.get_macro_indicators', return_value=None), \
+         patch('api.routes.analytics.smart_money_engine.get_sec_insider_trades', return_value=[]), \
+         patch('api.routes.analytics.smart_money_engine.get_congressional_trades', return_value=[]):
+
+        plan = {
+            "execution_status": "IN_BUY_ZONE",
+            "stop_loss": 95.0,
+            "optimal_entry_max": 100.0,
+            "take_profit_1": 115.0,
+            "risk_reward_ratio": 2.5,
+            "stage_phase": "Stage 2 Advancing Growth Phase",
+            "setup_pattern": "Minervini VCP",
+            "entry_thesis": "Sound technical breakout.",
+        }
+        mock_calc.return_value = plan
+        mock_conf.return_value = {"confluenceScore": 82.0}
+
+        # 1. Trade Plan setup API resolution
+        setup = _build_tactical_setup('AAPL', 'SWING_TRADER', CANDLES, is_stale=False)
+
+        # 2. Analysis decision trace resolution
+        trace = DecisionTraceEngine.build_decision_trace(
+            symbol="AAPL",
+            current_price=100.0,
+            candles=CANDLES,
+            freshness={"status": "LIVE", "stalenessDays": 0, "candleCount": len(CANDLES)},
+            technicals={},
+            confluence={"confluenceScore": 82.0},
+            factor_scores={"qualityScore": 85},
+            optimal_execution=plan,
+        )
+
+        # 3. Assert exact parity between Analysis and Trade Plan
+        assert setup['decisionState'] == trace['decisionState'] == "ACTIONABLE_SETUP"
+        assert setup['isActionable'] == trace['isActionable'] == True

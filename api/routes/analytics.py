@@ -263,13 +263,27 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "valuationScore": factor_snap.get("valuation_score"),
     } if (has_fundamentals and factor_snap) else None
 
+    # Macro Environment & Difficulty Rating from FRED
+    macro_difficulty = fred_fetcher.get_macro_indicators()
+    macro_inputs = None
+    if isinstance(macro_difficulty, dict):
+        yc = macro_difficulty.get("yield_curve_10y2y")
+        cs = macro_difficulty.get("high_yield_credit_spread")
+        if yc is not None or cs is not None:
+            macro_inputs = {
+                "yield_curve_10y2y": yc,
+                "credit_spread": cs,
+            }
+
+    catalyst_report = market_db.get_catalyst(sym)
+
     conf_output = confluence_engine.calculate_confluence(
         symbol=sym,
         technical_data={**(technicals or {}), **plan, "current_price": cur_price},
         smart_money_data=smart_data,
         fundamental_data=fund_data,
-        catalyst_data=None,
-        macro_data=None,
+        catalyst_data=catalyst_report,
+        macro_data=macro_inputs,
     )
     conf_score = conf_output.get("confluenceScore", 0.0)
 
