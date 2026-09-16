@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import TerminalShell from '../../components/terminal/TerminalShell';
 import PageIntro from '../../components/PageIntro';
 import { fetchScreenerGems, fetchAssetAnalytics } from '../../lib/api';
@@ -10,21 +11,23 @@ interface RadarAsset {
   ticker: string;
   name: string;
   price: number;
-  rsRating: number;
+  rsRating: number | null;
   vcpStage: string;
-  volumeDryUpPct: number;
+  volumeDryUpPct: number | null;
   confluenceScore: number;
   catalyst: string;
   categories: ('VCP' | 'SMART_MONEY' | 'VALUE')[];
   sector: string;
-  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT';
+  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'UNKNOWN';
 }
 
 type CategoryFilter = 'ALL' | 'VCP' | 'SMART_MONEY' | 'VALUE';
 
-export default function RadarPage() {
+function RadarContent() {
+  const searchParams = useSearchParams();
+  const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RS' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,18 +47,23 @@ export default function RadarPage() {
           if (cat.length === 0 || gem.composite_score >= 85) cat.push("SMART_MONEY");
 
           const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
-          let executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' = 'PULLBACK_SUPPORT';
-          if (rawStatus.includes("BUY_ZONE")) executionStatus = 'IN_BUY_ZONE';
+          let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
+          if (rawStatus.includes("BUY_ZONE") && !rawStatus.includes("AWAITING")) executionStatus = 'IN_BUY_ZONE';
+          else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
           else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
-          else if (rawStatus.includes("DRYUP") || rawStatus.includes("WAITING")) executionStatus = 'VOLUME_DRYUP';
+          else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
+          else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
+
+          const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : null;
+          const rsVal = typeof gem.rs_rating === 'number' ? gem.rs_rating : (typeof gem.momentum_score === 'number' ? gem.momentum_score : null);
 
           return {
             ticker: gem.ticker,
             name: gem.ticker,
             price: Number((gem.current_price || 0).toFixed(2)),
-            rsRating: Math.min(99, Math.max(50, Math.round(gem.composite_score || 80))),
+            rsRating: rsVal,
             vcpStage: executionStatus === 'IN_BUY_ZONE' ? '3T Pivot Breakout' : 'Stage 2 Base',
-            volumeDryUpPct: -45,
+            volumeDryUpPct: dryUp,
             confluenceScore: Math.round(gem.composite_score || 0),
             catalyst: gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.",
             categories: cat,
@@ -103,7 +111,7 @@ export default function RadarPage() {
       })
       .sort((a, b) => {
         if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
-        if (sortBy === 'RS') return b.rsRating - a.rsRating;
+        if (sortBy === 'RS') return (b.rsRating ?? 0) - (a.rsRating ?? 0);
         if (sortBy === 'PRICE') return b.price - a.price;
         return 0;
       });
@@ -137,21 +145,25 @@ export default function RadarPage() {
 
       const opt = data.optimalExecution;
       const rawStatus = (opt?.execution_status || "").toUpperCase();
-      let executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' = 'PULLBACK_SUPPORT';
-      if (rawStatus.includes("BUY_ZONE")) executionStatus = 'IN_BUY_ZONE';
+      let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
+      if (rawStatus.includes("BUY_ZONE") && !rawStatus.includes("AWAITING")) executionStatus = 'IN_BUY_ZONE';
+      else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
       else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
-      else if (rawStatus.includes("DRYUP") || rawStatus.includes("WAITING")) executionStatus = 'VOLUME_DRYUP';
+      else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
+      else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
       const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = ['VCP'];
       if ((data.confluence?.confluenceScore || 0) >= 70) cat.push('SMART_MONEY');
+
+      const rsVal = data.factorScores?.momentumScore ?? null;
 
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
         price: Number(data.currentPrice.toFixed(2)),
-        rsRating: Math.min(99, Math.max(50, Math.round(data.confluence?.confluenceScore || 75))),
+        rsRating: rsVal,
         vcpStage: opt?.setup_pattern || 'Stage 2 Continuation',
-        volumeDryUpPct: -35,
+        volumeDryUpPct: null,
         confluenceScore: Math.round(data.confluence?.confluenceScore || 50),
         catalyst: opt?.entry_thesis || "On-demand quantitative exchange tape discovery.",
         categories: cat,
@@ -677,9 +689,13 @@ export default function RadarPage() {
                             {asset.confluenceScore}
                           </span>
                         </td>
-                        <td className="p-3 text-center font-bold text-white">{asset.rsRating}</td>
+                        <td className="p-3 text-center font-bold text-white">
+                          {asset.rsRating !== null ? asset.rsRating : <span className="text-slate-500 font-normal">—</span>}
+                        </td>
                         <td className="p-3 text-slate-300 text-[11px]">{asset.vcpStage}</td>
-                        <td className="p-3 text-right font-bold text-emerald-400">{asset.volumeDryUpPct}%</td>
+                        <td className="p-3 text-right font-bold text-emerald-400">
+                          {asset.volumeDryUpPct !== null ? `${asset.volumeDryUpPct}%` : <span className="text-slate-500 font-normal">—</span>}
+                        </td>
                         <td className="p-3 text-slate-300 text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
                           {asset.catalyst}
                         </td>
@@ -705,5 +721,13 @@ export default function RadarPage() {
         </div>
       </div>
     </TerminalShell>
+  );
+}
+
+export default function RadarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#070a10] text-slate-400 font-mono text-xs p-6">Loading Radar Stream...</div>}>
+      <RadarContent />
+    </Suspense>
   );
 }

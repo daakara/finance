@@ -48,9 +48,26 @@ function SetupsContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [browseError, setBrowseError] = useState<string | null>(null);
   const [executionMode, setExecutionMode] = useState<'STANDARD' | 'GUIDED' | 'QUANT'>('GUIDED');
+  const [userRole, setUserRole] = useState<'DAY_TRADER' | 'LONG_TERM'>('LONG_TERM');
   const [copyStatus, setCopyStatus] = useState<'IDLE' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [copyErrorMessage, setCopyErrorMessage] = useState<string | null>(null);
   const latestRequestRef = useRef<string | null>(null);
+
+  // Sync userRole from localStorage and custom events
+  useEffect(() => {
+    const saved = localStorage.getItem("FINANCE_USER_ROLE");
+    if (saved === "DAY_TRADER" || saved === "LONG_TERM") {
+      setUserRole(saved);
+    }
+    const handleRoleEvent = (e: Event) => {
+      const custom = e as CustomEvent<'DAY_TRADER' | 'LONG_TERM'>;
+      if (custom.detail === "DAY_TRADER" || custom.detail === "LONG_TERM") {
+        setUserRole(custom.detail);
+      }
+    };
+    window.addEventListener("finance:role-change", handleRoleEvent);
+    return () => window.removeEventListener("finance:role-change", handleRoleEvent);
+  }, []);
 
   // 1. Initial load of risk telemetry from authoritative backend API
   useEffect(() => {
@@ -64,7 +81,7 @@ function SetupsContent() {
   // 2. Initial load of all available setups from API
   const loadAvailableSetups = useCallback(() => {
     setBrowseError(null);
-    fetchTacticalSetups()
+    fetchTacticalSetups(undefined, userRole)
       .then((setups) => {
         setAvailableSetups(setups);
       })
@@ -72,7 +89,7 @@ function SetupsContent() {
         console.warn("Error fetching available setups:", err);
         setBrowseError(err?.message || "Failed to load tactical setups catalog from API.");
       });
-  }, []);
+  }, [userRole]);
 
   useEffect(() => {
     loadAvailableSetups();
@@ -103,7 +120,7 @@ function SetupsContent() {
     }
 
     // Authoritative API fetch for requested asset setup
-    fetchTacticalSetupForTicker(upper)
+    fetchTacticalSetupForTicker(upper, userRole)
       .then((setup) => {
         if (latestRequestRef.current !== upper) return;
         if (setup) {
@@ -113,7 +130,7 @@ function SetupsContent() {
         } else {
           // Check if asset exists on analytics tape
           const baseUrl = getApiBaseUrl();
-          fetch(`${baseUrl}/analytics/${encodeURIComponent(upper)}`, {
+          fetch(`${baseUrl}/analytics/${encodeURIComponent(upper)}?user_role=${encodeURIComponent(userRole)}`, {
             headers: ARX_API_HEADERS,
             signal: AbortSignal.timeout(6000),
           })
@@ -162,6 +179,7 @@ function SetupsContent() {
               }
 
               // Genuine setup exists
+              const isActionable = Boolean(opt.is_actionable && (opt.execution_status === 'READY_TO_BUY' || opt.execution_status === 'IN_BUY_ZONE'));
               const loaded: TradeSetupSpec = {
                 ticker: upper,
                 setupName: opt.setup_pattern,
@@ -170,8 +188,8 @@ function SetupsContent() {
                 target1: opt.take_profit_1 || 0,
                 target2: opt.take_profit_2 || 0,
                 confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
-                isActionable: Boolean(opt.execution_status === 'READY_TO_BUY' || opt.is_actionable),
-                reasonSuppressed: opt.entry_thesis || null,
+                isActionable,
+                reasonSuppressed: isActionable ? null : (opt.entry_thesis || "Technical structure awaiting trigger confirmation."),
                 executionStatus: opt.execution_status || "WAITING_PULLBACK",
                 entryThesis: opt.entry_thesis || "",
                 invalidationCondition: opt.invalidation_condition || "",
@@ -192,7 +210,7 @@ function SetupsContent() {
         setLoadState('REQUEST_FAILURE');
         setErrorMessage(`Tactical analysis request failed for ${upper}: ${err.message || 'Network error'}.`);
       });
-  }, [tickerParam, availableSetups]);
+  }, [tickerParam, availableSetups, userRole]);
 
   const handleSelectSetup = (setup: TradeSetupSpec) => {
     setSelectedSetup(setup);

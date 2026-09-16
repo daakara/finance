@@ -122,13 +122,6 @@ export function generateQuantitativeInsight(
     target1 = optimalExecution.take_profit_1 ?? undefined;
     target2 = optimalExecution.take_profit_2 ?? undefined;
     profitRisk = optimalExecution.risk_reward_ratio ?? undefined;
-  } else if (!isExecutionSuppressed && isPriceValid && isTrendAvailable) {
-    stopLoss = Number((safePrice * 0.93).toFixed(2));
-    target1 = Number((safePrice * 1.204).toFixed(2));
-    target2 = Number((safePrice * 1.293).toFixed(2));
-    profitRisk = (target1 !== undefined && safePrice > stopLoss)
-      ? Number(((target1 - safePrice) / Math.max(0.01, safePrice - stopLoss)).toFixed(2))
-      : undefined;
   }
 
   // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog (DISC-03, DISC-04)
@@ -139,7 +132,6 @@ export function generateQuantitativeInsight(
   const roicDisplay = isHealthAvailable ? `${catAsset.roic}%` : "N/A";
   const filingDate = catAsset?.secFilingDate || "Unknown";
   const piotroskiScore = catAsset?.piotroski ?? 0;
-  const debtEquityDisplay = piotroskiScore >= 8 ? "0.28" : "0.75";
 
   // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
@@ -152,8 +144,8 @@ export function generateQuantitativeInsight(
           status: catAsset.roic >= 15 ? "FAVORABLE" : catAsset.roic >= 8 ? "MIXED" : "UNFAVORABLE",
           pointImpact: catAsset.roic >= 15 ? 20 : catAsset.roic >= 8 ? 10 : -15,
           importanceLevel: "HIGH",
-          observation: `ROIC > 15% (${roicDisplay}) and balance-sheet leverage (Debt/Equity ${debtEquityDisplay}, Piotroski ${piotroskiScore}/9).`,
-          modelRule: "Sound capital efficiency and low leverage contribute +20 points to fundamental score.",
+          observation: `ROIC > 15% (${roicDisplay}) and capital solvency (Piotroski ${piotroskiScore}/9).`,
+          modelRule: "Sound capital efficiency and verified solvency contribute positive weighting to fundamental score.",
           evidence: [
             {
               metricName: "Return on Invested Capital (ROIC)",
@@ -169,22 +161,6 @@ export function generateQuantitativeInsight(
               },
               freshness: "QUARTERLY",
               significance: "HIGH",
-              status: "POSITIVE",
-            },
-            {
-              metricName: "Debt to Equity Ratio",
-              currentValue: debtEquityDisplay,
-              benchmarkValue: "< 1.5 Target",
-              source: "SEC Form 10-Q Filing",
-              asOf: filingDate,
-              provenance: {
-                source: "SEC EDGAR Form 10-Q",
-                publishedAt: filingDate,
-                observedAt: new Date().toISOString().split("T")[0],
-                freshness: "QUARTERLY",
-              },
-              freshness: "QUARTERLY",
-              significance: "MEDIUM",
               status: "POSITIVE",
             },
           ],
@@ -263,56 +239,44 @@ export function generateQuantitativeInsight(
         },
 
     // Domain 3: Smart Money Flow
-    {
-      domainId: "smart_money",
-      domainName: "Smart Money Flow",
-      availability: "AVAILABLE",
-      status: isStage4 ? "MIXED" : "FAVORABLE",
-      pointImpact: isStage4 ? 5 : 15,
-      importanceLevel: "MEDIUM",
-      observation: isStage4
-        ? "Neutral 13F institutional accumulation over the past quarter."
-        : "Net institutional accumulation over 3 consecutive quarters.",
-      modelRule: "Institutional net buying adds positive weighting to setup conviction.",
-      evidence: [
-        {
-          metricName: "13F Institutional Net Change",
-          currentValue: isStage4 ? "+1.2%" : "+4.8%",
-          benchmarkValue: "Neutral",
-          source: "SEC Form 13F Quarterly Filings",
-          asOf: filingDate,
-          freshness: "QUARTERLY",
-          significance: "MEDIUM",
-          status: isStage4 ? "NEUTRAL" : "POSITIVE",
-        },
-      ],
-      whatWouldChangeAssessment: "Sustained net insider buying on Form 4 filings would elevate this factor.",
-    },
+    (() => {
+      const smartPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("smart") || p.pillar.toLowerCase().includes("flow"));
+      const isAvailable = Boolean(smartPillar);
+      return {
+        domainId: "smart_money",
+        domainName: "Smart Money Flow",
+        availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
+        status: isAvailable ? (smartPillar?.status === "positive" ? "FAVORABLE" : smartPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED") : "UNAVAILABLE",
+        pointImpact: isAvailable ? Math.round((smartPillar?.score || 0) * 0.15) : 0,
+        importanceLevel: "MEDIUM" as const,
+        observation: isAvailable
+          ? (smartPillar?.plainDetail || "Institutional and insider flow signals evaluated.")
+          : "SEC Form 13F institutional holdings flow unindexed for this security.",
+        modelRule: "Institutional net buying adds positive weighting to setup conviction.",
+        evidence: [],
+        whatWouldChangeAssessment: "Verified Form 4 insider transactions or institutional volume inflows would activate this factor.",
+      };
+    })(),
 
     // Domain 4: Macro Regime
-    {
-      domainId: "macro",
-      domainName: "Macro Regime",
-      availability: "AVAILABLE",
-      status: "FAVORABLE",
-      pointImpact: 15,
-      importanceLevel: "MEDIUM",
-      observation: "Broad market regime is Bullish (Risk-On, VIX < 15.0).",
-      modelRule: "Low volatility macro regime provides supportive market tailwinds (+15 points).",
-      evidence: [
-        {
-          metricName: "CBOE Volatility Index (VIX)",
-          currentValue: "14.21",
-          benchmarkValue: "< 20.0 Normal",
-          source: "FRED API (VIXCLS)",
-          asOf: "Daily Close",
-          freshness: "DAILY",
-          significance: "HIGH",
-          status: "POSITIVE",
-        },
-      ],
-      whatWouldChangeAssessment: "A VIX spike above 25.0 would shift macro tailwinds into a headwind.",
-    },
+    (() => {
+      const macroPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("macro") || p.pillar.toLowerCase().includes("regime"));
+      const isAvailable = Boolean(macroPillar);
+      return {
+        domainId: "macro",
+        domainName: "Macro Regime",
+        availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
+        status: isAvailable ? (macroPillar?.status === "positive" ? "FAVORABLE" : macroPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED") : "UNAVAILABLE",
+        pointImpact: isAvailable ? Math.round((macroPillar?.score || 0) * 0.15) : 0,
+        importanceLevel: "MEDIUM" as const,
+        observation: isAvailable
+          ? (macroPillar?.plainDetail || "Macroeconomic environment and volatility regime evaluated.")
+          : "Macro volatility regime telemetry is unassessed for this session.",
+        modelRule: "Low volatility macro regime provides supportive market tailwinds (+15 points).",
+        evidence: [],
+        whatWouldChangeAssessment: "A shift in systemic volatility or credit spreads would modify macro risk assessment.",
+      };
+    })(),
   ];
 
   // Derive Canonical Assessment State via Pure Engine
@@ -543,7 +507,7 @@ export function generateQuantitativeInsight(
       marketCap: catAsset?.marketCap || "N/A",
       peRatio: catAsset?.fwdPe,
       roic: catAsset?.roic,
-      debtToEquity: catAsset !== undefined ? Number(debtEquityDisplay) : undefined,
+      debtToEquity: undefined,
       vcpStage: isStage4 ? undefined : 3,
       relativeStrengthScore: catAsset?.momentumScore ?? (isTrendAvailable ? (isStage4 ? 45 : 88) : undefined),
       var95Pct: calculatedVar95,

@@ -343,7 +343,7 @@ export function calculateGovernedPositionSize(
   }
 
   const standardDollarRisk = Math.round(context.accountEquity * context.standardRiskBudgetPct);
-  const unclampedShares = isActionable && stopDistanceDollar > 0 ? Math.max(1, Math.floor(standardDollarRisk / stopDistanceDollar)) : 0;
+  const unclampedShares = isActionable && stopDistanceDollar > 0 ? Math.max(0, Math.floor(standardDollarRisk / stopDistanceDollar)) : 0;
 
   // Determine Governor clamp penalties
   let clampPenalty = 0;
@@ -391,11 +391,14 @@ export function calculateGovernedPositionSize(
   const clampFactorPct = -Math.round(finalClampPct * 100);
 
   const recommendedDollarRisk = isActionable ? Math.round(standardDollarRisk * (1 - finalClampPct)) : 0;
-  const recommendedShares = isActionable && stopDistanceDollar > 0 ? Math.max(1, Math.floor(recommendedDollarRisk / stopDistanceDollar)) : 0;
+  const rawShares = isActionable && stopDistanceDollar > 0 ? Math.floor(recommendedDollarRisk / stopDistanceDollar) : 0;
+  const recommendedShares = Math.max(0, rawShares);
 
   let cleanRoomRationale = "";
   if (!isActionable) {
     cleanRoomRationale = setup.reasonSuppressed || "Actionable risk levels suppressed: authentic market discovery required.";
+  } else if (recommendedShares === 0 && isActionable) {
+    cleanRoomRationale = `Position sizing suppressed (0 shares): Allowed risk budget ($${recommendedDollarRisk}) is smaller than the stop distance for 1 share ($${stopDistanceDollar.toFixed(2)}). Risk per share exceeds approved risk allowance.`;
   } else if (clampFactorPct < 0) {
     cleanRoomRationale = `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`;
   } else {

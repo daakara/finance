@@ -216,7 +216,13 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         technicals=technicals,
     )
 
-    is_actionable = plan.get("stop_loss") is not None and plan.get("optimal_entry_max") is not None
+    exec_status = plan.get("execution_status", "WAITING_PULLBACK")
+    # Actionable ONLY when valid execution levels exist AND status is actively confirmed in buy zone
+    is_actionable = (
+        plan.get("stop_loss") is not None
+        and plan.get("optimal_entry_max") is not None
+        and exec_status in ("IN_BUY_ZONE", "READY_TO_BUY")
+    )
     entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
     stop_loss = plan.get("stop_loss")
     target1 = plan.get("take_profit_1")
@@ -257,22 +263,34 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     )
     conf_score = conf_output.get("confluenceScore", 0.0)
 
+    suppressed_reason = None
+    if not is_actionable:
+        if exec_status == "WAITING_PULLBACK":
+            suppressed_reason = "Awaiting technical pullback to optimal entry corridor."
+        elif exec_status == "IN_BUY_ZONE_AWAITING_TRIGGER":
+            suppressed_reason = "In buy corridor; awaiting stabilization or confirmation trigger."
+        elif exec_status == "APPROACHING_TARGET":
+            suppressed_reason = "Price is extended past entry corridor toward target."
+        else:
+            suppressed_reason = plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria")
+
     return {
         "symbol": sym,
         "ticker": sym,
+        "userRole": clean_role,
         "setupName": plan.get("setup_pattern") or "Consolidation Setup",
         "entryPivot": round(entry_pivot, 2) if entry_pivot else None,
         "stopLoss": round(stop_loss, 2) if stop_loss else None,
         "target1": round(target1, 2) if target1 else None,
         "target2": round(target2, 2) if target2 else None,
         "confluenceScore": round(float(conf_score), 1) if conf_score is not None else 0.0,
-        "executionStatus": plan.get("execution_status", "WAITING_PULLBACK"),
+        "executionStatus": exec_status,
         "isActionable": is_actionable,
         "isSuppressed": not is_actionable,
         "entryThesis": plan.get("entry_thesis", ""),
         "invalidationCondition": plan.get("invalidation_condition", ""),
         "stagePhase": plan.get("stage_phase", ""),
-        "reasonSuppressed": None if is_actionable else plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria"),
+        "reasonSuppressed": suppressed_reason,
         "observationDate": obs_date,
     }
 
@@ -772,6 +790,7 @@ def get_asset_analytics(
             "symbol": upper_sym,
             "period": clean_period,
             "interval": clean_interval,
+            "userRole": clean_role,
             "currentPrice": current_price,
             "priceChangePct24h": price_change_pct,
             "candles": candles,

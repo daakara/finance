@@ -194,7 +194,7 @@ function TerminalContent() {
         const knownPrice = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.currentPrice : undefined;
         const knownChange = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.priceChangePct24h : undefined;
 
-        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, knownPrice, knownChange);
+        const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, userRole, knownPrice, knownChange);
         if (isMounted) {
           setData(res);
           setError(null);
@@ -320,6 +320,7 @@ function TerminalContent() {
           ) : (
             /* 🎯 Adaptive Multi-Tier Terminal Engine (Guided · Standard · Advanced) */
             <AdaptiveTerminal
+              key={`${selectedSymbol}_${userRole}`}
               symbol={selectedSymbol}
               companyName={aliasRecommendation?.companyName || selectedSymbol}
               currentPrice={data?.currentPrice ?? (SpotPriceRegistry.get(selectedSymbol)?.price || 0)}

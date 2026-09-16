@@ -1174,6 +1174,7 @@ export async function fetchAssetAnalytics(
   symbol: string,
   period: string = "1y",
   interval: string = "1d",
+  userRole: string = "LONG_TERM",
   overridePrice?: number,
   overrideChangePct?: number
 ): Promise<AnalyticsResponse> {
@@ -1182,7 +1183,8 @@ export async function fetchAssetAnalytics(
   // 1. Fetch live production API with 4000ms timeout
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}`, {
+    const cleanRole = userRole === "DAY_TRADER" ? "DAY_TRADER" : "LONG_TERM";
+    const res = await fetch(`${baseUrl}/analytics/${encodeURIComponent(symbol)}?period=${period}&interval=${interval}&user_role=${cleanRole}`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(4000),
     });

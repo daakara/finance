@@ -63,12 +63,14 @@ export default function AdaptiveTerminal({
 
   const [ownership, setOwnershipState] = useState<OwnershipState>(initialOwnership);
 
-  // Sync ownership if URL parameter updates
+  // Sync / reset ownership when symbol or URL parameter updates
   React.useEffect(() => {
-    if (urlOwnership === "OWNED" || urlOwnership === "NOT_OWNED") {
-      setOwnershipState(urlOwnership as OwnershipState);
-    }
-  }, [urlOwnership]);
+    const freshOwnership: OwnershipState =
+      urlOwnership === "OWNED" || urlOwnership === "NOT_OWNED"
+        ? (urlOwnership as OwnershipState)
+        : "UNKNOWN";
+    setOwnershipState(freshOwnership);
+  }, [symbol, urlOwnership]);
 
   const handleSetOwnership = (newOwnership: OwnershipState) => {
     setOwnershipState(newOwnership);
