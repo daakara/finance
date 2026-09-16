@@ -124,14 +124,21 @@ export function generateQuantitativeInsight(
     profitRisk = optimalExecution.risk_reward_ratio ?? undefined;
   }
 
-  // 3. Bind authentic asset-specific fundamentals & SEC filing dates from Master Catalog (DISC-03, DISC-04)
+  // 3. Bind authentic asset-specific fundamentals (DISC-03, DISC-04)
+  // Strict evidence gating: if backend reports fundamentals unavailable or fallback data, do not present static catalog data as live filings
   const upperSym = symbol.toUpperCase().replace("-USD", "");
   const catAsset = MASTER_ASSET_CATALOG[upperSym];
-  const isHealthAvailable = catAsset !== undefined && catAsset.roic !== undefined;
+  const fundPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("fundamental") || p.pillar.toLowerCase().includes("solvency"));
+  const isBackendFundAvailable = fundPillar ? (fundPillar.status !== "unavailable" && fundPillar.score > 0) : undefined;
+  
+  // Health is available only when authentic backend fundamentals exist or verified catalog entry exists with positive confirmation
+  const isHealthAvailable = isBackendFundAvailable !== undefined
+    ? isBackendFundAvailable
+    : (catAsset !== undefined && catAsset.roic !== undefined && !isFallbackFeed);
 
-  const roicDisplay = isHealthAvailable ? `${catAsset.roic}%` : "N/A";
-  const filingDate = catAsset?.secFilingDate || "Unknown";
-  const piotroskiScore = catAsset?.piotroski ?? 0;
+  const roicDisplay = isHealthAvailable && catAsset?.roic !== undefined ? `${catAsset.roic}%` : (fundPillar?.score ? `${fundPillar.score}/100` : "N/A");
+  const filingDate = isHealthAvailable && catAsset?.secFilingDate ? catAsset.secFilingDate : "Current Tape";
+  const piotroskiScore = catAsset?.piotroski ?? (fundPillar?.score ? Math.round(fundPillar.score / 11) : 0);
 
   // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
@@ -141,10 +148,10 @@ export function generateQuantitativeInsight(
           domainId: "health",
           domainName: "Company Health",
           availability: "AVAILABLE",
-          status: catAsset.roic >= 15 ? "FAVORABLE" : catAsset.roic >= 8 ? "MIXED" : "UNFAVORABLE",
-          pointImpact: catAsset.roic >= 15 ? 20 : catAsset.roic >= 8 ? 10 : -15,
+          status: fundPillar?.status === "positive" || (catAsset && catAsset.roic >= 15) ? "FAVORABLE" : fundPillar?.status === "warning" || (catAsset && catAsset.roic < 8) ? "UNFAVORABLE" : "MIXED",
+          pointImpact: fundPillar?.score ? Math.round(fundPillar.score * 0.20) : (catAsset && catAsset.roic >= 15 ? 20 : 10),
           importanceLevel: "HIGH",
-          observation: `ROIC > 15% (${roicDisplay}) and capital solvency (Piotroski ${piotroskiScore}/9).`,
+          observation: fundPillar?.plainDetail || `ROIC > 15% (${roicDisplay}) and capital solvency (Piotroski ${piotroskiScore}/9).`,
           modelRule: "Sound capital efficiency and verified solvency contribute positive weighting to fundamental score.",
           evidence: [
             {
@@ -173,7 +180,7 @@ export function generateQuantitativeInsight(
           status: "UNAVAILABLE",
           pointImpact: 0,
           importanceLevel: "HIGH",
-          observation: "Official SEC regulatory filings and verified financial statements unavailable for this asset.",
+          observation: fundPillar?.plainDetail || "Official SEC regulatory filings and verified financial statements unavailable for this asset.",
           modelRule: "Fundamental company health requires verified financial statements; zero points awarded when evidence is unavailable.",
           evidence: [],
           whatWouldChangeAssessment: "Publication of audited Form 10-Q or 10-K financial disclosures will unlock fundamental scoring.",
@@ -241,7 +248,12 @@ export function generateQuantitativeInsight(
     // Domain 3: Smart Money Flow
     (() => {
       const smartPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("smart") || p.pillar.toLowerCase().includes("flow"));
-      const isAvailable = Boolean(smartPillar);
+      // Strict availability: pillar must exist, not be 'unavailable', and have substantive non-zero score or explicit positive/warning status
+      const isAvailable = Boolean(
+        smartPillar &&
+        smartPillar.status !== "unavailable" &&
+        (smartPillar.score > 0 || smartPillar.status === "positive" || smartPillar.status === "warning")
+      );
       return {
         domainId: "smart_money",
         domainName: "Smart Money Flow",
@@ -251,7 +263,7 @@ export function generateQuantitativeInsight(
         importanceLevel: "MEDIUM" as const,
         observation: isAvailable
           ? (smartPillar?.plainDetail || "Institutional and insider flow signals evaluated.")
-          : "SEC Form 13F institutional holdings flow unindexed for this security.",
+          : (smartPillar?.plainDetail || "SEC Form 13F institutional holdings flow unindexed for this security."),
         modelRule: "Institutional net buying adds positive weighting to setup conviction.",
         evidence: [],
         whatWouldChangeAssessment: "Verified Form 4 insider transactions or institutional volume inflows would activate this factor.",
@@ -261,7 +273,12 @@ export function generateQuantitativeInsight(
     // Domain 4: Macro Regime
     (() => {
       const macroPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("macro") || p.pillar.toLowerCase().includes("regime"));
-      const isAvailable = Boolean(macroPillar);
+      // Strict availability: pillar must exist, not be 'unavailable', and have substantive non-zero score or explicit positive/warning status
+      const isAvailable = Boolean(
+        macroPillar &&
+        macroPillar.status !== "unavailable" &&
+        (macroPillar.score > 0 || macroPillar.status === "positive" || macroPillar.status === "warning")
+      );
       return {
         domainId: "macro",
         domainName: "Macro Regime",
@@ -271,7 +288,7 @@ export function generateQuantitativeInsight(
         importanceLevel: "MEDIUM" as const,
         observation: isAvailable
           ? (macroPillar?.plainDetail || "Macroeconomic environment and volatility regime evaluated.")
-          : "Macro volatility regime telemetry is unassessed for this session.",
+          : (macroPillar?.plainDetail || "Macro volatility regime telemetry is unassessed for this session."),
         modelRule: "Low volatility macro regime provides supportive market tailwinds (+15 points).",
         evidence: [],
         whatWouldChangeAssessment: "A shift in systemic volatility or credit spreads would modify macro risk assessment.",
@@ -400,12 +417,12 @@ export function generateQuantitativeInsight(
         {
           category: "Smart Money",
           status: (() => {
-            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("institutional"));
-            if (!flowPillar) return "Unavailable";
+            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("smart"));
+            if (!flowPillar || flowPillar.status === "unavailable" || (flowPillar.score === 0 && flowPillar.status === "neutral")) return "Unavailable";
             return flowPillar.status === "positive" ? "Supportive" : flowPillar.status === "warning" ? "Caution" : "Neutral";
           })(),
           description: (() => {
-            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("institutional"));
+            const flowPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("flow") || p.pillar.toLowerCase().includes("smart"));
             return flowPillar?.plainDetail || "Institutional order flow telemetry is unassessed for this session.";
           })(),
           sentiment: "neutral",
@@ -414,7 +431,7 @@ export function generateQuantitativeInsight(
           category: "Market Outlook",
           status: (() => {
             const macroPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("macro") || p.pillar.toLowerCase().includes("regime"));
-            if (!macroPillar) return "Unavailable";
+            if (!macroPillar || macroPillar.status === "unavailable" || (macroPillar.score === 0 && macroPillar.status === "neutral")) return "Unavailable";
             return macroPillar.status === "positive" ? "Supportive" : macroPillar.status === "warning" ? "Caution" : "Neutral";
           })(),
           description: (() => {

@@ -493,7 +493,7 @@ export interface ConfluencePillar {
   label: string;
   plainLabel: string;
   score: number;
-  status: "positive" | "neutral" | "warning";
+  status: "positive" | "neutral" | "warning" | "unavailable";
   detail: string;
   plainDetail: string;
   icon: string;

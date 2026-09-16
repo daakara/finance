@@ -34,6 +34,15 @@ function RadarContent() {
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
 
+  // Synchronize searchQuery when URL search params change while component remains mounted
+  useEffect(() => {
+    const q = searchParams?.get('q') || searchParams?.get('symbol') || '';
+    if (q) {
+      const clean = q.trim().toUpperCase();
+      setSearchQuery((prev) => (prev.trim().toUpperCase() !== clean ? clean : prev));
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     let isMounted = true;
     fetchScreenerGems("all")
@@ -44,7 +53,7 @@ function RadarContent() {
           const modelStr = (gem.expert_model || "").toUpperCase();
           if (modelStr.includes("VCP") || modelStr.includes("MINERVINI")) cat.push("VCP");
           if (modelStr.includes("MAGIC") || modelStr.includes("GARP") || modelStr.includes("VALUE") || modelStr.includes("GREENBLATT") || modelStr.includes("LYNCH") || modelStr.includes("GARDNER")) cat.push("VALUE");
-          if (cat.length === 0 || gem.composite_score >= 85) cat.push("SMART_MONEY");
+          if (modelStr.includes("SMART") || modelStr.includes("INSIDER") || modelStr.includes("13F") || modelStr.includes("FLOW")) cat.push("SMART_MONEY");
 
           const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
           let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
@@ -55,14 +64,16 @@ function RadarContent() {
           else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
           const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : null;
-          const rsVal = typeof gem.rs_rating === 'number' ? gem.rs_rating : (typeof gem.momentum_score === 'number' ? gem.momentum_score : null);
+          // Zero synthetic substitution: momentum_score is NOT an authentic IBD 1-99 RS rating
+          const rsVal = typeof gem.rs_rating === 'number' ? gem.rs_rating : null;
+          const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Consolidation Base'));
 
           return {
             ticker: gem.ticker,
             name: gem.ticker,
             price: Number((gem.current_price || 0).toFixed(2)),
             rsRating: rsVal,
-            vcpStage: executionStatus === 'IN_BUY_ZONE' ? '3T Pivot Breakout' : 'Stage 2 Base',
+            vcpStage: stageStr,
             volumeDryUpPct: dryUp,
             confluenceScore: Math.round(gem.composite_score || 0),
             catalyst: gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.",
@@ -152,17 +163,24 @@ function RadarContent() {
       else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
       else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
-      const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = ['VCP'];
-      if ((data.confluence?.confluenceScore || 0) >= 70) cat.push('SMART_MONEY');
+      const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = [];
+      const patternUpper = (opt?.setup_pattern || "").toUpperCase();
+      if (patternUpper.includes("VCP") || patternUpper.includes("MINERVINI") || patternUpper.includes("BREAKOUT")) cat.push("VCP");
+      const smartPillar = data.confluence?.pillars?.find((p) => p.pillar.toLowerCase().includes("smart") || p.pillar.toLowerCase().includes("flow"));
+      if (smartPillar && smartPillar.status === "positive") cat.push("SMART_MONEY");
+      const fundPillar = data.confluence?.pillars?.find((p) => p.pillar.toLowerCase().includes("fundamental") || p.pillar.toLowerCase().includes("solvency"));
+      if (fundPillar && fundPillar.status === "positive") cat.push("VALUE");
 
-      const rsVal = data.factorScores?.momentumScore ?? null;
+      // RS rating: on-demand feed does not compute 1-99 RS rating against 4000-stock universe
+      const rsVal: number | null = null;
+      const stageStr = opt?.setup_pattern || (opt?.stage_phase ? `Stage ${opt.stage_phase} Base` : 'Unclassified Base');
 
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
         price: Number(data.currentPrice.toFixed(2)),
         rsRating: rsVal,
-        vcpStage: opt?.setup_pattern || 'Stage 2 Continuation',
+        vcpStage: stageStr,
         volumeDryUpPct: null,
         confluenceScore: Math.round(data.confluence?.confluenceScore || 50),
         catalyst: opt?.entry_thesis || "On-demand quantitative exchange tape discovery.",

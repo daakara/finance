@@ -21,6 +21,7 @@ import {
 } from '../../lib/api';
 import { formatOrderPlanString, copyOrderPlanToClipboard } from '../../lib/orderClipboard';
 import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifecycle';
+import { isStatusActionable } from '../../types/decisionContract';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -114,7 +115,7 @@ function SetupsContent() {
     const existing = availableSetups.find((s) => s.ticker === upper);
     if (existing) {
       setSelectedSetup(existing);
-      const isAct = Boolean(existing.isActionable && existing.entryPivot && existing.entryPivot > 0 && existing.stopLoss && existing.stopLoss > 0);
+      const isAct = Boolean(existing.isActionable && isStatusActionable(existing.executionStatus) && existing.entryPivot && existing.entryPivot > 0 && existing.stopLoss && existing.stopLoss > 0);
       setLoadState(isAct ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
       return;
     }
@@ -125,7 +126,7 @@ function SetupsContent() {
         if (latestRequestRef.current !== upper) return;
         if (setup) {
           setSelectedSetup(setup);
-          const isAct = Boolean(setup.isActionable && setup.entryPivot && setup.entryPivot > 0 && setup.stopLoss && setup.stopLoss > 0);
+          const isAct = Boolean(setup.isActionable && isStatusActionable(setup.executionStatus) && setup.entryPivot && setup.entryPivot > 0 && setup.stopLoss && setup.stopLoss > 0);
           setLoadState(isAct ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
         } else {
           // Check if asset exists on analytics tape
@@ -179,7 +180,7 @@ function SetupsContent() {
               }
 
               // Genuine setup exists
-              const isActionable = Boolean(opt.is_actionable && (opt.execution_status === 'READY_TO_BUY' || opt.execution_status === 'IN_BUY_ZONE'));
+              const isActionable = Boolean(opt.is_actionable && isStatusActionable(opt.execution_status));
               const loaded: TradeSetupSpec = {
                 ticker: upper,
                 setupName: opt.setup_pattern,
@@ -224,7 +225,7 @@ function SetupsContent() {
     router.replace('/setups');
   };
 
-  const actionableCount = availableSetups.filter((s) => s.isActionable).length;
+  const actionableCount = availableSetups.filter((s) => s.isActionable && isStatusActionable(s.executionStatus)).length;
 
   const context = getTraderContextFromUnifiedCockpit(undefined, riskTelemetry);
   const effectiveSetup: TradeSetupSpec = selectedSetup || {
@@ -242,6 +243,7 @@ function SetupsContent() {
   const sizing = calculateGovernedPositionSize(effectiveSetup, context);
   const isActionable = Boolean(
     effectiveSetup.isActionable &&
+    isStatusActionable(effectiveSetup.executionStatus) &&
     effectiveSetup.entryPivot &&
     effectiveSetup.entryPivot > 0 &&
     effectiveSetup.stopLoss &&

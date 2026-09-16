@@ -10,6 +10,7 @@
 
 import { getUnifiedCockpitState } from './unifiedCockpitStore';
 import { loadPortfolioPositions, calculatePortfolioSummary } from '../portfolio';
+import { isStatusActionable } from '../../types/decisionContract';
 
 export interface TraderContext {
   accountEquity: number | null;
@@ -97,14 +98,7 @@ export function getTraderContextFromUnifiedCockpit(
         accountEquity = summary.totalEquity;
       }
     }
-    // 3. Fallback to localStorage ONLY if no API portfolio data exists.
-    // Editing browser storage cannot override authoritative API risk inputs.
-    if (!accountEquity) {
-      const savedSize = localStorage.getItem("FINANCE_USER_ACCOUNT_SIZE");
-      if (savedSize && !isNaN(Number(savedSize)) && Number(savedSize) > 0) {
-        accountEquity = Number(savedSize);
-      }
-    }
+    // Zero localStorage fallback: Editing browser storage cannot fabricate financial risk boundaries.
   }
 
   // Never substitute household liquid reserves (cockpit.runway.liquidReserves) for trading account equity.
@@ -112,48 +106,14 @@ export function getTraderContextFromUnifiedCockpit(
   let consecutiveLossStreak: number | null = null;
   let dailyDrawdownPct: number | null = null;
 
-  // 1. Authoritative server telemetry from /api/v1/journal/telemetry takes absolute precedence
+  // Authoritative server telemetry from /api/v1/journal/telemetry takes absolute precedence.
+  // Zero localStorage fallback: If telemetry is missing, sizing is marked strictly unavailable.
   if (serverTelemetry) {
     if (serverTelemetry.consecutiveLossStreak !== undefined && serverTelemetry.consecutiveLossStreak !== null) {
       consecutiveLossStreak = Math.max(0, serverTelemetry.consecutiveLossStreak);
     }
     if (serverTelemetry.dailyDrawdownPct !== undefined && serverTelemetry.dailyDrawdownPct !== null) {
       dailyDrawdownPct = Math.max(0, serverTelemetry.dailyDrawdownPct);
-    }
-  }
-
-  // 2. Client-side storage fallback only when server telemetry is absent
-  if (typeof window !== "undefined") {
-    if (consecutiveLossStreak === null) {
-      const savedLoss = localStorage.getItem("FINANCE_JOURNAL_LOSS_STREAK");
-      if (savedLoss !== null && savedLoss.trim() !== "" && !isNaN(Number(savedLoss))) {
-        consecutiveLossStreak = Math.max(0, parseInt(savedLoss, 10));
-      } else {
-        try {
-          const rawLogs = localStorage.getItem("FINANCE_JOURNAL_LOGS");
-          if (rawLogs) {
-            const parsed = JSON.parse(rawLogs);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              let streak = 0;
-              for (let i = parsed.length - 1; i >= 0; i--) {
-                if (parsed[i].rAchieved < 0) {
-                  streak++;
-                } else {
-                  break;
-                }
-              }
-              consecutiveLossStreak = streak;
-            }
-          }
-        } catch {}
-      }
-    }
-
-    if (dailyDrawdownPct === null) {
-      const savedDd = localStorage.getItem("FINANCE_DAILY_DRAWDOWN_PCT");
-      if (savedDd !== null && savedDd.trim() !== "" && !isNaN(Number(savedDd))) {
-        dailyDrawdownPct = Math.max(0, parseFloat(savedDd));
-      }
     }
   }
 
@@ -215,12 +175,13 @@ export interface TradeSetupSpec {
   setupName: string;
   entryPivot: number;
   stopLoss: number;
-  target1: number;
-  target2: number;
+  target1?: number;
+  target2?: number;
   confluenceScore: number;
   isActionable?: boolean;
   reasonSuppressed?: string | null;
   executionStatus?: string;
+  decisionState?: string;
   entryThesis?: string;
   invalidationCondition?: string;
   stagePhase?: string;
@@ -234,6 +195,7 @@ export interface GovernorSizingOutput {
   stopDistancePct: number;
   unclampedDollarRisk: number;
   unclampedShares: number;
+  rawShares?: number;
   recommendedDollarRisk: number;
   recommendedShares: number;
   clampFactorPct: number; // Negative or zero (e.g. -47%)
@@ -294,8 +256,10 @@ export function calculateGovernedPositionSize(
   const target1Num = (setup && typeof setup.target1 === 'number' && !isNaN(setup.target1)) ? setup.target1 : 0;
   const target2Num = (setup && typeof setup.target2 === 'number' && !isNaN(setup.target2)) ? setup.target2 : 0;
 
+  const isStatusAllowed = setup.executionStatus ? isStatusActionable(setup.executionStatus) : true;
   const isActionable = Boolean(
     setup.isActionable !== false &&
+    isStatusAllowed &&
     entryPivotNum > 0 &&
     stopLossNum > 0 &&
     entryPivotNum > stopLossNum

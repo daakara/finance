@@ -146,7 +146,7 @@ function TerminalContent() {
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
-      const cacheKey = `${selectedSymbol}_${interval}`;
+      const cacheKey = `${selectedSymbol}_${interval}_${userRole}`;
       const cached = cacheRef.current.get(cacheKey);
 
       // Instant optimistic display from memory cache (<10ms)
@@ -225,7 +225,7 @@ function TerminalContent() {
       isMounted = false;
       window.removeEventListener("finance:cache-purge", handlePurge);
     };
-  }, [selectedSymbol, interval]);
+  }, [selectedSymbol, interval, userRole]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200">

@@ -1,4 +1,4 @@
-﻿import assert from "node:assert";
+import assert from "node:assert";
 import {
   calculateGovernedPositionSize,
   TraderContext,
@@ -132,8 +132,53 @@ const baseContext: TraderContext = {
 
   const res = calculateGovernedPositionSize(invertedSetup, baseContext);
   assert.strictEqual(res.recommendedShares, 0, "Inverted stop must yield 0 shares");
-  assert.strictEqual(res.recommendedDollarRisk, 0, "Inverted stop must yield  risk");
+  assert.strictEqual(res.recommendedDollarRisk, 0, "Inverted stop must yield 0 risk");
   console.log("✓ Test 5 Passed: Inverted stop/entry safely rejects sizing");
 }
 
-console.log("ALL 5 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");
+// Test 6: Non-actionable execution status (WAITING_PULLBACK) -> 0 shares even with valid levels
+{
+  const waitingSetup: TradeSetupSpec = {
+    ticker: "TEST_WAITING",
+    setupName: "Waiting Pullback",
+    entryPivot: 100,
+    stopLoss: 90,
+    target1: 120,
+    confluenceScore: 85,
+    isActionable: true,
+    executionStatus: "WAITING_PULLBACK",
+  };
+
+  const res = calculateGovernedPositionSize(waitingSetup, baseContext);
+  assert.strictEqual(res.recommendedShares, 0, "Waiting pullback execution status must yield 0 shares");
+  assert.strictEqual(res.recommendedDollarRisk, 0, "Waiting pullback must yield 0 dollar risk");
+  console.log("✓ Test 6 Passed: Non-actionable execution status safely suppresses sizing");
+}
+
+// Test 7: Missing context telemetry -> isAvailable: false and 0 shares
+{
+  const unavailableContext: TraderContext = {
+    ...baseContext,
+    accountEquity: null,
+    isAvailable: false,
+    unavailableReason: "Missing required risk inputs",
+  };
+
+  const setup: TradeSetupSpec = {
+    ticker: "TEST_NO_CTX",
+    setupName: "Setup With No Context",
+    entryPivot: 100,
+    stopLoss: 90,
+    confluenceScore: 85,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+  };
+
+  const res = calculateGovernedPositionSize(setup, unavailableContext);
+  assert.strictEqual(res.isAvailable, false, "Must return isAvailable: false when context missing");
+  assert.strictEqual(res.recommendedShares, 0, "Must yield 0 shares when risk telemetry unavailable");
+  assert.ok(res.cleanRoomRationale.includes("Missing required risk input"), "Rationale must reflect missing inputs");
+  console.log("✓ Test 7 Passed: Missing risk telemetry strictly disables sizing without fallback");
+}
+
+console.log("ALL 7 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");

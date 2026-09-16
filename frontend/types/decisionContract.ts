@@ -41,6 +41,24 @@ export type UserRole = 'DAY_TRADER' | 'SWING_TRADER' | 'LONG_TERM';
 
 export type DataCompleteness = 'FULL' | 'PARTIAL' | 'INSUFFICIENT' | 'DEGRADED';
 
+export enum DecisionState {
+  UNVERIFIED = 'UNVERIFIED',
+  INSUFFICIENT_DATA = 'INSUFFICIENT_DATA',
+  STALE_DATA = 'STALE_DATA',
+  EVIDENCE_INCOMPLETE = 'EVIDENCE_INCOMPLETE',
+  VALID_SETUP = 'VALID_SETUP',
+  ACTIONABLE_SETUP = 'ACTIONABLE_SETUP',
+}
+
+export function isDecisionActionable(
+  decisionState: DecisionState | string | null | undefined,
+  executionStatus: string | null | undefined
+): boolean {
+  if (!isStatusActionable(executionStatus)) return false;
+  if (!decisionState) return true; // Backward compatibility if backend omitted decisionState
+  return decisionState === DecisionState.ACTIONABLE_SETUP || decisionState === 'ACTIONABLE_SETUP';
+}
+
 export interface ExecutionLevels {
   entryMin?: number;
   entryMax?: number;
@@ -59,6 +77,7 @@ export interface DecisionVerdict {
   userRole: UserRole;
   isActionable: boolean;
   canSizeTrade: boolean;
+  decisionState: DecisionState | string;
   executionStatus: ExecutionStatus;
   verdictLabel: string;
   disqualificationReason: string | null;
@@ -67,3 +86,4 @@ export interface DecisionVerdict {
   levels: ExecutionLevels;
   dataCompleteness: DataCompleteness;
 }
+
