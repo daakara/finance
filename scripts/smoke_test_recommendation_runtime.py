@@ -51,15 +51,19 @@ def run_smoke():
         stop = s.get("stopLoss")
         is_supp = s.get("isSuppressed")
 
+        dec_state = s.get("decisionState")
+        reason = s.get("reasonSuppressed")
+
         if is_act:
             assert status in ACTIONABLE_EXECUTION_STATUSES, f"Actionable setup {sym} has non-actionable status: {status}"
             assert entry is not None and entry > 0, f"Actionable setup {sym} missing valid entryPivot: {entry}"
             assert stop is not None and stop > 0, f"Actionable setup {sym} missing valid stopLoss: {stop}"
             assert is_supp is False, f"Actionable setup {sym} cannot be marked suppressed"
+            assert dec_state == "ACTIONABLE_SETUP", f"Actionable setup {sym} must have ACTIONABLE_SETUP decision state, got: {dec_state}"
         else:
             assert is_supp is True, f"Non-actionable setup {sym} must be marked suppressed"
-            assert (status not in ACTIONABLE_EXECUTION_STATUSES) or (entry is None or stop is None), \
-                f"Non-actionable setup {sym} has status {status} and entry={entry}, stop={stop}"
+            assert dec_state != "ACTIONABLE_SETUP", f"Suppressed setup {sym} cannot have ACTIONABLE_SETUP state, got: {dec_state}"
+            assert reason is not None and len(str(reason)) > 0, f"Suppressed setup {sym} must state reason for suppression"
 
     actionable_count = sum(1 for s in setups if s.get("isActionable"))
     suppressed_count = sum(1 for s in setups if not s.get("isActionable"))

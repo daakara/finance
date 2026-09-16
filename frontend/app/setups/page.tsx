@@ -52,8 +52,8 @@ function SetupsContent() {
   const [userRole, setUserRole] = useState<'DAY_TRADER' | 'LONG_TERM'>('LONG_TERM');
   const [copyStatus, setCopyStatus] = useState<'IDLE' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [copyErrorMessage, setCopyErrorMessage] = useState<string | null>(null);
-  const latestRequestRef = useRef<string | null>(null);
-  const latestCatalogRoleRef = useRef<string>(userRole);
+  const catalogSeqRef = useRef<number>(0);
+  const requestSeqRef = useRef<number>(0);
 
   // Sync userRole from localStorage and custom events
   useEffect(() => {
@@ -80,20 +80,20 @@ function SetupsContent() {
       .catch((err) => console.warn("Failed to load user risk telemetry:", err));
   }, []);
 
-  // 2. Initial load of all available setups from API
+  // 2. Initial load of all available setups from API with monotonic sequence guard
   const loadAvailableSetups = useCallback(() => {
     setBrowseError(null);
     const requestedRole = userRole;
-    latestCatalogRoleRef.current = requestedRole;
+    const currentCatalogSeq = ++catalogSeqRef.current;
     // Clear stale catalog immediately so fast-path does not serve cross-horizon setups
     setAvailableSetups([]);
     fetchTacticalSetups(undefined, requestedRole)
       .then((setups) => {
-        if (latestCatalogRoleRef.current !== requestedRole) return;
+        if (catalogSeqRef.current !== currentCatalogSeq) return;
         setAvailableSetups(setups);
       })
       .catch((err) => {
-        if (latestCatalogRoleRef.current !== requestedRole) return;
+        if (catalogSeqRef.current !== currentCatalogSeq) return;
         console.warn("Error fetching available setups:", err);
         setBrowseError(err?.message || "Failed to load tactical setups catalog from API.");
       });
@@ -103,19 +103,19 @@ function SetupsContent() {
     loadAvailableSetups();
   }, [loadAvailableSetups]);
 
-  // 3. Synchronize or fetch setup for requested tickerParam
+  // 3. Synchronize or fetch setup for requested tickerParam with monotonic request guard & abort cancellation
   useEffect(() => {
+    const currentRequestSeq = ++requestSeqRef.current;
+    const controller = new AbortController();
+
     if (!tickerParam) {
-      latestRequestRef.current = null;
       setSelectedSetup(null);
       setLoadState('BROWSE_ALL');
       setErrorMessage(null);
-      return;
+      return () => controller.abort();
     }
 
     const upper = tickerParam.trim().toUpperCase();
-    const requestKey = `${upper}_${userRole}`;
-    latestRequestRef.current = requestKey;
     setLoadState('LOADING');
     setErrorMessage(null);
 
@@ -130,13 +130,13 @@ function SetupsContent() {
         existing.stopLoss && existing.stopLoss > 0
       );
       setLoadState(isAct ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
-      return;
+      return () => controller.abort();
     }
 
     // Authoritative API fetch for requested asset setup
     fetchTacticalSetupForTicker(upper, userRole)
       .then((setup) => {
-        if (latestRequestRef.current !== requestKey) return;
+        if (requestSeqRef.current !== currentRequestSeq) return;
         if (setup) {
           setSelectedSetup(setup);
           const isAct = Boolean(
@@ -151,10 +151,10 @@ function SetupsContent() {
           const baseUrl = getApiBaseUrl();
           fetch(`${baseUrl}/analytics/${encodeURIComponent(upper)}?user_role=${encodeURIComponent(userRole)}`, {
             headers: ARX_API_HEADERS,
-            signal: AbortSignal.timeout(6000),
+            signal: controller.signal,
           })
             .then(async (res) => {
-              if (latestRequestRef.current !== requestKey) return;
+              if (requestSeqRef.current !== currentRequestSeq) return;
               if (res.status === 404) {
                 setLoadState('UNSUPPORTED_ASSET');
                 setUnsupportedError(`No active tactical setup on record for ${upper} (unrecognized on exchange tape or zero trade records).`);
@@ -172,7 +172,7 @@ function SetupsContent() {
                 return;
               }
               const data = await res.json();
-              if (latestRequestRef.current !== requestKey || !data) return;
+              if (requestSeqRef.current !== currentRequestSeq || !data) return;
 
               const opt = data.optimalExecution;
               // If asset exists but no setup meets criteria, report honestly (NO_QUALIFYING_SETUP)
@@ -199,8 +199,8 @@ function SetupsContent() {
                 return;
               }
 
-              // Genuine setup exists
-              const decisionState = data.decisionTrace?.decisionState || (opt.is_actionable ? "ACTIONABLE_SETUP" : "VALID_SETUP");
+              // Genuine setup exists - strictly gate on decisionTrace (zero fallback to ACTIONABLE_SETUP if trace is absent)
+              const decisionState = data.decisionTrace?.decisionState || "EVIDENCE_INCOMPLETE";
               const isActionable = Boolean(
                 isDecisionActionable(decisionState, opt.execution_status) &&
                 opt.is_actionable
@@ -216,7 +216,9 @@ function SetupsContent() {
                 confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
                 decisionState,
                 isActionable,
-                reasonSuppressed: isActionable ? null : (data.decisionTrace?.disqualificationReason || opt.entry_thesis || "Technical structure awaiting trigger confirmation."),
+                reasonSuppressed: isActionable
+                  ? null
+                  : (data.decisionTrace?.disqualificationReason || opt.entry_thesis || "Decision evidence incomplete or awaiting trigger confirmation."),
                 executionStatus: opt.execution_status || "WAITING_PULLBACK",
                 entryThesis: opt.entry_thesis || "",
                 invalidationCondition: opt.invalidation_condition || "",
@@ -226,17 +228,22 @@ function SetupsContent() {
               setLoadState(loaded.isActionable ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
             })
             .catch((err) => {
-              if (latestRequestRef.current !== requestKey) return;
+              if (requestSeqRef.current !== currentRequestSeq) return;
+              if (err?.name === 'AbortError') return;
               setLoadState('REQUEST_FAILURE');
               setErrorMessage(`Unable to complete tactical analysis for ${upper}: ${err.message || 'Network timeout'}.`);
             });
         }
       })
       .catch((err) => {
-        if (latestRequestRef.current !== requestKey) return;
+        if (requestSeqRef.current !== currentRequestSeq) return;
         setLoadState('REQUEST_FAILURE');
         setErrorMessage(`Tactical analysis request failed for ${upper}: ${err.message || 'Network error'}.`);
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [tickerParam, availableSetups, userRole]);
 
   const handleSelectSetup = (setup: TradeSetupSpec) => {

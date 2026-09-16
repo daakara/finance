@@ -185,6 +185,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         return {
             "symbol": sym,
             "ticker": sym,
+            "userRole": clean_role,
             "setupName": "Stale Market Tape",
             "entryPivot": None,
             "stopLoss": None,
@@ -192,6 +193,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
             "target2": None,
             "confluenceScore": 0.0,
             "executionStatus": "STALE_MARKET_DATA",
+            "decisionState": DecisionState.STALE_DATA.value,
             "isActionable": False,
             "isSuppressed": True,
             "entryThesis": f"Market data is dated ({obs_date}) and live refresh failed. Dependent trade actions suppressed.",
@@ -273,26 +275,35 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
 
     stage = plan.get("stage_phase")
     rr = plan.get("risk_reward_ratio")
-    is_in_buy_zone = exec_status == "IN_BUY_ZONE"
+    is_in_buy_zone = exec_status in ("IN_BUY_ZONE", "READY_TO_BUY")
     is_confirmed = exec_status in ACTIONABLE_EXECUTION_STATUSES
     freshness_status = "STALE_HISTORICAL" if is_stale else ("LIVE" if len(db_candles) >= 50 else "INSUFFICIENT_HISTORY")
 
-    # Actionable ONLY when valid execution levels exist AND status is actively confirmed in buy zone
+    # Authoritative DecisionHierarchyEngine resolution: guarantees Trade Plan and Analysis agree on eligibility
+    dec_state = DecisionHierarchyEngine.resolve_decision_state(
+        symbol=sym,
+        current_price=cur_price,
+        candle_count=len(db_candles),
+        freshness_status=freshness_status,
+        has_fundamentals=has_fundamentals,
+        confluence_score=float(conf_score),
+        stage_phase=stage,
+        is_in_buy_zone=is_in_buy_zone,
+        risk_reward_ratio=rr,
+        is_cataloged=True,
+        is_confirmed=is_confirmed,
+    )
+
+    decision_state = dec_state.get("state", DecisionState.VALID_SETUP.value)
     is_actionable = (
-        exec_status in ACTIONABLE_EXECUTION_STATUSES
+        bool(dec_state.get("isActionable"))
+        and exec_status in ACTIONABLE_EXECUTION_STATUSES
         and stop_loss is not None
         and plan.get("optimal_entry_max") is not None
     )
 
-    if is_stale:
-        decision_state = DecisionState.STALE_DATA.value
-    elif is_actionable:
-        decision_state = DecisionState.ACTIONABLE_SETUP.value
-    else:
-        decision_state = DecisionState.VALID_SETUP.value
-
-    disqualification_reason = None
-    if not is_actionable:
+    disqualification_reason = dec_state.get("disqualificationReason")
+    if not disqualification_reason and not is_actionable:
         if exec_status == "WAITING_PULLBACK":
             disqualification_reason = "Awaiting technical pullback to optimal entry corridor."
         elif exec_status == "IN_BUY_ZONE_AWAITING_TRIGGER":
