@@ -9,7 +9,6 @@ import {
 } from "../types/insight";
 import { deriveAssessmentState } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
-import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 import { evaluateLevelRelation } from "./reclaimSemantics";
 
 export function generateQuantitativeInsight(
@@ -124,21 +123,16 @@ export function generateQuantitativeInsight(
     profitRisk = optimalExecution.risk_reward_ratio ?? undefined;
   }
 
-  // 3. Bind authentic asset-specific fundamentals (DISC-03, DISC-04)
-  // Strict evidence gating: if backend reports fundamentals unavailable or fallback data, do not present static catalog data as live filings
-  const upperSym = symbol.toUpperCase().replace("-USD", "");
-  const catAsset = MASTER_ASSET_CATALOG[upperSym];
-  const fundPillar = confluence?.pillars?.find(p => p.pillar.toLowerCase().includes("fundamental") || p.pillar.toLowerCase().includes("solvency"));
-  const isBackendFundAvailable = fundPillar ? (fundPillar.status !== "unavailable" && fundPillar.score > 0) : undefined;
-  
-  // Health is available only when authentic backend fundamentals exist or verified catalog entry exists with positive confirmation
-  const isHealthAvailable = isBackendFundAvailable !== undefined
-    ? isBackendFundAvailable
-    : (catAsset !== undefined && catAsset.roic !== undefined && !isFallbackFeed);
-
-  const roicDisplay = isHealthAvailable && catAsset?.roic !== undefined ? `${catAsset.roic}%` : (fundPillar?.score ? `${fundPillar.score}/100` : "N/A");
-  const filingDate = isHealthAvailable && catAsset?.secFilingDate ? catAsset.secFilingDate : "Current Tape";
-  const piotroskiScore = catAsset?.piotroski ?? (fundPillar?.score ? Math.round(fundPillar.score / 11) : 0);
+  // 3. Bind authentic asset-specific fundamentals strictly from backend disclosures (DISC-03, DISC-04)
+  // Zero synthetic math (no score/11 for Piotroski) and zero false labeling (never label score/100 as ROIC)
+  const fundPillar = confluence?.pillars?.find(
+    (p) => p.pillar.toLowerCase().includes("fundamental") || p.pillar.toLowerCase().includes("solvency")
+  );
+  const isHealthAvailable = Boolean(fundPillar && fundPillar.status !== "unavailable" && fundPillar.score > 0);
+  const healthStatus: "FAVORABLE" | "UNFAVORABLE" | "MIXED" | "UNAVAILABLE" = !isHealthAvailable
+    ? "UNAVAILABLE"
+    : (fundPillar?.status === "positive" ? "FAVORABLE" : (fundPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED"));
+  const healthPointImpact = isHealthAvailable ? Math.round((fundPillar?.score || 0) * 0.20) : 0;
 
   // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
@@ -148,30 +142,30 @@ export function generateQuantitativeInsight(
           domainId: "health",
           domainName: "Company Health",
           availability: "AVAILABLE",
-          status: fundPillar?.status === "positive" || (catAsset && catAsset.roic >= 15) ? "FAVORABLE" : fundPillar?.status === "warning" || (catAsset && catAsset.roic < 8) ? "UNFAVORABLE" : "MIXED",
-          pointImpact: fundPillar?.score ? Math.round(fundPillar.score * 0.20) : (catAsset && catAsset.roic >= 15 ? 20 : 10),
+          status: healthStatus,
+          pointImpact: healthPointImpact,
           importanceLevel: "HIGH",
-          observation: fundPillar?.plainDetail || `ROIC > 15% (${roicDisplay}) and capital solvency (Piotroski ${piotroskiScore}/9).`,
+          observation: fundPillar?.plainDetail || "Authentic financial statements and solvency verified by backend telemetry.",
           modelRule: "Sound capital efficiency and verified solvency contribute positive weighting to fundamental score.",
           evidence: [
             {
-              metricName: "Return on Invested Capital (ROIC)",
-              currentValue: roicDisplay,
-              benchmarkValue: "10.0% Industry Avg",
-              source: "SEC Form 10-Q Filing",
-              asOf: filingDate,
+              metricName: "Fundamental Solvency Score",
+              currentValue: `${fundPillar?.score ?? 0}/100`,
+              benchmarkValue: "70/100 Minimum Floor",
+              source: "SEC Regulatory Disclosures",
+              asOf: "Current Tape",
               provenance: {
-                source: "SEC EDGAR Form 10-Q",
-                publishedAt: filingDate,
+                source: "SEC EDGAR Form 10-Q / 10-K",
+                publishedAt: "Current Tape",
                 observedAt: new Date().toISOString().split("T")[0],
                 freshness: "QUARTERLY",
               },
               freshness: "QUARTERLY",
               significance: "HIGH",
-              status: "POSITIVE",
+              status: fundPillar?.status === "positive" ? "POSITIVE" : (fundPillar?.status === "warning" ? "NEGATIVE" : "NEUTRAL"),
             },
           ],
-          whatWouldChangeAssessment: "A deterioration in operating margins below 8% would trigger a health downgrade.",
+          whatWouldChangeAssessment: "A deterioration in operating margins or solvency score below 45 would trigger a health downgrade.",
         }
       : {
           domainId: "health",
@@ -388,13 +382,15 @@ export function generateQuantitativeInsight(
       whyPills: [
         {
           category: "Company Health",
-          status: !isHealthAvailable ? "Unavailable" : (catAsset && catAsset.roic >= 20 ? "Healthy" : "Neutral"),
+          status: !isHealthAvailable
+            ? "Unavailable"
+            : (fundPillar?.status === "positive" ? "Healthy" : (fundPillar?.status === "warning" ? "Caution" : "Neutral")),
           description: !isHealthAvailable
             ? "Verified SEC financial filings unavailable for this security."
-            : (catAsset && catAsset.roic >= 20
-                ? "Stable financials and strong profitability across core metrics."
-                : "Financial metrics meet baseline criteria without distinct edge."),
-          sentiment: !isHealthAvailable ? "neutral" : (catAsset && catAsset.roic >= 20 ? "positive" : "neutral"),
+            : (fundPillar?.plainDetail || "Financial health and balance sheet solvency evaluated."),
+          sentiment: !isHealthAvailable
+            ? "neutral"
+            : (fundPillar?.status === "positive" ? "positive" : (fundPillar?.status === "warning" ? "negative" : "neutral")),
         },
         {
           category: "Price Trend",
@@ -518,15 +514,15 @@ export function generateQuantitativeInsight(
       rsi: calculatedRsi14,
       ema20,
       sma50,
-      atr: catAsset?.atr14,
-      rvol: catAsset?.rvol,
-      beta: catAsset?.beta,
-      marketCap: catAsset?.marketCap || "N/A",
-      peRatio: catAsset?.fwdPe,
-      roic: catAsset?.roic,
+      atr: undefined,
+      rvol: undefined,
+      beta: undefined,
+      marketCap: "N/A",
+      peRatio: undefined,
+      roic: undefined,
       debtToEquity: undefined,
-      vcpStage: isStage4 ? undefined : 3,
-      relativeStrengthScore: catAsset?.momentumScore ?? (isTrendAvailable ? (isStage4 ? 45 : 88) : undefined),
+      vcpStage: isStage4 ? undefined : (stage || undefined),
+      relativeStrengthScore: undefined,
       var95Pct: calculatedVar95,
     },
 

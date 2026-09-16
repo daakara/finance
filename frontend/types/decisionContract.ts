@@ -55,7 +55,7 @@ export function isDecisionActionable(
   executionStatus: string | null | undefined
 ): boolean {
   if (!isStatusActionable(executionStatus)) return false;
-  if (!decisionState) return true; // Backward compatibility if backend omitted decisionState
+  // Strict fail-closed: must be explicitly ACTIONABLE_SETUP. Missing or undefined decisionState is rejected.
   return decisionState === DecisionState.ACTIONABLE_SETUP || decisionState === 'ACTIONABLE_SETUP';
 }
 

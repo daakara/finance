@@ -21,7 +21,7 @@ import {
 } from '../../lib/api';
 import { formatOrderPlanString, copyOrderPlanToClipboard } from '../../lib/orderClipboard';
 import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifecycle';
-import { isStatusActionable } from '../../types/decisionContract';
+import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -30,29 +30,30 @@ function formatPrice(val: number | null | undefined, prefix = "$"): string {
   return `${prefix}${val.toFixed(2)}`;
 }
 
-function formatPct(val: number | null | undefined, suffix = "%"): string {
+function formatPct(val: number | null | undefined): string {
   if (val === null || val === undefined || isNaN(val)) return "--";
-  return `${val.toFixed(2)}${suffix}`;
+  return `${val >= 0 ? "+" : ""}${val.toFixed(1)}%`;
 }
 
 function SetupsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tickerParam = searchParams.get('symbol') || searchParams.get('ticker');
+  const tickerParam = searchParams.get('ticker') || searchParams.get('symbol') || null;
 
   const [availableSetups, setAvailableSetups] = useState<TradeSetupSpec[]>([]);
   const [selectedSetup, setSelectedSetup] = useState<TradeSetupSpec | null>(null);
-  const [showMobileCatalog, setShowMobileCatalog] = useState(false);
   const [riskTelemetry, setRiskTelemetry] = useState<UserRiskTelemetry | null>(null);
   const [loadState, setLoadState] = useState<SetupLoadState>('LOADING');
-  const [unsupportedError, setUnsupportedError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [unsupportedError, setUnsupportedError] = useState<string | null>(null);
+  const [showMobileCatalog, setShowMobileCatalog] = useState(false);
   const [browseError, setBrowseError] = useState<string | null>(null);
   const [executionMode, setExecutionMode] = useState<'STANDARD' | 'GUIDED' | 'QUANT'>('GUIDED');
   const [userRole, setUserRole] = useState<'DAY_TRADER' | 'LONG_TERM'>('LONG_TERM');
   const [copyStatus, setCopyStatus] = useState<'IDLE' | 'SUCCESS' | 'FAILED'>('IDLE');
   const [copyErrorMessage, setCopyErrorMessage] = useState<string | null>(null);
   const latestRequestRef = useRef<string | null>(null);
+  const latestCatalogRoleRef = useRef<string>(userRole);
 
   // Sync userRole from localStorage and custom events
   useEffect(() => {
@@ -82,11 +83,17 @@ function SetupsContent() {
   // 2. Initial load of all available setups from API
   const loadAvailableSetups = useCallback(() => {
     setBrowseError(null);
-    fetchTacticalSetups(undefined, userRole)
+    const requestedRole = userRole;
+    latestCatalogRoleRef.current = requestedRole;
+    // Clear stale catalog immediately so fast-path does not serve cross-horizon setups
+    setAvailableSetups([]);
+    fetchTacticalSetups(undefined, requestedRole)
       .then((setups) => {
+        if (latestCatalogRoleRef.current !== requestedRole) return;
         setAvailableSetups(setups);
       })
       .catch((err) => {
+        if (latestCatalogRoleRef.current !== requestedRole) return;
         console.warn("Error fetching available setups:", err);
         setBrowseError(err?.message || "Failed to load tactical setups catalog from API.");
       });
@@ -107,15 +114,21 @@ function SetupsContent() {
     }
 
     const upper = tickerParam.trim().toUpperCase();
-    latestRequestRef.current = upper;
+    const requestKey = `${upper}_${userRole}`;
+    latestRequestRef.current = requestKey;
     setLoadState('LOADING');
     setErrorMessage(null);
 
-    // Fast-path: Check if already in loaded available setups
-    const existing = availableSetups.find((s) => s.ticker === upper);
+    // Fast-path: Check if already in loaded available setups strictly matching current horizon
+    const existing = availableSetups.find((s) => s.ticker === upper && (s.userRole ? s.userRole === userRole : true));
     if (existing) {
       setSelectedSetup(existing);
-      const isAct = Boolean(existing.isActionable && isStatusActionable(existing.executionStatus) && existing.entryPivot && existing.entryPivot > 0 && existing.stopLoss && existing.stopLoss > 0);
+      const isAct = Boolean(
+        existing.isActionable &&
+        isDecisionActionable(existing.decisionState, existing.executionStatus) &&
+        existing.entryPivot && existing.entryPivot > 0 &&
+        existing.stopLoss && existing.stopLoss > 0
+      );
       setLoadState(isAct ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
       return;
     }
@@ -123,10 +136,15 @@ function SetupsContent() {
     // Authoritative API fetch for requested asset setup
     fetchTacticalSetupForTicker(upper, userRole)
       .then((setup) => {
-        if (latestRequestRef.current !== upper) return;
+        if (latestRequestRef.current !== requestKey) return;
         if (setup) {
           setSelectedSetup(setup);
-          const isAct = Boolean(setup.isActionable && isStatusActionable(setup.executionStatus) && setup.entryPivot && setup.entryPivot > 0 && setup.stopLoss && setup.stopLoss > 0);
+          const isAct = Boolean(
+            setup.isActionable &&
+            isDecisionActionable(setup.decisionState, setup.executionStatus) &&
+            setup.entryPivot && setup.entryPivot > 0 &&
+            setup.stopLoss && setup.stopLoss > 0
+          );
           setLoadState(isAct ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
         } else {
           // Check if asset exists on analytics tape
@@ -136,7 +154,7 @@ function SetupsContent() {
             signal: AbortSignal.timeout(6000),
           })
             .then(async (res) => {
-              if (latestRequestRef.current !== upper) return;
+              if (latestRequestRef.current !== requestKey) return;
               if (res.status === 404) {
                 setLoadState('UNSUPPORTED_ASSET');
                 setUnsupportedError(`No active tactical setup on record for ${upper} (unrecognized on exchange tape or zero trade records).`);
@@ -154,19 +172,21 @@ function SetupsContent() {
                 return;
               }
               const data = await res.json();
-              if (latestRequestRef.current !== upper || !data) return;
+              if (latestRequestRef.current !== requestKey || !data) return;
 
               const opt = data.optimalExecution;
               // If asset exists but no setup meets criteria, report honestly (NO_QUALIFYING_SETUP)
               if (!opt || !opt.setup_pattern || !opt.optimal_entry_max || !opt.stop_loss) {
                 const unqualSetup: TradeSetupSpec = {
                   ticker: upper,
+                  userRole,
                   setupName: opt?.setup_pattern || "No Qualifying Setup",
                   entryPivot: 0,
                   stopLoss: 0,
                   target1: 0,
                   target2: 0,
                   confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
+                  decisionState: data.decisionTrace?.decisionState || "EVIDENCE_INCOMPLETE",
                   isActionable: false,
                   reasonSuppressed: opt?.entry_thesis || `No active Minervini VCP or breakout setup currently qualifies for ${upper}. Technical structure does not meet risk/reward criteria.`,
                   executionStatus: opt?.execution_status || "NO_QUALIFYING_SETUP",
@@ -180,17 +200,23 @@ function SetupsContent() {
               }
 
               // Genuine setup exists
-              const isActionable = Boolean(opt.is_actionable && isStatusActionable(opt.execution_status));
+              const decisionState = data.decisionTrace?.decisionState || (opt.is_actionable ? "ACTIONABLE_SETUP" : "VALID_SETUP");
+              const isActionable = Boolean(
+                isDecisionActionable(decisionState, opt.execution_status) &&
+                opt.is_actionable
+              );
               const loaded: TradeSetupSpec = {
                 ticker: upper,
+                userRole,
                 setupName: opt.setup_pattern,
                 entryPivot: opt.optimal_entry_max,
                 stopLoss: opt.stop_loss,
                 target1: opt.take_profit_1 || 0,
                 target2: opt.take_profit_2 || 0,
                 confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
+                decisionState,
                 isActionable,
-                reasonSuppressed: isActionable ? null : (opt.entry_thesis || "Technical structure awaiting trigger confirmation."),
+                reasonSuppressed: isActionable ? null : (data.decisionTrace?.disqualificationReason || opt.entry_thesis || "Technical structure awaiting trigger confirmation."),
                 executionStatus: opt.execution_status || "WAITING_PULLBACK",
                 entryThesis: opt.entry_thesis || "",
                 invalidationCondition: opt.invalidation_condition || "",
@@ -200,14 +226,14 @@ function SetupsContent() {
               setLoadState(loaded.isActionable ? 'ACTIONABLE' : 'SUPPRESSED_CRITERIA');
             })
             .catch((err) => {
-              if (latestRequestRef.current !== upper) return;
+              if (latestRequestRef.current !== requestKey) return;
               setLoadState('REQUEST_FAILURE');
               setErrorMessage(`Unable to complete tactical analysis for ${upper}: ${err.message || 'Network timeout'}.`);
             });
         }
       })
       .catch((err) => {
-        if (latestRequestRef.current !== upper) return;
+        if (latestRequestRef.current !== requestKey) return;
         setLoadState('REQUEST_FAILURE');
         setErrorMessage(`Tactical analysis request failed for ${upper}: ${err.message || 'Network error'}.`);
       });
@@ -225,7 +251,9 @@ function SetupsContent() {
     router.replace('/setups');
   };
 
-  const actionableCount = availableSetups.filter((s) => s.isActionable && isStatusActionable(s.executionStatus)).length;
+  const actionableCount = availableSetups.filter(
+    (s) => s.isActionable && isDecisionActionable(s.decisionState, s.executionStatus)
+  ).length;
 
   const context = getTraderContextFromUnifiedCockpit(undefined, riskTelemetry);
   const effectiveSetup: TradeSetupSpec = selectedSetup || {
@@ -243,7 +271,7 @@ function SetupsContent() {
   const sizing = calculateGovernedPositionSize(effectiveSetup, context);
   const isActionable = Boolean(
     effectiveSetup.isActionable &&
-    isStatusActionable(effectiveSetup.executionStatus) &&
+    isDecisionActionable(effectiveSetup.decisionState, effectiveSetup.executionStatus) &&
     effectiveSetup.entryPivot &&
     effectiveSetup.entryPivot > 0 &&
     effectiveSetup.stopLoss &&

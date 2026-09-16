@@ -1,4 +1,4 @@
-﻿import assert from "node:assert";
+import assert from "node:assert";
 import {
   ACTIONABLE_EXECUTION_STATUSES,
   NON_ACTIONABLE_EXECUTION_STATUSES,
@@ -63,5 +63,30 @@ assert.strictEqual(
   "ACTIONABLE_SETUP + WAITING_PULLBACK must NOT be actionable"
 );
 
-console.log("[OK] Decision state + execution status joint actionability verified");
+// 4. Verify Strict Fail-Closed (Missing, null, or undefined decisionState MUST return false)
+assert.strictEqual(
+  isDecisionActionable(undefined, "IN_BUY_ZONE"),
+  false,
+  "Undefined decisionState must fail closed (false) even in buy zone"
+);
+
+assert.strictEqual(
+  isDecisionActionable(null, "IN_BUY_ZONE"),
+  false,
+  "Null decisionState must fail closed (false) even in buy zone"
+);
+
+assert.strictEqual(
+  isDecisionActionable("", "IN_BUY_ZONE"),
+  false,
+  "Empty decisionState must fail closed (false) even in buy zone"
+);
+
+assert.strictEqual(
+  isDecisionActionable("UNKNOWN_STATE", "IN_BUY_ZONE"),
+  false,
+  "Unknown decisionState must fail closed (false)"
+);
+
+console.log("[OK] Decision state + execution status joint actionability verified (fail-closed)");
 console.log("ALL DECISION CONTRACT TESTS PASSED!");

@@ -10,7 +10,7 @@
 
 import { getUnifiedCockpitState } from './unifiedCockpitStore';
 import { loadPortfolioPositions, calculatePortfolioSummary } from '../portfolio';
-import { isStatusActionable } from '../../types/decisionContract';
+import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 
 export interface TraderContext {
   accountEquity: number | null;
@@ -182,6 +182,7 @@ export interface TradeSetupSpec {
   reasonSuppressed?: string | null;
   executionStatus?: string;
   decisionState?: string;
+  userRole?: string;
   entryThesis?: string;
   invalidationCondition?: string;
   stagePhase?: string;
@@ -256,10 +257,10 @@ export function calculateGovernedPositionSize(
   const target1Num = (setup && typeof setup.target1 === 'number' && !isNaN(setup.target1)) ? setup.target1 : 0;
   const target2Num = (setup && typeof setup.target2 === 'number' && !isNaN(setup.target2)) ? setup.target2 : 0;
 
-  const isStatusAllowed = setup.executionStatus ? isStatusActionable(setup.executionStatus) : true;
+  const isDecisionApproved = isDecisionActionable(setup.decisionState, setup.executionStatus);
   const isActionable = Boolean(
     setup.isActionable !== false &&
-    isStatusAllowed &&
+    isDecisionApproved &&
     entryPivotNum > 0 &&
     stopLossNum > 0 &&
     entryPivotNum > stopLossNum

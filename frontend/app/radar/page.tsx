@@ -34,13 +34,10 @@ function RadarContent() {
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
 
-  // Synchronize searchQuery when URL search params change while component remains mounted
+  // Synchronize searchQuery when URL search params change while component remains mounted (clears when query is removed)
   useEffect(() => {
-    const q = searchParams?.get('q') || searchParams?.get('symbol') || '';
-    if (q) {
-      const clean = q.trim().toUpperCase();
-      setSearchQuery((prev) => (prev.trim().toUpperCase() !== clean ? clean : prev));
-    }
+    const q = (searchParams?.get('q') || searchParams?.get('symbol') || '').trim().toUpperCase();
+    setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
   }, [searchParams]);
 
   useEffect(() => {

@@ -25,6 +25,7 @@ from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
+from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -217,12 +218,6 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     )
 
     exec_status = plan.get("execution_status", "WAITING_PULLBACK")
-    # Actionable ONLY when valid execution levels exist AND status is actively confirmed in buy zone
-    is_actionable = (
-        plan.get("stop_loss") is not None
-        and plan.get("optimal_entry_max") is not None
-        and exec_status in ACTIONABLE_EXECUTION_STATUSES
-    )
     entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
     stop_loss = plan.get("stop_loss")
     target1 = plan.get("take_profit_1")
@@ -253,26 +248,59 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "has_options_flow": False,
     } if (has_insider or has_congress) else None
 
+    # Check fundamentals
+    factor_snap = market_db.get_factor_snapshot(sym)
+    has_fundamentals = bool(factor_snap and factor_snap.get("quality_score") is not None)
+    if not has_fundamentals and sym in KNOWN_ETFS:
+        has_fundamentals = True
+
+    fund_data = {
+        "qualityScore": factor_snap.get("quality_score"),
+        "piotroski_f": factor_snap.get("piotroski_f"),
+        "growthScore": factor_snap.get("growth_score"),
+        "valuationScore": factor_snap.get("valuation_score"),
+    } if (has_fundamentals and factor_snap) else None
+
     conf_output = confluence_engine.calculate_confluence(
         symbol=sym,
         technical_data={**(technicals or {}), **plan, "current_price": cur_price},
         smart_money_data=smart_data,
-        fundamental_data=None,
+        fundamental_data=fund_data,
         catalyst_data=None,
         macro_data=None,
     )
     conf_score = conf_output.get("confluenceScore", 0.0)
 
-    suppressed_reason = None
+    stage = plan.get("stage_phase")
+    rr = plan.get("risk_reward_ratio")
+    is_in_buy_zone = exec_status == "IN_BUY_ZONE"
+    is_confirmed = exec_status in ACTIONABLE_EXECUTION_STATUSES
+    freshness_status = "STALE_HISTORICAL" if is_stale else ("LIVE" if len(db_candles) >= 50 else "INSUFFICIENT_HISTORY")
+
+    # Actionable ONLY when valid execution levels exist AND status is actively confirmed in buy zone
+    is_actionable = (
+        exec_status in ACTIONABLE_EXECUTION_STATUSES
+        and stop_loss is not None
+        and plan.get("optimal_entry_max") is not None
+    )
+
+    if is_stale:
+        decision_state = DecisionState.STALE_DATA.value
+    elif is_actionable:
+        decision_state = DecisionState.ACTIONABLE_SETUP.value
+    else:
+        decision_state = DecisionState.VALID_SETUP.value
+
+    disqualification_reason = None
     if not is_actionable:
         if exec_status == "WAITING_PULLBACK":
-            suppressed_reason = "Awaiting technical pullback to optimal entry corridor."
+            disqualification_reason = "Awaiting technical pullback to optimal entry corridor."
         elif exec_status == "IN_BUY_ZONE_AWAITING_TRIGGER":
-            suppressed_reason = "In buy corridor; awaiting stabilization or confirmation trigger."
+            disqualification_reason = "In buy corridor; awaiting stabilization or confirmation trigger."
         elif exec_status == "APPROACHING_TARGET":
-            suppressed_reason = "Price is extended past entry corridor toward target."
+            disqualification_reason = "Price is extended past entry corridor toward target."
         else:
-            suppressed_reason = plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria")
+            disqualification_reason = plan.get("entry_thesis", "Technical structure does not meet risk/reward criteria")
 
     return {
         "symbol": sym,
@@ -285,12 +313,13 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "target2": round(target2, 2) if target2 else None,
         "confluenceScore": round(float(conf_score), 1) if conf_score is not None else 0.0,
         "executionStatus": exec_status,
+        "decisionState": decision_state,
         "isActionable": is_actionable,
         "isSuppressed": not is_actionable,
         "entryThesis": plan.get("entry_thesis", ""),
         "invalidationCondition": plan.get("invalidation_condition", ""),
         "stagePhase": plan.get("stage_phase", ""),
-        "reasonSuppressed": suppressed_reason,
+        "reasonSuppressed": disqualification_reason if not is_actionable else None,
         "observationDate": obs_date,
     }
 
