@@ -12,6 +12,23 @@ except ImportError:
 
 from analyst_dashboard.analyzers.liquidity_guard import LiquidityGuard
 
+ACTIONABLE_EXECUTION_STATUSES = frozenset({
+    "IN_BUY_ZONE",
+    "READY_TO_BUY",
+})
+
+NON_ACTIONABLE_EXECUTION_STATUSES = frozenset({
+    "WAITING_PULLBACK",
+    "IN_BUY_ZONE_AWAITING_TRIGGER",
+    "APPROACHING_TARGET",
+    "STOPPED_OUT",
+    "INSUFFICIENT_HISTORY",
+    "UNVERIFIED_ASSET",
+    "STALE_MARKET_DATA",
+})
+
+ALL_EXECUTION_STATUSES = ACTIONABLE_EXECUTION_STATUSES | NON_ACTIONABLE_EXECUTION_STATUSES
+
 
 class OptimalExecutionEngine:
     """Calculates mathematical entry price targets, stop-loss invalidation thresholds, and take-profit ladders."""
@@ -488,5 +505,12 @@ class OptimalExecutionEngine:
         if isinstance(liq, dict) and liq.get("execution_hazard"):
             plan["execution_hazard"] = True
             plan["liquidity_warning"] = liq.get("pro_summary")
+
+        # 7. Actionability verification based on authoritative taxonomy and non-null levels
+        plan["is_actionable"] = bool(
+            plan.get("stop_loss") is not None
+            and plan.get("optimal_entry_max") is not None
+            and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        )
 
         return plan

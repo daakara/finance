@@ -1,59 +1,102 @@
-﻿import pytest
+import pytest
 from unittest.mock import patch, MagicMock
 from api.routes.analytics import _build_tactical_setup
+from analyst_dashboard.analyzers.optimal_execution import (
+    OptimalExecutionEngine,
+    ACTIONABLE_EXECUTION_STATUSES,
+    ALL_EXECUTION_STATUSES,
+)
 
-def test_tactical_setup_actionable_only_in_buy_zone():
-    candles = [
-        {"open": 100.0, "high": 105.0, "low": 99.0, "close": 104.0, "volume": 1000000, "date": "2026-03-01"},
-        {"open": 104.0, "high": 106.0, "low": 103.0, "close": 105.0, "volume": 1200000, "date": "2026-03-02"},
-    ]
+CANDLES = [
+    {"open": 100.0, "high": 105.0, "low": 99.0, "close": 104.0, "volume": 1000000, "date": "2026-03-01"},
+    {"open": 104.0, "high": 106.0, "low": 103.0, "close": 105.0, "volume": 1200000, "date": "2026-03-02"},
+]
 
-    # Test Case 1: Stale data must NEVER be actionable
-    stale_setup = _build_tactical_setup('AAPL', 'SWING_TRADER', candles, is_stale=True)
-    assert stale_setup['isActionable'] is False
-    assert stale_setup['isSuppressed'] is True
-    assert stale_setup['executionStatus'] == 'STALE_MARKET_DATA'
+TAXONOMY_ACTIONABILITY_TABLE = [
+    ("IN_BUY_ZONE", True),
+    ("READY_TO_BUY", True),
+    ("WAITING_PULLBACK", False),
+    ("IN_BUY_ZONE_AWAITING_TRIGGER", False),
+    ("APPROACHING_TARGET", False),
+    ("STOPPED_OUT", False),
+    ("INSUFFICIENT_HISTORY", False),
+    ("UNVERIFIED_ASSET", False),
+    ("STALE_MARKET_DATA", False),
+    ("UNKNOWN", False),
+    ("UNAUTHORIZED_FUTURE_STATUS", False),
+]
 
-    # Test Case 2: WAITING_PULLBACK must NOT be actionable
+@pytest.mark.parametrize("status,expected_actionable", TAXONOMY_ACTIONABILITY_TABLE)
+def test_global_status_taxonomy_actionability(status, expected_actionable):
+    """Verify that every status in the taxonomy evaluates to exact expected actionability."""
     with patch('api.routes.analytics.optimal_execution_engine.calculate_trade_levels') as mock_calc, \
          patch('api.routes.analytics.confluence_engine.calculate_confluence') as mock_conf, \
          patch('api.routes.analytics.smart_money_engine.get_sec_insider_trades', return_value=[]), \
          patch('api.routes.analytics.smart_money_engine.get_congressional_trades', return_value=[]):
         
-        mock_conf.return_value = {"confluenceScore": 75.0}
-        
+        mock_conf.return_value = {"confluenceScore": 80.0}
         mock_calc.return_value = {
-            "execution_status": "WAITING_PULLBACK",
+            "execution_status": status,
             "stop_loss": 95.0,
-            "optimal_entry_max": 101.0,
+            "optimal_entry_max": 100.0,
             "take_profit_1": 115.0,
-            "setup_pattern": "Cup and Handle",
-            "entry_thesis": "Waiting for consolidation"
+            "setup_pattern": "VCP Setup",
+            "entry_thesis": "Test thesis",
         }
-        setup_pullback = _build_tactical_setup('AAPL', 'SWING_TRADER', candles, is_stale=False)
-        assert setup_pullback['isActionable'] is False
-        assert setup_pullback['isSuppressed'] is True
-        assert setup_pullback['executionStatus'] == 'WAITING_PULLBACK'
-        assert setup_pullback['userRole'] == 'SWING_TRADER'
+        
+        setup = _build_tactical_setup('AAPL', 'SWING_TRADER', CANDLES, is_stale=(status == "STALE_MARKET_DATA"))
+        assert setup['isActionable'] is expected_actionable, f"Status {status} expected isActionable={expected_actionable}"
+        assert setup['isSuppressed'] is (not expected_actionable)
+        if expected_actionable:
+            assert setup['executionStatus'] in ACTIONABLE_EXECUTION_STATUSES
+        else:
+            assert setup['executionStatus'] not in ACTIONABLE_EXECUTION_STATUSES
 
-        # Test Case 3: IN_BUY_ZONE_AWAITING_TRIGGER must NOT be actionable
-        mock_calc.return_value['execution_status'] = 'IN_BUY_ZONE_AWAITING_TRIGGER'
-        setup_await = _build_tactical_setup('AAPL', 'SWING_TRADER', candles, is_stale=False)
-        assert setup_await['isActionable'] is False
-        assert setup_await['isSuppressed'] is True
+def test_missing_levels_never_actionable_even_in_buy_zone():
+    """Verify that IN_BUY_ZONE with missing levels is strictly NON-ACTIONABLE."""
+    with patch('api.routes.analytics.optimal_execution_engine.calculate_trade_levels') as mock_calc, \
+         patch('api.routes.analytics.confluence_engine.calculate_confluence') as mock_conf, \
+         patch('api.routes.analytics.smart_money_engine.get_sec_insider_trades', return_value=[]), \
+         patch('api.routes.analytics.smart_money_engine.get_congressional_trades', return_value=[]):
+        
+        mock_conf.return_value = {"confluenceScore": 80.0}
+        
+        # Case A: Missing stop_loss
+        mock_calc.return_value = {
+            "execution_status": "IN_BUY_ZONE",
+            "stop_loss": None,
+            "optimal_entry_max": 100.0,
+            "take_profit_1": 115.0,
+        }
+        setup_no_stop = _build_tactical_setup('AAPL', 'SWING_TRADER', CANDLES, is_stale=False)
+        assert setup_no_stop['isActionable'] is False
 
-        # Test Case 4: IN_BUY_ZONE with valid levels MUST be actionable
-        mock_calc.return_value['execution_status'] = 'IN_BUY_ZONE'
-        setup_active = _build_tactical_setup('AAPL', 'SWING_TRADER', candles, is_stale=False)
-        assert setup_active['isActionable'] is True
-        assert setup_active['isSuppressed'] is False
-        assert setup_active['stopLoss'] == 95.0
-        assert setup_active['entryPivot'] == 101.0
-        assert setup_active['userRole'] == 'SWING_TRADER'
+        # Case B: Missing entry_max
+        mock_calc.return_value = {
+            "execution_status": "IN_BUY_ZONE",
+            "stop_loss": 95.0,
+            "optimal_entry_max": None,
+            "take_profit_1": 115.0,
+        }
+        setup_no_entry = _build_tactical_setup('AAPL', 'SWING_TRADER', CANDLES, is_stale=False)
+        assert setup_no_entry['isActionable'] is False
 
-        # Test Case 5: READY_TO_BUY with valid levels MUST be actionable
-        mock_calc.return_value['execution_status'] = 'READY_TO_BUY'
-        setup_ready = _build_tactical_setup('AAPL', 'DAY_TRADER', candles, is_stale=False)
-        assert setup_ready['isActionable'] is True
-        assert setup_ready['isSuppressed'] is False
-        assert setup_ready['userRole'] == 'DAY_TRADER'
+def test_optimal_execution_enforce_invariants_actionability():
+    """Verify that _enforce_execution_invariants embeds authoritative is_actionable field."""
+    raw_plan = {
+        "current_price": 100.0,
+        "optimal_entry_min": 98.0,
+        "optimal_entry_max": 101.0,
+        "stop_loss": 95.0,
+        "take_profit_1": 115.0,
+        "take_profit_2": 125.0,
+        "risk_reward_ratio": 2.5,
+        "execution_status": "IN_BUY_ZONE",
+        "setup_pattern": "VCP",
+    }
+    plan = OptimalExecutionEngine._enforce_execution_invariants(raw_plan, "SWING_TRADER")
+    assert plan["is_actionable"] is True
+
+    raw_plan_waiting = {**raw_plan, "execution_status": "WAITING_PULLBACK"}
+    plan_waiting = OptimalExecutionEngine._enforce_execution_invariants(raw_plan_waiting, "SWING_TRADER")
+    assert plan_waiting["is_actionable"] is False

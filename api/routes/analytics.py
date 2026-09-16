@@ -20,7 +20,7 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
-from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
+from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine, ACTIONABLE_EXECUTION_STATUSES
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
@@ -47,7 +47,7 @@ CACHE_TTL_SECONDS = 3600.0
 SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-_]{1,16}$")
 VALID_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
 VALID_INTERVALS = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
-VALID_ROLES = {"DAY_TRADER", "LONG_TERM"}
+VALID_ROLES = {"DAY_TRADER", "SWING_TRADER", "LONG_TERM"}
 
 
 def calculate_piotroski_f_score(info: dict, financials: dict) -> int:
@@ -221,7 +221,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     is_actionable = (
         plan.get("stop_loss") is not None
         and plan.get("optimal_entry_max") is not None
-        and exec_status in ("IN_BUY_ZONE", "READY_TO_BUY")
+        and exec_status in ACTIONABLE_EXECUTION_STATUSES
     )
     entry_pivot = plan.get("optimal_entry_max") or plan.get("breakout_pivot") or cur_price
     stop_loss = plan.get("stop_loss")
