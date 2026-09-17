@@ -4,6 +4,7 @@ import {
   TraderContext,
   TradeSetupSpec,
 } from "../lib/simulation/governorSizingEngine";
+import { formatConfluenceScore } from "../lib/confluenceFormat";
 
 console.log("Starting Governor Sizing Engine Permanent Regression Suite...");
 
@@ -432,4 +433,27 @@ const baseContext: TraderContext = {
   console.log("✓ Test 16 Passed: Explicit null confluence displays Unavailable without 0/100 fallback");
 }
 
-console.log("ALL 16 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");
+// Test 17: formatConfluenceScore helper consistency (Mobile Bar & Catalog displays)
+{
+  // Valid numbers
+  assert.strictEqual(formatConfluenceScore(85), "85/100");
+  assert.strictEqual(formatConfluenceScore(0), "0/100");
+  assert.strictEqual(formatConfluenceScore(100), "100/100");
+  assert.strictEqual(formatConfluenceScore(50), "50/100");
+
+  // Missing values (must NOT render /100)
+  assert.strictEqual(formatConfluenceScore(undefined), "Unavailable");
+  assert.strictEqual(formatConfluenceScore(null), "Unavailable");
+
+  // Invalid values (must NOT render /100)
+  assert.strictEqual(formatConfluenceScore(Infinity), "Unavailable");
+  assert.strictEqual(formatConfluenceScore(-Infinity), "Unavailable");
+  assert.strictEqual(formatConfluenceScore(NaN), "Unavailable");
+  assert.strictEqual(formatConfluenceScore(-10), "Unavailable");
+  assert.strictEqual(formatConfluenceScore(150), "Unavailable");
+
+  console.log("✓ Test 17 Passed: formatConfluenceScore validates finite 0-100 and rejects missing/invalid with Unavailable");
+}
+
+console.log("ALL 17 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");
+

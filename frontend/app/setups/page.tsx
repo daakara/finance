@@ -22,6 +22,7 @@ import {
 import { formatOrderPlanString, copyOrderPlanToClipboard } from '../../lib/orderClipboard';
 import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifecycle';
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
+import { formatConfluenceScore } from '../../lib/confluenceFormat';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -658,9 +659,7 @@ function SetupsContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-base font-bold font-mono text-white group-hover:text-cyan-300">{setup.ticker}</span>
                     <span className="text-xs font-mono font-bold text-emerald-400">
-                      {typeof setup.confluenceScore === 'number' && Number.isFinite(setup.confluenceScore) && setup.confluenceScore >= 0 && setup.confluenceScore <= 100
-                        ? `${setup.confluenceScore}/100`
-                        : 'Unavailable'}
+                      {formatConfluenceScore(setup.confluenceScore)}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-300 font-medium truncate">{setup.setupName}</div>
@@ -684,7 +683,7 @@ function SetupsContent() {
                 <div className="sm:hidden flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-900/60 font-mono text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-white font-bold text-sm">{effectiveSetup.ticker}</span>
-                    <span className="text-cyan-400 font-bold">{effectiveSetup.confluenceScore}/100</span>
+                    <span className="text-cyan-400 font-bold">{formatConfluenceScore(effectiveSetup.confluenceScore)}</span>
                     <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{effectiveSetup.setupName}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -735,9 +734,7 @@ function SetupsContent() {
                         <div className="flex items-center justify-between">
                           <span className="text-base font-bold font-mono text-white">{setup.ticker}</span>
                           <span className="text-xs font-mono font-bold text-cyan-400">
-                            {typeof setup.confluenceScore === 'number' && Number.isFinite(setup.confluenceScore) && setup.confluenceScore >= 0 && setup.confluenceScore <= 100
-                              ? `${setup.confluenceScore}/100`
-                              : 'Unavailable'}
+                            {formatConfluenceScore(setup.confluenceScore)}
                           </span>
                         </div>
                         <div className="text-[11px] text-slate-300 mt-1 font-medium truncate">{setup.setupName}</div>
