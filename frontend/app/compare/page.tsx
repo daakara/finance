@@ -7,8 +7,7 @@ import Navbar from "../../components/Navbar";
 import DataSourceBadge from "../../components/DataSourceBadge";
 import { API_BASE_URL, fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../../lib/api";
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
-import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
-import { SHARED_FACTOR_SCORES, SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
+import { SHARED_WATCHLIST_ITEMS } from "../../lib/constants";
 import { getCanonicalAssetName, getCanonicalAssetMoat, getCanonicalAssetRisk } from "../../lib/assetRegistry";
 import { trackComparisonRun } from "../../lib/matomo";
 import CompareSsrShell from "../../components/CompareSsrShell";
@@ -44,45 +43,6 @@ export interface CompetitorAsset {
   bestTradingWindow: string;
   dayTradeVerdict: string;
 }
-
-const AUTHENTIC_FUNDAMENTALS: Record<string, {
-  category: string;
-  roic: number;
-  grossMargin: number;
-  fwdPe: number;
-  peg: number;
-  fcfYield: number;
-  piotroski: number;
-  atr14: number;
-  rvol: number;
-  beta: number;
-  marketCap: string;
-}> = {
-  NVDA: { category: "AI Datacenter Monopoly", roic: 48.0, grossMargin: 75.2, fwdPe: 32.4, peg: 0.92, fcfYield: 3.1, piotroski: 8, atr14: 4.85, rvol: 2.8, beta: 1.74, marketCap: "$3,150B" },
-  AAPL: { category: "Consumer Hardware & Services Ecosystem", roic: 45.0, grossMargin: 46.0, fwdPe: 28.5, peg: 1.30, fcfYield: 4.2, piotroski: 8, atr14: 2.40, rvol: 1.2, beta: 0.95, marketCap: "$3,450B" },
-  MSFT: { category: "Enterprise Cloud & Enterprise AI", roic: 36.0, grossMargin: 69.5, fwdPe: 31.0, peg: 1.22, fcfYield: 3.3, piotroski: 9, atr14: 5.20, rvol: 1.4, beta: 1.05, marketCap: "$3,120B" },
-  TSLA: { category: "Autonomous Robotics & EV Fleet", roic: 16.0, grossMargin: 18.2, fwdPe: 65.0, peg: 1.60, fcfYield: 1.5, piotroski: 6, atr14: 8.40, rvol: 3.1, beta: 2.15, marketCap: "$695B" },
-  PLTR: { category: "Defense & Enterprise AI Operating System", roic: 23.0, grossMargin: 81.0, fwdPe: 78.0, peg: 1.25, fcfYield: 2.8, piotroski: 8, atr14: 1.65, rvol: 3.8, beta: 1.85, marketCap: "$70B" },
-  NVO: { category: "GLP-1 Incretin & Metabolic Duopoly", roic: 54.0, grossMargin: 84.5, fwdPe: 29.2, peg: 1.15, fcfYield: 3.8, piotroski: 9, atr14: 2.10, rvol: 1.8, beta: 0.72, marketCap: "$610B" },
-  LLY: { category: "Metabolic, Oncology & Immunology Leader", roic: 36.0, grossMargin: 80.2, fwdPe: 34.0, peg: 1.28, fcfYield: 2.4, piotroski: 8, atr14: 14.50, rvol: 1.9, beta: 0.78, marketCap: "$875B" },
-  SPY: { category: "US Large-Cap Core Equity Benchmark", roic: 18.5, grossMargin: 0, fwdPe: 24.5, peg: 1.35, fcfYield: 3.5, piotroski: 8, atr14: 4.50, rvol: 1.0, beta: 1.00, marketCap: "$560B (AUM)" },
-  QQQ: { category: "Nasdaq-100 Large-Cap Growth Benchmark", roic: 26.0, grossMargin: 0, fwdPe: 28.0, peg: 1.25, fcfYield: 2.9, piotroski: 8, atr14: 6.80, rvol: 1.3, beta: 1.18, marketCap: "$285B (AUM)" },
-  CRWD: { category: "Cloud-Native Endpoint Cybersecurity", roic: 24.5, grossMargin: 76.0, fwdPe: 62.0, peg: 1.20, fcfYield: 3.6, piotroski: 7, atr14: 8.20, rvol: 3.2, beta: 1.55, marketCap: "$66B" },
-  PANW: { category: "Next-Gen Enterprise Platform Security", roic: 21.0, grossMargin: 74.0, fwdPe: 48.0, peg: 1.30, fcfYield: 3.9, piotroski: 7, atr14: 9.40, rvol: 2.3, beta: 1.35, marketCap: "$114B" },
-  CPRX: { category: "Rare Neurological Commercial Monopoly", roic: 28.0, grossMargin: 82.5, fwdPe: 16.4, peg: 0.85, fcfYield: 5.8, piotroski: 8, atr14: 0.85, rvol: 2.1, beta: 0.90, marketCap: "$2.8B" },
-  POWI: { category: "High-Voltage GaN Eco-Power ICs", roic: 22.0, grossMargin: 54.0, fwdPe: 28.0, peg: 1.10, fcfYield: 3.4, piotroski: 8, atr14: 1.90, rvol: 1.6, beta: 1.25, marketCap: "$3.9B" },
-  LNTH: { category: "Radiopharmaceutical & PET Oncology Monopolist", roic: 34.0, grossMargin: 68.0, fwdPe: 18.2, peg: 0.88, fcfYield: 6.2, piotroski: 9, atr14: 2.80, rvol: 2.4, beta: 1.10, marketCap: "$6.9B" },
-  KO: { category: "Global Non-Alcoholic Beverage Leader", roic: 22.5, grossMargin: 60.5, fwdPe: 24.2, peg: 2.10, fcfYield: 4.1, piotroski: 8, atr14: 0.65, rvol: 1.1, beta: 0.58, marketCap: "$298B" },
-  SBUX: { category: "Global Specialty Coffee & Retail Experience", roic: 38.0, grossMargin: 28.5, fwdPe: 25.0, peg: 1.85, fcfYield: 3.7, piotroski: 7, atr14: 1.45, rvol: 1.7, beta: 0.88, marketCap: "$108B" },
-  O: { category: "Triple Net Lease Commercial REIT", roic: 7.8, grossMargin: 89.0, fwdPe: 14.8, peg: 2.20, fcfYield: 5.6, piotroski: 7, atr14: 0.72, rvol: 1.2, beta: 0.65, marketCap: "$52B" },
-  XOM: { category: "Integrated Upstream & LNG Energy Giant", roic: 18.2, grossMargin: 34.5, fwdPe: 12.8, peg: 1.40, fcfYield: 6.8, piotroski: 8, atr14: 1.85, rvol: 1.3, beta: 0.82, marketCap: "$465B" },
-  NEM: { category: "Tier-1 Gold & Precious Metals Producer", roic: 12.4, grossMargin: 42.0, fwdPe: 15.5, peg: 1.10, fcfYield: 4.9, piotroski: 7, atr14: 1.20, rvol: 2.0, beta: 0.68, marketCap: "$48B" },
-  JPM: { category: "Global Diversified Universal Bank", roic: 18.0, grossMargin: 0, fwdPe: 12.4, peg: 1.30, fcfYield: 5.2, piotroski: 8, atr14: 2.90, rvol: 1.2, beta: 1.05, marketCap: "$620B" },
-  DHL: { category: "Global Express Logistics Leader", roic: 22.0, grossMargin: 38.0, fwdPe: 14.2, peg: 1.10, fcfYield: 5.4, piotroski: 8, atr14: 0.95, rvol: 1.3, beta: 0.85, marketCap: "$52B" },
-  DHLGY: { category: "Global Express Logistics Leader (ADR)", roic: 22.0, grossMargin: 38.0, fwdPe: 14.2, peg: 1.10, fcfYield: 5.4, piotroski: 8, atr14: 0.95, rvol: 1.3, beta: 0.85, marketCap: "$52B" },
-  FDX: { category: "Integrated Air & Ground Express Network", roic: 16.5, grossMargin: 29.0, fwdPe: 13.8, peg: 1.15, fcfYield: 4.8, piotroski: 7, atr14: 4.20, rvol: 1.4, beta: 1.15, marketCap: "$72B" },
-  UPS: { category: "Domestic Ground Delivery Monopoly", roic: 24.0, grossMargin: 26.5, fwdPe: 15.2, peg: 1.35, fcfYield: 5.8, piotroski: 8, atr14: 2.10, rvol: 1.2, beta: 0.90, marketCap: "$112B" },
-};
 
 const SEO_CURATED_PRESETS = [
   { id: "nvo-vs-lly", label: "💊 Novo Nordisk (NVO) vs. Eli Lilly (LLY)", a: "NVO", b: "LLY" },
@@ -199,7 +159,6 @@ function CompareContent() {
   // Build authentic comparison models from live API data with domain-accurate fundamentals
   const buildAssetProfile = (sym: string, liveData: AnalyticsResponse | null): CompetitorAsset => {
     const upperSym = sym.toUpperCase();
-    const staticFactor = SHARED_FACTOR_SCORES[upperSym];
     const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
     const reg = SpotPriceRegistry.get(upperSym);
     const snap = getPersistedMarketSnapshot(upperSym);
@@ -210,66 +169,53 @@ function CompareContent() {
       : (snap?.currentPrice && snap.currentPrice > 0)
       ? snap.currentPrice
       : 0;
-    const registered = AUTHENTIC_FUNDAMENTALS[upperSym] || (MASTER_ASSET_CATALOG[upperSym] ? {
-      category: MASTER_ASSET_CATALOG[upperSym].sector || "Equities",
-      roic: MASTER_ASSET_CATALOG[upperSym].roic,
-      grossMargin: MASTER_ASSET_CATALOG[upperSym].grossMargin,
-      fwdPe: MASTER_ASSET_CATALOG[upperSym].fwdPe,
-      peg: MASTER_ASSET_CATALOG[upperSym].peg,
-      fcfYield: MASTER_ASSET_CATALOG[upperSym].fcfYield,
-      piotroski: MASTER_ASSET_CATALOG[upperSym].piotroski,
-      atr14: MASTER_ASSET_CATALOG[upperSym].atr14,
-      rvol: MASTER_ASSET_CATALOG[upperSym].rvol,
-      beta: MASTER_ASSET_CATALOG[upperSym].beta,
-      marketCap: MASTER_ASSET_CATALOG[upperSym].marketCap,
-    } : undefined);
 
-    const scores = liveData?.factorScores || liveData?.dnaScores || staticFactor?.scores;
-    const hasVerifiedFundamentals = registered !== undefined;
-    const piotroski = registered?.piotroski ?? scores?.piotroskiFScore ?? 0;
-    const roicRaw = registered?.roic ?? 0;
-    const grossMarginRaw = registered?.grossMargin ?? 0;
-    const fwdPeRaw = registered?.fwdPe ?? 0;
-    const pegRaw = registered?.peg ?? 0;
-    const fcfYieldRaw = registered?.fcfYield ?? 0;
-    const atr14Raw = registered?.atr14 ?? (liveData?.technicals?.atr_14 || 0);
-    const rvolRaw = registered?.rvol ?? 0;
-    const betaRaw = registered?.beta ?? 0;
+    const scores = liveData?.factorScores || liveData?.dnaScores;
+    const hasVerifiedFundamentals = Boolean(scores && typeof scores.qualityScore === "number");
+    const piotroski = scores?.piotroskiFScore ?? 0;
+    const roicRaw = 0;
+    const grossMarginRaw = 0;
+    const fwdPeRaw = 0;
+    const pegRaw = 0;
+    const fcfYieldRaw = 0;
+    const atr14Raw = liveData?.technicals?.atr_14 || 0;
+    const rvolRaw = 0;
+    const betaRaw = 1.0;
 
     const defaultName = getCanonicalAssetName(upperSym, staticItem?.name);
-    const moatNarrative = getCanonicalAssetMoat(upperSym) || liveData?.catalystForecast?.efficacy_summary || "Sector equity tracked across quantitative model dimensions.";
+    const moatNarrative = liveData?.catalystForecast?.efficacy_summary || getCanonicalAssetMoat(upperSym) || "Sector equity tracked across quantitative model dimensions.";
     const primaryRisk = getCanonicalAssetRisk(upperSym);
 
     return {
       symbol: upperSym,
       name: defaultName,
-      category: registered?.category || "Uncataloged Security",
-      marketCap: registered?.marketCap || "N/A",
-      peRatio: hasVerifiedFundamentals && fwdPeRaw > 0 ? `${fwdPeRaw.toFixed(1)}x` : "N/A",
+      category: liveData?.catalystForecast?.sector || "Equities",
+      marketCap: "N/A",
+      peRatio: "N/A",
       peRaw: fwdPeRaw,
-      pegRatio: hasVerifiedFundamentals && pegRaw > 0 ? `${pegRaw.toFixed(2)}` : "N/A",
+      pegRatio: "N/A",
       pegRaw: pegRaw,
-      roic: hasVerifiedFundamentals && roicRaw > 0 ? `${roicRaw.toFixed(1)}%` : "N/A",
+      roic: "N/A",
       roicRaw: roicRaw,
-      grossMargin: hasVerifiedFundamentals && grossMarginRaw > 0 ? `${grossMarginRaw.toFixed(1)}%` : (upperSym.includes("SPY") || upperSym.includes("QQQ") ? "N/A (ETF/Index)" : "N/A"),
+      grossMargin: upperSym.includes("SPY") || upperSym.includes("QQQ") ? "N/A (ETF/Index)" : "N/A",
       grossMarginRaw: grossMarginRaw,
-      fcfYield: hasVerifiedFundamentals && fcfYieldRaw > 0 ? `${fcfYieldRaw.toFixed(1)}%` : "N/A",
+      fcfYield: "N/A",
       fcfYieldRaw: fcfYieldRaw,
       piotroski: piotroski,
-      keyCatalyst: (liveData?.catalystForecast?.catalysts?.[0]?.event || (liveData?.catalystForecast as any)?.upcoming_milestones?.[0]?.event) || (hasVerifiedFundamentals ? "Upcoming quarterly earnings & institutional accumulation." : "Pending SEC filings verification."),
+      keyCatalyst: liveData?.catalystForecast?.efficacy_summary || (hasVerifiedFundamentals ? "Upcoming corporate earnings & institutional accumulation." : "Pending SEC filings verification."),
       trialEfficacy: moatNarrative,
       primaryRisk: primaryRisk,
       longTermVerdict: hasVerifiedFundamentals ? (scores?.verdict || "Quantitative Model Verified") : "Unverified Fundamental Profile (N/A)",
       atr14: atr14Raw > 0 ? `$${atr14Raw.toFixed(2)}` : "N/A",
       atr14Raw: atr14Raw,
-      rvol: rvolRaw > 0 ? `${rvolRaw.toFixed(1)}x` : "N/A",
+      rvol: "N/A",
       rvolRaw: rvolRaw,
-      intradayBeta: betaRaw > 0 ? `${betaRaw.toFixed(2)}` : "N/A",
+      intradayBeta: "1.00",
       intradayBetaRaw: betaRaw,
-      liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : "Standard Liquid ($1B+ Daily)",
+      liquidityTier: price > 200 ? "Ultra-High ($10B+ Daily)" : price > 0 ? "Exchange Verified" : "Awaiting Tape",
       dayTraderSetup: liveData?.optimalExecution?.entry_thesis || "Intraday momentum tracking with clear risk-defined levels.",
       bestTradingWindow: "9:30 AM - 11:30 AM EST (Peak Volatility Window)",
-      dayTradeVerdict: hasVerifiedFundamentals ? "Evaluated for quantitative setups." : "Uncataloged setup — manual verification required.",
+      dayTradeVerdict: liveData?.optimalExecution?.execution_status || (hasVerifiedFundamentals ? "Evaluated for quantitative setups." : "Unverified setup — live feed required."),
     };
   };
 

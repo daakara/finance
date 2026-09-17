@@ -1,6 +1,6 @@
 import re
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.sec_edgar_fetcher import SecEdgarFetcher
 from analyst_dashboard.data.finra_fetcher import FinraTransparencyFetcher
@@ -63,7 +63,11 @@ def get_congress_trades(symbol: Optional[str] = None, response: Response = None)
 
 
 @router.get("/options-flow")
-def get_options_flow(symbol: Optional[str] = None, response: Response = None):
+def get_options_flow(
+    symbol: Optional[str] = None,
+    include_curated: bool = Query(False),
+    response: Response = None,
+):
     """Get institutional options sweeps with verified provider provenance."""
     import os
     if response is not None and hasattr(response, "headers"):
@@ -72,7 +76,7 @@ def get_options_flow(symbol: Optional[str] = None, response: Response = None):
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
     has_live_provider = bool(os.getenv("POLYGON_API_KEY") or os.getenv("OPRA_API_KEY"))
-    flow = smart_money_engine.get_options_flow(valid_sym, include_curated=True if not valid_sym else False)
+    flow = smart_money_engine.get_options_flow(valid_sym, include_curated=include_curated)
     return {
         "symbol": valid_sym,
         "available": has_live_provider,

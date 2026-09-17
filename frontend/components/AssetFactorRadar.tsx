@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "../lib/api";
-import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "../lib/constants";
 
 interface AssetFactorRadarProps {
   symbol: string;

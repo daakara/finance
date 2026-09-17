@@ -3,8 +3,8 @@ import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import ShareTradeCardButton from "../../../components/ShareTradeCardButton";
 import HistoricalEdgeScorecard from "../../../components/HistoricalEdgeScorecard";
-import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
-import { getMasterAsset, getAllMasterTickers, getMasterBaselinePrice } from "../../../lib/masterCatalog";
+import { SHARED_WATCHLIST_ITEMS } from "../../../lib/constants";
+import { getMasterAsset, getAllMasterTickers } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -65,14 +65,10 @@ export function generateStaticParams() {
   const stockSymbols = SHARED_WATCHLIST_ITEMS.map((item) => ({
     ticker: item.symbol.toLowerCase(),
   }));
-  const additionalSymbols = Object.keys(SHARED_FACTOR_SCORES).map((sym) => ({
-    ticker: sym.toLowerCase(),
-  }));
   
   const unique = Array.from(new Set([
     ...masterTickers.map(s => s.ticker),
     ...stockSymbols.map(s => s.ticker),
-    ...additionalSymbols.map(s => s.ticker)
   ]));
   return unique.map(ticker => ({ ticker }));
 }
@@ -81,27 +77,21 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const sym = params.ticker.toUpperCase().replace("-USD", "");
   const master = getMasterAsset(params.ticker);
   const watchlist = SHARED_WATCHLIST_ITEMS.find((item) => item.symbol.toUpperCase() === sym);
-  const factor = SHARED_FACTOR_SCORES[sym];
   
   const name = master?.name || watchlist?.name || sym;
   const price = "Live Market Price";
-  const hasVerifiedData = Boolean(master || factor);
-  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore;
-  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore;
+  const hasVerifiedData = Boolean(master);
 
-  const isStage4 = (master?.verdict?.includes("Stage 4") || factor?.scores.verdict?.includes("Stage 4") || false);
-  const isStage1 = (master?.verdict?.includes("Stage 1") || factor?.scores.verdict?.includes("Stage 1") || false);
+  const isStage4 = (master?.verdict?.includes("Stage 4") || false);
+  const isStage1 = (master?.verdict?.includes("Stage 1") || false);
   const statusIcon = isStage4 ? "🔴" : isStage1 ? "🟡" : (hasVerifiedData ? "🟢" : "⚪");
-  
-  const scoreDesc = compositeScore !== undefined ? `${compositeScore}/100` : "Unverified";
-  const piotroskiDesc = piotroskiScore !== undefined ? `${piotroskiScore}/9` : "Unverified";
 
   return {
     title: `${statusIcon} ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`,
-    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score (${scoreDesc}), and Congressional STOCK Act disclosures.`,
+    description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score, and Congressional STOCK Act disclosures.`,
     openGraph: {
       title: `${statusIcon} ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,
-      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets, Piotroski F-Score (${piotroskiDesc}), and downside Cornish-Fisher VaR.`,
+      description: `Institutional stock analysis for ${name} (${sym}): Volatility Contraction Pattern (VCP) targets and downside Cornish-Fisher VaR.`,
       url: `https://www.arxterminal.com/stock/${params.ticker.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "article",
@@ -116,42 +106,32 @@ export default function StockDetailPage({ params }: PageProps) {
   const sym = params.ticker.toUpperCase().replace("-USD", "");
   const master = getMasterAsset(params.ticker);
   const watchlist = SHARED_WATCHLIST_ITEMS.find((item) => item.symbol.toUpperCase() === sym);
-  const factor = SHARED_FACTOR_SCORES[sym];
   const name = master?.name || watchlist?.name || `${sym} Equity`;
-  const spotPrice = getMasterBaselinePrice(params.ticker);
-  const changePct = 0.0;
-  const isPositive = changePct >= 0;
+  const spotPrice: number | undefined = undefined;
 
-  // Minervini execution levels & authentic state
+  // Minervini execution levels & authentic state (requires client-side live tape)
   const hasVerifiedMaster = master !== undefined;
-  const hasValidPrice = spotPrice !== undefined && spotPrice > 0;
-  const isHaltedOrIncomplete = sym === "CPRX" || !hasVerifiedMaster || !hasValidPrice;
   const isStage4 = sym === "FIX" || Boolean(master?.verdict?.toLowerCase().includes("stage 4") || master?.verdict?.toLowerCase().includes("correction"));
 
-  let executionState = "🟢 IN_BUY_ZONE (Optimal Accumulation)";
-  let executionBadgeClass = "bg-emerald-950 text-emerald-400 border-emerald-800";
-  let postureCode = "IN_BUY_ZONE";
+  let executionState = "🚫 UNAVAILABLE (Live Tape Required)";
+  let executionBadgeClass = "bg-slate-900 text-slate-400 border-slate-700";
+  let postureCode = "UNAVAILABLE";
 
-  if (!hasVerifiedMaster || !hasValidPrice) {
+  if (!hasVerifiedMaster) {
     executionState = "🚫 UNAVAILABLE (Uncataloged Asset)";
     executionBadgeClass = "bg-slate-900 text-slate-400 border-slate-700";
     postureCode = "UNAVAILABLE";
-  } else if (isHaltedOrIncomplete) {
-    executionState = "🔍 RESEARCH (Evidence Incomplete)";
-    executionBadgeClass = "bg-slate-900 text-slate-300 border-slate-700";
-    postureCode = "RESEARCH";
   } else if (isStage4) {
     executionState = "⏳ WAIT_FOR_TRIGGER (Stage 4 Correction)";
     executionBadgeClass = "bg-amber-950 text-amber-300 border-amber-800";
     postureCode = "WAIT_FOR_TRIGGER";
   }
 
-  const atr14 = master?.atr14 && master.atr14 > 0 ? master.atr14 : undefined;
-  const stopLoss = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined && atr14 !== undefined ? +(spotPrice - 1.5 * atr14).toFixed(2) : undefined;
-  const entryMin = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined ? (atr14 !== undefined ? +(spotPrice - 0.5 * atr14).toFixed(2) : spotPrice) : undefined;
-  const entryMax = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined ? spotPrice : undefined;
-  const target1 = !isHaltedOrIncomplete && atr14 !== undefined && spotPrice !== undefined ? +(spotPrice + 2.5 * atr14).toFixed(2) : undefined;
-  const target2 = !isHaltedOrIncomplete && atr14 !== undefined && spotPrice !== undefined ? +(spotPrice + 4.5 * atr14).toFixed(2) : undefined;
+  const stopLoss: number | undefined = undefined;
+  const entryMin: number | undefined = undefined;
+  const entryMax: number | undefined = undefined;
+  const target1: number | undefined = undefined;
+  const target2: number | undefined = undefined;
 
   const narrative = ASSET_NARRATIVES[sym] || {
     sectorMoat: master?.moatSummary || (hasVerifiedMaster ? `${sym} is an institutional equity tracked across fundamental balance sheet quality, momentum volatility, and macroeconomic regime sensitivity.` : "No verified corporate filings or operational moat records available for uncataloged asset."),
@@ -159,14 +139,15 @@ export default function StockDetailPage({ params }: PageProps) {
     politicalAngle: master?.thesis || (hasVerifiedMaster ? "Public Law 112-105 STOCK Act surveillance across US House and Senate disclosures." : "No verified political or congressional disclosures registered for this asset.")
   };
 
-  const compositeScore = master?.compositeFactorScore ?? factor?.scores.compositeFactorScore;
-  const piotroskiScore = master?.piotroski ?? factor?.scores.piotroskiFScore;
-  const growthScore = master?.growthScore ?? factor?.scores.growthScore;
-  const qualityScore = master?.qualityScore ?? factor?.scores.qualityScore;
-  const valuationScore = master?.valuationScore ?? factor?.scores.valuationScore;
-  const momentumScore = master?.momentumScore ?? factor?.scores.momentumScore;
-  const tailRiskScore = master?.tailRiskScore ?? factor?.scores.tailRiskScore;
-  const verdict = master?.verdict ?? factor?.scores.verdict ?? (hasVerifiedMaster ? "Unverified Security — Research Required" : "Uncataloged Asset — Ingestion Pending");
+  // Fundamental factor scores require live API / SEC filings verification
+  const compositeScore = undefined;
+  const piotroskiScore = undefined;
+  const growthScore = undefined;
+  const qualityScore = undefined;
+  const valuationScore = undefined;
+  const momentumScore = undefined;
+  const tailRiskScore = undefined;
+  const verdict = hasVerifiedMaster ? "Awaiting Verified SEC EDGAR Disclosures" : "Uncataloged Asset — Ingestion Pending";
 
   const jsonLd = [
     {
@@ -242,17 +223,11 @@ export default function StockDetailPage({ params }: PageProps) {
 
             <div className="text-right">
               <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-                {hasValidPrice && spotPrice !== undefined ? `$${spotPrice.toFixed(2)}` : "Price Unavailable"}
+                Live Tape Required
               </div>
-              {hasValidPrice ? (
-                <div className={`text-xs font-bold font-mono ${isPositive ? "text-emerald-400" : "text-rose-400"}`}>
-                  {isPositive ? "+" : ""}{changePct.toFixed(2)}% (24H)
-                </div>
-              ) : (
-                <div className="text-xs font-mono text-slate-500">Unverified Asset</div>
-              )}
+              <div className="text-xs font-mono text-slate-500">Unverified Realtime Feed</div>
               <span className="text-[10px] text-slate-500 font-sans block mt-0.5">
-                {hasValidPrice ? "Indicative Static Snapshot" : "No Market Feed Connected"}
+                Connect live feed for real-time tape
               </span>
             </div>
           </div>
@@ -340,40 +315,40 @@ export default function StockDetailPage({ params }: PageProps) {
             <div className="bg-[#06090f] p-3 rounded-xl border border-rose-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Stop Loss (Exit)</span>
               <strong className="text-rose-400 font-mono text-sm">
-                {stopLoss !== undefined ? `$${stopLoss.toFixed(2)}` : "N/A (Unverified)"}
+                N/A (Unverified)
               </strong>
               <span className="text-[10px] text-slate-400 block font-sans">
-                {stopLoss !== undefined ? "Invalidation Floor" : "No stop defined"}
+                Live Tape Required
               </span>
             </div>
 
             <div className="bg-[#06090f] p-3 rounded-xl border border-emerald-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Optimal Accumulation</span>
               <strong className="text-emerald-400 font-mono text-sm">
-                {entryMin !== undefined && entryMax !== undefined ? `$${entryMin.toFixed(2)} - $${entryMax.toFixed(2)}` : "N/A (Unverified)"}
+                N/A (Unverified)
               </strong>
               <span className="text-[10px] text-slate-400 block font-sans">
-                {entryMin !== undefined ? "Institutional Pocket" : "No entry zone"}
+                Live Tape Required
               </span>
             </div>
 
             <div className="bg-[#06090f] p-3 rounded-xl border border-cyan-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Target 1 (Scale 50%)</span>
               <strong className="text-cyan-400 font-mono text-sm">
-                {target1 !== undefined ? `$${target1.toFixed(2)}` : "N/A (< 50 sessions)"}
+                N/A (Unverified)
               </strong>
               <span className="text-[10px] text-slate-400 block font-sans">
-                {target1 !== undefined ? "+2.5x ATR14 Expansion" : "Historical trend unavailable"}
+                Live Tape Required
               </span>
             </div>
 
             <div className="bg-[#06090f] p-3 rounded-xl border border-purple-900/50 space-y-1">
               <span className="text-[10px] text-slate-500 uppercase block">Target 2 (Runner Exit)</span>
               <strong className="text-purple-400 font-mono text-sm">
-                {target2 !== undefined ? `$${target2.toFixed(2)}` : "N/A (< 50 sessions)"}
+                N/A (Unverified)
               </strong>
               <span className="text-[10px] text-slate-400 block font-sans">
-                {target2 !== undefined ? "+4.5x ATR14 Extended" : "Historical trend unavailable"}
+                Live Tape Required
               </span>
             </div>
           </div>

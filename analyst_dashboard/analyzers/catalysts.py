@@ -354,9 +354,14 @@ class CatalystEngine:
             data["current_price"] = current_price
             if not include_curated:
                 # Under Live-API-Only Epistemic Invariant:
-                # Production responses must never output static multi-year projections or fabricated upcoming milestones.
+                # Production responses must never output static multi-year projections, fabricated milestones, or unverified qualitative moats.
                 data["upcoming_milestones"] = []
                 data["multi_year_forecast"] = []
+                data["primary_drug_trial"] = "Awaiting Corporate Disclosures"
+                data["trial_phase"] = "Data Unavailable"
+                data["trial_readout_timeline"] = "Awaiting Official Corporate Schedule"
+                data["efficacy_summary"] = f"Awaiting verified fundamental and financial reporting disclosures for {data.get('company_name', upper)}."
+                data["competitive_edge"] = "Moat metrics unverified without official corporate filings."
             else:
                 data["isCuratedArchive"] = True
                 data["asOfDate"] = "2026-09-01"

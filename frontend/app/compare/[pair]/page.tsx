@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
-import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
-import { getMasterAsset } from "../../../lib/masterCatalog";
+import { SHARED_WATCHLIST_ITEMS } from "../../../lib/constants";
+import ComparePairMatrix from "../../../components/ComparePairMatrix";
 
 interface PageProps {
   params: {
@@ -65,32 +65,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
   const itemA = SHARED_WATCHLIST_ITEMS.find(i => i.symbol.toUpperCase() === symA);
   const itemB = SHARED_WATCHLIST_ITEMS.find(i => i.symbol.toUpperCase() === symB);
 
-  const factorA = SHARED_FACTOR_SCORES[symA];
-  const factorB = SHARED_FACTOR_SCORES[symB];
-
-  const priceA: number | null = null;
-  const priceB: number | null = null;
-
-  const masterA = getMasterAsset(symA);
-  const masterB = getMasterAsset(symB);
-
-  const scoreA = masterA?.compositeFactorScore ?? factorA?.scores.compositeFactorScore;
-  const scoreB = masterB?.compositeFactorScore ?? factorB?.scores.compositeFactorScore;
-
-  const piotroskiA = masterA?.piotroski ?? factorA?.scores.piotroskiFScore;
-  const piotroskiB = masterB?.piotroski ?? factorB?.scores.piotroskiFScore;
-
-  const growthA = masterA?.growthScore ?? factorA?.scores.growthScore;
-  const growthB = masterB?.growthScore ?? factorB?.scores.growthScore;
-
-  const qualityA = masterA?.qualityScore ?? factorA?.scores.qualityScore;
-  const qualityB = masterB?.qualityScore ?? factorB?.scores.qualityScore;
-
-  const valA = masterA?.valuationScore ?? factorA?.scores.valuationScore;
-  const valB = masterB?.valuationScore ?? factorB?.scores.valuationScore;
-
-  const verdictA = masterA?.verdict ?? factorA?.scores.verdict ?? "Unverified Security — Research Required";
-  const verdictB = masterB?.verdict ?? factorB?.scores.verdict ?? "Unverified Security — Research Required";
+  const nameA = itemA?.name || symA;
+  const nameB = itemB?.name || symB;
 
   const jsonLd = [
     {
@@ -181,54 +157,12 @@ export default function ComparisonPairPage({ params }: PageProps) {
             Quantitative Scorecard Comparison
           </h2>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#1e293b] text-slate-400">
-                  <th className="py-2.5 px-3">Metric / Factor</th>
-                  <th className="py-2.5 px-3 text-cyan-400 font-bold">{symA} ({itemA?.name || symA})</th>
-                  <th className="py-2.5 px-3 text-amber-400 font-bold">{symB} ({itemB?.name || symB})</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#162030] text-slate-300">
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Current Spot Price</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">{typeof priceA === "number" ? `$${(priceA as number).toFixed(2)}` : "Unavailable"}</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">{typeof priceB === "number" ? `$${(priceB as number).toFixed(2)}` : "Unavailable"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Composite Factor Score</td>
-                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreA !== undefined ? `${scoreA} / 100` : "N/A"}</td>
-                  <td className="py-2.5 px-3 font-mono text-emerald-400 font-bold">{scoreB !== undefined ? `${scoreB} / 100` : "N/A"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Piotroski 9-Point F-Score</td>
-                  <td className="py-2.5 px-3 font-mono text-cyan-300 font-bold">{piotroskiA !== undefined ? `${piotroskiA} / 9` : "N/A"}</td>
-                  <td className="py-2.5 px-3 font-mono text-amber-300 font-bold">{piotroskiB !== undefined ? `${piotroskiB} / 9` : "N/A"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Growth Score</td>
-                  <td className="py-2.5 px-3 font-mono">{growthA !== undefined ? `${growthA} / 100` : "N/A"}</td>
-                  <td className="py-2.5 px-3 font-mono">{growthB !== undefined ? `${growthB} / 100` : "N/A"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Quality Score</td>
-                  <td className="py-2.5 px-3 font-mono">{qualityA !== undefined ? `${qualityA} / 100` : "N/A"}</td>
-                  <td className="py-2.5 px-3 font-mono">{qualityB !== undefined ? `${qualityB} / 100` : "N/A"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Valuation Score</td>
-                  <td className="py-2.5 px-3 font-mono">{valA !== undefined ? `${valA} / 100` : "N/A"}</td>
-                  <td className="py-2.5 px-3 font-mono">{valB !== undefined ? `${valB} / 100` : "N/A"}</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">Institutional Verdict</td>
-                  <td className="py-2.5 px-3 font-sans text-emerald-400">{verdictA}</td>
-                  <td className="py-2.5 px-3 font-sans text-amber-400">{verdictB}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ComparePairMatrix
+            symA={symA}
+            symB={symB}
+            nameA={nameA}
+            nameB={nameB}
+          />
         </section>
 
         {/* More Preset Comparisons */}

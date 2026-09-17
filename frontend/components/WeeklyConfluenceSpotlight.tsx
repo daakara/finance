@@ -130,7 +130,7 @@ export default function WeeklyConfluenceSpotlight({
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
     if (!tacticalSetups || tacticalSetups.length === 0) return [];
 
-    // Filter valid setups with valid prices and numbers
+    // Filter valid setups with authentic positive prices, verified setup levels, and valid confluence score
     const valid = tacticalSetups
       .map((setup) => {
         const sym = setup.ticker;
@@ -143,6 +143,7 @@ export default function WeeklyConfluenceSpotlight({
           : (setup.entryPivot && setup.entryPivot > 0 ? setup.entryPivot : null);
 
         if (!effectivePrice || effectivePrice <= 0) return null;
+        if (!setup.stopLoss || setup.stopLoss <= 0 || !setup.target1 || setup.target1 <= 0) return null;
         const confScore = typeof setup.confluenceScore === "number" && !isNaN(setup.confluenceScore)
           ? setup.confluenceScore
           : 0;
@@ -205,15 +206,15 @@ export default function WeeklyConfluenceSpotlight({
         thesis: setup.entryThesis || "Live Confluence Setup",
       };
 
-      const stopVal = setup.stopLoss || (effectivePrice * 0.95);
-      const target1Val = setup.target1 || (effectivePrice * 1.10);
-      const target2Val = setup.target2 || (effectivePrice * 1.20);
+      const stopVal = setup.stopLoss ?? 0;
+      const target1Val = setup.target1 ?? 0;
+      const target2Val = setup.target2 ?? target1Val;
       const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
       const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
       const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
       const riskDelta = effectivePrice - stopVal;
       const rewardDelta = target1Val - effectivePrice;
-      const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.0";
+      const rr = riskDelta > 0 && rewardDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "N/A";
 
       return {
         entry,
