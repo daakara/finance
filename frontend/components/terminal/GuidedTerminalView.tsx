@@ -77,13 +77,26 @@ export default function GuidedTerminalView({
 
           <div
             onClick={onOpenWhy}
-            className="flex flex-col items-center justify-center p-3 bg-[#06090f] border border-[#24334b] hover:border-cyan-500/60 rounded-xl cursor-pointer transition-all shadow-md group shrink-0"
-            title="Click to inspect exact score breakdown"
+            className={`flex flex-col items-center justify-center p-3 bg-[#06090f] border rounded-xl cursor-pointer transition-all shadow-md group shrink-0 ${
+              insight.terminalState.overallEligibility !== "ELIGIBLE"
+                ? "border-slate-700 hover:border-slate-500"
+                : "border-[#24334b] hover:border-cyan-500/60"
+            }`}
+            title={insight.terminalState.overallEligibility !== "ELIGIBLE"
+              ? "Score based on partial evidence — click to inspect breakdown"
+              : "Click to inspect exact score breakdown"}
           >
             <span className="text-[10px] text-slate-400 font-mono">Setup Score</span>
-            <span className={`text-2xl font-black font-mono ${insight.setupScore >= 75 ? "text-emerald-400" : insight.setupScore >= 55 ? "text-amber-400" : "text-rose-400"}`}>
-              {insight.setupScore}
+            <span className={`text-2xl font-black font-mono ${
+              insight.terminalState.overallEligibility !== "ELIGIBLE"
+                ? "text-slate-500"
+                : insight.setupScore >= 75 ? "text-emerald-400" : insight.setupScore >= 55 ? "text-amber-400" : "text-rose-400"
+            }`}>
+              {insight.setupScore}{insight.terminalState.overallEligibility !== "ELIGIBLE" ? "*" : ""}
             </span>
+            {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
+              <span className="text-[8px] text-amber-500/80 font-mono mt-0.5">Partial</span>
+            )}
             <span className="text-[9px] text-cyan-400 group-hover:underline font-mono mt-0.5">Why? 🔍</span>
           </div>
         </div>

@@ -186,6 +186,7 @@ export default function TickerCommandStrip({
             score={setupScore}
             domainConfidence={domainConfidence}
             mode={activeMode}
+            isPartialEvidence={domainConfidence === "LIMITED"}
           />
 
           {/* Execution State Badge */}

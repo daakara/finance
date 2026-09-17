@@ -54,10 +54,23 @@ export default function StandardTerminalView({
 
             <div
               onClick={onOpenWhy}
-              className="flex flex-col items-center justify-center p-2.5 bg-[#06090f] border border-[#24334b] hover:border-cyan-500 rounded-xl cursor-pointer transition-all shrink-0"
+              className={`flex flex-col items-center justify-center p-2.5 bg-[#06090f] border rounded-xl cursor-pointer transition-all shrink-0 ${
+                insight.terminalState.overallEligibility !== "ELIGIBLE"
+                  ? "border-slate-700 hover:border-slate-500"
+                  : "border-[#24334b] hover:border-cyan-500"
+              }`}
             >
               <span className="text-[10px] text-slate-400 font-mono">Setup Score</span>
-              <span className="text-xl font-black text-cyan-400 font-mono">{insight.setupScore}/100</span>
+              <span className={`text-xl font-black font-mono ${
+                insight.terminalState.overallEligibility !== "ELIGIBLE"
+                  ? "text-slate-500"
+                  : "text-cyan-400"
+              }`}>
+                {insight.setupScore}{insight.terminalState.overallEligibility !== "ELIGIBLE" ? "*" : ""}/100
+              </span>
+              {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
+                <span className="text-[8px] text-amber-500/80 font-mono">Partial</span>
+              )}
               <span className="text-[9px] text-slate-500 font-mono">{insight.standard.signalsRatio}</span>
             </div>
           </div>

@@ -8,6 +8,7 @@ export interface SetupScoreBadgeProps {
   score: number; // 0 - 100
   domainConfidence?: DomainConfidence;
   mode?: ExperienceMode;
+  isPartialEvidence?: boolean;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -16,11 +17,13 @@ export default function SetupScoreBadge({
   score,
   domainConfidence = "HIGH",
   mode = "STANDARD",
+  isPartialEvidence = false,
   size = "md",
   className = "",
 }: SetupScoreBadgeProps) {
   // Clamp score between 0 and 100
   const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
+  const effectiveIsPartial = isPartialEvidence || domainConfidence === "LIMITED";
 
   // Strict institutional color thresholding:
   // >= 70: Emerald (Favorable)
@@ -29,7 +32,16 @@ export default function SetupScoreBadge({
   const isHigh = normalizedScore >= 70;
   const isMid = normalizedScore >= 50 && normalizedScore < 70;
 
-  const colorConfig = isHigh
+  const colorConfig = effectiveIsPartial
+    ? {
+        stroke: "#64748b", // Slate 500
+        text: "text-slate-500",
+        bg: "bg-slate-500/10",
+        border: "border-slate-700",
+        label: "Partial",
+        guidedLabel: "Partial Evidence",
+      }
+    : isHigh
     ? {
         stroke: "#10b981", // Emerald 500
         text: "text-emerald-400",
@@ -105,7 +117,7 @@ export default function SetupScoreBadge({
           data-testid="setup-score-value"
           className={`absolute font-mono font-bold text-sm sm:text-base ${colorConfig.text}`}
         >
-          {normalizedScore}
+          {normalizedScore}{effectiveIsPartial ? "*" : ""}
         </span>
       </div>
 

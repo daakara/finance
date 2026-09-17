@@ -82,6 +82,33 @@ describe("TickerCommandStrip & Badge Components (Milestone W1.5)", () => {
       const confTag = screen.getByTestId("domain-confidence-tag");
       expect(confTag.textContent).toContain("CONF: HIGH");
     });
+
+    it("renders dimmed slate styling with asterisk and partial label when isPartialEvidence is true", () => {
+      render(<SetupScoreBadge score={72} isPartialEvidence={true} />);
+      const badge = screen.getByTestId("setup-score-badge");
+      expect(badge.className).toContain("border-slate-700");
+
+      const scoreVal = screen.getByTestId("setup-score-value");
+      expect(scoreVal.textContent).toBe("72*");
+      expect(scoreVal.className).toContain("text-slate-500");
+
+      const status = screen.getByTestId("setup-score-status");
+      expect(status.textContent).toBe("Partial");
+      expect(status.className).toContain("text-slate-500");
+    });
+
+    it("renders dimmed slate styling with asterisk when domainConfidence is LIMITED", () => {
+      render(<SetupScoreBadge score={72} domainConfidence="LIMITED" />);
+      const badge = screen.getByTestId("setup-score-badge");
+      expect(badge.className).toContain("border-slate-700");
+
+      const scoreVal = screen.getByTestId("setup-score-value");
+      expect(scoreVal.textContent).toBe("72*");
+      expect(scoreVal.className).toContain("text-slate-500");
+
+      const status = screen.getByTestId("setup-score-status");
+      expect(status.textContent).toBe("Partial");
+    });
   });
 
   describe("ExecutionStateBadge", () => {
