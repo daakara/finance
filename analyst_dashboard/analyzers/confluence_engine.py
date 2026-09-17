@@ -75,10 +75,22 @@ class ConfluenceEngine:
         score_components = []
         if quality is not None:
             score_components.append((quality, 0.45))
+        elif piotroski is not None:
+            score_components.append((min(100.0, (piotroski / 9.0) * 100.0), 0.45))
+        elif fundamental_data and fundamental_data.get("roic") is not None:
+            score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.45))
+
         if growth is not None:
             score_components.append((growth, 0.30))
+        elif fundamental_data and fundamental_data.get("roic") is not None:
+            score_components.append((min(100.0, max(0.0, float(fundamental_data["roic"]) * 2.5)), 0.30))
+
         if valuation is not None:
             score_components.append((valuation, 0.25))
+        elif fundamental_data and fundamental_data.get("peg") is not None:
+            peg_val = float(fundamental_data["peg"])
+            val_pts = 90.0 if peg_val < 0.8 else (80.0 if peg_val < 1.2 else (65.0 if peg_val < 2.0 else 40.0))
+            score_components.append((val_pts, 0.25))
 
         has_fundamentals = len(score_components) > 0
 

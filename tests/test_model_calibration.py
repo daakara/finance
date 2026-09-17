@@ -1,4 +1,4 @@
-﻿"""Tests for Model Calibration: ETF scoring, ER drift damping, and Crypto Value moats."""
+"""Tests for Model Calibration: ETF scoring, ER drift damping, and Crypto Value moats."""
 
 from unittest.mock import patch, MagicMock
 import pytest
@@ -25,8 +25,8 @@ def test_etf_quality_calibration():
 
     with patch("yfinance.Ticker", return_value=mock_ticker):
         res = get_asset_analytics("SPY", "1y")
-        assert res["factorScores"]["compositeFactorScore"] >= 68
-        assert res["factorScores"]["qualityScore"] >= 80
+        assert res["factorScores"]["qualityScore"] is None, "ETF corporate quality score must be None"
+        assert "Benchmark ETF" in res["factorScores"]["verdict"]
 
 def test_er_drift_damping():
     mock_ticker = MagicMock()

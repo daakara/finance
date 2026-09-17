@@ -204,7 +204,7 @@ export default function AdaptiveTerminal({
             <button
               type="button"
               onClick={() => handleSetOwnership("NOT_OWNED")}
-              className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "NOT_OWNED"
                   ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
                   : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
@@ -215,7 +215,7 @@ export default function AdaptiveTerminal({
             <button
               type="button"
               onClick={() => handleSetOwnership("OWNED")}
-              className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "OWNED"
                   ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
                   : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
@@ -227,7 +227,7 @@ export default function AdaptiveTerminal({
               <button
                 type="button"
                 onClick={() => handleSetOwnership("UNKNOWN")}
-                className="px-2 py-1 text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer"
+                className="min-h-[44px] sm:min-h-[32px] px-2 py-1 text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer flex items-center justify-center"
                 title="Reset relationship"
               >
                 Reset

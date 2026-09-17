@@ -394,8 +394,9 @@ class TestNextJsFrontendStructure(unittest.TestCase):
             api_content = f.read()
         with open(db_path, "r", encoding="utf-8") as f:
             db_content = f.read()
-        self.assertIn("persisted?.currentPrice", api_content)
-        self.assertIn("persisted?.priceChangePct24h", api_content)
+        self.assertIn("persistMarketSnapshot", api_content)
+        self.assertIn("persistMarketSnapshot", db_content)
+        self.assertIn("getPersistedMarketSnapshot", db_content)
     def test_matomo_analytics_and_user_journey_wiring(self):
         """Regression Quality Gate: Ensure Matomo Tag Manager, Privacy-First tracker, and User Journey events are fully wired."""
         layout_path = os.path.join("frontend", "app", "layout.tsx")

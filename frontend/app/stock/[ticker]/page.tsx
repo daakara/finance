@@ -112,12 +112,13 @@ export default function StockDetailPage({ params }: PageProps) {
   // Minervini execution levels & authentic state (requires client-side live tape)
   const hasVerifiedMaster = master !== undefined;
   const isStage4 = sym === "FIX" || Boolean(master?.verdict?.toLowerCase().includes("stage 4") || master?.verdict?.toLowerCase().includes("correction"));
+  const isHaltedOrIncomplete = !hasVerifiedMaster || spotPrice === undefined;
 
   let executionState = "🚫 UNAVAILABLE (Live Tape Required)";
   let executionBadgeClass = "bg-slate-900 text-slate-400 border-slate-700";
   let postureCode = "UNAVAILABLE";
 
-  if (!hasVerifiedMaster) {
+  if (isHaltedOrIncomplete && !hasVerifiedMaster) {
     executionState = "🚫 UNAVAILABLE (Uncataloged Asset)";
     executionBadgeClass = "bg-slate-900 text-slate-400 border-slate-700";
     postureCode = "UNAVAILABLE";
@@ -127,7 +128,8 @@ export default function StockDetailPage({ params }: PageProps) {
     postureCode = "WAIT_FOR_TRIGGER";
   }
 
-  const stopLoss: number | undefined = undefined;
+  // Canonical stop-loss parity: 0.93 multiplier (-7% floor) when spot price is present
+  const stopLoss: number | undefined = spotPrice !== undefined ? +(spotPrice * 0.93).toFixed(2) : undefined;
   const entryMin: number | undefined = undefined;
   const entryMax: number | undefined = undefined;
   const target1: number | undefined = undefined;

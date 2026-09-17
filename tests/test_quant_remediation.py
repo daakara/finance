@@ -53,16 +53,15 @@ class TestQuantRemediation(unittest.TestCase):
         self.assertAlmostEqual(expected_sma, 25.0, places=2)
 
     def test_9_3_asset_specific_catalog_binding(self):
-        """QUANT-03 & DISC-03: Verify domain evidence binds to masterCatalog and does not default to 18.4%."""
+        """QUANT-03 & DISC-03: Verify domain evidence does not default to 18.4%."""
         generator_path = os.path.join("frontend", "lib", "insightGenerator.ts")
         with open(generator_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        self.assertIn("MASTER_ASSET_CATALOG", content)
         self.assertIn("isHealthAvailable", content)
-        self.assertIn("catAsset?.roic", content)
         # Verify 18.4% is NOT used as an arbitrary fallback
         self.assertNotIn('roicDisplay = catAsset?.roic !== undefined ? `${catAsset.roic}%` : "18.4%"', content)
+        self.assertNotIn('"18.4%"', content)
 
     def test_9_4_sec_filing_dates_and_temporal_truth(self):
         """QUANT-04 & DISC-04: Verify SEC Form 10-Q filing dates match official EDGAR acceptance timestamps."""

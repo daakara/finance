@@ -28,13 +28,16 @@ def _validate_symbol(sym: Optional[str]) -> Optional[str]:
 
 
 @router.get("/overview")
-def get_smart_money_overview(response: Response = None):
+def get_smart_money_overview(
+    include_curated: bool = Query(False, description="Include curated research archive records"),
+    response: Response = None
+):
     """Get market-wide congressional disclosures and unusual options flow overview."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
-    overview = smart_money_engine.get_smart_money_overview()
+    overview = smart_money_engine.get_smart_money_overview(include_curated=include_curated)
     overview["regulatory_sources"] = {
         "sec_edgar": "Official SEC Form 4 & 10-K Public API",
         "finra_ats": "FINRA ATS Dark Pool Transparency Aggregation",

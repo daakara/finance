@@ -2120,5 +2120,5 @@ class SmartMoneyEngine:
             'fresh_trades_count': len(fresh_trades),
             'congress_trades': enriched_trades,
             'sec_insider_trades': SEC_FORM_4_TRADES,
-            'options_flow': SmartMoneyEngine.get_options_flow(include_curated=False),
+            'options_flow': SmartMoneyEngine.get_options_flow(include_curated=include_curated),
         }

@@ -69,7 +69,7 @@ def test_2_onchain_missing_is_unavailable_not_zero():
 # Test 3: Static congressional trades are labelled curated/historical
 # ---------------------------------------------------------------------------
 def test_3_congressional_trades_labeled_curated():
-    res = client.get("/api/v1/smart-money/congress")
+    res = client.get("/api/v1/smart-money/congress?include_curated=true")
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "CURATED"
