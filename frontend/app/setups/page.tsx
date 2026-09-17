@@ -185,7 +185,12 @@ function SetupsContent() {
                   stopLoss: 0,
                   target1: 0,
                   target2: 0,
-                  confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
+                  confluenceScore: typeof data.confluence?.confluenceScore === 'number' &&
+                    Number.isFinite(data.confluence.confluenceScore) &&
+                    data.confluence.confluenceScore >= 0 &&
+                    data.confluence.confluenceScore <= 100
+                      ? Math.round(data.confluence.confluenceScore)
+                      : undefined,
                   decisionState: data.decisionTrace?.decisionState || "EVIDENCE_INCOMPLETE",
                   isActionable: false,
                   reasonSuppressed: opt?.entry_thesis || `No active Minervini VCP or breakout setup currently qualifies for ${upper}. Technical structure does not meet risk/reward criteria.`,

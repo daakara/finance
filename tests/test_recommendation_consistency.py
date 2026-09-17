@@ -325,3 +325,123 @@ def test_smart_money_confluence_inputs_parity():
         assert inputs_call_flow["has_insider_buy"] is False
         assert inputs_call_flow["has_congress_buy"] is False
 
+
+def test_day_trader_intraday_momentum_approved():
+    """Verify that Day Trader setups with Intraday Momentum Trend Expansion pass the gate."""
+    state = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=100.0,
+        candle_count=60,
+        freshness_status="LIVE",
+        has_fundamentals=True,
+        confluence_score=85.0,
+        stage_phase="Intraday Momentum Trend Expansion",
+        is_in_buy_zone=True,
+        risk_reward_ratio=2.5,
+        is_confirmed=True,
+        user_role="DAY_TRADER",
+    )
+    assert state["state"] == DecisionState.ACTIONABLE_SETUP.value
+    assert state["isActionable"] is True
+    assert state["canSizeTrade"] is True
+    assert state["disqualificationReason"] is None
+
+
+def test_intraday_momentum_not_relabelled_as_stage_2():
+    """Verify that intraday momentum is NEVER relabeled as Minervini Stage 2 in normalize_stage."""
+    assert DecisionHierarchyEngine.normalize_stage("Intraday Momentum Trend Expansion") is None
+    assert DecisionHierarchyEngine.is_valid_intraday_stage("Intraday Momentum Trend Expansion") is True
+
+
+def test_swing_trader_rejects_intraday_momentum():
+    """Verify that Swing Trader rejects Intraday Momentum Trend Expansion because Stage 2 is strictly required."""
+    state = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=100.0,
+        candle_count=60,
+        freshness_status="LIVE",
+        has_fundamentals=True,
+        confluence_score=85.0,
+        stage_phase="Intraday Momentum Trend Expansion",
+        is_in_buy_zone=True,
+        risk_reward_ratio=2.5,
+        is_confirmed=True,
+        user_role="SWING_TRADER",
+    )
+    assert state["state"] == DecisionState.VALID_SETUP.value
+    assert state["isActionable"] is False
+    assert state["disqualificationReason"] == (
+        "Stage unconfirmed: Minervini Stage 2 advancing growth phase required for trade approval."
+    )
+
+
+def test_day_trader_rejects_unknown_and_none_stages():
+    """Verify that Day Trader strictly rejects missing, None, or UNKNOWN stages."""
+    for invalid_stage in [None, "UNKNOWN", "Unclassified Base"]:
+        state = DecisionHierarchyEngine.resolve_decision_state(
+            symbol="AAPL",
+            current_price=100.0,
+            candle_count=60,
+            freshness_status="LIVE",
+            has_fundamentals=True,
+            confluence_score=85.0,
+            stage_phase=invalid_stage,
+            is_in_buy_zone=True,
+            risk_reward_ratio=2.5,
+            is_confirmed=True,
+            user_role="DAY_TRADER",
+        )
+        assert state["state"] == DecisionState.VALID_SETUP.value, f"Failed for {invalid_stage}"
+        assert state["isActionable"] is False
+        assert state["disqualificationReason"] == (
+            "Intraday momentum unconfirmed: Active intraday trend expansion required for trade approval."
+        )
+
+
+def test_day_trader_analysis_and_trade_plan_parity():
+    """Verify that Day Trader setups achieve exact parity between Analysis and Trade Plan."""
+    from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
+
+    with patch('api.routes.analytics.optimal_execution_engine.calculate_trade_levels') as mock_calc, \
+         patch('api.routes.analytics.confluence_engine.calculate_confluence') as mock_conf, \
+         patch('api.routes.analytics.market_db.get_factor_snapshot', return_value={"quality_score": 85}), \
+         patch('api.routes.analytics.market_db.get_catalyst', return_value=None), \
+         patch('api.routes.analytics.fred_fetcher.get_macro_indicators', return_value=None), \
+         patch('api.routes.analytics.smart_money_engine.get_options_flow', return_value=[]):
+
+        plan = {
+            "execution_status": "IN_BUY_ZONE",
+            "stop_loss": 98.0,
+            "optimal_entry_max": 100.0,
+            "take_profit_1": 105.0,
+            "risk_reward_ratio": 2.5,
+            "stage_phase": "Intraday Momentum Trend Expansion",
+            "setup_pattern": "Raschke 20 EMA Pullback & VWAP Re-test",
+            "entry_thesis": "Intraday pullback to 20 EMA with positive volume absorption.",
+            "user_role": "DAY_TRADER",
+        }
+        mock_calc.return_value = plan
+        mock_conf.return_value = {"confluenceScore": 82.0}
+
+        # 1. Trade Plan setup API resolution
+        setup = _build_tactical_setup('AAPL', 'DAY_TRADER', CANDLES, is_stale=False)
+
+        # 2. Analysis decision trace resolution
+        trace = DecisionTraceEngine.build_decision_trace(
+            symbol="AAPL",
+            current_price=100.0,
+            candles=CANDLES,
+            freshness={"status": "LIVE", "stalenessDays": 0, "candleCount": len(CANDLES)},
+            technicals={},
+            confluence={"confluenceScore": 82.0},
+            factor_scores={"qualityScore": 85},
+            optimal_execution=plan,
+            user_role="DAY_TRADER",
+        )
+
+        # 3. Assert exact parity
+        assert setup['decisionState'] == trace['decisionState'] == "ACTIONABLE_SETUP"
+        assert setup['isActionable'] == trace['isActionable'] == True
+        assert setup['userRole'] == "DAY_TRADER"
+
+

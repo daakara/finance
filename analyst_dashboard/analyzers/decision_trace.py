@@ -25,6 +25,7 @@ class DecisionTraceEngine:
         smart_money: Optional[Dict[str, Any]] = None,
         macro_difficulty: Optional[Dict[str, Any]] = None,
         catalyst_report: Optional[Dict[str, Any]] = None,
+        user_role: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Construct the comprehensive Decision Trace tree."""
         clean_sym = symbol.upper().strip()
@@ -45,6 +46,8 @@ class DecisionTraceEngine:
         if optimal_execution:
             stage = optimal_execution.get("stage_phase") or optimal_execution.get("setup_pattern")
 
+        effective_role = user_role or (optimal_execution.get("user_role") if optimal_execution else None)
+
         # 1. Resolve State via Canonical Precedence Hierarchy
         decision_state = DecisionHierarchyEngine.resolve_decision_state(
             symbol=clean_sym,
@@ -58,6 +61,7 @@ class DecisionTraceEngine:
             risk_reward_ratio=rr,
             is_cataloged=True,
             is_confirmed=is_confirmed,
+            user_role=effective_role,
         )
 
         # 2. Extract Pillar Statuses

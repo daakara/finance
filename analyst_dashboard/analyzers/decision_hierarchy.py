@@ -55,6 +55,14 @@ class DecisionHierarchyEngine:
         return None
 
     @staticmethod
+    def is_valid_intraday_stage(stage_val: Any) -> bool:
+        """Verify if stage represents confirmed intraday momentum trend expansion."""
+        if not stage_val or not isinstance(stage_val, str):
+            return False
+        clean = stage_val.strip().lower()
+        return "intraday momentum" in clean or "trend expansion" in clean
+
+    @staticmethod
     def resolve_decision_state(
         symbol: str,
         current_price: float,
@@ -67,6 +75,7 @@ class DecisionHierarchyEngine:
         risk_reward_ratio: Optional[float] = None,
         is_cataloged: bool = True,
         is_confirmed: bool = True,
+        user_role: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
@@ -120,15 +129,26 @@ class DecisionHierarchyEngine:
             }
 
         # ── Precedence 6: ACTIONABLE_SETUP (Highest criteria) ─────────────────
-        # Requires: Full evidence + Stage 2 accumulation + Confluence >= 75 + in buy zone + confirmed trigger + R:R >= 2.0
+        # Requires: Full evidence + Horizon-specific trend qualification + Confluence >= 75 + in buy zone + confirmed trigger + R:R >= 2.0
         norm_stage = DecisionHierarchyEngine.normalize_stage(stage_phase)
+        is_intraday_expansion = DecisionHierarchyEngine.is_valid_intraday_stage(stage_phase)
+        clean_role = user_role.upper().strip() if isinstance(user_role, str) else None
+
+        # Explicit horizon-specific eligibility:
+        # Day Trader evaluates confirmed intraday momentum trend expansion or Stage 2.
+        # Swing / Long-term strictly requires Minervini Stage 2 advancing growth phase.
+        is_day_trader = (clean_role == "DAY_TRADER") or (clean_role is None and is_intraday_expansion)
+        if is_day_trader:
+            is_stage_eligible = is_intraday_expansion or (norm_stage == 2)
+        else:
+            is_stage_eligible = (norm_stage == 2)
+
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
-        is_stage_2 = norm_stage == 2
         if (
             confluence_score >= 75.0
             and is_in_buy_zone
             and is_confirmed
-            and is_stage_2
+            and is_stage_eligible
             and rr >= 2.0
         ):
             return {
@@ -150,7 +170,9 @@ class DecisionHierarchyEngine:
             reason = "Stage 1 structural basing phase: price establishing floor; awaiting Stage 2 breakout."
         elif norm_stage == 3:
             reason = "Stage 3 distribution phase: topping pattern detected; protect capital."
-        elif norm_stage is None:
+        elif is_day_trader and not is_stage_eligible:
+            reason = "Intraday momentum unconfirmed: Active intraday trend expansion required for trade approval."
+        elif not is_day_trader and norm_stage is None:
             reason = "Stage unconfirmed: Minervini Stage 2 advancing growth phase required for trade approval."
         elif not is_in_buy_zone:
             reason = "Price is outside the optimal entry corridor; awaiting pullback to buy zone."

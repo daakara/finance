@@ -177,7 +177,7 @@ export interface TradeSetupSpec {
   stopLoss: number;
   target1?: number;
   target2?: number;
-  confluenceScore: number;
+  confluenceScore?: number | null;
   isActionable?: boolean;
   reasonSuppressed?: string | null;
   executionStatus?: string;
@@ -367,8 +367,12 @@ export function calculateGovernedPositionSize(
   } else if (clampFactorPct < 0) {
     cleanRoomRationale = `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`;
   } else {
-    const formattedScore = (typeof setup.confluenceScore === 'number' && !isNaN(setup.confluenceScore))
-      ? `${setup.confluenceScore.toFixed(1)}/100`
+    const isValidScore = typeof setup.confluenceScore === 'number' &&
+      Number.isFinite(setup.confluenceScore) &&
+      setup.confluenceScore >= 0 &&
+      setup.confluenceScore <= 100;
+    const formattedScore = isValidScore
+      ? `${setup.confluenceScore!.toFixed(1)}/100`
       : 'Unavailable';
     cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). No Governor risk reduction applied under the evaluated rules. Confluence score: ${formattedScore}.`;
   }

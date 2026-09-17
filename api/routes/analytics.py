@@ -301,6 +301,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         risk_reward_ratio=rr,
         is_cataloged=True,
         is_confirmed=is_confirmed,
+        user_role=clean_role,
     )
 
     decision_state = dec_state.get("state", DecisionState.VALID_SETUP.value)
@@ -882,6 +883,7 @@ def get_asset_analytics(
                 },
                 macro_difficulty=macro_difficulty,
                 catalyst_report=catalyst_report,
+                user_role=clean_role,
             ),
         }
 

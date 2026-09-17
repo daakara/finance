@@ -512,5 +512,6 @@ class OptimalExecutionEngine:
             and plan.get("optimal_entry_max") is not None
             and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
         )
+        plan["user_role"] = user_role
 
         return plan
