@@ -324,4 +324,112 @@ const baseContext: TraderContext = {
   console.log("✓ Test 12 Passed: Missing confluence score displays Unavailable instead of 0/100");
 }
 
-console.log("ALL 12 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");
+// Test 13: Reject Infinity
+{
+  const infSetup: TradeSetupSpec = {
+    ticker: "TEST_INF_CONF",
+    setupName: "Infinite Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: Infinity,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(infSetup, baseContext);
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: Unavailable"),
+    "Infinity confluence must display Unavailable"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("Infinity"),
+    "Must NOT render Infinity"
+  );
+  console.log("✓ Test 13 Passed: Infinity confluence correctly rejected as Unavailable");
+}
+
+// Test 14: Reject Negative Score (< 0)
+{
+  const negSetup: TradeSetupSpec = {
+    ticker: "TEST_NEG_CONF",
+    setupName: "Negative Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: -12.5,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(negSetup, baseContext);
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: Unavailable"),
+    "Negative confluence must display Unavailable"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("-12"),
+    "Must NOT render negative score"
+  );
+  console.log("✓ Test 14 Passed: Negative confluence score (< 0) rejected as Unavailable");
+}
+
+// Test 15: Reject Out-of-bounds Score (> 100)
+{
+  const overSetup: TradeSetupSpec = {
+    ticker: "TEST_OVER_CONF",
+    setupName: "Over 100 Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: 115.0,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(overSetup, baseContext);
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: Unavailable"),
+    "Score > 100 must display Unavailable"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("115"),
+    "Must NOT render score > 100"
+  );
+  console.log("✓ Test 15 Passed: Out-of-bounds score (> 100) rejected as Unavailable");
+}
+
+// Test 16: Explicit null confluence score
+{
+  const nullSetup: TradeSetupSpec = {
+    ticker: "TEST_NULL_CONF",
+    setupName: "Null Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: null,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(nullSetup, baseContext);
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: Unavailable"),
+    "Null confluence must display Unavailable"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("0/100"),
+    "Null confluence must NOT default to 0/100"
+  );
+  console.log("✓ Test 16 Passed: Explicit null confluence displays Unavailable without 0/100 fallback");
+}
+
+console.log("ALL 16 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");

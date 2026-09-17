@@ -218,7 +218,12 @@ function SetupsContent() {
                 stopLoss: opt.stop_loss,
                 target1: opt.take_profit_1 || 0,
                 target2: opt.take_profit_2 || 0,
-                confluenceScore: Math.round(data.confluence?.confluenceScore || 0),
+                confluenceScore: typeof data.confluence?.confluenceScore === 'number' &&
+                  Number.isFinite(data.confluence.confluenceScore) &&
+                  data.confluence.confluenceScore >= 0 &&
+                  data.confluence.confluenceScore <= 100
+                    ? Math.round(data.confluence.confluenceScore)
+                    : undefined,
                 decisionState,
                 isActionable,
                 reasonSuppressed: isActionable
@@ -275,7 +280,7 @@ function SetupsContent() {
     stopLoss: 0,
     target1: 0,
     target2: 0,
-    confluenceScore: 0,
+    confluenceScore: undefined,
     isActionable: false,
     reasonSuppressed: "Select a verified asset setup to authorize order.",
   };
@@ -652,7 +657,11 @@ function SetupsContent() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-base font-bold font-mono text-white group-hover:text-cyan-300">{setup.ticker}</span>
-                    <span className="text-xs font-mono font-bold text-emerald-400">{setup.confluenceScore}/100</span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">
+                      {typeof setup.confluenceScore === 'number' && Number.isFinite(setup.confluenceScore) && setup.confluenceScore >= 0 && setup.confluenceScore <= 100
+                        ? `${setup.confluenceScore}/100`
+                        : 'Unavailable'}
+                    </span>
                   </div>
                   <div className="text-[11px] text-slate-300 font-medium truncate">{setup.setupName}</div>
                   <div className="text-[11px] font-mono text-slate-400 flex justify-between pt-1 border-t border-slate-800">
@@ -725,7 +734,11 @@ function SetupsContent() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-base font-bold font-mono text-white">{setup.ticker}</span>
-                          <span className="text-xs font-mono font-bold text-cyan-400">{setup.confluenceScore}/100</span>
+                          <span className="text-xs font-mono font-bold text-cyan-400">
+                            {typeof setup.confluenceScore === 'number' && Number.isFinite(setup.confluenceScore) && setup.confluenceScore >= 0 && setup.confluenceScore <= 100
+                              ? `${setup.confluenceScore}/100`
+                              : 'Unavailable'}
+                          </span>
                         </div>
                         <div className="text-[11px] text-slate-300 mt-1 font-medium truncate">{setup.setupName}</div>
                         <div className="text-[11px] font-mono text-slate-400 mt-2 flex justify-between">
