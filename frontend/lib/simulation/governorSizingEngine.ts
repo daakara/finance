@@ -353,7 +353,7 @@ export function calculateGovernedPositionSize(
 
   // Cap total clamp between 0% and 70% to strictly preserve human agency (INV-OI114-P)
   const finalClampPct = Math.min(0.70, clampPenalty);
-  const clampFactorPct = -Math.round(finalClampPct * 100);
+  const clampFactorPct = finalClampPct === 0 ? 0 : -Math.round(finalClampPct * 100);
 
   const recommendedDollarRisk = isActionable ? Math.round(standardDollarRisk * (1 - finalClampPct)) : 0;
   const rawShares = isActionable && stopDistanceDollar > 0 ? Math.floor(recommendedDollarRisk / stopDistanceDollar) : 0;
@@ -367,7 +367,10 @@ export function calculateGovernedPositionSize(
   } else if (clampFactorPct < 0) {
     cleanRoomRationale = `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`;
   } else {
-    cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). High confluence (${setup.confluenceScore || 0}/100) and disciplined execution state verified.`;
+    const formattedScore = (typeof setup.confluenceScore === 'number' && !isNaN(setup.confluenceScore))
+      ? `${setup.confluenceScore.toFixed(1)}/100`
+      : 'Unavailable';
+    cleanRoomRationale = `Standard position risk authorized ($${standardDollarRisk}). No Governor risk reduction applied under the evaluated rules. Confluence score: ${formattedScore}.`;
   }
 
   const rMultipleTarget1 = isActionable && target1Num > entryPivotNum && stopDistanceDollar > 0 ? Number(((target1Num - entryPivotNum) / stopDistanceDollar).toFixed(2)) : 0;

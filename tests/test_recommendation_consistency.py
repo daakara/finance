@@ -6,6 +6,10 @@ from analyst_dashboard.analyzers.optimal_execution import (
     ACTIONABLE_EXECUTION_STATUSES,
     ALL_EXECUTION_STATUSES,
 )
+from analyst_dashboard.analyzers.decision_hierarchy import (
+    DecisionHierarchyEngine,
+    DecisionState,
+)
 import pandas as pd
 
 DATES = pd.date_range("2026-01-01", periods=60, freq="B").strftime("%Y-%m-%d").tolist()
@@ -272,3 +276,52 @@ def test_analysis_and_trade_plan_decision_parity():
         # 3. Assert exact parity between Analysis and Trade Plan
         assert setup['decisionState'] == trace['decisionState'] == "ACTIONABLE_SETUP"
         assert setup['isActionable'] == trace['isActionable'] == True
+
+
+def test_unconfirmed_and_none_stage_strictly_rejected():
+    """Verify that UNKNOWN, None, and unclassified stages strictly fail the Stage 2 gate with clear reason."""
+    for invalid_stage in [None, "UNKNOWN", "Unclassified Base", "Stage 1", "Stage 3", "Stage 4"]:
+        state = DecisionHierarchyEngine.resolve_decision_state(
+            symbol="AAPL",
+            current_price=100.0,
+            candle_count=60,
+            freshness_status="LIVE",
+            has_fundamentals=True,
+            confluence_score=85.0,
+            stage_phase=invalid_stage,
+            is_in_buy_zone=True,
+            risk_reward_ratio=2.5,
+            is_confirmed=True,
+        )
+        assert state["state"] == DecisionState.VALID_SETUP.value, f"Failed for stage: {invalid_stage}"
+        assert state["isActionable"] is False, f"Expected non-actionable for stage: {invalid_stage}"
+        assert state["canSizeTrade"] is False
+        if invalid_stage in (None, "UNKNOWN", "Unclassified Base"):
+            assert state["disqualificationReason"] == (
+                "Stage unconfirmed: Minervini Stage 2 advancing growth phase required for trade approval."
+            )
+
+
+def test_smart_money_confluence_inputs_parity():
+    """Verify that _build_smart_money_confluence_inputs provides identical epistemically honest feeds."""
+    from api.routes.analytics import _build_smart_money_confluence_inputs
+
+    with patch('api.routes.analytics.smart_money_engine.get_options_flow') as mock_flow:
+        # Case A: No options flow
+        mock_flow.return_value = []
+        inputs_no_flow = _build_smart_money_confluence_inputs("AAPL")
+        assert inputs_no_flow == {
+            "has_insider_buy": False,
+            "insider_value_usd": 0.0,
+            "insider_name": "",
+            "has_congress_buy": False,
+            "has_options_flow": False,
+        }
+
+        # Case B: Unusual call options flow
+        mock_flow.return_value = [{"type": "CALL_SWEEP", "sentiment": "BULLISH"}]
+        inputs_call_flow = _build_smart_money_confluence_inputs("AAPL")
+        assert inputs_call_flow["has_options_flow"] is True
+        assert inputs_call_flow["has_insider_buy"] is False
+        assert inputs_call_flow["has_congress_buy"] is False
+

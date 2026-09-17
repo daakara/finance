@@ -123,7 +123,7 @@ class DecisionHierarchyEngine:
         # Requires: Full evidence + Stage 2 accumulation + Confluence >= 75 + in buy zone + confirmed trigger + R:R >= 2.0
         norm_stage = DecisionHierarchyEngine.normalize_stage(stage_phase)
         rr = risk_reward_ratio if risk_reward_ratio is not None else 0.0
-        is_stage_2 = norm_stage == 2 or norm_stage is None
+        is_stage_2 = norm_stage == 2
         if (
             confluence_score >= 75.0
             and is_in_buy_zone
@@ -150,6 +150,8 @@ class DecisionHierarchyEngine:
             reason = "Stage 1 structural basing phase: price establishing floor; awaiting Stage 2 breakout."
         elif norm_stage == 3:
             reason = "Stage 3 distribution phase: topping pattern detected; protect capital."
+        elif norm_stage is None:
+            reason = "Stage unconfirmed: Minervini Stage 2 advancing growth phase required for trade approval."
         elif not is_in_buy_zone:
             reason = "Price is outside the optimal entry corridor; awaiting pullback to buy zone."
         elif not is_confirmed:

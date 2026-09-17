@@ -178,6 +178,24 @@ def _is_history_stale(db_candles: List[Dict[str, Any]]) -> bool:
             return True
 
 
+def _build_smart_money_confluence_inputs(sym: str) -> Dict[str, Any]:
+    """
+    Build authoritative smart money confluence inputs with strict epistemic honesty.
+    Curated historical SEC Form 4 and STOCK Act records are informational reference logs,
+    not real-time intraday buy triggers. Active options flow is checked for directional call sweeps.
+    """
+    clean_sym = sym.upper().replace("-USD", "").strip()
+    options_flow = smart_money_engine.get_options_flow(clean_sym) or []
+    has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
+    return {
+        "has_insider_buy": False,
+        "insider_value_usd": 0.0,
+        "insider_name": "",
+        "has_congress_buy": False,
+        "has_options_flow": has_options_flow,
+    }
+
+
 def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, Any]], is_stale: bool) -> Optional[Dict[str, Any]]:
     """Build tactical trade setup from db_candles and staleness status."""
     obs_date = str(db_candles[-1].get("time") or db_candles[-1].get("date") or "")[:10] if db_candles else ""
@@ -225,30 +243,7 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     target1 = plan.get("take_profit_1")
     target2 = plan.get("take_profit_2")
 
-    sec_trades = smart_money_engine.get_sec_insider_trades(sym)
-    cong_trades = smart_money_engine.get_congressional_trades(sym)
-    has_insider = len(sec_trades) > 0
-    has_congress = len(cong_trades) > 0
-    insider_val = 0.0
-    if has_insider:
-        for t in sec_trades:
-            val_raw = t.get("total_value") or t.get("transaction_value") or 0.0
-            if isinstance(val_raw, str):
-                cleaned = val_raw.replace("$", "").replace(",", "").strip()
-                try:
-                    insider_val += float(cleaned)
-                except ValueError:
-                    pass
-            elif isinstance(val_raw, (int, float)):
-                insider_val += float(val_raw)
-
-    smart_data = {
-        "has_insider_buy": has_insider,
-        "insider_value_usd": insider_val if has_insider else 0.0,
-        "insider_name": sec_trades[0].get("reporting_owner", "") if has_insider else "",
-        "has_congress_buy": has_congress,
-        "has_options_flow": False,
-    } if (has_insider or has_congress) else None
+    smart_data = _build_smart_money_confluence_inputs(sym)
 
     # Check fundamentals
     factor_snap = market_db.get_factor_snapshot(sym)
@@ -801,10 +796,9 @@ def get_asset_analytics(
 
         # Smart Money Feeds (Enforce Epistemic Honesty: Stale curated data does not trigger live buy signals)
         options_flow = smart_money_engine.get_options_flow(upper_sym) or []
-        has_options_flow = any("CALL" in (o.get("type", "") or "").upper() for o in options_flow)
         congress_trades = smart_money_engine.get_congressional_trades(upper_sym) or []
-        # Curated historical STOCK Act records are informational and do not synthesize real-time intraday buy confluence
         has_congress_buy = False
+        smart_data = _build_smart_money_confluence_inputs(upper_sym)
 
         # Macro inputs: Strictly authentic FRED observations; never fabricated 0.25 / 3.5 fallbacks
         macro_inputs = None
@@ -825,13 +819,7 @@ def get_asset_analytics(
                 **optimal_execution_plan,
                 "current_price": current_price,
             },
-            smart_money_data={
-                "has_insider_buy": False,
-                "insider_value_usd": 0.0,
-                "insider_name": "",
-                "has_congress_buy": has_congress_buy,
-                "has_options_flow": has_options_flow,
-            },
+            smart_money_data=smart_data,
             fundamental_data={
                 **factor_scores,
                 "piotroski_f": piotroski,

@@ -199,7 +199,7 @@ function calculateGovernedPositionSize(setup, context) {
   const cleanRoomRationale =
     clampFactorPct < 0
       ? `Risk allowance reduced ${Math.abs(clampFactorPct)}% ($${standardDollarRisk} → $${recommendedDollarRisk}) due to: ${rationaleParts.join('; ')}. Preserving capital for highest-conviction morning windows.`
-      : `Standard position risk authorized ($${standardDollarRisk}). High confluence (${setup.confluenceScore}/100) and disciplined execution state verified.`;
+      : `Standard position risk authorized ($${standardDollarRisk}). No Governor risk reduction applied under the evaluated rules. Confluence score: ${typeof setup.confluenceScore === 'number' && !isNaN(setup.confluenceScore) ? `${setup.confluenceScore.toFixed(1)}/100` : 'Unavailable'}.`;
 
   const rMultipleTarget1 = Number(((setup.target1 - setup.entryPivot) / stopDistanceDollar).toFixed(2));
   const rMultipleTarget2 = Number(((setup.target2 - setup.entryPivot) / stopDistanceDollar).toFixed(2));

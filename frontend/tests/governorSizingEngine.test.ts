@@ -207,4 +207,121 @@ const baseContext: TraderContext = {
   console.log("✓ Test 8 Passed: EVIDENCE_INCOMPLETE decision state strictly suppresses sizing");
 }
 
-console.log("ALL 8 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");
+// Test 9: Zero-clamp branch with Low Confluence (23.2/100)
+{
+  const lowConfSetup: TradeSetupSpec = {
+    ticker: "TEST_LOW_CONF",
+    setupName: "Low Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: 23.2,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(lowConfSetup, baseContext);
+  assert.strictEqual(res.clampFactorPct, 0, "Zero clamp penalty expected");
+  assert.strictEqual(res.recommendedShares, 2, "Shares should be 2");
+  assert.ok(
+    !res.cleanRoomRationale.includes("High confluence"),
+    "Must NOT report 'High confluence' for 23.2/100 score"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("disciplined execution state verified"),
+    "Must NOT claim verified discipline without evidence"
+  );
+  assert.ok(
+    res.cleanRoomRationale.includes("No Governor risk reduction applied under the evaluated rules"),
+    "Must state factual Governor status"
+  );
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: 23.2/100"),
+    "Must report exact numeric confluence score (23.2/100)"
+  );
+  console.log("✓ Test 9 Passed: Low confluence score (23.2) never labeled High Confluence");
+}
+
+// Test 10: Zero-clamp branch with High Confluence (85.0/100)
+{
+  const highConfSetup: TradeSetupSpec = {
+    ticker: "TEST_HIGH_CONF",
+    setupName: "High Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: 85.0,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(highConfSetup, baseContext);
+  assert.strictEqual(res.clampFactorPct, 0, "Zero clamp penalty expected");
+  assert.ok(
+    !res.cleanRoomRationale.includes("disciplined execution state verified"),
+    "Must NOT claim verified discipline without evidence"
+  );
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: 85.0/100"),
+    "Must report exact numeric confluence score (85.0/100)"
+  );
+  console.log("✓ Test 10 Passed: High confluence score (85.0) reports factual score and clean rationale");
+}
+
+// Test 11: Zero-clamp branch with Genuine Zero Confluence (0.0/100)
+{
+  const zeroConfSetup: TradeSetupSpec = {
+    ticker: "TEST_ZERO_CONF",
+    setupName: "Zero Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: 0.0,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(zeroConfSetup, baseContext);
+  assert.strictEqual(res.clampFactorPct, 0, "Zero clamp penalty expected");
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: 0.0/100"),
+    "Genuine zero must format as 0.0/100"
+  );
+  console.log("✓ Test 11 Passed: Genuine zero confluence formatted as 0.0/100");
+}
+
+// Test 12: Zero-clamp branch with Missing Confluence (undefined/null)
+{
+  const missingConfSetup: TradeSetupSpec = {
+    ticker: "TEST_MISSING_CONF",
+    setupName: "Missing Confluence Setup",
+    entryPivot: 100,
+    stopLoss: 95,
+    target1: 110,
+    target2: 120,
+    confluenceScore: undefined as unknown as number,
+    isActionable: true,
+    executionStatus: "IN_BUY_ZONE",
+    decisionState: "ACTIONABLE_SETUP",
+  };
+
+  const res = calculateGovernedPositionSize(missingConfSetup, baseContext);
+  assert.strictEqual(res.clampFactorPct, 0, "Zero clamp penalty expected");
+  assert.ok(
+    res.cleanRoomRationale.includes("Confluence score: Unavailable"),
+    "Missing confluence must display Unavailable"
+  );
+  assert.ok(
+    !res.cleanRoomRationale.includes("0/100"),
+    "Missing confluence must NOT default to 0/100"
+  );
+  console.log("✓ Test 12 Passed: Missing confluence score displays Unavailable instead of 0/100");
+}
+
+console.log("ALL 12 GOVERNOR SIZING ENGINE REGRESSION TESTS PASSED!");

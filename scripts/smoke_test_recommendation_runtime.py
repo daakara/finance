@@ -95,25 +95,35 @@ def run_smoke():
     # 5. Direct Parity Test: Analysis (/analytics/{sym}) vs Trade Plan (/analytics/setups/{sym})
     print("\n[SMOKE 5] Analysis vs Trade Plan Recommendation Parity")
     test_symbols = ["NVDA", "AAPL"]
+    actionable_verified_count = 0
     for sym in test_symbols:
         res_analysis = client.get(f"/api/v1/analytics/{sym}?period=1y&interval=1d&user_role=SWING_TRADER")
         res_setup = client.get(f"/api/v1/analytics/setups/{sym}?user_role=SWING_TRADER")
-        if res_analysis.status_code == 200 and res_setup.status_code == 200:
-            a_data = res_analysis.json()
-            s_data = res_setup.json()
-            trace = a_data.get("decisionTrace", {})
-            trace_state = trace.get("decisionState")
-            setup_state = s_data.get("decisionState")
-            trace_act = trace.get("isActionable")
-            setup_act = s_data.get("isActionable")
-            
-            assert trace_state == setup_state, (
-                f"{sym} state divergence: Analysis={trace_state} vs TradePlan={setup_state}"
-            )
-            assert trace_act == setup_act, (
-                f"{sym} actionability divergence: Analysis={trace_act} vs TradePlan={setup_act}"
-            )
-            print(f"  [OK] {sym} Parity Confirmed: decisionState={trace_state}, isActionable={trace_act}")
+        assert res_analysis.status_code == 200, f"Analysis request failed for {sym}: status={res_analysis.status_code}"
+        assert res_setup.status_code == 200, f"Setup request failed for {sym}: status={res_setup.status_code}"
+
+        a_data = res_analysis.json()
+        s_data = res_setup.json()
+        trace = a_data.get("decisionTrace", {})
+        trace_state = trace.get("decisionState")
+        setup_state = s_data.get("decisionState")
+        trace_act = trace.get("isActionable")
+        setup_act = s_data.get("isActionable")
+        
+        assert trace_state == setup_state, (
+            f"{sym} state divergence: Analysis={trace_state} vs TradePlan={setup_state}"
+        )
+        assert trace_act == setup_act, (
+            f"{sym} actionability divergence: Analysis={trace_act} vs TradePlan={setup_act}"
+        )
+        if trace_act and setup_act:
+            actionable_verified_count += 1
+        print(f"  [OK] {sym} Parity Confirmed: decisionState={trace_state}, isActionable={trace_act}")
+
+    assert actionable_verified_count >= 1, (
+        f"Smoke test requires at least 1 verified actionable qualifying case, got {actionable_verified_count}"
+    )
+    print(f"  [OK] Positive qualifying case verified (actionable_verified_count={actionable_verified_count})")
 
     print("\n==================================================================")
     print("ALL LIVE RUNTIME SMOKE TESTS PASSED!")
