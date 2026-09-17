@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MASTER_ASSET_CATALOG } from "../lib/masterCatalog";
-import { SpotPriceRegistry } from "../lib/api";
-import { getPersistedMarketSnapshot } from "../lib/marketDatabase";
+import { SpotPriceRegistry, isQuoteFresh } from "../lib/api";
 
 export interface PriceAlert {
   id: string;
@@ -41,17 +40,18 @@ export default function RealTimeAlertEngine() {
 
         const upper = alert.symbol.toUpperCase();
         const reg = SpotPriceRegistry.get(upper);
-        const snap = getPersistedMarketSnapshot(upper);
-        const livePrice = (reg?.price && reg.price > 0)
-          ? reg.price
-          : (snap?.currentPrice && snap.currentPrice > 0)
-          ? snap.currentPrice
-          : null;
+        const isFresh = Boolean(
+          reg?.price &&
+          reg.price > 0 &&
+          isQuoteFresh(reg.lastUpdated)
+        );
 
-        if (!livePrice || isNaN(livePrice)) {
-          // Zero Fabricated Data Invariant: Alerts must evaluate strictly against genuine observed market tape
+        if (!isFresh || !reg?.price || isNaN(reg.price)) {
+          // Zero Fabricated Data Invariant: Alerts must evaluate strictly against fresh, observed market tape
           continue;
         }
+
+        const livePrice = reg.price;
 
         let isTriggered = false;
         let msg = "";

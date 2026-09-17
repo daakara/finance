@@ -93,7 +93,7 @@ def test_staleness_monotonic_decay():
 
 def test_smart_money_engine_enrichment():
     """Verify SmartMoneyEngine enriches trades with all required institutional metrics."""
-    trades = SmartMoneyEngine.get_congressional_trades()
+    trades = SmartMoneyEngine.get_congressional_trades(include_curated=True)
     assert len(trades) > 0
 
     for t in trades:
@@ -104,6 +104,11 @@ def test_smart_money_engine_enrichment():
         assert "compliance_tier" in t
         assert 0 <= t["legislative_alignment_score"] <= 100
         assert t["staleness_status"] in ["FRESH", "NORMAL", "AGING", "LATE_FILER"]
+
+
+def test_smart_money_live_mode_empty():
+    """Verify live mode defaults to empty list without live feed."""
+    assert SmartMoneyEngine.get_congressional_trades(include_curated=False) == []
 
 
 def test_smart_money_overview_metrics():

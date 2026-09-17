@@ -5,7 +5,18 @@
  * spotlight rankings never inject synthesized, defaulted, or fabricated market data.
  */
 
-import { generateFallbackAnalytics, fetchSmartMoneyOverview } from "../lib/api";
+import { generateFallbackAnalytics, fetchSmartMoneyOverview, isQuoteFresh } from "../lib/api";
+import { persistMarketSnapshot, getPersistedMarketSnapshot } from "../lib/marketDatabase";
+
+class MockLocalStorage {
+  private store = new Map<string, string>();
+  getItem(key: string) { return this.store.get(key) || null; }
+  setItem(key: string, value: string) { this.store.set(key, value); }
+  removeItem(key: string) { this.store.delete(key); }
+  clear() { this.store.clear(); }
+}
+(global as any).window = { location: { hostname: "localhost" } };
+(global as any).localStorage = new MockLocalStorage();
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -83,6 +94,90 @@ async function runProvenanceSuite() {
   const shouldEvaluate = livePrice !== null && !isNaN(livePrice);
   assert(!shouldEvaluate, "Alert engine must skip evaluation when live market price tick is missing");
   console.log("✓ Test 5 Passed: Alert engine never falls back to createdPrice or triggers without tape.");
+
+  // 6. Test Suppression of Generic Bullish Conclusions & Uncalibrated Contagion
+  console.log("Executing Test 6: Fallback and uncalibrated models suppress bullish and contagion claims...");
+  assert(fallback.marketGraph?.systemicContagionRisk === "Uncalibrated (Awaiting Network Telemetry)", "Contagion risk must not be Low-to-Moderate");
+  assert(fallback.catalystForecast?.overallDirection === "Unverified Asset", "Direction must be unverified, never Bullish Accumulation");
+  console.log("✓ Test 6 Passed: Generic financial conclusions strictly suppressed.");
+
+  // 7. Test Non-Actionable Execution Status on Fallback
+  console.log("Executing Test 7: Fallback execution plan marks execution_status as UNAVAILABLE with null levels...");
+  assert(fallback.optimalExecution?.execution_status === "UNAVAILABLE", "Execution status must be UNAVAILABLE");
+  assert(fallback.optimalExecution?.optimal_entry_min === null, "Entry min must be null");
+  assert(fallback.optimalExecution?.stop_loss === null, "Stop loss must be null");
+  assert(fallback.optimalExecution?.take_profit_1 === null, "Take profit must be null");
+  assert(fallback.decisionTrace?.isActionable === false, "Decision trace must be non-actionable");
+  console.log("✓ Test 7 Passed: Fallback execution strictly refuses to invent trade setups or entry corridors.");
+
+  // 8. Test Quote Freshness Barrier (Prevents Stored Quotes From Masking Feed Outages)
+  console.log("Executing Test 8: Quote freshness validator rejects stale quotes, future timestamps, and invalid values...");
+  assert(isQuoteFresh(undefined) === false, "Undefined timestamp must not be fresh");
+  assert(isQuoteFresh(null as any) === false, "Null timestamp must not be fresh");
+  assert(isQuoteFresh(NaN) === false, "NaN timestamp must not be fresh");
+  assert(isQuoteFresh(Infinity) === false, "Infinity timestamp must not be fresh");
+  assert(isQuoteFresh(-5000) === false, "Negative timestamp must not be fresh");
+  assert(isQuoteFresh(0) === false, "Zero timestamp must not be fresh");
+  assert(isQuoteFresh(Date.now() + 60 * 1000) === false, "Future timestamp (+60s) must not be fresh");
+  assert(isQuoteFresh(Date.now() + 1000) === false, "Future timestamp (+1s) must not be fresh");
+  assert(isQuoteFresh(Date.now() - 10 * 60 * 1000) === false, "10-minute-old timestamp must not be fresh");
+  assert(isQuoteFresh(Date.now() - 10 * 1000) === true, "10-second-old timestamp must be fresh");
+  console.log("✓ Test 8 Passed: Stale stored quotes and future timestamps strictly rejected.");
+
+  // 9. Test Unchecked Price Override Rejection
+  console.log("Executing Test 9: Fallback rejects unchecked price overrides without fresh observation timestamp...");
+  const unverifiedOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0);
+  assert(unverifiedOverride.currentPrice === 0, "Unchecked overridePrice without fresh observation timestamp must be clamped to 0");
+  const staleOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0, 1.5, Date.now() - 10 * 60 * 1000);
+  assert(staleOverride.currentPrice === 0, "OverridePrice with stale timestamp must be clamped to 0");
+  const freshOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0, 1.5, Date.now() - 30 * 1000);
+  assert(freshOverride.currentPrice === 150.0, "Verified overridePrice with fresh timestamp must be accepted");
+  console.log("✓ Test 9 Passed: Unchecked price overrides strictly rejected; only fresh observations accepted.");
+
+  // 10. Test Provider Failure Guaranteed Price Unavailability
+  console.log("Executing Test 10: Provider failure leaves currentPrice unavailable (0)...");
+  const failureFallback = generateFallbackAnalytics("AAPL", "1y", "1d");
+  assert(failureFallback.currentPrice === 0, "Fallback on provider failure must return currentPrice 0, never previous price");
+  assert(failureFallback._dataSource === "unavailable", "Data source must be marked unavailable");
+  assert(failureFallback.freshness?.status === "UNAVAILABLE", "Freshness must be marked UNAVAILABLE");
+  console.log("✓ Test 10 Passed: Provider failure guaranteed to keep current-price fields unavailable.");
+
+  // 11. Test Separation of observedAt from storedAt & Preservation Across Persistence
+  console.log("Executing Test 11: Persisted market snapshots preserve observedAt and never reset observation age to storedAt...");
+  const oldObservationTime = Date.now() - 20 * 60 * 1000; // 20 minutes ago
+  const validCandles = Array.from({ length: 20 }, (_, i) => ({
+    time: `2026-08-${String(i + 1).padStart(2, "0")}`,
+    open: 390 + i,
+    high: 395 + i,
+    low: 385 + i,
+    close: 392 + i,
+    volume: 1000000,
+  }));
+  const testPayload = {
+    symbol: "MSFT",
+    currentPrice: 400.0,
+    priceChangePct24h: 1.2,
+    period: "1y",
+    interval: "1d",
+    observedAt: oldObservationTime,
+    candles: validCandles,
+  } as any;
+  persistMarketSnapshot("MSFT", testPayload);
+  const snap = getPersistedMarketSnapshot("MSFT", true);
+  assert(snap !== null, "Persisted snapshot must be retrievable");
+  assert(snap?.observedAt === oldObservationTime, "ObservedAt must retain authentic old observation time");
+  assert(snap?.lastUpdated === oldObservationTime, "lastUpdated must strictly retain observedAt, never Date.now()");
+  assert(typeof snap?.storedAt === "number" && (Date.now() - snap.storedAt) < 1000, "storedAt must record the write time");
+  assert(isQuoteFresh(snap?.observedAt) === false, "Old observation must fail quote freshness despite recent storage");
+  console.log("✓ Test 11 Passed: Snapshot persistence strictly separates observedAt from storedAt without resetting observation age.");
+
+  // 12. Test Daily Candle Date Invariant (Never Infer Quote Freshness From Daily Date)
+  console.log("Executing Test 12: Invariant check ensures daily candle date (YYYY-MM-DD) is never parsed as a 5-minute quote timestamp...");
+  const dailyDateString = "2026-09-17";
+  const midnightEpoch = Date.parse(dailyDateString);
+  assert(!isNaN(midnightEpoch), "Daily string parses as midnight UTC");
+  assert(isQuoteFresh(midnightEpoch) === false, "Daily candle midnight UTC timestamp must never pass 5-minute live quote freshness");
+  console.log("✓ Test 12 Passed: Daily candle dates strictly isolated from quote freshness evaluation.");
 
   console.log("\n===============================================================================");
   console.log("ALL EPISTEMIC PURITY & PROVENANCE SANITIZATION TESTS PASSED!");

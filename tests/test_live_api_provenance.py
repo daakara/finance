@@ -142,3 +142,67 @@ def test_catalyst_archive_provenance_disclosure():
     assert curated_report.get("forecastProvenance") == "Curated Historical Consensus"
     assert curated_report.get("asOfDate") == "2026-09-01"
     assert len(curated_report["multi_year_forecast"]) > 0
+
+
+def test_smart_money_congress_and_options_routes_provenance():
+    """Verify that /congress and /options-flow routes enforce live feed honesty."""
+    from fastapi.testclient import TestClient
+    from api.main import app
+
+    client = TestClient(app)
+
+    # 1. /congress route defaults to live mode (empty, unavailable)
+    res_live_congress = client.get("/api/v1/smart-money/congress")
+    assert res_live_congress.status_code == 200
+    data_live = res_live_congress.json()
+    assert data_live["available"] is False
+    assert data_live["status"] == "UNAVAILABLE"
+    assert data_live["trades"] == []
+    assert "disconnected" in data_live["disclosure"].lower()
+
+    # 2. /congress route returns curated data only when explicitly requested
+    res_curated_congress = client.get("/api/v1/smart-money/congress?include_curated=true")
+    assert res_curated_congress.status_code == 200
+    data_curated = res_curated_congress.json()
+    assert data_curated["available"] is True
+    assert data_curated["status"] == "CURATED"
+    assert len(data_curated["trades"]) > 0
+    assert data_curated["dataset_date"] == "2026-08-28"
+
+    # 3. /options-flow route reports available: False when no live stream is connected
+    res_options = client.get("/api/v1/smart-money/options-flow")
+    assert res_options.status_code == 200
+    data_opts = res_options.json()
+    assert data_opts["available"] is False
+    assert data_opts["is_live"] is False
+    assert data_opts["flow"] == []
+    assert "unavailable" in data_opts["message"].lower()
+
+    # 4. /options-flow route with include_curated=true must NOT claim "Live OPRA options feed active"
+    res_curated_opts = client.get("/api/v1/smart-money/options-flow?include_curated=true")
+    assert res_curated_opts.status_code == 200
+    data_curated_opts = res_curated_opts.json()
+    assert data_curated_opts["status"] == "CURATED"
+    assert data_curated_opts["is_live"] is False
+    assert "live opra options feed active" not in data_curated_opts["message"].lower()
+    assert "archive" in data_curated_opts["message"].lower()
+
+
+def test_analytics_observed_at_and_fetched_at_separation():
+    """Verify that /analytics endpoint reports separated observedAt and fetchedAt metadata."""
+    from fastapi.testclient import TestClient
+    from api.main import app
+
+    client = TestClient(app)
+    res = client.get("/api/v1/analytics/AAPL?period=1mo&interval=1d")
+    if res.status_code == 200:
+        data = res.json()
+        assert "fetchedAt" in data, "fetchedAt must be present in response"
+        assert isinstance(data["fetchedAt"], int), "fetchedAt must be millisecond epoch int"
+        assert "freshness" in data
+        assert "fetchedAt" in data["freshness"]
+        if data.get("observedAt") is not None:
+            assert isinstance(data["observedAt"], int)
+            # observedAt must represent authentic market observation, distinct from fetch time
+            assert data["observedAt"] <= data["fetchedAt"], "Observation time cannot be in the future of fetch time"
+

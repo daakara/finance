@@ -522,6 +522,8 @@ export interface AnalyticsResponse {
   currentPrice: number;
   priceChangePct24h: number;
   candles: CandleData[];
+  observedAt?: number;
+  fetchedAt?: number;
   technicals?: TechnicalIndicators;
   factorScores?: AssetFactorScores;
   dnaScores?: AssetFactorScores;
@@ -582,206 +584,94 @@ export const SpotPriceRegistry = new Map<string, {
   technicals?: any;
   catalyst?: any;
   smartMoney?: any;
+  observedAt?: number;
+  fetchedAt?: number;
   lastUpdated?: number;
 }>();
 
-// Auto-hydrate in-memory SpotPriceRegistry on client load from localStorage
-if (typeof window !== "undefined") {
-  try {
-    const indexStr = localStorage.getItem("finance_market_db_index");
-    const index: string[] = indexStr ? JSON.parse(indexStr) : [];
-    for (const sym of index) {
-      const snap = getPersistedMarketSnapshot(sym);
-      if (snap && snap.currentPrice) {
-        SpotPriceRegistry.set(sym, {
-          price: snap.currentPrice,
-          changePct: snap.priceChangePct24h,
-          technicals: snap.technicals,
-          catalyst: snap.catalyst,
-          smartMoney: snap.smartMoney,
-          lastUpdated: snap.lastUpdated,
-        });
-      }
-    }
-  } catch {}
+export const QUOTE_MAX_AGE_MS = 5 * 60 * 1000; // 5-minute strict live data freshness window
+
+/**
+ * Validate quote freshness against provider observation timestamp.
+ * Invariant: Requires a finite timestamp and a valid, nonnegative age strictly within QUOTE_MAX_AGE_MS.
+ * Future timestamps and invalid numbers are strictly rejected.
+ */
+export function isQuoteFresh(timestamp?: number): boolean {
+  if (!timestamp || typeof timestamp !== "number" || !Number.isFinite(timestamp) || timestamp <= 0) {
+    return false;
+  }
+  const now = Date.now();
+  const age = now - timestamp;
+  return age >= 0 && age < QUOTE_MAX_AGE_MS;
 }
 
-// High-Fidelity Multi-Period Horizon & Day-Trader Fallback Generator (<1ms instant execution)
+// High-Fidelity Epistemic Fallback: Refuses to fabricate synthetic candles, fake recommendations, or use cold stored quotes
 export function generateFallbackAnalytics(
   symbol: string,
   period: string = "1y",
   interval: string = "1d",
   overridePrice?: number,
-  overrideChangePct?: number
+  overrideChangePct?: number,
+  overrideTimestamp?: number
 ): AnalyticsResponse {
   const upper = symbol.toUpperCase().replace("-USD", "");
   const catalogEntry = MASTER_ASSET_CATALOG[upper];
-  const registered = SpotPriceRegistry.get(upper);
-  const persisted = getPersistedMarketSnapshot(upper);
 
-  const registeredValidPrice = (registered?.price && (upper === "AAPL" || Math.abs(registered.price - 319.64) >= 0.01)) ? registered.price : undefined;
-  const persistedValidPrice = (persisted?.currentPrice && (upper === "AAPL" || Math.abs(persisted.currentPrice - 319.64) >= 0.01)) ? persisted.currentPrice : undefined;
-
-  // Phase 18 Epistemic Invariant: If asset has no verified price from registry/storage/override,
-  // downstream analytics MUST NOT invent evidence, fake prices, synthetic candles, or fake trade setups.
-  if (!registeredValidPrice && !persistedValidPrice && !overridePrice) {
-    return {
-      _dataSource: "unavailable" as const,
-      symbol: upper,
-      period,
-      interval,
-      currentPrice: 0,
-      priceChangePct24h: 0,
-      candles: [],
-      technicals: undefined,
-      factorScores: undefined,
-      dnaScores: undefined,
-      macroDifficulty: undefined,
-      expectedReturn: undefined,
-      traderArchetypes: undefined,
-      selfHealingAudit: undefined,
-      marketGraph: undefined,
-      catalystForecast: {
-        company_name: catalogEntry?.name || upper,
-        symbol: upper,
-        sector: catalogEntry?.sector || "Unclassified",
-        efficacy_summary: "No verified corporate filings or operational disclosures available.",
-        competitive_edge: "Awaiting verified regulatory filings.",
-        upcoming_milestones: [],
-        multi_year_forecast: [],
-        overallDirection: "Unverified Asset",
-      },
-      optimalExecution: {
-        current_price: 0,
-        optimal_entry_min: null as any,
-        optimal_entry_max: null as any,
-        stop_loss: null as any,
-        stop_loss_pct: 0,
-        take_profit_1: null as any,
-        take_profit_1_pct: 0,
-        take_profit_2: null as any,
-        take_profit_2_pct: 0,
-        risk_reward_ratio: 0,
-        execution_status: "UNVERIFIED_ASSET",
-        setup_pattern: "No Verified Market Data",
-        entry_thesis: "Live exchange feed unavailable. Under Phase 18 anti-hallucination invariants, the terminal refuses to invent hypothetical prices or trade levels.",
-        invalidation_condition: "Awaiting verified exchange data feed.",
-        stage_phase: "Unverified Asset",
-        vcp_contraction_status: "Unverified",
-        atr_14: 0,
-      },
-      smartMoney: {
-        congressTrades: [],
-        optionsFlow: [],
-      },
-      freshness: {
-        status: "UNAVAILABLE",
-        providerSource: "none",
-        stalenessDays: 999,
-        candleCount: 0,
-      },
-      decisionTrace: {
-        symbol: upper,
-        decisionState: "UNVERIFIED",
-        stateLabel: "Unverified Asset — Live Quotes Required",
-        isActionable: false,
-        canSizeTrade: false,
-        allowedActions: ["RESEARCH_PROFILE"],
-        disqualificationReason: "No verified real-time or historical exchange tape on record.",
-      },
-    };
-  }
-
-  const basePrice = overridePrice ||
-    registeredValidPrice ||
-    persistedValidPrice ||
-    0;
-  const baseChangePct = overrideChangePct !== undefined
-    ? overrideChangePct
-    : (registered?.changePct ?? persisted?.priceChangePct24h ?? 0.0);
-  const isIntraday = interval === "1m" || interval === "5m" || interval === "15m" || interval === "1h" || interval === "30m";
-
-  // Horizon-aware numPoints and time step (stepMs) so each period spans the correct calendar window
-  const horizonConfig: Record<string, { points: number; spanMs: number }> = {
-    // Intraday intervals (keyed by apiInterval value)
-    "1m":  { points: 45, spanMs: 60000 },              // 1-minute scalp: 45 × 1min = 45 min
-    "5m":  { points: 45, spanMs: 300000 },              // 5-minute VWAP: 45 × 5min = ~4 hours
-    "15m": { points: 48, spanMs: 900000 },              // 15-minute flag: 48 × 15min = ~12 hours
-    "1h":  { points: 40, spanMs: 3600000 },             // 1-hour trend: 40 × 1hr = ~2 days
-    // Daily / macro intervals (keyed by period value)
-    "1mo": { points: 22, spanMs: 86400000 },            // 1 month: 22 trading days × 1 day
-    "6mo": { points: 130, spanMs: 86400000 },           // 6 months: ~130 trading days × 1 day
-    "1y":  { points: 252, spanMs: 86400000 },           // 1 year: ~252 trading days × 1 day
-    "3y":  { points: 156, spanMs: 7 * 86400000 },       // 3 years: ~156 weeks × 7 days
-    "5y":  { points: 60, spanMs: 30 * 86400000 },       // 5 years: ~60 months × 30 days
-  };
-  // For intraday intervals, key by the actual interval (1m/5m/15m/1h); for daily+, key by period
-  const hKey = isIntraday ? interval : period;
-  const hConfig = horizonConfig[hKey] || horizonConfig["1y"];
-  const numPoints = hConfig.points;
-  const stepMs = hConfig.spanMs;
-
-  // Horizon-specific return multipliers to provide authentic period changes
-  const horizonChangeMultiplier: Record<string, number> = {
-    "1m": 0.4,
-    "5m": 0.8,
-    "15m": 1.2,
-    "1h": 1.5,
-    "1mo": 4.2,
-    "6mo": 18.5,
-    "1y": 28.4,
-    "3y": 64.2,
-    "5y": 142.8,
-  };
-  const expectedTotalPctChange = (horizonChangeMultiplier[hKey] || (isIntraday ? 0.8 : 28.4)) * (baseChangePct >= 0 ? 1 : -0.7);
-
-  let generatedCandles: CandleData[] = [];
-
-  if (persisted && persisted.dailyCandles && persisted.dailyCandles.length > 0) {
-    generatedCandles = slicePersistedCandles(persisted.dailyCandles, period, interval, basePrice);
-  }
-
-  // Phase 18 Invariant: If authentic persisted candles are unavailable, never synthesize sine-wave or Brownian walk candles.
-  // Missing candles must remain empty ([]).
+  // Zero Fabricated Data Invariant: When upstream providers are unavailable,
+  // current-price fields, recommendations, and execution states must remain unavailable.
+  // Never substitute stored quotes, unchecked price overrides, or synthetic candles.
+  const isVerifiedOverride = Boolean(
+    overridePrice &&
+    overridePrice > 0 &&
+    overrideTimestamp &&
+    isQuoteFresh(overrideTimestamp)
+  );
+  const effectivePrice = isVerifiedOverride ? overridePrice! : 0;
+  const effectiveChange = isVerifiedOverride && overrideChangePct !== undefined ? overrideChangePct : 0;
+  const fetchedTime = Date.now();
 
   return {
-    _dataSource: "fallback" as const,
+    _dataSource: "unavailable" as const,
     symbol: upper,
     period,
     interval,
-    currentPrice: basePrice,
-    priceChangePct24h: baseChangePct,
-    candles: generatedCandles,
-    technicals: registered?.technicals || persisted?.technicals || undefined,
+    currentPrice: effectivePrice,
+    priceChangePct24h: effectiveChange,
+    candles: [],
+    observedAt: isVerifiedOverride ? overrideTimestamp : undefined,
+    fetchedAt: fetchedTime,
+    technicals: undefined,
     factorScores: undefined,
+    dnaScores: undefined,
     macroDifficulty: undefined,
     expectedReturn: undefined,
+    traderArchetypes: undefined,
     selfHealingAudit: undefined,
     marketGraph: {
       rootNode: upper,
       topology: {
-        upstream: [{ name: "TSMC & Silicon Foundries", link: "Hardware production inputs", impact: "High" }],
-        downstream: [{ name: "Enterprise AI & Cloud Hyperscalers", link: "Revenue and cash flow sources", impact: "High" }],
-        macro: [{ name: "FRED 10Y-2Y Yield Curve", link: "Capital cost sensitivity", impact: "High" }],
-        peers: [{ name: "Sector Industry Peers", link: "Multiple contagion", impact: "Medium" }],
+        upstream: [],
+        downstream: [],
+        macro: [],
+        peers: [],
       },
-      systemicContagionRisk: "Low-to-Moderate (Well-Diversified)",
+      systemicContagionRisk: "Uncalibrated (Awaiting Network Telemetry)",
     },
-    catalystForecast: registered?.catalyst || persisted?.catalyst || {
-      company_name: catalogEntry?.name || `${upper} Corporation`,
+    catalystForecast: {
+      company_name: catalogEntry?.name || upper,
       symbol: upper,
       sector: catalogEntry?.sector || "Unclassified",
       primary_drug_trial: "Awaiting Corporate Disclosures",
       trial_phase: "Data Unavailable",
       trial_readout_timeline: "Scheduled Calendar Pending",
-      efficacy_summary: "No verified operational roadmap or corporate filings registered.",
-      competitive_edge: "Moat metrics unverified without official corporate filings.",
+      efficacy_summary: "No verified corporate filings or operational disclosures available.",
+      competitive_edge: "Awaiting verified regulatory filings.",
       upcoming_milestones: [],
       multi_year_forecast: [],
-      overallDirection: "Offline Fallback Feed",
+      overallDirection: "Unverified Asset",
     },
     optimalExecution: {
-      current_price: basePrice,
+      current_price: overridePrice || 0,
       optimal_entry_min: null as any,
       optimal_entry_max: null as any,
       stop_loss: null as any,
@@ -791,32 +681,32 @@ export function generateFallbackAnalytics(
       take_profit_2: null as any,
       take_profit_2_pct: 0,
       risk_reward_ratio: 0,
-      execution_status: "INSUFFICIENT_HISTORY",
-      setup_pattern: "Trend Evidence Incomplete (Offline Fallback Feed)",
-      entry_thesis: "Live exchange feed unavailable. Under Phase 18 anti-hallucination invariants, offline fallback feeds cannot generate verified trade setups or actionable buy zones.",
-      invalidation_condition: "Awaiting live exchange candlestick feed.",
-      stage_phase: "Awaiting Live Feed",
-      vcp_contraction_status: "Unverified (Fallback Feed)",
+      execution_status: "UNAVAILABLE",
+      setup_pattern: "Live Feed Unavailable",
+      entry_thesis: "Live exchange feed unavailable. Under Zero Fabricated Data invariants, the terminal refuses to invent hypothetical prices, trade levels, or execution states.",
+      invalidation_condition: "Awaiting verified exchange data feed.",
+      stage_phase: "Unverified Asset",
+      vcp_contraction_status: "Unverified",
       atr_14: 0,
     },
-    smartMoney: registered?.smartMoney || persisted?.smartMoney || {
+    smartMoney: {
       congressTrades: [],
       optionsFlow: [],
     },
     freshness: {
-      status: "END_OF_DAY",
-      providerSource: "offline_fallback",
-      stalenessDays: 1,
-      candleCount: generatedCandles.length,
+      status: "UNAVAILABLE",
+      providerSource: "none",
+      stalenessDays: 999,
+      candleCount: 0,
     },
     decisionTrace: {
       symbol: upper,
-      decisionState: generatedCandles.length >= 50 ? "VALID_SETUP" : "INSUFFICIENT_DATA",
-      stateLabel: generatedCandles.length >= 50 ? "Valid Setup — Offline Fallback" : `Insufficient History (${generatedCandles.length}/50 Sessions)`,
+      decisionState: "UNVERIFIED",
+      stateLabel: "Unverified Asset — Live Tape Required",
       isActionable: false,
       canSizeTrade: false,
-      allowedActions: generatedCandles.length >= 50 ? ["SET_ALERT", "ADD_WATCHLIST", "RESEARCH_PROFILE"] : ["RESEARCH_PROFILE", "ADD_WATCHLIST"],
-      disqualificationReason: generatedCandles.length >= 50 ? "Offline fallback feed: live trade triggers are suspended." : `Requires minimum 50 daily trading sessions for trend validation; ${generatedCandles.length} provided.`,
+      allowedActions: ["RESEARCH_PROFILE"],
+      disqualificationReason: "No verified real-time or historical exchange tape on record.",
     },
   };
 }
@@ -1022,14 +912,26 @@ export async function fetchDirectYahooFinanceChart(
             atr_14,
           };
 
+      const regularMarketTime = meta.regularMarketTime;
+      // Invariant: Never infer quote timestamp from daily candle date or daily timestamps.
+      // A market quote observation must come strictly from the provider's quote timestamp (regularMarketTime).
+      const observationSec = (typeof regularMarketTime === "number" && Number.isFinite(regularMarketTime) && regularMarketTime > 0)
+        ? regularMarketTime
+        : 0;
+      const observationTime = observationSec > 0 ? (observationSec < 1e11 ? observationSec * 1000 : observationSec) : 0;
+      const isObservationFresh = observationTime > 0 && isQuoteFresh(observationTime);
+      const fetchedTime = Date.now();
+
       const responsePayload: AnalyticsResponse = {
-        _dataSource: "live",
+        _dataSource: isObservationFresh ? ("live" as const) : ("fallback" as const),
         symbol: upper,
         period,
         interval,
         currentPrice,
         priceChangePct24h,
         candles,
+        observedAt: observationTime > 0 ? observationTime : undefined,
+        fetchedAt: fetchedTime,
         technicals,
         factorScores: undefined,
         macroDifficulty: undefined,
@@ -1043,7 +945,7 @@ export async function fetchDirectYahooFinanceChart(
             macro: [{ name: "FRED 10Y-2Y Yield Curve", link: "Capital cost sensitivity", impact: "High" }],
             peers: [{ name: "Sector Industry Peers", link: "Multiple contagion", impact: "Medium" }],
           },
-          systemicContagionRisk: "Low-to-Moderate (Market Calibrated)",
+          systemicContagionRisk: "Uncalibrated (Awaiting Network Telemetry)",
         },
         catalystForecast: {
           company_name: meta.shortName || meta.longName || upper,
@@ -1056,24 +958,37 @@ export async function fetchDirectYahooFinanceChart(
           competitive_edge: "Moat metrics unverified without regulatory filings.",
           upcoming_milestones: [],
           multi_year_forecast: [],
-          overallDirection: isCataloged ? "Bullish Accumulation" : "Unverified Asset",
+          overallDirection: "Unverified (Directional Model Required)",
         },
         optimalExecution,
         smartMoney: {
           congressTrades: [],
           optionsFlow: [],
         },
+        freshness: {
+          status: isObservationFresh ? "LIVE" : "END_OF_DAY",
+          providerSource: "yahoo_finance_direct",
+          lastTradeDate: observationTime > 0 ? new Date(observationTime).toISOString().split("T")[0] : undefined,
+          stalenessDays: isObservationFresh ? 0 : (observationTime > 0 ? Math.max(0, Math.floor((Date.now() - observationTime) / 86400000)) : 999),
+          candleCount: candles.length,
+          observedAt: observationTime > 0 ? observationTime : undefined,
+          fetchedAt: fetchedTime,
+        },
       };
 
-      // Save to memory registry and browser database
-      SpotPriceRegistry.set(upper, {
-        price: currentPrice,
-        changePct: priceChangePct24h,
-        technicals,
-        catalyst: responsePayload.catalystForecast,
-        smartMoney: responsePayload.smartMoney,
-        lastUpdated: Date.now(),
-      });
+      // Save to memory registry strictly preserving provider observation timestamp
+      if (observationTime > 0) {
+        SpotPriceRegistry.set(upper, {
+          price: currentPrice,
+          changePct: priceChangePct24h,
+          technicals,
+          catalyst: responsePayload.catalystForecast,
+          smartMoney: responsePayload.smartMoney,
+          observedAt: observationTime,
+          fetchedAt: fetchedTime,
+          lastUpdated: observationTime,
+        });
+      }
       persistMarketSnapshot(upper, responsePayload);
 
       return responsePayload;
@@ -1094,8 +1009,8 @@ export async function fetchDirectYahooFinanceChart(
  */
 export async function fetchBatchQuotes(
   symbols: string[]
-): Promise<Record<string, { price: number; changePct: number }>> {
-  const results: Record<string, { price: number; changePct: number }> = {};
+): Promise<Record<string, { price: number; changePct: number; lastUpdated: number }>> {
+  const results: Record<string, { price: number; changePct: number; lastUpdated: number }> = {};
   if (!symbols || symbols.length === 0) return results;
 
   const promises = symbols.map(async (sym) => {
@@ -1104,20 +1019,27 @@ export async function fetchBatchQuotes(
       // 1. Try Direct Yahoo Finance client fetch
       const yfRes = await fetchDirectYahooFinanceChart(cleanSym, "1mo", "1d");
       if (yfRes && yfRes.currentPrice > 0) {
-        results[cleanSym] = {
-          price: yfRes.currentPrice,
-          changePct: yfRes.priceChangePct24h,
-        };
-        return;
+        const reg = SpotPriceRegistry.get(cleanSym);
+        const observedAt = reg?.observedAt || (reg?.lastUpdated && isQuoteFresh(reg.lastUpdated) ? reg.lastUpdated : 0);
+        if (observedAt > 0 && isQuoteFresh(observedAt)) {
+          results[cleanSym] = {
+            price: yfRes.currentPrice,
+            changePct: yfRes.priceChangePct24h,
+            lastUpdated: observedAt,
+          };
+          return;
+        }
       }
     } catch {}
 
-    // 2. Check fresh persisted snapshot
-    const snap = getPersistedMarketSnapshot(cleanSym, true);
-    if (snap && snap.currentPrice > 0) {
+    // 2. Check fresh persisted snapshot (strict observation freshness, never storage time)
+    const snap = getPersistedMarketSnapshot(cleanSym, false);
+    const snapObservedAt = snap?.observedAt;
+    if (snap && snap.currentPrice > 0 && !snap.isStale && snapObservedAt && isQuoteFresh(snapObservedAt)) {
       results[cleanSym] = {
         price: snap.currentPrice,
         changePct: snap.priceChangePct24h,
+        lastUpdated: snapObservedAt,
       };
     }
   });
@@ -1156,24 +1078,48 @@ export async function fetchAssetAnalytics(
         const isHealthy = (maxP - minP) >= 0.01;
 
         if (isHealthy) {
-          // Save live price and metadata to in-memory registry
-          SpotPriceRegistry.set(upper, {
-            price: data.currentPrice,
-            changePct: data.priceChangePct24h,
-            technicals: data.technicals,
-            catalyst: data.catalystForecast,
-            smartMoney: data.smartMoney,
-            lastUpdated: Date.now(),
-          });
+          // Reject STALE_HISTORICAL or UNAVAILABLE backend data from being labeled live
+          const freshnessStatus = data.freshness?.status;
+          const isBackendStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "UNAVAILABLE";
 
-          // Persist full market snapshot to client-side database storage
-          persistMarketSnapshot(upper, data);
+          // Extract authentic observation timestamp strictly from provider metadata.
+          // Invariant: Never infer quote freshness from a daily candle date (YYYY-MM-DD) or lastTradeDate.
+          let observationTime = 0;
+          if (typeof data.observedAt === "number" && Number.isFinite(data.observedAt) && data.observedAt > 0) {
+            observationTime = data.observedAt;
+          } else if (typeof data.freshness?.observedAt === "number" && Number.isFinite(data.freshness.observedAt) && data.freshness.observedAt > 0) {
+            observationTime = data.freshness.observedAt;
+          }
 
-          return {
+          const isObservationFresh = !isBackendStale && observationTime > 0 && isQuoteFresh(observationTime);
+          const fetchedTime = Date.now();
+
+          // Save price and observation metadata to in-memory registry strictly using authentic observation timestamp
+          if (observationTime > 0) {
+            SpotPriceRegistry.set(upper, {
+              price: data.currentPrice,
+              changePct: data.priceChangePct24h,
+              technicals: data.technicals,
+              catalyst: data.catalystForecast,
+              smartMoney: data.smartMoney,
+              observedAt: observationTime,
+              fetchedAt: fetchedTime,
+              lastUpdated: observationTime,
+            });
+          }
+
+          const analyticsPayload: AnalyticsResponse = {
             ...data,
-            _dataSource: "live" as const,
+            observedAt: observationTime > 0 ? observationTime : undefined,
+            fetchedAt: fetchedTime,
+            _dataSource: isObservationFresh ? ("live" as const) : ("fallback" as const),
             factorScores: data.factorScores || data.dnaScores,
           };
+
+          // Persist full market snapshot to client-side database storage
+          persistMarketSnapshot(upper, analyticsPayload);
+
+          return analyticsPayload;
         }
       }
     }
@@ -1197,18 +1143,11 @@ export async function fetchAssetAnalytics(
     }
   }
 
-  // 3. High-Fidelity Fallback Generator anchored to verified spot prices (Guaranteed never to stick unknown tickers to $319.64)
+  // 3. Fallback when providers are unavailable: current-price fields MUST remain unavailable
   if (typeof window !== "undefined" && (window as any)._paq) {
     (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Fallback Generator Engaged", upper]);
   }
-  const reg = SpotPriceRegistry.get(upper);
-  return generateFallbackAnalytics(
-    symbol,
-    period,
-    interval,
-    overridePrice || reg?.price,
-    overrideChangePct !== undefined ? overrideChangePct : reg?.changePct
-  );
+  return generateFallbackAnalytics(symbol, period, interval);
 }
 
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {

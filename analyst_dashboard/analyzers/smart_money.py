@@ -2038,7 +2038,12 @@ class SmartMoneyEngine:
         return t_copy
 
     @staticmethod
-    def get_congressional_trades(symbol: str = None) -> List[Dict[str, Any]]:
+    def get_congressional_trades(symbol: str = None, include_curated: bool = False) -> List[Dict[str, Any]]:
+        """Fetch STOCK Act congressional disclosures. Requires verified live sync provider unless explicitly querying curated research archive."""
+        if not include_curated:
+            # Under Zero Fabricated Data Invariant, live congressional trades require active Capitol Trades/House Clerk feed.
+            # Without live provider connection, return empty list rather than static archive masquerading as live.
+            return []
         enriched_trades = [SmartMoneyEngine.enrich_trade(t) for t in CONGRESSIONAL_TRADES]
         if symbol:
             sym_clean = symbol.upper().strip()

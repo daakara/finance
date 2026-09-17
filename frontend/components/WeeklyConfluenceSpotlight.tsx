@@ -4,9 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
 import { addPortfolioPosition } from "../lib/portfolio";
-import { SpotPriceRegistry, fetchBatchQuotes, fetchTacticalSetups } from "../lib/api";
+import { SpotPriceRegistry, fetchBatchQuotes, fetchTacticalSetups, isQuoteFresh } from "../lib/api";
 import type { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
-import { getPersistedMarketSnapshot, getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
 interface ConfluenceCandidate {
@@ -42,28 +41,31 @@ export default function WeeklyConfluenceSpotlight({
   const [userRole, setUserRole] = useState<"DAY_TRADER" | "LONG_TERM">("LONG_TERM");
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
-  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePct: number }>>({});
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePct: number; lastUpdated: number }>>({});
 
   useEffect(() => {
     setIsCollapsed(defaultCollapsed);
   }, [defaultCollapsed]);
 
-  // Hydrate initial live quotes from persisted client database and registry
+  // Hydrate initial live quotes from registry and prune expired entries
   const refreshLocalQuotes = useCallback(() => {
-    const snapshots = getAllPersistedMarketSnapshots(true);
-    const initial: Record<string, { price: number; changePct: number }> = {};
-    for (const [sym, snap] of Object.entries(snapshots)) {
-      if (snap.currentPrice && snap.currentPrice > 0) {
-        initial[sym] = { price: snap.currentPrice, changePct: snap.priceChangePct24h };
+    setLiveQuotes((prev) => {
+      const next: Record<string, { price: number; changePct: number; lastUpdated: number }> = {};
+      // 1. Keep non-expired quotes from prev
+      for (const [sym, q] of Object.entries(prev)) {
+        if (q && q.lastUpdated && isQuoteFresh(q.lastUpdated)) {
+          next[sym] = q;
+        }
       }
-    }
-    for (const sym of Object.keys(MASTER_ASSET_CATALOG)) {
-      const reg = SpotPriceRegistry.get(sym);
-      if (reg && reg.price > 0) {
-        initial[sym] = { price: reg.price, changePct: reg.changePct };
+      // 2. Ingest fresh quotes from SpotPriceRegistry
+      for (const sym of Object.keys(MASTER_ASSET_CATALOG)) {
+        const reg = SpotPriceRegistry.get(sym);
+        if (reg && reg.price > 0 && reg.lastUpdated && isQuoteFresh(reg.lastUpdated)) {
+          next[sym] = { price: reg.price, changePct: reg.changePct, lastUpdated: reg.lastUpdated };
+        }
       }
-    }
-    setLiveQuotes((prev) => ({ ...prev, ...initial }));
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -73,9 +75,22 @@ export default function WeeklyConfluenceSpotlight({
     const candidateSymbols = Object.keys(MASTER_ASSET_CATALOG);
     fetchBatchQuotes(candidateSymbols).then((batch) => {
       if (batch && Object.keys(batch).length > 0) {
-        setLiveQuotes((prev) => ({ ...prev, ...batch }));
+        setLiveQuotes((prev) => {
+          const next = { ...prev };
+          for (const [sym, b] of Object.entries(batch)) {
+            if (b && b.price > 0 && b.lastUpdated && isQuoteFresh(b.lastUpdated)) {
+              next[sym] = b;
+            }
+          }
+          return next;
+        });
       }
     }).catch(() => {});
+
+    // Periodic freshness reaper: prune expired observations from state
+    const timer = setInterval(() => {
+      refreshLocalQuotes();
+    }, 15000);
 
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
@@ -86,8 +101,13 @@ export default function WeeklyConfluenceSpotlight({
 
       const handleStorage = () => refreshLocalQuotes();
       window.addEventListener("storage", handleStorage);
-      return () => window.removeEventListener("storage", handleStorage);
+      return () => {
+        clearInterval(timer);
+        window.removeEventListener("storage", handleStorage);
+      };
     }
+
+    return () => clearInterval(timer);
   }, [refreshLocalQuotes]);
 
   useEffect(() => {
@@ -134,19 +154,23 @@ export default function WeeklyConfluenceSpotlight({
     const valid = tacticalSetups
       .map((setup) => {
         const sym = setup.ticker;
-        const live = liveQuotes[sym] || SpotPriceRegistry.get(sym);
-        const snap = getPersistedMarketSnapshot(sym);
-        const effectivePrice = (live?.price && live.price > 0)
-          ? live.price
-          : (snap?.currentPrice && snap.currentPrice > 0)
-          ? snap.currentPrice
-          : (setup.entryPivot && setup.entryPivot > 0 ? setup.entryPivot : null);
+        const live = liveQuotes[sym];
+        const reg = SpotPriceRegistry.get(sym);
+        const isLiveFresh = Boolean(live?.price && live.price > 0 && live.lastUpdated && isQuoteFresh(live.lastUpdated));
+        const isRegFresh = Boolean(reg?.price && reg.price > 0 && reg.lastUpdated && isQuoteFresh(reg.lastUpdated));
+        const effectivePrice = isLiveFresh
+          ? live!.price
+          : (isRegFresh && reg?.price ? reg.price : null);
 
+        // Zero Fabricated Data Invariant: Candidate requires an observed market price on live tape. Never substitute entryPivot or cold stored snapshots.
         if (!effectivePrice || effectivePrice <= 0) return null;
         if (!setup.stopLoss || setup.stopLoss <= 0 || !setup.target1 || setup.target1 <= 0) return null;
-        const confScore = typeof setup.confluenceScore === "number" && !isNaN(setup.confluenceScore)
-          ? setup.confluenceScore
-          : 0;
+        
+        // Confluence score must be an authentic positive number. Never default missing/invalid confluence to 0.
+        if (typeof setup.confluenceScore !== "number" || isNaN(setup.confluenceScore) || setup.confluenceScore <= 0) {
+          return null;
+        }
+        const confScore = setup.confluenceScore;
 
         return {
           setup,
@@ -168,13 +192,13 @@ export default function WeeklyConfluenceSpotlight({
 
     return sorted.slice(0, 3).map(({ setup, effectivePrice, confScore }) => {
       const sym = setup.ticker;
-      const live = liveQuotes[sym] || SpotPriceRegistry.get(sym);
-      const snap = getPersistedMarketSnapshot(sym);
-      const effectiveChange = (live?.changePct !== undefined)
+      const live = liveQuotes[sym];
+      const reg = SpotPriceRegistry.get(sym);
+      const isLiveFresh = Boolean(live?.lastUpdated && isQuoteFresh(live.lastUpdated));
+      const isRegFresh = Boolean(reg?.lastUpdated && isQuoteFresh(reg.lastUpdated));
+      const effectiveChange = (isLiveFresh && live?.changePct !== undefined)
         ? live.changePct
-        : (snap?.priceChangePct24h !== undefined)
-        ? snap.priceChangePct24h
-        : 0.0;
+        : (isRegFresh && reg?.changePct !== undefined ? reg.changePct : 0.0);
 
       const master = MASTER_ASSET_CATALOG[sym];
       const entry: MasterAssetEntry = master || {

@@ -227,6 +227,8 @@ export interface FreshnessInfo {
   lastTradeDate?: string;
   stalenessDays?: number;
   candleCount?: number;
+  observedAt?: number;
+  fetchedAt?: number;
 }
 
 export interface DecisionTrace {

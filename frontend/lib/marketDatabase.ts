@@ -13,7 +13,10 @@ export const SNAPSHOT_TTL_MS = 15 * 60 * 1000; // 15-minute strict live data fre
 
 export interface PersistedMarketRecord {
   symbol: string;
-  lastUpdated: number;
+  observedAt?: number; // Authentic market observation timestamp from provider
+  fetchedAt?: number;  // Timestamp when network response was received
+  storedAt: number;    // Timestamp when record was written to persistent storage
+  lastUpdated: number; // Set strictly to observedAt (or 0 if missing); NEVER storedAt/Date.now()
   currentPrice: number;
   priceChangePct24h: number;
   dailyCandles: CandleData[];
@@ -34,7 +37,10 @@ export function isSnapshotFresh(symbol: string): boolean {
     const raw = localStorage.getItem(`${DB_STORAGE_PREFIX}${upper}`);
     if (!raw) return false;
     const record = JSON.parse(raw) as PersistedMarketRecord;
-    return (Date.now() - record.lastUpdated) < SNAPSHOT_TTL_MS;
+    const refTime = typeof record.storedAt === "number" && Number.isFinite(record.storedAt) && record.storedAt > 0
+      ? record.storedAt
+      : record.lastUpdated;
+    return typeof refTime === "number" && (Date.now() - refTime) < SNAPSHOT_TTL_MS;
   } catch {
     return false;
   }
@@ -42,6 +48,7 @@ export function isSnapshotFresh(symbol: string): boolean {
 
 /**
  * Save a verified live market response to browser persistent storage.
+ * Preserves authentic provider observation timestamps and separates observedAt from fetchedAt/storedAt.
  */
 export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): void {
   if (typeof window === "undefined" || !data || !data.candles || data.candles.length === 0) {
@@ -51,9 +58,28 @@ export function persistMarketSnapshot(symbol: string, data: AnalyticsResponse): 
   const prior = getPersistedMarketSnapshot(upper, true);
 
   const isDaily = data.interval === "1d" || data.interval === "1y_hist" || !data.interval;
+  const now = Date.now();
+  const observedAt = (typeof data.observedAt === "number" && Number.isFinite(data.observedAt) && data.observedAt > 0)
+    ? data.observedAt
+    : (typeof data.freshness?.observedAt === "number" && Number.isFinite(data.freshness.observedAt) && data.freshness.observedAt > 0
+      ? data.freshness.observedAt
+      : undefined);
+
+  const fetchedAt = (typeof data.fetchedAt === "number" && Number.isFinite(data.fetchedAt) && data.fetchedAt > 0)
+    ? data.fetchedAt
+    : (typeof data.freshness?.fetchedAt === "number" && Number.isFinite(data.freshness.fetchedAt) && data.freshness.fetchedAt > 0
+      ? data.freshness.fetchedAt
+      : now);
+
+  const storedAt = now;
+
   const record: PersistedMarketRecord = {
     symbol: upper,
-    lastUpdated: Date.now(),
+    observedAt,
+    fetchedAt,
+    storedAt,
+    // Invariant: Never reset observation age to Date.now() on storage; strictly preserve observedAt
+    lastUpdated: observedAt || 0,
     currentPrice: data.currentPrice,
     priceChangePct24h: data.priceChangePct24h,
     dailyCandles: isDaily ? data.candles : (prior?.dailyCandles || []),
@@ -116,8 +142,11 @@ export function getPersistedMarketSnapshot(symbol: string, allowStale: boolean =
       return null;
     }
 
-    // Self-healing check 2: Strict 15-minute TTL invalidation
-    const ageMs = Date.now() - record.lastUpdated;
+    // Self-healing check 2: Strict 15-minute storage TTL invalidation
+    const storedTime = typeof record.storedAt === "number" && Number.isFinite(record.storedAt) && record.storedAt > 0
+      ? record.storedAt
+      : record.lastUpdated;
+    const ageMs = Date.now() - storedTime;
     if (ageMs > SNAPSHOT_TTL_MS) {
       if (!allowStale) {
         return null; // Force live re-fetch

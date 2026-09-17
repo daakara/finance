@@ -624,6 +624,21 @@ def get_asset_analytics(
         except Exception:
             staleness_days = 0
 
+        # Provider observation timestamp
+        observed_at = None
+        fetched_at = int(datetime.utcnow().timestamp() * 1000)
+        if provider_source != "sqlite_cache":
+            try:
+                meta = getattr(ticker_obj, "history_metadata", None)
+                if meta and "regularMarketTime" in meta:
+                    rmt = meta["regularMarketTime"]
+                    if hasattr(rmt, "timestamp"):
+                        observed_at = int(rmt.timestamp() * 1000)
+                    elif isinstance(rmt, (int, float)):
+                        observed_at = int(rmt * 1000 if rmt < 1e11 else rmt)
+            except Exception:
+                pass
+
         if provider_source == "sqlite_cache":
             freshness_status = "STALE_HISTORICAL" if staleness_days > 4 else "RECENT"
         else:
@@ -854,12 +869,16 @@ def get_asset_analytics(
             },
             "confluence": confluence_output,
             "analytics": risk_output,
+            "observedAt": observed_at,
+            "fetchedAt": fetched_at,
             "freshness": {
                 "status": freshness_status,
                 "providerSource": provider_source,
                 "lastTradeDate": last_trade_date_str,
                 "stalenessDays": staleness_days,
                 "candleCount": len(candles),
+                "observedAt": observed_at,
+                "fetchedAt": fetched_at,
             },
             "decisionTrace": DecisionTraceEngine.build_decision_trace(
                 symbol=upper_sym,

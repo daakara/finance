@@ -44,17 +44,32 @@ def get_smart_money_overview(response: Response = None):
 
 
 @router.get("/congress")
-def get_congress_trades(symbol: Optional[str] = None, response: Response = None):
+def get_congress_trades(
+    symbol: Optional[str] = None,
+    include_curated: bool = Query(False),
+    response: Response = None,
+):
     """Get Capitol Hill stock disclosures with explicit curated provenance."""
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=60, s-maxage=300, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=300, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
-    trades = smart_money_engine.get_congressional_trades(valid_sym)
+    trades = smart_money_engine.get_congressional_trades(valid_sym, include_curated=include_curated)
+    if not include_curated:
+        return {
+            "symbol": valid_sym,
+            "status": "UNAVAILABLE",
+            "available": False,
+            "dataset_date": None,
+            "trades": [],
+            "source_meta": capitol_fetcher.get_filing_source_info(),
+            "disclosure": "Live Congressional disclosure sync feed disconnected. Pass include_curated=true to query archived research disclosures.",
+        }
     return {
         "symbol": valid_sym,
         "status": "CURATED",
+        "available": True,
         "dataset_date": "2026-08-28",
         "trades": trades,
         "source_meta": capitol_fetcher.get_filing_source_info(),
@@ -69,19 +84,36 @@ def get_options_flow(
     response: Response = None,
 ):
     """Get institutional options sweeps with verified provider provenance."""
-    import os
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
         response.headers["Cloudflare-CDN-Cache-Control"] = "max-age=120, stale-while-revalidate=86400, stale-if-error=86400"
     valid_sym = _validate_symbol(symbol)
-    has_live_provider = bool(os.getenv("POLYGON_API_KEY") or os.getenv("OPRA_API_KEY"))
     flow = smart_money_engine.get_options_flow(valid_sym, include_curated=include_curated)
+
+    if include_curated:
+        return {
+            "symbol": valid_sym,
+            "status": "CURATED",
+            "is_live": False,
+            "available": bool(flow and len(flow) > 0),
+            "flow": flow,
+            "message": "Curated options research archive loaded (not a live feed)",
+        }
+
+    # Live mode: only active if a functioning live provider stream delivers records
+    has_live_flow = bool(flow and len(flow) > 0)
     return {
         "symbol": valid_sym,
-        "available": has_live_provider,
+        "status": "LIVE" if has_live_flow else "UNAVAILABLE",
+        "is_live": has_live_flow,
+        "available": has_live_flow,
         "flow": flow,
-        "message": "Live OPRA options feed active" if has_live_provider else "Live options tape unavailable without Polygon.io / Trade Alert API Key",
+        "message": (
+            "Live OPRA options feed active"
+            if has_live_flow
+            else "Live options tape unavailable (no active stream connection)"
+        ),
     }
 
 
