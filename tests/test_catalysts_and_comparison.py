@@ -1,4 +1,4 @@
-﻿"""Tests for Catalyst Forecasting Engine and Comparison Endpoints."""
+"""Tests for Catalyst Forecasting Engine and Comparison Endpoints."""
 
 from unittest.mock import patch, MagicMock
 import pytest
@@ -14,8 +14,8 @@ client = TestClient(app)
 catalyst_engine = CatalystEngine()
 
 def test_catalyst_engine_nvo_report():
-    """Verify that Novo Nordisk returns authentic Amycretin clinical trial and 5-year forecast."""
-    nvo_report = catalyst_engine.get_asset_catalyst_report("NVO", current_price=138.50)
+    """Verify that Novo Nordisk curated archive returns Amycretin clinical trial and 5-year forecast when include_curated=True."""
+    nvo_report = catalyst_engine.get_asset_catalyst_report("NVO", current_price=138.50, include_curated=True)
     assert nvo_report["symbol"] == "NVO"
     assert "Amycretin" in nvo_report["primary_drug_trial"]
     assert len(nvo_report["upcoming_milestones"]) >= 3
@@ -28,13 +28,14 @@ def test_catalyst_engine_nvo_report():
     assert y2031["projected_eps"] > 9.0
 
 def test_catalyst_engine_generic_asset():
-    """Verify that any asset gracefully receives a quantitative 5-year projection."""
-    aapl_report = catalyst_engine.get_asset_catalyst_report("AAPL", current_price=300.0)
+    """Verify that in live mode (include_curated=False), assets never output static multi-year projections."""
+    aapl_report = catalyst_engine.get_asset_catalyst_report("AAPL", current_price=300.0, include_curated=False)
     assert aapl_report["symbol"] == "AAPL"
-    assert len(aapl_report["multi_year_forecast"]) == 4
+    assert aapl_report["multi_year_forecast"] == []
+    assert aapl_report["upcoming_milestones"] == []
 
 def test_analytics_api_returns_catalyst_forecast():
-    """Verify that the FastAPI /analytics/{symbol} endpoint bundles catalyst forecasts."""
+    """Verify that the FastAPI /analytics/{symbol} endpoint bundles catalyst forecasts without static projections."""
     prices = [100 + i * 0.5 for i in range(60)]
     mock_df = pd.DataFrame({
         "Open": prices,
@@ -54,4 +55,5 @@ def test_analytics_api_returns_catalyst_forecast():
         data = res.json()
         assert "catalystForecast" in data
         assert data["catalystForecast"]["symbol"] == "NVO"
-        assert "Amycretin" in data["catalystForecast"]["primary_drug_trial"]
+        assert data["catalystForecast"]["multi_year_forecast"] == []
+        assert data["catalystForecast"]["upcoming_milestones"] == []

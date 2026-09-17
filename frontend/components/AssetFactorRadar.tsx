@@ -31,10 +31,30 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
 
-  const defaultObj = SHARED_FACTOR_SCORES[symbol?.toUpperCase()?.replace("-USD", "")] || SHARED_FACTOR_SCORES["AAPL"];
-  const scores = factorScores || defaultObj.scores;
-  const mdr = macroDifficulty || DEFAULT_MACRO_DIFFICULTY;
-  const er = expectedReturn || DEFAULT_EXPECTED_RETURN;
+  if (!factorScores) {
+    return (
+      <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-3 font-mono">
+        <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+            <h3 className="text-sm font-bold text-slate-200 tracking-tight">
+              {symbol} {isPlain ? "Business DNA & BS Detector" : "Fundamental & Factor Profile"}
+            </h3>
+          </div>
+          <span className="text-[10px] bg-[#1b2434] text-slate-400 border border-slate-700/60 px-2 py-0.5 rounded">
+            Awaiting Live Corporate Filings
+          </span>
+        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Under ARX live-API data invariants, fundamental scoring across growth, solvency, and Piotroski F-Scores requires verified regulatory SEC filings. No synthetic or catalog baseline scores are imputed.
+        </p>
+      </div>
+    );
+  }
+
+  const scores = factorScores;
+  const mdr = macroDifficulty;
+  const er = expectedReturn;
 
   return (
     <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-mono">
@@ -109,14 +129,26 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
             <span className="text-xs font-bold text-slate-200">
               {isPlain ? "Economic Climate (Federal Reserve)" : "Macro Regime (FRED Data)"}
             </span>
-            <span className="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded font-semibold">
-              MDR: {mdr.rating} / 5 ({mdr.regime})
-            </span>
+            {mdr ? (
+              <span className="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded font-semibold">
+                MDR: {mdr.rating} / 5 ({mdr.regime})
+              </span>
+            ) : (
+              <span className="text-[10px] text-slate-400 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">
+                Feed Unavailable
+              </span>
+            )}
           </div>
-          <div className="text-xs text-slate-300 space-y-1.5 leading-relaxed">
-            <p><span className="text-slate-400 font-semibold">Interest Rates: </span>{mdr.interestRateImpact}</p>
-            <p><span className="text-slate-400 font-semibold">Inflation: </span>{mdr.inflationImpact}</p>
-          </div>
+          {mdr ? (
+            <div className="text-xs text-slate-300 space-y-1.5 leading-relaxed">
+              <p><span className="text-slate-400 font-semibold">Interest Rates: </span>{mdr.interestRateImpact}</p>
+              <p><span className="text-slate-400 font-semibold">Inflation: </span>{mdr.inflationImpact}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500 italic">
+              Live FRED interest rate yield curves and inflation data feed awaiting upstream calibration.
+            </p>
+          )}
         </div>
 
         {/* 90-Day Expected Return Simulation */}
@@ -125,24 +157,36 @@ export default function AssetFactorRadar({ symbol, factorScores, macroDifficulty
             <span className="text-xs font-bold text-slate-200">
               {isPlain ? "90-Day Price Forecast Odds" : "90-Day Expected Return E[R]"}
             </span>
-            <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded font-semibold">
-              Vol: {er.annualizedVolatility}%
-            </span>
+            {er ? (
+              <span className="text-[10px] text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded font-semibold">
+                Vol: {er.annualizedVolatility}%
+              </span>
+            ) : (
+              <span className="text-[10px] text-slate-400 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">
+                Uncalibrated
+              </span>
+            )}
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-            <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-              <span className="text-[10px] text-slate-400 block">{isPlain ? "Bad Case" : "P10 Bear"}</span>
-              <span className="font-bold text-rose-400">{er.p10Pessimistic}%</span>
+          {er ? (
+            <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+              <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-400 block">{isPlain ? "Bad Case" : "P10 Bear"}</span>
+                <span className="font-bold text-rose-400">{er.p10Pessimistic}%</span>
+              </div>
+              <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-400 block">{isPlain ? "Expected" : "P50 Base"}</span>
+                <span className="font-bold text-emerald-400">{er.p50Expected > 0 ? `+${er.p50Expected}` : er.p50Expected}%</span>
+              </div>
+              <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
+                <span className="text-[10px] text-slate-400 block">{isPlain ? "Bull Run" : "P90 Bull"}</span>
+                <span className="font-bold text-cyan-400">+{er.p90Optimistic}%</span>
+              </div>
             </div>
-            <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-              <span className="text-[10px] text-slate-400 block">{isPlain ? "Expected" : "P50 Base"}</span>
-              <span className="font-bold text-emerald-400">{er.p50Expected > 0 ? `+${er.p50Expected}` : er.p50Expected}%</span>
-            </div>
-            <div className="bg-[#111722] p-2 rounded border border-[#1b2434]">
-              <span className="text-[10px] text-slate-400 block">{isPlain ? "Bull Run" : "P90 Bull"}</span>
-              <span className="font-bold text-cyan-400">+{er.p90Optimistic}%</span>
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-slate-500 italic">
+              Expected return simulations require minimum calibrated empirical return distribution.
+            </p>
+          )}
         </div>
       </div>
     </div>

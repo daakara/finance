@@ -26,13 +26,13 @@ logger = logging.getLogger(__name__)
 class VolatilityForecast:
     """Data class for volatility forecast information"""
     forecast_horizon: int
-    current_volatility: float
+    current_volatility: Optional[float]
     forecasted_volatility: List[float]
     confidence_intervals: Dict[str, List[float]]
     regime_probability: Dict[str, float]
     model_type: str
-    forecast_accuracy: float
-    volatility_trend: str  # 'increasing', 'decreasing', 'stable'
+    forecast_accuracy: Optional[float]
+    volatility_trend: str  # 'increasing', 'decreasing', 'stable', 'insufficient_data'
 
 class VolatilityForecaster:
     """Priority 3: Advanced volatility forecasting with GARCH models and regime detection"""
@@ -56,7 +56,12 @@ class VolatilityForecaster:
         """Generate comprehensive volatility forecast"""
         try:
             if len(price_data) < 100:
-                return {'error': 'Insufficient data for volatility forecasting (minimum 100 observations required)'}
+                return {
+                    'error': 'Insufficient data for volatility forecasting (minimum 100 observations required)',
+                    'is_available': False,
+                    'current_volatility': None,
+                    'forecasted_volatility': [],
+                }
             
             # Calculate returns
             returns = price_data['Close'].pct_change().dropna() * 100  # Convert to percentage
@@ -570,14 +575,18 @@ class VolatilityForecaster:
                                 fallback_type: str) -> VolatilityForecast:
         """Create fallback forecast when models fail"""
         try:
-            if len(returns) > 0 and not returns.dropna().empty:
-                current_vol = float(returns.std() * np.sqrt(252))
-                if np.isnan(current_vol):
-                    current_vol = 0.0
-                forecasted_vol = [current_vol] * horizon
+            valid_returns = returns.dropna() if returns is not None and hasattr(returns, "dropna") else pd.Series(dtype=float)
+            if len(valid_returns) > 1 and not valid_returns.empty:
+                std_val = valid_returns.std()
+                if np.isnan(std_val) or np.isinf(std_val):
+                    current_vol = None
+                    forecasted_vol = []
+                else:
+                    current_vol = float(std_val * np.sqrt(252))
+                    forecasted_vol = [current_vol] * horizon
             else:
-                current_vol = 0.0
-                forecasted_vol = [0.0] * horizon
+                current_vol = None
+                forecasted_vol = []
             
             return VolatilityForecast(
                 forecast_horizon=horizon,
@@ -586,20 +595,20 @@ class VolatilityForecaster:
                 confidence_intervals={},
                 regime_probability={},
                 model_type=f'Fallback ({fallback_type})',
-                forecast_accuracy=0.0,
-                volatility_trend='insufficient_data' if current_vol == 0.0 else 'stable'
+                forecast_accuracy=None,
+                volatility_trend='insufficient_data' if current_vol is None else 'stable'
             )
             
         except Exception as e:
             logger.error(f"Error creating fallback forecast: {str(e)}")
             return VolatilityForecast(
                 forecast_horizon=horizon,
-                current_volatility=0.0,
-                forecasted_volatility=[0.0] * horizon,
+                current_volatility=None,
+                forecasted_volatility=[],
                 confidence_intervals={},
                 regime_probability={},
                 model_type='Error Fallback',
-                forecast_accuracy=0.0,
+                forecast_accuracy=None,
                 volatility_trend='error'
             )
     

@@ -2065,7 +2065,22 @@ class SmartMoneyEngine:
         return UNUSUAL_OPTIONS_FLOW
 
     @staticmethod
-    def get_smart_money_overview() -> Dict[str, Any]:
+    def get_smart_money_overview(include_curated: bool = False) -> Dict[str, Any]:
+        if not include_curated:
+            return {
+                'total_congress_filings_30d': None,
+                'total_sec_insiders_30d': None,
+                'net_political_sentiment': None,
+                'top_congress_bought_sector': None,
+                'unusual_flow_volume_today': None,
+                'call_to_put_dollar_ratio': None,
+                'late_filers_count': 0,
+                'fresh_trades_count': 0,
+                'congress_trades': [],
+                'sec_insider_trades': [],
+                'options_flow': [],
+            }
+
         enriched_trades = [SmartMoneyEngine.enrich_trade(t) for t in CONGRESSIONAL_TRADES]
         late_filers = [t for t in enriched_trades if t.get("staleness_status") == "LATE_FILER"]
         fresh_trades = [t for t in enriched_trades if t.get("staleness_status") == "FRESH"]

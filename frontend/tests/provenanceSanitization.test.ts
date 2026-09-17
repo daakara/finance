@@ -18,14 +18,20 @@ async function runProvenanceSuite() {
   console.log("Starting Live-API-Only Epistemic Purity & Provenance Suite...\n");
 
   // 1. Test Fallback Payload Epistemic Sanitization
-  console.log("Executing Test 1: Fallback payload suppresses factor scores and self-healing claims...");
+  console.log("Executing Test 1: Fallback payload suppresses factor scores, macro, return forecasts, and self-healing claims...");
   const fallback = generateFallbackAnalytics("NVDA", "1y", "1d");
-  assert(fallback._dataSource === "fallback", "Data source must be marked fallback");
+  assert(fallback._dataSource === "unavailable" || fallback._dataSource === "fallback", "Data source must be marked unavailable or fallback");
   assert(fallback.factorScores === undefined, "Fallback factor scores must be undefined, never catalog defaults");
+  assert(fallback.macroDifficulty === undefined, "Fallback macroDifficulty must be undefined, never DEFAULT_MACRO_DIFFICULTY");
+  assert(fallback.expectedReturn === undefined, "Fallback expectedReturn must be undefined, never +18.6% DEFAULT_EXPECTED_RETURN");
   assert(fallback.selfHealingAudit === undefined, "Fallback selfHealingAudit must be undefined, never fabricated 92.4%");
   assert(Array.isArray(fallback.catalystForecast?.upcoming_milestones), "Upcoming milestones must be an array");
   assert(fallback.catalystForecast?.upcoming_milestones.length === 0, "Fallback upcoming milestones must be empty");
-  console.log("✓ Test 1 Passed: Fallback payload is epistemically clean without fabricated claims.");
+  assert(Array.isArray(fallback.catalystForecast?.multi_year_forecast), "Multi-year forecast must be an array");
+  assert(fallback.catalystForecast?.multi_year_forecast.length === 0, "Fallback multi-year forecast must be empty, never static projections");
+  assert(fallback.currentPrice === 0, "Fallback currentPrice without live/persisted quote must be 0, never catalog baseline price");
+  assert(fallback.candles.length === 0, "Fallback candles without live/persisted quote must be empty");
+  console.log("✓ Test 1 Passed: Complete fallback payload is epistemically clean without fabricated claims.");
 
   // 2. Test Smart Money Fallback Null Safety
   console.log("Executing Test 2: Smart Money fallback sets null for unverified options flow volume...");

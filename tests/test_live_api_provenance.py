@@ -13,6 +13,9 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 
 
+from analyst_dashboard.analyzers.volatility_forecaster import VolatilityForecaster
+
+
 def test_self_healing_auditor_rejects_insufficient_history():
     """Verify that fewer than 35 bars returns None for accuracy/hit rate, never fabricated 92.4%."""
     auditor = SelfHealingForecastAuditor()
@@ -38,14 +41,40 @@ def test_smart_money_options_flow_no_fabricated_live_feed():
     assert len(curated_flow) > 0, "Curated research archive should be retrievable when explicitly requested"
 
 
-def test_smart_money_overview_dynamic_metrics():
-    """Verify that overview dynamically computes counts and sets None for unverified options flow volume."""
-    overview = SmartMoneyEngine.get_smart_money_overview()
-    assert overview["total_congress_filings_30d"] > 0
-    assert overview["total_sec_insiders_30d"] > 0
-    assert overview["unusual_flow_volume_today"] is None, "Unusual flow volume must be None without live OPRA feed"
-    assert overview["call_to_put_dollar_ratio"] is None, "Call to put ratio must be None without live OPRA feed"
-    assert "Bullish" in overview["net_political_sentiment"] or "Bearish" in overview["net_political_sentiment"]
+def test_smart_money_overview_live_and_curated():
+    """Verify that live overview sets None for rolling totals, while curated mode calculates archive totals."""
+    # Live mode (include_curated=False)
+    live_overview = SmartMoneyEngine.get_smart_money_overview(include_curated=False)
+    assert live_overview["total_congress_filings_30d"] is None, "Live 30d congress count must be None without live feed"
+    assert live_overview["total_sec_insiders_30d"] is None, "Live 30d SEC count must be None without live feed"
+    assert live_overview["net_political_sentiment"] is None, "Live political sentiment must be None without live feed"
+    assert live_overview["unusual_flow_volume_today"] is None
+    assert live_overview["call_to_put_dollar_ratio"] is None
+    assert live_overview["congress_trades"] == []
+
+    # Curated mode (include_curated=True)
+    curated_overview = SmartMoneyEngine.get_smart_money_overview(include_curated=True)
+    assert curated_overview["total_congress_filings_30d"] > 0
+    assert curated_overview["total_sec_insiders_30d"] > 0
+    assert "Bullish" in curated_overview["net_political_sentiment"] or "Bearish" in curated_overview["net_political_sentiment"]
+
+
+def test_volatility_forecaster_rejects_insufficient_history():
+    """Verify that insufficient history returns is_available: False and None volatility, never numeric 0.0."""
+    forecaster = VolatilityForecaster()
+    short_data = pd.DataFrame({
+        "Close": [100.0 + i * 0.1 for i in range(30)],
+    })
+    forecast = forecaster.generate_volatility_forecast(short_data, forecast_horizon=30)
+    assert forecast.get("is_available") is False, "Volatility forecast must be unavailable for N < 100"
+    assert forecast.get("current_volatility") is None, "Current volatility must be None, never 0.0"
+    assert forecast.get("forecasted_volatility") == [], "Forecasted volatility series must be empty list"
+
+    # Test fallback forecast with empty returns
+    empty_forecast = forecaster._create_fallback_forecast(pd.Series(dtype=float), horizon=10, fallback_type="empty_test")
+    assert empty_forecast.current_volatility is None, "Fallback volatility must be None for empty returns"
+    assert empty_forecast.forecasted_volatility == [], "Fallback forecasted volatility must be empty list"
+    assert empty_forecast.volatility_trend == "insufficient_data"
 
 
 def test_market_db_no_default_snapshot_pollution():
@@ -100,9 +129,16 @@ def test_confluence_engine_purges_fundamental_imputation():
 
 
 def test_catalyst_archive_provenance_disclosure():
-    """Verify that catalyst reports explicitly disclose curated archive status and consensus provenance."""
+    """Verify that catalyst reports purge static forecasts in live mode, disclosing provenance in curated mode."""
     engine = CatalystEngine()
-    report = engine.get_asset_catalyst_report("NVDA", current_price=125.0)
-    assert report.get("isCuratedArchive") is True
-    assert report.get("forecastProvenance") == "Curated Historical Consensus"
-    assert report.get("asOfDate") == "2026-09-01"
+    # Live mode (default): zero static multi-year projections or fake milestones
+    live_report = engine.get_asset_catalyst_report("NVDA", current_price=125.0, include_curated=False)
+    assert live_report["upcoming_milestones"] == [], "Live catalyst report must not include static milestones"
+    assert live_report["multi_year_forecast"] == [], "Live catalyst report must not include static multi-year forecasts"
+
+    # Curated mode
+    curated_report = engine.get_asset_catalyst_report("NVDA", current_price=125.0, include_curated=True)
+    assert curated_report.get("isCuratedArchive") is True
+    assert curated_report.get("forecastProvenance") == "Curated Historical Consensus"
+    assert curated_report.get("asOfDate") == "2026-09-01"
+    assert len(curated_report["multi_year_forecast"]) > 0

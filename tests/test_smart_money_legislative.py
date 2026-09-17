@@ -1,4 +1,4 @@
-﻿"""Unit & Integration Tests for Legislative Alignment, STOCK Act Staleness Decay, and Regulatory Catalysts."""
+"""Unit & Integration Tests for Legislative Alignment, STOCK Act Staleness Decay, and Regulatory Catalysts."""
 
 import pytest
 from analyst_dashboard.analyzers.smart_money import (
@@ -107,8 +107,8 @@ def test_smart_money_engine_enrichment():
 
 
 def test_smart_money_overview_metrics():
-    """Verify overview aggregate returns count of late filers and fresh trades."""
-    overview = SmartMoneyEngine.get_smart_money_overview()
+    """Verify overview aggregate returns count of late filers and fresh trades in curated archive."""
+    overview = SmartMoneyEngine.get_smart_money_overview(include_curated=True)
     assert "late_filers_count" in overview
     assert "fresh_trades_count" in overview
     assert overview["late_filers_count"] >= 1, "Expected at least 1 late filer test case"
@@ -116,9 +116,9 @@ def test_smart_money_overview_metrics():
 
 
 def test_catalyst_engine_regulatory_milestones():
-    """Verify CatalystEngine contains legislative and regulatory milestones for key assets."""
+    """Verify CatalystEngine contains legislative and regulatory milestones for key assets in curated mode."""
     engine = CatalystEngine()
-    nvda_report = engine.get_asset_catalyst_report("NVDA", current_price=125.0)
+    nvda_report = engine.get_asset_catalyst_report("NVDA", current_price=125.0, include_curated=True)
     assert nvda_report["symbol"] == "NVDA"
     assert len(nvda_report["upcoming_milestones"]) >= 3
 
@@ -126,6 +126,6 @@ def test_catalyst_engine_regulatory_milestones():
     events_text = " ".join([m["event"] for m in nvda_report["upcoming_milestones"]])
     assert any(term in events_text.lower() for term in ["congressional", "export", "sovereign", "appropriations"])
 
-    pltr_report = engine.get_asset_catalyst_report("PLTR", current_price=30.0)
+    pltr_report = engine.get_asset_catalyst_report("PLTR", current_price=30.0, include_curated=True)
     pltr_events = " ".join([m["event"] for m in pltr_report["upcoming_milestones"]])
     assert any(term in pltr_events.lower() for term in ["defense", "appropriations", "ndaa", "procurement"])

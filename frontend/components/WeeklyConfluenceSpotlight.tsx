@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { MASTER_ASSET_CATALOG, MasterAssetEntry, CATALOG_BASELINE_PRICES } from "../lib/masterCatalog";
+import { MASTER_ASSET_CATALOG, MasterAssetEntry } from "../lib/masterCatalog";
 import { addPortfolioPosition } from "../lib/portfolio";
-import { SpotPriceRegistry, fetchBatchQuotes } from "../lib/api";
+import { SpotPriceRegistry, fetchBatchQuotes, fetchTacticalSetups } from "../lib/api";
+import type { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import { getPersistedMarketSnapshot, getAllPersistedMarketSnapshots } from "../lib/marketDatabase";
 import MiniSparkline from "./MiniSparkline";
 
@@ -109,123 +110,120 @@ export default function WeeklyConfluenceSpotlight({
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const isDayTrader = userRole === "DAY_TRADER";
 
-  // Dynamically compute the Top 3 High-Confluence Plays based on active Horizon (Day Trader vs Long Term)
+  const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchTacticalSetups(undefined, userRole)
+      .then((data) => {
+        if (isMounted) setTacticalSetups(data || []);
+      })
+      .catch(() => {
+        if (isMounted) setTacticalSetups([]);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [userRole]);
+
+  // Dynamically compute the Top 3 High-Confluence Plays strictly from authoritative live setups
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
-    const all = Object.values(MASTER_ASSET_CATALOG);
-    
-    // 1. Dual-Horizon Pre-Filter
-    const eligible = all.filter((a) => {
-      if (a.type !== "Stock" || !a.atr14 || a.atr14 <= 0) return false;
-      if (isDayTrader) {
-        // Day Trader: Filter for high Relative Volume (RVOL >= 1.3) or elevated Momentum (>=70)
-        return a.rvol >= 1.3 || a.momentumScore >= 70;
-      } else {
-        // Long Term: Filter for pristine solvency (Piotroski >= 7) and positive ROIC
-        return a.piotroski >= 7 && a.roic > 0;
+    if (!tacticalSetups || tacticalSetups.length === 0) return [];
+
+    // Filter valid setups with valid prices and numbers
+    const valid = tacticalSetups
+      .map((setup) => {
+        const sym = setup.ticker;
+        const live = liveQuotes[sym] || SpotPriceRegistry.get(sym);
+        const snap = getPersistedMarketSnapshot(sym);
+        const effectivePrice = (live?.price && live.price > 0)
+          ? live.price
+          : (snap?.currentPrice && snap.currentPrice > 0)
+          ? snap.currentPrice
+          : (setup.entryPivot && setup.entryPivot > 0 ? setup.entryPivot : null);
+
+        if (!effectivePrice || effectivePrice <= 0) return null;
+        const confScore = typeof setup.confluenceScore === "number" && !isNaN(setup.confluenceScore)
+          ? setup.confluenceScore
+          : 0;
+
+        return {
+          setup,
+          effectivePrice,
+          confScore,
+        };
+      })
+      .filter((item): item is { setup: TradeSetupSpec; effectivePrice: number; confScore: number } => item !== null);
+
+    // Sort: Actionable first, then highest confluenceScore descending
+    const sorted = [...valid].sort((a, b) => {
+      const aAct = Boolean(a.setup.isActionable);
+      const bAct = Boolean(b.setup.isActionable);
+      if (aAct !== bAct) {
+        return aAct ? -1 : 1;
       }
+      return b.confScore - a.confScore;
     });
 
-    const scored = eligible.map((asset) => {
-      // Resolve authentic live exchange spot price
-      const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
-      const snap = getPersistedMarketSnapshot(asset.symbol);
-      const effectivePrice = (live?.price && live.price > 0)
-        ? live.price
-        : (snap?.currentPrice && snap.currentPrice > 0)
-        ? snap.currentPrice
-        : null;
-
-      if (!effectivePrice) {
-        // Exclude assets without verified exchange price from spotlight ranking
-        return null;
-      }
-
+    return sorted.slice(0, 3).map(({ setup, effectivePrice, confScore }) => {
+      const sym = setup.ticker;
+      const live = liveQuotes[sym] || SpotPriceRegistry.get(sym);
+      const snap = getPersistedMarketSnapshot(sym);
       const effectiveChange = (live?.changePct !== undefined)
         ? live.changePct
         : (snap?.priceChangePct24h !== undefined)
         ? snap.priceChangePct24h
         : 0.0;
 
-      const currentAtr = Math.max(0.2, asset.atr14);
-      const atrPct = effectivePrice > 0 ? (currentAtr / effectivePrice) : 0.02;
+      const master = MASTER_ASSET_CATALOG[sym];
+      const entry: MasterAssetEntry = master || {
+        symbol: sym,
+        name: sym,
+        type: "Stock",
+        sector: "Equities",
+        category: "Trading Setup",
+        roic: 0,
+        grossMargin: 0,
+        fwdPe: 0,
+        peg: 0,
+        fcfYield: 0,
+        piotroski: 0,
+        atr14: 0,
+        rvol: 0,
+        shortFloat: 0,
+        beta: 1.0,
+        marketCap: "-",
+        growthScore: 0,
+        qualityScore: 0,
+        valuationScore: 0,
+        momentumScore: 0,
+        tailRiskScore: 0,
+        compositeFactorScore: Math.round(confScore),
+        verdict: setup.setupName || "High Confluence Setup",
+        moatSummary: setup.entryThesis || "Verified Setup",
+        upcomingCatalyst: setup.setupName || "Technical Setup",
+        thesis: setup.entryThesis || "Live Confluence Setup",
+      };
 
-      let compositeScore = 80;
-      let stopVal = effectivePrice - currentAtr * 1.25;
-      let target1Val = effectivePrice + currentAtr * 2.5;
-      let target2Val = effectivePrice + currentAtr * 3.8;
-      let setupBadge = "INSTITUTIONAL ACCUMULATION";
-      let setupBadgePlain = "Smart Money Buying";
-
-      if (isDayTrader) {
-        // ── ⚡ DAY TRADER QUANTITATIVE SCORING SIEVE ─────────────────────────
-        const rvolScore = Math.min(35, (asset.rvol / 2.6) * 35); // Max 35 pts
-        const momentumScore = Math.min(35, (asset.momentumScore / 100) * 35); // Max 35 pts
-        const volatilityBonus = atrPct >= 0.022 ? 15 : 8; // Max 15 pts
-        const squeezeBonus = asset.shortFloat >= 5.0 ? 15 : asset.shortFloat >= 2.5 ? 10 : 5; // Max 15 pts
-
-        compositeScore = Math.round(rvolScore + momentumScore + volatilityBonus + squeezeBonus);
-
-        // Tight Intraday/Swing Monotonic Execution Ladder (0.9x ATR Stop, 1.8x ATR TP1, 3.2x ATR TP2)
-        stopVal = Math.max(0.01, effectivePrice - currentAtr * 0.9);
-        target1Val = effectivePrice + currentAtr * 1.8;
-        target2Val = effectivePrice + currentAtr * 3.2;
-
-        setupBadge = asset.rvol >= 2.4
-          ? "⚡ HIGH-RVOL EXPLOSION"
-          : asset.shortFloat >= 5.5
-          ? "🔥 SHORT SQUEEZE PRESSURE"
-          : "🚀 STAGE 2 BREAKOUT";
-
-        setupBadgePlain = asset.rvol >= 2.4
-          ? "Surging Trading Volume"
-          : asset.shortFloat >= 5.5
-          ? "Squeeze Pressure Building"
-          : "Fast-Moving Momentum";
-      } else {
-        // ── 🏛️ LONG-TERM COMPOUNDER SCORING SIEVE ────────────────────────────
-        const piotroskiWeight = (asset.piotroski / 9) * 30; // Max 30 pts
-        const factorWeight = (asset.compositeFactorScore / 100) * 35; // Max 35 pts
-        const pegBonus = asset.peg > 0 && asset.peg <= 1.2 ? 15 : 5; // Max 15 pts
-        const roicBonus = asset.roic >= 20 ? 15 : asset.roic >= 12 ? 10 : 5; // Max 15 pts
-        const momBonus = Math.min(5, Math.max(0, asset.momentumScore / 20)); // Max 5 pts
-
-        compositeScore = Math.round(piotroskiWeight + factorWeight + pegBonus + roicBonus + momBonus);
-
-        // Structural Swing/Position Ladder (1.25x ATR Stop, 2.5x ATR TP1, 3.8x ATR TP2)
-        stopVal = Math.max(0.01, effectivePrice - currentAtr * 1.25);
-        target1Val = effectivePrice + currentAtr * 2.5;
-        target2Val = effectivePrice + currentAtr * 3.8;
-
-        setupBadge = asset.piotroski === 9
-          ? "🏛️ PERFECT 9/9 PIOTROSKI"
-          : asset.roic >= 25
-          ? "💎 CAPITAL COMPOUNDER"
-          : "🛡️ SECULAR MOAT LEADER";
-
-        setupBadgePlain = asset.piotroski === 9
-          ? "Rock-Solid Balance Sheet"
-          : asset.roic >= 25
-          ? "High Profit Engine"
-          : "Dominant Market Leader";
-      }
-      
-      const riskDelta = effectivePrice - stopVal;
-      const rewardDelta = target1Val - effectivePrice;
-      const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.2";
-
+      const stopVal = setup.stopLoss || (effectivePrice * 0.95);
+      const target1Val = setup.target1 || (effectivePrice * 1.10);
+      const target2Val = setup.target2 || (effectivePrice * 1.20);
       const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
       const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
       const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
+      const riskDelta = effectivePrice - stopVal;
+      const rewardDelta = target1Val - effectivePrice;
+      const rr = riskDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "2.0";
 
       return {
-        entry: asset,
+        entry,
         livePrice: effectivePrice,
         liveChangePct: effectiveChange,
-        convictionScore: Math.min(99, compositeScore),
-        setupBadge,
-        setupBadgePlain,
-        catalystSummary: asset.upcomingCatalyst || asset.thesis,
-        catalystSummaryPlain: asset.moatSummary || asset.thesis,
+        convictionScore: Math.min(99, Math.round(confScore)),
+        setupBadge: setup.setupName || (isDayTrader ? "⚡ HIGH-RVOL MOMENTUM" : "INSTITUTIONAL ACCUMULATION"),
+        setupBadgePlain: isPlain ? "High Confluence Setup" : (setup.setupName || "High Confluence"),
+        catalystSummary: setup.entryThesis || setup.setupName || (isDayTrader ? "Intraday Volume Expansion" : "Institutional Accumulation"),
+        catalystSummaryPlain: setup.setupName || (isDayTrader ? "Surging Trading Volume" : "High Quality Accumulation"),
         stopPrice: Number(stopVal.toFixed(2)),
         stopLossPct: stopPct,
         target1Price: Number(target1Val.toFixed(2)),
@@ -234,12 +232,8 @@ export default function WeeklyConfluenceSpotlight({
         target2Pct: t2Pct,
         rewardRiskRatio: rr,
       };
-    })
-    .filter((cand): cand is ConfluenceCandidate => cand !== null)
-    .sort((a, b) => b.convictionScore - a.convictionScore);
-
-    return scored.slice(0, 3);
-  }, [liveQuotes, isDayTrader]);
+    });
+  }, [tacticalSetups, liveQuotes, isDayTrader, isPlain]);
 
   const handleQuickLog = async (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();

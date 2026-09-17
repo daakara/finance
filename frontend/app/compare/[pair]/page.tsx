@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import { SHARED_WATCHLIST_ITEMS, SHARED_FACTOR_SCORES } from "../../../lib/constants";
-import { getMasterBaselinePrice, getMasterAsset } from "../../../lib/masterCatalog";
+import { getMasterAsset } from "../../../lib/masterCatalog";
 
 interface PageProps {
   params: {
@@ -68,8 +68,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
   const factorA = SHARED_FACTOR_SCORES[symA];
   const factorB = SHARED_FACTOR_SCORES[symB];
 
-  const priceA = getMasterBaselinePrice(symA);
-  const priceB = getMasterBaselinePrice(symB);
+  const priceA: number | null = null;
+  const priceB: number | null = null;
 
   const masterA = getMasterAsset(symA);
   const masterB = getMasterAsset(symB);
@@ -193,8 +193,8 @@ export default function ComparisonPairPage({ params }: PageProps) {
               <tbody className="divide-y divide-[#162030] text-slate-300">
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Current Spot Price</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">{priceA !== undefined ? `$${priceA.toFixed(2)}` : "Unavailable"}</td>
-                  <td className="py-2.5 px-3 font-mono text-white font-bold">{priceB !== undefined ? `$${priceB.toFixed(2)}` : "Unavailable"}</td>
+                  <td className="py-2.5 px-3 font-mono text-white font-bold">{typeof priceA === "number" ? `$${(priceA as number).toFixed(2)}` : "Unavailable"}</td>
+                  <td className="py-2.5 px-3 font-mono text-white font-bold">{typeof priceB === "number" ? `$${(priceB as number).toFixed(2)}` : "Unavailable"}</td>
                 </tr>
                 <tr>
                   <td className="py-2.5 px-3 font-semibold text-slate-400">Composite Factor Score</td>

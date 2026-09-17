@@ -30,7 +30,7 @@ import {
   calculateRealizedR,
 } from "../../lib/tradeLifecycle";
 import { getPersistedMarketSnapshot } from "../../lib/marketDatabase";
-import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "../../lib/masterCatalog";
+import { MASTER_ASSET_CATALOG } from "../../lib/masterCatalog";
 import { resolveAssetAlias, getCanonicalAssetName } from "../../lib/assetRegistry";
 import { trackMatomoEvent } from "../../lib/matomo";
 import MacroStressTestSimulator from "../../components/MacroStressTestSimulator";
@@ -91,12 +91,23 @@ export default function PortfolioPage() {
     setIsResolvingQuote(true);
 
     try {
-      // 1. Fetch freshest live exchange analytics
+      // 1. Fetch freshest live exchange analytics with strict provenance check
       let price: number | null = null;
       try {
         const analytics = await fetchAssetAnalytics(symKey, "1mo", "1d");
-        if (analytics?.currentPrice && !isNaN(analytics.currentPrice) && analytics.currentPrice > 0) {
+        if (
+          analytics?.currentPrice &&
+          !isNaN(analytics.currentPrice) &&
+          analytics.currentPrice > 0 &&
+          analytics._dataSource === "live"
+        ) {
           price = analytics.currentPrice;
+        } else {
+          // If offline fallback, only accept if backed by an authentic registered or persisted quote
+          const reg = SpotPriceRegistry.get(symKey);
+          const snap = getPersistedMarketSnapshot(symKey);
+          if (reg?.price && reg.price > 0) price = reg.price;
+          else if (snap?.currentPrice && snap.currentPrice > 0) price = snap.currentPrice;
         }
       } catch (e) {
         const reg = SpotPriceRegistry.get(symKey);

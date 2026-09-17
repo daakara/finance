@@ -1,9 +1,7 @@
 "use client";
 
-import { SHARED_FACTOR_SCORES, DEFAULT_MACRO_DIFFICULTY, DEFAULT_EXPECTED_RETURN } from "./constants";
 import { persistMarketSnapshot, getPersistedMarketSnapshot, slicePersistedCandles } from "./marketDatabase";
-import { getCanonicalAssetCatalyst } from "./assetRegistry";
-import { MASTER_ASSET_CATALOG, getMasterBaselinePrice } from "./masterCatalog";
+import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 import { DecisionTrace, FreshnessInfo } from "../types/insight";
 import type { TradeSetupSpec } from "./simulation/governorSizingEngine";
 import type { TradeFillInput, TradeExitInput, TradeCloseInput } from "./tradeLifecycle";
@@ -624,9 +622,9 @@ export function generateFallbackAnalytics(
   const registeredValidPrice = (registered?.price && (upper === "AAPL" || Math.abs(registered.price - 319.64) >= 0.01)) ? registered.price : undefined;
   const persistedValidPrice = (persisted?.currentPrice && (upper === "AAPL" || Math.abs(persisted.currentPrice - 319.64) >= 0.01)) ? persisted.currentPrice : undefined;
 
-  // Phase 18 Epistemic Invariant: If asset is uncataloged AND has no verified price from registry/storage/override,
+  // Phase 18 Epistemic Invariant: If asset has no verified price from registry/storage/override,
   // downstream analytics MUST NOT invent evidence, fake prices, synthetic candles, or fake trade setups.
-  if (!catalogEntry && !registeredValidPrice && !persistedValidPrice && !overridePrice) {
+  if (!registeredValidPrice && !persistedValidPrice && !overridePrice) {
     return {
       _dataSource: "unavailable" as const,
       symbol: upper,
@@ -644,10 +642,10 @@ export function generateFallbackAnalytics(
       selfHealingAudit: undefined,
       marketGraph: undefined,
       catalystForecast: {
-        company_name: upper,
+        company_name: catalogEntry?.name || upper,
         symbol: upper,
-        sector: "Unclassified",
-        efficacy_summary: "No verified corporate filings or operational disclosures available for this uncataloged asset.",
+        sector: catalogEntry?.sector || "Unclassified",
+        efficacy_summary: "No verified corporate filings or operational disclosures available.",
         competitive_edge: "Awaiting verified regulatory filings.",
         upcoming_milestones: [],
         multi_year_forecast: [],
@@ -665,8 +663,8 @@ export function generateFallbackAnalytics(
         take_profit_2_pct: 0,
         risk_reward_ratio: 0,
         execution_status: "UNVERIFIED_ASSET",
-        setup_pattern: "No Verified Market Data (Uncataloged)",
-        entry_thesis: "Live exchange feed and catalog metadata unavailable. Under Phase 18 anti-hallucination invariants, the terminal refuses to invent hypothetical prices or trade levels.",
+        setup_pattern: "No Verified Market Data",
+        entry_thesis: "Live exchange feed unavailable. Under Phase 18 anti-hallucination invariants, the terminal refuses to invent hypothetical prices or trade levels.",
         invalidation_condition: "Awaiting verified exchange data feed.",
         stage_phase: "Unverified Asset",
         vcp_contraction_status: "Unverified",
@@ -685,7 +683,7 @@ export function generateFallbackAnalytics(
       decisionTrace: {
         symbol: upper,
         decisionState: "UNVERIFIED",
-        stateLabel: "Unverified Asset — Disclosures Required",
+        stateLabel: "Unverified Asset — Live Quotes Required",
         isActionable: false,
         canSizeTrade: false,
         allowedActions: ["RESEARCH_PROFILE"],
@@ -694,25 +692,10 @@ export function generateFallbackAnalytics(
     };
   }
 
-  const matched = SHARED_FACTOR_SCORES[upper] || {
-    scores: {
-      growthScore: catalogEntry?.growthScore ?? 75,
-      qualityScore: catalogEntry?.qualityScore ?? 75,
-      valuationScore: catalogEntry?.valuationScore ?? 70,
-      momentumScore: catalogEntry?.momentumScore ?? 70,
-      tailRiskScore: catalogEntry?.tailRiskScore ?? 70,
-      compositeFactorScore: catalogEntry?.compositeFactorScore ?? 72,
-      verdict: catalogEntry?.verdict ?? "Catalog Baseline",
-      piotroskiFScore: catalogEntry?.piotroski ?? 7,
-    },
-    price: catalogEntry ? (getMasterBaselinePrice(upper) ?? 0) : 0,
-    changePct: 1.5,
-  };
-
   const basePrice = overridePrice ||
     registeredValidPrice ||
     persistedValidPrice ||
-    (catalogEntry ? (getMasterBaselinePrice(upper) ?? 0) : 0);
+    0;
   const baseChangePct = overrideChangePct !== undefined
     ? overrideChangePct
     : (registered?.changePct ?? persisted?.priceChangePct24h ?? 0.0);
@@ -761,8 +744,6 @@ export function generateFallbackAnalytics(
   // Phase 18 Invariant: If authentic persisted candles are unavailable, never synthesize sine-wave or Brownian walk candles.
   // Missing candles must remain empty ([]).
 
-  const assetCat = getCanonicalAssetCatalyst(upper);
-
   return {
     _dataSource: "fallback" as const,
     symbol: upper,
@@ -773,8 +754,8 @@ export function generateFallbackAnalytics(
     candles: generatedCandles,
     technicals: registered?.technicals || persisted?.technicals || undefined,
     factorScores: undefined,
-    macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
-    expectedReturn: DEFAULT_EXPECTED_RETURN,
+    macroDifficulty: undefined,
+    expectedReturn: undefined,
     selfHealingAudit: undefined,
     marketGraph: {
       rootNode: upper,
@@ -787,14 +768,14 @@ export function generateFallbackAnalytics(
       systemicContagionRisk: "Low-to-Moderate (Well-Diversified)",
     },
     catalystForecast: registered?.catalyst || persisted?.catalyst || {
-      company_name: `${upper} Corporation`,
+      company_name: catalogEntry?.name || `${upper} Corporation`,
       symbol: upper,
-      sector: "Multi-Asset Technology / Growth",
-      primary_drug_trial: assetCat.trial,
-      trial_phase: assetCat.phase,
-      trial_readout_timeline: assetCat.timeline,
-      efficacy_summary: assetCat.thesis,
-      competitive_edge: "High market share moat and continuous cash generation",
+      sector: catalogEntry?.sector || "Unclassified",
+      primary_drug_trial: "Awaiting Corporate Disclosures",
+      trial_phase: "Data Unavailable",
+      trial_readout_timeline: "Scheduled Calendar Pending",
+      efficacy_summary: "No verified operational roadmap or corporate filings registered.",
+      competitive_edge: "Moat metrics unverified without official corporate filings.",
       upcoming_milestones: [],
       multi_year_forecast: [],
       overallDirection: "Offline Fallback Feed",
@@ -999,7 +980,6 @@ export async function fetchDirectYahooFinanceChart(
       };
 
       const isCataloged = Boolean(MASTER_ASSET_CATALOG[upper]);
-      const matched = SHARED_FACTOR_SCORES[upper];
       const hasSufficientHistory = candles.length >= 50;
 
       const optimalExecution: OptimalExecutionPlan = hasSufficientHistory
@@ -1042,8 +1022,6 @@ export async function fetchDirectYahooFinanceChart(
             atr_14,
           };
 
-      const assetCat = getCanonicalAssetCatalyst(upper);
-
       const responsePayload: AnalyticsResponse = {
         _dataSource: "live",
         symbol: upper,
@@ -1054,8 +1032,8 @@ export async function fetchDirectYahooFinanceChart(
         candles,
         technicals,
         factorScores: undefined,
-        macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
-        expectedReturn: DEFAULT_EXPECTED_RETURN,
+        macroDifficulty: undefined,
+        expectedReturn: undefined,
         selfHealingAudit: undefined,
         marketGraph: {
           rootNode: upper,
@@ -1071,11 +1049,11 @@ export async function fetchDirectYahooFinanceChart(
           company_name: meta.shortName || meta.longName || upper,
           symbol: upper,
           sector: isCataloged ? (MASTER_ASSET_CATALOG[upper]?.sector || "Public Equities") : "Unclassified",
-          primary_drug_trial: isCataloged ? assetCat.trial : "Awaiting Corporate Disclosures",
-          trial_phase: isCataloged ? assetCat.phase : "Corporate Disclosure Pending",
-          trial_readout_timeline: isCataloged ? assetCat.timeline : "Scheduled Calendar Pending",
-          efficacy_summary: isCataloged ? assetCat.thesis : "No verified operational roadmap or corporate filings registered.",
-          competitive_edge: isCataloged ? "Expanding market share and positive return on invested capital" : "Moat metrics unverified.",
+          primary_drug_trial: "Awaiting Corporate Disclosures",
+          trial_phase: "Corporate Disclosure Pending",
+          trial_readout_timeline: "Scheduled Calendar Pending",
+          efficacy_summary: "Awaiting verified corporate filings and operational disclosures.",
+          competitive_edge: "Moat metrics unverified without regulatory filings.",
           upcoming_milestones: [],
           multi_year_forecast: [],
           overallDirection: isCataloged ? "Bullish Accumulation" : "Unverified Asset",
