@@ -101,24 +101,22 @@ export default function PortfolioPage() {
       } catch (e) {
         const reg = SpotPriceRegistry.get(symKey);
         const snap = getPersistedMarketSnapshot(symKey);
-        const baseline = getMasterBaselinePrice(symKey, 0);
         if (reg?.price && reg.price > 0) price = reg.price;
         else if (snap?.currentPrice && snap.currentPrice > 0) price = snap.currentPrice;
-        else if (baseline !== undefined && baseline > 0) price = baseline;
       }
 
       if (price && price > 0) {
         setResolvedQuotePrice(price);
         setNewEntryPrice(price.toFixed(2));
-        setNewStopLoss((price * 0.93).toFixed(2));
-        setNewTarget((price * 1.25).toFixed(2));
-        setNewShares((prev) => (prev && Number(prev) > 0 ? prev : "10"));
+        setNewStopLoss("");
+        setNewTarget("");
+        setNewShares((prev) => (prev && Number(prev) > 0 ? prev : ""));
       } else {
         setResolvedQuotePrice(null);
         setNewEntryPrice("");
         setNewStopLoss("");
         setNewTarget("");
-        setNewShares("10");
+        setNewShares("");
       }
     } catch (err) {
       console.warn("Failed to auto-populate ticker data:", err);
@@ -137,7 +135,7 @@ export default function PortfolioPage() {
     setModalError(null);
     const target = initialSymbol || "";
     setNewSymbol(target);
-    setNewShares("10");
+    setNewShares("");
     setShowAddModal(true);
     populateTickerData(target);
   };

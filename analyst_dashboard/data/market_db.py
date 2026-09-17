@@ -89,16 +89,16 @@ class MarketDatabaseEngine:
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS asset_factor_snapshots (
                         symbol TEXT PRIMARY KEY,
-                        current_price REAL NOT NULL,
-                        price_change_24h REAL NOT NULL,
-                        growth_score INTEGER NOT NULL,
-                        quality_score INTEGER NOT NULL,
-                        valuation_score INTEGER NOT NULL,
-                        momentum_score INTEGER NOT NULL,
-                        tail_risk_score INTEGER NOT NULL,
-                        composite_score INTEGER NOT NULL,
-                        piotroski_f INTEGER NOT NULL,
-                        verdict TEXT NOT NULL,
+                        current_price REAL,
+                        price_change_24h REAL,
+                        growth_score INTEGER,
+                        quality_score INTEGER,
+                        valuation_score INTEGER,
+                        momentum_score INTEGER,
+                        tail_risk_score INTEGER,
+                        composite_score INTEGER,
+                        piotroski_f INTEGER,
+                        verdict TEXT,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
@@ -300,16 +300,16 @@ class MarketDatabaseEngine:
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     upper,
-                    float(snapshot.get("currentPrice", 100.0)),
-                    float(snapshot.get("priceChangePct24h", 0.0)),
-                    int(snapshot.get("growthScore", 80)),
-                    int(snapshot.get("qualityScore", 80)),
-                    int(snapshot.get("valuationScore", 80)),
-                    int(snapshot.get("momentumScore", 80)),
-                    int(snapshot.get("tailRiskScore", 80)),
-                    int(snapshot.get("compositeFactorScore", 80)),
-                    int(snapshot.get("piotroskiFScore", 8)),
-                    str(snapshot.get("verdict", "Strong Buy / Core Accumulation")),
+                    float(snapshot["currentPrice"]) if snapshot.get("currentPrice") is not None else None,
+                    float(snapshot["priceChangePct24h"]) if snapshot.get("priceChangePct24h") is not None else None,
+                    int(snapshot["growthScore"]) if snapshot.get("growthScore") is not None else None,
+                    int(snapshot["qualityScore"]) if snapshot.get("qualityScore") is not None else None,
+                    int(snapshot["valuationScore"]) if snapshot.get("valuationScore") is not None else None,
+                    int(snapshot["momentumScore"]) if snapshot.get("momentumScore") is not None else None,
+                    int(snapshot["tailRiskScore"]) if snapshot.get("tailRiskScore") is not None else None,
+                    int(snapshot["compositeFactorScore"]) if snapshot.get("compositeFactorScore") is not None else None,
+                    int(snapshot["piotroskiFScore"]) if snapshot.get("piotroskiFScore") is not None else None,
+                    str(snapshot["verdict"]) if snapshot.get("verdict") is not None else None,
                 ))
         finally:
             conn.close()

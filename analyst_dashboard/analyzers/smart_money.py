@@ -2055,9 +2055,9 @@ class SmartMoneyEngine:
     @staticmethod
     def get_options_flow(symbol: str = None, include_curated: bool = False) -> List[Dict[str, Any]]:
         """Fetch options flow. Requires verified live provider (Polygon/OPRA) unless explicitly querying curated research archive."""
-        import os
-        has_live_provider = bool(os.getenv("POLYGON_API_KEY") or os.getenv("OPRA_API_KEY"))
-        if not (include_curated or has_live_provider):
+        if not include_curated:
+            # Under Zero Fabricated Data Invariant, live options flow requires active OPRA websocket stream.
+            # Without live provider connection, return empty list rather than static archive masquerading as live.
             return []
         if symbol:
             sym_clean = symbol.upper().strip()
@@ -2070,16 +2070,35 @@ class SmartMoneyEngine:
         late_filers = [t for t in enriched_trades if t.get("staleness_status") == "LATE_FILER"]
         fresh_trades = [t for t in enriched_trades if t.get("staleness_status") == "FRESH"]
 
+        total_congress = len(enriched_trades)
+        total_sec = len(SEC_FORM_4_TRADES)
+
+        purchases = [t for t in enriched_trades if "Purchase" in t.get("transaction_type", "")]
+        sales = [t for t in enriched_trades if "Sale" in t.get("transaction_type", "")]
+
+        if total_congress > 0:
+            purchase_pct = round((len(purchases) / total_congress) * 100, 1)
+            sentiment_str = f"Bullish ({purchase_pct}% Purchases)" if purchase_pct >= 50 else f"Bearish ({round(100 - purchase_pct, 1)}% Sales)"
+        else:
+            sentiment_str = "Neutral"
+
+        sector_counts: Dict[str, int] = {}
+        for t in purchases:
+            s = t.get("sector")
+            if s:
+                sector_counts[s] = sector_counts.get(s, 0) + 1
+        top_sector = max(sector_counts.items(), key=lambda x: x[1])[0] if sector_counts else "Unclassified"
+
         return {
-            'total_congress_filings_30d': 14,
-            'total_sec_insiders_30d': 5,
-            'net_political_sentiment': 'Bullish (91.7% Purchases)',
-            'top_congress_bought_sector': 'AI Infrastructure, Semis & GLP-1',
-            'unusual_flow_volume_today': '$42.8M',
-            'call_to_put_dollar_ratio': 3.42,
+            'total_congress_filings_30d': total_congress,
+            'total_sec_insiders_30d': total_sec,
+            'net_political_sentiment': sentiment_str,
+            'top_congress_bought_sector': top_sector,
+            'unusual_flow_volume_today': None,
+            'call_to_put_dollar_ratio': None,
             'late_filers_count': len(late_filers),
             'fresh_trades_count': len(fresh_trades),
             'congress_trades': enriched_trades,
             'sec_insider_trades': SEC_FORM_4_TRADES,
-            'options_flow': SmartMoneyEngine.get_options_flow(include_curated=True),
+            'options_flow': SmartMoneyEngine.get_options_flow(include_curated=False),
         }

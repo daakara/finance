@@ -146,8 +146,8 @@ export default function StockDetailPage({ params }: PageProps) {
     postureCode = "WAIT_FOR_TRIGGER";
   }
 
-  const atr14 = master?.atr14 ? master.atr14 : (isHaltedOrIncomplete || !hasValidPrice || spotPrice === undefined ? undefined : +(spotPrice * 0.032).toFixed(2));
-  const stopLoss = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined ? +(spotPrice * 0.93).toFixed(2) : undefined;
+  const atr14 = master?.atr14 && master.atr14 > 0 ? master.atr14 : undefined;
+  const stopLoss = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined && atr14 !== undefined ? +(spotPrice - 1.5 * atr14).toFixed(2) : undefined;
   const entryMin = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined ? (atr14 !== undefined ? +(spotPrice - 0.5 * atr14).toFixed(2) : spotPrice) : undefined;
   const entryMax = hasValidPrice && !isHaltedOrIncomplete && spotPrice !== undefined ? spotPrice : undefined;
   const target1 = !isHaltedOrIncomplete && atr14 !== undefined && spotPrice !== undefined ? +(spotPrice + 2.5 * atr14).toFixed(2) : undefined;

@@ -129,12 +129,16 @@ export default function WeeklyConfluenceSpotlight({
       // Resolve authentic live exchange spot price
       const live = liveQuotes[asset.symbol] || SpotPriceRegistry.get(asset.symbol);
       const snap = getPersistedMarketSnapshot(asset.symbol);
-      const fallbackPrice = CATALOG_BASELINE_PRICES[asset.symbol] || 50.0;
       const effectivePrice = (live?.price && live.price > 0)
         ? live.price
         : (snap?.currentPrice && snap.currentPrice > 0)
         ? snap.currentPrice
-        : fallbackPrice;
+        : null;
+
+      if (!effectivePrice) {
+        // Exclude assets without verified exchange price from spotlight ranking
+        return null;
+      }
 
       const effectiveChange = (live?.changePct !== undefined)
         ? live.changePct
@@ -231,6 +235,7 @@ export default function WeeklyConfluenceSpotlight({
         rewardRiskRatio: rr,
       };
     })
+    .filter((cand): cand is ConfluenceCandidate => cand !== null)
     .sort((a, b) => b.convictionScore - a.convictionScore);
 
     return scored.slice(0, 3);
@@ -353,28 +358,32 @@ export default function WeeklyConfluenceSpotlight({
               <span>{isDayTrader ? "⚡" : "🎯"}</span>
               <span>Top Plays:</span>
             </span>
-            {topCandidates.map((cand, idx) => {
-              const isSelected = selectedSymbol?.toUpperCase() === cand.entry.symbol.toUpperCase();
-              return (
-                <button
-                  key={cand.entry.symbol}
-                  type="button"
-                  onClick={(e) => handleCardClick(e, cand.entry.symbol)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 active:scale-95 ${
-                    isSelected
-                      ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
-                      : "bg-[#111722] border-[#243044] text-slate-300 hover:border-cyan-500/60 hover:text-white"
-                  }`}
-                  aria-label={`Select ${cand.entry.symbol}`}
-                >
-                  <span className="text-[9px] text-slate-400 font-normal">#{idx + 1}</span>
-                  <span className="font-extrabold">{cand.entry.symbol}</span>
-                  <span className={`text-[10px] tabular-nums ${cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                    ${cand.livePrice.toFixed(2)}
-                  </span>
-                </button>
-              );
-            })}
+            {topCandidates.length > 0 ? (
+              topCandidates.map((cand, idx) => {
+                const isSelected = selectedSymbol?.toUpperCase() === cand.entry.symbol.toUpperCase();
+                return (
+                  <button
+                    key={cand.entry.symbol}
+                    type="button"
+                    onClick={(e) => handleCardClick(e, cand.entry.symbol)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all flex items-center gap-1.5 active:scale-95 ${
+                      isSelected
+                        ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                        : "bg-[#111722] border-[#243044] text-slate-300 hover:border-cyan-500/60 hover:text-white"
+                    }`}
+                    aria-label={`Select ${cand.entry.symbol}`}
+                  >
+                    <span className="text-[9px] text-slate-400 font-normal">#{idx + 1}</span>
+                    <span className="font-extrabold">{cand.entry.symbol}</span>
+                    <span className={`text-[10px] tabular-nums ${cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      ${cand.livePrice.toFixed(2)}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-xs text-slate-500 font-mono">Awaiting verified live quotes</span>
+            )}
           </div>
           <button
             type="button"
@@ -389,119 +398,125 @@ export default function WeeklyConfluenceSpotlight({
 
       {/* 3-Card Responsive Grid */}
       {!isCollapsed && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
-          {topCandidates.map((cand, idx) => {
-            const isRank1 = idx === 0;
+        topCandidates.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+            {topCandidates.map((cand, idx) => {
+              const isRank1 = idx === 0;
 
-            return (
-              <Link
-                key={cand.entry.symbol}
-                href={`/?symbol=${cand.entry.symbol}`}
-                onClick={(e) => handleCardClick(e, cand.entry.symbol)}
-                aria-label={`Analyze ${cand.entry.symbol} (${cand.entry.name})`}
-                className={`p-4 rounded-xl border transition-all duration-150 active:scale-[0.98] active:bg-[#0e1522] bg-[#111722] space-y-3 block group cursor-pointer ${
-                  isRank1
-                    ? "border-cyan-500/60 shadow-[0_0_16px_rgba(6,182,212,0.12)] hover:border-cyan-400"
-                    : "border-[#243044] hover:border-cyan-500/60 hover:shadow-[0_0_12px_rgba(6,182,212,0.08)]"
-                }`}
-              >
-                {/* Card Header: Rank Badge, Ticker & Price + Compact Score Pill */}
-                <div className="flex items-start justify-between gap-2 min-w-0">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-black text-xs shrink-0 ${
-                      isRank1 ? "bg-cyan-500 text-slate-950 font-bold" : "bg-slate-800 text-slate-300"
-                    }`}>
-                      #{idx + 1}
+              return (
+                <Link
+                  key={cand.entry.symbol}
+                  href={`/?symbol=${cand.entry.symbol}`}
+                  onClick={(e) => handleCardClick(e, cand.entry.symbol)}
+                  aria-label={`Analyze ${cand.entry.symbol} (${cand.entry.name})`}
+                  className={`p-4 rounded-xl border transition-all duration-150 active:scale-[0.98] active:bg-[#0e1522] bg-[#111722] space-y-3 block group cursor-pointer ${
+                    isRank1
+                      ? "border-cyan-500/60 shadow-[0_0_16px_rgba(6,182,212,0.12)] hover:border-cyan-400"
+                      : "border-[#243044] hover:border-cyan-500/60 hover:shadow-[0_0_12px_rgba(6,182,212,0.08)]"
+                  }`}
+                >
+                  {/* Card Header: Rank Badge, Ticker & Price + Compact Score Pill */}
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={`w-5 h-5 rounded-md flex items-center justify-center font-mono font-black text-xs shrink-0 ${
+                        isRank1 ? "bg-cyan-500 text-slate-950 font-bold" : "bg-slate-800 text-slate-300"
+                      }`}>
+                        #{idx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <strong className="text-base font-black text-white font-mono group-hover:text-cyan-400 transition-colors shrink-0">
+                            {cand.entry.symbol}
+                          </strong>
+                          <span className="text-[11px] text-slate-400 truncate max-w-[80px] sm:max-w-[105px]" title={cand.entry.name}>
+                            {cand.entry.name}
+                          </span>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate">
+                          ${cand.livePrice.toFixed(2)}{" "}
+                          <span className={cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                            ({cand.liveChangePct >= 0 ? "+" : ""}{cand.liveChangePct}%)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sparkline & Compact Score Pill */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <MiniSparkline
+                        basePrice={cand.livePrice}
+                        changePct={cand.liveChangePct}
+                        width={40}
+                        height={18}
+                        className="hidden sm:inline-block"
+                      />
+                      <div className="px-2 py-0.5 rounded-md bg-[#090d14] border border-cyan-800/50 text-right">
+                        <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold tracking-wider leading-none">
+                          SCORE
+                        </span>
+                        <span className="text-xs font-black font-mono text-cyan-300 tabular-nums leading-none">
+                          {cand.convictionScore}<span className="text-[9px] text-cyan-500/70 font-normal">/100</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Setup Badge */}
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-extrabold min-w-0">
+                    <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300 truncate max-w-[165px]" title={isPlain ? cand.setupBadgePlain : cand.setupBadge}>
+                      {isPlain ? cand.setupBadgePlain : cand.setupBadge}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <strong className="text-base font-black text-white font-mono group-hover:text-cyan-400 transition-colors shrink-0">
-                          {cand.entry.symbol}
-                        </strong>
-                        <span className="text-[11px] text-slate-400 truncate max-w-[80px] sm:max-w-[105px]" title={cand.entry.name}>
-                          {cand.entry.name}
-                        </span>
-                      </div>
-                      <div className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate">
-                        ${cand.livePrice.toFixed(2)}{" "}
-                        <span className={cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                          ({cand.liveChangePct >= 0 ? "+" : ""}{cand.liveChangePct}%)
-                        </span>
-                      </div>
+                    <span className="text-emerald-400 shrink-0 tabular-nums">
+                      {cand.rewardRiskRatio} : 1.0 R:R
+                    </span>
+                  </div>
+
+                  {/* Mathematical Execution Price Ladder */}
+                  <div className="bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b] space-y-1.5 font-mono text-xs">
+                    <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
+                      <span className="text-emerald-400 font-bold truncate">{isPlain ? "Goal 1 (Sell Half):" : "Take Profit 1 (TP1):"}</span>
+                      <strong className="text-white tabular-nums shrink-0">
+                        ${cand.target1Price.toFixed(2)} <span className="text-emerald-500 text-[10px] font-normal">(+{cand.target1Pct}%)</span>
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
+                      <span className="text-rose-400 font-bold truncate">{isPlain ? "Safety Exit Stop:" : "Hard Stop Floor:"}</span>
+                      <strong className="text-rose-400 tabular-nums shrink-0">
+                        ${cand.stopPrice.toFixed(2)} <span className="text-rose-500 text-[10px] font-normal">(-{cand.stopLossPct}%)</span>
+                      </strong>
                     </div>
                   </div>
 
-                  {/* Sparkline & Compact Score Pill */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <MiniSparkline
-                      basePrice={cand.livePrice}
-                      changePct={cand.liveChangePct}
-                      width={40}
-                      height={18}
-                      className="hidden sm:inline-block"
-                    />
-                    <div className="px-2 py-0.5 rounded-md bg-[#090d14] border border-cyan-800/50 text-right">
-                      <span className="text-[8px] font-mono text-slate-400 block uppercase font-bold tracking-wider leading-none">
-                        SCORE
-                      </span>
-                      <span className="text-xs font-black font-mono text-cyan-300 tabular-nums leading-none">
-                        {cand.convictionScore}<span className="text-[9px] text-cyan-500/70 font-normal">/100</span>
-                      </span>
-                    </div>
+                  {/* Rationale / Catalyst Text */}
+                  <p className="text-[11px] text-slate-300 leading-relaxed font-sans line-clamp-2">
+                    {isPlain ? cand.catalystSummaryPlain : cand.catalystSummary}
+                  </p>
+
+                  {/* Footer CTAs */}
+                  <div className="flex items-center justify-between pt-1 border-t border-[#1e293b] text-[11px]">
+                    <button
+                      type="button"
+                      onClick={(e) => handleQuickLog(e, cand)}
+                      className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300 transition-colors flex items-center gap-1 shrink-0 active:scale-95"
+                      title="Log directly into your Paper Portfolio"
+                    >
+                      <span>💼</span>
+                      <span>{isPlain ? "Quick Paper Log" : "Log to Portfolio"}</span>
+                    </button>
+
+                    <span className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-cyan-500/10 border-cyan-500/40 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 group-hover:border-cyan-400 transition-colors flex items-center gap-1 shrink-0">
+                      Analyze <span className="group-hover:translate-x-0.5 transition-transform">➔</span>
+                    </span>
                   </div>
-                </div>
-
-                {/* Setup Badge */}
-                <div className="flex items-center justify-between gap-2 text-[10px] font-mono font-extrabold min-w-0">
-                  <span className="px-2 py-0.5 rounded bg-[#090d14] border border-cyan-800/50 text-cyan-300 truncate max-w-[165px]" title={isPlain ? cand.setupBadgePlain : cand.setupBadge}>
-                    {isPlain ? cand.setupBadgePlain : cand.setupBadge}
-                  </span>
-                  <span className="text-emerald-400 shrink-0 tabular-nums">
-                    {cand.rewardRiskRatio} : 1.0 R:R
-                  </span>
-                </div>
-
-                {/* Mathematical Execution Price Ladder */}
-                <div className="bg-[#090d14] p-2.5 rounded-lg border border-[#1e293b] space-y-1.5 font-mono text-xs">
-                  <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
-                    <span className="text-emerald-400 font-bold truncate">{isPlain ? "Goal 1 (Sell Half):" : "Take Profit 1 (TP1):"}</span>
-                    <strong className="text-white tabular-nums shrink-0">
-                      ${cand.target1Price.toFixed(2)} <span className="text-emerald-500 text-[10px] font-normal">(+{cand.target1Pct}%)</span>
-                    </strong>
-                  </div>
-                  <div className="flex items-center justify-between gap-1 text-[11px] min-w-0">
-                    <span className="text-rose-400 font-bold truncate">{isPlain ? "Safety Exit Stop:" : "Hard Stop Floor:"}</span>
-                    <strong className="text-rose-400 tabular-nums shrink-0">
-                      ${cand.stopPrice.toFixed(2)} <span className="text-rose-500 text-[10px] font-normal">(-{cand.stopLossPct}%)</span>
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Rationale / Catalyst Text */}
-                <p className="text-[11px] text-slate-300 leading-relaxed font-sans line-clamp-2">
-                  {isPlain ? cand.catalystSummaryPlain : cand.catalystSummary}
-                </p>
-
-                {/* Footer CTAs */}
-                <div className="flex items-center justify-between pt-1 border-t border-[#1e293b] text-[11px]">
-                  <button
-                    type="button"
-                    onClick={(e) => handleQuickLog(e, cand)}
-                    className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300 transition-colors flex items-center gap-1 shrink-0 active:scale-95"
-                    title="Log directly into your Paper Portfolio"
-                  >
-                    <span>💼</span>
-                    <span>{isPlain ? "Quick Paper Log" : "Log to Portfolio"}</span>
-                  </button>
-
-                  <span className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-cyan-500/10 border-cyan-500/40 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 group-hover:border-cyan-400 transition-colors flex items-center gap-1 shrink-0">
-                    Analyze <span className="group-hover:translate-x-0.5 transition-transform">➔</span>
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-6 text-center text-sm font-mono text-slate-400 bg-[#111722] rounded-xl border border-[#243044]">
+            No candidates with verified exchange pricing currently meet spotlight criteria. Awaiting market tape.
+          </div>
+        )
       )}
     </section>
   );

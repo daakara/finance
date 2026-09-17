@@ -351,6 +351,9 @@ class CatalystEngine:
             data = ASSET_CATALYST_KNOWLEDGE[upper].copy()
             data["symbol"] = upper
             data["current_price"] = current_price
+            data["isCuratedArchive"] = True
+            data["asOfDate"] = "2026-09-01"
+            data["forecastProvenance"] = "Curated Historical Consensus"
             return data
 
         clean_name = company_name or f"{upper} Corporation"

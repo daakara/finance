@@ -46,7 +46,12 @@ export default function RealTimeAlertEngine() {
           ? reg.price
           : (snap?.currentPrice && snap.currentPrice > 0)
           ? snap.currentPrice
-          : alert.createdPrice;
+          : null;
+
+        if (!livePrice || isNaN(livePrice)) {
+          // Zero Fabricated Data Invariant: Alerts must evaluate strictly against genuine observed market tape
+          continue;
+        }
 
         let isTriggered = false;
         let msg = "";

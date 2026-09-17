@@ -106,27 +106,30 @@ export default function PreFlightChecklistModal({
   // Defensive Numeric Guards & Epistemic Verification
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
-  const safeStop = (typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0) ? stopLoss : (isPriceValid ? safePrice * 0.95 : 0);
-  const safeTarget = (typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0) ? takeProfit1 : (isPriceValid ? safePrice * 1.10 : 0);
+  const hasStopLoss = typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
+  const safeStop = hasStopLoss ? stopLoss : null;
+  const hasTarget = typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0;
+  const safeTarget = hasTarget ? takeProfit1 : null;
   const isRRValid = typeof riskRewardRatio === "number" && !isNaN(riskRewardRatio) && riskRewardRatio > 0;
   const safeRR = isRRValid ? riskRewardRatio : 0;
-  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin)) ? optimalEntryMin : (isPriceValid ? safePrice * 0.98 : 0);
-  const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax)) ? optimalEntryMax : safePrice;
-  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot)) ? breakoutPivot : (isPriceValid ? safePrice * 1.072 : 0);
+  const safeEntryMin = (typeof optimalEntryMin === "number" && !isNaN(optimalEntryMin) && optimalEntryMin > 0) ? optimalEntryMin : null;
+  const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
+  const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
   const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
   const safeVix = isVixValid ? vix : 99.0;
 
-  const stopLossPct = (isPriceValid && safeStop > 0) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
-  const target1Pct = (isPriceValid && safeTarget > 0) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
+  const stopLossPct = (isPriceValid && safeStop !== null) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
+  const target1Pct = (isPriceValid && safeTarget !== null) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
 
   // ── 5-Point Quantitative Decision Checklist ──────────────────────────────
 
-  // Check 1: Asymmetric Risk-Reward (Must have valid R:R >= 2.0:1)
-  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0;
+  // Check 1: Asymmetric Risk-Reward (Must have valid R:R >= 2.0:1 AND verified stop/target)
+  const hasExecutionLevels = hasStopLoss && hasTarget;
+  const isRRPassed = isPriceValid && isRRValid && safeRR >= 2.0 && hasExecutionLevels;
 
   // Check 2: Technical Trend Alignment & Stage Discipline
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
-  const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone;
+  const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone && safeEntryMin !== null && safeEntryMax !== null;
 
   // Check 3: Smart Money Flow & Distribution Traps
   // isDistributionTrapResolved = true means a trap EXISTS (bad). Naming is unambiguous.
@@ -158,31 +161,35 @@ export default function PreFlightChecklistModal({
   }
 
   // Trade plan markdown — differentiated by vernacularMode
-  const safeTarget2 = safePrice > 0 ? Number((safeTarget * 1.12).toFixed(2)) : Number((safePrice * 1.25).toFixed(2));
-  const target2Pct = safePrice > 0 ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "+22.00";
+  const entryZoneStr = (safeEntryMin !== null && safeEntryMax !== null) ? `$${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}` : "Unavailable (Awaiting Technical Structure)";
+  const stopLossStr = safeStop !== null ? `$${safeStop.toFixed(2)} (${stopLossPct}%)` : "Unavailable (Trader Defined Stop Required)";
+  const target1Str = safeTarget !== null ? `$${safeTarget.toFixed(2)} (+${target1Pct}%)` : "Unavailable (Trader Defined Target Required)";
+  const safeTarget2 = (safePrice > 0 && safeTarget !== null) ? Number((safeTarget * 1.12).toFixed(2)) : null;
+  const target2Pct = (safePrice > 0 && safeTarget2 !== null) ? (((safeTarget2 - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
+  const target2Str = safeTarget2 !== null ? `$${safeTarget2.toFixed(2)} (+${target2Pct}%)` : "Unavailable";
 
   const tradePlanMarkdown = isPlain
     ? `### 📋 ARX Terminal Trade Plan: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "⚡ Day Trader" : "🏛️ Swing / Long-Term Compounder"}
 - **Current Price**: $${safePrice.toFixed(2)}
-- **Buy Zone**: $${safeEntryMin.toFixed(2)} – $${safeEntryMax.toFixed(2)}
-- **Stop Loss**: $${safeStop.toFixed(2)} (${stopLossPct}%)
-- **Profit Goal 1 (TP1)**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
-- **Profit Goal 2 (TP2 Runner)**: $${safeTarget2.toFixed(2)} (+${target2Pct}%)
-- **Tactical Rule (Risk-Free Transition)**: When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a risk-free trade.
+- **Buy Zone**: ${entryZoneStr}
+- **Stop Loss**: ${stopLossStr}
+- **Profit Goal 1 (TP1)**: ${target1Str}
+- **Profit Goal 2 (TP2 Runner)**: ${target2Str}
+- **Tactical Rule (Risk-Free Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a risk-free trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
 - **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
 `
     : `### 📋 ARX Institutional Execution Brief: ${symbol}
 - **Date**: ${new Date().toISOString().split("T")[0]}
 - **Asset**: ${symbol} | **Mode**: ${isDayTrader ? "Intraday Momentum Pullback" : "Swing / Compounder Accumulation"}
-- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: $${safeEntryMin.toFixed(2)}–$${safeEntryMax.toFixed(2)}
-- **Hard Stop / Invalidation**: $${safeStop.toFixed(2)} (${stopLossPct}%)
-- **Target 1 (TP1)**: $${safeTarget.toFixed(2)} (+${target1Pct}%)
-- **Target 2 (TP2 Runner)**: $${safeTarget2.toFixed(2)} (+${target2Pct}%)
-- **Execution Rule (Risk-Free Ratchet)**: Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure zero-risk runner convexity.
-- **Risk/Reward**: ${safeRR.toFixed(2)} : 1.0
+- **Spot**: $${safePrice.toFixed(2)} | **Optimal Entry**: ${entryZoneStr}
+- **Hard Stop / Invalidation**: ${stopLossStr}
+- **Target 1 (TP1)**: ${target1Str}
+- **Target 2 (TP2 Runner)**: ${target2Str}
+- **Execution Rule (Risk-Free Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure zero-risk runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
+- **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
 - **VIX Regime**: ${safeVix.toFixed(1)} | **Distribution Trap**: ${distributionTrapActive ? "DETECTED" : "CLEAR"} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
@@ -276,13 +283,13 @@ export default function PreFlightChecklistModal({
                   <span>{isPlain ? "1. Reward vs Risk Balance (At least 2 to 1)" : "1. Asymmetric Payoff (Reward:Risk >= 2.0:1)"}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  Current: <strong className="text-cyan-300 font-mono">{isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "N/A (Unverified R:R)"}</strong>{" "}
-                  {isRRPassed ? "(Adequate upside cushion)" : isRRValid ? "(Hazard: upside too small for downside risk)" : "(Evidence incomplete: risk-reward unavailable)"}
+                  Current: <strong className="text-cyan-300 font-mono">{isRRValid && hasExecutionLevels ? `${safeRR.toFixed(2)} : 1.0` : "N/A (Missing Execution Levels)"}</strong>{" "}
+                  {isRRPassed ? "(Adequate upside cushion)" : !hasExecutionLevels ? "(Execution levels missing: Stop and target required)" : isRRValid ? "(Hazard: upside too small for downside risk)" : "(Evidence incomplete: risk-reward unavailable)"}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
                 isRRPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
-              }`}>{isRRPassed ? "PASS" : "FAIL"}</span>
+              }`}>{isRRPassed ? "PASS" : (!hasExecutionLevels ? "MISSING LEVELS" : "FAIL")}</span>
             </div>
 
             {/* Check 2 */}
@@ -296,21 +303,23 @@ export default function PreFlightChecklistModal({
                   {isStage4
                     ? (isPlain
                         ? `⚠️ Watchlist Only: Spot price ($${safePrice.toFixed(2)}) is in Stage 4 correction below 50-day average. Await base formation.`
-                        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot above $${safePivot.toFixed(2)}.`)
-                    : (isExtendedAboveZone
-                        ? (isPlain
-                            ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
-                            : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
-                        : (isPlain
-                            ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
-                            : `Defending key moving average support (20 EMA / 50 SMA).`))}
+                        : `Stage 4 correction structure: Spot ($${safePrice.toFixed(2)}) requires 50-day breakout pivot ${safePivot !== null ? `above $${safePivot.toFixed(2)}` : "(pivot uncalculated)"}.`)
+                    : (safeEntryMin === null || safeEntryMax === null
+                        ? "Optimal buy zone levels uncalculated. Awaiting technical structure."
+                        : (isExtendedAboveZone
+                            ? (isPlain
+                                ? `⚠️ Extended: Price is above ideal buy zone ($${safeEntryMin.toFixed(2)} - $${safeEntryMax.toFixed(2)}). Wait for pullback.`
+                                : `Extended structure: Spot is above value area. Chasing creates negative R:R risk.`)
+                            : (isPlain
+                                ? `Spot price ($${safePrice.toFixed(2)}) is inside the verified buying range defending key support.`
+                                : `Defending key moving average support (20 EMA / 50 SMA).`)))}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
                 isTrendPassed
                   ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                  : (isStage4 ? "bg-amber-950 text-amber-300 border-amber-800" : "bg-rose-950 text-rose-300 border-rose-800")
-              }`}>{isTrendPassed ? "PASS" : (isStage4 ? "STAGE 4 WAIT" : "CHASING")}</span>
+                  : (isStage4 ? "bg-amber-950 text-amber-300 border-amber-800" : (safeEntryMin === null ? "bg-rose-950 text-rose-300 border-rose-800" : "bg-rose-950 text-rose-300 border-rose-800"))
+              }`}>{isTrendPassed ? "PASS" : (isStage4 ? "STAGE 4 WAIT" : (safeEntryMin === null ? "MISSING LEVELS" : "CHASING"))}</span>
             </div>
 
             {/* Check 3 */}

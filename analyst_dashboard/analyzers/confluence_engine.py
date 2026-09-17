@@ -63,31 +63,44 @@ class ConfluenceEngine:
                 tech_plain = f"Sideways price action (RSI {rsi:.1f}). No clear direction yet."
 
         # ── 2. FUNDAMENTAL QUALITY & SOLVENCY (Weight: 25%) ──────────────────
-        has_fundamentals = bool(fundamental_data and any(fundamental_data.get(k) is not None for k in ["qualityScore", "piotroski_f", "piotroskiFScore", "roic"]))
+        raw_p = fundamental_data.get("piotroski_f") if fundamental_data and fundamental_data.get("piotroski_f") is not None else (fundamental_data.get("piotroskiFScore") if fundamental_data else None)
+        piotroski = int(raw_p) if raw_p is not None else None
+        raw_q = fundamental_data.get("qualityScore") if fundamental_data else None
+        quality = float(raw_q) if raw_q is not None else None
+        raw_g = fundamental_data.get("growthScore") if fundamental_data else None
+        growth = float(raw_g) if raw_g is not None else None
+        raw_v = fundamental_data.get("valuationScore") if fundamental_data else None
+        valuation = float(raw_v) if raw_v is not None else None
+
+        score_components = []
+        if quality is not None:
+            score_components.append((quality, 0.45))
+        if growth is not None:
+            score_components.append((growth, 0.30))
+        if valuation is not None:
+            score_components.append((valuation, 0.25))
+
+        has_fundamentals = len(score_components) > 0
+
         if has_fundamentals:
-            raw_p = fundamental_data.get("piotroski_f") if fundamental_data.get("piotroski_f") is not None else fundamental_data.get("piotroskiFScore")
-            piotroski = int(raw_p) if raw_p is not None else 7
-            raw_q = fundamental_data.get("qualityScore")
-            quality = float(raw_q) if raw_q is not None else 70.0
-            raw_g = fundamental_data.get("growthScore")
-            growth = float(raw_g) if raw_g is not None else 70.0
-            raw_v = fundamental_data.get("valuationScore")
-            valuation = float(raw_v) if raw_v is not None else 65.0
+            total_weight = sum(w for _, w in score_components)
+            fund_score = round(sum(s * w for s, w in score_components) / total_weight, 1)
 
-            fund_score = round(0.45 * quality + 0.30 * growth + 0.25 * valuation, 1)
+            p_desc = f"Piotroski F-Score {piotroski}/9" if piotroski is not None else "Piotroski Unassessed"
+            q_desc = f"Quality Factor {quality:.0f}/100" if quality is not None else "Quality Unassessed"
 
-            if piotroski >= 8 or quality >= 82.0:
+            if (piotroski is not None and piotroski >= 8) or (quality is not None and quality >= 82.0):
                 fund_status = "positive"
-                fund_detail = f"Fortress Solvency: Piotroski F-Score {piotroski}/9, Quality Factor {quality:.0f}/100."
-                fund_plain = f"Rock-solid balance sheet: Top-tier {piotroski}/9 financial strength with strong margins."
-            elif piotroski <= 4 or quality < 45.0:
+                fund_detail = f"Fortress Solvency: {p_desc}, {q_desc}."
+                fund_plain = f"Rock-solid balance sheet: Top-tier financial strength with strong margins."
+            elif (piotroski is not None and piotroski <= 4) or (quality is not None and quality < 45.0):
                 fund_status = "warning"
-                fund_detail = f"Elevated Balance Sheet Risk: Piotroski F-Score {piotroski}/9. Sensitive to credit tightening."
-                fund_plain = f"Weaker financial health ({piotroski}/9 score). Carries elevated debt or thinning margins."
+                fund_detail = f"Elevated Balance Sheet Risk: {p_desc}. Sensitive to credit tightening."
+                fund_plain = f"Weaker financial health. Carries elevated debt or thinning margins."
             else:
                 fund_status = "neutral"
-                fund_detail = f"Stable Solvency: Piotroski F-Score {piotroski}/9, Quality Factor {quality:.0f}/100."
-                fund_plain = f"Stable core financials ({piotroski}/9 score) without acute balance sheet concerns."
+                fund_detail = f"Stable Solvency: {p_desc}, {q_desc}."
+                fund_plain = f"Stable core financials without acute balance sheet concerns."
         else:
             fund_score = 0.0
             fund_status = "unavailable"

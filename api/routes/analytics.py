@@ -651,26 +651,26 @@ def get_asset_analytics(
 
         has_fundamentals = bool(info and any(k in info for k in ["returnOnAssets", "trailingPE", "forwardPE", "grossMargins", "revenueGrowth", "freeCashflow"]))
         if upper_sym in KNOWN_ETFS:
-            piotroski = 8
-            growth_score = 75
-            quality_score = 80
-            valuation_score = 75
+            piotroski = None
+            growth_score = None
+            quality_score = None
+            valuation_score = None
             momentum_score = min(99, max(55, int(65 + price_change_pct * 3.5)))
-            mvar = adv_metrics.get("Modified_VaR_95", 2.2)
-            if mvar is None or math.isnan(mvar):
-                mvar = 2.2
-            tail_risk_score = min(99, max(65, int(100 - abs(mvar) * 7)))
-            composite_score = int(np.mean([growth_score, quality_score, valuation_score, momentum_score, tail_risk_score]))
-            verdict = "Core ETF Benchmark Allocation"
+            mvar = adv_metrics.get("Modified_VaR_95")
+            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
+            valid_scores = [s for s in [momentum_score, tail_risk_score] if s is not None]
+            composite_score = int(np.mean(valid_scores)) if valid_scores else None
+            verdict = "Benchmark ETF Instrument (Fundamental Scoring Not Applicable)"
         elif not has_fundamentals:
-            piotroski = 0
+            piotroski = None
             growth_score = None
             quality_score = None
             valuation_score = None
             momentum_score = min(99, max(30, int(50 + price_change_pct * 2.0)))
             mvar = adv_metrics.get("Modified_VaR_95")
             tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
-            composite_score = None
+            valid_scores = [s for s in [momentum_score, tail_risk_score] if s is not None]
+            composite_score = int(np.mean(valid_scores)) if valid_scores else None
             verdict = "Awaiting Verified Fundamental Filing"
         else:
             piotroski = calculate_piotroski_f_score(info, {})
@@ -681,9 +681,9 @@ def get_asset_analytics(
                 else:
                     growth_score = max(25, int(round(50 + rev_g * 100 * 1.5)))
             else:
-                growth_score = 50
+                growth_score = None
 
-            quality_score = min(99, max(20, int(piotroski * 11)))
+            quality_score = min(99, max(20, int(piotroski * 11))) if piotroski is not None else None
             pe_val = info.get("trailingPE") or info.get("forwardPE")
             if pe_val is not None and pe_val > 0:
                 if pe_val <= 15.0:
@@ -693,13 +693,13 @@ def get_asset_analytics(
                 else:
                     valuation_score = max(35, int(round(50 - (pe_val - 60.0) * 0.25)))
             else:
-                valuation_score = 50
+                valuation_score = None
 
             # Momentum combines short-term 24h delta with intermediate 20-day trend
             ret_20d = float((hist["Close"].iloc[-1] - hist["Close"].iloc[-min(20, len(hist))]) / hist["Close"].iloc[-min(20, len(hist))]) * 100 if len(hist) >= 5 else price_change_pct
             momentum_score = min(99, max(30, int(round(50 + price_change_pct * 1.5 + ret_20d * 0.8))))
             mvar = adv_metrics.get("Modified_VaR_95")
-            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else 65
+            tail_risk_score = min(99, max(40, int(100 - abs(mvar) * 7))) if mvar is not None and not math.isnan(mvar) else None
             valid_scores = [s for s in [growth_score, quality_score, valuation_score, momentum_score, tail_risk_score] if s is not None]
             composite_score = int(np.mean(valid_scores)) if valid_scores else None
             verdict = "Strong Buy / Core Accumulation" if composite_score and composite_score >= 80 else ("Moderate Growth Hold" if composite_score and composite_score >= 60 else "High Volatility Speculative")

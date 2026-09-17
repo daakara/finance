@@ -1,4 +1,4 @@
-﻿"""Self-Healing Forecast Auditor & Real-Time Walk-Forward Auto-Calibration Engine."""
+"""Self-Healing Forecast Auditor & Real-Time Walk-Forward Auto-Calibration Engine."""
 
 from typing import Dict, Any, List
 import pandas as pd
@@ -20,14 +20,14 @@ class SelfHealingForecastAuditor:
         """Perform rolling walk-forward backtest and auto-healing calibration."""
         if len(price_df) < 35:
             return {
-                "auditStatus": "Calibrated & Stable",
-                "accuracyScore": 92.4,
-                "hitRatePct": 88.6,
-                "rmsePct": 1.42,
-                "varBreachRatePct": 2.8,
-                "varBreachStatus": "Passed Kupiec POF Test",
-                "autoCalibrationAdjustments": "Damping factor locked at optimal $\\lambda = 0.35$",
-                "confidenceInterval": "95% Statistical Confidence",
+                "auditStatus": "Awaiting Minimum Historical Sample (N < 35)",
+                "accuracyScore": None,
+                "hitRatePct": None,
+                "rmsePct": None,
+                "varBreachRatePct": None,
+                "varBreachStatus": "Insufficient History (< 35 bars)",
+                "autoCalibrationAdjustments": "Auto-calibration inactive until minimum sample reached",
+                "confidenceInterval": "Insufficient Sample Size",
             }
 
         closes = price_df["Close"].values
@@ -71,18 +71,25 @@ class SelfHealingForecastAuditor:
                 if (projected_return >= 0 and actual_30d_return >= 0) or (projected_return < 0 and actual_30d_return < 0):
                     hits += 1
 
-        rmse = round(float(np.sqrt(np.mean(errors))) * 100, 2) if errors else 1.85
-        hit_rate = round((hits / max(1, sample_windows)) * 100, 1) if sample_windows > 0 else 85.0
-        accuracy_score = round(max(70.0, min(98.5, 100.0 - (rmse * 3.5) + (hit_rate * 0.15))), 1)
+        if errors and sample_windows > 0:
+            rmse = round(float(np.sqrt(np.mean(errors))) * 100, 2)
+            hit_rate = round((hits / sample_windows) * 100, 1)
+            accuracy_score = round(max(0.0, min(100.0, 100.0 - (rmse * 3.5) + (hit_rate * 0.15))), 1)
+            audit_status = "Self-Healed & Auto-Calibrated"
+        else:
+            rmse = None
+            hit_rate = None
+            accuracy_score = None
+            audit_status = "Awaiting Valid Walk-Forward Samples"
 
         return {
-            "auditStatus": "Self-Healed & Auto-Calibrated",
+            "auditStatus": audit_status,
             "accuracyScore": accuracy_score,
             "hitRatePct": hit_rate,
             "rmsePct": rmse,
             "varBreachRatePct": actual_breach_rate,
             "varBreachStatus": var_status,
             "autoCalibrationAdjustments": var_adjustment,
-            "confidenceInterval": "95% Statistical Confidence",
+            "confidenceInterval": "95% Statistical Confidence" if accuracy_score is not None else "Insufficient Sample Size",
         }
 

@@ -109,13 +109,13 @@ export interface TraderArchetypeConsensus {
 
 export interface SelfHealingAudit {
   auditStatus: string;
-  accuracyScore: number;
-  hitRatePct: number;
-  rmsePct: number;
-  varBreachRatePct: number;
-  varBreachStatus: string;
-  autoCalibrationAdjustments: string;
-  confidenceInterval: string;
+  accuracyScore?: number | null;
+  hitRatePct?: number | null;
+  rmsePct?: number | null;
+  varBreachRatePct?: number | null;
+  varBreachStatus?: string;
+  autoCalibrationAdjustments?: string;
+  confidenceInterval?: string;
 }
 
 export interface MarketGraphNode {
@@ -287,8 +287,10 @@ export interface SmartMoneyOverview {
   total_sec_insiders_30d?: number;
   net_political_sentiment: string;
   top_congress_bought_sector: string;
-  unusual_flow_volume_today: string;
-  call_to_put_dollar_ratio: number;
+  unusual_flow_volume_today?: string | null;
+  call_to_put_dollar_ratio?: number | null;
+  late_filers_count?: number;
+  fresh_trades_count?: number;
   congress_trades: CongressTradeItem[];
   sec_insider_trades?: SecInsiderTradeItem[];
   options_flow: OptionsFlowItem[];
@@ -770,19 +772,10 @@ export function generateFallbackAnalytics(
     priceChangePct24h: baseChangePct,
     candles: generatedCandles,
     technicals: registered?.technicals || persisted?.technicals || undefined,
-    factorScores: matched.scores,
+    factorScores: undefined,
     macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
     expectedReturn: DEFAULT_EXPECTED_RETURN,
-    selfHealingAudit: {
-      auditStatus: "Verified & Live-Calibrated",
-      accuracyScore: 92.4,
-      hitRatePct: 88.6,
-      rmsePct: 1.42,
-      varBreachRatePct: 2.8,
-      varBreachStatus: "Optimal (Passed 5% Stress Target)",
-      autoCalibrationAdjustments: "Calibrated for High-Volatility Stress",
-      confidenceInterval: "95% Statistical Confidence",
-    },
+    selfHealingAudit: undefined,
     marketGraph: {
       rootNode: upper,
       topology: {
@@ -802,10 +795,7 @@ export function generateFallbackAnalytics(
       trial_readout_timeline: assetCat.timeline,
       efficacy_summary: assetCat.thesis,
       competitive_edge: "High market share moat and continuous cash generation",
-      upcoming_milestones: [
-        { date: "2026-09-15", event: "Q3 Product Line Readout", impact: "High" },
-        { date: "2026-10-22", event: "FY26 Analyst Day Guidance", impact: "High" },
-      ],
+      upcoming_milestones: [],
       multi_year_forecast: [],
       overallDirection: "Offline Fallback Feed",
     },
@@ -1063,19 +1053,10 @@ export async function fetchDirectYahooFinanceChart(
         priceChangePct24h,
         candles,
         technicals,
-        factorScores: matched?.scores,
+        factorScores: undefined,
         macroDifficulty: DEFAULT_MACRO_DIFFICULTY,
         expectedReturn: DEFAULT_EXPECTED_RETURN,
-        selfHealingAudit: {
-          auditStatus: "Verified Live Market Feed",
-          accuracyScore: 94.2,
-          hitRatePct: 89.5,
-          rmsePct: 1.15,
-          varBreachRatePct: 2.1,
-          varBreachStatus: "Optimal (Passed 5% Stress Target)",
-          autoCalibrationAdjustments: "Live Market Sync Active",
-          confidenceInterval: "95% Statistical Confidence",
-        },
+        selfHealingAudit: undefined,
         marketGraph: {
           rootNode: upper,
           topology: {
@@ -1095,10 +1076,7 @@ export async function fetchDirectYahooFinanceChart(
           trial_readout_timeline: isCataloged ? assetCat.timeline : "Scheduled Calendar Pending",
           efficacy_summary: isCataloged ? assetCat.thesis : "No verified operational roadmap or corporate filings registered.",
           competitive_edge: isCataloged ? "Expanding market share and positive return on invested capital" : "Moat metrics unverified.",
-          upcoming_milestones: isCataloged ? [
-            { date: "2026-09-15", event: "Q3 Earnings & Operating Update", impact: "High" },
-            { date: "2026-10-22", event: "Analyst Day & Guidance", impact: "High" },
-          ] : [],
+          upcoming_milestones: [],
           multi_year_forecast: [],
           overallDirection: isCataloged ? "Bullish Accumulation" : "Unverified Asset",
         },
@@ -1413,8 +1391,8 @@ export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
   "total_sec_insiders_30d": 5,
   "net_political_sentiment": "Bullish (91.7% Purchases)",
   "top_congress_bought_sector": "AI Infrastructure, Semis & GLP-1",
-  "unusual_flow_volume_today": "$42.8M",
-  "call_to_put_dollar_ratio": 3.42,
+  "unusual_flow_volume_today": null,
+  "call_to_put_dollar_ratio": null,
   "late_filers_count": 2,
   "fresh_trades_count": 22,
   "congress_trades": [

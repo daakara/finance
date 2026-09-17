@@ -570,12 +570,14 @@ class VolatilityForecaster:
                                 fallback_type: str) -> VolatilityForecast:
         """Create fallback forecast when models fail"""
         try:
-            if len(returns) > 0:
-                current_vol = returns.std() * np.sqrt(252)
+            if len(returns) > 0 and not returns.dropna().empty:
+                current_vol = float(returns.std() * np.sqrt(252))
+                if np.isnan(current_vol):
+                    current_vol = 0.0
                 forecasted_vol = [current_vol] * horizon
             else:
-                current_vol = 0.20  # Default 20% volatility
-                forecasted_vol = [current_vol] * horizon
+                current_vol = 0.0
+                forecasted_vol = [0.0] * horizon
             
             return VolatilityForecast(
                 forecast_horizon=horizon,
@@ -585,42 +587,42 @@ class VolatilityForecaster:
                 regime_probability={},
                 model_type=f'Fallback ({fallback_type})',
                 forecast_accuracy=0.0,
-                volatility_trend='stable'
+                volatility_trend='insufficient_data' if current_vol == 0.0 else 'stable'
             )
             
         except Exception as e:
             logger.error(f"Error creating fallback forecast: {str(e)}")
             return VolatilityForecast(
                 forecast_horizon=horizon,
-                current_volatility=0.20,
-                forecasted_volatility=[0.20] * horizon,
+                current_volatility=0.0,
+                forecasted_volatility=[0.0] * horizon,
                 confidence_intervals={},
                 regime_probability={},
                 model_type='Error Fallback',
                 forecast_accuracy=0.0,
-                volatility_trend='stable'
+                volatility_trend='error'
             )
     
-    def _calculate_volatility_percentile(self, returns: pd.Series, current_vol: float) -> float:
+    def _calculate_volatility_percentile(self, returns: pd.Series, current_vol: float) -> Optional[float]:
         """Calculate percentile rank of current volatility"""
         try:
             if len(returns) < 60:
-                return 50.0  # Default to median if insufficient data
+                return None  # Insufficient data for valid historical percentile
             
             # Calculate rolling volatilities
             rolling_vols = returns.rolling(20).std() * np.sqrt(252)
             rolling_vols = rolling_vols.dropna()
             
             if len(rolling_vols) == 0:
-                return 50.0
+                return None
             
             # Calculate percentile
-            percentile = (rolling_vols < current_vol).mean() * 100
+            percentile = float((rolling_vols < current_vol).mean() * 100)
             return percentile
             
         except Exception as e:
             logger.error(f"Error calculating volatility percentile: {str(e)}")
-            return 50.0
+            return None
     
     def _generate_forecast_insights(self, ensemble_forecast: VolatilityForecast,
                                   regime_analysis: Dict[str, Any],
@@ -631,15 +633,18 @@ class VolatilityForecaster:
         
         try:
             current_vol = current_metrics.get('current_volatility', 0)
-            vol_percentile = current_metrics.get('volatility_percentile', 50)
+            vol_percentile = current_metrics.get('volatility_percentile')
             
             # Current volatility level insight
-            if vol_percentile > 80:
-                insights.append(f"⚡ Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - unusually high levels")
-            elif vol_percentile < 20:
-                insights.append(f"😌 Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - unusually calm conditions")
+            if vol_percentile is not None and not np.isnan(vol_percentile):
+                if vol_percentile > 80:
+                    insights.append(f"⚡ Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - unusually high levels")
+                elif vol_percentile < 20:
+                    insights.append(f"😌 Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - unusually calm conditions")
+                else:
+                    insights.append(f"📊 Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - normal range")
             else:
-                insights.append(f"📊 Current volatility ({current_vol:.1%}) is at {vol_percentile:.0f}th percentile - normal range")
+                insights.append(f"📊 Current volatility: {current_vol:.1%} (historical percentile uncalibrated: <60 trading bars)")
             
             # Forecast trend insight
             vol_trend = ensemble_forecast.volatility_trend
