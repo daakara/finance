@@ -23,6 +23,13 @@ except ImportError:
 class ProvenanceCohort:
     """Rigid provenance classification for cohort contamination insulation."""
     PROSPECTIVE_CLEAN = "PROSPECTIVE_CLEAN"
+    HISTORICAL_RECOMPUTED = "HISTORICAL_RECOMPUTED"
+    BACKTEST_SIMULATION = "BACKTEST_SIMULATION"
+    DEMO_SYNTHETIC = "DEMO_SYNTHETIC"
+    CONTAMINATED = "CONTAMINATED"
+    UNKNOWN = "UNKNOWN"
+
+    # Backward-compatibility aliases
     HISTORICAL_CONTAMINATED = "HISTORICAL_CONTAMINATED"
     HISTORICAL_UNKNOWN = "HISTORICAL_UNKNOWN"
     EXCLUDED = "EXCLUDED"
@@ -31,6 +38,52 @@ class ProvenanceCohort:
 class ExperimentLedger:
     """Production-grade Model Governance and Forward Experiment Tracker."""
 
+    # Prospective Validation Epoch 1 Boundary Constants
+    EPOCH_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_1"
+    EPOCH_START_UTC = "2026-09-19T00:00:00Z"
+
+    # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
+    DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
+    ENGINE_SHA = DECISION_ENGINE_SHA  # Backward-compatibility alias
+    OBSERVATION_GOVERNANCE_SHA: Optional[str] = None
+
+    @classmethod
+    def get_observation_governance_sha(cls) -> str:
+        """Dynamically resolves the observation governance Git SHA without self-reference mutation."""
+        env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
+        if env_sha:
+            return env_sha.strip()
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    if meta.get("observationGovernanceSha"):
+                        return meta["observationGovernanceSha"].strip()
+            except Exception:
+                pass
+        try:
+            import subprocess
+            res = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except Exception:
+            pass
+        return "UNCOMMITTED_PRE_RELEASE"
+
+    CONFIG_HASH = "6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a"
+    SCHEMA_VERSION = "1.1.0"
+    OBSERVATION_POLICY_VERSION = "1.0.0"
+    LEDGER_WRITE_CAN_TRIGGER_EXECUTION = False
+
+    # Historical Phase 24 Baseline Constants (Retained for provenance audit)
     FREEZE_DATE_THRESHOLD = "2026-09-04"
     FROZEN_ENGINE_COMMIT = "4e36862"
     FROZEN_ENGINE_TAG = "v2.4.0-phase24-freeze"
@@ -84,18 +137,51 @@ class ExperimentLedger:
         }
 
     @classmethod
+    def _parse_utc_timestamp(cls, ts_str: Any, is_as_of_boundary: bool = False) -> Optional[datetime]:
+        """Normalizes date or timestamp string to UTC datetime.
+        For candidate events with date-only precision:
+        - Reference/recommendation timestamp defaults to start-of-day (00:00:00Z).
+        - Published event/filing/observation date without timestamp defaults to end-of-day (23:59:59Z)
+          to strictly prevent intraday lookahead.
+        """
+        if not ts_str:
+            return None
+        s = str(ts_str).strip()
+        if len(s) == 10 and s.count("-") == 2:
+            try:
+                dt = datetime.strptime(s, "%Y-%m-%d")
+                if is_as_of_boundary:
+                    return dt.replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                return dt.replace(hour=0, minute=0, second=0, tzinfo=timezone.utc)
+            except Exception:
+                return None
+        clean_s = s.replace("Z", "+00:00")
+        try:
+            dt = datetime.fromisoformat(clean_s)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                dt = dt.astimezone(timezone.utc)
+            return dt
+        except Exception:
+            return None
+
+    @classmethod
     def classify_provenance_cohort(cls, sig: Dict[str, Any]) -> str:
         """Classifies a signal into a strict provenance tier (Cohort Contamination Firewall).
-        Enforces 5 fail-closed security barriers:
+        Enforces fail-closed security barriers across the 6 canonical cohorts:
         1. Pre-freeze temporal barrier: Any signal dated prior to 2026-09-04 is permanently
            quarantined as HISTORICAL_CONTAMINATED, regardless of explicit tags.
-        2. Explicit quarantine preservation: Explicit HISTORICAL_CONTAMINATED, HISTORICAL_UNKNOWN,
-           or EXCLUDED records are strictly preserved as non-clean.
-        3. Decision hash integrity: If decisionSnapshotHash is present, it must match the
-           SHA-256 fingerprint of the record's frozen decision fields; otherwise fail-closed to EXCLUDED.
-        4. Inputs hash integrity: If inputsSnapshotHash is present, it must match; otherwise EXCLUDED.
-        5. Mandatory provenance fields: A clean prospective signal must have symbol, signalDate >= 2026-09-04,
-           and status. If engineVersion is present, it must match the frozen manifest/commit.
+        2. Explicit quarantine preservation: Explicit non-clean cohort records are strictly preserved.
+        3. Simulation/Demo detection: Flags for simulation, backtest, or demo/synthetic fixtures.
+        4. Post-outcome mutation detection: Explicit contamination flag or hash mismatch.
+        5. Decision & Inputs hash integrity: If decisionSnapshotHash or inputsSnapshotHash is present,
+           it must match the SHA-256 fingerprint; otherwise fail-closed to CONTAMINATED.
+        6. Engine version verification: engineVersion must match pinned commit/SHA or manifest.
+        7. Temporal anti-lookahead (Market Bar): recommended_at must precede first_forward_bar_timestamp.
+        8. Fundamental Point-in-Time Anti-Lookahead: filing/as-of UTC timestamp cannot exceed recommended_at.
+        9. Macro & Market observation anti-lookahead: observed/available timestamps cannot exceed recommended_at.
+        10. Mandatory prospective fields: Clean prospective signal must have symbol and status.
         """
         sig_date = sig.get("signalDate", "")
         # Invariant 1: Temporal barrier - pre-freeze signals are ALWAYS contaminated
@@ -105,34 +191,94 @@ class ExperimentLedger:
         explicit = sig.get("provenanceCohort")
         # Invariant 2: Explicit quarantine preservation
         if explicit in [
+            ProvenanceCohort.HISTORICAL_RECOMPUTED,
+            ProvenanceCohort.BACKTEST_SIMULATION,
+            ProvenanceCohort.DEMO_SYNTHETIC,
+            ProvenanceCohort.CONTAMINATED,
+            ProvenanceCohort.UNKNOWN,
             ProvenanceCohort.HISTORICAL_CONTAMINATED,
             ProvenanceCohort.HISTORICAL_UNKNOWN,
             ProvenanceCohort.EXCLUDED,
         ]:
             return explicit
 
-        # Invariant 3 & 4: Cryptographic hash validation (Fail-closed)
+        # Invariant 3: Simulation and demo fixture detection
+        if sig.get("isSimulated") or sig.get("isBacktest"):
+            return ProvenanceCohort.BACKTEST_SIMULATION
+        if sig.get("isDemo") or sig.get("isSynthetic"):
+            return ProvenanceCohort.DEMO_SYNTHETIC
+
+        # Invariant 4: Post-outcome mutation or contamination flag
+        if sig.get("isContaminated") or sig.get("modifiedPostOutcome"):
+            return ProvenanceCohort.CONTAMINATED
+
+        # Invariant 5: Cryptographic hash validation (Fail-closed)
         dec_hash = sig.get("decisionSnapshotHash")
         if dec_hash:
             if dec_hash != cls.compute_decision_snapshot_hash(sig):
-                return ProvenanceCohort.EXCLUDED
+                return ProvenanceCohort.CONTAMINATED
 
         in_hash = sig.get("inputsSnapshotHash")
         if in_hash:
             if in_hash != cls.compute_inputs_snapshot_hash(sig):
-                return ProvenanceCohort.EXCLUDED
+                return ProvenanceCohort.CONTAMINATED
 
-        # Invariant 5: Engine version verification against frozen manifest/commit
+        # Invariant 6: Engine version verification against frozen manifest/commit/SHA
         engine_ver = sig.get("engineVersion")
         if engine_ver:
             manifest_meta = cls.get_frozen_manifest()
-            valid_commits = [cls.FROZEN_ENGINE_COMMIT]
+            valid_commits = [
+                cls.ENGINE_SHA,
+                cls.ENGINE_SHA[:7],
+                cls.FROZEN_ENGINE_COMMIT,
+                cls.FROZEN_ENGINE_COMMIT[:7],
+            ]
             if manifest_meta and manifest_meta.get("provenanceCommit"):
                 valid_commits.append(manifest_meta["provenanceCommit"])
                 valid_commits.append(manifest_meta["provenanceCommit"][:7])
             if not any(engine_ver.startswith(c[:7]) or c.startswith(engine_ver[:7]) for c in valid_commits):
                 return ProvenanceCohort.EXCLUDED
 
+        # Parse normalized recommendation timestamp
+        rec_str = sig.get("recommended_at") or sig.get("signalTimestamp") or sig.get("signalDate")
+        rec_dt = cls._parse_utc_timestamp(rec_str)
+
+        # Invariant 7: Temporal anti-lookahead verification (Market Bar)
+        first_bar_str = sig.get("first_forward_bar_timestamp")
+        if first_bar_str and rec_dt:
+            first_bar_dt = cls._parse_utc_timestamp(first_bar_str)
+            if first_bar_dt and rec_dt >= first_bar_dt:
+                return ProvenanceCohort.CONTAMINATED
+
+        # Invariant 8: Fundamental Point-in-Time Anti-Lookahead
+        inputs = sig.get("inputs") or {}
+        fund_filing_str = inputs.get("fundamentalFilingTimestamp")
+        if fund_filing_str and rec_dt:
+            filing_dt = cls._parse_utc_timestamp(fund_filing_str)
+            if filing_dt and filing_dt > rec_dt:
+                return ProvenanceCohort.CONTAMINATED
+
+        fund_as_of_str = inputs.get("fundamentalAsOfDate")
+        if fund_as_of_str and rec_dt:
+            as_of_dt = cls._parse_utc_timestamp(fund_as_of_str, is_as_of_boundary=False)
+            rec_date_dt = datetime(rec_dt.year, rec_dt.month, rec_dt.day, tzinfo=timezone.utc)
+            if as_of_dt and as_of_dt > rec_date_dt:
+                return ProvenanceCohort.CONTAMINATED
+
+        # Invariant 9: Market & Macro snapshot timestamp integrity
+        market_obs_str = inputs.get("marketSnapshotObservedAt") or inputs.get("marketDataSnapshotTimestamp")
+        if market_obs_str and rec_dt:
+            market_dt = cls._parse_utc_timestamp(market_obs_str)
+            if market_dt and market_dt > rec_dt:
+                return ProvenanceCohort.CONTAMINATED
+
+        macro_obs_str = inputs.get("macroObservationAvailableAt") or inputs.get("macroObservationDate")
+        if macro_obs_str and rec_dt:
+            macro_dt = cls._parse_utc_timestamp(macro_obs_str)
+            if macro_dt and macro_dt > rec_dt:
+                return ProvenanceCohort.CONTAMINATED
+
+        # Invariant 10: Mandatory fields for prospective eligibility
         if sig_date and sig_date >= cls.FREEZE_DATE_THRESHOLD:
             if not sig.get("symbol") or not sig.get("status"):
                 return ProvenanceCohort.EXCLUDED
@@ -142,7 +288,7 @@ class ExperimentLedger:
         if explicit == ProvenanceCohort.PROSPECTIVE_CLEAN:
             return ProvenanceCohort.PROSPECTIVE_CLEAN
 
-        return "SYNTHETIC_OR_UNCLASSIFIED"
+        return ProvenanceCohort.UNKNOWN
 
     @classmethod
     def load_ledger(cls, ledger_path: Optional[str] = None) -> Dict[str, Any]:
@@ -191,9 +337,91 @@ class ExperimentLedger:
         return hashlib.sha256(encoded).hexdigest()
 
     @classmethod
+    def compute_payload_hash(cls, payload: Any) -> Optional[str]:
+        """Computes deterministic SHA-256 over a canonical JSON payload or validates an existing 64-char hex hash."""
+        if payload is None:
+            return None
+        if isinstance(payload, str) and len(payload) == 64 and all(c in "0123456789abcdefABCDEF" for c in payload):
+            return payload.lower()
+        try:
+            encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+            return hashlib.sha256(encoded).hexdigest()
+        except Exception:
+            return None
+
+    @classmethod
+    def compute_epoch1_inputs_snapshot_hash(cls, record: Dict[str, Any]) -> str:
+        """Computes a SHA-256 fingerprint committing to the complete point-in-time decision state.
+
+        Canonical Architecture:
+        EPOCH_1_INPUT_SNAPSHOT =
+            MARKET_SNAPSHOT_HASH
+          + TECHNICAL_INPUTS
+          + FUNDAMENTAL_SNAPSHOT_HASH
+          + MACRO_SNAPSHOT_HASH
+          + MODEL_CONFIG_HASH
+          + EVIDENCE_STATE
+          + PROVIDER_PROVENANCE
+        """
+        inputs = record.get("inputs") or {}
+
+        # 1. Content-addressed Market Data Snapshot Hash
+        raw_market = inputs.get("rawMarketPayload") or inputs.get("candles")
+        market_hash = cls.compute_payload_hash(raw_market) or inputs.get("marketSnapshotHash") or inputs.get("market_snapshot_hash") or ""
+
+        # 2. Content-addressed Fundamental Snapshot Hash
+        raw_fund = inputs.get("rawFundamentalPayload") or inputs.get("fundamentals")
+        fund_hash = cls.compute_payload_hash(raw_fund) or inputs.get("fundamentalSnapshotHash") or inputs.get("fundamental_snapshot_hash") or ""
+
+        # 3. Content-addressed Macro Snapshot Hash
+        raw_macro = inputs.get("rawMacroPayload") or inputs.get("macro")
+        macro_hash = cls.compute_payload_hash(raw_macro) or inputs.get("macroSnapshotHash") or inputs.get("macro_snapshot_hash") or ""
+
+        canonical_dict = {
+            "symbol": str(record.get("symbol", "")).upper().strip(),
+            # 1. Market Data Content Hash & Observation Timestamps
+            "marketSnapshotHash": str(market_hash),
+            "marketSnapshotObservedAt": str(inputs.get("marketSnapshotObservedAt") or inputs.get("marketDataSnapshotTimestamp") or ""),
+            "candleCount": int(inputs.get("candleCount", 0)) if inputs.get("candleCount") is not None else None,
+            # 2. Technical Indicator Inputs
+            "atr14": float(inputs.get("atr14", 0.0)) if inputs.get("atr14") is not None else None,
+            "atrPct": float(inputs.get("atrPct", 0.0)) if inputs.get("atrPct") is not None else None,
+            "setupPattern": str(inputs.get("setupPattern", "")),
+            "stagePhase": str(inputs.get("stagePhase", "")),
+            "sma50": float(inputs.get("sma50", 0.0)) if inputs.get("sma50") is not None else None,
+            "ema20": float(inputs.get("ema20", 0.0)) if inputs.get("ema20") is not None else None,
+            "rsi14": float(inputs.get("rsi14", 0.0)) if inputs.get("rsi14") is not None else None,
+            # 3. Fundamental Content Hash & Point-in-Time Timestamps
+            "fundamentalSnapshotHash": str(fund_hash),
+            "fundamentalFilingTimestamp": str(inputs.get("fundamentalFilingTimestamp") or ""),
+            "fundamentalAsOfDate": str(inputs.get("fundamentalAsOfDate") or ""),
+            # 4. Macro Content Hash & Availability Timestamps
+            "macroSnapshotHash": str(macro_hash),
+            "macroObservationAvailableAt": str(inputs.get("macroObservationAvailableAt") or inputs.get("macroObservationDate") or ""),
+            "yieldCurve10y2y": float(inputs.get("yieldCurve10y2y", 0.0)) if inputs.get("yieldCurve10y2y") is not None else None,
+            "creditSpread": float(inputs.get("creditSpread", 0.0)) if inputs.get("creditSpread") is not None else None,
+            # 5. Model Config Hash
+            "modelConfigHash": str(inputs.get("modelConfigHash") or cls.CONFIG_HASH),
+            # 6. Regime, Evidence State & Provider Provenance
+            "marketRegime": str(inputs.get("marketRegime", "")),
+            "sector": str(inputs.get("sector", "")),
+            "assetClass": str(inputs.get("assetClass", "")),
+            "dataProvider": str(inputs.get("dataProvider", "")),
+            "quoteFreshness": str(inputs.get("quoteFreshness", "")),
+            "evidenceCompleteness": str(inputs.get("evidenceCompleteness", "")),
+            "pointInTimePrecision": str(inputs.get("pointInTimePrecision", "TIMESTAMP")),
+        }
+        encoded = json.dumps(canonical_dict, sort_keys=True).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    @classmethod
     def compute_inputs_snapshot_hash(cls, record: Dict[str, Any]) -> str:
         """Computes a SHA-256 fingerprint over the immutable frozen input features."""
         inputs = record.get("inputs") or {}
+        # Route Epoch 1 records to the complete information set hash
+        if record.get("epochId") == cls.EPOCH_ID or "marketDataSnapshotTimestamp" in inputs or "fundamentalAsOfDate" in inputs:
+            return cls.compute_epoch1_inputs_snapshot_hash(record)
+
         canonical_dict = {
             "atr14": float(inputs.get("atr14", 0.0)) if inputs.get("atr14") is not None else None,
             "atrPct": float(inputs.get("atrPct", 0.0)) if inputs.get("atrPct") is not None else None,
@@ -220,6 +448,8 @@ class ExperimentLedger:
         signal_date: Optional[str] = None,
         component_scores: Optional[Dict[str, Any]] = None,
         benchmarks: Optional[Dict[str, Any]] = None,
+        epoch_id: Optional[str] = None,
+        provenance_cohort: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Record an immutable new signal in the ledger."""
         ledger = cls.load_ledger(ledger_path)
@@ -235,6 +465,8 @@ class ExperimentLedger:
             "signalId": signal_id,
             "symbol": symbol.upper().strip(),
             "signalDate": sig_date,
+            "epochId": epoch_id or cls.EPOCH_ID,
+            "provenanceCohort": provenance_cohort or ProvenanceCohort.PROSPECTIVE_CLEAN,
             "engineVersion": engine_commit,
             "engineTag": engine_tag,
             "decisionState": "ACTIONABLE_SETUP",
@@ -257,6 +489,20 @@ class ExperimentLedger:
                 "marketRegime": inputs_meta.get("market_regime", "BULL"),
                 "sector": inputs_meta.get("sector", "EQUITY"),
                 "assetClass": inputs_meta.get("asset_class", "US_EQUITY"),
+                # Epoch 1 Complete Information Set Attributes
+                "marketDataSnapshotTimestamp": inputs_meta.get("market_data_snapshot_timestamp") or inputs_meta.get("marketDataSnapshotTimestamp"),
+                "candleCount": inputs_meta.get("candle_count") or inputs_meta.get("candleCount"),
+                "sma50": opt_exec.get("sma_50") or inputs_meta.get("sma50"),
+                "ema20": opt_exec.get("ema_20") or inputs_meta.get("ema20"),
+                "rsi14": opt_exec.get("rsi_14") or inputs_meta.get("rsi14"),
+                "fundamentalAsOfDate": inputs_meta.get("fundamental_as_of_date") or inputs_meta.get("fundamentalAsOfDate"),
+                "fundamentalFilingTimestamp": inputs_meta.get("fundamental_filing_timestamp") or inputs_meta.get("fundamentalFilingTimestamp"),
+                "macroObservationDate": inputs_meta.get("macro_observation_date") or inputs_meta.get("macroObservationDate"),
+                "yieldCurve10y2y": inputs_meta.get("yield_curve_10y2y") or inputs_meta.get("yieldCurve10y2y"),
+                "creditSpread": inputs_meta.get("credit_spread") or inputs_meta.get("creditSpread"),
+                "dataProvider": inputs_meta.get("data_provider") or inputs_meta.get("dataProvider", "YAHOO_AUTHENTIC"),
+                "quoteFreshness": inputs_meta.get("quote_freshness") or inputs_meta.get("quoteFreshness", "END_OF_DAY"),
+                "evidenceCompleteness": inputs_meta.get("evidence_completeness") or inputs_meta.get("evidenceCompleteness", "COMPLETE"),
             },
             "componentScores": component_scores or {
                 "qualityScore": None,
@@ -875,7 +1121,8 @@ class ExperimentLedger:
     def compute_governance_scorecard(
         cls,
         ledger_path: Optional[str] = None,
-        cohort_filter: Optional[str] = None
+        cohort_filter: Optional[str] = None,
+        epoch_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Evaluate performance against Phase 25/26 Model Governance criteria with Cohort Contamination Firewall."""
         ledger = cls.load_ledger(ledger_path)
@@ -883,7 +1130,7 @@ class ExperimentLedger:
         if not all_signals:
             return {"status": "NO_SIGNALS", "n": 0}
 
-        # 1. Audit Provenance Across All Signals (Cohort Contamination Firewall)
+        # 1. Audit Provenance Across All Signals (Cohort Contamination Firewall & Epoch Boundary)
         clean_signals = []
         contaminated_signals = []
         unclassified_signals = []
@@ -893,10 +1140,21 @@ class ExperimentLedger:
             c = cls.classify_provenance_cohort(s)
             s["provenanceCohort"] = c
             if c == ProvenanceCohort.PROSPECTIVE_CLEAN:
-                clean_signals.append(s)
-            elif c == ProvenanceCohort.HISTORICAL_CONTAMINATED:
+                if epoch_id is None or s.get("epochId") == epoch_id:
+                    clean_signals.append(s)
+                else:
+                    excluded_signals.append(s)
+            elif c in [
+                ProvenanceCohort.HISTORICAL_CONTAMINATED,
+                ProvenanceCohort.CONTAMINATED,
+                ProvenanceCohort.HISTORICAL_RECOMPUTED,
+            ]:
                 contaminated_signals.append(s)
-            elif c == ProvenanceCohort.EXCLUDED:
+            elif c in [
+                ProvenanceCohort.EXCLUDED,
+                ProvenanceCohort.BACKTEST_SIMULATION,
+                ProvenanceCohort.DEMO_SYNTHETIC,
+            ]:
                 excluded_signals.append(s)
             else:
                 unclassified_signals.append(s)
@@ -1264,6 +1522,10 @@ class ExperimentLedger:
             "cohortFirewall": {
                 "status": firewall_status,
                 "cohortFilterRequested": cohort_filter,
+                "epochIdRequested": epoch_id,
+                "historicalProspectivePooling": "BLOCKED",
+                "demoProspectivePooling": "BLOCKED",
+                "contaminatedProspectivePooling": "BLOCKED",
                 "cleanSignalsCount": len(clean_signals),
                 "contaminatedSignalsCount": len(contaminated_signals),
                 "excludedSignalsCount": len(excluded_signals),
