@@ -246,7 +246,15 @@ function CompareContent() {
 
             {/* Dual-Horizon Lens Switcher & DataSource Badge */}
             <div className="flex items-center gap-2">
-              <DataSourceBadge source={dataA?._dataSource === "fallback" || dataB?._dataSource === "fallback" ? "fallback" : "live"} />
+              <DataSourceBadge source={
+                dataA?._dataSource === "fallback" || dataB?._dataSource === "fallback"
+                  ? "fallback"
+                  : dataA?._dataSource === "unavailable" || dataB?._dataSource === "unavailable"
+                  ? "unavailable"
+                  : dataA?._dataSource === "historical" || dataB?._dataSource === "historical"
+                  ? "historical"
+                  : "live"
+              } />
               <div role="radiogroup" aria-label="Comparison Lens" className="flex items-center space-x-2 bg-[#0d131f] p-1.5 rounded-xl border border-[#243044]">
                 <span className="text-[11px] text-slate-400 font-bold px-2 hidden sm:inline">Comparison Lens:</span>
                 <button

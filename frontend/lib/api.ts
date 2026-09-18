@@ -514,8 +514,10 @@ export interface ConfluenceData {
   warnings?: string[];
 }
 
+export type MarketDataSource = "live" | "historical" | "fallback" | "unavailable";
+
 export interface AnalyticsResponse {
-  _dataSource?: "live" | "fallback" | "unavailable";
+  _dataSource?: MarketDataSource;
   symbol: string;
   period: string;
   interval: string;
@@ -923,7 +925,7 @@ export async function fetchDirectYahooFinanceChart(
       const fetchedTime = Date.now();
 
       const responsePayload: AnalyticsResponse = {
-        _dataSource: isObservationFresh ? ("live" as const) : ("fallback" as const),
+        _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),
         symbol: upper,
         period,
         interval,
@@ -1112,7 +1114,7 @@ export async function fetchAssetAnalytics(
             ...data,
             observedAt: observationTime > 0 ? observationTime : undefined,
             fetchedAt: fetchedTime,
-            _dataSource: isObservationFresh ? ("live" as const) : ("fallback" as const),
+            _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),
             factorScores: data.factorScores || data.dnaScores,
           };
 

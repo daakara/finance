@@ -636,6 +636,8 @@ def get_asset_analytics(
                         observed_at = int(rmt.timestamp() * 1000)
                     elif isinstance(rmt, (int, float)):
                         observed_at = int(rmt * 1000 if rmt < 1e11 else rmt)
+                    if observed_at is not None and observed_at > fetched_at:
+                        observed_at = fetched_at
             except Exception:
                 pass
 

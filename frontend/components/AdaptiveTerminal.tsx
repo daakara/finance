@@ -24,7 +24,7 @@ interface AdaptiveTerminalProps {
   confluence?: ConfluenceData;
   isStage4?: boolean;
   candles?: CandleData[];
-  dataSource?: "live" | "fallback" | "unavailable";
+  dataSource?: "live" | "historical" | "fallback" | "unavailable";
   decisionTrace?: DecisionTrace;
   optimalExecution?: OptimalExecutionPlan;
   freshness?: FreshnessInfo;

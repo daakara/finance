@@ -1,11 +1,12 @@
 "use client";
 
-export type ProvenanceSource = "live" | "delayed" | "curated" | "fallback" | "unavailable";
+export type ProvenanceSource = "live" | "historical" | "delayed" | "curated" | "fallback" | "unavailable";
 
 interface DataSourceBadgeProps {
   source?: ProvenanceSource;
   className?: string;
   labelLive?: string;
+  labelHistorical?: string;
   labelFallback?: string;
   labelCurated?: string;
   labelDelayed?: string;
@@ -16,6 +17,7 @@ export default function DataSourceBadge({
   source = "fallback",
   className = "",
   labelLive = "📡 Live Market Feed",
+  labelHistorical = "🏛️ Historical EOD",
   labelFallback = "📊 Model Estimate",
   labelCurated = "📚 Curated Dataset",
   labelDelayed = "⏱️ Regulatory Delayed",
@@ -27,10 +29,15 @@ export default function DataSourceBadge({
   let tooltip = "Deterministic quantitative model estimate based on trailing market close.";
 
   if (source === "live") {
-    badgeColor = "bg-emerald-950/70 border-emerald-700/80 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
+    badgeColor = "bg-emerald-950/70 border-emerald-700/80 text-emerald-300 shadow-[0_0_10px_rgba(168,85,247,0.15)]";
     dotColor = "bg-emerald-400 animate-pulse";
     label = labelLive;
     tooltip = "Real-time exchange market feed and authentic OHLCV candle streams.";
+  } else if (source === "historical") {
+    badgeColor = "bg-cyan-950/70 border-cyan-700/80 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.15)]";
+    dotColor = "bg-cyan-400";
+    label = labelHistorical;
+    tooltip = "Official market close quote and authentic verified exchange historical candles.";
   } else if (source === "curated") {
     badgeColor = "bg-purple-950/70 border-purple-700/80 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.15)]";
     dotColor = "bg-purple-400";
