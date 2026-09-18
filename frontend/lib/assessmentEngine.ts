@@ -171,7 +171,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     uiStateLabel = "Evidence Incomplete — In-Depth Research Required";
     headlineExplanation = !isTrendAvailable
       ? "Technical trend evidence is unavailable (insufficient historical sessions). Active triggers cannot be confirmed."
-      : "Core fundamental financial evidence is unverified. In-depth due diligence required before evaluating setups.";
+      : !isHealthAvailable
+      ? "Core fundamental financial evidence is unverified. In-depth due diligence required before evaluating setups."
+      : "One or more evidence domains are unavailable or unverified. In-depth due diligence required before evaluating setups.";
   } else if (ownershipState === "OWNED") {
     if (assessment === "UNFAVORABLE") {
       posture = "TRIM";

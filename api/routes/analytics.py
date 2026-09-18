@@ -18,7 +18,7 @@ from analyst_dashboard.analyzers.self_healing_engine import SelfHealingForecastA
 from analyst_dashboard.analyzers.market_graph import MarketGraphEngine
 from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
-from analyst_dashboard.data.fred_fetcher import FredMacroFetcher
+from analyst_dashboard.data.fred_fetcher import FredMacroFetcher, normalize_macro_payload
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine, ACTIONABLE_EXECUTION_STATUSES
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
@@ -258,17 +258,9 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "valuationScore": factor_snap.get("valuation_score"),
     } if (has_fundamentals and factor_snap) else None
 
-    # Macro Environment & Difficulty Rating from FRED
+    # Macro Environment & Difficulty Rating from FRED (Canonical Contract Normalization)
     macro_difficulty = fred_fetcher.get_macro_indicators()
-    macro_inputs = None
-    if isinstance(macro_difficulty, dict):
-        yc = macro_difficulty.get("yield_curve_10y2y")
-        cs = macro_difficulty.get("high_yield_credit_spread")
-        if yc is not None or cs is not None:
-            macro_inputs = {
-                "yield_curve_10y2y": yc,
-                "credit_spread": cs,
-            }
+    macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
 
     catalyst_report = market_db.get_catalyst(sym)
 
@@ -818,16 +810,8 @@ def get_asset_analytics(
         has_congress_buy = False
         smart_data = _build_smart_money_confluence_inputs(upper_sym)
 
-        # Macro inputs: Strictly authentic FRED observations; never fabricated 0.25 / 3.5 fallbacks
-        macro_inputs = None
-        if isinstance(macro_difficulty, dict):
-            yc = macro_difficulty.get("yield_curve_10y2y")
-            cs = macro_difficulty.get("high_yield_credit_spread")
-            if yc is not None or cs is not None:
-                macro_inputs = {
-                    "yield_curve_10y2y": yc,
-                    "credit_spread": cs,
-                }
+        # Macro inputs: Strictly authentic FRED observations; never fabricated fallbacks
+        macro_inputs = normalize_macro_payload(macro_difficulty) if macro_difficulty else None
 
         # Compute Canonical Multi-Factor Confluence (Single Source of Truth)
         confluence_output = confluence_engine.calculate_confluence(

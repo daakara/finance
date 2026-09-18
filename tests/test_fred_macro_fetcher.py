@@ -1,4 +1,4 @@
-﻿"""Tests for FRED Macroeconomic Fetcher and MDR Regime Classification."""
+"""Tests for FRED Macroeconomic Fetcher and MDR Regime Classification."""
 
 from unittest.mock import patch, MagicMock
 import pytest
@@ -9,7 +9,7 @@ pytestmark = pytest.mark.tier2c
 
 
 def test_fred_macro_fetcher_indicators():
-    fetcher = FredMacroFetcher()
+    fetcher = FredMacroFetcher(api_key="TEST_FRED_KEY")
     mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.json.return_value = {

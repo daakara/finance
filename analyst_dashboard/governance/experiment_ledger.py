@@ -240,7 +240,7 @@ class ExperimentLedger:
                 return ProvenanceCohort.EXCLUDED
 
         # Parse normalized recommendation timestamp
-        rec_str = sig.get("recommended_at") or sig.get("signalTimestamp") or sig.get("signalDate")
+        rec_str = sig.get("recommended_at") or sig.get("signalTimestamp") or sig.get("signalDate") or sig.get("timestamp")
         rec_dt = cls._parse_utc_timestamp(rec_str)
 
         # Invariant 7: Temporal anti-lookahead verification (Market Bar)
@@ -374,8 +374,33 @@ class ExperimentLedger:
         fund_hash = cls.compute_payload_hash(raw_fund) or inputs.get("fundamentalSnapshotHash") or inputs.get("fundamental_snapshot_hash") or ""
 
         # 3. Content-addressed Macro Snapshot Hash
-        raw_macro = inputs.get("rawMacroPayload") or inputs.get("macro")
+        raw_macro = inputs.get("rawMacroPayload") or inputs.get("macro") or inputs.get("macroInputs") or inputs.get("macro_inputs")
         macro_hash = cls.compute_payload_hash(raw_macro) or inputs.get("macroSnapshotHash") or inputs.get("macro_snapshot_hash") or ""
+
+        # Safe numeric parsing for macro indicators
+        yc_input = inputs.get("yieldCurve10y2y") if inputs.get("yieldCurve10y2y") is not None else inputs.get("yield_curve_10y2y")
+        if yc_input is None:
+            yc_input = inputs.get("yield_curve_spread")
+
+        cs_input = inputs.get("creditSpread") if inputs.get("creditSpread") is not None else inputs.get("high_yield_credit_spread")
+        if cs_input is None:
+            cs_input = inputs.get("credit_spread")
+        if cs_input is None:
+            cs_input = inputs.get("credit_spread_oas")
+
+        yc_val: Optional[float] = None
+        if yc_input is not None and not isinstance(yc_input, bool):
+            try:
+                yc_val = float(yc_input)
+            except (ValueError, TypeError):
+                yc_val = None
+
+        cs_val: Optional[float] = None
+        if cs_input is not None and not isinstance(cs_input, bool):
+            try:
+                cs_val = float(cs_input)
+            except (ValueError, TypeError):
+                cs_val = None
 
         canonical_dict = {
             "symbol": str(record.get("symbol", "")).upper().strip(),
@@ -397,9 +422,15 @@ class ExperimentLedger:
             "fundamentalAsOfDate": str(inputs.get("fundamentalAsOfDate") or ""),
             # 4. Macro Content Hash & Availability Timestamps
             "macroSnapshotHash": str(macro_hash),
-            "macroObservationAvailableAt": str(inputs.get("macroObservationAvailableAt") or inputs.get("macroObservationDate") or ""),
-            "yieldCurve10y2y": float(inputs.get("yieldCurve10y2y", 0.0)) if inputs.get("yieldCurve10y2y") is not None else None,
-            "creditSpread": float(inputs.get("creditSpread", 0.0)) if inputs.get("creditSpread") is not None else None,
+            "macroObservationAvailableAt": str(
+                inputs.get("macroObservationAvailableAt")
+                or inputs.get("macro_observation_available_at")
+                or inputs.get("yield_observation_timestamp")
+                or inputs.get("macroObservationDate")
+                or ""
+            ),
+            "yieldCurve10y2y": yc_val,
+            "creditSpread": cs_val,
             # 5. Model Config Hash
             "modelConfigHash": str(inputs.get("modelConfigHash") or cls.CONFIG_HASH),
             # 6. Regime, Evidence State & Provider Provenance
