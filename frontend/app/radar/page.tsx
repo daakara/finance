@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import TerminalShell from '../../components/terminal/TerminalShell';
 import PageIntro from '../../components/PageIntro';
-import { fetchScreenerGems, fetchAssetAnalytics } from '../../lib/api';
+import {
+  fetchScreenerGems,
+  fetchAssetAnalytics,
+  CanonicalRadarCategory,
+  RadarCapabilities,
+  RadarCapabilityStatus,
+} from '../../lib/api';
 
 interface RadarAsset {
   ticker: string;
@@ -16,12 +22,33 @@ interface RadarAsset {
   volumeDryUpPct: number | null;
   confluenceScore: number;
   catalyst: string;
-  categories: ('VCP' | 'SMART_MONEY' | 'VALUE')[];
+  categories: CanonicalRadarCategory[];
   sector: string;
   executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'UNKNOWN';
 }
 
-type CategoryFilter = 'ALL' | 'VCP' | 'SMART_MONEY' | 'VALUE';
+type CategoryFilter = 'ALL' | CanonicalRadarCategory;
+
+const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
+  VALUE_GARP: {
+    status: "AVAILABLE",
+    universeScreening: "AVAILABLE",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Authentic multi-factor fundamental screening active across known candidate universe.",
+  },
+  VCP: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
+  },
+  SMART_MONEY: {
+    status: "PIPELINE_PENDING",
+    universeScreening: "PIPELINE_PENDING",
+    singleAssetAnalysis: "AVAILABLE",
+    rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
+  },
+};
 
 function RadarContent() {
   const searchParams = useSearchParams();
@@ -30,6 +57,7 @@ function RadarContent() {
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RS' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
+  const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
@@ -45,12 +73,15 @@ function RadarContent() {
     fetchScreenerGems("all")
       .then((res) => {
         if (!isMounted) return;
+        if (res.capabilities) {
+          setCapabilities(res.capabilities);
+        }
         const mapped: RadarAsset[] = (res.results || []).map((gem: any) => {
-          const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = [];
-          const modelStr = (gem.expert_model || "").toUpperCase();
-          if (modelStr.includes("VCP") || modelStr.includes("MINERVINI")) cat.push("VCP");
-          if (modelStr.includes("MAGIC") || modelStr.includes("GARP") || modelStr.includes("VALUE") || modelStr.includes("GREENBLATT") || modelStr.includes("LYNCH") || modelStr.includes("GARDNER")) cat.push("VALUE");
-          if (modelStr.includes("SMART") || modelStr.includes("INSIDER") || modelStr.includes("13F") || modelStr.includes("FLOW")) cat.push("SMART_MONEY");
+          // Canonical typed categories: strictly consume explicit backend categories.
+          // Zero substring-based inference from arbitrary strings (e.g. "Smart Growth" or "Flow Traders").
+          const cat: CanonicalRadarCategory[] = Array.isArray(gem.categories)
+            ? (gem.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+            : [];
 
           const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
           let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
@@ -91,15 +122,31 @@ function RadarContent() {
     };
   }, []);
 
-  // Category Counts
-  const counts = useMemo(() => {
+  // Category Counts & Invariant Enforcement
+  // Zero Semantics Invariant: Numerical count (including 0) is permitted ONLY when
+  // capability is AVAILABLE. For PIPELINE_PENDING or NOT_IMPLEMENTED, return null.
+  const categoryMeta = useMemo(() => {
+    const isAvailable = (cat: CanonicalRadarCategory) => capabilities[cat]?.universeScreening === 'AVAILABLE';
+
     return {
-      ALL: allAssets.length,
-      VCP: allAssets.filter((a) => a.categories.includes('VCP')).length,
-      SMART_MONEY: allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length,
-      VALUE: allAssets.filter((a) => a.categories.includes('VALUE')).length,
+      ALL: { count: allAssets.length, badge: `${allAssets.length}`, status: 'AVAILABLE' as RadarCapabilityStatus },
+      VALUE_GARP: {
+        count: isAvailable('VALUE_GARP') ? allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length : null,
+        badge: isAvailable('VALUE_GARP') ? `${allAssets.filter((a) => a.categories.includes('VALUE_GARP')).length}` : 'Pending',
+        status: capabilities.VALUE_GARP?.status || 'AVAILABLE',
+      },
+      VCP: {
+        count: isAvailable('VCP') ? allAssets.filter((a) => a.categories.includes('VCP')).length : null,
+        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Pipeline Pending',
+        status: capabilities.VCP?.status || 'PIPELINE_PENDING',
+      },
+      SMART_MONEY: {
+        count: isAvailable('SMART_MONEY') ? allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length : null,
+        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Pipeline Pending',
+        status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
+      },
     };
-  }, [allAssets]);
+  }, [allAssets, capabilities]);
 
   // Filtered & Sorted Assets
   const filteredAssets = useMemo(() => {
@@ -160,13 +207,20 @@ function RadarContent() {
       else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
       else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
-      const cat: ('VCP' | 'SMART_MONEY' | 'VALUE')[] = [];
-      const patternUpper = (opt?.setup_pattern || "").toUpperCase();
-      if (patternUpper.includes("VCP") || patternUpper.includes("MINERVINI") || patternUpper.includes("BREAKOUT")) cat.push("VCP");
+      const cat: CanonicalRadarCategory[] = [];
+      // On-demand asset is evaluated across single-asset execution and confluence engines.
+      // If single-asset setup is verified VCP pattern:
+      if (opt?.vcp_contraction_status === "VCP 3-Stage Compression Confirmed" || opt?.setup_pattern === "Minervini Volatility Contraction Pattern (VCP)") {
+        cat.push("VCP");
+      }
       const smartPillar = data.confluence?.pillars?.find((p) => p.pillar.toLowerCase().includes("smart") || p.pillar.toLowerCase().includes("flow"));
-      if (smartPillar && smartPillar.status === "positive") cat.push("SMART_MONEY");
+      if (smartPillar && smartPillar.status === "positive") {
+        cat.push("SMART_MONEY");
+      }
       const fundPillar = data.confluence?.pillars?.find((p) => p.pillar.toLowerCase().includes("fundamental") || p.pillar.toLowerCase().includes("solvency"));
-      if (fundPillar && fundPillar.status === "positive") cat.push("VALUE");
+      if (fundPillar && fundPillar.status === "positive") {
+        cat.push("VALUE_GARP");
+      }
 
       // RS rating: on-demand feed does not compute 1-99 RS rating against 4000-stock universe
       const rsVal: number | null = null;
@@ -197,7 +251,7 @@ function RadarContent() {
   };
 
   const handleFilterKeyDown = (e: React.KeyboardEvent, current: CategoryFilter) => {
-    const filters: CategoryFilter[] = ['ALL', 'VCP', 'SMART_MONEY', 'VALUE'];
+    const filters: CategoryFilter[] = ['ALL', 'VALUE_GARP', 'VCP', 'SMART_MONEY'];
     const idx = filters.indexOf(current);
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -431,8 +485,29 @@ function RadarContent() {
               }`}
             >
               <span>All Confluences</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                {counts.ALL}
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                {categoryMeta.ALL.badge}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              id="tab-radar-filter-value_garp"
+              aria-selected={activeFilter === 'VALUE_GARP'}
+              aria-controls="panel-radar-candidates"
+              tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
+              onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
+              onClick={() => setActiveFilter('VALUE_GARP')}
+              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                activeFilter === 'VALUE_GARP'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+              }`}
+            >
+              <span>💎 Value / GARP</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                {categoryMeta.VALUE_GARP.badge}
               </span>
             </button>
 
@@ -452,8 +527,12 @@ function RadarContent() {
               }`}
             >
               <span>⚡ Minervini VCP</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                {counts.VCP}
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                  ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                  : 'bg-slate-800 text-slate-300'
+              }`}>
+                {categoryMeta.VCP.badge}
               </span>
             </button>
 
@@ -473,29 +552,12 @@ function RadarContent() {
               }`}
             >
               <span>🐋 Smart Money</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                {counts.SMART_MONEY}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              id="tab-radar-filter-value"
-              aria-selected={activeFilter === 'VALUE'}
-              aria-controls="panel-radar-candidates"
-              tabIndex={activeFilter === 'VALUE' ? 0 : -1}
-              onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE')}
-              onClick={() => setActiveFilter('VALUE')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeFilter === 'VALUE'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-              }`}
-            >
-              <span>💎 Value / GARP</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                {counts.VALUE}
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                  ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                  : 'bg-slate-800 text-slate-300'
+              }`}>
+                {categoryMeta.SMART_MONEY.badge}
               </span>
             </button>
           </div>
@@ -616,13 +678,21 @@ function RadarContent() {
                           <p className="text-sm font-bold text-white">
                             {searchQuery
                               ? `No assets match "${searchQuery}" in current confluence scan`
-                              : `No candidates currently in "${activeFilter}"`}
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                              ? "Minervini VCP Screener: Universe Pipeline Pending"
+                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                              ? "Smart Money Flow Screener: Universe Pipeline Pending"
+                              : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
                           <p className="text-xs text-slate-400 font-sans leading-relaxed">
                             {searchQuery
                               ? (isTickerQuery
                                   ? `Asset "${cleanQ}" is not in today's top 24 pre-scanned confluence batch. You can scan it live across the exchange tape or review its tactical setup.`
                                   : `No confluence candidates match this search. Try searching by symbol (e.g. NVDA, CPRX, ASML, TSLA) or reset the filter.`)
+                              : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                              ? "Single-asset volatility contraction geometry is active on the Analysis (/) and Setups (/setups) hubs. Batch multi-timeframe universe scanning across all 60 stocks is currently pending deployment."
+                              : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                              ? "Single-asset SEC Form 4 insider transactions and Congressional STOCK Act disclosures are active on /smart-money. Batch universe institutional accumulation scanning is currently pending deployment."
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>

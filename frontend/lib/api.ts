@@ -557,10 +557,24 @@ export interface AnalyticsResponse {
   };
 }
 
+export type CanonicalRadarCategory = "VALUE_GARP" | "VCP" | "SMART_MONEY";
+export type RadarCapabilityStatus = "AVAILABLE" | "PIPELINE_PENDING" | "NOT_IMPLEMENTED" | "ERROR";
+
+export interface RadarCapabilityDetail {
+  status: RadarCapabilityStatus;
+  universeScreening: RadarCapabilityStatus;
+  singleAssetAnalysis: RadarCapabilityStatus;
+  rationale?: string;
+}
+
+export type RadarCapabilities = Record<CanonicalRadarCategory, RadarCapabilityDetail>;
+
 export interface GemCandidate {
   ticker: string;
   composite_score: number;
-  expert_model: string;
+  expert_model: string | null;
+  categories: CanonicalRadarCategory[];
+  categoryEvidence: Partial<Record<CanonicalRadarCategory, "CRITERIA_MATCHED" | "CRITERIA_UNMET" | "UNASSESSED">>;
   peg_ratio: number;
   roic_pct?: number;
   gross_margin_pct?: number;
@@ -576,6 +590,7 @@ export interface GemCandidate {
 export interface ScreenerResponse {
   total_candidates: number;
   gems_found: number;
+  capabilities?: RadarCapabilities;
   results: GemCandidate[];
 }
 
@@ -1163,10 +1178,15 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
       const data = await res.json();
       const rawCandidates = data.candidates || data.results || [];
       if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
+        const capabilities: RadarCapabilities | undefined = data.capabilities;
         const candidates: GemCandidate[] = rawCandidates.map((r: any) => ({
-          ticker: r.ticker || r.companyName || "UNKNOWN",
+          ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
           composite_score: Math.round(r.confluenceScore || r.gemScore || 0),
-          expert_model: r.expertArchetype || "Minervini Stage 2 VCP",
+          expert_model: r.expertArchetype || null,
+          categories: Array.isArray(r.categories)
+            ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+            : [],
+          categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
           peg_ratio: r.peg_ratio,
           roic_pct: r.roic_pct,
           gross_margin_pct: r.gross_margin_pct,
@@ -1181,6 +1201,7 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
         return {
           total_candidates: candidates.length,
           gems_found: candidates.length,
+          capabilities,
           results: candidates,
         };
       }

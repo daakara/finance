@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
@@ -43,6 +43,78 @@ LONG_TERM_CANDIDATES = [
 ]
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
+
+# ── Canonical Radar Discovery Taxonomy ──────────────────────────────────────
+# Exactly three canonical categories governed across backend transport, API contracts,
+# and UI presentation (no transport aliases such as "VALUE").
+CANONICAL_RADAR_CATEGORIES = ["VALUE_GARP", "VCP", "SMART_MONEY"]
+
+# Root-level capability contract distinguishing universe screening from single-asset analysis
+RADAR_CAPABILITY_CONTRACT = {
+    "VALUE_GARP": {
+        "status": "AVAILABLE",
+        "universeScreening": "AVAILABLE",
+        "singleAssetAnalysis": "AVAILABLE",
+        "rationale": "Authentic multi-factor fundamental screening active across known candidate universe.",
+    },
+    "VCP": {
+        "status": "PIPELINE_PENDING",
+        "universeScreening": "PIPELINE_PENDING",
+        "singleAssetAnalysis": "AVAILABLE",
+        "rationale": "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
+    },
+    "SMART_MONEY": {
+        "status": "PIPELINE_PENDING",
+        "universeScreening": "PIPELINE_PENDING",
+        "singleAssetAnalysis": "AVAILABLE",
+        "rationale": "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
+    },
+}
+
+# Whitelist of authentic fundamental models that establish VALUE_GARP membership
+VALUE_GARP_MODELS = {
+    "Peter Lynch GARP Compounder",
+    "Greenblatt Magic Formula",
+    "Deep Value & Capital Return (Decelerating Comp Watch)",
+    "Deep Value & Brand Mean-Reversion",
+}
+
+
+def derive_canonical_radar_categories(
+    expert_model: Optional[str],
+    peg_ratio: Optional[float],
+    roic_pct: Optional[float],
+    gross_margin_pct: Optional[float],
+    symbol: str,
+) -> List[str]:
+    """
+    Authoritative deterministic classifier: analytical evidence -> explicit category.
+    Strictly immune to arbitrary substring heuristics (e.g. 'Smart Growth' or 'Flow Traders').
+    """
+    cats: List[str] = []
+
+    # VALUE_GARP: Requires explicit known fundamental model membership or verified metrics
+    if expert_model in VALUE_GARP_MODELS:
+        cats.append("VALUE_GARP")
+    elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None and roic_pct >= 15.0:
+        cats.append("VALUE_GARP")
+
+    # VCP & SMART_MONEY: Universe screening pipelines are currently PIPELINE_PENDING.
+    # No candidate-level category membership is manufactured or inferred.
+
+    return cats
+
+
+def classify_candidate_category_evidence(categories: List[str]) -> Dict[str, str]:
+    """
+    Produces candidate-level evidence state for performed evaluations only.
+    Does NOT manufacture evidence for unperformed universe evaluations.
+    """
+    evidence: Dict[str, str] = {}
+    for cat in categories:
+        if cat in CANONICAL_RADAR_CATEGORIES:
+            evidence[cat] = "CRITERIA_MATCHED"
+    return evidence
 
 
 class ScreenerRequest(BaseModel):
@@ -278,12 +350,27 @@ def run_screener_get(
             else:
                 short_float_val = "N/A"
 
+        # Derive authentic, machine-readable category taxonomy
+        model_name = r.get("expert_model")
+        raw_peg = float(r.get("peg_ratio")) if r.get("peg_ratio") is not None else None
+        cand_categories = derive_canonical_radar_categories(
+            expert_model=model_name,
+            peg_ratio=raw_peg,
+            roic_pct=roic_val,
+            gross_margin_pct=margin_val,
+            symbol=sym,
+        )
+        cand_evidence = classify_candidate_category_evidence(cand_categories)
+
         mapped_candidates.append({
+            "ticker": sym,
             "symbol": sym,
             "companyName": r.get("company_name", sym),
             "currentPrice": current_price,
             "gemScore": int(r.get("composite_score")) if r.get("composite_score") is not None else (0 if execution_status == "UNVERIFIED_ASSET" else None),
-            "expertArchetype": r.get("expert_model") or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else ("High-Beta Momentum Leader" if is_day_trader else "Peter Lynch GARP Compounder")),
+            "expertArchetype": model_name or ("Unverified Asset" if execution_status == "UNVERIFIED_ASSET" else None),
+            "categories": cand_categories,
+            "categoryEvidence": cand_evidence,
             "roic": f"{roic_val}%" if roic_val is not None else "N/A",
             "pegRatio": str(r.get("peg_ratio")) if r.get("peg_ratio") is not None else ("0.0" if execution_status == "UNVERIFIED_ASSET" else "N/A"),
             "grossMargin": f"{margin_val}%" if margin_val is not None else "N/A",
@@ -335,11 +422,13 @@ def run_screener_get(
     elif filter_type == "squeeze":
         filtered = [c for c in mapped_candidates if c["shortFloat"] != "N/A" and float(c["shortFloat"].replace("%", "")) >= 6.0]
     elif filter_type == "lynch":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and ((0 < float(c["pegRatio"]) <= 1.05) or "Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and ((0 < float(c["pegRatio"]) <= 1.05) or (c["expertArchetype"] and ("Lynch" in c["expertArchetype"] or "GARP" in c["expertArchetype"])))]
     elif filter_type == "greenblatt":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["roic"].replace("%", "")) >= 28.0 or "Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"])]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["roic"].replace("%", "")) >= 28.0 or (c["expertArchetype"] and ("Greenblatt" in c["expertArchetype"] or "Magic" in c["expertArchetype"])))]
     elif filter_type == "rule_breakers":
-        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["grossMargin"].replace("%", "")) >= 65.0 or "Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"])]
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["grossMargin"].replace("%", "")) >= 65.0 or (c["expertArchetype"] and ("Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"])))]
+    elif filter_type == "value_garp":
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "VALUE_GARP" in c["categories"]]
     else:
         filtered = mapped_candidates
 
@@ -348,6 +437,7 @@ def run_screener_get(
         "gemsFound": len(filtered),
         "activeFilter": filter_type,
         "userRole": user_role,
+        "capabilities": RADAR_CAPABILITY_CONTRACT,
         "candidates": filtered,
         "results": results,
     }
