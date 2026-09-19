@@ -46,38 +46,20 @@ class ExperimentLedger:
     # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
     DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
     ENGINE_SHA = DECISION_ENGINE_SHA  # Backward-compatibility alias
-    OBSERVATION_GOVERNANCE_SHA: str = "9bc1854c729974ba03548549091c4735d1bf0414"
+    OBSERVATION_GOVERNANCE_ARTIFACT_SHA = "1725fd877d56da01e5361db2e5d521d2316782ab"
+    OBSERVATION_GOVERNANCE_SHA: str = OBSERVATION_GOVERNANCE_ARTIFACT_SHA
+    OBSERVATION_GOVERNANCE_VERSION: str = "1.0.0"
 
     @classmethod
     def get_observation_governance_sha(cls) -> str:
-        """Dynamically resolves the observation governance Git SHA without self-reference mutation."""
+        """Resolves the pinned observation governance artifact SHA without git HEAD instability."""
         env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
         if env_sha:
             return env_sha.strip()
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        manifest_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
-        if os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
-                    meta = json.load(f)
-                    if meta.get("observationGovernanceSha"):
-                        return meta["observationGovernanceSha"].strip()
-            except Exception:
-                pass
-        try:
-            import subprocess
-            res = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                cwd=repo_root,
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            if res.returncode == 0 and res.stdout.strip():
-                return res.stdout.strip()
-        except Exception:
-            pass
-        return cls.OBSERVATION_GOVERNANCE_SHA or "UNCOMMITTED_PRE_RELEASE"
+        manifest = cls.get_epoch1_manifest()
+        if manifest and manifest.get("observationGovernanceSha"):
+            return manifest["observationGovernanceSha"].strip()
+        return cls.OBSERVATION_GOVERNANCE_ARTIFACT_SHA
 
     CONFIG_HASH = "6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a"
     SCHEMA_VERSION = "1.1.0"
@@ -135,6 +117,59 @@ class ExperimentLedger:
             "provenanceCommit": manifest.get("provenanceCommit"),
             "frozenStrategyVersion": manifest.get("frozenStrategyVersion"),
             "engines": engine_results
+        }
+
+    @classmethod
+    def get_epoch1_manifest(cls) -> Optional[Dict[str, Any]]:
+        """Loads the Epoch 1 observation governance manifest if available."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return None
+        return None
+
+    @classmethod
+    def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
+        """Verifies repository executable observation governance against EPOCH_1_MANIFEST.json."""
+        manifest = cls.get_epoch1_manifest()
+        if not manifest:
+            return {"status": "MANIFEST_MISSING", "valid": False}
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        file_results = {}
+        all_valid = True
+        combined = hashlib.sha256()
+        for rel_path, meta in manifest.get("executableGovernanceFiles", {}).items():
+            full_path = os.path.join(repo_root, rel_path)
+            if not os.path.exists(full_path):
+                file_results[rel_path] = {"valid": False, "error": "FILE_MISSING"}
+                all_valid = False
+                continue
+            with open(full_path, "rb") as fp:
+                content = fp.read().replace(b"\r\n", b"\n")
+                h = hashlib.sha256(content).hexdigest()
+            is_match = (h == meta["sha256"])
+            file_results[rel_path] = {"valid": is_match, "sha256": h, "expectedSha256": meta["sha256"]}
+            combined.update(rel_path.encode("utf-8") + b":" + h.encode("utf-8") + b"\n")
+            if not is_match:
+                all_valid = False
+        computed_manifest_hash = combined.hexdigest()
+        manifest_hash_match = (computed_manifest_hash == manifest.get("observationGovernanceManifestHash"))
+        if not manifest_hash_match:
+            all_valid = False
+        return {
+            "status": "VERIFIED" if all_valid else "CORRUPTED",
+            "valid": all_valid,
+            "manifestVersion": manifest.get("manifestVersion"),
+            "observationGovernanceVersion": manifest.get("observationGovernanceVersion"),
+            "observationGovernanceSha": manifest.get("observationGovernanceSha"),
+            "observationGovernanceArtifactSha": manifest.get("observationGovernanceArtifactSha"),
+            "observationGovernanceManifestHash": manifest.get("observationGovernanceManifestHash"),
+            "computedManifestHash": computed_manifest_hash,
+            "files": file_results,
         }
 
     @classmethod

@@ -125,10 +125,16 @@ def test_stage2_production_deployment_identity():
     """Stage 2: Verify production deployment baseline identities and engine freeze."""
     assert ExperimentLedger.DECISION_ENGINE_SHA == "7ad44595826c147cc77f93cd676af520764c7442"
     obs_sha = ExperimentLedger.get_observation_governance_sha()
-    assert obs_sha.startswith("9bc1854") or obs_sha.startswith("b586ffe") or len(obs_sha) == 40
+    assert obs_sha == "1725fd877d56da01e5361db2e5d521d2316782ab"
     manifest_audit = ExperimentLedger.verify_frozen_engine_manifest()
     assert manifest_audit["status"] == "VERIFIED"
     assert manifest_audit["valid"] is True
+    
+    # Verify Epoch 1 observation governance manifest
+    epoch1_audit = ExperimentLedger.verify_observation_governance_manifest()
+    assert epoch1_audit["status"] == "VERIFIED"
+    assert epoch1_audit["valid"] is True
+    assert epoch1_audit["observationGovernanceSha"] == "1725fd877d56da01e5361db2e5d521d2316782ab"
 
 
 def test_stage3_passive_capture_hook_fail_closed_and_zero_side_effects():
@@ -199,7 +205,7 @@ def test_stage7_and_stage8_dual_sha_verification():
 
         record = PassiveCaptureHook.record_natural_recommendation(**payload)
         assert record["decisionEngineSha"] == "7ad44595826c147cc77f93cd676af520764c7442"
-        assert record["observationGovernanceSha"].startswith("9bc1854") or record["observationGovernanceSha"].startswith("b586ffe") or len(record["observationGovernanceSha"]) == 40
+        assert record["observationGovernanceSha"] == "1725fd877d56da01e5361db2e5d521d2316782ab"
         assert record["engineVersion"] == "7ad44595826c147cc77f93cd676af520764c7442"
     finally:
         if os.path.exists(tmp_path):
@@ -480,3 +486,15 @@ def test_forensic_archive_of_removed_test_records():
     # Cryptographic integrity check
     computed_sha = hashlib.sha256(json.dumps(archive["records"], sort_keys=True).encode("utf-8")).hexdigest()
     assert computed_sha == archive["recordsSha256"]
+
+
+def test_observation_governance_identity_immune_to_git_head_fluctuation():
+    """Verify that observation governance identity is pinned to the executable contract, not arbitrary git HEAD."""
+    # Regardless of what git HEAD returns, get_observation_governance_sha must remain pinned
+    pinned_sha = "1725fd877d56da01e5361db2e5d521d2316782ab"
+    with patch("subprocess.run") as mock_subp:
+        mock_subp.return_value.returncode = 0
+        mock_subp.return_value.stdout = "arbitrary_commit_sha_from_doc_edit_or_chore"
+        assert ExperimentLedger.get_observation_governance_sha() == pinned_sha
+        assert mock_subp.called is False  # Must not invoke git rev-parse HEAD when manifest exists
+
