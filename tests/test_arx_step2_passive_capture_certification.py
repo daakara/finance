@@ -20,6 +20,7 @@ Stage 14: Activation gate invariant: temporal passing alone != active; activatio
 
 import os
 import json
+import hashlib
 import tempfile
 import pytest
 from datetime import datetime, timezone
@@ -459,3 +460,23 @@ def test_quarantined_certification_record_excluded_from_denominator():
     # Verify PROSPECTIVE_CLEAN_NATURAL_DENOMINATOR is strictly 0
     clean_count = ExperimentLedger.get_epoch1_clean_prospective_count()
     assert clean_count == 0, f"PROSPECTIVE_CLEAN_NATURAL_DENOMINATOR must be 0, got {clean_count}"
+
+
+def test_forensic_archive_of_removed_test_records():
+    """Verify that the 21 test-polluted records removed from primary ledger are forensically archived."""
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    archive_path = os.path.join(repo_root, "analyst_dashboard", "data", "test_pollution_forensic_archive.json")
+    assert os.path.exists(archive_path), "Forensic archive file must exist"
+    
+    with open(archive_path, "r", encoding="utf-8") as f:
+        archive = json.load(f)
+    
+    assert archive["recordsRemovedCount"] == 21
+    assert len(archive["records"]) == 21
+    assert len(archive["removedRecordIds"]) == 21
+    assert archive["primaryProspectiveDenominatorImpact"] == "NONE"
+    assert archive["removalReason"] == "AUTOMATED_TEST_LEDGER_CONTAMINATION"
+    
+    # Cryptographic integrity check
+    computed_sha = hashlib.sha256(json.dumps(archive["records"], sort_keys=True).encode("utf-8")).hexdigest()
+    assert computed_sha == archive["recordsSha256"]
