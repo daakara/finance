@@ -3,11 +3,13 @@
   "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_1",
   "epochStartUtc": "2026-09-19T00:00:00Z",
   "observationGovernanceVersion": "1.0.0",
-  "observationGovernanceArtifactSha": "1725fd877d56da01e5361db2e5d521d2316782ab",
-  "observationGovernanceSha": "1725fd877d56da01e5361db2e5d521d2316782ab",
-  "observationGovernanceSourceCommit": "1725fd877d56da01e5361db2e5d521d2316782ab",
-  "decisionEngineSha": "7ad44595826c147cc77f93cd676af520764c7442",
+  "observationGovernanceIdentity": "MANIFEST_HASH",
   "observationGovernanceManifestHash": "51a90a19d160fd84d6d516b8f5c07ea63bd2f509201cfbddaf55b2204c8de63a",
+  "observationGovernanceArtifactIdentity": "51a90a19d160fd84d6d516b8f5c07ea63bd2f509201cfbddaf55b2204c8de63a",
+  "step2RuntimeImplementationCommit": "1725fd877d56da01e5361db2e5d521d2316782ab",
+  "observationGovernanceSourceCommit": "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73",
+  "observationGovernanceSha": "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73",
+  "decisionEngineSha": "7ad44595826c147cc77f93cd676af520764c7442",
   "executableGovernanceFiles": {
     "analyst_dashboard/governance/passive_capture.py": {
       "sha256": "7d34de79132dd1009d2e2e09086464ae5da3b0804ef6e7b81df53c1e246a0c93"

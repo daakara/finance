@@ -124,8 +124,6 @@ def test_stage1_temporal_gate_satisfied():
 def test_stage2_production_deployment_identity():
     """Stage 2: Verify production deployment baseline identities and engine freeze."""
     assert ExperimentLedger.DECISION_ENGINE_SHA == "7ad44595826c147cc77f93cd676af520764c7442"
-    obs_sha = ExperimentLedger.get_observation_governance_sha()
-    assert obs_sha == "1725fd877d56da01e5361db2e5d521d2316782ab"
     manifest_audit = ExperimentLedger.verify_frozen_engine_manifest()
     assert manifest_audit["status"] == "VERIFIED"
     assert manifest_audit["valid"] is True
@@ -134,7 +132,13 @@ def test_stage2_production_deployment_identity():
     epoch1_audit = ExperimentLedger.verify_observation_governance_manifest()
     assert epoch1_audit["status"] == "VERIFIED"
     assert epoch1_audit["valid"] is True
-    assert epoch1_audit["observationGovernanceSha"] == "1725fd877d56da01e5361db2e5d521d2316782ab"
+    assert epoch1_audit["observationGovernanceManifestHash"] == "51a90a19d160fd84d6d516b8f5c07ea63bd2f509201cfbddaf55b2204c8de63a"
+    assert epoch1_audit["observationGovernanceVersion"] == "1.0.0"
+    assert epoch1_audit["observationGovernanceSha"] == "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73"
+
+    # Pinned governance SHA resolves to finalized manifest implementation commit
+    obs_sha = ExperimentLedger.get_observation_governance_sha()
+    assert obs_sha == "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73"
 
 
 def test_stage3_passive_capture_hook_fail_closed_and_zero_side_effects():
@@ -205,7 +209,7 @@ def test_stage7_and_stage8_dual_sha_verification():
 
         record = PassiveCaptureHook.record_natural_recommendation(**payload)
         assert record["decisionEngineSha"] == "7ad44595826c147cc77f93cd676af520764c7442"
-        assert record["observationGovernanceSha"] == "1725fd877d56da01e5361db2e5d521d2316782ab"
+        assert record["observationGovernanceSha"] == "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73"
         assert record["engineVersion"] == "7ad44595826c147cc77f93cd676af520764c7442"
     finally:
         if os.path.exists(tmp_path):
@@ -458,6 +462,8 @@ def test_quarantined_certification_record_excluded_from_denominator():
     aapl = aapl_sigs[0]
     assert aapl["provenanceCohort"] == ProvenanceCohort.CERTIFICATION_VALIDATION
     assert "certification_generated" in aapl.get("quarantineReason", "")
+    assert aapl.get("observationGovernanceManifestHash") == "51a90a19d160fd84d6d516b8f5c07ea63bd2f509201cfbddaf55b2204c8de63a"
+    assert aapl.get("observationGovernanceSourceCommit") == "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73"
     assert aapl["forwardTracking"]["maxFavorableExcursionPct"] is None
     assert aapl["forwardTracking"]["maxAdverseExcursionPct"] is None
     assert aapl["forwardTracking"]["signalQuality"]["mfePct"] is None
@@ -491,7 +497,7 @@ def test_forensic_archive_of_removed_test_records():
 def test_observation_governance_identity_immune_to_git_head_fluctuation():
     """Verify that observation governance identity is pinned to the executable contract, not arbitrary git HEAD."""
     # Regardless of what git HEAD returns, get_observation_governance_sha must remain pinned
-    pinned_sha = "1725fd877d56da01e5361db2e5d521d2316782ab"
+    pinned_sha = "187f65b4c6e9447e1136b95ee387d3a0a3fe7a73"
     with patch("subprocess.run") as mock_subp:
         mock_subp.return_value.returncode = 0
         mock_subp.return_value.stdout = "arbitrary_commit_sha_from_doc_edit_or_chore"
