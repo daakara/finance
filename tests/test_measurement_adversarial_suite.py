@@ -331,7 +331,8 @@ def test_frozen_production_ledger_live_cohort_hashes_intact():
     """Verify that all 9 live signals in paper_trading_ledger.json maintain valid dual cryptographic hashes."""
     live_ledger = ExperimentLedger.load_ledger()
     signals = live_ledger.get("signals", [])
-    assert len(signals) == 9, "All 9 live cohort signals must be present"
+    assert len([s for s in signals if s.get("signalDate") == "2026-09-04"]) == 9, "All 9 original Phase 24 cohort signals must be present"
+    assert len(signals) >= 9, "All cohort signals must be present"
 
     for sig in signals:
         sym = sig.get("symbol")

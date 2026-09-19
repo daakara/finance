@@ -26,6 +26,7 @@ from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
+from analyst_dashboard.governance.passive_capture import PassiveCaptureHook
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -829,6 +830,29 @@ def get_asset_analytics(
             catalyst_data=catalyst_report,
             macro_data=macro_inputs,
         )
+
+        # Step 2: Passive Prospective Recommendation Capture (Zero execution mutation, Fail-closed)
+        try:
+            if optimal_execution_plan and (
+                optimal_execution_plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+                or (optimal_execution_plan.get("optimal_entry_min") and optimal_execution_plan.get("stop_loss"))
+            ):
+                PassiveCaptureHook.record_natural_recommendation(
+                    symbol=upper_sym,
+                    current_price=current_price,
+                    optimal_execution_plan=optimal_execution_plan,
+                    confluence_output=confluence_output,
+                    technicals=technicals,
+                    factor_scores=factor_scores,
+                    macro_inputs=macro_inputs,
+                    observed_at=observed_at,
+                    fetched_at=fetched_at,
+                    freshness_status=freshness_status,
+                    provider_source=provider_source,
+                    candles=candles,
+                )
+        except Exception as e:
+            logger.warning(f"Passive recommendation capture bypassed on error: {e}")
 
         return {
             "symbol": upper_sym,

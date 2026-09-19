@@ -1,0 +1,243 @@
+"""ARX Prospective Validation Epoch 1 — Passive Capture Hook.
+
+Provides immutable, fail-closed, zero-side-effect passive observation
+of natural production recommendations for prospective prediction validation.
+
+Invariants Enforced:
+1. ZERO EXECUTION MUTATION: No broker interaction, no order placement, no capital allocation.
+2. STRICT FAIL-CLOSED: Capture exceptions are logged; analytics responses are NEVER blocked or altered.
+3. DUAL-SHA IDENTITY:
+   - DECISION_ENGINE_SHA: 7ad44595826c147cc77f93cd676af520764c7442
+   - OBSERVATION_GOVERNANCE_SHA: b586ffe7e20466a077a5728e5e31c77ec5eb98f8
+4. COMPLETE CONTENT-ADDRESSED SNAPSHOTS:
+   - Market data payload & timestamp
+   - Fundamental data payload & filing timestamp
+   - Canonical normalized FRED macro payload & timestamp
+   - Model configuration hash
+5. TEMPORAL INTEGRITY (ANTI-LOOKAHEAD):
+   - Every source observation timestamp <= recommendation timestamp
+   - NO_SOURCE_INFORMATION_AVAILABLE_AFTER_RECOMMENDATION
+6. OUTCOME ISOLATION:
+   - Initial outcome state is PENDING / OPEN
+   - realizedOutcome = None, MFE/MAE = 0.0, sessionsObserved = 0
+"""
+
+import os
+import json
+import logging
+import hashlib
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
+
+from analyst_dashboard.governance.experiment_ledger import (
+    ExperimentLedger,
+    ProvenanceCohort,
+)
+
+logger = logging.getLogger("arx.governance.passive_capture")
+
+
+class PassiveCaptureHook:
+    """Passively captures natural production recommendations into the governance ledger."""
+
+    EPOCH_ID = ExperimentLedger.EPOCH_ID
+    EPOCH_START_UTC = ExperimentLedger.EPOCH_START_UTC
+    DECISION_ENGINE_SHA = ExperimentLedger.DECISION_ENGINE_SHA
+    CONFIG_HASH = ExperimentLedger.CONFIG_HASH
+
+    @classmethod
+    def get_observation_governance_sha(cls) -> str:
+        """Retrieves observation governance SHA from ledger."""
+        return ExperimentLedger.get_observation_governance_sha()
+
+    @classmethod
+    def is_temporal_gate_satisfied(cls) -> bool:
+        """Evaluates whether current UTC has crossed the Epoch 1 boundary."""
+        now_utc = datetime.now(timezone.utc).isoformat()
+        return now_utc >= cls.EPOCH_START_UTC
+
+    @classmethod
+    def compute_sha256(cls, payload: Any) -> str:
+        """Deterministic SHA-256 for snapshot payloads."""
+        if payload is None:
+            return ""
+        if isinstance(payload, str) and len(payload) == 64 and all(c in "0123456789abcdefABCDEF" for c in payload):
+            return payload.lower()
+        try:
+            encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+            return hashlib.sha256(encoded).hexdigest()
+        except Exception:
+            return ""
+
+    @classmethod
+    def record_natural_recommendation(
+        cls,
+        symbol: str,
+        current_price: float,
+        optimal_execution_plan: Dict[str, Any],
+        confluence_output: Dict[str, Any],
+        technicals: Dict[str, Any],
+        factor_scores: Dict[str, Any],
+        macro_inputs: Optional[Dict[str, Any]],
+        observed_at: Optional[str] = None,
+        fetched_at: Optional[str] = None,
+        freshness_status: str = "END_OF_DAY",
+        provider_source: str = "YAHOO_AUTHENTIC",
+        candles: Optional[list] = None,
+        ledger_path: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Passively captures a single natural production recommendation.
+
+        Fail-closed: Returns the captured record on success, or None on failure/quarantine.
+        Never raises exceptions to callers.
+        Zero side-effects on capital, orders, or broker connections.
+        """
+        try:
+            now_dt = datetime.now(timezone.utc)
+
+            def _to_iso(ts_val: Any) -> Optional[str]:
+                if ts_val is None:
+                    return None
+                if isinstance(ts_val, (int, float)):
+                    sec = ts_val / 1000.0 if ts_val > 1e11 else float(ts_val)
+                    return datetime.fromtimestamp(sec, tz=timezone.utc).isoformat()
+                s = str(ts_val).strip()
+                return s if s else None
+
+            rec_iso = _to_iso(fetched_at) or now_dt.isoformat()
+            market_iso = _to_iso(observed_at) or rec_iso
+            sig_date = rec_iso[:10] if len(rec_iso) >= 10 else now_dt.strftime("%Y-%m-%d")
+
+            upper_sym = symbol.upper().strip()
+            entry_price = float(
+                optimal_execution_plan.get("optimal_entry_min")
+                or current_price
+                or 0.0
+            )
+
+            # 1. Content-addressed Market Snapshot
+            candle_list = candles or []
+            candle_summary = [
+                {"d": c.get("date") or c.get("Date"), "c": c.get("close") or c.get("Close"), "v": c.get("volume") or c.get("Volume")}
+                for c in candle_list[-50:]
+            ] if candle_list else []
+            market_snapshot_hash = cls.compute_sha256(candle_summary) if candle_summary else cls.compute_sha256({"price": current_price, "obs": market_iso})
+
+            # 2. Content-addressed Fundamental Snapshot
+            fundamental_as_of = factor_scores.get("as_of_date") or factor_scores.get("asOfDate") or ""
+            fundamental_filing_ts = _to_iso(factor_scores.get("filing_timestamp") or factor_scores.get("filingTimestamp")) or ""
+            fundamental_snapshot_hash = cls.compute_sha256(factor_scores) if factor_scores else ""
+
+            # 3. Content-addressed Macro Snapshot
+            macro_data = macro_inputs or {}
+            macro_obs_at = _to_iso(
+                macro_data.get("macro_observation_available_at")
+                or macro_data.get("yield_observation_timestamp")
+                or macro_data.get("macroObservationAvailableAt")
+            ) or ""
+            macro_snapshot_hash = macro_data.get("raw_payload_hash") or (cls.compute_sha256(macro_data) if macro_data else "")
+            yc_10y2y = macro_data.get("yield_curve_10y2y")
+            cr_spread = macro_data.get("high_yield_credit_spread") if macro_data.get("high_yield_credit_spread") is not None else macro_data.get("credit_spread")
+
+            # 4. Anti-Lookahead Temporal Integrity Verification
+            # Invariant: source_available_at <= recommended_at for every domain
+            rec_dt = ExperimentLedger._parse_utc_timestamp(rec_iso)
+            if rec_dt:
+                if market_iso:
+                    obs_dt = ExperimentLedger._parse_utc_timestamp(market_iso)
+                    if obs_dt and obs_dt > rec_dt:
+                        logger.warning(f"Anti-lookahead violation: market observedAt {market_iso} > rec {rec_iso}")
+                        return None
+                if macro_obs_at:
+                    macro_dt = ExperimentLedger._parse_utc_timestamp(macro_obs_at)
+                    if macro_dt and macro_dt > rec_dt:
+                        logger.warning(f"Anti-lookahead violation: macro observedAt {macro_obs_at} > rec {rec_iso}")
+                        return None
+                if fundamental_filing_ts:
+                    filing_dt = ExperimentLedger._parse_utc_timestamp(fundamental_filing_ts)
+                    if filing_dt and filing_dt > rec_dt:
+                        logger.warning(f"Anti-lookahead violation: fundamental filing {fundamental_filing_ts} > rec {rec_iso}")
+                        return None
+
+            # 5. Assemble Inputs Metadata
+            inputs_meta = {
+                "market_regime": confluence_output.get("market_regime", "BULL"),
+                "sector": confluence_output.get("sector", "EQUITY"),
+                "asset_class": "US_EQUITY",
+                "marketDataSnapshotTimestamp": market_iso,
+                "marketSnapshotObservedAt": market_iso,
+                "marketSnapshotHash": market_snapshot_hash,
+                "candleCount": len(candle_list),
+                "candle_count": len(candle_list),
+                "sma50": technicals.get("sma_50"),
+                "ema20": technicals.get("ema_20"),
+                "rsi14": technicals.get("rsi_14"),
+                "atr14": technicals.get("atr_14"),
+                "fundamentalAsOfDate": str(fundamental_as_of),
+                "fundamentalFilingTimestamp": str(fundamental_filing_ts),
+                "fundamentalSnapshotHash": fundamental_snapshot_hash,
+                "macroObservationDate": str(macro_obs_at),
+                "macroObservationAvailableAt": str(macro_obs_at),
+                "macroSnapshotHash": macro_snapshot_hash,
+                "yieldCurve10y2y": yc_10y2y,
+                "yield_curve_10y2y": yc_10y2y,
+                "creditSpread": cr_spread,
+                "credit_spread": cr_spread,
+                "dataProvider": provider_source,
+                "quoteFreshness": freshness_status,
+                "evidenceCompleteness": "COMPLETE" if confluence_output.get("overall_eligibility") == "FULL" else "PARTIAL",
+                "modelConfigHash": cls.CONFIG_HASH,
+                "pointInTimePrecision": "TIMESTAMP",
+                "rawMarketPayload": candle_summary if candle_summary else None,
+                "rawFundamentalPayload": factor_scores if factor_scores else None,
+                "rawMacroPayload": macro_data if macro_data else None,
+                "recommended_at": rec_iso,
+                "signalTimestamp": rec_iso,
+            }
+
+            component_scores = {
+                "qualityScore": factor_scores.get("quality_score"),
+                "growthScore": factor_scores.get("growth_score"),
+                "valuationScore": factor_scores.get("valuation_score"),
+                "technicalScore": technicals.get("technical_score") or (technicals.get("score") if isinstance(technicals.get("score"), (int, float)) else None),
+                "smartMoneyScore": None,
+                "macroScore": confluence_output.get("macro_score"),
+                "catalystScore": None,
+            }
+
+            # 6. Immutable Registration into Governance Ledger
+            conf_val = confluence_output.get("confluenceScore") if confluence_output.get("confluenceScore") is not None else confluence_output.get("overall_score", 0.0)
+            record = ExperimentLedger.register_signal(
+                symbol=upper_sym,
+                entry_price=entry_price,
+                opt_exec=optimal_execution_plan,
+                confluence_score=float(conf_val or 0.0),
+                inputs_meta=inputs_meta,
+                engine_commit=cls.DECISION_ENGINE_SHA,
+                engine_tag="v2.4.0-phase24-freeze",
+                ledger_path=ledger_path,
+                signal_date=sig_date,
+                component_scores=component_scores,
+                epoch_id=cls.EPOCH_ID,
+                provenance_cohort=ProvenanceCohort.PROSPECTIVE_CLEAN,
+            )
+
+            # Ensure dual-SHA identity is explicitly annotated on the record
+            record["decisionEngineSha"] = cls.DECISION_ENGINE_SHA
+            record["observationGovernanceSha"] = cls.get_observation_governance_sha()
+            record["recommended_at"] = rec_iso
+            record["signalTimestamp"] = rec_iso
+
+            # 7. Cohort Classification & Integrity Validation
+            cohort = ExperimentLedger.classify_provenance_cohort(record)
+            record["provenanceCohort"] = cohort
+
+            logger.info(
+                f"[PASSIVE_CAPTURE] Captured natural recommendation {record.get('signalId')} "
+                f"symbol={upper_sym} cohort={cohort} epoch={cls.EPOCH_ID}"
+            )
+            return record
+
+        except Exception as e:
+            logger.error(f"[PASSIVE_CAPTURE] Fail-closed: capture error for symbol {symbol}: {e}", exc_info=True)
+            return None
