@@ -161,10 +161,11 @@ def test_adversarial_anti_lookahead_temporal_leakage(tmp_path):
     ledger = ExperimentLedger.load_ledger(ledger_path)
     ft = ledger["signals"][0]["forwardTracking"]
 
-    # Zero forward sessions observed
+    # Zero forward sessions observed -> excursions must be None
     assert ft["sessionsObserved"] == 0
     assert ft["currentPrice"] == 100.0
-    assert ft["maxFavorableExcursionPct"] == 0.0
+    assert ft["maxFavorableExcursionPct"] is None
+    assert ft["maxAdverseExcursionPct"] is None
 
 
 def test_friction_sensitivity_grid_and_breakeven(tmp_path):

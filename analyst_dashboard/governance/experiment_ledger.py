@@ -26,6 +26,7 @@ class ProvenanceCohort:
     HISTORICAL_RECOMPUTED = "HISTORICAL_RECOMPUTED"
     BACKTEST_SIMULATION = "BACKTEST_SIMULATION"
     DEMO_SYNTHETIC = "DEMO_SYNTHETIC"
+    CERTIFICATION_VALIDATION = "CERTIFICATION_VALIDATION"
     CONTAMINATED = "CONTAMINATED"
     UNKNOWN = "UNKNOWN"
 
@@ -45,7 +46,7 @@ class ExperimentLedger:
     # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
     DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
     ENGINE_SHA = DECISION_ENGINE_SHA  # Backward-compatibility alias
-    OBSERVATION_GOVERNANCE_SHA: Optional[str] = None
+    OBSERVATION_GOVERNANCE_SHA: str = "9bc1854c729974ba03548549091c4735d1bf0414"
 
     @classmethod
     def get_observation_governance_sha(cls) -> str:
@@ -76,7 +77,7 @@ class ExperimentLedger:
                 return res.stdout.strip()
         except Exception:
             pass
-        return "UNCOMMITTED_PRE_RELEASE"
+        return cls.OBSERVATION_GOVERNANCE_SHA or "UNCOMMITTED_PRE_RELEASE"
 
     CONFIG_HASH = "6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a"
     SCHEMA_VERSION = "1.1.0"
@@ -194,6 +195,7 @@ class ExperimentLedger:
             ProvenanceCohort.HISTORICAL_RECOMPUTED,
             ProvenanceCohort.BACKTEST_SIMULATION,
             ProvenanceCohort.DEMO_SYNTHETIC,
+            ProvenanceCohort.CERTIFICATION_VALIDATION,
             ProvenanceCohort.CONTAMINATED,
             ProvenanceCohort.UNKNOWN,
             ProvenanceCohort.HISTORICAL_CONTAMINATED,
@@ -202,11 +204,13 @@ class ExperimentLedger:
         ]:
             return explicit
 
-        # Invariant 3: Simulation and demo fixture detection
+        # Invariant 3: Simulation, demo fixture, or certification detection
         if sig.get("isSimulated") or sig.get("isBacktest"):
             return ProvenanceCohort.BACKTEST_SIMULATION
         if sig.get("isDemo") or sig.get("isSynthetic"):
             return ProvenanceCohort.DEMO_SYNTHETIC
+        if sig.get("isCertification") or sig.get("isValidation"):
+            return ProvenanceCohort.CERTIFICATION_VALIDATION
 
         # Invariant 4: Post-outcome mutation or contamination flag
         if sig.get("isContaminated") or sig.get("modifiedPostOutcome"):
@@ -316,6 +320,16 @@ class ExperimentLedger:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
+
+    @classmethod
+    def get_epoch1_clean_prospective_count(cls, ledger_path: Optional[str] = None) -> int:
+        """Returns the count of certified natural prospective records admitted to Epoch 1."""
+        ledger = cls.load_ledger(ledger_path)
+        return len([
+            s for s in ledger.get("signals", [])
+            if s.get("epochId") == cls.EPOCH_ID
+            and cls.classify_provenance_cohort(s) == ProvenanceCohort.PROSPECTIVE_CLEAN
+        ])
 
     @classmethod
     def compute_decision_snapshot_hash(cls, record: Dict[str, Any]) -> str:
@@ -569,8 +583,8 @@ class ExperimentLedger:
             "forwardTracking": {
                 "sessionsObserved": 0,
                 "currentPrice": float(entry_price),
-                "maxFavorableExcursionPct": 0.0,
-                "maxAdverseExcursionPct": 0.0,
+                "maxFavorableExcursionPct": None,
+                "maxAdverseExcursionPct": None,
                 "tp1Hit": False,
                 "tp1Session": None,
                 "stopHit": False,
@@ -598,8 +612,8 @@ class ExperimentLedger:
                     "rawReturn5d": None,
                     "rawReturn10d": None,
                     "rawReturn20d": None,
-                    "mfePct": 0.0,
-                    "maePct": 0.0,
+                    "mfePct": None,
+                    "maePct": None,
                 },
                 "tradeConstruction": {
                     "prematureStopOut": False,
@@ -980,8 +994,8 @@ class ExperimentLedger:
                 "rawReturn5d": None,
                 "rawReturn10d": None,
                 "rawReturn20d": None,
-                "mfePct": 0.0,
-                "maePct": 0.0,
+                "mfePct": None,
+                "maePct": None,
             })
             sq["mfePct"] = round(mfe, 2)
             sq["maePct"] = round(mae, 2)
@@ -1199,6 +1213,7 @@ class ExperimentLedger:
                 ProvenanceCohort.EXCLUDED,
                 ProvenanceCohort.BACKTEST_SIMULATION,
                 ProvenanceCohort.DEMO_SYNTHETIC,
+                ProvenanceCohort.CERTIFICATION_VALIDATION,
             ]:
                 excluded_signals.append(s)
             else:

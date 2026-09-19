@@ -124,7 +124,7 @@ def test_stage2_production_deployment_identity():
     """Stage 2: Verify production deployment baseline identities and engine freeze."""
     assert ExperimentLedger.DECISION_ENGINE_SHA == "7ad44595826c147cc77f93cd676af520764c7442"
     obs_sha = ExperimentLedger.get_observation_governance_sha()
-    assert obs_sha.startswith("b586ffe") or len(obs_sha) == 40
+    assert obs_sha.startswith("9bc1854") or obs_sha.startswith("b586ffe") or len(obs_sha) == 40
     manifest_audit = ExperimentLedger.verify_frozen_engine_manifest()
     assert manifest_audit["status"] == "VERIFIED"
     assert manifest_audit["valid"] is True
@@ -198,7 +198,7 @@ def test_stage7_and_stage8_dual_sha_verification():
 
         record = PassiveCaptureHook.record_natural_recommendation(**payload)
         assert record["decisionEngineSha"] == "7ad44595826c147cc77f93cd676af520764c7442"
-        assert record["observationGovernanceSha"].startswith("b586ffe") or len(record["observationGovernanceSha"]) == 40
+        assert record["observationGovernanceSha"].startswith("9bc1854") or record["observationGovernanceSha"].startswith("b586ffe") or len(record["observationGovernanceSha"]) == 40
         assert record["engineVersion"] == "7ad44595826c147cc77f93cd676af520764c7442"
     finally:
         if os.path.exists(tmp_path):
@@ -259,6 +259,21 @@ def test_stage10_anti_lookahead_temporal_integrity():
         assert rec is not None
         cohort = ExperimentLedger.classify_provenance_cohort(rec)
         assert cohort == ProvenanceCohort.PROSPECTIVE_CLEAN
+
+        # Explicit verification and audit logging of all 3 source domains:
+        # market_available_at <= rec, fundamental_available_at <= rec, macro_available_at <= rec
+        market_obs = rec["inputs"]["marketSnapshotObservedAt"]
+        fund_obs = rec["inputs"]["fundamentalFilingTimestamp"]
+        macro_obs = rec["inputs"]["macroObservationAvailableAt"]
+        rec_at = rec["recommended_at"]
+
+        print(f"\n[STAGE 10 AUDIT] Market PIT check: {market_obs} <= {rec_at} -> {market_obs <= rec_at}")
+        print(f"[STAGE 10 AUDIT] Fundamental PIT check: {fund_obs} <= {rec_at} -> {fund_obs <= rec_at}")
+        print(f"[STAGE 10 AUDIT] Macro PIT check: {macro_obs} <= {rec_at} -> {macro_obs <= rec_at}")
+
+        assert market_obs <= rec_at, f"Market snapshot {market_obs} must precede recommendation {rec_at}"
+        assert fund_obs <= rec_at, f"Fundamental filing {fund_obs} must precede recommendation {rec_at}"
+        assert macro_obs <= rec_at, f"Macro observation {macro_obs} must precede recommendation {rec_at}"
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -283,9 +298,19 @@ def test_stage10_anti_lookahead_temporal_integrity():
     res_m = PassiveCaptureHook.record_natural_recommendation(**adversarial_macro)
     assert res_m is None, "Future macro observation must fail closed and be rejected"
 
+    # Adversarial: future fundamental filing timestamp (fund_time > recommended_at) must fail closed
+    adversarial_fund = _build_fixture_payload(
+        symbol="META",
+        rec_time=rec_time,
+        fund_time="2026-09-20T00:00:00Z",  # In the future!
+    )
+    adversarial_fund["ledger_path"] = tmp_path
+    res_f = PassiveCaptureHook.record_natural_recommendation(**adversarial_fund)
+    assert res_f is None, "Future fundamental filing observation must fail closed and be rejected"
+
 
 def test_stage11_initial_outcome_state_null_and_pending():
-    """Stage 11: Verify initial outcome state is PENDING/OPEN with zero post-outcome leakage."""
+    """Stage 11: Verify initial outcome state is PENDING/OPEN with zero post-outcome leakage and null unobserved excursions."""
     with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".json") as tmp:
         tmp_path = tmp.name
 
@@ -301,10 +326,10 @@ def test_stage11_initial_outcome_state_null_and_pending():
         assert fw["sessionsObserved"] == 0
         assert fw["resolvedOutcome"] is None
         assert fw["resolutionDate"] is None
-        assert fw["maxFavorableExcursionPct"] == 0.0
-        assert fw["maxAdverseExcursionPct"] == 0.0
-        assert fw["signalQuality"]["mfePct"] == 0.0
-        assert fw["signalQuality"]["maePct"] == 0.0
+        assert fw["maxFavorableExcursionPct"] is None
+        assert fw["maxAdverseExcursionPct"] is None
+        assert fw["signalQuality"]["mfePct"] is None
+        assert fw["signalQuality"]["maePct"] is None
         assert fw["tp1Hit"] is False
         assert fw["stopHit"] is False
         assert fw["return1d"] is None
@@ -416,3 +441,21 @@ def test_stage3_api_route_integration_passive_capture():
         assert resp2.status_code == 200
         data2 = resp2.json()
         assert data2["symbol"] == "AAPL"
+
+
+def test_quarantined_certification_record_excluded_from_denominator():
+    """Verify that AAPL_2026-09-19 is quarantined as CERTIFICATION_VALIDATION and denominator is 0."""
+    ledger = ExperimentLedger.load_ledger()
+    aapl_sigs = [s for s in ledger.get("signals", []) if s.get("signalId") == "AAPL_2026-09-19"]
+    assert len(aapl_sigs) == 1, "AAPL_2026-09-19 must be preserved in ledger"
+    aapl = aapl_sigs[0]
+    assert aapl["provenanceCohort"] == ProvenanceCohort.CERTIFICATION_VALIDATION
+    assert "certification_generated" in aapl.get("quarantineReason", "")
+    assert aapl["forwardTracking"]["maxFavorableExcursionPct"] is None
+    assert aapl["forwardTracking"]["maxAdverseExcursionPct"] is None
+    assert aapl["forwardTracking"]["signalQuality"]["mfePct"] is None
+    assert aapl["forwardTracking"]["signalQuality"]["maePct"] is None
+
+    # Verify PROSPECTIVE_CLEAN_NATURAL_DENOMINATOR is strictly 0
+    clean_count = ExperimentLedger.get_epoch1_clean_prospective_count()
+    assert clean_count == 0, f"PROSPECTIVE_CLEAN_NATURAL_DENOMINATOR must be 0, got {clean_count}"

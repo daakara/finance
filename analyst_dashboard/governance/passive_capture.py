@@ -8,7 +8,7 @@ Invariants Enforced:
 2. STRICT FAIL-CLOSED: Capture exceptions are logged; analytics responses are NEVER blocked or altered.
 3. DUAL-SHA IDENTITY:
    - DECISION_ENGINE_SHA: 7ad44595826c147cc77f93cd676af520764c7442
-   - OBSERVATION_GOVERNANCE_SHA: b586ffe7e20466a077a5728e5e31c77ec5eb98f8
+   - OBSERVATION_GOVERNANCE_SHA: 9bc1854c729974ba03548549091c4735d1bf0414
 4. COMPLETE CONTENT-ADDRESSED SNAPSHOTS:
    - Market data payload & timestamp
    - Fundamental data payload & filing timestamp
@@ -19,7 +19,7 @@ Invariants Enforced:
    - NO_SOURCE_INFORMATION_AVAILABLE_AFTER_RECOMMENDATION
 6. OUTCOME ISOLATION:
    - Initial outcome state is PENDING / OPEN
-   - realizedOutcome = None, MFE/MAE = 0.0, sessionsObserved = 0
+   - realizedOutcome = None, MFE/MAE = null (sessionsObserved = 0)
 """
 
 import os
@@ -93,6 +93,11 @@ class PassiveCaptureHook:
         Zero side-effects on capital, orders, or broker connections.
         """
         try:
+            # Safeguard: Never contaminate production ledger during automated test execution
+            if ledger_path is None and ("PYTEST_CURRENT_TEST" in os.environ or os.getenv("ARX_TEST_MODE") == "1"):
+                logger.debug("[PASSIVE_CAPTURE] Bypassing capture to production ledger during automated test execution.")
+                return None
+
             now_dt = datetime.now(timezone.utc)
 
             def _to_iso(ts_val: Any) -> Optional[str]:
