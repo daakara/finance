@@ -17,9 +17,10 @@ interface RadarAsset {
   ticker: string;
   name: string;
   price: number;
-  rsRating: number | null;
+  rvol?: string | null;
+  riskRewardRatio?: number | null;
   vcpStage: string;
-  volumeDryUpPct: number | null;
+  volumeDryUpPct?: number | null;
   confluenceScore: number;
   catalyst: string;
   categories: CanonicalRadarCategory[];
@@ -55,7 +56,7 @@ function RadarContent() {
   const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(initialQ);
-  const [sortBy, setSortBy] = useState<'SCORE' | 'RS' | 'PRICE'>('SCORE');
+  const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
   const [capabilities, setCapabilities] = useState<RadarCapabilities>(DEFAULT_RADAR_CAPABILITIES);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,16 +92,17 @@ function RadarContent() {
           else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
           else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
-          const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : null;
-          // Zero synthetic substitution: momentum_score is NOT an authentic IBD 1-99 RS rating
-          const rsVal = typeof gem.rs_rating === 'number' ? gem.rs_rating : null;
+          const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : (typeof gem.volumeDryUpPct === 'number' ? gem.volumeDryUpPct : null);
+          const rvolVal = typeof gem.rvol === 'string' && gem.rvol !== 'N/A' ? gem.rvol : null;
+          const rrVal = typeof gem.riskRewardRatio === 'number' ? gem.riskRewardRatio : null;
           const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Consolidation Base'));
 
           return {
             ticker: gem.ticker,
             name: gem.ticker,
             price: Number((gem.current_price || 0).toFixed(2)),
-            rsRating: rsVal,
+            rvol: rvolVal,
+            riskRewardRatio: rrVal,
             vcpStage: stageStr,
             volumeDryUpPct: dryUp,
             confluenceScore: Math.round(gem.composite_score || 0),
@@ -166,7 +168,11 @@ function RadarContent() {
       })
       .sort((a, b) => {
         if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
-        if (sortBy === 'RS') return (b.rsRating ?? 0) - (a.rsRating ?? 0);
+        if (sortBy === 'RVOL') {
+          const aRvol = a.rvol ? parseFloat(a.rvol.replace('x', '')) : 0;
+          const bRvol = b.rvol ? parseFloat(b.rvol.replace('x', '')) : 0;
+          return bRvol - aRvol;
+        }
         if (sortBy === 'PRICE') return b.price - a.price;
         return 0;
       });
@@ -222,15 +228,15 @@ function RadarContent() {
         cat.push("VALUE_GARP");
       }
 
-      // RS rating: on-demand feed does not compute 1-99 RS rating against 4000-stock universe
-      const rsVal: number | null = null;
+      const rrVal = typeof opt?.risk_reward_ratio === 'number' ? opt.risk_reward_ratio : null;
       const stageStr = opt?.setup_pattern || (opt?.stage_phase ? `Stage ${opt.stage_phase} Base` : 'Unclassified Base');
 
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
         price: Number(data.currentPrice.toFixed(2)),
-        rsRating: rsVal,
+        rvol: null,
+        riskRewardRatio: rrVal,
         vcpStage: stageStr,
         volumeDryUpPct: null,
         confluenceScore: Math.round(data.confluence?.confluenceScore || 50),
@@ -313,7 +319,7 @@ function RadarContent() {
             <div className="space-y-1">
               <div className="text-white font-bold text-sm">No Active Confluence Candidates</div>
               <p className="text-slate-400 max-w-lg mx-auto font-sans">
-                No market assets currently meet the combined Minervini Stage 2, volume dry-up, and relative strength thresholds. This is normal during market pullbacks or broad consolidation regimes.
+                No market assets currently meet the active multi-factor confluence, valuation, or execution trigger thresholds. This is normal during market pullbacks or broad consolidation regimes.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -425,16 +431,33 @@ function RadarContent() {
                     <span className="text-slate-400">Confluence:</span>
                     <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
                   </div>
-                  <span className="text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">RS Rating:</span>
-                    <span className="text-white font-bold">{heroAsset.rsRating !== null ? `${heroAsset.rsRating}/99` : "--"}</span>
-                  </div>
-                  <span className="text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Vol Dry-Up:</span>
-                    <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct !== null ? `${heroAsset.volumeDryUpPct}%` : "--"}</span>
-                  </div>
+                  {heroAsset.rvol && (
+                    <>
+                      <span className="text-slate-700">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">RVOL:</span>
+                        <span className="text-cyan-300 font-bold">{heroAsset.rvol}</span>
+                      </div>
+                    </>
+                  )}
+                  {heroAsset.riskRewardRatio !== null && heroAsset.riskRewardRatio !== undefined && (
+                    <>
+                      <span className="text-slate-700">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">Risk:Reward:</span>
+                        <span className="text-emerald-400 font-bold">{heroAsset.riskRewardRatio.toFixed(1)}:1</span>
+                      </div>
+                    </>
+                  )}
+                  {typeof heroAsset.volumeDryUpPct === 'number' && (
+                    <>
+                      <span className="text-slate-700">•</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-400">Vol Dry-Up:</span>
+                        <span className="text-emerald-400 font-bold">{heroAsset.volumeDryUpPct}%</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -629,10 +652,10 @@ function RadarContent() {
               </button>
               <button
                 type="button"
-                onClick={() => setSortBy('RS')}
-                className={`focus-ring px-2 py-1 rounded ${sortBy === 'RS' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                onClick={() => setSortBy('RVOL')}
+                className={`focus-ring px-2 py-1 rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
               >
-                RS
+                RVOL
               </button>
               <button
                 type="button"
@@ -661,9 +684,9 @@ function RadarContent() {
                   <th className="p-3">Action Status</th>
                   <th className="p-3">Price</th>
                   <th className="p-3 text-center">Score</th>
-                  <th className="p-3 text-center">RS Rating</th>
+                  <th className="p-3 text-center">RVOL</th>
                   <th className="p-3">VCP / Base Setup</th>
-                  <th className="p-3 text-right">Vol Dry-Up</th>
+                  <th className="p-3 text-center">R:R Ratio</th>
                   <th className="p-3">Catalyst Rationale</th>
                   <th className="p-3 text-right">Action</th>
                 </tr>
@@ -774,12 +797,12 @@ function RadarContent() {
                             {asset.confluenceScore}
                           </span>
                         </td>
-                        <td className="p-3 text-center font-bold text-white">
-                          {asset.rsRating !== null ? asset.rsRating : <span className="text-slate-500 font-normal">—</span>}
+                        <td className="p-3 text-center font-bold text-cyan-300">
+                          {asset.rvol ? asset.rvol : <span className="text-slate-500 font-normal">—</span>}
                         </td>
                         <td className="p-3 text-slate-300 text-[11px]">{asset.vcpStage}</td>
-                        <td className="p-3 text-right font-bold text-emerald-400">
-                          {asset.volumeDryUpPct !== null ? `${asset.volumeDryUpPct}%` : <span className="text-slate-500 font-normal">—</span>}
+                        <td className="p-3 text-center font-bold text-emerald-400">
+                          {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-slate-500 font-normal">—</span>}
                         </td>
                         <td className="p-3 text-slate-300 text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
                           {asset.catalyst}

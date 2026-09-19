@@ -585,6 +585,8 @@ export interface GemCandidate {
   factor_verdict?: string;
   dna_verdict?: string;
   archetype_alignment?: string;
+  rvol?: string | null;
+  riskRewardRatio?: number | null;
 }
 
 export interface ScreenerResponse {
@@ -1197,6 +1199,8 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           dna_verdict: r.confluenceRating || "",
           current_price: r.currentPrice || r.current_price,
           execution_status: r.executionStatus || r.execution_status,
+          rvol: typeof r.rvol === "string" ? r.rvol : null,
+          riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
         }));
         return {
           total_candidates: candidates.length,
