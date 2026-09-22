@@ -142,8 +142,8 @@ describe("WorkstationCanvas & ExecutionCorridor (Milestone W1.7)", () => {
       expect(screen.getByTestId("workstation-canvas")).toBeDefined();
       expect(screen.getByTestId("ticker-command-strip")).toBeDefined();
       expect(screen.getByTestId("workstation-grid")).toBeDefined();
-      expect(screen.getByTestId("price-chart-workspace")).toBeDefined();
-      expect(screen.getByTestId("execution-corridor")).toBeDefined();
+      expect(screen.getAllByTestId("price-chart-workspace")[0]).toBeDefined();
+      expect(screen.getAllByTestId("execution-corridor")[0]).toBeDefined();
     });
   });
 });

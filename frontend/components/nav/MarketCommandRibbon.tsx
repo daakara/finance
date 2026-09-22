@@ -201,7 +201,10 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           </div>
 
           {/* QQQ - visible on desktop, or when mobile is expanded */}
-          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+          <div
+            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            aria-label="NASDAQ 100"
+          >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
             <span className="text-slate-400 font-semibold">QQQ</span>
             <span className="text-white font-medium">${qqqPrice.toFixed(2)}</span>
@@ -215,7 +218,10 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           </div>
 
           {/* VIX - visible on desktop, or when mobile is expanded */}
-          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+          <div
+            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1 sm:gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            aria-label="CBOE Volatility Index"
+          >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
             <span className="text-slate-400 font-semibold">VIX</span>
             <span className="text-white font-medium">{vixLevel.toFixed(2)}</span>
@@ -229,7 +235,10 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
           </div>
 
           {/* 10Y Yield - visible on desktop, or when mobile is expanded */}
-          <div className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}>
+          <div
+            className={`${isMobileExpanded ? "flex" : "hidden sm:flex"} items-center gap-1.5 font-mono text-[10px] sm:text-xs shrink-0`}
+            aria-label="10-Year Treasury Yield"
+          >
             <span className="text-slate-700 select-none text-xs mr-1 sm:mr-3">|</span>
             <span className="text-slate-400 font-semibold">10Y</span>
             <span className="text-white font-medium">{tenYearYield.toFixed(2)}%</span>
@@ -259,7 +268,7 @@ export default function MarketCommandRibbon({ initialData }: MarketCommandRibbon
               className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-medium"
             >
               <span className="w-1 h-1 rounded-full bg-amber-400" aria-hidden="true" />
-              [Cached]
+              [Cached Market Snapshot]
             </span>
           )}
 
