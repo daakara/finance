@@ -546,6 +546,8 @@ export interface AnalyticsResponse {
   };
   freshness?: FreshnessInfo;
   decisionTrace?: DecisionTrace;
+  decisionId?: string;
+  canonicalDecision?: any;
   analytics?: {
     advanced_metrics?: {
       VaR_95?: number;
@@ -589,6 +591,15 @@ export interface GemCandidate {
   archetype_alignment?: string;
   rvol?: string | null;
   riskRewardRatio?: number | null;
+  current_price?: number;
+  execution_status?: string;
+  decisionState?: string;
+  decisionStateLabel?: string;
+  isActionable?: boolean;
+  canSizeTrade?: boolean;
+  allowedActions?: string[];
+  disqualificationReason?: string | null;
+  decisionContextId?: string;
 }
 
 export interface ScreenerResponse {
@@ -1199,6 +1210,13 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
           execution_status: r.executionStatus || r.execution_status,
           rvol: typeof r.rvol === "string" ? r.rvol : null,
           riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
+          decisionState: r.decisionState,
+          decisionStateLabel: r.decisionStateLabel,
+          isActionable: typeof r.isActionable === "boolean" ? r.isActionable : false,
+          canSizeTrade: typeof r.canSizeTrade === "boolean" ? r.canSizeTrade : false,
+          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : [],
+          disqualificationReason: r.disqualificationReason ?? null,
+          decisionContextId: r.decisionContextId,
         }));
         return {
           total_candidates: candidates.length,

@@ -3,11 +3,13 @@
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
 from typing import List, Optional, Dict
+import time
 import pandas as pd
 from analyst_dashboard.analyzers.gem_screener import HiddenGemsScreener
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
+from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 
 router = APIRouter()
@@ -181,6 +183,7 @@ def run_screener_get(
         # Retrieve current price and candles from market database
         latest_info = market_db.get_latest_price(sym)
         current_price = latest_info.get("currentPrice") if (latest_info and latest_info.get("currentPrice") and latest_info["currentPrice"] > 0) else None
+        hist_df = pd.DataFrame()
 
         if current_price is None or current_price <= 0:
             current_price = None
@@ -362,6 +365,34 @@ def run_screener_get(
         )
         cand_evidence = classify_candidate_category_evidence(cand_categories)
 
+        # Resolve Canonical Decision State under DecisionHierarchyEngine (Phase 2 Consolidation)
+        candle_count = len(hist_df) if (hist_df is not None and not hist_df.empty) else 0
+        has_fundamentals = bool(
+            execution_status != "UNVERIFIED_ASSET"
+            and any(r.get(k) is not None for k in ["quality_score", "growth_score", "valuation_score", "piotroski_f", "roic_pct", "peg_ratio"])
+        )
+        if execution_status == "UNVERIFIED_ASSET" or current_price is None or current_price <= 0:
+            freshness_status = "UNAVAILABLE"
+        elif execution_status == "INSUFFICIENT_HISTORY" or candle_count < 50:
+            freshness_status = "INSUFFICIENT_HISTORY"
+        else:
+            freshness_status = "LIVE"
+
+        dec_state = DecisionHierarchyEngine.resolve_decision_state(
+            symbol=sym,
+            current_price=current_price or 0.0,
+            candle_count=candle_count,
+            freshness_status=freshness_status,
+            has_fundamentals=has_fundamentals,
+            confluence_score=float(confluence_res["confluenceScore"]),
+            stage_phase=execution.get("stage_phase") or setup_pat,
+            is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
+            risk_reward_ratio=rr_ratio,
+            is_cataloged=True,
+            is_confirmed=(execution_status == "IN_BUY_ZONE"),
+            user_role=user_role,
+        )
+
         mapped_candidates.append({
             "ticker": sym,
             "symbol": sym,
@@ -396,6 +427,14 @@ def run_screener_get(
             "riskRewardRatio": rr_ratio,
             "setupPattern": setup_pat,
             "entryThesis": entry_th,
+            # Canonical Decision Authority Fields (Phase 2 Consolidation)
+            "decisionState": dec_state["state"],
+            "decisionStateLabel": dec_state["label"],
+            "isActionable": dec_state["isActionable"],
+            "canSizeTrade": dec_state["canSizeTrade"],
+            "allowedActions": dec_state["allowedActions"],
+            "disqualificationReason": dec_state.get("disqualificationReason"),
+            "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
             # Confluence Conviction Score & Position Sizing
             "confluenceScore": confluence_res["confluenceScore"],
             "confluenceRating": confluence_res["confluenceRating"],

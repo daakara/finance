@@ -15,6 +15,10 @@ interface OptimalEntryExitCardProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   smartMoney?: any;
   macroRegime?: any;
+  isActionable?: boolean;
+  canSizeTrade?: boolean;
+  decisionState?: string;
+  decisionStateLabel?: string;
 }
 
 export default function OptimalEntryExitCard({
@@ -23,6 +27,10 @@ export default function OptimalEntryExitCard({
   userRole = "LONG_TERM",
   smartMoney,
   macroRegime,
+  isActionable,
+  canSizeTrade,
+  decisionState,
+  decisionStateLabel,
 }: OptimalEntryExitCardProps) {
   const [isSizerOpen, setIsSizerOpen] = useState<boolean>(false);
   const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
@@ -537,6 +545,8 @@ export default function OptimalEntryExitCard({
         vix={derivedVix}
         hasImminentEarnings={derivedHasImminentEarnings}
         isDistributionTrap={derivedIsDistributionTrap}
+        isActionable={isActionable}
+        decisionState={decisionState}
       />
 
       <PositionSizerModal
@@ -549,6 +559,9 @@ export default function OptimalEntryExitCard({
         riskRewardRatio={risk_reward_ratio}
         isStage4={isStage4}
         adv20d={executionPlan.liquidity_defense?.adv_20d_usd}
+        canSizeTrade={canSizeTrade}
+        isActionable={isActionable}
+        decisionStateLabel={decisionStateLabel}
       />
 
       <AlertTriggerModal

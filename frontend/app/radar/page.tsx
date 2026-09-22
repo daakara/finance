@@ -26,6 +26,12 @@ interface RadarAsset {
   categories: CanonicalRadarCategory[];
   sector: string;
   executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'UNKNOWN';
+  decisionState?: string;
+  decisionStateLabel?: string;
+  isActionable?: boolean;
+  canSizeTrade?: boolean;
+  disqualificationReason?: string | null;
+  decisionContextId?: string;
 }
 
 type CategoryFilter = 'ALL' | CanonicalRadarCategory;
@@ -110,6 +116,12 @@ function RadarContent() {
             categories: cat,
             sector: "Broad Market",
             executionStatus,
+            decisionState: gem.decisionState,
+            decisionStateLabel: gem.decisionStateLabel,
+            isActionable: typeof gem.isActionable === "boolean" ? gem.isActionable : false,
+            canSizeTrade: typeof gem.canSizeTrade === "boolean" ? gem.canSizeTrade : false,
+            disqualificationReason: gem.disqualificationReason || null,
+            decisionContextId: gem.decisionContextId,
           };
         });
         setAllAssets(mapped);
@@ -231,6 +243,8 @@ function RadarContent() {
       const rrVal = typeof opt?.risk_reward_ratio === 'number' ? opt.risk_reward_ratio : null;
       const stageStr = opt?.setup_pattern || (opt?.stage_phase ? `Stage ${opt.stage_phase} Base` : 'Unclassified Base');
 
+      const dec = data.decisionTrace;
+
       const newAsset: RadarAsset = {
         ticker: clean,
         name: clean,
@@ -244,6 +258,12 @@ function RadarContent() {
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
+        decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : undefined),
+        decisionStateLabel: dec?.stateLabel,
+        isActionable: Boolean(dec?.isActionable),
+        canSizeTrade: Boolean(dec?.canSizeTrade),
+        disqualificationReason: dec?.disqualificationReason || null,
+        decisionContextId: data.decisionId,
       };
 
       setAllAssets((prev) => [newAsset, ...prev.filter((a) => a.ticker !== clean)]);
@@ -772,8 +792,16 @@ function RadarContent() {
                   </tr>
                 ) : (
                   filteredAssets.map((asset) => {
+                    const isActionable = Boolean(asset.isActionable);
                     const isBuy = asset.executionStatus === 'IN_BUY_ZONE';
+                    const isActionableBuy = isBuy && isActionable;
                     const isPivot = asset.executionStatus === 'NEAR_PIVOT';
+                    const statusLabel = isActionableBuy
+                      ? 'BUY ZONE CONFIRMED'
+                      : isBuy
+                      ? (asset.decisionState === 'EVIDENCE_INCOMPLETE' ? 'DISCLOSURES PENDING' : 'AWAITING TRIGGER')
+                      : asset.executionStatus.replace(/_/g, ' ');
+
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
                         <td className="p-3">
@@ -782,13 +810,15 @@ function RadarContent() {
                         </td>
                         <td className="p-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            isBuy
+                            isActionableBuy
                               ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
+                              : isBuy
+                              ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/60'
                               : isPivot
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
                               : 'bg-slate-800/60 text-slate-400 border border-slate-700/60'
                           }`}>
-                            {asset.executionStatus.replace(/_/g, ' ')}
+                            {statusLabel}
                           </span>
                         </td>
                         <td className="p-3 font-bold text-white">${asset.price.toFixed(2)}</td>
@@ -811,12 +841,12 @@ function RadarContent() {
                           <Link
                             href={`/setups?ticker=${asset.ticker}`}
                             className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block ${
-                              isBuy
+                              isActionableBuy
                                 ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-300 border border-emerald-500/40'
                                 : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400'
                             }`}
                           >
-                            {isBuy ? 'Ticket →' : 'Setup →'}
+                            {isActionableBuy ? 'Ticket →' : 'Setup →'}
                           </Link>
                         </td>
                       </tr>

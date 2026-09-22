@@ -259,6 +259,9 @@ export default function AdaptiveTerminal({
         takeProfit1={insight.standard.keyLevels.target1}
         riskRewardRatio={insight.standard.keyLevels.profitRiskRatio}
         isStage4={isStage4 || (insight.advanced.vcpStage === undefined && insight.verdict !== "ACTIONABLE_BUY_ZONE")}
+        canSizeTrade={insight.decisionTrace?.canSizeTrade}
+        isActionable={insight.decisionTrace?.isActionable}
+        decisionStateLabel={insight.decisionTrace?.stateLabel}
       />
     </div>
   );

@@ -16,6 +16,9 @@ interface PositionSizerProps {
   riskRewardRatio?: number;
   isStage4?: boolean;
   adv20d?: number;
+  canSizeTrade?: boolean;
+  isActionable?: boolean;
+  decisionStateLabel?: string;
 }
 
 export default function PositionSizerModal({
@@ -28,6 +31,9 @@ export default function PositionSizerModal({
   riskRewardRatio = 2.5,
   isStage4 = false,
   adv20d,
+  canSizeTrade = true,
+  isActionable = true,
+  decisionStateLabel,
 }: PositionSizerProps) {
   const [accountSize, setAccountSize] = useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -105,6 +111,7 @@ export default function PositionSizerModal({
   const safeStop = hasValidPricing ? stopLoss : 0;
   const safeTarget = hasValidPricing && typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : 0;
 
+  const isSizingBlocked = canSizeTrade === false || isActionable === false;
   const isSetupInvalid = safeEntry <= safeStop;
   const isMicroAccount = hasValidPricing && accountSize < safeEntry;
   const isFractionalActive = allowFractional || isMicroAccount;
@@ -112,7 +119,7 @@ export default function PositionSizerModal({
 
   const riskPerShare = isSetupInvalid ? 0 : Math.max(0.01, safeEntry - safeStop);
   const maxDollarRisk = isSetupInvalid ? 0 : accountSize * (riskPct / 100);
-  const rawShares = isSetupInvalid
+  const rawShares = (isSetupInvalid || isSizingBlocked)
     ? 0
     : isFractionalActive
     ? Number((maxDollarRisk / (riskPerShare || 1)).toFixed(4))
@@ -139,7 +146,7 @@ export default function PositionSizerModal({
   const authenticName = getCanonicalAssetName(symbol, matchedItem?.name);
 
   const handleSaveToPortfolio = () => {
-    if (isSetupInvalid || shares <= 0 || safeEntry <= 0) return;
+    if (isSetupInvalid || isSizingBlocked || shares <= 0 || safeEntry <= 0) return;
     try {
       const raw = localStorage.getItem("FINANCE_USER_PORTFOLIO");
       let currentPositions = raw ? JSON.parse(raw) : [];
@@ -438,7 +445,11 @@ export default function PositionSizerModal({
           {/* Action Guidance */}
           <div className="text-[11px] text-slate-400 bg-[#0c121d] p-3 rounded-lg border border-[#1b2639] leading-relaxed">
             <span className="text-cyan-400 font-bold">Execution Plan: </span>
-            {isSetupInvalid ? (
+            {isSizingBlocked ? (
+              <span className="text-rose-400 font-bold">
+                Position sizing disabled by DecisionHierarchyEngine: asset is not in an ACTIONABLE_SETUP state ({decisionStateLabel || "Disqualified"}).
+              </span>
+            ) : isSetupInvalid ? (
               <span className="text-rose-400 font-bold">
                 Setup Invalidated. Entry price (${safeEntry.toFixed(2)}) is at or below stop loss floor (${safeStop.toFixed(2)}). Position sizing is disabled and zero orders are permitted.
               </span>
@@ -466,16 +477,22 @@ export default function PositionSizerModal({
         <div className="p-3.5 sm:p-4 border-t border-[#1b2537] bg-[#0e1422] flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
-            disabled={isSetupInvalid || shares <= 0}
+            disabled={isSetupInvalid || shares <= 0 || isSizingBlocked}
             onClick={handleSaveToPortfolio}
             className={`px-3.5 sm:px-4 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow ${
-              isSetupInvalid || shares <= 0
+              isSetupInvalid || shares <= 0 || isSizingBlocked
                 ? "bg-[#0e1420] border-[#182334] text-slate-600 cursor-not-allowed"
                 : "bg-[#172338] hover:bg-[#20314f] border border-[#2b3f63] text-cyan-300 hover:text-white active:scale-95 cursor-pointer"
             }`}
           >
             <span>💼</span>
-            <span>{isSetupInvalid ? "Sizing Disabled (Invalid Setup)" : "Save to My Portfolio"}</span>
+            <span>
+              {isSizingBlocked
+                ? "Sizing Disabled (Non-Actionable Asset)"
+                : isSetupInvalid
+                ? "Sizing Disabled (Invalid Setup)"
+                : "Save to My Portfolio"}
+            </span>
           </button>
 
           <button

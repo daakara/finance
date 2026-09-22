@@ -547,6 +547,10 @@ function TerminalContent() {
                 userRole={userRole}
                 smartMoney={data?.smartMoney}
                 macroRegime={macroData}
+                isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
+                decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
               />
             </div>
           )}

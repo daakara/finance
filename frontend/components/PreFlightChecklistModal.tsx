@@ -21,6 +21,8 @@ interface PreFlightChecklistModalProps {
   isDistributionTrap?: boolean;
   hasImminentEarnings?: boolean;
   vix?: number;
+  isActionable?: boolean;
+  decisionState?: string;
 }
 
 export default function PreFlightChecklistModal({
@@ -40,6 +42,8 @@ export default function PreFlightChecklistModal({
   isDistributionTrap,
   hasImminentEarnings = false,
   vix = 15.4,
+  isActionable = true,
+  decisionState,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
   const [vernacularMode, setVernacularMode] = useState<"PLAIN_ENGLISH" | "PRO_QUANT">("PLAIN_ENGLISH");
@@ -151,7 +155,8 @@ export default function PreFlightChecklistModal({
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
-  const isCleared = isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isSmartMoneyPassed && isTrendPassed;
+  const isActionableGranted = isActionable !== false;
+  const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isSmartMoneyPassed && isTrendPassed;
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
@@ -244,6 +249,21 @@ export default function PreFlightChecklistModal({
 
         {/* Scrollable body — barometer + 5-point checklist */}
         <div className="overflow-y-auto flex-1 space-y-4 py-4 pr-0.5">
+          {/* Actionability Revocation Banner (DecisionHierarchyEngine Authority) */}
+          {isActionable === false && (
+            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-600/80 text-xs font-mono text-rose-200 flex items-start gap-2.5">
+              <span className="text-base shrink-0">🛑</span>
+              <div className="space-y-0.5">
+                <strong className="font-bold text-[11px] uppercase tracking-wide block">
+                  FLIGHT CLEARANCE REVOKED: CANONICAL AUTHORITY
+                </strong>
+                <p className="text-[11px] leading-relaxed">
+                  DecisionHierarchyEngine reports non-actionable state ({decisionState || "NOT_ACTIONABLE"}). Local checklist cannot override canonical decision authority.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Warning banner when price or execution levels are unverified */}
           {!isPriceValid && (
             <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs font-mono text-rose-300 flex items-center gap-2">

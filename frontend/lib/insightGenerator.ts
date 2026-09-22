@@ -299,6 +299,7 @@ export function generateQuantitativeInsight(
     invalidationPrice: stopLoss,
     reclaimMilestonePrice: sma50,
     freshnessStatus,
+    decisionTrace,
   });
 
   // Phase 21 Epistemic Alignment: Honor authoritative backend decisionTrace if provided
@@ -362,9 +363,7 @@ export function generateQuantitativeInsight(
 
   const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision)
     ? "UNVERIFIED"
-    : decisionTrace
-    ? (decisionTrace.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER")
-    : (terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
+    : (decisionTrace?.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
 
   const smaLevelRelation = evaluateLevelRelation(safePrice, sma50, "50-day moving average", symbol);
 
@@ -556,5 +555,6 @@ export function generateQuantitativeInsight(
       : "Risk levels suppressed: awaiting 50-session historical base.",
     whatWouldChangeAssessment: terminalState.whatWouldChangeAssessment,
     availableActions: terminalState.availableActions,
+    decisionTrace: decisionTrace,
   };
 }

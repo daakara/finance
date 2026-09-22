@@ -103,6 +103,8 @@ export interface TerminalViewState {
   modelProvenance: ModelProvenance;
   overallEligibility: "ELIGIBLE" | "LIMITED" | "INELIGIBLE";
   decisionState?: DecisionState;
+  canSizeTrade?: boolean;
+  isActionable?: boolean;
   assessment: Assessment;
   factorAgreement: FactorAgreement;
   domains: DomainAssessment[];
@@ -219,6 +221,7 @@ export interface QuantitativeInsight {
   primaryRiskSummary: string;
   whatWouldChangeAssessment: string;
   availableActions: ARXAction[];
+  decisionTrace?: DecisionTrace;
 }
 
 export interface FreshnessInfo {

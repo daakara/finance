@@ -18,6 +18,7 @@ import {
   TerminalViewState,
   ModelProvenance,
   ARXAction,
+  DecisionTrace,
 } from "../types/insight";
 import { evaluateLevelRelation } from "./reclaimSemantics";
 
@@ -35,6 +36,8 @@ export interface AssessmentEngineInput {
   reclaimMilestonePrice?: number;
   freshnessStatus?: string;
   modelProvenance?: ModelProvenance;
+  decisionTrace?: DecisionTrace;
+  canonicalDecision?: any;
 }
 
 /**
@@ -104,6 +107,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       rulesetVersion: "2026.09-v1",
       calculatedAt: new Date().toISOString(),
     },
+    decisionTrace,
   } = input;
 
   const agreement = calculateFactorAgreement(domains);
@@ -190,9 +194,18 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     }
   } else {
     // NOT_OWNED or UNKNOWN (Full core evidence verified)
-    if (assessment === "FAVORABLE") {
+    // Canonical Decision Authority Enforcement (Phase 2):
+    // ACQUIRE is permitted strictly when canonical decision authoritatively approves ACTIONABLE_SETUP.
+    // Zero client-side re-derivation of actionable posture from factor counts alone.
+    const isCanonicalActionable = Boolean(
+      decisionTrace
+        ? (decisionTrace.isActionable && decisionTrace.decisionState === "ACTIONABLE_SETUP")
+        : false
+    );
+
+    if (isCanonicalActionable) {
       posture = "ACQUIRE";
-      uiStateLabel = "Actionable Setup";
+      uiStateLabel = decisionTrace?.stateLabel || "Actionable Setup";
       headlineExplanation = "Multi-factor confluence confirmed in optimal buy zone.";
     } else if (assessment === "UNFAVORABLE") {
       posture = "AVOID";
@@ -200,9 +213,11 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       headlineExplanation = "Negative trend or poor fundamentals present unfavorable risk/reward.";
     } else {
       posture = "WATCH";
-      uiStateLabel = "Wait for Trigger";
+      uiStateLabel = decisionTrace?.stateLabel || "Wait for Trigger";
       const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
-      headlineExplanation = levelRel.status === "UNAVAILABLE"
+      headlineExplanation = (decisionTrace && decisionTrace.disqualificationReason)
+        ? decisionTrace.disqualificationReason
+        : levelRel.status === "UNAVAILABLE"
         ? "Awaiting constructive consolidation and volume confirmation before trigger."
         : levelRel.headlineExplanationWatch;
     }
@@ -216,6 +231,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         : `Set Alert for $${reclaimMilestonePrice.toFixed(2)}`)
     : "Set Price Alert";
 
+  const canSize = decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE");
   const availableActions: ARXAction[] = [
     {
       id: "set_alert",
@@ -227,8 +243,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       id: "size_trade",
       type: "SIZE_POSITION",
       label: "Calculate Position Size",
-      enabled: posture === "ACQUIRE",
-      reason: posture !== "ACQUIRE" ? "Only actionable when in Buy Zone" : undefined,
+      enabled: canSize,
+      reason: !canSize ? (decisionTrace?.disqualificationReason || "Only actionable when in Buy Zone") : undefined,
     },
     {
       id: "review_invalidation",
@@ -245,9 +261,17 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     },
   ];
 
-  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21)
+  // 4a. Resolve Precedence-Enforced DecisionState (Phase 20A / Phase 21 / Phase 2)
   let decisionState: DecisionState = "VALID_SETUP";
-  if (!isPriceValid || agreement.evaluated === 0 || freshnessStatus === "UNAVAILABLE") {
+  if (decisionTrace) {
+    decisionState = decisionTrace.decisionState;
+    if (decisionTrace.stateLabel) {
+      uiStateLabel = decisionTrace.stateLabel;
+    }
+    if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
+      headlineExplanation = decisionTrace.disqualificationReason;
+    }
+  } else if (!isPriceValid || agreement.evaluated === 0 || freshnessStatus === "UNAVAILABLE") {
     decisionState = "UNVERIFIED";
   } else if (!isTrendAvailable) {
     decisionState = "INSUFFICIENT_DATA";
@@ -274,6 +298,8 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
     modelProvenance,
     overallEligibility,
     decisionState,
+    canSizeTrade: decisionTrace ? decisionTrace.canSizeTrade : (posture === "ACQUIRE"),
+    isActionable: decisionTrace ? decisionTrace.isActionable : (posture === "ACQUIRE"),
     assessment,
     factorAgreement: agreement,
     domains,
