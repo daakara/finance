@@ -79,6 +79,44 @@ def can_quality_contribute_evidence(quality: EvidenceQualityState) -> bool:
     )
 
 
+def is_pit_eligible(available_from: Optional[str], evaluation_timestamp: Optional[str]) -> bool:
+    """Evaluates whether an evidence record was publicly available at or before evaluation_timestamp.
+
+    Canonical PIT Invariant: availableFrom <= evaluation_timestamp.
+    Period end date or filing date alone without public publication are strictly insufficient.
+    """
+    if not available_from or not evaluation_timestamp:
+        return False
+    af = str(available_from).strip()
+    et = str(evaluation_timestamp).strip()
+    return af <= et
+
+
+def weakest_pit_status(statuses: List[PointInTimeStatus | str]) -> PointInTimeStatus:
+    """Returns the weakest point-in-time provenance across input factors.
+
+    A derived factor inherits the weakest provenance of its inputs:
+    UNKNOWN < CURRENT_ONLY < POINT_IN_TIME.
+    """
+    if not statuses:
+        return PointInTimeStatus.UNKNOWN
+    resolved = []
+    for s in statuses:
+        if isinstance(s, PointInTimeStatus):
+            resolved.append(s)
+        else:
+            try:
+                resolved.append(PointInTimeStatus(str(s)))
+            except ValueError:
+                resolved.append(PointInTimeStatus.UNKNOWN)
+
+    if any(s == PointInTimeStatus.UNKNOWN for s in resolved):
+        return PointInTimeStatus.UNKNOWN
+    if any(s == PointInTimeStatus.CURRENT_ONLY for s in resolved):
+        return PointInTimeStatus.CURRENT_ONLY
+    return PointInTimeStatus.POINT_IN_TIME
+
+
 class ARXDecisionAuthority(str, Enum):
     BACKEND_CANONICAL = "BACKEND_CANONICAL"
     DISPLAY_ONLY_MARKET_DATA = "DISPLAY_ONLY_MARKET_DATA"
@@ -141,7 +179,9 @@ class FundamentalEvidenceContract:
     source: str = "none"
     fetched_at: str = ""
     as_of: str = ""
+    period_end: Optional[str] = None
     filing_date: Optional[str] = None
+    acceptance_datetime: Optional[str] = None
     available_from: Optional[str] = None
     point_in_time_status: PointInTimeStatus = PointInTimeStatus.UNKNOWN
     quality: EvidenceQualityState = EvidenceQualityState.UNAVAILABLE
@@ -154,7 +194,9 @@ class FundamentalEvidenceContract:
             "source": self.source,
             "fetchedAt": self.fetched_at,
             "asOf": self.as_of,
+            "periodEnd": self.period_end,
             "filingDate": self.filing_date,
+            "acceptanceDatetime": self.acceptance_datetime,
             "availableFrom": self.available_from,
             "pointInTimeStatus": self.point_in_time_status.value if isinstance(self.point_in_time_status, PointInTimeStatus) else str(self.point_in_time_status),
             "quality": self.quality.value if isinstance(self.quality, EvidenceQualityState) else str(self.quality),

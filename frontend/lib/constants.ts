@@ -39,7 +39,18 @@ export const SHARED_WATCHLIST_ITEMS: WatchlistDefinition[] = [
   { symbol: "SOL-USD", name: "Solana", type: "Crypto" },
 ];
 
-export const SHARED_FACTOR_SCORES: Record<string, { scores: AssetFactorScores }> = {
+export interface SharedFactorEntry {
+  scores: AssetFactorScores;
+  pointInTimeStatus?: "CURRENT_ONLY" | "POINT_IN_TIME" | "UNKNOWN";
+  historicalEligible?: boolean;
+}
+
+/**
+ * Static baseline factor scores.
+ * Epistemic Invariant: These scores are strictly CURRENT_ONLY and barred from
+ * historical backtest or point-in-time model evaluation.
+ */
+export const SHARED_FACTOR_SCORES: Record<string, SharedFactorEntry> = {
   "AAPL": {
     scores: { growthScore: 84, qualityScore: 90, valuationScore: 72, momentumScore: 78, tailRiskScore: 82, compositeFactorScore: 82, verdict: "Strong Accumulation Candidate", piotroskiFScore: 8 }
   },

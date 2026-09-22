@@ -95,6 +95,8 @@ class SecEdgarFetcher:
         filing_dates = recent.get("filingDate", [])
         accessions = recent.get("accessionNumber", [])
         descriptions = recent.get("primaryDocDescription", [])
+        acceptance_dts = recent.get("acceptanceDateTime", [])
+        report_dates = recent.get("reportDate", [])
 
         allowed_forms = set(form_types) if form_types else {"10-K", "10-Q", "8-K", "4", "13F-HR"}
         results = []
@@ -105,13 +107,23 @@ class SecEdgarFetcher:
         for i in range(min(len(forms), 25)):
             form = forms[i]
             if form in allowed_forms:
-                clean_acc = accessions[i].replace("-", "")
+                clean_acc = accessions[i].replace("-", "") if i < len(accessions) else ""
+                acc_num = accessions[i] if i < len(accessions) else ""
+                acceptance_dt = acceptance_dts[i] if i < len(acceptance_dts) else ""
+                report_date = report_dates[i] if i < len(report_dates) else ""
+                filing_date = filing_dates[i] if i < len(filing_dates) else ""
+                # Canonical PIT: available_from = acceptanceDateTime if present, else filing_date
+                avail_from = acceptance_dt or (f"{filing_date}T00:00:00Z" if filing_date else "")
+
                 results.append({
                     "form": form,
-                    "filing_date": filing_dates[i] if i < len(filing_dates) else "",
+                    "filing_date": filing_date,
+                    "report_date": report_date,
+                    "acceptance_datetime": acceptance_dt,
+                    "available_from": avail_from,
                     "description": descriptions[i] if i < len(descriptions) else form,
-                    "accession_number": accessions[i],
-                    "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{accessions[i]}.txt",
+                    "accession_number": acc_num,
+                    "sec_url": f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{clean_acc}/{acc_num}.txt",
                 })
 
         return results

@@ -1,6 +1,6 @@
 """Hidden Gems Screener Engine powered by Legendary Investors: Peter Lynch, Joel Greenblatt & Disruptive Innovation."""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 import numpy as np
 
@@ -29,6 +29,11 @@ class HiddenGemsScreener:
     3. Disruptive Growth (Revenue CAGR > 30%, Gross Margins > 50%)
     4. Balance Sheet Quality Floor (Piotroski F-Score >= 7)
     """
+
+    # Invariant: Curated reference catalog is strictly CURRENT_ONLY and barred from historical evaluation
+    STATIC_REFERENCE_DATA: bool = True
+    CAN_ENTER_HISTORICAL_MODEL_EVIDENCE: bool = False
+    POINT_IN_TIME_STATUS: str = "CURRENT_ONLY"
 
     KNOWN_GEMS_DATA = {
     "NVDA": {
@@ -905,8 +910,16 @@ class HiddenGemsScreener:
     def __init__(self, criteria: GemCriteria = None):
         self.criteria = criteria or GemCriteria()
 
-    def evaluate_candidates(self, tickers: List[str]) -> List[Dict[str, Any]]:
-        """Screen, score, and rank candidates against Peter Lynch, Greenblatt, and Disruptive Growth models."""
+    def evaluate_candidates(
+        self, tickers: List[str], evaluation_timestamp: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Screen, score, and rank candidates against Peter Lynch, Greenblatt, and Disruptive Growth models.
+
+        Point-in-Time Invariant:
+        KNOWN_GEMS_DATA is static curated reference data (CURRENT_ONLY). If evaluation_timestamp is provided
+        (historical backtest / evaluation cutoff T), static catalog values cannot enter scoring without
+        authentic point-in-time SEC filings. Unverified tickers fail closed.
+        """
         if not tickers:
             return []
 
@@ -930,6 +943,30 @@ class HiddenGemsScreener:
                     "primary_catalyst": "Awaiting verified corporate disclosures.",
                     "factor_verdict": "Unverified / Awaiting SEC Disclosures",
                     "dna_verdict": "Unverified Asset",
+                    "point_in_time_status": "UNKNOWN",
+                    "historical_eligible": False,
+                })
+                continue
+
+            # Epistemic Invariant: Static curated catalog cannot enter historical backtest/evaluation
+            if evaluation_timestamp is not None:
+                results.append({
+                    "ticker": ticker.upper(),
+                    "composite_score": 0.0,
+                    "lynch_score": 0.0,
+                    "greenblatt_score": 0.0,
+                    "growth_score": 0.0,
+                    "expert_model": "Historical Fundamentals Unverified (Catalog is CURRENT_ONLY)",
+                    "peg_ratio": 0.0,
+                    "roic_pct": 0.0,
+                    "gross_margin_pct": 0.0,
+                    "risk_rating": "Unverified Risk",
+                    "investment_thesis": "Static gem catalog cannot be projected backward into historical evaluation without verified point-in-time filing.",
+                    "primary_catalyst": "Awaiting point-in-time SEC disclosures.",
+                    "factor_verdict": "Historical Fundamentals Unverified",
+                    "dna_verdict": "Unverified Historical Asset",
+                    "point_in_time_status": "CURRENT_ONLY",
+                    "historical_eligible": False,
                 })
                 continue
 
@@ -968,13 +1005,15 @@ class HiddenGemsScreener:
                 "primary_catalyst": gem_data["catalyst"],
                 "factor_verdict": verdict,
                 "dna_verdict": verdict,
+                "point_in_time_status": "CURRENT_ONLY",
+                "historical_eligible": False,
             })
 
         return sorted(results, key=lambda x: x["composite_score"], reverse=True)
 
-    def screen_universe(self, universe: List[str]) -> List[Dict[str, Any]]:
+    def screen_universe(self, universe: List[str], evaluation_timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
         """Legacy alias method."""
-        return self.evaluate_candidates(universe)
+        return self.evaluate_candidates(universe, evaluation_timestamp=evaluation_timestamp)
 
     def calculate_composite_score(self, scores: Dict[str, float]) -> float:
         """Legacy helper."""

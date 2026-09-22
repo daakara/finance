@@ -85,23 +85,95 @@ class MarketDatabaseEngine:
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_sym_date ON asset_ohlcv_daily (symbol, trade_date)")
 
-                # 2. Asset Factor & Fundamentals Snapshot
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS asset_factor_snapshots (
-                        symbol TEXT PRIMARY KEY,
-                        current_price REAL,
-                        price_change_24h REAL,
-                        growth_score INTEGER,
-                        quality_score INTEGER,
-                        valuation_score INTEGER,
-                        momentum_score INTEGER,
-                        tail_risk_score INTEGER,
-                        composite_score INTEGER,
-                        piotroski_f INTEGER,
-                        verdict TEXT,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                # 2. Asset Factor & Fundamentals Snapshot (Versioned Point-in-Time Schema)
+                cursor.execute("PRAGMA table_info(asset_factor_snapshots)")
+                existing_cols = {row["name"] for row in cursor.fetchall()}
+                if not existing_cols:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS asset_factor_snapshots (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            symbol TEXT NOT NULL,
+                            as_of_date TEXT,
+                            period_end TEXT,
+                            filing_date TEXT,
+                            acceptance_datetime TEXT,
+                            available_from TEXT,
+                            fetched_at TEXT,
+                            point_in_time_status TEXT DEFAULT 'CURRENT_ONLY',
+                            source TEXT DEFAULT 'unknown',
+                            current_price REAL,
+                            price_change_24h REAL,
+                            growth_score INTEGER,
+                            quality_score INTEGER,
+                            valuation_score INTEGER,
+                            momentum_score INTEGER,
+                            tail_risk_score INTEGER,
+                            composite_score INTEGER,
+                            piotroski_f INTEGER,
+                            verdict TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_avail ON asset_factor_snapshots (symbol, available_from)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_asof ON asset_factor_snapshots (symbol, as_of_date)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_id ON asset_factor_snapshots (symbol, id DESC)")
+                elif "available_from" not in existing_cols:
+                    logger.info("Migrating legacy asset_factor_snapshots table to versioned point-in-time schema...")
+                    cursor.execute("ALTER TABLE asset_factor_snapshots RENAME TO asset_factor_snapshots_legacy")
+                    cursor.execute("""
+                        CREATE TABLE asset_factor_snapshots (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            symbol TEXT NOT NULL,
+                            as_of_date TEXT,
+                            period_end TEXT,
+                            filing_date TEXT,
+                            acceptance_datetime TEXT,
+                            available_from TEXT,
+                            fetched_at TEXT,
+                            point_in_time_status TEXT DEFAULT 'CURRENT_ONLY',
+                            source TEXT DEFAULT 'unknown',
+                            current_price REAL,
+                            price_change_24h REAL,
+                            growth_score INTEGER,
+                            quality_score INTEGER,
+                            valuation_score INTEGER,
+                            momentum_score INTEGER,
+                            tail_risk_score INTEGER,
+                            composite_score INTEGER,
+                            piotroski_f INTEGER,
+                            verdict TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
+                    updated_at_expr = "updated_at" if "updated_at" in existing_cols else "CURRENT_TIMESTAMP"
+                    cursor.execute(f"""
+                        INSERT INTO asset_factor_snapshots (
+                            symbol, current_price, price_change_24h, growth_score, quality_score,
+                            valuation_score, momentum_score, tail_risk_score, composite_score,
+                            piotroski_f, verdict, as_of_date, available_from, fetched_at,
+                            point_in_time_status, source, created_at
+                        )
+                        SELECT
+                            symbol, current_price, price_change_24h, growth_score, quality_score,
+                            valuation_score, momentum_score, tail_risk_score, composite_score,
+                            piotroski_f, verdict,
+                            COALESCE(strftime('%Y-%m-%d', {updated_at_expr}), ''),
+                            NULL,
+                            {updated_at_expr},
+                            'CURRENT_ONLY',
+                            'legacy_migration',
+                            {updated_at_expr}
+                        FROM asset_factor_snapshots_legacy
+                    """)
+                    cursor.execute("DROP TABLE asset_factor_snapshots_legacy")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_avail ON asset_factor_snapshots (symbol, available_from)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_asof ON asset_factor_snapshots (symbol, as_of_date)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_id ON asset_factor_snapshots (symbol, id DESC)")
+                    logger.info("Migration of asset_factor_snapshots to versioned PIT store complete.")
+                else:
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_avail ON asset_factor_snapshots (symbol, available_from)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_asof ON asset_factor_snapshots (symbol, as_of_date)")
+                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_factor_sym_id ON asset_factor_snapshots (symbol, id DESC)")
 
                 # 3. Verified Company Catalysts
                 cursor.execute("""
@@ -286,46 +358,143 @@ class MarketDatabaseEngine:
 
     @retry_sqlite()
     def save_factor_snapshot(self, symbol: str, snapshot: Dict[str, Any]):
-        """Save factor score and fundamental snapshot to database."""
+        """Save factor score and fundamental snapshot to database with versioned PIT provenance.
+
+        Does not overwrite prior historical records, enabling true Point-in-Time temporal queries.
+        """
         upper = symbol.upper().strip()
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                as_of = snapshot.get("as_of_date") or snapshot.get("asOf") or snapshot.get("asOfDate")
+                period_end = snapshot.get("period_end") or snapshot.get("periodEnd")
+                filing_date = snapshot.get("filing_date") or snapshot.get("filingDate")
+                acceptance_dt = snapshot.get("acceptance_datetime") or snapshot.get("acceptanceDatetime")
+                available_from = snapshot.get("available_from") or snapshot.get("availableFrom")
+                # Canonical Rule: If official SEC acceptance datetime is present, availableFrom = acceptanceDatetime
+                if not available_from and acceptance_dt:
+                    available_from = acceptance_dt
+
+                fetched_at = snapshot.get("fetched_at") or snapshot.get("fetchedAt")
+                if not fetched_at:
+                    fetched_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                pit_status = snapshot.get("point_in_time_status") or snapshot.get("pointInTimeStatus")
+                if not pit_status:
+                    pit_status = "POINT_IN_TIME" if available_from else "CURRENT_ONLY"
+                elif hasattr(pit_status, "value"):
+                    pit_status = pit_status.value
+
+                source = snapshot.get("source") or ("SEC_EDGAR" if acceptance_dt else "LIVE_RUNTIME")
+
+                # Robust extraction supporting both camelCase and snake_case factor score keys
+                growth = snapshot.get("growthScore") if snapshot.get("growthScore") is not None else snapshot.get("growth_score")
+                quality = snapshot.get("qualityScore") if snapshot.get("qualityScore") is not None else snapshot.get("quality_score")
+                valuation = snapshot.get("valuationScore") if snapshot.get("valuationScore") is not None else snapshot.get("valuation_score")
+                momentum = snapshot.get("momentumScore") if snapshot.get("momentumScore") is not None else snapshot.get("momentum_score")
+                tail_risk = snapshot.get("tailRiskScore") if snapshot.get("tailRiskScore") is not None else snapshot.get("tail_risk_score")
+                composite = snapshot.get("compositeFactorScore") if snapshot.get("compositeFactorScore") is not None else snapshot.get("composite_score")
+                piotroski = snapshot.get("piotroskiFScore") if snapshot.get("piotroskiFScore") is not None else snapshot.get("piotroski_f")
+
                 cursor.execute("""
-                    INSERT OR REPLACE INTO asset_factor_snapshots (
-                        symbol, current_price, price_change_24h, growth_score, quality_score,
+                    INSERT INTO asset_factor_snapshots (
+                        symbol, as_of_date, period_end, filing_date, acceptance_datetime,
+                        available_from, fetched_at, point_in_time_status, source,
+                        current_price, price_change_24h, growth_score, quality_score,
                         valuation_score, momentum_score, tail_risk_score, composite_score,
                         piotroski_f, verdict
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     upper,
-                    float(snapshot["currentPrice"]) if snapshot.get("currentPrice") is not None else None,
-                    float(snapshot["priceChangePct24h"]) if snapshot.get("priceChangePct24h") is not None else None,
-                    int(snapshot["growthScore"]) if snapshot.get("growthScore") is not None else None,
-                    int(snapshot["qualityScore"]) if snapshot.get("qualityScore") is not None else None,
-                    int(snapshot["valuationScore"]) if snapshot.get("valuationScore") is not None else None,
-                    int(snapshot["momentumScore"]) if snapshot.get("momentumScore") is not None else None,
-                    int(snapshot["tailRiskScore"]) if snapshot.get("tailRiskScore") is not None else None,
-                    int(snapshot["compositeFactorScore"]) if snapshot.get("compositeFactorScore") is not None else None,
-                    int(snapshot["piotroskiFScore"]) if snapshot.get("piotroskiFScore") is not None else None,
+                    as_of,
+                    period_end,
+                    filing_date,
+                    acceptance_dt,
+                    available_from,
+                    fetched_at,
+                    str(pit_status),
+                    source,
+                    float(snapshot["currentPrice"]) if snapshot.get("currentPrice") is not None else (float(snapshot["current_price"]) if snapshot.get("current_price") is not None else None),
+                    float(snapshot["priceChangePct24h"]) if snapshot.get("priceChangePct24h") is not None else (float(snapshot["price_change_24h"]) if snapshot.get("price_change_24h") is not None else None),
+                    int(growth) if growth is not None else None,
+                    int(quality) if quality is not None else None,
+                    int(valuation) if valuation is not None else None,
+                    int(momentum) if momentum is not None else None,
+                    int(tail_risk) if tail_risk is not None else None,
+                    int(composite) if composite is not None else None,
+                    int(piotroski) if piotroski is not None else None,
                     str(snapshot["verdict"]) if snapshot.get("verdict") is not None else None,
                 ))
         finally:
             conn.close()
 
     @retry_sqlite()
-    def get_factor_snapshot(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Retrieve stored factor snapshot from database."""
+    def get_factor_snapshot(
+        self, symbol: str, evaluation_timestamp: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve stored factor snapshot from database.
+
+        If evaluation_timestamp is None (live/current evaluation):
+            Returns the latest stored snapshot for the symbol.
+        If evaluation_timestamp is provided (historical replay / backtest cutoff T):
+            Returns the latest snapshot strictly satisfying:
+                available_from <= evaluation_timestamp
+            with point_in_time_status == 'POINT_IN_TIME'.
+            Never returns a record where available_from > evaluation_timestamp.
+            Returns None if no eligible point-in-time record exists.
+        """
         upper = symbol.upper().strip()
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM asset_factor_snapshots WHERE symbol = ?", (upper,))
+            if evaluation_timestamp is None:
+                cursor.execute("""
+                    SELECT * FROM asset_factor_snapshots
+                    WHERE symbol = ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                """, (upper,))
+                row = cursor.fetchone()
+                if not row:
+                    return None
+                return dict(row)
+
+            # Historical evaluation at cutoff T
+            eval_ts = str(evaluation_timestamp).strip()
+            cursor.execute("""
+                SELECT * FROM asset_factor_snapshots
+                WHERE symbol = ?
+                  AND point_in_time_status = 'POINT_IN_TIME'
+                  AND available_from IS NOT NULL
+                  AND available_from <= ?
+                ORDER BY available_from DESC, id DESC
+                LIMIT 1
+            """, (upper, eval_ts))
             row = cursor.fetchone()
             if not row:
                 return None
-            return dict(row)
+            res = dict(row)
+            # Invariant: Never leak future fundamental data
+            if res.get("available_from") and res["available_from"] > eval_ts:
+                return None
+            return res
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_factor_history(self, symbol: str) -> List[Dict[str, Any]]:
+        """Retrieve all historical factor snapshots for a symbol, ordered chronologically."""
+        upper = symbol.upper().strip()
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM asset_factor_snapshots
+                WHERE symbol = ?
+                ORDER BY available_from ASC, id ASC
+            """, (upper,))
+            return [dict(row) for row in cursor.fetchall()]
         finally:
             conn.close()
 
@@ -386,4 +555,9 @@ class MarketDatabaseEngine:
                 return purged_count
         finally:
             conn.close()
+
+
+# Backward compatibility alias
+MarketDatabase = MarketDatabaseEngine
+
 
