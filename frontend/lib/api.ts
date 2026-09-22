@@ -83,7 +83,8 @@ export interface ExpectedReturnForecast {
 export interface TraderArchetypeItem {
   name: string;
   archetype: string;
-  alignmentScore?: number;
+  alignmentScore?: number | null;
+  evidenceStatus?: string;
   weight?: number;
   stance?: string;
   timeframe?: string;
@@ -95,7 +96,7 @@ export interface TraderArchetypeItem {
 }
 
 export interface TraderArchetypeConsensus {
-  consensusScore?: number;
+  consensusScore?: number | null;
   verdict?: string;
   dominant_archetype?: string;
   bullish_archetype_count?: number;

@@ -13,6 +13,7 @@ Guarantees:
   * MACRO_RISK_FRICTION (Credit friction)
   * REGIME_SEMANTIC_COLLAPSE = NO
 - Fail-closed behavior on missing macro telemetry (no 0.47 / 2.69 / 2.4 static defaults).
+- Missing macro telemetry strictly excluded from archetype consensus (numerator & denominator).
 - Decision authority invariants remain frozen under DecisionHierarchyEngine.
 """
 
@@ -34,17 +35,18 @@ from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngi
 # ── F_11: Elimination of Hardcoded Macro Proxies & Fail-Closed Behavior ──────
 
 def test_f11_druckenmiller_fail_closed_on_missing_macro():
-    """Verify that Druckenmiller macro archetype fails closed to neutral 50 when macro data is absent.
-    Previously, it laundered missing data with hardcoded 0.47 and 2.69 defaults yielding base 90."""
+    """Verify that Druckenmiller macro archetype fails closed to null alignmentScore and UNAVAILABLE status.
+    Previously, it laundered missing data with hardcoded 0.47 and 2.69 defaults yielding base 90 or nominal 50."""
     analyzer = TraderArchetypeAnalyzer()
-    
+
     # Missing / None macro indicators
     res_none = analyzer._evaluate_druckenmiller_macro(
         macro_indicators=None,
         factor_scores={"momentumScore": 75.0, "growthScore": 75.0},
         price_df=pd.DataFrame({"Close": [100.0, 101.0, 102.0]}),
     )
-    assert res_none["alignmentScore"] == 50
+    assert res_none["alignmentScore"] is None
+    assert res_none["evidenceStatus"] == "UNAVAILABLE"
     assert "Unavailable" in res_none["status"]
 
     # Incomplete macro indicators (only yield curve, missing credit spread)
@@ -53,14 +55,15 @@ def test_f11_druckenmiller_fail_closed_on_missing_macro():
         factor_scores={"momentumScore": 75.0, "growthScore": 75.0},
         price_df=pd.DataFrame({"Close": [100.0, 101.0, 102.0]}),
     )
-    assert res_partial["alignmentScore"] == 50
+    assert res_partial["alignmentScore"] is None
+    assert res_partial["evidenceStatus"] == "UNAVAILABLE"
     assert "Unavailable" in res_partial["status"]
 
 
 def test_f11_druckenmiller_authentic_macro_scoring():
     """Verify Druckenmiller scores authentically when valid macro telemetry is supplied."""
     analyzer = TraderArchetypeAnalyzer()
-    
+
     # Normal yield curve (0.80) and tight credit spread (3.0) -> favorable macro
     res = analyzer._evaluate_druckenmiller_macro(
         macro_indicators={
@@ -71,7 +74,111 @@ def test_f11_druckenmiller_authentic_macro_scoring():
         price_df=pd.DataFrame({"Close": [100.0, 101.0, 102.0, 105.0]}),
     )
     assert res["alignmentScore"] > 50
+    assert res["evidenceStatus"] == "AVAILABLE"
     assert any(k in res["thesis"].lower() for k in ["steepening", "liquidity", "tailwinds", "positive", "expansionary"])
+
+
+def test_f11_unavailable_macro_archetype_excluded_from_consensus():
+    """Verify that an unavailable macro archetype is excluded from both numerator and denominator of consensus."""
+    analyzer = TraderArchetypeAnalyzer()
+    dates = pd.date_range("2026-01-01", periods=60)
+    df = pd.DataFrame({"Close": [100.0 + i * 0.1 for i in range(60)]}, index=dates)
+
+    res = analyzer.analyze_asset(
+        symbol="AAPL",
+        info={"sector": "Technology", "industry": "Consumer Electronics"},
+        price_df=df,
+        risk_metrics={"Sortino_Ratio": 2.0, "Skewness": -0.1},
+        macro_indicators=None,  # Missing macro!
+        factor_scores={"qualityScore": 90, "growthScore": 85, "momentumScore": 80, "valuationScore": 70, "piotroskiFScore": 8, "tailRiskScore": 80},
+    )
+
+    druckenmiller = next(a for a in res["archetypes"] if "Druckenmiller" in a["name"])
+    assert druckenmiller["evidenceStatus"] == "UNAVAILABLE"
+    assert druckenmiller["alignmentScore"] is None
+
+    available_archetypes = [a for a in res["archetypes"] if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    assert len(available_archetypes) == 4
+
+    expected_consensus = round(sum(a["alignmentScore"] for a in available_archetypes) / 4)
+    assert res["consensusScore"] == expected_consensus
+
+
+def test_f11_missing_macro_cannot_increase_consensus():
+    """Verify that missing macro cannot artificially raise a low consensus score (no positive evidence)."""
+    analyzer = TraderArchetypeAnalyzer()
+
+    # Synthetic low-scoring archetype setup
+    archetypes = [
+        {"name": "Buffett", "alignmentScore": 40, "evidenceStatus": "AVAILABLE"},
+        {"name": "Pelosi", "alignmentScore": 42, "evidenceStatus": "AVAILABLE"},
+        {"name": "Druckenmiller", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "Simons", "alignmentScore": 38, "evidenceStatus": "AVAILABLE"},
+        {"name": "Gardner", "alignmentScore": 40, "evidenceStatus": "AVAILABLE"},
+    ]
+
+    available = [a for a in archetypes if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    consensus = round(sum(a["alignmentScore"] for a in available) / len(available))
+
+    # Without F_11 fix, a nominal 50 would yield (40+42+50+38+40)/5 = 42.0 (elevating consensus)
+    # With F_11 fix, consensus is exactly (40+42+38+40)/4 = 40.0
+    assert consensus == 40
+    assert len(available) == 4
+
+
+def test_f11_missing_macro_cannot_decrease_consensus():
+    """Verify that missing macro cannot artificially drag down a high consensus score (no negative evidence)."""
+    archetypes = [
+        {"name": "Buffett", "alignmentScore": 88, "evidenceStatus": "AVAILABLE"},
+        {"name": "Pelosi", "alignmentScore": 84, "evidenceStatus": "AVAILABLE"},
+        {"name": "Druckenmiller", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "Simons", "alignmentScore": 82, "evidenceStatus": "AVAILABLE"},
+        {"name": "Gardner", "alignmentScore": 86, "evidenceStatus": "AVAILABLE"},
+    ]
+
+    available = [a for a in archetypes if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    consensus = round(sum(a["alignmentScore"] for a in available) / len(available))
+
+    # Without F_11 fix, a nominal 50 would yield (88+84+50+82+86)/5 = 78 (dragging down from buy zone)
+    # With F_11 fix, consensus is exactly (88+84+82+86)/4 = 85
+    assert consensus == 85
+    assert len(available) == 4
+
+
+def test_f11_all_archetypes_unavailable_returns_null_consensus():
+    """Verify that when zero archetypes are available, consensusScore is null / None, never 0, 50, or 100."""
+    archetypes = [
+        {"name": "A", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "B", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+    ]
+    available = [a for a in archetypes if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    consensus = round(sum(a["alignmentScore"] for a in available) / len(available)) if available else None
+    assert consensus is None
+
+
+def test_f11_available_druckenmiller_telemetry_contributes_normally():
+    """Verify that when authentic macro telemetry is present, Druckenmiller contributes as 1 of 5 archetypes."""
+    analyzer = TraderArchetypeAnalyzer()
+    dates = pd.date_range("2026-01-01", periods=60)
+    df = pd.DataFrame({"Close": [100.0 + i * 0.1 for i in range(60)]}, index=dates)
+
+    res = analyzer.analyze_asset(
+        symbol="NVDA",
+        info={"sector": "Technology", "industry": "Semiconductors"},
+        price_df=df,
+        risk_metrics={"Sortino_Ratio": 2.0, "Skewness": -0.1},
+        macro_indicators={"yield_curve_spread": 0.85, "credit_spread_oas": 3.10},  # Authentic macro!
+        factor_scores={"qualityScore": 90, "growthScore": 85, "momentumScore": 80, "valuationScore": 70, "piotroskiFScore": 8, "tailRiskScore": 80},
+    )
+
+    druckenmiller = next(a for a in res["archetypes"] if "Druckenmiller" in a["name"])
+    assert druckenmiller["evidenceStatus"] == "AVAILABLE"
+    assert isinstance(druckenmiller["alignmentScore"], (int, float))
+
+    available_archetypes = [a for a in res["archetypes"] if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    assert len(available_archetypes) == 5
+    expected_consensus = round(sum(a["alignmentScore"] for a in available_archetypes) / 5)
+    assert res["consensusScore"] == expected_consensus
 
 
 def test_f11_frontend_constants_suppresses_hardcoded_macro_proxies():
@@ -89,7 +196,7 @@ def test_f11_frontend_constants_suppresses_hardcoded_macro_proxies():
 def test_f11_confluence_engine_no_fabricated_macro_defaults():
     """Verify confluence engine treats missing macro as unavailable, not fabricating 0.0 or 4.0 defaults."""
     engine = ConfluenceEngine()
-    
+
     # Empty macro_data
     result_empty = engine.calculate_confluence(
         symbol="TEST",
@@ -157,7 +264,7 @@ def test_f05_regime_semantic_separation():
     dates = pd.date_range("2026-01-01", periods=60, freq="D")
     df = pd.DataFrame({"Close": [100.0 + i * 0.2 for i in range(60)]}, index=dates)
     tactical = TacticalRegimeEngine.evaluate_tactical_regime(hist_df=df, use_cache=False)
-    
+
     # 2. Structural Macro Regime & Risk Friction: from shared macro snapshot
     macro_snap = get_shared_macro_snapshot()
 
@@ -165,7 +272,7 @@ def test_f05_regime_semantic_separation():
     assert "regime" in tactical  # Tactical equity (RISK_ON / DEFENSIVE / NEUTRAL)
     assert "structural_macro_regime" in macro_snap  # Macro cycle
     assert "macro_risk_friction" in macro_snap  # Credit friction
-    
+
     # They represent separate semantic layers and must not be collapsed
     assert tactical["regime"] in ("RISK_ON", "DEFENSIVE", "NEUTRAL", "UNAVAILABLE")
     assert macro_snap["macro_risk_friction"] in ("LOW", "NORMAL", "ELEVATED", "UNAVAILABLE")
@@ -196,7 +303,7 @@ def test_f03_shared_macro_snapshot_parity_with_screener():
 def test_f03_screener_candidate_macro_context_id_parity():
     """Verify screener candidates receive macroContextId matching the shared snapshot."""
     from api.routes.screener import run_screener_get
-    
+
     response = run_screener_get(custom_tickers="AAPL")
     assert "macroContextId" in response
     assert len(response["candidates"]) > 0

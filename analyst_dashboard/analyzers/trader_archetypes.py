@@ -93,16 +93,32 @@ class TraderArchetypeAnalyzer:
         gardner = self._evaluate_motley_fool_growth(sym_str, sym_clean, is_crypto, factor_scores, info)
 
         archetypes = [buffett, pelosi, druckenmiller, simons, gardner]
-        consensus_score = round(sum(a["alignmentScore"] for a in archetypes) / len(archetypes))
+        for a in archetypes:
+            if "evidenceStatus" not in a:
+                a["evidenceStatus"] = "AVAILABLE" if a.get("alignmentScore") is not None else "UNAVAILABLE"
 
-        if consensus_score >= 85:
-            verdict = "Strong Buy / Core Accumulation"
-        elif consensus_score >= 75:
-            verdict = "Favorable Multi-Strategy Buy"
-        elif consensus_score >= 65:
-            verdict = "Moderate Growth Hold"
+        # Invariant: Unavailable evidence is not neutral evidence.
+        # Exclude unavailable archetypes from both numerator and denominator.
+        available_archetypes = [
+            a for a in archetypes
+            if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None
+        ]
+
+        if available_archetypes:
+            consensus_score = round(
+                sum(a["alignmentScore"] for a in available_archetypes) / len(available_archetypes)
+            )
+            if consensus_score >= 85:
+                verdict = "Strong Buy / Core Accumulation"
+            elif consensus_score >= 75:
+                verdict = "Favorable Multi-Strategy Buy"
+            elif consensus_score >= 65:
+                verdict = "Moderate Growth Hold"
+            else:
+                verdict = "High Volatility Speculative"
         else:
-            verdict = "High Volatility Speculative"
+            consensus_score = None
+            verdict = "Telemetry Unavailable"
 
         return {
             "consensusScore": consensus_score,
@@ -298,7 +314,8 @@ class TraderArchetypeAnalyzer:
             return {
                 "name": "Stanley Druckenmiller (Macro Trends)",
                 "archetype": "Interest Rate Trends & Market Momentum",
-                "alignmentScore": 50,
+                "alignmentScore": None,
+                "evidenceStatus": "UNAVAILABLE",
                 "status": "Macro Telemetry Unavailable",
                 "thesis": "Macro yield curve and credit spread telemetry unavailable; macro trend evaluation unverified.",
                 "catalyst": "Awaiting authoritative Federal Reserve economic telemetry.",
@@ -340,6 +357,7 @@ class TraderArchetypeAnalyzer:
             "name": "Stanley Druckenmiller (Macro Trends)",
             "archetype": "Interest Rate Trends & Market Momentum",
             "alignmentScore": score,
+            "evidenceStatus": "AVAILABLE",
             "status": status,
             "thesis": thesis,
             "catalyst": catalyst,

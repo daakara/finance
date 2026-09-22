@@ -82,7 +82,9 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
         <div className="flex items-center space-x-2">
           <div className="bg-purple-950/80 border border-purple-700/80 px-3 py-1 rounded-lg text-right">
             <span className="text-[9px] sm:text-[10px] text-purple-300 block uppercase leading-none font-bold">Consensus</span>
-            <span className="text-sm sm:text-base font-bold text-purple-400">{data.consensusScore} / 100</span>
+            <span className="text-sm sm:text-base font-bold text-purple-400">
+              {data.consensusScore != null ? `${data.consensusScore} / 100` : "Unavailable"}
+            </span>
           </div>
           <span className="text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
             {data.verdict}
@@ -93,8 +95,9 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
       {/* 5 Archetypes Adaptive Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {data.archetypes.map((item, idx) => {
-          const isHigh = ((item.alignmentScore ?? 80) ?? 80) >= 80;
-          const isMid = ((item.alignmentScore ?? 80) ?? 80) >= 65;
+          const isUnavailable = item.alignmentScore == null || item.evidenceStatus === "UNAVAILABLE";
+          const isHigh = item.alignmentScore != null && item.alignmentScore >= 80;
+          const isMid = item.alignmentScore != null && item.alignmentScore >= 65;
 
           return (
             <div
@@ -109,10 +112,10 @@ export default function TraderArchetypesCard({ symbol, traderArchetypes }: Trade
                   </span>
                   <span
                     className={`text-sm font-bold shrink-0 ${
-                      isHigh ? "text-cyan-400" : isMid ? "text-emerald-400" : "text-amber-400"
+                      isUnavailable ? "text-slate-400 text-xs" : isHigh ? "text-cyan-400" : isMid ? "text-emerald-400" : "text-amber-400"
                     }`}
                   >
-                    {(item.alignmentScore ?? 80)}%
+                    {isUnavailable ? "Unavailable" : `${item.alignmentScore}%`}
                   </span>
                 </div>
 

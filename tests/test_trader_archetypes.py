@@ -311,8 +311,11 @@ def test_trader_archetype_null_safety_and_none_coalescing():
     assert "consensusScore" in res
     assert len(res["archetypes"]) == 5
     for a in res["archetypes"]:
-        assert isinstance(a["alignmentScore"], (int, float))
-        assert 0 <= a["alignmentScore"] <= 100
+        if a.get("evidenceStatus") == "UNAVAILABLE":
+            assert a["alignmentScore"] is None
+        else:
+            assert isinstance(a["alignmentScore"], (int, float))
+            assert 0 <= a["alignmentScore"] <= 100
         assert len(a["thesis"]) > 5
         assert len(a["catalyst"]) > 5
 
