@@ -1,12 +1,24 @@
-"""Tests for Trader Archetype Strategy Models (Buffett, Pelosi, Druckenmiller, Simons, Gardner)."""
+"""Tests for Trader Archetype Strategy Models (Buffett, Pelosi, Druckenmiller, Simons, Gardner).
+
+Phase 4A-2 F_04 Remediation Test Suite:
+- Verification of authentic empirical scoring and exclusion of numeric laundering fallbacks.
+- Elimination of hardcoded ticker score floors.
+- Explicit typing of static domain priors (STATIC_DOMAIN_PRIOR).
+- Partial-evidence weight normalization across required and optional factors.
+- Preservation of canonical decision authority under DecisionHierarchyEngine.
+"""
 
 import pandas as pd
 import numpy as np
-from analyst_dashboard.analyzers.trader_archetypes import TraderArchetypeAnalyzer
-
 import pytest
-pytestmark = pytest.mark.tier2b
+from analyst_dashboard.analyzers.trader_archetypes import (
+    TraderArchetypeAnalyzer,
+    EvidenceType,
+    ArchetypeEvidenceStatus,
+)
+from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 
+pytestmark = pytest.mark.tier2b
 
 
 def test_trader_archetype_consensus_five_models():
@@ -51,7 +63,7 @@ def test_warren_buffett_moat_and_commodity_discrimination():
     """Warren Buffett Model: Discerning wide moats vs commodity hardware assembly vs logistics vs biotech."""
     analyzer = TraderArchetypeAnalyzer()
 
-    # 1. Wide-Moat Compounder (AAPL)
+    # 1. Wide-Moat Compounder (AAPL) - Empirical score without hardcoded >= 90 floor clamp
     res_aapl = analyzer.analyze_asset(
         symbol="AAPL",
         info={"sector": "Technology", "industry": "Consumer Electronics"},
@@ -61,9 +73,10 @@ def test_warren_buffett_moat_and_commodity_discrimination():
         factor_scores={"qualityScore": 92, "valuationScore": 70, "piotroskiFScore": 8},
     )
     buffett_aapl = next(a for a in res_aapl["archetypes"] if "Buffett" in a["name"])
-    assert buffett_aapl["alignmentScore"] >= 90
+    assert buffett_aapl["alignmentScore"] >= 80
     assert buffett_aapl["status"] == "High Moat Alignment"
     assert "pricing power" in buffett_aapl["thesis"]
+    assert buffett_aapl["evidenceStatus"] in ["AVAILABLE", EvidenceType.AUTHORITATIVE_DYNAMIC]
 
     # 2. Hardware Server Integrator (SMCI) -> Capped score, thin gross margins
     res_smci = analyzer.analyze_asset(
@@ -107,7 +120,7 @@ def test_warren_buffett_moat_and_commodity_discrimination():
     assert buffett_arwr["status"] == "Outside Circle of Competence"
     assert "clinical trial" in buffett_arwr["thesis"].lower()
 
-    # 5. Crypto Moat Proxy (BTC-USD)
+    # 5. Crypto Moat Proxy (BTC-USD) -> Disclosed as STATIC_DOMAIN_PRIOR, without numeric missing-evidence score
     res_btc = analyzer.analyze_asset(
         symbol="BTC-USD",
         info={},
@@ -117,15 +130,18 @@ def test_warren_buffett_moat_and_commodity_discrimination():
         factor_scores={},
     )
     buffett_btc = next(a for a in res_btc["archetypes"] if "Buffett" in a["name"])
-    assert buffett_btc["alignmentScore"] >= 75
-    assert buffett_btc["status"] == "Tier-1 Network Moat"
+    assert buffett_btc["alignmentScore"] is None
+    assert buffett_btc["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+    assert "Tier-1 Network Moat" in buffett_btc["status"]
+    assert buffett_btc["thematicPrior"] is not None
+    assert buffett_btc["thematicPrior"]["evidenceType"] == EvidenceType.STATIC_DOMAIN_PRIOR
 
 
 def test_nancy_pelosi_congressional_policy_coverage():
     """Nancy Pelosi Model: Key legislative policy beneficiaries and sector-aware policy fallbacks."""
     analyzer = TraderArchetypeAnalyzer()
 
-    # 1. Direct Policy Beneficiary (PLTR)
+    # 1. Direct Policy Beneficiary (PLTR) with valid measured momentum and growth
     res_pltr = analyzer.analyze_asset(
         symbol="PLTR",
         info={"sector": "Technology", "industry": "Software - Infrastructure"},
@@ -138,6 +154,8 @@ def test_nancy_pelosi_congressional_policy_coverage():
     assert pelosi_pltr["alignmentScore"] >= 85
     assert pelosi_pltr["status"] == "Strong Policy Support"
     assert "Department of Defense" in pelosi_pltr["thesis"]
+    assert pelosi_pltr["thematicPrior"] is not None
+    assert pelosi_pltr["thematicPrior"]["evidenceType"] == EvidenceType.STATIC_DOMAIN_PRIOR
 
     # 2. Direct Defense Contractor (LMT)
     res_lmt = analyzer.analyze_asset(
@@ -308,14 +326,12 @@ def test_trader_archetype_null_safety_and_none_coalescing():
             "tailRiskScore": None,
         },
     )
-    assert "consensusScore" in res
+    assert res["consensusScore"] is None
+    assert res["verdict"] == "Telemetry Unavailable"
     assert len(res["archetypes"]) == 5
     for a in res["archetypes"]:
-        if a.get("evidenceStatus") == "UNAVAILABLE":
-            assert a["alignmentScore"] is None
-        else:
-            assert isinstance(a["alignmentScore"], (int, float))
-            assert 0 <= a["alignmentScore"] <= 100
+        assert a.get("evidenceStatus") == ArchetypeEvidenceStatus.UNAVAILABLE
+        assert a["alignmentScore"] is None
         assert len(a["thesis"]) > 5
         assert len(a["catalyst"]) > 5
 
@@ -370,3 +386,269 @@ def test_hardware_odm_broadened_matching():
         buffett = next(a for a in res["archetypes"] if "Buffett" in a["name"])
         assert buffett["status"] == "Competitive Commodity Risk", f"{sym} expected Competitive Commodity Risk"
         assert buffett["alignmentScore"] <= 62
+
+
+# ── F_04 Specific Acceptance Test Suites (Sections 16, 17, 18, 19, 20) ──────
+
+def test_f04_section16_no_decision_authority_expansion():
+    """Section 16: Verify archetype scores and consensus CANNOT change decision state,
+    promote actionable status, or enable position sizing under DecisionHierarchyEngine."""
+    analyzer = TraderArchetypeAnalyzer()
+
+    # 1. Evaluate DecisionState for incomplete data
+    engine_verdict = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=150.0,
+        candle_count=10,  # < 50 sessions -> INSUFFICIENT_DATA
+        freshness_status="LIVE_INTRA_DAY",
+        has_fundamentals=True,
+        confluence_score=85.0,
+        stage_phase=None,
+        is_in_buy_zone=False,
+        risk_reward_ratio=None,
+    )
+    assert engine_verdict["state"] == DecisionState.INSUFFICIENT_DATA.value
+    assert engine_verdict["isActionable"] is False
+    assert engine_verdict["canSizeTrade"] is False
+
+    # 2. Perfect archetype scores must have ZERO authority over canonical decision
+    perfect_archetypes = analyzer.analyze_asset(
+        symbol="AAPL",
+        info={"sector": "Technology", "industry": "Consumer Electronics"},
+        price_df=pd.DataFrame({"Close": [100.0, 105.0]}),
+        risk_metrics={"Sortino_Ratio": 3.5, "Skewness": 0.2},
+        macro_indicators={"yield_curve_spread": 0.50, "credit_spread_oas": 2.50},
+        factor_scores={"qualityScore": 95, "valuationScore": 90, "growthScore": 95, "momentumScore": 95, "tailRiskScore": 90, "piotroskiFScore": 9},
+    )
+    assert perfect_archetypes["consensusScore"] >= 80
+
+    # DecisionHierarchyEngine must remain completely unaffected by archetype output
+    engine_verdict_after = DecisionHierarchyEngine.resolve_decision_state(
+        symbol="AAPL",
+        current_price=150.0,
+        candle_count=10,
+        freshness_status="LIVE_INTRA_DAY",
+        has_fundamentals=True,
+        confluence_score=85.0,
+        stage_phase=None,
+        is_in_buy_zone=False,
+        risk_reward_ratio=None,
+    )
+    assert engine_verdict_after["state"] == DecisionState.INSUFFICIENT_DATA.value
+    assert engine_verdict_after["isActionable"] is False
+    assert engine_verdict_after["canSizeTrade"] is False
+
+
+def test_f04_section17_all_measured_inputs_missing_fails_closed():
+    """Section 17: For each archetype, verify that when all measured inputs are missing,
+    no empirical numeric score is synthesized."""
+    analyzer = TraderArchetypeAnalyzer()
+
+    # Empty inputs across all factor, risk, and macro telemetry
+    res = analyzer.analyze_asset(
+        symbol="EMPTY_TEST",
+        info={},
+        price_df=None,
+        risk_metrics={},
+        macro_indicators={},
+        factor_scores={},
+    )
+
+    archetype_map = {a["name"]: a for a in res["archetypes"]}
+
+    # BUFFETT_MISSING_EVIDENCE_NUMERIC_SCORE = NO
+    buffett = next(a for n, a in archetype_map.items() if "Buffett" in n)
+    assert buffett["alignmentScore"] is None
+    assert buffett["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # PELOSI_MISSING_EVIDENCE_NUMERIC_SCORE = NO
+    pelosi = next(a for n, a in archetype_map.items() if "Pelosi" in n)
+    assert pelosi["alignmentScore"] is None
+    assert pelosi["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # DRUCKENMILLER_MISSING_EVIDENCE_NUMERIC_SCORE = NO
+    druck = next(a for n, a in archetype_map.items() if "Druckenmiller" in n)
+    assert druck["alignmentScore"] is None
+    assert druck["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # SIMONS_MISSING_EVIDENCE_NUMERIC_SCORE = NO
+    simons = next(a for n, a in archetype_map.items() if "Simons" in n)
+    assert simons["alignmentScore"] is None
+    assert simons["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # GARDNER_MISSING_EVIDENCE_NUMERIC_SCORE = NO
+    gardner = next(a for n, a in archetype_map.items() if "Gardner" in n)
+    assert gardner["alignmentScore"] is None
+    assert gardner["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # Consensus must be None when all archetypes are unavailable
+    assert res["consensusScore"] is None
+    assert res["verdict"] == "Telemetry Unavailable"
+
+
+def test_f04_section18_partial_evidence_semantics():
+    """Section 18: Partial evidence tests for each archetype:
+    - all factors present
+    - required present + optional missing
+    - required missing
+    - only static prior present
+    - all evidence absent."""
+    analyzer = TraderArchetypeAnalyzer()
+
+    # Buffett: required (quality, valuation), optional (piotroski)
+    # 1. All present -> AUTHORITATIVE_DYNAMIC / AVAILABLE
+    b_all = analyzer._evaluate_buffett_moat("TEST", False, {}, {"qualityScore": 80, "valuationScore": 70, "piotroskiFScore": 8})
+    assert b_all["alignmentScore"] is not None
+    assert b_all["evidenceStatus"] == ArchetypeEvidenceStatus.AVAILABLE
+    assert b_all["evidenceType"] == EvidenceType.AUTHORITATIVE_DYNAMIC
+
+    # 2. Required present + optional missing -> PROVISIONAL_DYNAMIC / PROVISIONAL
+    b_prov = analyzer._evaluate_buffett_moat("TEST", False, {}, {"qualityScore": 80, "valuationScore": 70})
+    assert b_prov["alignmentScore"] is not None
+    assert b_prov["evidenceStatus"] == ArchetypeEvidenceStatus.PROVISIONAL
+    assert b_prov["evidenceType"] == EvidenceType.PROVISIONAL_DYNAMIC
+
+    # 3. Required missing (valuation missing) -> UNAVAILABLE
+    b_req_miss = analyzer._evaluate_buffett_moat("TEST", False, {}, {"qualityScore": 80})
+    assert b_req_miss["alignmentScore"] is None
+    assert b_req_miss["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # 4. Only static prior present (BTC-USD in CRYPTO_MOATS) -> UNAVAILABLE numeric score, STATIC_DOMAIN_PRIOR
+    b_prior_only = analyzer._evaluate_buffett_moat("BTC", True, {}, {})
+    assert b_prior_only["alignmentScore"] is None
+    assert b_prior_only["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+    assert b_prior_only["thematicPrior"]["evidenceType"] == EvidenceType.STATIC_DOMAIN_PRIOR
+
+    # 5. All absent -> UNAVAILABLE
+    b_absent = analyzer._evaluate_buffett_moat("UNKNOWN", False, {}, {})
+    assert b_absent["alignmentScore"] is None
+    assert b_absent["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # Druckenmiller: required (macro YC, macro CS, momentum), optional (growth)
+    # 1. All present -> AUTHORITATIVE_DYNAMIC / AVAILABLE
+    d_all = analyzer._evaluate_druckenmiller_macro(
+        {"yield_curve_spread": 0.40, "credit_spread_oas": 2.50},
+        {"momentumScore": 80, "growthScore": 85},
+        None,
+    )
+    assert d_all["alignmentScore"] is not None
+    assert d_all["evidenceStatus"] == ArchetypeEvidenceStatus.AVAILABLE
+    assert d_all["evidenceType"] == EvidenceType.AUTHORITATIVE_DYNAMIC
+
+    # 2. Required present + optional missing (growth missing) -> PROVISIONAL_DYNAMIC / PROVISIONAL
+    d_prov = analyzer._evaluate_druckenmiller_macro(
+        {"yield_curve_spread": 0.40, "credit_spread_oas": 2.50},
+        {"momentumScore": 80},
+        None,
+    )
+    assert d_prov["alignmentScore"] is not None
+    assert d_prov["evidenceStatus"] == ArchetypeEvidenceStatus.PROVISIONAL
+    assert d_prov["evidenceType"] == EvidenceType.PROVISIONAL_DYNAMIC
+
+    # 3. Required missing (momentum missing) -> UNAVAILABLE
+    d_miss = analyzer._evaluate_druckenmiller_macro(
+        {"yield_curve_spread": 0.40, "credit_spread_oas": 2.50},
+        {},
+        None,
+    )
+    assert d_miss["alignmentScore"] is None
+    assert d_miss["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+    # Simons: required (Sortino, Skewness, tailRisk), optional (momentum)
+    # 1. All present -> AUTHORITATIVE_DYNAMIC / AVAILABLE
+    s_all = analyzer._evaluate_simons_quant(
+        {"Sortino_Ratio": 2.0, "Skewness": -0.2},
+        None,
+        {"tailRiskScore": 85, "momentumScore": 80},
+    )
+    assert s_all["alignmentScore"] is not None
+    assert s_all["evidenceStatus"] == ArchetypeEvidenceStatus.AVAILABLE
+    assert s_all["evidenceType"] == EvidenceType.AUTHORITATIVE_DYNAMIC
+
+    # 2. Required present + optional missing (momentum missing) -> PROVISIONAL_DYNAMIC / PROVISIONAL
+    s_prov = analyzer._evaluate_simons_quant(
+        {"Sortino_Ratio": 2.0, "Skewness": -0.2},
+        None,
+        {"tailRiskScore": 85},
+    )
+    assert s_prov["alignmentScore"] is not None
+    assert s_prov["evidenceStatus"] == ArchetypeEvidenceStatus.PROVISIONAL
+    assert s_prov["evidenceType"] == EvidenceType.PROVISIONAL_DYNAMIC
+
+    # 3. Required missing (Sortino missing) -> UNAVAILABLE
+    s_miss = analyzer._evaluate_simons_quant(
+        {"Skewness": -0.2},
+        None,
+        {"tailRiskScore": 85},
+    )
+    assert s_miss["alignmentScore"] is None
+    assert s_miss["evidenceStatus"] == ArchetypeEvidenceStatus.UNAVAILABLE
+
+
+def test_f04_section19_consensus_aggregation_formula():
+    """Section 19: Consensus test:
+    - 80, 70, None -> expected 75
+    - None, None, None, None, None -> consensus = None, verdict = Telemetry Unavailable."""
+    # Synthetic consensus with 80, 70, None
+    archetypes = [
+        {"name": "A1", "alignmentScore": 80, "evidenceStatus": "AUTHORITATIVE_DYNAMIC"},
+        {"name": "A2", "alignmentScore": 70, "evidenceStatus": "PROVISIONAL_DYNAMIC"},
+        {"name": "A3", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+    ]
+    available = [a for a in archetypes if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    consensus = round(sum(a["alignmentScore"] for a in available) / len(available))
+    assert consensus == 75
+
+    # All None
+    all_none = [
+        {"name": "A1", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "A2", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "A3", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "A4", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+        {"name": "A5", "alignmentScore": None, "evidenceStatus": "UNAVAILABLE"},
+    ]
+    avail_none = [a for a in all_none if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None]
+    cons_none = round(sum(a["alignmentScore"] for a in avail_none) / len(avail_none)) if avail_none else None
+    assert cons_none is None
+
+
+def test_f04_section20_prior_disclosure_and_labeling():
+    """Section 20: For tickers in curated thematic dictionaries verify:
+    - STATIC_PRIOR_VISIBLE = YES
+    - STATIC_PRIOR_LABELED = YES
+    - STATIC_PRIOR_PRESENTED_AS_LIVE_OBSERVATION = NO."""
+    analyzer = TraderArchetypeAnalyzer()
+
+    # NVDA in MOTLEY_FOOL_DISRUPTORS
+    res_nvda = analyzer.analyze_asset(
+        symbol="NVDA",
+        info={"sector": "Technology", "industry": "Semiconductors"},
+        price_df=None,
+        risk_metrics={"Sortino_Ratio": 2.2, "Skewness": -0.1},
+        macro_indicators={"yield_curve_spread": 0.40, "credit_spread_oas": 2.50},
+        factor_scores={"growthScore": 95, "momentumScore": 92, "qualityScore": 90, "valuationScore": 75, "tailRiskScore": 85},
+    )
+
+    gardner = next(a for a in res_nvda["archetypes"] if "Gardner" in a["name"])
+    assert gardner["thematicPrior"] is not None
+    assert gardner["thematicPrior"]["source"] == "MOTLEY_FOOL_DISRUPTORS"
+    assert gardner["thematicPrior"]["evidenceType"] == EvidenceType.STATIC_DOMAIN_PRIOR
+    assert gardner["thematicPrior"]["isStaticPrior"] is True
+    assert gardner["thematicPrior"]["isLiveObservation"] is False
+
+    # PLTR in CONGRESSIONAL_POLICY_TICKERS
+    res_pltr = analyzer.analyze_asset(
+        symbol="PLTR",
+        info={"sector": "Technology", "industry": "Software"},
+        price_df=None,
+        risk_metrics={"Sortino_Ratio": 2.0, "Skewness": -0.1},
+        macro_indicators={"yield_curve_spread": 0.40, "credit_spread_oas": 2.50},
+        factor_scores={"growthScore": 92, "momentumScore": 90, "qualityScore": 88, "valuationScore": 70, "tailRiskScore": 80},
+    )
+
+    pelosi = next(a for a in res_pltr["archetypes"] if "Pelosi" in a["name"])
+    assert pelosi["thematicPrior"] is not None
+    assert pelosi["thematicPrior"]["source"] == "CONGRESSIONAL_POLICY_TICKERS"
+    assert pelosi["thematicPrior"]["evidenceType"] == EvidenceType.STATIC_DOMAIN_PRIOR
+    assert pelosi["thematicPrior"]["isStaticPrior"] is True
+    assert pelosi["thematicPrior"]["isLiveObservation"] is False

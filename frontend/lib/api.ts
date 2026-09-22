@@ -80,6 +80,26 @@ export interface ExpectedReturnForecast {
   forecastHorizonDays: number;
 }
 
+export interface ThematicPrior {
+  source: string;
+  evidenceType: string;
+  isStaticPrior?: boolean;
+  isLiveObservation?: boolean;
+  description?: string;
+  thesis?: string;
+  catalyst?: string;
+}
+
+export interface FactorEvidenceItem {
+  name: string;
+  value: number | null;
+  evidenceType: string;
+  quality: string;
+  source: string;
+  asOf?: string | null;
+  required: boolean;
+}
+
 export interface TraderArchetypeItem {
   name: string;
   archetype: string;
@@ -93,6 +113,8 @@ export interface TraderArchetypeItem {
   status?: string;
   thesis?: string;
   catalyst?: string;
+  thematicPrior?: ThematicPrior | null;
+  factorEvidence?: Record<string, FactorEvidenceItem>;
 }
 
 export interface TraderArchetypeConsensus {
@@ -103,6 +125,9 @@ export interface TraderArchetypeConsensus {
   bearish_archetype_count?: number;
   neutral_archetype_count?: number;
   macro_alignment?: string;
+  availableCount?: number;
+  unavailableCount?: number;
+  coverageRatio?: number;
   archetypes: TraderArchetypeItem[];
 }
 

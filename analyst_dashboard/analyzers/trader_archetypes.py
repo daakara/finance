@@ -1,17 +1,79 @@
+"""Trader Archetypes Strategy Models (Buffett, Pelosi, Druckenmiller, Simons, Gardner).
+
+Phase 4A-2 F_04 Remediation:
+- Elimination of numeric missing-evidence substitution (no _safe_num fallback laundering).
+- Elimination of hardcoded ticker score floors (no AAPL/BAC max(score, 90)).
+- Separation of static domain priors (CONGRESSIONAL_POLICY_TICKERS, CRYPTO_MOATS, MOTLEY_FOOL_DISRUPTORS) from measured empirical evidence.
+- Factor-level evidence tracking with explicit EvidenceType taxonomy.
+- Strict partial-evidence semantics: required vs optional factors and dynamic weight normalization.
+- Exclusion of unavailable archetypes from consensus numerator and denominator.
+"""
+
 import math
 from typing import Dict, Any, List, Optional
 import pandas as pd
 import numpy as np
 
 
-def _safe_num(d: Any, key: str, default: float) -> float:
-    """Safely extracts a numeric float value from dictionary d, coalescing None, NaN, Inf, booleans, and invalid types."""
+class EvidenceType:
+    """Rigid evidence classification taxonomy for archetype factor inputs and composite scores."""
+    AUTHORITATIVE_DYNAMIC = "AUTHORITATIVE_DYNAMIC"
+    PROVISIONAL_DYNAMIC = "PROVISIONAL_DYNAMIC"
+    STATIC_DOMAIN_PRIOR = "STATIC_DOMAIN_PRIOR"
+    HEURISTIC = "HEURISTIC"
+    CURRENT_ONLY = "CURRENT_ONLY"
+    UNAVAILABLE = "UNAVAILABLE"
+    STALE = "STALE"
+
+
+class ArchetypeEvidenceStatus:
+    AVAILABLE = "AVAILABLE"
+    PROVISIONAL = "PROVISIONAL"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+def _extract_num(d: Any, key: str) -> Optional[float]:
+    """Safely extracts a numeric float value from dictionary d.
+
+    Returns None if missing, non-dict, bool, NaN, Inf, or invalid type.
+    Strictly never substitutes missing observations with nominal defaults.
+    """
     if not isinstance(d, dict):
-        return default
+        return None
     v = d.get(key)
-    if v is None or isinstance(v, bool) or not isinstance(v, (int, float)) or (isinstance(v, float) and (math.isnan(v) or math.isinf(v))):
-        return default
-    return float(v)
+    if v is None or isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    fv = float(v)
+    if math.isnan(fv) or math.isinf(fv):
+        return None
+    return fv
+
+
+def _make_factor_input(
+    name: str,
+    value: Optional[float],
+    required: bool,
+    source: str,
+    evidence_type: Optional[str] = None,
+    quality: str = "HIGH",
+    as_of: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Packages a single factor measurement into an audited factor-level evidence model."""
+    if value is None:
+        etype = EvidenceType.UNAVAILABLE
+        qual = "NONE"
+    else:
+        etype = evidence_type or EvidenceType.AUTHORITATIVE_DYNAMIC
+        qual = quality
+    return {
+        "name": name,
+        "value": value,
+        "evidenceType": etype,
+        "quality": qual,
+        "source": source,
+        "asOf": as_of,
+        "required": required,
+    }
 
 
 class TraderArchetypeAnalyzer:
@@ -95,13 +157,13 @@ class TraderArchetypeAnalyzer:
         archetypes = [buffett, pelosi, druckenmiller, simons, gardner]
         for a in archetypes:
             if "evidenceStatus" not in a:
-                a["evidenceStatus"] = "AVAILABLE" if a.get("alignmentScore") is not None else "UNAVAILABLE"
+                a["evidenceStatus"] = ArchetypeEvidenceStatus.AVAILABLE if a.get("alignmentScore") is not None else ArchetypeEvidenceStatus.UNAVAILABLE
 
         # Invariant: Unavailable evidence is not neutral evidence.
         # Exclude unavailable archetypes from both numerator and denominator.
         available_archetypes = [
             a for a in archetypes
-            if a.get("evidenceStatus") != "UNAVAILABLE" and a.get("alignmentScore") is not None
+            if a.get("evidenceStatus") != ArchetypeEvidenceStatus.UNAVAILABLE and a.get("alignmentScore") is not None
         ]
 
         if available_archetypes:
@@ -124,90 +186,181 @@ class TraderArchetypeAnalyzer:
             "consensusScore": consensus_score,
             "verdict": verdict,
             "archetypes": archetypes,
+            "availableCount": len(available_archetypes),
+            "unavailableCount": len(archetypes) - len(available_archetypes),
+            "coverageRatio": round(len(available_archetypes) / len(archetypes), 2),
         }
 
     def _evaluate_buffett_moat(
         self, sym: str, is_crypto: bool, info: Dict[str, Any], factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Warren Buffett Value, Quality, Moat & Free Cash Flow model (with Crypto Protocol Fee Proxy)."""
+        factor_scores_dict = factor_scores if isinstance(factor_scores, dict) else {}
+        quality = _extract_num(factor_scores_dict, "qualityScore")
+        valuation = _extract_num(factor_scores_dict, "valuationScore")
+        piotroski = _extract_num(factor_scores_dict, "piotroskiFScore")
+        as_of = factor_scores_dict.get("as_of_date") or factor_scores_dict.get("asOfDate")
+
+        factor_evidence = {
+            "qualityScore": _make_factor_input("qualityScore", quality, required=True, source="factor_engine", as_of=as_of),
+            "valuationScore": _make_factor_input("valuationScore", valuation, required=True, source="factor_engine", as_of=as_of),
+            "piotroskiFScore": _make_factor_input("piotroskiFScore", piotroski, required=False, source="financial_statements", as_of=as_of),
+        }
+
         if is_crypto:
             crypto_data = self.CRYPTO_MOATS.get(sym, None)
             if crypto_data:
+                thematic_prior = {
+                    "source": "CRYPTO_MOATS",
+                    "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
+                    "isStaticPrior": True,
+                    "isLiveObservation": False,
+                    "description": crypto_data["thesis"],
+                    "thesis": crypto_data["thesis"],
+                    "catalyst": crypto_data["catalyst"],
+                }
                 return {
                     "name": "Warren Buffett (Value & Moat)",
                     "archetype": "Network Moat & Protocol Cash Flows",
-                    "alignmentScore": crypto_data["score"],
-                    "status": "Tier-1 Network Moat",
+                    "alignmentScore": None,
+                    "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                    "evidenceType": EvidenceType.UNAVAILABLE,
+                    "status": "Tier-1 Network Moat (Static Prior)",
                     "thesis": crypto_data["thesis"],
                     "catalyst": crypto_data["catalyst"],
+                    "factorEvidence": factor_evidence,
+                    "thematicPrior": thematic_prior,
                 }
             return {
                 "name": "Warren Buffett (Value & Moat)",
                 "archetype": "High Cash Flow & Wide Moats",
-                "alignmentScore": 38,
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
                 "status": "Speculative Altcoin",
                 "thesis": "Lacks consistent protocol fee generation or store-of-value monetary premium.",
                 "catalyst": "Prefers assets with sustainable economic utility and clear cash dividends.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
             }
 
-        quality = _safe_num(factor_scores, "qualityScore", 80.0)
-        valuation = _safe_num(factor_scores, "valuationScore", 75.0)
-        piotroski = _safe_num(factor_scores, "piotroskiFScore", 8.0)
+        # Check required empirical factors: qualityScore and valuationScore
+        if quality is None or valuation is None:
+            return {
+                "name": "Warren Buffett (Value & Moat)",
+                "archetype": "High Cash Flow & Wide Moats",
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
+                "status": "Fundamental Telemetry Unavailable",
+                "thesis": "Quality or valuation factor measurements unavailable; Buffett moat evaluation unverified.",
+                "catalyst": "Awaiting authoritative fundamental financial statements and valuation multiples.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
+            }
 
         sector = (info.get("sector") if (isinstance(info, dict) and isinstance(info.get("sector"), str)) else "").lower()
         industry = (info.get("industry") if (isinstance(info, dict) and isinstance(info.get("industry"), str)) else "").lower()
 
-        # Hardware Server Integrator & Low Gross-Margin ODM check (e.g. SMCI, DELL, HPE, VRT, CIEN, FLEX, CLS, JBL, WST)
+        # Dynamic partial-evidence weight normalization
+        if piotroski is not None:
+            p_val = min(100.0, max(0.0, piotroski * 10.0))
+            raw_score = quality * 0.45 + valuation * 0.35 + p_val * 0.20
+            evidence_status = ArchetypeEvidenceStatus.AVAILABLE
+            evidence_type = EvidenceType.AUTHORITATIVE_DYNAMIC
+        else:
+            w_qual = 0.45 / 0.80
+            w_val = 0.35 / 0.80
+            raw_score = quality * w_qual + valuation * w_val
+            evidence_status = ArchetypeEvidenceStatus.PROVISIONAL
+            evidence_type = EvidenceType.PROVISIONAL_DYNAMIC
+
+        # Hardware Server Integrator & Low Gross-Margin ODM check
         is_hardware_odm = (
             sym in {"SMCI", "DELL", "HPE", "VRT", "CIEN", "FLEX", "CLS", "JBL", "WST"}
             or any(k in industry for k in ["computer hardware", "server", "electronic manufacturing", "contract electronics", "chassis", "liquid cooling"])
         )
         if is_hardware_odm:
-            score = min(62, max(42, int(quality * 0.30 + valuation * 0.35 + (piotroski * 10) * 0.15)))
+            if piotroski is not None:
+                p_val = min(100.0, max(0.0, piotroski * 10.0))
+                odm_score = quality * 0.30 + valuation * 0.35 + p_val * 0.15
+            else:
+                odm_score = quality * (0.30 / 0.65) + valuation * (0.35 / 0.65)
+            score = min(62, max(42, int(odm_score)))
             return {
                 "name": "Warren Buffett (Value & Moat)",
                 "archetype": "High Cash Flow & Wide Moats",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Competitive Commodity Risk",
                 "thesis": "Capital-intensive server hardware integration with thin gross margins (~11-14%) and customer concentration risk.",
                 "catalyst": "Prefers wide-moat pricing power and tollbooth businesses over cyclical hardware assembly.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
             }
 
-        # Logistics & Freight check (DHLGY, FDX, UPS, EXPD, JBHT, CHRW)
+        # Logistics & Freight check
         is_logistics = (
             sym in {"DHLGY", "FDX", "UPS", "EXPD", "JBHT", "CHRW", "ZTO", "GXO", "XPO"}
             or (sector != "real estate" and "reit" not in industry and any(k in industry for k in ["freight", "logistics", "shipping", "courier", "trucking"]))
         )
         if is_logistics:
-            score = min(72, max(48, int(quality * 0.40 + valuation * 0.40 + (piotroski * 10) * 0.15)))
+            if piotroski is not None:
+                p_val = min(100.0, max(0.0, piotroski * 10.0))
+                log_score = quality * 0.40 + valuation * 0.40 + p_val * 0.15
+            else:
+                log_score = quality * 0.50 + valuation * 0.50
+            score = min(72, max(48, int(log_score)))
             return {
                 "name": "Warren Buffett (Value & Moat)",
                 "archetype": "High Cash Flow & Wide Moats",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Capital-Intensive Network Moat",
                 "thesis": "Extensive global delivery sorting infrastructure provides physical barrier to entry, but requires heavy recurring fleet CapEx and is exposed to union labor and fuel cycles.",
                 "catalyst": "Focuses on owner-earnings yield and free cash flow generation across global freight volume cycles.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
             }
 
-        # Clinical Biopharma (High R&D / Binary clinical risk)
+        # Clinical Biopharma
         is_biopharma = (
             sym in {"ARWR", "CPRX", "MRNA", "CRSP", "BEAM", "BIIB", "LLY", "NVO", "VRTX", "REGN", "AMGN", "GILD", "BMY", "PFE", "INCY"}
             or (sector == "healthcare" and any(k in industry for k in ["biotechnology", "drug manufacturers", "pharmaceutical", "therapeutics", "therapies", "biopharmaceutical", "drug discovery", "gene editing"]))
         )
         if is_biopharma and quality < 75:
-            score = min(58, max(38, int(quality * 0.30 + valuation * 0.30 + (piotroski * 10) * 0.15)))
+            if piotroski is not None:
+                p_val = min(100.0, max(0.0, piotroski * 10.0))
+                bio_score = quality * 0.30 + valuation * 0.30 + p_val * 0.15
+            else:
+                bio_score = quality * 0.50 + valuation * 0.50
+            score = min(58, max(38, int(bio_score)))
             return {
                 "name": "Warren Buffett (Value & Moat)",
                 "archetype": "High Cash Flow & Wide Moats",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Outside Circle of Competence",
                 "thesis": "Binary clinical trial risk and unpredictable cash flows fall outside classic franchise predictability.",
                 "catalyst": "Prefers predictable consumer and industrial monopolies with demonstrated century-long durability.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
             }
 
-        score = min(96, max(40, int(quality * 0.45 + valuation * 0.35 + (piotroski * 10) * 0.20)))
-        if sym in ["AAPL", "BAC", "KO", "AXP", "OXY", "SPY", "QQQ"]:
-            score = max(score, 90)
+        score = min(96, max(40, int(raw_score)))
+
+        thematic_prior = None
+        if sym in ["AAPL", "BAC", "KO", "AXP", "OXY"]:
+            thematic_prior = {
+                "source": "BERKSHIRE_PORTFOLIO",
+                "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
+                "isStaticPrior": True,
+                "isLiveObservation": False,
+                "description": "Historical Berkshire Hathaway core equity portfolio holding.",
+            }
 
         if score >= 80:
             status = "High Moat Alignment"
@@ -226,38 +379,82 @@ class TraderArchetypeAnalyzer:
             "name": "Warren Buffett (Value & Moat)",
             "archetype": "High Cash Flow & Wide Moats",
             "alignmentScore": score,
+            "evidenceStatus": evidence_status,
+            "evidenceType": evidence_type,
             "status": status,
             "thesis": thesis,
             "catalyst": catalyst,
+            "factorEvidence": factor_evidence,
+            "thematicPrior": thematic_prior,
         }
 
     def _evaluate_congressional_whale(
         self, symbol: str, sym_clean: str, factor_scores: Dict[str, Any], is_crypto: bool, info: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Nancy Pelosi / Congressional Policy Catalyst model."""
+        factor_scores_dict = factor_scores if isinstance(factor_scores, dict) else {}
+        momentum = _extract_num(factor_scores_dict, "momentumScore")
+        growth = _extract_num(factor_scores_dict, "growthScore")
+        as_of = factor_scores_dict.get("as_of_date") or factor_scores_dict.get("asOfDate")
+
+        factor_evidence = {
+            "momentumScore": _make_factor_input("momentumScore", momentum, required=True, source="factor_engine", as_of=as_of),
+            "growthScore": _make_factor_input("growthScore", growth, required=True, source="factor_engine", as_of=as_of),
+        }
+
         policy_catalyst = self.CONGRESSIONAL_POLICY_TICKERS.get(
             symbol,
             self.CONGRESSIONAL_POLICY_TICKERS.get(sym_clean, None),
         )
 
-        momentum = _safe_num(factor_scores, "momentumScore", 70.0)
-        growth = _safe_num(factor_scores, "growthScore", 75.0)
+        thematic_prior = None
+        if policy_catalyst:
+            thematic_prior = {
+                "source": "CONGRESSIONAL_POLICY_TICKERS",
+                "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
+                "isStaticPrior": True,
+                "isLiveObservation": False,
+                "description": policy_catalyst,
+                "thesis": policy_catalyst,
+            }
+
+        # Check required empirical factors: momentumScore and growthScore
+        if momentum is None or growth is None:
+            status = "Strong Policy Support (Thematic Prior)" if policy_catalyst else "Policy Telemetry Unavailable"
+            thesis = policy_catalyst if policy_catalyst else "Growth and momentum factor measurements unavailable; congressional whale alignment unverified."
+            catalyst = "Awaiting measured company momentum and growth factors."
+            return {
+                "name": "Nancy Pelosi (Policy & Government Catalysts)",
+                "archetype": "Government Spending & High-Conviction Tech",
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
+                "status": status,
+                "thesis": thesis,
+                "catalyst": catalyst,
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
+            }
+
+        # Both required factors present -> compute observed evidence score
+        score = min(96, max(45, int((growth * 0.60) + (momentum * 0.40))))
 
         if policy_catalyst:
-            score = min(98, max(75, int(82 + (momentum * 0.1) + (growth * 0.08))))
             return {
                 "name": "Nancy Pelosi (Policy & Government Catalysts)",
                 "archetype": "Government Spending & High-Conviction Tech",
                 "alignmentScore": score,
+                "evidenceStatus": ArchetypeEvidenceStatus.AVAILABLE,
+                "evidenceType": EvidenceType.AUTHORITATIVE_DYNAMIC,
                 "status": "Strong Policy Support",
                 "thesis": policy_catalyst,
                 "catalyst": "Beneficiary of federal industrial policy, technology subsidies, and government contracts.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
         sector = (info.get("sector") if (isinstance(info, dict) and isinstance(info.get("sector"), str)) else "").lower()
         industry = (info.get("industry") if (isinstance(info, dict) and isinstance(info.get("industry"), str)) else "").lower()
-
-        score = min(82, max(45, int((growth * 0.6) + (momentum * 0.4))))
 
         if any(term in sector or term in industry for term in ["defense", "aerospace"]):
             status = "Defense Appropriations Exposure"
@@ -284,71 +481,120 @@ class TraderArchetypeAnalyzer:
             "name": "Nancy Pelosi (Policy & Government Catalysts)",
             "archetype": "Government Spending & High-Conviction Tech",
             "alignmentScore": score,
+            "evidenceStatus": ArchetypeEvidenceStatus.AVAILABLE,
+            "evidenceType": EvidenceType.AUTHORITATIVE_DYNAMIC,
             "status": status,
             "thesis": thesis,
             "catalyst": catalyst,
+            "factorEvidence": factor_evidence,
+            "thematicPrior": None,
         }
 
     def _evaluate_druckenmiller_macro(
         self, macro_indicators: Dict[str, Any], factor_scores: Dict[str, Any], price_df: Any
     ) -> Dict[str, Any]:
         """Stanley Druckenmiller / Macro Trends & Reflexivity model (Dynamic Regime-Aware)."""
-        # Canonical macro check: strictly authentic observations without nominal laundering
-        raw_yc = macro_indicators.get("yield_curve_10y2y") if isinstance(macro_indicators, dict) else None
-        if raw_yc is None and isinstance(macro_indicators, dict):
-            raw_yc = macro_indicators.get("yield_curve_spread")
-        raw_cs = macro_indicators.get("high_yield_credit_spread") if isinstance(macro_indicators, dict) else None
-        if raw_cs is None and isinstance(macro_indicators, dict):
-            raw_cs = macro_indicators.get("credit_spread_oas")
-        if raw_cs is None and isinstance(macro_indicators, dict):
-            raw_cs = macro_indicators.get("credit_spread")
+        factor_scores_dict = factor_scores if isinstance(factor_scores, dict) else {}
+        as_of = factor_scores_dict.get("as_of_date") or factor_scores_dict.get("asOfDate")
 
-        has_authentic_macro = (
-            raw_yc is not None
-            and raw_cs is not None
-            and not isinstance(raw_yc, bool)
-            and not isinstance(raw_cs, bool)
-        )
+        raw_yc = None
+        raw_cs = None
+        if isinstance(macro_indicators, dict):
+            raw_yc = macro_indicators.get("yield_curve_10y2y")
+            if raw_yc is None:
+                raw_yc = macro_indicators.get("yield_curve_spread")
+            raw_cs = macro_indicators.get("high_yield_credit_spread")
+            if raw_cs is None:
+                raw_cs = macro_indicators.get("credit_spread_oas")
+            if raw_cs is None:
+                raw_cs = macro_indicators.get("credit_spread")
 
-        if not has_authentic_macro:
+        yc_val = float(raw_yc) if (raw_yc is not None and not isinstance(raw_yc, bool) and not (isinstance(raw_yc, float) and (math.isnan(raw_yc) or math.isinf(raw_yc)))) else None
+        cs_val = float(raw_cs) if (raw_cs is not None and not isinstance(raw_cs, bool) and not (isinstance(raw_cs, float) and (math.isnan(raw_cs) or math.isinf(raw_cs)))) else None
+
+        momentum = _extract_num(factor_scores_dict, "momentumScore")
+        growth = _extract_num(factor_scores_dict, "growthScore")
+
+        factor_evidence = {
+            "yield_curve": _make_factor_input("yield_curve", yc_val, required=True, source="fred_macro"),
+            "credit_spread": _make_factor_input("credit_spread", cs_val, required=True, source="fred_macro"),
+            "momentumScore": _make_factor_input("momentumScore", momentum, required=True, source="factor_engine", as_of=as_of),
+            "growthScore": _make_factor_input("growthScore", growth, required=False, source="factor_engine", as_of=as_of),
+        }
+
+        # Check required authentic macro telemetry (Phase 3 preservation)
+        if yc_val is None or cs_val is None:
             return {
                 "name": "Stanley Druckenmiller (Macro Trends)",
                 "archetype": "Interest Rate Trends & Market Momentum",
                 "alignmentScore": None,
-                "evidenceStatus": "UNAVAILABLE",
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
                 "status": "Macro Telemetry Unavailable",
                 "thesis": "Macro yield curve and credit spread telemetry unavailable; macro trend evaluation unverified.",
                 "catalyst": "Awaiting authoritative Federal Reserve economic telemetry.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
             }
 
-        yield_curve = float(raw_yc)
-        credit_spread = float(raw_cs)
-        momentum = _safe_num(factor_scores, "momentumScore", 50.0)
-        growth = _safe_num(factor_scores, "growthScore", 50.0)
+        # Check required empirical momentum
+        if momentum is None:
+            return {
+                "name": "Stanley Druckenmiller (Macro Trends)",
+                "archetype": "Interest Rate Trends & Market Momentum",
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
+                "status": "Momentum Telemetry Unavailable",
+                "thesis": "Price momentum factor unavailable; macro momentum alignment unverified.",
+                "catalyst": "Awaiting verified price trend and momentum factors.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
+            }
+
+        yield_curve = yc_val
+        credit_spread = cs_val
+
+        # Partial evidence weight normalization (growth is optional)
+        has_growth = (growth is not None)
+        evidence_status = ArchetypeEvidenceStatus.AVAILABLE if has_growth else ArchetypeEvidenceStatus.PROVISIONAL
+        evidence_type = EvidenceType.AUTHORITATIVE_DYNAMIC if has_growth else EvidenceType.PROVISIONAL_DYNAMIC
 
         # 1. Inverted Yield Curve Regime (Late-cycle / Tightening)
         if yield_curve < 0.0:
-            score = min(82, max(42, int(52 * 0.4 + momentum * 0.35 + growth * 0.25)))
+            if has_growth:
+                score = min(82, max(42, int(52 * 0.40 + momentum * 0.35 + growth * 0.25)))
+            else:
+                score = min(82, max(42, int(52 * (0.40 / 0.75) + momentum * (0.35 / 0.75))))
             status = "Inverted Yield Curve / Late-Cycle Warning"
             thesis = "Inverted yield curve signals late-cycle macroeconomic tightening; warrants tight trailing stops and tactical risk management."
             catalyst = "Flight to balance-sheet liquidity, defensive cash flows, and defensive secular alpha."
         # 2. Widening Credit Spread Regime (Credit Stress)
         elif credit_spread >= 4.0:
-            score = min(84, max(45, int(58 * 0.4 + momentum * 0.35 + growth * 0.25)))
+            if has_growth:
+                score = min(84, max(45, int(58 * 0.40 + momentum * 0.35 + growth * 0.25)))
+            else:
+                score = min(84, max(45, int(58 * (0.40 / 0.75) + momentum * (0.35 / 0.75))))
             status = "Credit Spread Widening / Macro Caution"
             thesis = "Elevated credit spreads indicate tightening financial conditions and increased discount rate risk on high-multiple equities."
             catalyst = "Federal Reserve liquidity management and corporate debt refinancing stability."
         # 3. Steepening Yield Curve / Bullish Expansion
         elif yield_curve > 0.20 and credit_spread < 3.2:
             base = 90
-            score = min(97, max(45, int(base * 0.5 + momentum * 0.3 + growth * 0.2)))
+            if has_growth:
+                score = min(97, max(45, int(base * 0.50 + momentum * 0.30 + growth * 0.20)))
+            else:
+                score = min(97, max(45, int(base * (0.50 / 0.80) + momentum * (0.30 / 0.80))))
             status = "Positive Macro Trend" if score >= 80 else "Neutral Macro"
             thesis = "Accommodative monetary liquidity, steepening yield curve, and strong price momentum create high-conviction macro tailwinds."
             catalyst = "Central bank easing trajectory and institutional trend-following capital inflows."
         # 4. Transitional / Normalizing Macro Regime
         else:
             base = 70 + (8 if credit_spread < 3.5 else 0)
-            score = min(90, max(45, int(base * 0.5 + momentum * 0.3 + growth * 0.2)))
+            if has_growth:
+                score = min(90, max(45, int(base * 0.50 + momentum * 0.30 + growth * 0.20)))
+            else:
+                score = min(90, max(45, int(base * (0.50 / 0.80) + momentum * (0.30 / 0.80))))
             status = "Neutral Macro Transition"
             thesis = "Transitional interest rate regime with flat yield curve dynamics; macro sizing favors selective momentum leaders with balance sheet resilience."
             catalyst = "Selective corporate earnings resilience amidst macroeconomic policy shifts."
@@ -357,23 +603,60 @@ class TraderArchetypeAnalyzer:
             "name": "Stanley Druckenmiller (Macro Trends)",
             "archetype": "Interest Rate Trends & Market Momentum",
             "alignmentScore": score,
-            "evidenceStatus": "AVAILABLE",
+            "evidenceStatus": evidence_status,
+            "evidenceType": evidence_type,
             "status": status,
             "thesis": thesis,
             "catalyst": catalyst,
+            "factorEvidence": factor_evidence,
+            "thematicPrior": None,
         }
 
     def _evaluate_simons_quant(
         self, risk_metrics: Dict[str, Any], price_df: Any, factor_scores: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Jim Simons / Renaissance Quantitative Risk model (Distribution & Tail-Risk Aware)."""
-        sortino = _safe_num(risk_metrics, "Sortino_Ratio", 1.84)
-        skew = _safe_num(risk_metrics, "Skewness", -0.15)
-        tail_risk = _safe_num(factor_scores, "tailRiskScore", 80.0)
-        momentum = _safe_num(factor_scores, "momentumScore", 75.0)
+        risk_metrics_dict = risk_metrics if isinstance(risk_metrics, dict) else {}
+        factor_scores_dict = factor_scores if isinstance(factor_scores, dict) else {}
+        as_of = factor_scores_dict.get("as_of_date") or factor_scores_dict.get("asOfDate")
+
+        sortino = _extract_num(risk_metrics_dict, "Sortino_Ratio")
+        skew = _extract_num(risk_metrics_dict, "Skewness")
+        tail_risk = _extract_num(factor_scores_dict, "tailRiskScore")
+        momentum = _extract_num(factor_scores_dict, "momentumScore")
+
+        factor_evidence = {
+            "Sortino_Ratio": _make_factor_input("Sortino_Ratio", sortino, required=True, source="risk_metrics"),
+            "Skewness": _make_factor_input("Skewness", skew, required=True, source="risk_metrics"),
+            "tailRiskScore": _make_factor_input("tailRiskScore", tail_risk, required=True, source="factor_engine", as_of=as_of),
+            "momentumScore": _make_factor_input("momentumScore", momentum, required=False, source="factor_engine", as_of=as_of),
+        }
+
+        # Require real quantitative input: Sortino, Skewness, tailRiskScore
+        if sortino is None or skew is None or tail_risk is None:
+            return {
+                "name": "Jim Simons (Quantitative Risk)",
+                "archetype": "Statistical Stability & Crash Protection",
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
+                "status": "Quantitative Telemetry Unavailable",
+                "thesis": "Quantitative distribution metrics (Sortino, Skewness, or Tail Risk) unavailable; statistical edge unverified.",
+                "catalyst": "Awaiting sufficient historical return series for statistical distribution modeling.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": None,
+            }
 
         skew_bonus = 10 if skew > -0.3 else (-10 if skew < -0.6 else -5)
-        score = min(96, max(40, int(tail_risk * 0.45 + momentum * 0.35 + sortino * 8 + skew_bonus)))
+
+        if momentum is not None:
+            score = min(96, max(40, int(tail_risk * 0.45 + momentum * 0.35 + sortino * 8.0 + skew_bonus)))
+            evidence_status = ArchetypeEvidenceStatus.AVAILABLE
+            evidence_type = EvidenceType.AUTHORITATIVE_DYNAMIC
+        else:
+            score = min(96, max(40, int(tail_risk * 0.70 + sortino * 12.0 + skew_bonus)))
+            evidence_status = ArchetypeEvidenceStatus.PROVISIONAL
+            evidence_type = EvidenceType.PROVISIONAL_DYNAMIC
 
         if score >= 80 and skew > -0.4:
             status = "Low Downside Risk"
@@ -392,32 +675,67 @@ class TraderArchetypeAnalyzer:
             "name": "Jim Simons (Quantitative Risk)",
             "archetype": "Statistical Stability & Crash Protection",
             "alignmentScore": score,
+            "evidenceStatus": evidence_status,
+            "evidenceType": evidence_type,
             "status": status,
             "thesis": thesis,
             "catalyst": catalyst,
+            "factorEvidence": factor_evidence,
+            "thematicPrior": None,
         }
 
     def _evaluate_motley_fool_growth(
         self, symbol: str, sym_clean: str, is_crypto: bool, factor_scores: Dict[str, Any], info: Dict[str, Any]
     ) -> Dict[str, Any]:
         """David Gardner / Motley Fool Rule Breakers (Sector & Economics-Aware)."""
+        factor_scores_dict = factor_scores if isinstance(factor_scores, dict) else {}
+        growth = _extract_num(factor_scores_dict, "growthScore")
+        momentum = _extract_num(factor_scores_dict, "momentumScore")
+        as_of = factor_scores_dict.get("as_of_date") or factor_scores_dict.get("asOfDate")
+
+        factor_evidence = {
+            "growthScore": _make_factor_input("growthScore", growth, required=True, source="factor_engine", as_of=as_of),
+            "momentumScore": _make_factor_input("momentumScore", momentum, required=True, source="factor_engine", as_of=as_of),
+        }
+
         disruptor = self.MOTLEY_FOOL_DISRUPTORS.get(symbol) or self.MOTLEY_FOOL_DISRUPTORS.get(sym_clean)
+        thematic_prior = None
         if disruptor:
-            return {
-                "name": "David Gardner (Motley Fool Rule Breakers)",
-                "archetype": "First-Mover Disruptors & Hyper-Growth",
-                "alignmentScore": disruptor["score"],
-                "status": "High-Conviction Rule Breaker",
+            thematic_prior = {
+                "source": "MOTLEY_FOOL_DISRUPTORS",
+                "evidenceType": EvidenceType.STATIC_DOMAIN_PRIOR,
+                "isStaticPrior": True,
+                "isLiveObservation": False,
+                "description": disruptor["thesis"],
                 "thesis": disruptor["thesis"],
                 "catalyst": disruptor["catalyst"],
             }
 
-        growth = _safe_num(factor_scores, "growthScore", 75.0)
-        momentum = _safe_num(factor_scores, "momentumScore", 70.0)
+        # Check required factors: growthScore and momentumScore
+        if growth is None or momentum is None:
+            status = "High-Conviction Rule Breaker (Thematic Prior)" if disruptor else "Growth Telemetry Unavailable"
+            thesis = disruptor["thesis"] if disruptor else "Growth and momentum factor measurements unavailable; Rule Breaker alignment unverified."
+            catalyst = disruptor["catalyst"] if disruptor else "Awaiting measured top-line growth and price momentum factors."
+            return {
+                "name": "David Gardner (Motley Fool Rule Breakers)",
+                "archetype": "First-Mover Disruptors & Hyper-Growth",
+                "alignmentScore": None,
+                "evidenceStatus": ArchetypeEvidenceStatus.UNAVAILABLE,
+                "evidenceType": EvidenceType.UNAVAILABLE,
+                "status": status,
+                "thesis": thesis,
+                "catalyst": catalyst,
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
+            }
+
         sector = (info.get("sector") if (isinstance(info, dict) and isinstance(info.get("sector"), str)) else "").lower()
         industry = (info.get("industry") if (isinstance(info, dict) and isinstance(info.get("industry"), str)) else "").lower()
 
-        # 1. Hardware ODM / Server Integrators (SMCI, DELL, HPE, VRT, CIEN, FLEX, CLS, JBL, WST)
+        evidence_status = ArchetypeEvidenceStatus.AVAILABLE
+        evidence_type = EvidenceType.AUTHORITATIVE_DYNAMIC
+
+        # 1. Hardware ODM / Server Integrators
         is_hardware_odm = (
             sym_clean in {"SMCI", "DELL", "HPE", "VRT", "CIEN", "FLEX", "CLS", "JBL", "WST"}
             or any(k in industry for k in ["computer hardware", "server", "electronic manufacturing", "contract electronics", "chassis", "liquid cooling"])
@@ -428,12 +746,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "AI Hardware Supercycle",
                 "thesis": "High-velocity AI datacenter rack deployment and direct liquid cooling integration expanding market share.",
                 "catalyst": "Hyperscaler liquid-cooled GPU cluster buildouts and modular compute architecture adoption.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 2. Logistics & Freight (DHLGY, FDX, UPS, EXPD, JBHT, CHRW) - Exclude REITs
+        # 2. Logistics & Freight
         is_logistics = (
             sym_clean in {"DHLGY", "FDX", "UPS", "EXPD", "JBHT", "CHRW", "ZTO", "GXO", "XPO"}
             or (sector != "real estate" and "reit" not in industry and any(k in industry for k in ["freight", "logistics", "shipping", "courier", "trucking"]))
@@ -444,12 +766,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Supply Chain & Logistics Network",
                 "thesis": "Asset-heavy global supply chain and logistics network with capital-intensive delivery infrastructure and operational leverage.",
                 "catalyst": "E-commerce volume expansion, automated sorting hub efficiency, and cross-border freight rate realization.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 3. Biopharma & Therapeutics (LLY, NVO, VRTX, ARWR, CPRX, AMGN, GILD, BIIB, MRNA, REGN, CRSP, BEAM)
+        # 3. Biopharma & Therapeutics
         is_biopharma = (
             sym_clean in {"LLY", "NVO", "VRTX", "ARWR", "CPRX", "AMGN", "GILD", "BIIB", "MRNA", "REGN", "BMY", "PFE", "INCY", "CRSP", "BEAM"}
             or (sector == "healthcare" and any(k in industry for k in ["biotechnology", "drug manufacturers", "pharmaceutical", "therapeutics", "therapies", "biopharmaceutical", "drug discovery", "gene editing"]))
@@ -461,12 +787,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Biopharma Innovation & Pipeline",
                 "thesis": "Pioneering therapeutic drug pipeline with high gross margins (~75-85%), proprietary intellectual property, and blockbuster market potential.",
                 "catalyst": "Phase 3 clinical trial readouts, FDA accelerated approvals, and global commercial formulary expansion.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 4. Utilities & Regulated Infrastructure (Evaluated before Commodities to prevent 'gas' utilities collision)
+        # 4. Utilities
         is_utility = (
             sym_clean in {"NEE", "DUK", "SO", "AEP", "SRE", "D", "EXC", "XEL"}
             or sector in ["utilities"]
@@ -478,12 +808,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Regulated Utility / Infrastructure Asset Base",
                 "thesis": "Capital-intensive regulated asset base with contracted utility rate structures and steady cash distribution.",
                 "catalyst": "Grid electrification, data center power interconnection demand, and rate base expansion.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 5. Commodities / Energy / Materials (XOM, CVX, COP, OXY, CLF, NUE, FCX, SLB)
+        # 5. Commodities
         is_commodity = (
             sym_clean in {"XOM", "CVX", "COP", "OXY", "CLF", "NUE", "FCX", "SLB"}
             or sector in ["energy", "basic materials"]
@@ -495,12 +829,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Commodity Resource / Cyclical",
                 "thesis": "Cyclical resource producer dependent on global commodity pricing and capital expenditure cycles rather than proprietary software moat.",
                 "catalyst": "Global upstream demand cycles, refining crack spreads, and disciplined capital return programs.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 6. Financial Services & Banking
+        # 6. Financial Services
         is_financial = (
             sym_clean in {"JPM", "BAC", "WFC", "C", "GS", "MS", "AXP", "BLK", "SCHW"}
             or sector in ["financials", "financial services"]
@@ -512,12 +850,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Financial Institution & Capital Allocator",
                 "thesis": "Regulated financial services provider benefiting from net interest margins, loan book growth, and institutional asset management.",
                 "catalyst": "Credit expansion, capital markets activity, and return on tangible equity (ROTE) optimization.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 7. Real Estate & REITs
+        # 7. Real Estate
         is_real_estate = (
             sym_clean in {"O", "PLD", "AMT", "CCI", "EQIX", "SPG", "PSA", "DLR"}
             or sector in ["real estate"]
@@ -529,12 +871,16 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Real Estate Asset Portfolio",
                 "thesis": "Income-generating property portfolio with contracted tenant lease cash flows and asset appreciation.",
                 "catalyst": "Occupancy rate expansion, rental rate escalations, and property acquisition pipeline.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 8. Consumer Defensive & Retail Networks
+        # 8. Consumer Defensive & Retail
         is_consumer_retail = (
             sym_clean in {"WMT", "COST", "TGT", "HD", "LOW", "PG", "KO", "PEP"}
             or sector in ["consumer defensive", "consumer staples"]
@@ -546,21 +892,29 @@ class TraderArchetypeAnalyzer:
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Consumer Distribution & Retail Network",
                 "thesis": "High-volume consumer retail distribution network with strong omnichannel foot-traffic and supply chain scale.",
                 "catalyst": "Same-store sales growth, private label expansion, and supply chain automation.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
-        # 9. Turnaround / Mature / Low Growth Candidate (e.g. ULTA, LULU, KO or growth < 60)
+        # 9. Maturing / Low Growth
         score = min(95, max(40, int(growth * 0.65 + momentum * 0.35)))
         if growth < 60 or score < 60:
             return {
                 "name": "David Gardner (Motley Fool Rule Breakers)",
                 "archetype": "First-Mover Disruptors & Hyper-Growth",
                 "alignmentScore": score,
+                "evidenceStatus": evidence_status,
+                "evidenceType": evidence_type,
                 "status": "Maturing Business / Low Secular Growth",
                 "thesis": "Moderate or decelerating top-line revenue growth; lacks the hyper-growth velocity sought in early-stage Rule Breaker candidates.",
                 "catalyst": "Brand revitalization, operational turnaround, and margin stabilization.",
+                "factorEvidence": factor_evidence,
+                "thematicPrior": thematic_prior,
             }
 
         # 10. Default High-Margin Tech / Software / Secular Growth
@@ -568,8 +922,11 @@ class TraderArchetypeAnalyzer:
             "name": "David Gardner (Motley Fool Rule Breakers)",
             "archetype": "First-Mover Disruptors & Hyper-Growth",
             "alignmentScore": score,
+            "evidenceStatus": evidence_status,
+            "evidenceType": evidence_type,
             "status": "Growth Compounder" if score >= 80 else "Moderate Growth",
             "thesis": "High gross margin secular growth candidate with expanding industry market share.",
             "catalyst": "Emerging product adoption and industry transition toward digital/cloud architecture.",
+            "factorEvidence": factor_evidence,
+            "thematicPrior": thematic_prior,
         }
-

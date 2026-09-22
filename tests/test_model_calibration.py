@@ -45,5 +45,9 @@ def test_crypto_buffett_moat_calibration():
     with patch("yfinance.Ticker", return_value=mock_ticker):
         res = get_asset_analytics("ETH-USD", "1y")
         buffett = next(a for a in res["traderArchetypes"]["archetypes"] if "Warren Buffett" in a["name"])
-        assert buffett["alignmentScore"] >= 70
+        # F_04: Missing measured fundamentals must not produce numeric empirical score
+        assert buffett["alignmentScore"] is None
+        assert buffett["evidenceStatus"] == "UNAVAILABLE"
         assert "Tier-1 Network Moat" in buffett["status"]
+        assert buffett["thematicPrior"] is not None
+        assert buffett["thematicPrior"]["evidenceType"] == "STATIC_DOMAIN_PRIOR"
