@@ -31,9 +31,12 @@ export function generateQuantitativeInsight(
   const isPriceValid = typeof currentPrice === "number" && !isNaN(currentPrice) && currentPrice > 0;
   const safePrice = isPriceValid ? currentPrice : 0;
   const isFallbackFeed = dataSource === "fallback" || dataSource === "unavailable";
-  const finalSetupScore = confluence?.confluenceScore !== undefined
-    ? Math.round(confluence.confluenceScore)
-    : (setupScore !== undefined ? setupScore : 40);
+  const isDegradedDecision = decisionTrace?.decisionState === "UNVERIFIED" || optimalExecution?.execution_status === "UNVERIFIED_ASSET" || isFallbackFeed;
+  const finalSetupScore = isDegradedDecision
+    ? 0
+    : (confluence?.confluenceScore !== undefined
+        ? Math.round(confluence.confluenceScore)
+        : (setupScore !== undefined ? setupScore : 40));
 
   // 1. Real Historical Moving Averages calculation (Strict observation windows: DISC-01, DISC-02, DISC-07)
   // SMA50 requires at least 50 valid closed daily sessions. Synthetic fallback candles are NEVER treated as market evidence.
@@ -109,6 +112,8 @@ export function generateQuantitativeInsight(
   // 2b. Authentic Trade Levels (Phase 21: Use backend optimalExecution directly if provided)
   const isExecutionSuppressed = optimalExecution?.execution_status === "INSUFFICIENT_HISTORY"
     || optimalExecution?.execution_status === "UNVERIFIED_ASSET"
+    || optimalExecution?.execution_status === "UNAVAILABLE"
+    || isDegradedDecision
     || !isTrendAvailable;
 
   let stopLoss: number = 0;
@@ -300,7 +305,18 @@ export function generateQuantitativeInsight(
   if (decisionTrace) {
     terminalState.decisionState = decisionTrace.decisionState;
 
-    if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
+    if (decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision) {
+      terminalState.posture = "RESEARCH";
+      terminalState.uiStateLabel = decisionTrace.stateLabel || "Unverified Asset — Live Tape Required";
+      terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
+        "Direct market data tape only. Analytical decision authority is unavailable."
+      );
+      terminalState.primaryAction = {
+        label: "Research Asset Profile",
+        actionType: "RESEARCH_PROFILE",
+        enabled: true,
+      };
+    } else if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
       terminalState.posture = "WATCH";
       terminalState.uiStateLabel = decisionTrace.stateLabel || "Valid Setup — Awaiting Trigger";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
@@ -344,7 +360,9 @@ export function generateQuantitativeInsight(
     whatWouldChangeAssessment: d.whatWouldChangeAssessment,
   }));
 
-  const finalVerdict = decisionTrace
+  const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision)
+    ? "UNVERIFIED"
+    : decisionTrace
     ? (decisionTrace.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER")
     : (terminalState.posture === "ACQUIRE" ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
 
@@ -469,6 +487,13 @@ export function generateQuantitativeInsight(
             dimension: p.plainLabel || p.label,
             score: Math.round(p.score),
           }))
+        : isDegradedDecision
+        ? [
+            { dimension: "Chart Structure", score: 0 },
+            { dimension: "Company Health", score: 0 },
+            { dimension: "Smart Money Flow", score: 0 },
+            { dimension: "Market Tailwinds", score: 0 },
+          ]
         : [
             { dimension: "Chart Structure", score: !isTrendAvailable ? 0 : (isStage4 ? 40 : 88) },
             { dimension: "Company Health", score: !isHealthAvailable ? 0 : 80 },
@@ -483,17 +508,19 @@ export function generateQuantitativeInsight(
         stopLossPct: (isPriceValid && !isExecutionSuppressed && stopLoss > 0)
           ? Number((((stopLoss - safePrice) / safePrice) * 100).toFixed(1))
           : 0,
-        target1: isTrendAvailable ? target1 : undefined,
+        target1: isTrendAvailable && !isExecutionSuppressed ? target1 : undefined,
         target1Pct: (isPriceValid && !isExecutionSuppressed && target1 !== undefined && target1 > 0)
           ? Number((((target1 - safePrice) / safePrice) * 100).toFixed(1))
           : undefined,
-        target2: isTrendAvailable ? target2 : undefined,
+        target2: isTrendAvailable && !isExecutionSuppressed ? target2 : undefined,
         target2Pct: (isPriceValid && !isExecutionSuppressed && target2 !== undefined && target2 > 0)
           ? Number((((target2 - safePrice) / safePrice) * 100).toFixed(1))
           : undefined,
-        profitRiskRatio: isTrendAvailable ? profitRisk : undefined,
+        profitRiskRatio: isTrendAvailable && !isExecutionSuppressed ? profitRisk : undefined,
       },
-      setupSummary: !isTrendAvailable
+      setupSummary: isDegradedDecision
+        ? "Unverified Asset — Direct market tape display only; decision engine unreachable."
+        : !isTrendAvailable
         ? "Trend Evidence Incomplete — Awaiting 50-session historical base."
         : (isStage4
             ? "Stage 4 Correction / Base Building Required below 50-day SMA."

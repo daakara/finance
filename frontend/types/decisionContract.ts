@@ -115,15 +115,33 @@ export interface MarketEvidenceContract {
   asOf: string | number;
 }
 
+export type PointInTimeStatus = 'POINT_IN_TIME' | 'CURRENT_ONLY' | 'UNKNOWN';
+
+export function canQualityCreateActionability(quality: EvidenceQualityState): boolean {
+  return quality === 'AUTHORITATIVE';
+}
+
+export function canQualityContributeEvidence(quality: EvidenceQualityState): boolean {
+  return quality === 'AUTHORITATIVE' || quality === 'PROVISIONAL' || quality === 'FALLBACK';
+}
+
 export interface FundamentalEvidenceContract {
   peRatio?: number | null;
   marketCap?: number | null;
   sector?: string | null;
   source: string;
+  fetchedAt: string | number;
+  asOf: string | number;
   filingDate?: string | null;
+  availableFrom?: string | null;
+  pointInTimeStatus: PointInTimeStatus;
+  quality: EvidenceQualityState;
 }
 
 export interface MacroEvidenceContract {
+  tacticalEquityRegime?: string | null;
+  structuralMacroRegime?: string | null;
+  macroRiskFriction?: number | string | null;
   regimeLabel?: string | null;
   yieldSpread10Y2Y?: number | null;
   inflationRate?: number | null;
@@ -220,7 +238,12 @@ export function createDegradedDecisionContext(
         marketCap: null,
         sector: null,
         source: 'none',
+        fetchedAt: now,
+        asOf: now,
         filingDate: null,
+        availableFrom: null,
+        pointInTimeStatus: 'UNKNOWN',
+        quality: 'UNAVAILABLE',
       },
       isStale: true,
       stalenessReason: 'Backend analytics engine unreachable',
@@ -231,6 +254,9 @@ export function createDegradedDecisionContext(
       source: 'none',
       observedAt: now,
       payload: {
+        tacticalEquityRegime: null,
+        structuralMacroRegime: null,
+        macroRiskFriction: null,
         regimeLabel: null,
         yieldSpread10Y2Y: null,
         inflationRate: null,

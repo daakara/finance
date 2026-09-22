@@ -77,7 +77,33 @@ export default function CompositeConvictionCard({
       };
     }
 
-    // 2. Fallback Projection if data.confluence is not yet loaded
+    // 2. Strict Fail-Closed Check: Degraded Mode or Unverified State
+    if (
+      data?.degradedMode ||
+      data?.decisionUnavailable ||
+      data?.decisionTrace?.decisionState === "UNVERIFIED" ||
+      data?.optimalExecution?.execution_status === "UNVERIFIED_ASSET"
+    ) {
+      return {
+        score: 0,
+        verdictTitle: isPlain ? "UNVERIFIED ASSET" : "DECISION ENGINE UNREACHABLE",
+        verdictColor: "text-slate-400",
+        confluenceBadge: isPlain ? "Tape Only (Degraded)" : "Display Only (Unverified)",
+        bottomLineText: "Analytical backend decision authority is unreachable. Displaying market data tape only.",
+        reasons: [
+          {
+            label: "Analytical Engine",
+            plainLabel: "Decision System",
+            detail: "Backend analytical authority unreachable. Platform refuses to synthesize speculative confluence.",
+            plainDetail: "Decision engine offline. Showing authentic market tape only.",
+            status: "warning" as const,
+            icon: "⚠️",
+          },
+        ],
+      };
+    }
+
+    // 3. Fallback Projection if data.confluence is not yet loaded
     const reasons: {
       label: string;
       plainLabel: string;

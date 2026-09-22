@@ -59,6 +59,26 @@ class DecisionState(str, Enum):
     ACTIONABLE_SETUP = "ACTIONABLE_SETUP"
 
 
+class PointInTimeStatus(str, Enum):
+    POINT_IN_TIME = "POINT_IN_TIME"
+    CURRENT_ONLY = "CURRENT_ONLY"
+    UNKNOWN = "UNKNOWN"
+
+
+def can_quality_create_actionability(quality: EvidenceQualityState) -> bool:
+    """AUTHORITATIVE is the sole quality state permitted to establish canonical actionability."""
+    return quality == EvidenceQualityState.AUTHORITATIVE
+
+
+def can_quality_contribute_evidence(quality: EvidenceQualityState) -> bool:
+    """AUTHORITATIVE, PROVISIONAL, and FALLBACK may contribute evidence; UNAVAILABLE and STALE may not."""
+    return quality in (
+        EvidenceQualityState.AUTHORITATIVE,
+        EvidenceQualityState.PROVISIONAL,
+        EvidenceQualityState.FALLBACK,
+    )
+
+
 class ARXDecisionAuthority(str, Enum):
     BACKEND_CANONICAL = "BACKEND_CANONICAL"
     DISPLAY_ONLY_MARKET_DATA = "DISPLAY_ONLY_MARKET_DATA"
@@ -77,10 +97,14 @@ def evaluate_actionability(
     decision_state: Optional[DecisionState | str],
     execution_status: Optional[str],
 ) -> bool:
-    """Strict fail-closed evaluation of joint decision actionability.
-    
-    Both the decision state must be strictly ACTIONABLE_SETUP and the execution status
-    must be in ACTIONABLE_EXECUTION_STATUSES. Missing or undefined state returns False.
+    """ROLE: VALIDATOR.
+
+    Validates the consistency of canonical decision outputs against platform invariants.
+    Does NOT independently derive canonical actionability (which belongs solely to
+    DecisionHierarchyEngine in analyst_dashboard/analyzers/decision_hierarchy.py).
+
+    Returns True only when the canonical output reflects both ACTIONABLE_SETUP and an
+    actionable execution status (IN_BUY_ZONE or READY_TO_BUY).
     """
     if not is_status_actionable(execution_status):
         return False
@@ -99,7 +123,14 @@ class MarketEvidenceContract:
     as_of: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "candlesCount": self.candles_count,
+            "lastClose": self.last_close,
+            "vwap": self.vwap,
+            "atr14": self.atr_14,
+            "provider": self.provider,
+            "asOf": self.as_of,
+        }
 
 
 @dataclass
@@ -108,14 +139,33 @@ class FundamentalEvidenceContract:
     market_cap: Optional[float] = None
     sector: Optional[str] = None
     source: str = "none"
+    fetched_at: str = ""
+    as_of: str = ""
     filing_date: Optional[str] = None
+    available_from: Optional[str] = None
+    point_in_time_status: PointInTimeStatus = PointInTimeStatus.UNKNOWN
+    quality: EvidenceQualityState = EvidenceQualityState.UNAVAILABLE
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "peRatio": self.pe_ratio,
+            "marketCap": self.market_cap,
+            "sector": self.sector,
+            "source": self.source,
+            "fetchedAt": self.fetched_at,
+            "asOf": self.as_of,
+            "filingDate": self.filing_date,
+            "availableFrom": self.available_from,
+            "pointInTimeStatus": self.point_in_time_status.value if isinstance(self.point_in_time_status, PointInTimeStatus) else str(self.point_in_time_status),
+            "quality": self.quality.value if isinstance(self.quality, EvidenceQualityState) else str(self.quality),
+        }
 
 
 @dataclass
 class MacroEvidenceContract:
+    tactical_equity_regime: Optional[str] = None
+    structural_macro_regime: Optional[str] = None
+    macro_risk_friction: Optional[float | str] = None
     regime_label: Optional[str] = None
     yield_spread_10y_2y: Optional[float] = None
     inflation_rate: Optional[float] = None
@@ -123,7 +173,16 @@ class MacroEvidenceContract:
     source: str = "none"
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "tacticalEquityRegime": self.tactical_equity_regime,
+            "structuralMacroRegime": self.structural_macro_regime,
+            "macroRiskFriction": self.macro_risk_friction,
+            "regimeLabel": self.regime_label,
+            "yieldSpread10Y2Y": self.yield_spread_10y_2y,
+            "inflationRate": self.inflation_rate,
+            "fredObservationDate": self.fred_observation_date,
+            "source": self.source,
+        }
 
 
 @dataclass
@@ -134,7 +193,12 @@ class LiquidityEvidenceContract:
     source: str = "none"
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "spreadBps": self.spread_bps,
+            "avgVolume30D": self.avg_volume_30d,
+            "liquidityGatePassed": self.liquidity_gate_passed,
+            "source": self.source,
+        }
 
 
 @dataclass
@@ -152,10 +216,10 @@ class ARXEvidenceItem:
             "domain": self.domain.value if isinstance(self.domain, EvidenceDomain) else str(self.domain),
             "quality": self.quality.value if isinstance(self.quality, EvidenceQualityState) else str(self.quality),
             "source": self.source,
-            "observed_at": self.observed_at,
+            "observedAt": self.observed_at,
             "payload": self.payload,
-            "is_stale": self.is_stale,
-            "staleness_reason": self.staleness_reason,
+            "isStale": self.is_stale,
+            "stalenessReason": self.staleness_reason,
         }
 
 
@@ -172,7 +236,17 @@ class ExecutionLevels:
     risk_reward_ratio: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        return {
+            "entryMin": self.entry_min,
+            "entryMax": self.entry_max,
+            "stopLoss": self.stop_loss,
+            "stopLossPct": self.stop_loss_pct,
+            "target1": self.target_1,
+            "target1Pct": self.target_1_pct,
+            "target2": self.target_2,
+            "target2Pct": self.target_2_pct,
+            "riskRewardRatio": self.risk_reward_ratio,
+        }
 
 
 @dataclass
@@ -195,17 +269,17 @@ class DecisionVerdict:
         return {
             "symbol": self.symbol,
             "horizon": self.horizon.value if isinstance(self.horizon, TimeHorizon) else str(self.horizon),
-            "user_role": self.user_role.value if isinstance(self.user_role, UserRole) else str(self.user_role),
-            "is_actionable": self.is_actionable,
-            "can_size_trade": self.can_size_trade,
-            "decision_state": self.decision_state.value if isinstance(self.decision_state, DecisionState) else str(self.decision_state),
-            "execution_status": self.execution_status,
-            "verdict_label": self.verdict_label,
-            "disqualification_reason": self.disqualification_reason,
-            "confluence_score": self.confluence_score,
-            "observation_date": self.observation_date,
+            "userRole": self.user_role.value if isinstance(self.user_role, UserRole) else str(self.user_role),
+            "isActionable": self.is_actionable,
+            "canSizeTrade": self.can_size_trade,
+            "decisionState": self.decision_state.value if isinstance(self.decision_state, DecisionState) else str(self.decision_state),
+            "executionStatus": self.execution_status,
+            "verdictLabel": self.verdict_label,
+            "disqualificationReason": self.disqualification_reason,
+            "confluenceScore": self.confluence_score,
+            "observationDate": self.observation_date,
             "levels": self.levels.to_dict(),
-            "data_completeness": self.data_completeness.value if isinstance(self.data_completeness, DataCompleteness) else str(self.data_completeness),
+            "dataCompleteness": self.data_completeness.value if isinstance(self.data_completeness, DataCompleteness) else str(self.data_completeness),
         }
 
 
@@ -225,17 +299,17 @@ class ARXDecisionContext:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "decision_id": self.decision_id,
+            "decisionId": self.decision_id,
             "symbol": self.symbol,
             "horizon": self.horizon.value if isinstance(self.horizon, TimeHorizon) else str(self.horizon),
-            "user_role": self.user_role.value if isinstance(self.user_role, UserRole) else str(self.user_role),
+            "userRole": self.user_role.value if isinstance(self.user_role, UserRole) else str(self.user_role),
             "timestamp": self.timestamp,
-            "market_evidence": self.market_evidence.to_dict(),
-            "fundamental_evidence": self.fundamental_evidence.to_dict(),
-            "macro_evidence": self.macro_evidence.to_dict(),
-            "liquidity_evidence": self.liquidity_evidence.to_dict(),
-            "evidence_completeness": self.evidence_completeness.value if isinstance(self.evidence_completeness, DataCompleteness) else str(self.evidence_completeness),
-            "is_degraded": self.is_degraded,
+            "marketEvidence": self.market_evidence.to_dict(),
+            "fundamentalEvidence": self.fundamental_evidence.to_dict(),
+            "macroEvidence": self.macro_evidence.to_dict(),
+            "liquidityEvidence": self.liquidity_evidence.to_dict(),
+            "evidenceCompleteness": self.evidence_completeness.value if isinstance(self.evidence_completeness, DataCompleteness) else str(self.evidence_completeness),
+            "isDegraded": self.is_degraded,
         }
 
 
@@ -251,8 +325,8 @@ class ARXDecision:
         return {
             "context": self.context.to_dict(),
             "verdict": self.verdict.to_dict(),
-            "confluence_score": self.confluence_score,
-            "model_trace": self.model_trace,
+            "confluenceScore": self.confluence_score,
+            "modelTrace": self.model_trace,
             "authority": self.authority.value if isinstance(self.authority, ARXDecisionAuthority) else str(self.authority),
         }
 
@@ -299,7 +373,12 @@ def create_degraded_decision_context(
                 "market_cap": None,
                 "sector": None,
                 "source": "none",
+                "fetched_at": now,
+                "as_of": now,
                 "filing_date": None,
+                "available_from": None,
+                "point_in_time_status": PointInTimeStatus.UNKNOWN.value,
+                "quality": EvidenceQualityState.UNAVAILABLE.value,
             },
             is_stale=True,
             staleness_reason="Backend analytics engine unreachable",
@@ -310,6 +389,9 @@ def create_degraded_decision_context(
             source="none",
             observed_at=now,
             payload={
+                "tactical_equity_regime": None,
+                "structural_macro_regime": None,
+                "macro_risk_friction": None,
                 "regime_label": None,
                 "yield_spread_10y_2y": None,
                 "inflation_rate": None,

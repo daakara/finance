@@ -1,0 +1,235 @@
+{
+  "full_decision": {
+    "context": {
+      "decisionId": "dec-NVDA-20260922-001",
+      "symbol": "NVDA",
+      "horizon": "SWING",
+      "userRole": "LONG_TERM",
+      "timestamp": "2026-09-22T06:00:00Z",
+      "marketEvidence": {
+        "domain": "MARKET_DATA",
+        "quality": "AUTHORITATIVE",
+        "source": "polygon",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "candlesCount": 252,
+          "lastClose": 118.5,
+          "vwap": 117.8,
+          "atr14": 3.4,
+          "provider": "polygon",
+          "asOf": "2026-09-22T06:00:00Z"
+        },
+        "isStale": false,
+        "stalenessReason": null
+      },
+      "fundamentalEvidence": {
+        "domain": "FUNDAMENTALS",
+        "quality": "AUTHORITATIVE",
+        "source": "sec_edgar",
+        "observedAt": "2026-08-28T20:00:00Z",
+        "payload": {
+          "peRatio": 42.5,
+          "marketCap": 2900000000000.0,
+          "sector": "Technology",
+          "source": "sec_edgar",
+          "fetchedAt": "2026-08-28T20:00:00Z",
+          "asOf": "2026-07-28",
+          "filingDate": "2026-08-28",
+          "availableFrom": "2026-08-28T21:00:00Z",
+          "pointInTimeStatus": "POINT_IN_TIME",
+          "quality": "AUTHORITATIVE"
+        },
+        "isStale": false,
+        "stalenessReason": null
+      },
+      "macroEvidence": {
+        "domain": "MACRO",
+        "quality": "AUTHORITATIVE",
+        "source": "fred",
+        "observedAt": "2026-09-21T20:00:00Z",
+        "payload": {
+          "tacticalEquityRegime": "BULL_TRENDING",
+          "structuralMacroRegime": "EXPANSION",
+          "macroRiskFriction": "STABLE",
+          "regimeLabel": "Bull Trending / Macro Expansion",
+          "yieldSpread10Y2Y": 0.15,
+          "inflationRate": 2.6,
+          "fredObservationDate": "2026-09-18",
+          "source": "fred"
+        },
+        "isStale": false,
+        "stalenessReason": null
+      },
+      "liquidityEvidence": {
+        "domain": "LIQUIDITY",
+        "quality": "AUTHORITATIVE",
+        "source": "finra_and_exchange",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "spreadBps": 1.8,
+          "avgVolume30D": 45000000.0,
+          "liquidityGatePassed": true,
+          "source": "finra_and_exchange"
+        },
+        "isStale": false,
+        "stalenessReason": null
+      },
+      "evidenceCompleteness": "FULL",
+      "isDegraded": false
+    },
+    "verdict": {
+      "symbol": "NVDA",
+      "horizon": "SWING",
+      "userRole": "LONG_TERM",
+      "isActionable": true,
+      "canSizeTrade": true,
+      "decisionState": "ACTIONABLE_SETUP",
+      "executionStatus": "IN_BUY_ZONE",
+      "verdictLabel": "Actionable Setup — Buy Zone Confirmed",
+      "disqualificationReason": null,
+      "confluenceScore": 86.5,
+      "observationDate": "2026-09-22",
+      "levels": {
+        "entryMin": 116.0,
+        "entryMax": 119.0,
+        "stopLoss": 112.5,
+        "stopLossPct": -5.06,
+        "target1": 128.0,
+        "target1Pct": 8.02,
+        "target2": 135.0,
+        "target2Pct": 13.92,
+        "riskRewardRatio": 2.71
+      },
+      "dataCompleteness": "FULL"
+    },
+    "confluenceScore": 86.5,
+    "modelTrace": {
+      "modelName": "DecisionHierarchyEngine",
+      "version": "phase_20a",
+      "generatedAt": "2026-09-22T06:00:00Z",
+      "passedGates": [
+        "CONFLUENCE_FLOOR",
+        "STAGE_2_ALIGNMENT",
+        "LIQUIDITY_GATE",
+        "RR_MINIMUM"
+      ],
+      "failedGates": []
+    },
+    "authority": "BACKEND_CANONICAL"
+  },
+  "degraded_decision": {
+    "context": {
+      "decisionId": "degraded-NVDA-1727000000000",
+      "symbol": "NVDA",
+      "horizon": "SWING",
+      "userRole": "LONG_TERM",
+      "timestamp": "2026-09-22T06:00:00Z",
+      "marketEvidence": {
+        "domain": "MARKET_DATA",
+        "quality": "FALLBACK",
+        "source": "yahoo_finance_direct",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "candlesCount": 80,
+          "lastClose": 118.5,
+          "vwap": null,
+          "atr14": 3.4,
+          "provider": "yahoo_finance_direct",
+          "asOf": "2026-09-22T06:00:00Z"
+        },
+        "isStale": false,
+        "stalenessReason": null
+      },
+      "fundamentalEvidence": {
+        "domain": "FUNDAMENTALS",
+        "quality": "UNAVAILABLE",
+        "source": "none",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "peRatio": null,
+          "marketCap": null,
+          "sector": null,
+          "source": "none",
+          "fetchedAt": "2026-09-22T06:00:00Z",
+          "asOf": "2026-09-22T06:00:00Z",
+          "filingDate": null,
+          "availableFrom": null,
+          "pointInTimeStatus": "UNKNOWN",
+          "quality": "UNAVAILABLE"
+        },
+        "isStale": true,
+        "stalenessReason": "Backend analytics engine unreachable"
+      },
+      "macroEvidence": {
+        "domain": "MACRO",
+        "quality": "UNAVAILABLE",
+        "source": "none",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "tacticalEquityRegime": null,
+          "structuralMacroRegime": null,
+          "macroRiskFriction": null,
+          "regimeLabel": null,
+          "yieldSpread10Y2Y": null,
+          "inflationRate": null,
+          "fredObservationDate": null,
+          "source": "none"
+        },
+        "isStale": true,
+        "stalenessReason": "Backend analytics engine unreachable"
+      },
+      "liquidityEvidence": {
+        "domain": "LIQUIDITY",
+        "quality": "UNAVAILABLE",
+        "source": "none",
+        "observedAt": "2026-09-22T06:00:00Z",
+        "payload": {
+          "spreadBps": null,
+          "avgVolume30D": null,
+          "liquidityGatePassed": false,
+          "source": "none"
+        },
+        "isStale": true,
+        "stalenessReason": "Backend analytics engine unreachable"
+      },
+      "evidenceCompleteness": "DEGRADED",
+      "isDegraded": true
+    },
+    "verdict": {
+      "symbol": "NVDA",
+      "horizon": "SWING",
+      "userRole": "LONG_TERM",
+      "isActionable": false,
+      "canSizeTrade": false,
+      "decisionState": "UNVERIFIED",
+      "executionStatus": "UNVERIFIED_ASSET",
+      "verdictLabel": "Degraded Market Tape — Decision Engine Unreachable",
+      "disqualificationReason": "Direct client Yahoo fallback. Analytical backend decision authority unavailable.",
+      "confluenceScore": 0.0,
+      "observationDate": "2026-09-22",
+      "levels": {
+        "entryMin": null,
+        "entryMax": null,
+        "stopLoss": null,
+        "stopLossPct": 0.0,
+        "target1": null,
+        "target1Pct": 0.0,
+        "target2": null,
+        "target2Pct": 0.0,
+        "riskRewardRatio": null
+      },
+      "dataCompleteness": "DEGRADED"
+    },
+    "confluenceScore": 0.0,
+    "modelTrace": {
+      "modelName": "client_fallback",
+      "version": "phase_0_1",
+      "generatedAt": "2026-09-22T06:00:00Z",
+      "passedGates": [],
+      "failedGates": [
+        "BACKEND_DECISION_ENGINE_UNREACHABLE"
+      ]
+    },
+    "authority": "DISPLAY_ONLY_MARKET_DATA"
+  }
+}

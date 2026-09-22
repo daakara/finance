@@ -195,7 +195,7 @@ def test_epoch1_authorized_outcome_append(tmp_path, base_opt_exec):
     obs = ExperimentLedger.record_execution_observation(
         signal_id=rec["signalId"],
         fill_price=150.20,
-        execution_timestamp="2026-09-20T14:35:00Z",
+        execution_timestamp=datetime.now(timezone.utc).isoformat(),
         order_size_usd=10000.0,
         side="BUY",
         ledger_path=ledger_path,

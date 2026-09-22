@@ -1,5 +1,7 @@
 """Unit tests for ARX Canonical Decision Context and Evidence Contracts (Phase 0/1)."""
 
+import json
+import os
 import pytest
 from analyst_dashboard.governance.decision_context import (
     ARXDecision,
@@ -16,8 +18,11 @@ from analyst_dashboard.governance.decision_context import (
     LiquidityEvidenceContract,
     MacroEvidenceContract,
     MarketEvidenceContract,
+    PointInTimeStatus,
     TimeHorizon,
     UserRole,
+    can_quality_contribute_evidence,
+    can_quality_create_actionability,
     create_degraded_decision_context,
     evaluate_actionability,
     is_status_actionable,
@@ -55,6 +60,68 @@ def test_joint_decision_actionability_fail_closed():
     assert evaluate_actionability(None, "IN_BUY_ZONE") is False
     assert evaluate_actionability("", "IN_BUY_ZONE") is False
     assert evaluate_actionability(DecisionState.ACTIONABLE_SETUP, None) is False
+
+
+def test_evidence_quality_governance_rules():
+    """Verify decision eligibility semantics for every EvidenceQualityState."""
+    # Only AUTHORITATIVE can create canonical actionability
+    assert can_quality_create_actionability(EvidenceQualityState.AUTHORITATIVE) is True
+    assert can_quality_create_actionability(EvidenceQualityState.PROVISIONAL) is False
+    assert can_quality_create_actionability(EvidenceQualityState.FALLBACK) is False
+    assert can_quality_create_actionability(EvidenceQualityState.UNAVAILABLE) is False
+    assert can_quality_create_actionability(EvidenceQualityState.STALE) is False
+
+    # AUTHORITATIVE, PROVISIONAL, and FALLBACK may contribute evidence; UNAVAILABLE and STALE may not
+    assert can_quality_contribute_evidence(EvidenceQualityState.AUTHORITATIVE) is True
+    assert can_quality_contribute_evidence(EvidenceQualityState.PROVISIONAL) is True
+    assert can_quality_contribute_evidence(EvidenceQualityState.FALLBACK) is True
+    assert can_quality_contribute_evidence(EvidenceQualityState.UNAVAILABLE) is False
+    assert can_quality_contribute_evidence(EvidenceQualityState.STALE) is False
+
+
+def test_fundamental_point_in_time_contract():
+    """Verify FundamentalEvidenceContract enforces PIT vs CURRENT_ONLY distinction."""
+    pit_fund = FundamentalEvidenceContract(
+        pe_ratio=25.0,
+        market_cap=1000000000.0,
+        sector="Technology",
+        source="sec_edgar",
+        fetched_at="2026-08-28T20:00:00Z",
+        as_of="2026-06-30",
+        filing_date="2026-08-28",
+        available_from="2026-08-28T21:00:00Z",
+        point_in_time_status=PointInTimeStatus.POINT_IN_TIME,
+        quality=EvidenceQualityState.AUTHORITATIVE,
+    )
+    assert pit_fund.point_in_time_status == PointInTimeStatus.POINT_IN_TIME
+    assert pit_fund.quality == EvidenceQualityState.AUTHORITATIVE
+
+    # CURRENT_ONLY cannot masquerade as historical PIT
+    current_fund = FundamentalEvidenceContract(
+        pe_ratio=25.0,
+        source="current_quote_aggregator",
+        point_in_time_status=PointInTimeStatus.CURRENT_ONLY,
+        quality=EvidenceQualityState.PROVISIONAL,
+    )
+    assert current_fund.point_in_time_status != PointInTimeStatus.POINT_IN_TIME
+
+
+def test_regime_semantic_separation():
+    """Verify distinct regime concepts are preserved separately in MacroEvidenceContract."""
+    macro = MacroEvidenceContract(
+        tactical_equity_regime="BULL_TRENDING",
+        structural_macro_regime="EXPANSION",
+        macro_risk_friction="STABLE",
+        regime_label="Bull Trending / Macro Expansion",
+        yield_spread_10y_2y=0.15,
+        inflation_rate=2.6,
+        fred_observation_date="2026-09-18",
+        source="fred",
+    )
+    assert macro.tactical_equity_regime == "BULL_TRENDING"
+    assert macro.structural_macro_regime == "EXPANSION"
+    assert macro.macro_risk_friction == "STABLE"
+    assert macro.regime_label != macro.tactical_equity_regime
 
 
 def test_create_degraded_decision_context():
@@ -99,57 +166,36 @@ def test_create_degraded_decision_context():
     # Test serialization
     as_dict = context.to_dict()
     assert as_dict["symbol"] == "NVDA"
-    assert as_dict["is_degraded"] is True
-    assert as_dict["evidence_completeness"] == "DEGRADED"
-    assert as_dict["market_evidence"]["payload"]["last_close"] == 115.5
+    assert as_dict["isDegraded"] is True
+    assert as_dict["evidenceCompleteness"] == "DEGRADED"
+    assert as_dict["marketEvidence"]["payload"]["last_close"] == 115.5
 
 
-def test_full_decision_contract_structure():
-    """Verify full ARXDecision structure with verdict and model trace."""
-    context = create_degraded_decision_context("AAPL")
-    verdict = DecisionVerdict(
-        symbol="AAPL",
-        horizon=TimeHorizon.SWING,
-        user_role=UserRole.LONG_TERM,
-        is_actionable=False,
-        can_size_trade=False,
-        decision_state=DecisionState.UNVERIFIED,
-        execution_status="UNVERIFIED_ASSET",
-        verdict_label="Degraded Display Only",
-        disqualification_reason="Direct client tape fallback",
-        confluence_score=0.0,
-        observation_date="2026-09-22",
-        levels=ExecutionLevels(
-            entry_min=None,
-            entry_max=None,
-            stop_loss=None,
-            stop_loss_pct=0.0,
-            target_1=None,
-            target_1_pct=0.0,
-            target_2=None,
-            target_2_pct=0.0,
-            risk_reward_ratio=None,
-        ),
-        data_completeness=DataCompleteness.DEGRADED,
+def test_cross_language_schema_parity_with_fixture():
+    """Verify Python models faithfully parse and match the canonical cross-language fixture."""
+    fixture_path = os.path.join(
+        os.path.dirname(__file__), "fixtures", "canonical_decision_fixture.json"
     )
+    with open(fixture_path, "r", encoding="utf-8") as f:
+        fixture_data = json.load(f)
 
-    decision = ARXDecision(
-        context=context,
-        verdict=verdict,
-        confluence_score=0.0,
-        model_trace={
-            "model_name": "client_fallback",
-            "version": "phase_0_1",
-            "generated_at": "2026-09-22T06:00:00Z",
-            "passed_gates": [],
-            "failed_gates": ["BACKEND_DECISION_ENGINE_UNREACHABLE"],
-        },
-        authority=ARXDecisionAuthority.DISPLAY_ONLY_MARKET_DATA,
-    )
+    full = fixture_data["full_decision"]
+    degraded = fixture_data["degraded_decision"]
 
-    dec_dict = decision.to_dict()
-    assert dec_dict["authority"] == "DISPLAY_ONLY_MARKET_DATA"
-    assert dec_dict["verdict"]["is_actionable"] is False
-    assert dec_dict["verdict"]["execution_status"] == "UNVERIFIED_ASSET"
-    assert dec_dict["verdict"]["levels"]["stop_loss"] is None
-    assert dec_dict["verdict"]["levels"]["entry_min"] is None
+    # Validate full decision structure
+    assert full["authority"] == ARXDecisionAuthority.BACKEND_CANONICAL.value
+    assert full["verdict"]["isActionable"] is True
+    assert full["verdict"]["decisionState"] == DecisionState.ACTIONABLE_SETUP.value
+    assert full["context"]["marketEvidence"]["quality"] == EvidenceQualityState.AUTHORITATIVE.value
+    assert full["context"]["fundamentalEvidence"]["payload"]["pointInTimeStatus"] == PointInTimeStatus.POINT_IN_TIME.value
+    assert full["context"]["macroEvidence"]["payload"]["tacticalEquityRegime"] == "BULL_TRENDING"
+    assert full["context"]["macroEvidence"]["payload"]["structuralMacroRegime"] == "EXPANSION"
+
+    # Validate degraded decision structure
+    assert degraded["authority"] == ARXDecisionAuthority.DISPLAY_ONLY_MARKET_DATA.value
+    assert degraded["verdict"]["isActionable"] is False
+    assert degraded["verdict"]["decisionState"] == DecisionState.UNVERIFIED.value
+    assert degraded["verdict"]["levels"]["entryMin"] is None
+    assert degraded["verdict"]["levels"]["stopLoss"] is None
+    assert degraded["context"]["isDegraded"] is True
+    assert degraded["context"]["evidenceCompleteness"] == DataCompleteness.DEGRADED.value

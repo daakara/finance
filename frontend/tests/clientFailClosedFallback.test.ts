@@ -4,6 +4,7 @@ import {
   fetchDirectYahooFinanceChart,
   AnalyticsResponse,
 } from "../lib/api";
+import { generateQuantitativeInsight } from "../lib/insightGenerator";
 import {
   DecisionState,
   isDecisionActionable,
@@ -172,6 +173,109 @@ assert.strictEqual(
 );
 
 console.log("   [OK] Canonical decision context and evidence items correctly formatted and fail-closed");
+
+// ---------------------------------------------------------------------------
+// 4. Verify Gate 11: Insight Generator Fail-Closed Under Degraded Mode
+// ---------------------------------------------------------------------------
+console.log("4. Testing generateQuantitativeInsight under degraded mode...");
+const degradedInsight = generateQuantitativeInsight(
+  "TSLA",
+  "Tesla, Inc.",
+  220.5,
+  1.2,
+  undefined,
+  undefined,
+  "SWING",
+  "NOT_OWNED",
+  "USER_DECLARED",
+  Array.from({ length: 60 }, (_, i) => ({
+    time: `2026-08-${String((i % 28) + 1).padStart(2, "0")}`,
+    open: 219,
+    high: 222,
+    low: 218,
+    close: 220.5,
+    volume: 1000000,
+  })),
+  "fallback",
+  undefined,
+  {
+    symbol: "TSLA",
+    decisionState: "UNVERIFIED",
+    stateLabel: "Degraded Market Tape — Decision Engine Unreachable",
+    isActionable: false,
+    canSizeTrade: false,
+    allowedActions: ["RESEARCH_PROFILE"],
+    disqualificationReason: "Direct client Yahoo fallback. Analytical backend decision authority unavailable.",
+  },
+  {
+    current_price: 220.5,
+    optimal_entry_min: null as any,
+    optimal_entry_max: null as any,
+    stop_loss: null as any,
+    stop_loss_pct: 0,
+    take_profit_1: null as any,
+    take_profit_1_pct: 0,
+    take_profit_2: null as any,
+    take_profit_2_pct: 0,
+    risk_reward_ratio: null as any,
+    execution_status: "UNVERIFIED_ASSET",
+    setup_pattern: "Degraded Market Tape (Display Only)",
+    entry_thesis: "Direct client market data tape. Decision engine unreachable.",
+    invalidation_condition: "Awaiting authoritative backend decision engine.",
+    stage_phase: "Unverified Asset",
+    vcp_contraction_status: "Unverified",
+    atr_14: 4.2,
+  },
+  "UNAVAILABLE"
+);
+
+// Gate 11 invariants:
+// 1. BULLISH_POSTURE = ABSENT
+assert.strictEqual(
+  degradedInsight.posture,
+  "RESEARCH",
+  "Degraded mode must yield RESEARCH posture, never ACQUIRE, BUY, or ENTER"
+);
+assert.notStrictEqual(degradedInsight.posture, "ACQUIRE");
+assert.notStrictEqual(degradedInsight.human.actionCallout.action, "ENTER");
+assert.strictEqual(degradedInsight.human.actionCallout.action, "RESEARCH");
+
+// 2. ACTIONABLE_PLAN = ABSENT
+assert.strictEqual(
+  degradedInsight.standard.keyLevels.stopLoss,
+  0,
+  "Key level stop loss must be 0 (suppressed) in degraded mode"
+);
+assert.strictEqual(
+  degradedInsight.standard.keyLevels.target1,
+  undefined,
+  "Key level target1 must be undefined in degraded mode"
+);
+assert.strictEqual(
+  degradedInsight.standard.keyLevels.profitRiskRatio,
+  undefined,
+  "Key level profitRiskRatio must be undefined in degraded mode"
+);
+const sizeAction = degradedInsight.terminalState.availableActions.find(a => a.id === "size_trade");
+assert.strictEqual(sizeAction?.enabled, false, "Trade sizing must be strictly disabled");
+
+// 3. CANONICAL_CONFIDENCE = ABSENT
+assert.strictEqual(
+  degradedInsight.setupScore,
+  0,
+  "Degraded mode must yield 0 setup score, never synthetic confidence"
+);
+for (const pillar of degradedInsight.standard.confluenceBreakdown) {
+  assert.strictEqual(
+    pillar.score,
+    0,
+    `Confluence pillar ${pillar.dimension} must have score 0 in degraded mode`
+  );
+}
+
+// 4. VERDICT = UNVERIFIED
+assert.strictEqual(degradedInsight.verdict, "UNVERIFIED");
+console.log("   [OK] Insight generator strictly enforces BULLISH_POSTURE=ABSENT, ACTIONABLE_PLAN=ABSENT, CANONICAL_CONFIDENCE=ABSENT");
 
 testDirectYahooFetcher().then(() => {
   console.log("\nALL CLIENT FAIL-CLOSED TESTS PASSED SUCCESSFULLY!");

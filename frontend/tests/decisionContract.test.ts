@@ -1,10 +1,18 @@
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
 import {
   ACTIONABLE_EXECUTION_STATUSES,
   NON_ACTIONABLE_EXECUTION_STATUSES,
   isStatusActionable,
   isDecisionActionable,
   DecisionState,
+  EvidenceQualityState,
+  canQualityCreateActionability,
+  canQualityContributeEvidence,
+  ARXDecision,
+  FundamentalEvidenceContract,
+  MacroEvidenceContract,
 } from "../types/decisionContract";
 
 console.log("Starting Decision Contract & Taxonomy Regression Suite...");
@@ -89,4 +97,50 @@ assert.strictEqual(
 );
 
 console.log("[OK] Decision state + execution status joint actionability verified (fail-closed)");
+
+// 5. Evidence Quality Governance Rules
+assert.strictEqual(canQualityCreateActionability("AUTHORITATIVE"), true);
+assert.strictEqual(canQualityCreateActionability("PROVISIONAL"), false);
+assert.strictEqual(canQualityCreateActionability("FALLBACK"), false);
+assert.strictEqual(canQualityCreateActionability("UNAVAILABLE"), false);
+assert.strictEqual(canQualityCreateActionability("STALE"), false);
+
+assert.strictEqual(canQualityContributeEvidence("AUTHORITATIVE"), true);
+assert.strictEqual(canQualityContributeEvidence("PROVISIONAL"), true);
+assert.strictEqual(canQualityContributeEvidence("FALLBACK"), true);
+assert.strictEqual(canQualityContributeEvidence("UNAVAILABLE"), false);
+assert.strictEqual(canQualityContributeEvidence("STALE"), false);
+console.log("[OK] Evidence quality governance rules verified");
+
+// 6. Cross-Language Schema Parity with Canonical Fixture
+const fixturePath = path.resolve(__dirname, "../../tests/fixtures/canonical_decision_fixture.json");
+assert(fs.existsSync(fixturePath), `Fixture file must exist at ${fixturePath}`);
+const rawFixture = JSON.parse(fs.readFileSync(fixturePath, "utf-8"));
+
+const fullDecision: ARXDecision = rawFixture.full_decision;
+assert.strictEqual(fullDecision.authority, "BACKEND_CANONICAL");
+assert.strictEqual(fullDecision.verdict.isActionable, true);
+assert.strictEqual(fullDecision.verdict.decisionState, "ACTIONABLE_SETUP");
+assert.strictEqual(fullDecision.context.marketEvidence.quality, "AUTHORITATIVE");
+
+const fundPayload: FundamentalEvidenceContract = fullDecision.context.fundamentalEvidence.payload;
+assert.strictEqual(fundPayload.pointInTimeStatus, "POINT_IN_TIME");
+assert.strictEqual(fundPayload.source, "sec_edgar");
+assert.strictEqual(fundPayload.quality, "AUTHORITATIVE");
+
+const macroPayload: MacroEvidenceContract = fullDecision.context.macroEvidence.payload;
+assert.strictEqual(macroPayload.tacticalEquityRegime, "BULL_TRENDING");
+assert.strictEqual(macroPayload.structuralMacroRegime, "EXPANSION");
+assert.strictEqual(macroPayload.macroRiskFriction, "STABLE");
+
+const degradedDecision: ARXDecision = rawFixture.degraded_decision;
+assert.strictEqual(degradedDecision.authority, "DISPLAY_ONLY_MARKET_DATA");
+assert.strictEqual(degradedDecision.verdict.isActionable, false);
+assert.strictEqual(degradedDecision.verdict.decisionState, "UNVERIFIED");
+assert.strictEqual(degradedDecision.verdict.levels.entryMin, null);
+assert.strictEqual(degradedDecision.verdict.levels.stopLoss, null);
+assert.strictEqual(degradedDecision.context.isDegraded, true);
+assert.strictEqual(degradedDecision.context.evidenceCompleteness, "DEGRADED");
+console.log("[OK] Cross-language schema parity verified against canonical fixture");
+
 console.log("ALL DECISION CONTRACT TESTS PASSED!");
