@@ -252,3 +252,84 @@ def test_dim12_client_side_decoupling():
     assert res["spec_version"] == LiquidityGuard.SPEC_VERSION
     assert "factorEvidence" in res
     assert res["factorEvidence"]["adv_20d"]["source"] == "ohlcv_series"
+
+
+# ── Dimension 13: Tri-State Python Consumer Safety ─────────────────────────────
+def test_dim13_tristate_python_consumer_simulation_safety():
+    """Verify that UNKNOWN hazard is NOT treated as True by simulation consumers."""
+    resolved_signals = [
+        {
+            "signalId": "SIG_UNKNOWN_HAZARD",
+            "status": "RESOLVED",
+            "symbol": "UNK",
+            "forwardTracking": {"realizedReturnPct": 10.0},
+            "liquidityAtSignal": {
+                "liquidityGrade": "UNKNOWN_LIQUIDITY",
+                "executionHazard": "UNKNOWN",
+            },
+            "executionObservations": [],
+        },
+        {
+            "signalId": "SIG_CONFIRMED_HAZARD",
+            "status": "RESOLVED",
+            "symbol": "RISK",
+            "forwardTracking": {"realizedReturnPct": -5.0},
+            "liquidityAtSignal": {
+                "liquidityGrade": "EXECUTION_RISK",
+                "executionHazard": True,
+            },
+            "executionObservations": [],
+        },
+    ]
+
+    report = Phase26ValidationEngine.evaluate_economic_counterfactual(
+        ledger_data={"signals": resolved_signals},
+        filter_criterion="EXECUTION_RISK",
+    )
+
+    # UNK has UNKNOWN hazard; it must NOT be filtered as an avoided loser or excluded winner
+    excluded_ids = [s["signalId"] for s in report["tradeoffAnalysis"]["excludedWinnersList"]]
+    avoided_ids = [s["signalId"] for s in report["tradeoffAnalysis"]["avoidedLosersList"]]
+
+    assert "SIG_UNKNOWN_HAZARD" not in excluded_ids
+    assert "SIG_UNKNOWN_HAZARD" not in avoided_ids
+    # RISK has confirmed True hazard; it must be filtered
+    assert "SIG_CONFIRMED_HAZARD" in avoided_ids
+
+
+# ── Dimension 14: Partial-Evidence Unmeasured Price Impact Fails to UNKNOWN ────
+def test_dim14_partial_evidence_unmeasured_amihud_fails_to_unknown():
+    """When ADV is high but valid return bars < 3, execution_hazard fails closed to UNKNOWN."""
+    # 2 sessions with $1M volume each (< 3 sessions for Amihud)
+    dates = pd.date_range("2026-01-01", periods=2)
+    df = pd.DataFrame({"Close": [100.0, 101.0], "Volume": [10_000, 10_000]}, index=dates)
+
+    res = LiquidityGuard.evaluate_liquidity(df, 101.0)
+    # < 3 sessions total -> routes to fallback
+    assert res["execution_hazard"] == "UNKNOWN"
+    assert res["evidenceStatus"] == LiquidityEvidenceStatus.UNAVAILABLE
+
+
+# ── Dimension 15: Exhaustive Tri-State Differentiation ─────────────────────────
+def test_dim15_exhaustive_tristate_differentiation():
+    """Verify clean mutual exclusion of True, False, and UNKNOWN across all evaluation paths."""
+    # 1. True hazard: low volume ($20K ADV)
+    dates = pd.date_range("2026-01-01", periods=30)
+    df_low = pd.DataFrame({"Close": [5.0]*30, "Volume": [2000]*30, "High": [5.1]*30, "Low": [4.9]*30}, index=dates)
+    res_true = LiquidityGuard.evaluate_liquidity(df_low, 5.0)
+    assert res_true["execution_hazard"] is True
+    assert res_true["execution_hazard"] != "UNKNOWN"
+    assert res_true["execution_hazard"] is not False
+
+    # 2. False hazard: high volume ($50M ADV)
+    df_high = pd.DataFrame({"Close": [100.0 + i*0.1 for i in range(30)], "Volume": [500_000]*30, "High": [101.0]*30, "Low": [99.0]*30}, index=dates)
+    res_false = LiquidityGuard.evaluate_liquidity(df_high, 103.0)
+    assert res_false["execution_hazard"] is False
+    assert res_false["execution_hazard"] != "UNKNOWN"
+    assert res_false["execution_hazard"] is not True
+
+    # 3. UNKNOWN hazard: empty / None
+    res_unknown = LiquidityGuard.evaluate_liquidity(None, 100.0)
+    assert res_unknown["execution_hazard"] == "UNKNOWN"
+    assert res_unknown["execution_hazard"] is not True
+    assert res_unknown["execution_hazard"] is not False

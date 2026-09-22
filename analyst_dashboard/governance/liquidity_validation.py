@@ -360,7 +360,8 @@ class Phase26ValidationEngine:
             r_gross = float(s["forwardTracking"]["realizedReturnPct"])
             liq_at_sig = s.get("liquidityAtSignal") or {}
             grade = liq_at_sig.get("liquidityGrade") or liq_at_sig.get("liquidity_grade") or "UNKNOWN_LIQUIDITY"
-            is_hazard = bool(liq_at_sig.get("executionHazard") or liq_at_sig.get("execution_hazard") or False)
+            raw_hz = liq_at_sig.get("executionHazard") if "executionHazard" in liq_at_sig else liq_at_sig.get("execution_hazard")
+            is_hazard = (raw_hz is True)
 
             # Determine hypothetical gating decision
             is_hypothetically_filtered = (grade == filter_criterion) or is_hazard

@@ -321,6 +321,17 @@ export interface SmartMoneyOverview {
   _dataSource?: "live" | "fallback";
 }
 
+export interface LiquidityFactorEvidence {
+  metric: string;
+  value: number | boolean | string | null;
+  source: string;
+  quality: string;
+  evidenceStatus: "AUTHORITATIVE" | "PROVISIONAL" | "UNAVAILABLE" | "UNKNOWN";
+  evidenceType: string;
+  observedAt?: string | null;
+  asOf?: string | null;
+}
+
 export interface LiquidityDefenseData {
   liquidity_grade: "HIGH_TRADING_LIQUIDITY" | "MODERATE_TRADING_LIQUIDITY" | "EXECUTION_RISK" | "UNKNOWN_LIQUIDITY" | "DEEP_LIQUIDITY" | "LIMIT_ORDER_REQUIRED" | "INSTITUTIONAL" | "THIN" | "TRAP";
   badge_color: "emerald" | "amber" | "rose" | "slate";
@@ -343,7 +354,7 @@ export interface LiquidityDefenseData {
   pro_summary: string;
   evidenceStatus?: "AUTHORITATIVE" | "PROVISIONAL" | "UNAVAILABLE" | "UNKNOWN";
   evidenceType?: string;
-  factorEvidence?: Record<string, any>;
+  factorEvidence?: Record<string, LiquidityFactorEvidence>;
 }
 
 export interface OptimalExecutionPlan {

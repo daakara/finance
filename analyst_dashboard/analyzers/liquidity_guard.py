@@ -245,6 +245,17 @@ class LiquidityGuard:
                 f"ADV 20D (${adv_20d:,.0f}) breaches ${cls.DEFAULT_ADV_MIN_SAFETY_FLOOR:,.0f} baseline. "
                 f"Liquidity Trend: {trend_desc}. {amihud_desc}."
             )
+        elif amihud_illiq_raw is None:
+            # Partial evidence: ADV observed, but price impact unmeasured (< 3 valid sessions)
+            # Hazard predicate is not fully supported; fail closed to UNKNOWN
+            liquidity_grade = "UNKNOWN_LIQUIDITY"
+            badge_color = "slate"
+            execution_hazard = "UNKNOWN"
+            market_order_warning = False
+            plain_label = "⚪ Unknown Liquidity · Partial Telemetry"
+            plain_summary = f"Volume observed ({adv_20d_desc}) but return volatility unverified (< 3 sessions)."
+            pro_label = "UNKNOWN_LIQUIDITY"
+            pro_summary = f"ADV 20D ({adv_20d_desc}) available; price impact unclassified due to insufficient return history."
         elif adv_20d < cls.DEFAULT_ADV_HIGH_FLOOR or (amihud_illiq_raw is not None and amihud_illiq_raw >= cls.DEFAULT_AMIHUD_THIN_THRESHOLD):
             liquidity_grade = "MODERATE_TRADING_LIQUIDITY"
             badge_color = "amber"
