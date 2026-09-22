@@ -508,15 +508,15 @@ export function generateQuantitativeInsight(
         stopLossPct: (isPriceValid && !isExecutionSuppressed && stopLoss > 0)
           ? Number((((stopLoss - safePrice) / safePrice) * 100).toFixed(1))
           : 0,
-        target1: isTrendAvailable && !isExecutionSuppressed ? target1 : undefined,
+        target1: isTrendAvailable ? target1 : undefined,
         target1Pct: (isPriceValid && !isExecutionSuppressed && target1 !== undefined && target1 > 0)
           ? Number((((target1 - safePrice) / safePrice) * 100).toFixed(1))
           : undefined,
-        target2: isTrendAvailable && !isExecutionSuppressed ? target2 : undefined,
+        target2: isTrendAvailable ? target2 : undefined,
         target2Pct: (isPriceValid && !isExecutionSuppressed && target2 !== undefined && target2 > 0)
           ? Number((((target2 - safePrice) / safePrice) * 100).toFixed(1))
           : undefined,
-        profitRiskRatio: isTrendAvailable && !isExecutionSuppressed ? profitRisk : undefined,
+        profitRiskRatio: isTrendAvailable ? profitRisk : undefined,
       },
       setupSummary: isDegradedDecision
         ? "Unverified Asset — Direct market tape display only; decision engine unreachable."
