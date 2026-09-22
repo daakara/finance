@@ -12,8 +12,10 @@ def test_liquidity_guard_fallback():
     assert res["liquidity_grade"] == "UNKNOWN_LIQUIDITY"
     assert res["badge_color"] == "slate"
     assert res["suppress_buy_zone"] is False
-    assert res["execution_hazard"] is False
-    assert res["adv_20d_usd"] == 0.0
+    assert res["execution_hazard"] == "UNKNOWN"
+    assert res["adv_20d_usd"] is None
+    assert res["amihud_illiq"] is None
+    assert res["evidenceStatus"] == "UNAVAILABLE"
 
 def test_liquidity_guard_high_trading_liquidity():
     # 30 days of high volume, low price volatility
@@ -86,13 +88,16 @@ def test_extreme_cases_resilience():
     # 1. Zero volume series
     df_zero_vol = pd.DataFrame({"Close": [10.0]*30, "Volume": [0.0]*30}, index=dates)
     res1 = LiquidityGuard.evaluate_liquidity(df_zero_vol, 10.0)
-    assert res1["liquidity_grade"] == "EXECUTION_RISK"
-    assert res1["adv_20d_usd"] == 0.0
+    assert res1["liquidity_grade"] == "UNKNOWN_LIQUIDITY"
+    assert res1["adv_20d_usd"] is None
+    assert res1["execution_hazard"] == "UNKNOWN"
 
     # 2. Missing Volume column entirely
     df_no_vol = pd.DataFrame({"Close": [10.0]*30}, index=dates)
     res2 = LiquidityGuard.evaluate_liquidity(df_no_vol, 10.0)
-    assert res2["liquidity_grade"] == "EXECUTION_RISK"
+    assert res2["liquidity_grade"] == "UNKNOWN_LIQUIDITY"
+    assert res2["adv_20d_usd"] is None
+    assert res2["execution_hazard"] == "UNKNOWN"
 
     # 3. NaN and Inf in prices and volumes
     df_nan = pd.DataFrame({
@@ -108,6 +113,8 @@ def test_extreme_cases_resilience():
     res4 = LiquidityGuard.evaluate_liquidity(df_single, 10.0)
     assert res4["liquidity_grade"] == "UNKNOWN_LIQUIDITY" # Safe fallback (< 3 sessions)
     assert res4["badge_color"] == "slate"
+    assert res4["adv_20d_usd"] is None
+    assert res4["execution_hazard"] == "UNKNOWN"
 
     # 5. Enormous 100x volume spike
     vols = [10_000]*29 + [1_000_000]

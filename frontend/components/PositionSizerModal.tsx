@@ -15,7 +15,7 @@ interface PositionSizerProps {
   takeProfit1?: number;
   riskRewardRatio?: number;
   isStage4?: boolean;
-  adv20d?: number;
+  adv20d?: number | null;
   canSizeTrade?: boolean;
   isActionable?: boolean;
   decisionStateLabel?: string;

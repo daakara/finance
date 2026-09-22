@@ -301,7 +301,7 @@ export default function OptimalEntryExitCard({
       </div>
 
       {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}
-      {executionPlan.liquidity_defense?.execution_hazard && (
+      {executionPlan.liquidity_defense?.execution_hazard === true && (
         <div className="bg-amber-950/30 border border-amber-800/60 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
           <span className="text-xl flex-shrink-0">⚠️</span>
           <div className="space-y-1">
@@ -310,7 +310,7 @@ export default function OptimalEntryExitCard({
                 {isPlain ? "Estimated Execution Risk" : "Execution Risk: Low Historical Dollar Volume"}
               </span>
               <span className="px-1.5 py-0.5 bg-amber-900/60 text-amber-200 text-[9px] font-mono rounded">
-                ADV 20D: ${executionPlan.liquidity_defense.adv_20d_usd.toLocaleString()}
+                ADV 20D: {executionPlan.liquidity_defense.adv_20d_usd != null ? `$${executionPlan.liquidity_defense.adv_20d_usd.toLocaleString()}` : "Unavailable"}
                 {executionPlan.liquidity_defense.liquidity_trend != null && (
                   <span className="ml-1.5 text-amber-300">
                     • 5D Trend: {executionPlan.liquidity_defense.liquidity_trend}x
@@ -327,6 +327,30 @@ export default function OptimalEntryExitCard({
               {isPlain
                 ? "💡 Advisory: Estimated execution risk based on historical trading liquidity. Market orders may experience greater slippage; consider using a limit order. Model signal remains active."
                 : "💡 Shadow Observation: Model decision unconstrained. Low historical dollar volume may induce execution friction on market orders."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {executionPlan.liquidity_defense?.execution_hazard === "UNKNOWN" && (
+        <div className="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3.5 text-xs flex items-start gap-3 shadow-lg">
+          <span className="text-xl flex-shrink-0">⚪</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
+                {isPlain ? "Liquidity Telemetry Unavailable" : "Liquidity Telemetry: Insufficient Historical Volume"}
+              </span>
+              <span className="px-1.5 py-0.5 bg-slate-800 text-slate-400 text-[9px] font-mono rounded">
+                ADV: Unavailable
+              </span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              {isPlain
+                ? executionPlan.liquidity_defense.plain_summary
+                : executionPlan.liquidity_defense.pro_summary}
+            </p>
+            <p className="text-slate-400 font-semibold text-[10px]">
+              💡 Shadow Observation: Historical exchange volume data insufficient (&lt; 3 valid sessions). Execution hazard unverified; model decision unconstrained.
             </p>
           </div>
         </div>

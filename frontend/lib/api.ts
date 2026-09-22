@@ -324,23 +324,26 @@ export interface SmartMoneyOverview {
 export interface LiquidityDefenseData {
   liquidity_grade: "HIGH_TRADING_LIQUIDITY" | "MODERATE_TRADING_LIQUIDITY" | "EXECUTION_RISK" | "UNKNOWN_LIQUIDITY" | "DEEP_LIQUIDITY" | "LIMIT_ORDER_REQUIRED" | "INSTITUTIONAL" | "THIN" | "TRAP";
   badge_color: "emerald" | "amber" | "rose" | "slate";
-  adv_20d_usd: number;
-  adv_5d_usd?: number;
-  liquidity_trend?: number;
-  amihud_illiq: number;
-  amihud_illiq_scaled?: number;
-  volume_spike_ratio: number;
+  adv_20d_usd?: number | null;
+  adv_5d_usd?: number | null;
+  liquidity_trend?: number | null;
+  amihud_illiq?: number | null;
+  amihud_illiq_scaled?: number | null;
+  volume_spike_ratio?: number | null;
   is_volume_spike: boolean;
   float_turnover_pct?: number | null;
   is_float_turnover_anomaly: boolean;
-  estimated_participation_rate?: number;
-  execution_hazard: boolean;
+  estimated_participation_rate?: number | null;
+  execution_hazard: boolean | "UNKNOWN";
   market_order_warning?: boolean;
   suppress_buy_zone: boolean;
   plain_label: string;
   pro_label: string;
   plain_summary: string;
   pro_summary: string;
+  evidenceStatus?: "AUTHORITATIVE" | "PROVISIONAL" | "UNAVAILABLE" | "UNKNOWN";
+  evidenceType?: string;
+  factorEvidence?: Record<string, any>;
 }
 
 export interface OptimalExecutionPlan {
@@ -363,7 +366,7 @@ export interface OptimalExecutionPlan {
   breakout_pivot?: number;
   atr_14?: number;
   liquidity_defense?: LiquidityDefenseData;
-  execution_hazard?: boolean;
+  execution_hazard?: boolean | "UNKNOWN";
   liquidity_warning?: string;
 }
 
@@ -377,11 +380,11 @@ export interface Phase26ExecutionObservation {
   fillPrice?: number | null;
   side: "BUY" | "SELL";
   orderSizeUsd?: number | null;
-  adv20dUsd: number;
-  adv5dUsd: number;
-  liquidityTrend: number;
-  amihudIlliqRaw: number;
-  amihudIlliqScaled: number;
+  adv20dUsd?: number | null;
+  adv5dUsd?: number | null;
+  liquidityTrend?: number | null;
+  amihudIlliqRaw?: number | null;
+  amihudIlliqScaled?: number | null;
   liquidityGrade: string;
   participationRate?: number | null;
   slippageBps?: number | null;

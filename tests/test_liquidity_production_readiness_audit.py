@@ -136,10 +136,11 @@ def test_p0_3_unknown_missing_data_semantics():
         res = LiquidityGuard.evaluate_liquidity(bad_input, 100.0)
         assert res["liquidity_grade"] == "UNKNOWN_LIQUIDITY"
         assert res["badge_color"] == "slate"
-        assert res["execution_hazard"] is False
+        assert res["execution_hazard"] == "UNKNOWN"
         assert res["suppress_buy_zone"] is False
-        assert res["adv_20d_usd"] == 0.0
-        assert res["amihud_illiq"] == 0.0
+        assert res["adv_20d_usd"] is None
+        assert res["amihud_illiq"] is None
+        assert res["evidenceStatus"] == "UNAVAILABLE"
 
 
 # ── P0-4: Amihud Dimensional & Unit Semantics ─────────────────────────────────
@@ -448,6 +449,9 @@ def test_p1_20_disabled_gracefully_when_unknown():
     res = LiquidityGuard._generate_fallback(100.0)
     assert res["liquidity_grade"] == "UNKNOWN_LIQUIDITY"
     assert res["badge_color"] == "slate"
-    assert res["execution_hazard"] is False
+    assert res["execution_hazard"] == "UNKNOWN"
     assert res["suppress_buy_zone"] is False
     assert res["market_order_warning"] is False
+    assert res["adv_20d_usd"] is None
+    assert res["amihud_illiq"] is None
+    assert res["evidenceStatus"] == "UNAVAILABLE"
