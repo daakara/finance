@@ -518,6 +518,8 @@ export type MarketDataSource = "live" | "historical" | "fallback" | "unavailable
 
 export interface AnalyticsResponse {
   _dataSource?: MarketDataSource;
+  degradedMode?: boolean;
+  decisionUnavailable?: boolean;
   symbol: string;
   period: string;
   interval: string;
@@ -651,6 +653,8 @@ export function generateFallbackAnalytics(
 
   return {
     _dataSource: "unavailable" as const,
+    degradedMode: true,
+    decisionUnavailable: true,
     symbol: upper,
     period,
     interval,
@@ -891,45 +895,28 @@ export async function fetchDirectYahooFinanceChart(
       const isCataloged = Boolean(MASTER_ASSET_CATALOG[upper]);
       const hasSufficientHistory = candles.length >= 50;
 
-      const optimalExecution: OptimalExecutionPlan = hasSufficientHistory
-        ? {
-            current_price: currentPrice,
-            optimal_entry_min: Number((currentPrice * 0.98).toFixed(2)),
-            optimal_entry_max: Number((currentPrice * 1.015).toFixed(2)),
-            stop_loss: Number((currentPrice - 1.8 * atr_14).toFixed(2)),
-            stop_loss_pct: Number((((currentPrice - 1.8 * atr_14 - currentPrice) / currentPrice) * 100).toFixed(1)),
-            take_profit_1: Number((currentPrice + 2.5 * atr_14).toFixed(2)),
-            take_profit_1_pct: Number((((2.5 * atr_14) / currentPrice) * 100).toFixed(1)),
-            take_profit_2: Number((currentPrice + 4.5 * atr_14).toFixed(2)),
-            take_profit_2_pct: Number((((4.5 * atr_14) / currentPrice) * 100).toFixed(1)),
-            risk_reward_ratio: 2.5,
-            execution_status: "IN_BUY_ZONE",
-            setup_pattern: "Institutional Liquidity Expansion",
-            entry_thesis: "Live market trend alignment above 20 EMA with ATR trailing stop buffer.",
-            invalidation_condition: `Daily close below $${(currentPrice - 1.8 * atr_14).toFixed(2)} safety floor.`,
-            stage_phase: "Stage 2 Trend Following",
-            vcp_contraction_status: "Compression Calibrated",
-            atr_14,
-          }
-        : {
-            current_price: currentPrice,
-            optimal_entry_min: null as any,
-            optimal_entry_max: null as any,
-            stop_loss: null as any,
-            stop_loss_pct: 0,
-            take_profit_1: null as any,
-            take_profit_1_pct: 0,
-            take_profit_2: null as any,
-            take_profit_2_pct: 0,
-            risk_reward_ratio: 0,
-            execution_status: "INSUFFICIENT_HISTORY",
-            setup_pattern: "Insufficient Candlestick History (< 50 Sessions)",
-            entry_thesis: "Asset has fewer than 50 verified daily sessions. Under Phase 18 quantitative integrity invariants, the platform refuses to synthesize hypothetical entry corridors, stop losses, or profit targets.",
-            invalidation_condition: "Awaiting 50+ sessions of verified exchange trading history.",
-            stage_phase: "Stage 1 Undefined Base",
-            vcp_contraction_status: "Insufficient History",
-            atr_14,
-          };
+      // Fail-Closed Invariant: Direct Yahoo client fetching is strictly DISPLAY_ONLY_MARKET_DATA.
+      // DIRECT_YAHOO_CLIENT_DECISION_AUTHORITY = NONE.
+      // The client must NEVER synthesize entry corridors, stop losses, profit targets, or declare IN_BUY_ZONE.
+      const optimalExecution: OptimalExecutionPlan = {
+        current_price: currentPrice,
+        optimal_entry_min: null as any,
+        optimal_entry_max: null as any,
+        stop_loss: null as any,
+        stop_loss_pct: 0,
+        take_profit_1: null as any,
+        take_profit_1_pct: 0,
+        take_profit_2: null as any,
+        take_profit_2_pct: 0,
+        risk_reward_ratio: null as any,
+        execution_status: "UNVERIFIED_ASSET",
+        setup_pattern: "Degraded Market Tape (Display Only)",
+        entry_thesis: "Direct client market data tape. Decision engine unreachable. Platform refuses to synthesize hypothetical trade execution parameters.",
+        invalidation_condition: "Awaiting authoritative backend decision engine.",
+        stage_phase: "Unverified Asset",
+        vcp_contraction_status: "Unverified",
+        atr_14,
+      };
 
       const regularMarketTime = meta.regularMarketTime;
       // Invariant: Never infer quote timestamp from daily candle date or daily timestamps.
@@ -943,6 +930,8 @@ export async function fetchDirectYahooFinanceChart(
 
       const responsePayload: AnalyticsResponse = {
         _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),
+        degradedMode: true,
+        decisionUnavailable: true,
         symbol: upper,
         period,
         interval,
@@ -992,6 +981,15 @@ export async function fetchDirectYahooFinanceChart(
           candleCount: candles.length,
           observedAt: observationTime > 0 ? observationTime : undefined,
           fetchedAt: fetchedTime,
+        },
+        decisionTrace: {
+          symbol: upper,
+          decisionState: "UNVERIFIED",
+          stateLabel: "Degraded Market Tape — Decision Engine Unreachable",
+          isActionable: false,
+          canSizeTrade: false,
+          allowedActions: ["RESEARCH_PROFILE"],
+          disqualificationReason: "Direct client Yahoo fallback. Analytical backend decision authority unavailable.",
         },
       };
 
