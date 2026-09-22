@@ -5,6 +5,7 @@ import pandas as pd
 import yfinance as yf
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
+from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
 
 logger = logging.getLogger(__name__)
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
@@ -26,36 +27,37 @@ def _compute_regime_for_symbol(symbol: str = "SPY"):
     if hist.empty:
         raise HTTPException(status_code=400, detail=f"No price data found for symbol {upper_sym}")
 
-    # Compute real statistical regime analysis via AdvancedRiskAnalyzer
+    # Compute canonical statistical tactical regime via TacticalRegimeEngine
+    tactical_eval = TacticalRegimeEngine.evaluate_tactical_regime(
+        benchmark_symbol=upper_sym,
+        hist_df=hist,
+    )
+    current_regime = tactical_eval["regimeLabel"]
+    tactical_state = tactical_eval["regime"]
+    action = tactical_eval["recommendedAction"]
+    vol_annual = tactical_eval["volatilityAnnualPct"] or 0.0
+    return_annual = tactical_eval["returnAnnualPct"] or 0.0
+    trend_strength = tactical_eval["trendStrength"] or 0.0
+
+    # Risk metrics from AdvancedRiskAnalyzer
     risk_output = risk_analyzer.analyze_comprehensive_risk(hist)
     adv = risk_output.get("advanced_metrics", {})
-    returns = hist["Close"].pct_change().dropna()
-
-    vol_annual = float(returns.std() * (252 ** 0.5) * 100)
-    return_annual = float(returns.mean() * 252 * 100)
     sortino = adv.get("Sortino_Ratio", 1.8)
-
-    if vol_annual < 16.0 and return_annual > 5.0:
-        current_regime = "Optimal Low-Volatility Bull"
-        action = "Momentum accumulation and growth allocation favored"
-    elif vol_annual >= 25.0:
-        current_regime = "High Volatility Fragile Tail"
-        action = "Hedging and tail-risk defense required"
-    else:
-        current_regime = "Neutral Balanced Expansion"
-        action = "Balanced multi-strategy exposure"
 
     return {
         "symbol": upper_sym,
         "regime": current_regime,
+        "tactical_state": tactical_state,
+        "tactical_regime": tactical_state,
         "annualized_volatility_pct": round(vol_annual, 2),
         "annualized_return_pct": round(return_annual, 2),
         "sortino_ratio": round(sortino, 2),
         "recommended_action": action,
         "regime_analysis": {
             "current_regime": current_regime,
+            "tactical_equity_regime": tactical_state,
             "volatility_regime": "Low Volatility" if vol_annual < 18 else "High Volatility",
-            "trend_strength": round(return_annual / (vol_annual + 0.01), 2),
+            "trend_strength": trend_strength,
             "regime_recommendations": [action],
         },
     }

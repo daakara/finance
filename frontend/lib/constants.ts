@@ -172,14 +172,14 @@ export const SHARED_FACTOR_SCORES: Record<string, { scores: AssetFactorScores }>
   },
 };
 export const DEFAULT_MACRO_DIFFICULTY: MacroDifficultyRating = {
-  rating: 1,
-  regime: "Optimal Expansionary Goldilocks",
-  interestRateImpact: "Steepening curve (+0.47%) and tight credit spreads fuel strong risk-on alpha",
-  inflationImpact: "CPI (2.4% YoY) moderation reduces discount rate pressure on valuations",
-  yield_curve_spread: 0.47,
-  fed_funds_rate: 3.63,
-  credit_spread_oas: 2.69,
-  cpi_yoy: 2.4,
+  rating: 0,
+  regime: "Macro Telemetry Unavailable",
+  interestRateImpact: "Macroeconomic liquidity indicators unavailable.",
+  inflationImpact: "Macroeconomic inflation telemetry unavailable.",
+  yield_curve_spread: undefined,
+  fed_funds_rate: undefined,
+  credit_spread_oas: undefined,
+  cpi_yoy: undefined,
 };
 
 export const DEFAULT_EXPECTED_RETURN: ExpectedReturnForecast = {

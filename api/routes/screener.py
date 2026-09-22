@@ -11,6 +11,7 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
+from analyst_dashboard.analyzers.tactical_regime import get_shared_macro_snapshot
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -169,6 +170,8 @@ def run_screener_get(
         active_universe = DAY_TRADER_CANDIDATES if is_day_trader else LONG_TERM_CANDIDATES
 
     results = screener.evaluate_candidates(active_universe)
+    shared_macro = get_shared_macro_snapshot()
+    shared_macro_context_id = shared_macro.get("macroContextId")
 
     # Map candidate fields with live optimal execution levels
     mapped_candidates = []
@@ -334,7 +337,7 @@ def run_screener_get(
                 catalyst_data={
                     "days_to_earnings": days_to_earn,
                 } if days_to_earn is not None else None,
-                macro_data=None,  # No fabricated yield curve 0.25 / credit spread 3.5
+                macro_data=shared_macro,
             )
 
             if not hist_df.empty and len(hist_df) >= 5 and "Volume" in hist_df.columns:
@@ -435,6 +438,7 @@ def run_screener_get(
             "allowedActions": dec_state["allowedActions"],
             "disqualificationReason": dec_state.get("disqualificationReason"),
             "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
+            "macroContextId": shared_macro_context_id,
             # Confluence Conviction Score & Position Sizing
             "confluenceScore": confluence_res["confluenceScore"],
             "confluenceRating": confluence_res["confluenceRating"],
@@ -477,6 +481,8 @@ def run_screener_get(
         "activeFilter": filter_type,
         "userRole": user_role,
         "capabilities": RADAR_CAPABILITY_CONTRACT,
+        "macroContextId": shared_macro_context_id,
+        "macroDifficulty": shared_macro,
         "candidates": filtered,
         "results": results,
     }

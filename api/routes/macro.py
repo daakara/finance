@@ -12,6 +12,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Response
 import yfinance as yf
 import exchange_calendars as xcals
+from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
 
 logger = logging.getLogger("api.macro")
 router = APIRouter()
@@ -253,33 +254,13 @@ def get_macro_ribbon(response: Response = None):
         "dailyChangeBp": tnx_raw.get("changeBps"),
     }
 
-    # 3. Derive Macro Regime (Requires genuine SPY history; never fabricated default)
-    regime = "UNAVAILABLE"
-    regime_summary = "Macro indicators unavailable; regime determination suspended."
-    
-    if spy_data.get("available", False):
-        try:
-            spy_1y = yf.Ticker("SPY").history(period="1y", interval="1d")
-            if not spy_1y.empty and len(spy_1y) >= 20:
-                returns = spy_1y["Close"].pct_change().dropna()
-                vol_annual = float(returns.std() * (252 ** 0.5) * 100)
-                return_annual = float(returns.mean() * 252 * 100)
-
-                vix_val = vix_data.get("price")
-                if vol_annual >= 22.0 or (vix_val is not None and vix_val >= 25.0):
-                    regime = "DEFENSIVE"
-                    regime_summary = "Elevated tail risk and high volatility require defensive positioning and stop-discipline."
-                elif vol_annual < 18.0 and return_annual > 0:
-                    regime = "RISK_ON"
-                    regime_summary = "Confirmed uptrend with controlled volatility and positive equity momentum."
-                else:
-                    regime = "NEUTRAL"
-                    regime_summary = "Mixed macroeconomic indicators; selective stock-picking recommended."
-            else:
-                regime_summary = "Insufficient historical bars to compute statistical volatility."
-        except Exception as e:
-            logger.warning(f"Failed to calculate statistical regime from SPY: {e}")
-            regime_summary = f"Regime calculation error: {str(e)}"
+    # 3. Derive Canonical Tactical Equity Regime via TacticalRegimeEngine
+    tactical_eval = TacticalRegimeEngine.evaluate_tactical_regime(
+        benchmark_symbol="SPY",
+        vix_level=vix_data.get("price"),
+    )
+    regime = tactical_eval.get("regime", "UNAVAILABLE")
+    regime_summary = tactical_eval.get("summary", "Macro indicators unavailable; regime determination suspended.")
 
     # 4. Determine overall data source indicator
     fields = [spy_data, qqq_data, vix_data, treasury_data]

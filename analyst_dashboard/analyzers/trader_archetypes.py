@@ -277,10 +277,37 @@ class TraderArchetypeAnalyzer:
         self, macro_indicators: Dict[str, Any], factor_scores: Dict[str, Any], price_df: Any
     ) -> Dict[str, Any]:
         """Stanley Druckenmiller / Macro Trends & Reflexivity model (Dynamic Regime-Aware)."""
-        yield_curve = _safe_num(macro_indicators, "yield_curve_spread", 0.47)
-        credit_spread = _safe_num(macro_indicators, "credit_spread_oas", 2.69)
-        momentum = _safe_num(factor_scores, "momentumScore", 75.0)
-        growth = _safe_num(factor_scores, "growthScore", 75.0)
+        # Canonical macro check: strictly authentic observations without nominal laundering
+        raw_yc = macro_indicators.get("yield_curve_10y2y") if isinstance(macro_indicators, dict) else None
+        if raw_yc is None and isinstance(macro_indicators, dict):
+            raw_yc = macro_indicators.get("yield_curve_spread")
+        raw_cs = macro_indicators.get("high_yield_credit_spread") if isinstance(macro_indicators, dict) else None
+        if raw_cs is None and isinstance(macro_indicators, dict):
+            raw_cs = macro_indicators.get("credit_spread_oas")
+        if raw_cs is None and isinstance(macro_indicators, dict):
+            raw_cs = macro_indicators.get("credit_spread")
+
+        has_authentic_macro = (
+            raw_yc is not None
+            and raw_cs is not None
+            and not isinstance(raw_yc, bool)
+            and not isinstance(raw_cs, bool)
+        )
+
+        if not has_authentic_macro:
+            return {
+                "name": "Stanley Druckenmiller (Macro Trends)",
+                "archetype": "Interest Rate Trends & Market Momentum",
+                "alignmentScore": 50,
+                "status": "Macro Telemetry Unavailable",
+                "thesis": "Macro yield curve and credit spread telemetry unavailable; macro trend evaluation unverified.",
+                "catalyst": "Awaiting authoritative Federal Reserve economic telemetry.",
+            }
+
+        yield_curve = float(raw_yc)
+        credit_spread = float(raw_cs)
+        momentum = _safe_num(factor_scores, "momentumScore", 50.0)
+        growth = _safe_num(factor_scores, "growthScore", 50.0)
 
         # 1. Inverted Yield Curve Regime (Late-cycle / Tightening)
         if yield_curve < 0.0:
