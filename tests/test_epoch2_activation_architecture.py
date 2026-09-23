@@ -345,25 +345,80 @@ def test_15_retroactive_reclassification_impossible():
 # Phase 3, 4, 5 Verification: Activation Record Validation & Deployment Boundary
 # ---------------------------------------------------------------------------
 
-def test_16_activation_record_future_timestamp_rejected():
-    """Phase 4: Explicit test of the activation record itself rejecting future timestamps."""
-    far_future = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
-    rec = {
+def test_16_strict_future_activation_time_boundaries():
+    """Phase 4: Explicit test of the activation record with 8 deterministic boundary scenarios using injected trusted clock.
+    Zero positive future tolerance is enforced:
+    1. activatedAtUtc = now - 1 second -> ACCEPT
+    2. activatedAtUtc = now -> ACCEPT
+    3. activatedAtUtc = now + 1 millisecond -> REJECT
+    4. activatedAtUtc = now + 1 second -> REJECT
+    5. activatedAtUtc = now + 30 seconds -> REJECT
+    6. activatedAtUtc = now + 59 seconds -> REJECT
+    7. activatedAtUtc = now + 60 seconds -> REJECT
+    8. activatedAtUtc = now + 61 seconds -> REJECT
+    """
+    trusted_now = datetime(2026, 9, 23, 12, 0, 0, 0, tzinfo=timezone.utc)
+    base_rec = {
         "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
         "releaseSha": VALID_RELEASE_SHA,
         "deploymentId": "deploy-uuid-001",
         "deploymentStatus": "SUCCESS",
-        "activatedAtUtc": far_future,
         "runtimeIdentityAttestation": "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED",
         "prospectiveObservationAuthorized": True,
     }
-    valid, reason = ExperimentLedger.validate_activation_record(rec)
+
+    # 1. now - 1 second -> ACCEPT
+    rec_past_1s = dict(base_rec, activatedAtUtc=(trusted_now - timedelta(seconds=1)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_past_1s, current_time_utc=trusted_now)
+    assert valid is True
+    assert reason is None
+
+    # 2. now -> ACCEPT
+    rec_exact_now = dict(base_rec, activatedAtUtc=trusted_now.isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_exact_now, current_time_utc=trusted_now)
+    assert valid is True
+    assert reason is None
+
+    # 3. now + 1 millisecond -> REJECT
+    rec_future_1ms = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(milliseconds=1)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_1ms, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+    # 4. now + 1 second -> REJECT
+    rec_future_1s = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(seconds=1)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_1s, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+    # 5. now + 30 seconds -> REJECT
+    rec_future_30s = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(seconds=30)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_30s, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+    # 6. now + 59 seconds -> REJECT
+    rec_future_59s = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(seconds=59)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_59s, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+    # 7. now + 60 seconds -> REJECT
+    rec_future_60s = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(seconds=60)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_60s, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+    # 8. now + 61 seconds -> REJECT
+    rec_future_61s = dict(base_rec, activatedAtUtc=(trusted_now + timedelta(seconds=61)).isoformat())
+    valid, reason = ExperimentLedger.validate_activation_record(rec_future_61s, current_time_utc=trusted_now)
     assert valid is False
     assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
 
 
 def test_17_activation_vs_deployment_boundary_scenarios():
-    """Phase 3: Verify the 6 deployment boundary vs activation timestamp scenarios."""
+    """Phase 3 & 5: Verify the 6 deployment boundary vs activation timestamp scenarios."""
+    trusted_now = datetime(2026, 9, 23, 10, 5, 0, tzinfo=timezone.utc)
     dep_boundary = "2026-09-23T10:00:00Z"
     base_rec = {
         "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
@@ -378,37 +433,43 @@ def test_17_activation_vs_deployment_boundary_scenarios():
 
     # Scenario 1: activation timestamp before successful deployment/runtime activation -> REJECT
     rec_pre_deploy = dict(base_rec, activatedAtUtc="2026-09-23T09:59:59Z")
-    valid, reason = ExperimentLedger.validate_activation_record(rec_pre_deploy)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_pre_deploy, current_time_utc=trusted_now)
     assert valid is False
     assert "ACTIVATION_PREDATES_DEPLOYMENT_BOUNDARY" in reason
 
     # Scenario 2: activation timestamp equal to successful activation boundary -> ACCEPT
     rec_equal = dict(base_rec, activatedAtUtc=dep_boundary)
-    valid, reason = ExperimentLedger.validate_activation_record(rec_equal)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_equal, current_time_utc=trusted_now)
     assert valid is True
     assert reason is None
 
-    # Scenario 3: activation timestamp after successful activation boundary -> ACCEPT
+    # Scenario 3: activation timestamp after successful activation boundary but not future -> ACCEPT
     rec_post_deploy = dict(base_rec, activatedAtUtc="2026-09-23T10:00:01Z")
-    valid, reason = ExperimentLedger.validate_activation_record(rec_post_deploy)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_post_deploy, current_time_utc=trusted_now)
     assert valid is True
     assert reason is None
+
+    # Scenario 3b: activation timestamp after deployment boundary BUT in future -> REJECT (both hold)
+    rec_post_deploy_future = dict(base_rec, activatedAtUtc="2026-09-23T10:06:00Z")
+    valid, reason = ExperimentLedger.validate_activation_record(rec_post_deploy_future, current_time_utc=trusted_now)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
 
     # Scenario 4: deployment status != SUCCESS -> REJECT
     rec_failed = dict(base_rec, deploymentStatus="FAILED")
-    valid, reason = ExperimentLedger.validate_activation_record(rec_failed)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_failed, current_time_utc=trusted_now)
     assert valid is False
     assert "DEPLOYMENT_STATUS_NOT_SUCCESS" in reason
 
     # Scenario 5: deployment identity absent -> REJECT
     rec_no_deploy_id = dict(base_rec, deploymentId="")
-    valid, reason = ExperimentLedger.validate_activation_record(rec_no_deploy_id)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_no_deploy_id, current_time_utc=trusted_now)
     assert valid is False
     assert "MISSING_DEPLOYMENT_ID" in reason
 
     # Scenario 6: deployment identity mismatches release identity -> REJECT
     valid, reason = ExperimentLedger.validate_activation_record(
-        base_rec, expected_release_sha="different_release_sha_12345"
+        base_rec, expected_release_sha="different_release_sha_12345", current_time_utc=trusted_now
     )
     assert valid is False
     assert "RELEASE_SHA_MISMATCH" in reason
@@ -444,3 +505,18 @@ def test_18_activation_record_cannot_overwrite_prior_immutable_record():
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+def test_19_activation_creator_rejects_future_timestamp():
+    """Phase 6: create_activation_record rejects caller-supplied future timestamps and fails closed."""
+    trusted_now = datetime(2026, 9, 23, 12, 0, 0, tzinfo=timezone.utc)
+    future_time = (trusted_now + timedelta(seconds=5)).isoformat()
+    with pytest.raises(ValueError) as exc_info:
+        ExperimentLedger.create_activation_record(
+            epoch_id="ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+            release_sha=VALID_RELEASE_SHA,
+            deployment_id="deploy-future-test",
+            activated_at_utc=future_time,
+            current_time_utc=trusted_now,
+        )
+    assert "FUTURE_ACTIVATION_TIMESTAMP" in str(exc_info.value)

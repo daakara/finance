@@ -497,9 +497,9 @@ class ExperimentLedger:
         if parsed_dt is None:
             return False, "MALFORMED_ACTIVATED_AT_UTC"
 
-        # Future activation timestamp gate (Phase 4 requirement)
+        # Strict Epoch Activation Authorization: Zero positive future tolerance
         now_dt = current_time_utc or datetime.now(timezone.utc)
-        if parsed_dt > now_dt + timedelta(seconds=60):  # 60s skew tolerance
+        if parsed_dt > now_dt:
             return False, "FUTURE_ACTIVATION_TIMESTAMP"
 
         # Deployment boundary gate (Phase 3 requirement):
@@ -531,6 +531,7 @@ class ExperimentLedger:
         deployment_finished_at_utc: Optional[str] = None,
         output_path: Optional[str] = None,
         overwrite: bool = False,
+        current_time_utc: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """Creates, validates, and optionally persists an immutable production activation record."""
         record = {
@@ -544,7 +545,11 @@ class ExperimentLedger:
         }
         if deployment_finished_at_utc:
             record["deploymentFinishedAtUtc"] = deployment_finished_at_utc
-        valid, reason = cls.validate_activation_record(record)
+        valid, reason = cls.validate_activation_record(
+            record,
+            expected_release_sha=release_sha if release_sha else None,
+            current_time_utc=current_time_utc,
+        )
         if not valid:
             raise ValueError(f"Cannot create invalid activation record: {reason}")
         if output_path:
