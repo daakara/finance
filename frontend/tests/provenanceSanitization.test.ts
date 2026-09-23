@@ -40,7 +40,7 @@ async function runProvenanceSuite() {
   assert(fallback.catalystForecast?.upcoming_milestones.length === 0, "Fallback upcoming milestones must be empty");
   assert(Array.isArray(fallback.catalystForecast?.multi_year_forecast), "Multi-year forecast must be an array");
   assert(fallback.catalystForecast?.multi_year_forecast.length === 0, "Fallback multi-year forecast must be empty, never static projections");
-  assert(fallback.currentPrice === 0, "Fallback currentPrice without live/persisted quote must be 0, never catalog baseline price");
+  assert(fallback.currentPrice === null || fallback.currentPrice === 0, "Fallback currentPrice without live/persisted quote must be null or 0, never catalog baseline price");
   assert(fallback.candles.length === 0, "Fallback candles without live/persisted quote must be empty");
   console.log("✓ Test 1 Passed: Complete fallback payload is epistemically clean without fabricated claims.");
 
@@ -127,17 +127,17 @@ async function runProvenanceSuite() {
   // 9. Test Unchecked Price Override Rejection
   console.log("Executing Test 9: Fallback rejects unchecked price overrides without fresh observation timestamp...");
   const unverifiedOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0);
-  assert(unverifiedOverride.currentPrice === 0, "Unchecked overridePrice without fresh observation timestamp must be clamped to 0");
+  assert(unverifiedOverride.currentPrice === null || unverifiedOverride.currentPrice === 0, "Unchecked overridePrice without fresh observation timestamp must be clamped to null or 0");
   const staleOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0, 1.5, Date.now() - 10 * 60 * 1000);
-  assert(staleOverride.currentPrice === 0, "OverridePrice with stale timestamp must be clamped to 0");
+  assert(staleOverride.currentPrice === null || staleOverride.currentPrice === 0, "OverridePrice with stale timestamp must be clamped to null or 0");
   const freshOverride = generateFallbackAnalytics("NVDA", "1y", "1d", 150.0, 1.5, Date.now() - 30 * 1000);
   assert(freshOverride.currentPrice === 150.0, "Verified overridePrice with fresh timestamp must be accepted");
   console.log("✓ Test 9 Passed: Unchecked price overrides strictly rejected; only fresh observations accepted.");
 
   // 10. Test Provider Failure Guaranteed Price Unavailability
-  console.log("Executing Test 10: Provider failure leaves currentPrice unavailable (0)...");
+  console.log("Executing Test 10: Provider failure leaves currentPrice unavailable (null/0)...");
   const failureFallback = generateFallbackAnalytics("AAPL", "1y", "1d");
-  assert(failureFallback.currentPrice === 0, "Fallback on provider failure must return currentPrice 0, never previous price");
+  assert(failureFallback.currentPrice === null || failureFallback.currentPrice === 0, "Fallback on provider failure must return currentPrice null or 0, never previous price");
   assert(failureFallback._dataSource === "unavailable", "Data source must be marked unavailable");
   assert(failureFallback.freshness?.status === "UNAVAILABLE", "Freshness must be marked UNAVAILABLE");
   console.log("✓ Test 10 Passed: Provider failure guaranteed to keep current-price fields unavailable.");

@@ -7,7 +7,7 @@ import { CandleData } from "../lib/api";
 interface PriceChartProps {
   symbol: string;
   candles: CandleData[];
-  currentPrice?: number;
+  currentPrice?: number | null;
   priceChangePct?: number;
   interval?: string;
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -396,9 +396,13 @@ export default function PriceChart({
               </span>
             );
           })()}
-          {currentPrice && (
+          {typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0 ? (
             <span aria-label={`Current price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
               ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          ) : (
+            <span aria-label="Current price unavailable" className="text-sm sm:text-base font-medium text-slate-400">
+              — Data Unavailable
             </span>
           )}
           <span

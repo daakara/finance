@@ -563,7 +563,11 @@ export interface AnalyticsResponse {
   symbol: string;
   period: string;
   interval: string;
-  currentPrice: number;
+  currentPrice: number | null;
+  priceState?: "AVAILABLE" | "DATA_UNAVAILABLE";
+  analysisReferencePrice?: number | null;
+  analysisReferenceDate?: string | null;
+  quoteStatus?: string;
   priceChangePct24h: number;
   candles: CandleData[];
   observedAt?: number;
@@ -698,7 +702,7 @@ export function generateFallbackAnalytics(
     overrideTimestamp &&
     isQuoteFresh(overrideTimestamp)
   );
-  const effectivePrice = isVerifiedOverride ? overridePrice! : 0;
+  const effectivePrice = isVerifiedOverride ? overridePrice! : null;
   const effectiveChange = isVerifiedOverride && overrideChangePct !== undefined ? overrideChangePct : 0;
   const fetchedTime = Date.now();
 
@@ -710,6 +714,10 @@ export function generateFallbackAnalytics(
     period,
     interval,
     currentPrice: effectivePrice,
+    priceState: isVerifiedOverride ? "AVAILABLE" : "DATA_UNAVAILABLE",
+    analysisReferencePrice: effectivePrice,
+    analysisReferenceDate: null,
+    quoteStatus: "UNAVAILABLE",
     priceChangePct24h: effectiveChange,
     candles: [],
     observedAt: isVerifiedOverride ? overrideTimestamp : undefined,
@@ -795,6 +803,10 @@ export async function fetchDirectYahooFinanceChart(
   period: string = "1y",
   interval: string = "1d"
 ): Promise<AnalyticsResponse | null> {
+  // Invariant: Direct Yahoo Finance client fetch is disabled in browser environments
+  if (typeof window !== "undefined") {
+    return null;
+  }
   const upper = symbol.toUpperCase().replace("-USD", "");
 
   // Map period and interval to Yahoo Finance query parameters
@@ -987,6 +999,10 @@ export async function fetchDirectYahooFinanceChart(
         period,
         interval,
         currentPrice,
+        priceState: (typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0) ? "AVAILABLE" : "DATA_UNAVAILABLE",
+        analysisReferencePrice: currentPrice,
+        analysisReferenceDate: candles.length > 0 ? String(candles[candles.length - 1].time) : null,
+        quoteStatus: interval === "1d" ? "COMPLETED_SESSION" : "LIVE_INTRADAY",
         priceChangePct24h,
         candles,
         observedAt: observationTime > 0 ? observationTime : undefined,
@@ -1086,7 +1102,7 @@ export async function fetchBatchQuotes(
     try {
       // 1. Try Direct Yahoo Finance client fetch
       const yfRes = await fetchDirectYahooFinanceChart(cleanSym, "1mo", "1d");
-      if (yfRes && yfRes.currentPrice > 0) {
+      if (yfRes && typeof yfRes.currentPrice === "number" && yfRes.currentPrice > 0) {
         const reg = SpotPriceRegistry.get(cleanSym);
         const observedAt = reg?.observedAt || (reg?.lastUpdated && isQuoteFresh(reg.lastUpdated) ? reg.lastUpdated : 0);
         if (observedAt > 0 && isQuoteFresh(observedAt)) {
@@ -1103,7 +1119,7 @@ export async function fetchBatchQuotes(
     // 2. Check fresh persisted snapshot (strict observation freshness, never storage time)
     const snap = getPersistedMarketSnapshot(cleanSym, false);
     const snapObservedAt = snap?.observedAt;
-    if (snap && snap.currentPrice > 0 && !snap.isStale && snapObservedAt && isQuoteFresh(snapObservedAt)) {
+    if (snap && typeof snap.currentPrice === "number" && snap.currentPrice > 0 && !snap.isStale && snapObservedAt && isQuoteFresh(snapObservedAt)) {
       results[cleanSym] = {
         price: snap.currentPrice,
         changePct: snap.priceChangePct24h,
@@ -1162,10 +1178,15 @@ export async function fetchAssetAnalytics(
           const isObservationFresh = !isBackendStale && observationTime > 0 && isQuoteFresh(observationTime);
           const fetchedTime = Date.now();
 
+          const validPrice = (typeof data.currentPrice === "number" && Number.isFinite(data.currentPrice) && data.currentPrice > 0)
+            ? data.currentPrice
+            : null;
+          const priceState: "AVAILABLE" | "DATA_UNAVAILABLE" = validPrice !== null ? "AVAILABLE" : "DATA_UNAVAILABLE";
+
           // Save price and observation metadata to in-memory registry strictly using authentic observation timestamp
-          if (observationTime > 0) {
+          if (observationTime > 0 && validPrice !== null) {
             SpotPriceRegistry.set(upper, {
-              price: data.currentPrice,
+              price: validPrice,
               changePct: data.priceChangePct24h,
               technicals: data.technicals,
               catalyst: data.catalystForecast,
@@ -1178,6 +1199,11 @@ export async function fetchAssetAnalytics(
 
           const analyticsPayload: AnalyticsResponse = {
             ...data,
+            currentPrice: validPrice,
+            priceState: data.priceState || priceState,
+            analysisReferencePrice: data.analysisReferencePrice !== undefined ? data.analysisReferencePrice : validPrice,
+            analysisReferenceDate: data.analysisReferenceDate !== undefined ? data.analysisReferenceDate : (data.candles?.length ? String(data.candles[data.candles.length - 1].time) : null),
+            quoteStatus: data.quoteStatus || (interval === "1d" ? "COMPLETED_SESSION" : "LIVE_INTRADAY"),
             observedAt: observationTime > 0 ? observationTime : undefined,
             fetchedAt: fetchedTime,
             _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),

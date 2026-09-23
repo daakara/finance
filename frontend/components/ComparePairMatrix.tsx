@@ -34,11 +34,11 @@ export default function ComparePairMatrix({ symA, symB, nameA, nameB }: CompareP
       if (!isMounted) return;
       if (resA) {
         setDataA(resA);
-        if (resA.currentPrice > 0) setPriceA(resA.currentPrice);
+        if (resA.currentPrice !== null && resA.currentPrice > 0) setPriceA(resA.currentPrice);
       }
       if (resB) {
         setDataB(resB);
-        if (resB.currentPrice > 0) setPriceB(resB.currentPrice);
+        if (resB.currentPrice !== null && resB.currentPrice > 0) setPriceB(resB.currentPrice);
       }
     });
     return () => {

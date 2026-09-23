@@ -34,7 +34,7 @@ export default function WatchlistDrawerContent({
     return SHARED_WATCHLIST_ITEMS.map((item) => {
       const symClean = item.symbol.toUpperCase().replace("-USD", "");
       const snap = snapshots[symClean];
-      if (snap && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
+      if (snap && snap.currentPrice !== null && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
         const isUp = snap.priceChangePct24h >= 0;
         return {
           ...item,

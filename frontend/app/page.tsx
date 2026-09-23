@@ -191,7 +191,7 @@ function TerminalContent() {
           apiInterval = "1mo";
         }
 
-        const knownPrice = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.currentPrice : undefined;
+        const knownPrice = (data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() && data.currentPrice !== null) ? data.currentPrice : undefined;
         const knownChange = data?.symbol?.toUpperCase() === selectedSymbol.toUpperCase() ? data.priceChangePct24h : undefined;
 
         const res = await fetchAssetAnalytics(selectedSymbol, period, apiInterval, userRole, knownPrice, knownChange);

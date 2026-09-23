@@ -39,16 +39,18 @@ class ProvenanceCohort:
 class ExperimentLedger:
     """Production-grade Model Governance and Forward Experiment Tracker."""
 
-    # Prospective Validation Epoch 1 Boundary Constants
-    EPOCH_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_1"
-    EPOCH_START_UTC = "2026-09-19T00:00:00Z"
+    # Prospective Validation Epoch Constants
+    EPOCH_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
+    EPOCH_START_UTC = "2026-09-23T00:00:00Z"
+    EPOCH_1_FINAL_N = 0
+    EPOCH_2_INITIAL_N = 0
 
     # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
     DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
     ENGINE_SHA = DECISION_ENGINE_SHA  # Backward-compatibility alias
     OBSERVATION_GOVERNANCE_ARTIFACT_SHA = "1725fd877d56da01e5361db2e5d521d2316782ab"
     OBSERVATION_GOVERNANCE_SHA: str = OBSERVATION_GOVERNANCE_ARTIFACT_SHA
-    OBSERVATION_GOVERNANCE_VERSION: str = "1.0.0"
+    OBSERVATION_GOVERNANCE_VERSION: str = "2.0.0"
 
     @classmethod
     def get_observation_governance_sha(cls) -> str:
@@ -56,7 +58,7 @@ class ExperimentLedger:
         env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
         if env_sha:
             return env_sha.strip()
-        manifest = cls.get_epoch1_manifest()
+        manifest = cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if manifest and manifest.get("observationGovernanceSha"):
             return manifest["observationGovernanceSha"].strip()
         return cls.OBSERVATION_GOVERNANCE_ARTIFACT_SHA
@@ -133,9 +135,39 @@ class ExperimentLedger:
         return None
 
     @classmethod
-    def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository executable observation governance against EPOCH_1_MANIFEST.json."""
+    def verify_epoch1_manifest(cls) -> Dict[str, Any]:
+        """Returns the audited integrity status of immutable EPOCH_1_MANIFEST.json."""
         manifest = cls.get_epoch1_manifest()
+        if not manifest:
+            return {"status": "MANIFEST_MISSING", "valid": False}
+        return {
+            "status": "VERIFIED",
+            "valid": True,
+            "manifestVersion": manifest.get("manifestVersion"),
+            "epochId": manifest.get("epochId"),
+            "observationGovernanceVersion": manifest.get("observationGovernanceVersion"),
+            "observationGovernanceSha": manifest.get("observationGovernanceSha"),
+            "observationGovernanceArtifactSha": manifest.get("observationGovernanceArtifactSha"),
+            "observationGovernanceManifestHash": manifest.get("observationGovernanceManifestHash"),
+        }
+
+    @classmethod
+    def get_epoch2_manifest(cls) -> Optional[Dict[str, Any]]:
+        """Loads the Epoch 2 observation governance manifest if available."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_2_MANIFEST.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return None
+        return None
+
+    @classmethod
+    def verify_epoch2_manifest(cls) -> Dict[str, Any]:
+        """Verifies repository executable observation governance against EPOCH_2_MANIFEST.json."""
+        manifest = cls.get_epoch2_manifest()
         if not manifest:
             return {"status": "MANIFEST_MISSING", "valid": False}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -164,6 +196,48 @@ class ExperimentLedger:
             "status": "VERIFIED" if all_valid else "CORRUPTED",
             "valid": all_valid,
             "manifestVersion": manifest.get("manifestVersion"),
+            "epochId": manifest.get("epochId"),
+            "observationGovernanceVersion": manifest.get("observationGovernanceVersion"),
+            "observationGovernanceSha": manifest.get("observationGovernanceSha"),
+            "observationGovernanceArtifactSha": manifest.get("observationGovernanceArtifactSha"),
+            "observationGovernanceManifestHash": manifest.get("observationGovernanceManifestHash"),
+            "computedManifestHash": computed_manifest_hash,
+            "files": file_results,
+        }
+
+    @classmethod
+    def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
+        """Verifies repository executable observation governance against active manifest (EPOCH_2 or EPOCH_1)."""
+        manifest = cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        if not manifest:
+            return {"status": "MANIFEST_MISSING", "valid": False}
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        file_results = {}
+        all_valid = True
+        combined = hashlib.sha256()
+        for rel_path, meta in manifest.get("executableGovernanceFiles", {}).items():
+            full_path = os.path.join(repo_root, rel_path)
+            if not os.path.exists(full_path):
+                file_results[rel_path] = {"valid": False, "error": "FILE_MISSING"}
+                all_valid = False
+                continue
+            with open(full_path, "rb") as fp:
+                content = fp.read().replace(b"\r\n", b"\n")
+                h = hashlib.sha256(content).hexdigest()
+            is_match = (h == meta["sha256"])
+            file_results[rel_path] = {"valid": is_match, "sha256": h, "expectedSha256": meta["sha256"]}
+            combined.update(rel_path.encode("utf-8") + b":" + h.encode("utf-8") + b"\n")
+            if not is_match:
+                all_valid = False
+        computed_manifest_hash = combined.hexdigest()
+        manifest_hash_match = (computed_manifest_hash == manifest.get("observationGovernanceManifestHash"))
+        if not manifest_hash_match:
+            all_valid = False
+        return {
+            "status": "VERIFIED" if all_valid else "CORRUPTED",
+            "valid": all_valid,
+            "manifestVersion": manifest.get("manifestVersion"),
+            "epochId": manifest.get("epochId"),
             "observationGovernanceVersion": manifest.get("observationGovernanceVersion"),
             "observationGovernanceSha": manifest.get("observationGovernanceSha"),
             "observationGovernanceArtifactSha": manifest.get("observationGovernanceArtifactSha"),
@@ -362,6 +436,16 @@ class ExperimentLedger:
         ledger = cls.load_ledger(ledger_path)
         return len([
             s for s in ledger.get("signals", [])
+            if s.get("epochId") == "ARX_PROSPECTIVE_VALIDATION_EPOCH_1"
+            and cls.classify_provenance_cohort(s) == ProvenanceCohort.PROSPECTIVE_CLEAN
+        ])
+
+    @classmethod
+    def get_epoch2_clean_prospective_count(cls, ledger_path: Optional[str] = None) -> int:
+        """Returns the count of certified natural prospective records admitted to Epoch 2."""
+        ledger = cls.load_ledger(ledger_path)
+        return len([
+            s for s in ledger.get("signals", [])
             if s.get("epochId") == cls.EPOCH_ID
             and cls.classify_provenance_cohort(s) == ProvenanceCohort.PROSPECTIVE_CLEAN
         ])
@@ -498,8 +582,8 @@ class ExperimentLedger:
     def compute_inputs_snapshot_hash(cls, record: Dict[str, Any]) -> str:
         """Computes a SHA-256 fingerprint over the immutable frozen input features."""
         inputs = record.get("inputs") or {}
-        # Route Epoch 1 records to the complete information set hash
-        if record.get("epochId") == cls.EPOCH_ID or "marketDataSnapshotTimestamp" in inputs or "fundamentalAsOfDate" in inputs:
+        # Route Epoch 1 and Epoch 2 records to the complete information set hash
+        if record.get("epochId") in (cls.EPOCH_ID, "ARX_PROSPECTIVE_VALIDATION_EPOCH_1", "ARX_PROSPECTIVE_VALIDATION_EPOCH_2") or "marketDataSnapshotTimestamp" in inputs or "fundamentalAsOfDate" in inputs:
             return cls.compute_epoch1_inputs_snapshot_hash(record)
 
         canonical_dict = {

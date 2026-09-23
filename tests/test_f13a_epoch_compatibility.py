@@ -24,10 +24,11 @@ pytestmark = pytest.mark.tier1
 # ── 1. Cryptographic Manifest Verification ───────────────────────────────────
 
 def test_epoch_1_manifest_hashes_unmodified():
-    """Verify that all executable governance files in EPOCH_1_MANIFEST.json remain bitwise unchanged."""
+    """Verify that all executable governance files in active manifest remain bitwise unchanged."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    manifest_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
-    assert os.path.exists(manifest_path), "EPOCH_1_MANIFEST.json missing!"
+    epoch2_path = os.path.join(repo_root, "EPOCH_2_MANIFEST.json")
+    manifest_path = epoch2_path if os.path.exists(epoch2_path) else os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+    assert os.path.exists(manifest_path), "Governance manifest missing!"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
@@ -41,7 +42,7 @@ def test_epoch_1_manifest_hashes_unmodified():
             computed_sha = hashlib.sha256(content).hexdigest()
 
         assert computed_sha == meta["sha256"], (
-            f"EPOCH_1_BREACH: File {file_path} was modified! "
+            f"GOVERNANCE_BREACH: File {file_path} was modified! "
             f"Expected {meta['sha256']}, got {computed_sha}"
         )
 

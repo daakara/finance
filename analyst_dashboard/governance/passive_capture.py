@@ -24,6 +24,7 @@ Invariants Enforced:
 
 import os
 import json
+import math
 import logging
 import hashlib
 from datetime import datetime, timezone
@@ -52,7 +53,7 @@ class PassiveCaptureHook:
 
     @classmethod
     def is_temporal_gate_satisfied(cls) -> bool:
-        """Evaluates whether current UTC has crossed the Epoch 1 boundary."""
+        """Evaluates whether current UTC has crossed the active Epoch boundary."""
         now_utc = datetime.now(timezone.utc).isoformat()
         return now_utc >= cls.EPOCH_START_UTC
 
@@ -98,6 +99,42 @@ class PassiveCaptureHook:
                 logger.debug("[PASSIVE_CAPTURE] Bypassing capture to production ledger during automated test execution.")
                 return None
 
+            # Non-finite and invalid price firewall (Fail-closed defense-in-depth)
+            if current_price is None:
+                logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price=None for symbol {symbol}")
+                return None
+            try:
+                cp_float = float(current_price)
+                if not math.isfinite(cp_float) or cp_float <= 0.0:
+                    logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price={current_price} for symbol {symbol}")
+                    return None
+            except (ValueError, TypeError):
+                logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price={current_price} invalid float for symbol {symbol}")
+                return None
+
+            try:
+                entry_price = float(
+                    optimal_execution_plan.get("optimal_entry_min")
+                    or current_price
+                    or 0.0
+                )
+                if not math.isfinite(entry_price) or entry_price <= 0.0:
+                    logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: entry_price={entry_price} for symbol {symbol}")
+                    return None
+            except (ValueError, TypeError):
+                return None
+
+            for level_key in ("stop_loss", "take_profit_1", "take_profit_2"):
+                val = optimal_execution_plan.get(level_key)
+                if val is not None:
+                    try:
+                        f_val = float(val)
+                        if not math.isfinite(f_val) or f_val <= 0.0:
+                            logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: {level_key}={val} for symbol {symbol}")
+                            return None
+                    except (ValueError, TypeError):
+                        return None
+
             now_dt = datetime.now(timezone.utc)
 
             def _to_iso(ts_val: Any) -> Optional[str]:
@@ -114,11 +151,6 @@ class PassiveCaptureHook:
             sig_date = rec_iso[:10] if len(rec_iso) >= 10 else now_dt.strftime("%Y-%m-%d")
 
             upper_sym = symbol.upper().strip()
-            entry_price = float(
-                optimal_execution_plan.get("optimal_entry_min")
-                or current_price
-                or 0.0
-            )
 
             # 1. Content-addressed Market Snapshot
             candle_list = candles or []

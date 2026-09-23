@@ -16,7 +16,7 @@ interface WatchlistItemDisplay extends WatchlistDefinition {
 interface WatchlistSidebarProps {
   activeSymbol: string;
   onSelectSymbol: (symbol: string) => void;
-  liveCurrentPrice?: number;
+  liveCurrentPrice?: number | null;
   livePriceChangePct?: number;
 }
 
@@ -27,7 +27,7 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
     return SHARED_WATCHLIST_ITEMS.map((item) => {
       const symClean = item.symbol.toUpperCase().replace("-USD", "");
       const snap = snapshots[symClean];
-      if (snap && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
+      if (snap && snap.currentPrice !== null && snap.currentPrice > 0 && Math.abs(snap.currentPrice - 319.64) >= 0.01) {
         const isUp = snap.priceChangePct24h >= 0;
         return {
           ...item,
@@ -96,10 +96,12 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
       const symClean = activeSymbol.toUpperCase().replace("-USD", "");
       const isUp = (livePriceChangePct ?? 0) >= 0;
       const changeStr = `${isUp ? "+" : ""}${(livePriceChangePct ?? 0).toFixed(2)}%`;
-      const priceStr = `$${liveCurrentPrice.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
+      const priceStr = (typeof liveCurrentPrice === "number" && liveCurrentPrice > 0)
+        ? `$${liveCurrentPrice.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`
+        : "Unavailable";
 
       setItems((prevItems) =>
         prevItems.map((item) => {

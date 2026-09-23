@@ -162,7 +162,7 @@ function CompareContent() {
     const staticItem = SHARED_WATCHLIST_ITEMS.find((i) => i.symbol.toUpperCase() === upperSym);
     const reg = SpotPriceRegistry.get(upperSym);
     const snap = getPersistedMarketSnapshot(upperSym);
-    const price = (liveData && liveData.currentPrice > 0)
+    const price = (liveData && typeof liveData.currentPrice === "number" && liveData.currentPrice > 0)
       ? liveData.currentPrice
       : (reg?.price && reg.price > 0)
       ? reg.price

@@ -1,0 +1,33 @@
+{
+  "manifestVersion": "1.0.0",
+  "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+  "epochStartUtc": "2026-09-23T00:00:00Z",
+  "observationGovernanceVersion": "2.0.0",
+  "observationGovernanceIdentity": "MANIFEST_HASH",
+  "observationGovernanceManifestHash": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
+  "observationGovernanceArtifactIdentity": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
+  "observationGovernanceSha": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
+  "decisionEngineSha": "7ad44595826c147cc77f93cd676af520764c7442",
+  "executableGovernanceFiles": {
+    "analyst_dashboard/governance/passive_capture.py": {
+      "sha256": "9d2d5316d7e942aef3f29bf000cf368a0077bdc5266ddffdec75f463df52ded1"
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "sha256": "4e8fb0f65dc1abddf2090fc2db27b0591dd8062b905ee0b9f32a8115afc7c028"
+    },
+    "analyst_dashboard/data/fred_fetcher.py": {
+      "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"
+    },
+    "api/routes/analytics.py": {
+      "sha256": "57fa53ce1a744ba5998f3b558c23ade9b09b8997ea0c7e3a1e13bc3d0f92739c"
+    }
+  },
+  "invariants": {
+    "zero_production_mutation": true,
+    "zero_execution_side_effects": true,
+    "fail_closed_passive_capture": true,
+    "epistemic_null_unobserved_excursions": true,
+    "completed_session_market_data_authority": true,
+    "zero_synthetic_data": true
+  }
+}

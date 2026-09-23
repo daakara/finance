@@ -17,7 +17,7 @@ export interface PersistedMarketRecord {
   fetchedAt?: number;  // Timestamp when network response was received
   storedAt: number;    // Timestamp when record was written to persistent storage
   lastUpdated: number; // Set strictly to observedAt (or 0 if missing); NEVER storedAt/Date.now()
-  currentPrice: number;
+  currentPrice: number | null;
   priceChangePct24h: number;
   dailyCandles: CandleData[];
   technicals?: any;
@@ -137,7 +137,7 @@ export function getPersistedMarketSnapshot(symbol: string, allowStale: boolean =
     const record = JSON.parse(raw) as PersistedMarketRecord;
     
     // Self-healing check 1: Discard poisoned legacy fallback snapshots where un-cataloged stocks got stuck at Apple's $319.64
-    if (upper !== "AAPL" && Math.abs(record.currentPrice - 319.64) < 0.01) {
+    if (upper !== "AAPL" && record.currentPrice !== null && Math.abs(record.currentPrice - 319.64) < 0.01) {
       localStorage.removeItem(`${DB_STORAGE_PREFIX}${upper}`);
       return null;
     }

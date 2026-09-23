@@ -130,7 +130,7 @@ async function testDirectYahooFetcher() {
 
     // Candles must still be present for DISPLAY_ONLY_MARKET_DATA
     assert(yfResult.candles.length > 0, "Candles must be present for display purposes");
-    assert(yfResult.currentPrice > 0, "Current price must be present for display purposes");
+    assert(yfResult.currentPrice !== null && yfResult.currentPrice > 0, "Current price must be present for display purposes");
 
     console.log("   [OK] fetchDirectYahooFinanceChart strictly adheres to DISPLAY_ONLY_MARKET_DATA (no synthetic trade plan)");
   } finally {

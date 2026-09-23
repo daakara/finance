@@ -2,8 +2,9 @@ import os
 import re
 import math
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Optional, List, Dict, Any, Tuple
+from datetime import datetime, timezone
+import exchange_calendars as xcals
 from fastapi import APIRouter, HTTPException, Query, Response
 import pandas as pd
 import numpy as np
@@ -489,6 +490,212 @@ def get_tactical_setup_for_symbol(
         )
 
 
+_XNYS_CALENDAR = None
+
+
+def get_exchange_calendar(exchange: str = "XNYS"):
+    """Cached accessor for exchange calendar instance."""
+    global _XNYS_CALENDAR
+    if _XNYS_CALENDAR is None:
+        try:
+            _XNYS_CALENDAR = xcals.get_calendar(exchange)
+        except Exception as e:
+            logger.warning(f"Could not load exchange calendar {exchange}: {e}")
+            _XNYS_CALENDAR = None
+    return _XNYS_CALENDAR
+
+
+def is_valid_daily_bar(open_val: Any, high_val: Any = None, low_val: Any = None, close_val: Any = None, volume_val: Any = None) -> bool:
+    """Canonical daily bar validation predicate.
+
+    All prices must be finite, non-null, and strictly positive.
+    High must be >= low, high >= max(open, close), low <= min(open, close).
+    Volume, if provided, must be finite and non-negative.
+    Supports either a Series/dict or positional OHLCV arguments.
+    """
+    if isinstance(open_val, (pd.Series, dict)):
+        d = open_val
+        open_val = d.get("Open") if hasattr(d, "get") else d["Open"]
+        high_val = d.get("High") if hasattr(d, "get") else d["High"]
+        low_val = d.get("Low") if hasattr(d, "get") else d["Low"]
+        close_val = d.get("Close") if hasattr(d, "get") else d["Close"]
+        volume_val = d.get("Volume") if hasattr(d, "get") else (d["Volume"] if "Volume" in d else None)
+
+    for val in (open_val, high_val, low_val, close_val):
+        if val is None:
+            return False
+        try:
+            f = float(val)
+            if not math.isfinite(f) or f <= 0.0:
+                return False
+        except (ValueError, TypeError):
+            return False
+
+    o, h, l, c = float(open_val), float(high_val), float(low_val), float(close_val)
+    if h < l - 1e-6:
+        return False
+    if h < max(o, c) - 1e-6:
+        return False
+    if l > min(o, c) + 1e-6:
+        return False
+
+    if volume_val is not None:
+        try:
+            v = float(volume_val)
+            if not math.isfinite(v) or v < 0.0:
+                return False
+        except (ValueError, TypeError):
+            return False
+
+    return True
+
+
+def get_daily_bar_session_state(bar_timestamp: Any, now_utc: Optional[datetime] = None, exchange: str = "XNYS", is_crypto: bool = False) -> str:
+    """Evaluates the market session state of a daily bar timestamp.
+
+    Returns:
+    - 'COMPLETED_EXCHANGE_SESSION'
+    - 'CURRENT_OPEN_SESSION'
+    - 'FUTURE_SESSION'
+    - 'INVALID_SESSION'
+    """
+    if bar_timestamp is None:
+        return "INVALID_SESSION"
+
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc)
+    elif now_utc.tzinfo is None:
+        now_utc = now_utc.replace(tzinfo=timezone.utc)
+    else:
+        now_utc = now_utc.astimezone(timezone.utc)
+
+    try:
+        ts = pd.Timestamp(bar_timestamp)
+        if ts.tz is not None:
+            ts_utc = ts.tz_convert("UTC")
+            bar_date = ts_utc.date()
+        else:
+            bar_date = ts.date()
+    except Exception:
+        return "INVALID_SESSION"
+
+    today_utc = now_utc.date()
+
+    if bar_date > today_utc:
+        return "FUTURE_SESSION"
+
+    if is_crypto:
+        if bar_date < today_utc:
+            return "COMPLETED_EXCHANGE_SESSION"
+        return "CURRENT_OPEN_SESSION"
+
+    cal = get_exchange_calendar(exchange)
+    if cal is not None:
+        try:
+            date_str = bar_date.strftime("%Y-%m-%d")
+            if not cal.is_session(date_str):
+                return "INVALID_SESSION"
+
+            session_close = cal.session_close(date_str)
+            if now_utc >= session_close:
+                return "COMPLETED_EXCHANGE_SESSION"
+
+            session_open = cal.session_open(date_str)
+            if now_utc >= session_open:
+                return "CURRENT_OPEN_SESSION"
+
+            return "CURRENT_OPEN_SESSION"
+        except Exception as e:
+            logger.warning(f"Error evaluating exchange calendar session for {bar_date}: {e}")
+            if bar_date < today_utc:
+                return "COMPLETED_EXCHANGE_SESSION"
+            return "CURRENT_OPEN_SESSION"
+    else:
+        if bar_date < today_utc:
+            return "COMPLETED_EXCHANGE_SESSION"
+        return "CURRENT_OPEN_SESSION"
+
+
+def validate_and_prune_daily_history(
+    df: Optional[pd.DataFrame],
+    is_crypto: bool = False,
+    now_utc: Optional[datetime] = None
+) -> Tuple[Optional[pd.DataFrame], Dict[str, Any]]:
+    """Prunes trailing invalid or open session bars and enforces interior numeric integrity.
+
+    Invariants:
+    1. CURRENT_OPEN_SESSION_DAILY_BAR is excluded from daily decision analytics.
+    2. Trailing bars with NaN/null/non-positive close or open session state are trimmed back
+       to the last COMPLETED_EXCHANGE_SESSION.
+    3. Interior corruption (NaN/null/invalid rows in the middle) is strictly rejected
+       (NEVER silently dropped, to avoid time-series and indicator distortion).
+    """
+    meta = {
+        "valid": False,
+        "reason": None,
+        "pruned_trailing_count": 0,
+        "reference_price": None,
+        "reference_date": None,
+        "quote_status": "DATA_UNAVAILABLE"
+    }
+
+    if df is None or df.empty:
+        meta["reason"] = "EMPTY_DATAFRAME"
+        return None, meta
+
+    req_cols = ["Open", "High", "Low", "Close"]
+    if not all(col in df.columns for col in req_cols):
+        meta["reason"] = "MISSING_OHLC_COLUMNS"
+        return None, meta
+
+    work_df = df.copy()
+    pruned_count = 0
+
+    while len(work_df) > 0:
+        last_idx = work_df.index[-1]
+        last_row = work_df.iloc[-1]
+
+        is_bar_valid = is_valid_daily_bar(
+            last_row["Open"], last_row["High"], last_row["Low"], last_row["Close"], last_row.get("Volume", 0)
+        )
+        session_state = get_daily_bar_session_state(last_idx, now_utc=now_utc, is_crypto=is_crypto)
+
+        if is_bar_valid and session_state == "COMPLETED_EXCHANGE_SESSION":
+            break
+
+        work_df = work_df.iloc[:-1]
+        pruned_count += 1
+
+    meta["pruned_trailing_count"] = pruned_count
+
+    if len(work_df) < 15:
+        meta["reason"] = f"INSUFFICIENT_BARS_AFTER_PRUNING: {len(work_df)} bars (min 15 required)"
+        return None, meta
+
+    for idx, row in work_df.iterrows():
+        if not is_valid_daily_bar(row["Open"], row["High"], row["Low"], row["Close"], row.get("Volume", 0)):
+            meta["reason"] = f"INTERIOR_CORRUPTION_DETECTED_AT_{idx}"
+            return None, meta
+
+    low_min = float(work_df["Low"].min())
+    high_max = float(work_df["High"].max())
+    if (high_max - low_min) < 0.01:
+        meta["reason"] = "FLAT_PRICE_ACTION"
+        return None, meta
+
+    last_bar = work_df.iloc[-1]
+    ref_price = round(float(last_bar["Close"]), 2)
+    last_idx = work_df.index[-1]
+    ref_date = last_idx.strftime("%Y-%m-%d") if hasattr(last_idx, "strftime") else str(last_idx)[:10]
+
+    meta["valid"] = True
+    meta["reference_price"] = ref_price
+    meta["reference_date"] = ref_date
+    meta["quote_status"] = "COMPLETED_SESSION"
+
+    return work_df, meta
+
+
 @router.get("/{symbol}")
 def get_asset_analytics(
     symbol: str,
@@ -542,27 +749,26 @@ def get_asset_analytics(
         ticker_obj = yf.Ticker(fetch_sym)
         hist = ticker_obj.history(period=clean_period, interval=clean_interval)
 
-        def is_valid_ohlcv(df: pd.DataFrame) -> bool:
-            if df is None or df.empty or len(df) < (3 if clean_interval in ["1m", "5m", "15m", "1h"] else 15):
-                return False
-            low_min = float(df["Low"].min()) if "Low" in df else float(df["Close"].min())
-            high_max = float(df["High"].max()) if "High" in df else float(df["Close"].max())
-            return (high_max - low_min) >= 0.01
+        is_crypto_sym = ("-" in fetch_sym or fetch_sym.endswith("-USD") or upper_sym in ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LTC"])
 
-        if not is_valid_ohlcv(hist) and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
-            ticker_obj = yf.Ticker(f"{upper_sym}-USD")
-            crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
-            if is_valid_ohlcv(crypto_hist):
-                hist = crypto_hist
-                provider_source = "yfinance_crypto"
-
-        if not is_valid_ohlcv(hist):
-            eodhd_df = eodhd_fetcher.fetch_historical_candles(upper_sym)
-            if eodhd_df is not None and is_valid_ohlcv(eodhd_df):
-                hist = eodhd_df
-                provider_source = "eodhd"
+        if clean_interval == "1d":
+            pruned_hist, prune_meta = validate_and_prune_daily_history(hist, is_crypto=is_crypto_sym)
+            if prune_meta["valid"]:
+                hist = pruned_hist
             else:
-                # Check persistent database for historical daily candles
+                hist = None
+
+            # If invalid and not crypto, try crypto format if applicable
+            if hist is None and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
+                ticker_obj = yf.Ticker(f"{upper_sym}-USD")
+                crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+                c_pruned, c_meta = validate_and_prune_daily_history(crypto_hist, is_crypto=True)
+                if c_meta["valid"]:
+                    hist = c_pruned
+                    provider_source = "yfinance_crypto"
+
+            # If still invalid, try SQLite cache
+            if hist is None:
                 fresh_candles = market_db.get_candles_with_freshness(upper_sym, limit=252)
                 db_candles = fresh_candles.get("candles", [])
                 if db_candles and len(db_candles) >= 15:
@@ -575,13 +781,51 @@ def get_asset_analytics(
                             "Close": c["close"],
                             "Volume": c["volume"],
                         })
-                    hist = pd.DataFrame(hist_data, index=pd.to_datetime([c["time"] for c in db_candles]))
-                    provider_source = "sqlite_cache"
-                else:
-                    raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
+                    db_df = pd.DataFrame(hist_data, index=pd.to_datetime([c["time"] for c in db_candles]))
+                    db_pruned, db_meta = validate_and_prune_daily_history(db_df, is_crypto=is_crypto_sym)
+                    if db_meta["valid"]:
+                        hist = db_pruned
+                        provider_source = "sqlite_cache"
 
-        # Automatically persist daily candles into SQLite store
-        if clean_interval == "1d" and not hist.empty:
+            if hist is None:
+                if prune_meta.get("reason") and "INTERIOR_CORRUPTION" in prune_meta["reason"]:
+                    raise HTTPException(status_code=503, detail="Interior corruption detected in market price history")
+                raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
+
+        else:
+            def is_valid_intraday(df: pd.DataFrame) -> bool:
+                if df is None or df.empty or len(df) < 3:
+                    return False
+                if not all(col in df.columns for col in ["Open", "High", "Low", "Close"]):
+                    return False
+                while len(df) > 0 and (df["Close"].iloc[-1] is None or not math.isfinite(float(df["Close"].iloc[-1]))):
+                    df = df.iloc[:-1]
+                if len(df) < 3:
+                    return False
+                for _, r in df.iterrows():
+                    for col in ["Open", "High", "Low", "Close"]:
+                        v = r[col]
+                        if v is None or not math.isfinite(float(v)) or float(v) <= 0.0:
+                            return False
+                low_min = float(df["Low"].min())
+                high_max = float(df["High"].max())
+                return (high_max - low_min) >= 0.01
+
+            if not is_valid_intraday(hist) and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
+                ticker_obj = yf.Ticker(f"{upper_sym}-USD")
+                crypto_hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+                if is_valid_intraday(crypto_hist):
+                    hist = crypto_hist
+                    provider_source = "yfinance_crypto"
+
+            if not is_valid_intraday(hist):
+                raise HTTPException(status_code=404, detail=f"No valid price action data found for symbol {symbol}")
+
+            while len(hist) > 0 and (hist["Close"].iloc[-1] is None or not math.isfinite(float(hist["Close"].iloc[-1]))):
+                hist = hist.iloc[:-1]
+
+        # Automatically persist daily candles into SQLite store (only for verified completed history)
+        if clean_interval == "1d" and hist is not None and not hist.empty:
             try:
                 market_db.save_daily_candles(upper_sym, hist)
             except Exception as e:
@@ -606,7 +850,16 @@ def get_asset_analytics(
 
         current_price = round(float(hist["Close"].iloc[-1]), 2)
         prev_price = float(hist["Close"].iloc[-2]) if len(hist) > 1 else current_price
+
+        # Centralized Numeric Safety Gate: Market price baseline must be finite and positive
+        if not math.isfinite(current_price) or current_price <= 0.0:
+            raise HTTPException(status_code=503, detail="Invalid market price baseline")
+        if not math.isfinite(prev_price) or prev_price <= 0.0:
+            raise HTTPException(status_code=503, detail="Invalid market price baseline")
+
         price_change_pct = round(((current_price - prev_price) / prev_price) * 100, 2)
+        if not math.isfinite(price_change_pct):
+            raise HTTPException(status_code=503, detail="Non-finite price change percentage")
 
         # Freshness calculation
         last_trade_date_str = str(candles[-1]["time"])[:10] if candles else ""
@@ -837,20 +1090,21 @@ def get_asset_analytics(
                 optimal_execution_plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
                 or (optimal_execution_plan.get("optimal_entry_min") and optimal_execution_plan.get("stop_loss"))
             ):
-                PassiveCaptureHook.record_natural_recommendation(
-                    symbol=upper_sym,
-                    current_price=current_price,
-                    optimal_execution_plan=optimal_execution_plan,
-                    confluence_output=confluence_output,
-                    technicals=technicals,
-                    factor_scores=factor_scores,
-                    macro_inputs=macro_inputs,
-                    observed_at=observed_at,
-                    fetched_at=fetched_at,
-                    freshness_status=freshness_status,
-                    provider_source=provider_source,
-                    candles=candles,
-                )
+                if current_price is not None and math.isfinite(current_price) and current_price > 0:
+                    PassiveCaptureHook.record_natural_recommendation(
+                        symbol=upper_sym,
+                        current_price=current_price,
+                        optimal_execution_plan=optimal_execution_plan,
+                        confluence_output=confluence_output,
+                        technicals=technicals,
+                        factor_scores=factor_scores,
+                        macro_inputs=macro_inputs,
+                        observed_at=observed_at,
+                        fetched_at=fetched_at,
+                        freshness_status=freshness_status,
+                        provider_source=provider_source,
+                        candles=candles,
+                    )
         except Exception as e:
             logger.warning(f"Passive recommendation capture bypassed on error: {e}")
 
@@ -860,6 +1114,10 @@ def get_asset_analytics(
             "interval": clean_interval,
             "userRole": clean_role,
             "currentPrice": current_price,
+            "priceState": "AVAILABLE",
+            "analysisReferencePrice": current_price,
+            "analysisReferenceDate": candles[-1]["time"] if candles else None,
+            "quoteStatus": "COMPLETED_SESSION" if clean_interval == "1d" else "LIVE_INTRADAY",
             "priceChangePct24h": price_change_pct,
             "candles": candles,
             "technicals": technicals,
