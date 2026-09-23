@@ -20,6 +20,7 @@ from analyst_dashboard.analyzers.catalysts import CatalystEngine
 from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.data.fred_fetcher import FredMacroFetcher, normalize_macro_payload
 from analyst_dashboard.data.eodhd_fetcher import EODHDMarketFetcher
+from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine, ACTIONABLE_EXECUTION_STATUSES
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
@@ -37,6 +38,7 @@ market_graph_engine = MarketGraphEngine()
 catalyst_engine = CatalystEngine()
 smart_money_engine = SmartMoneyEngine()
 eodhd_fetcher = EODHDMarketFetcher()
+alpaca_fetcher = AlpacaMarketFetcher()
 optimal_execution_engine = OptimalExecutionEngine()
 confluence_engine = ConfluenceEngine()
 market_db = MarketDatabaseEngine()
@@ -489,6 +491,49 @@ def get_tactical_setup_for_symbol(
         )
 
 
+@router.get("/{symbol}/quote")
+def get_asset_quote(symbol: str, response: Response = None):
+    """Fetch ultra-low-latency real-time quote (bid/ask/price/spread) via Alpaca IEX tape."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = "public, max-age=5, s-maxage=10"
+
+    upper_sym = symbol.upper().strip()
+    if not SYMBOL_REGEX.match(upper_sym):
+        raise HTTPException(status_code=400, detail="Invalid ticker symbol format.")
+
+    if alpaca_fetcher.is_configured and "-" not in upper_sym:
+        quote = alpaca_fetcher.fetch_realtime_quote(upper_sym)
+        if quote and quote.get("price"):
+            return {
+                "symbol": upper_sym,
+                "price": quote.get("price"),
+                "bid": quote.get("bid"),
+                "ask": quote.get("ask"),
+                "bid_size": quote.get("bid_size"),
+                "ask_size": quote.get("ask_size"),
+                "timestamp": quote.get("timestamp"),
+                "provider": "alpaca_iex",
+            }
+
+    # Graceful fallback to yfinance fast_info
+    try:
+        t = yf.Ticker(upper_sym)
+        fi = t.fast_info
+        lp = getattr(fi, "last_price", None)
+        return {
+            "symbol": upper_sym,
+            "price": round(float(lp), 2) if lp else None,
+            "bid": None,
+            "ask": None,
+            "bid_size": None,
+            "ask_size": None,
+            "timestamp": datetime.utcnow().isoformat(),
+            "provider": "yfinance_fallback",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Quote not available for {symbol}: {e}")
+
+
 @router.get("/{symbol}")
 def get_asset_analytics(
     symbol: str,
@@ -539,8 +584,8 @@ def get_asset_analytics(
             clean_period = "1mo" if clean_period not in ["1d", "5d", "1mo"] else clean_period
 
         provider_source = "yfinance"
-        ticker_obj = yf.Ticker(fetch_sym)
-        hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+        ticker_obj = None
+        hist = None
 
         def is_valid_ohlcv(df: pd.DataFrame) -> bool:
             if df is None or df.empty or len(df) < (3 if clean_interval in ["1m", "5m", "15m", "1h"] else 15):
@@ -548,6 +593,27 @@ def get_asset_analytics(
             low_min = float(df["Low"].min()) if "Low" in df else float(df["Close"].min())
             high_max = float(df["High"].max()) if "High" in df else float(df["Close"].max())
             return (high_max - low_min) >= 0.01
+
+        # 1. Primary: Alpaca Market Data (Free IEX tape for US equities on daily interval)
+        if alpaca_fetcher.is_configured and "-" not in fetch_sym and clean_interval == "1d":
+            limit_days = 252
+            if clean_period == "1mo":
+                limit_days = 30
+            elif clean_period in ["3mo", "6mo"]:
+                limit_days = 130
+            elif clean_period in ["2y", "5y", "10y", "max"]:
+                limit_days = 750
+
+            alpaca_df = alpaca_fetcher.fetch_historical_candles(upper_sym, timeframe="1Day", limit=limit_days)
+            if is_valid_ohlcv(alpaca_df):
+                hist = alpaca_df
+                provider_source = "alpaca_iex"
+
+        # 2. Secondary: Yahoo Finance
+        if not is_valid_ohlcv(hist):
+            ticker_obj = yf.Ticker(fetch_sym)
+            hist = ticker_obj.history(period=clean_period, interval=clean_interval)
+            provider_source = "yfinance"
 
         if not is_valid_ohlcv(hist) and "-" not in fetch_sym and upper_sym not in KNOWN_ETFS:
             ticker_obj = yf.Ticker(f"{upper_sym}-USD")
@@ -620,7 +686,9 @@ def get_asset_analytics(
         # Provider observation timestamp
         observed_at = None
         fetched_at = int(datetime.utcnow().timestamp() * 1000)
-        if provider_source != "sqlite_cache":
+        if provider_source == "alpaca_iex":
+            observed_at = fetched_at
+        elif provider_source != "sqlite_cache" and ticker_obj is not None:
             try:
                 meta = getattr(ticker_obj, "history_metadata", None)
                 if meta and "regularMarketTime" in meta:
@@ -653,6 +721,8 @@ def get_asset_analytics(
             info = INFO_CACHE[upper_sym][1]
         else:
             try:
+                if ticker_obj is None:
+                    ticker_obj = yf.Ticker(fetch_sym)
                 info = ticker_obj.info or {}
                 if info:
                     INFO_CACHE[upper_sym] = (now_ts, info)

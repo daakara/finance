@@ -19,3 +19,4 @@ sqlalchemy>=2.0.0
 diskcache>=5.6.3
 redis>=5.0.0
 exchange_calendars>=4.5.0
+alpaca-py>=0.20.0
