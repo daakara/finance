@@ -468,8 +468,14 @@ class ExperimentLedger:
         return None
 
     @classmethod
-    def validate_activation_record(cls, record: Any, expected_release_sha: Optional[str] = None) -> Tuple[bool, Optional[str]]:
-        """Validates schema, fields, and consistency of an Epoch 2 activation record."""
+    def validate_activation_record(
+        cls,
+        record: Any,
+        expected_release_sha: Optional[str] = None,
+        deployment_boundary_utc: Optional[str] = None,
+        current_time_utc: Optional[datetime] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """Validates schema, fields, temporal bounds, and consistency of an Epoch 2 activation record."""
         if not isinstance(record, dict):
             return False, "RECORD_NOT_A_DICT"
         if record.get("epochId") != cls.EPOCH_ID:
@@ -490,6 +496,24 @@ class ExperimentLedger:
         parsed_dt = cls._parse_utc_timestamp(activated_at)
         if parsed_dt is None:
             return False, "MALFORMED_ACTIVATED_AT_UTC"
+
+        # Future activation timestamp gate (Phase 4 requirement)
+        now_dt = current_time_utc or datetime.now(timezone.utc)
+        if parsed_dt > now_dt + timedelta(seconds=60):  # 60s skew tolerance
+            return False, "FUTURE_ACTIVATION_TIMESTAMP"
+
+        # Deployment boundary gate (Phase 3 requirement):
+        # Activation time must not predate authoritative deployment/runtime activation boundary.
+        dep_boundary_str = (
+            deployment_boundary_utc
+            or record.get("deploymentFinishedAtUtc")
+            or record.get("deploymentBoundaryUtc")
+        )
+        if dep_boundary_str:
+            dep_boundary_dt = cls._parse_utc_timestamp(dep_boundary_str)
+            if dep_boundary_dt and parsed_dt < dep_boundary_dt:
+                return False, f"ACTIVATION_PREDATES_DEPLOYMENT_BOUNDARY: activated={activated_at} < deployment={dep_boundary_str}"
+
         if not record.get("runtimeIdentityAttestation"):
             return False, "MISSING_RUNTIME_IDENTITY_ATTESTATION"
         return True, None
@@ -504,7 +528,9 @@ class ExperimentLedger:
         deployment_status: str = "SUCCESS",
         runtime_identity_attestation: str = "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED",
         prospective_observation_authorized: bool = True,
+        deployment_finished_at_utc: Optional[str] = None,
         output_path: Optional[str] = None,
+        overwrite: bool = False,
     ) -> Dict[str, Any]:
         """Creates, validates, and optionally persists an immutable production activation record."""
         record = {
@@ -516,10 +542,14 @@ class ExperimentLedger:
             "runtimeIdentityAttestation": runtime_identity_attestation,
             "prospectiveObservationAuthorized": prospective_observation_authorized,
         }
+        if deployment_finished_at_utc:
+            record["deploymentFinishedAtUtc"] = deployment_finished_at_utc
         valid, reason = cls.validate_activation_record(record)
         if not valid:
             raise ValueError(f"Cannot create invalid activation record: {reason}")
         if output_path:
+            if os.path.exists(output_path) and not overwrite:
+                raise FileExistsError(f"Activation record at {output_path} already exists and is immutable (overwrite=False)")
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(record, f, indent=2)

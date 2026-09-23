@@ -339,3 +339,108 @@ def test_15_retroactive_reclassification_impossible():
     """Verify that retroactive reclassification is impossible: Epoch 1 records cannot be counted by Epoch 2."""
     assert ExperimentLedger.get_epoch1_clean_prospective_count() == 0
     assert ExperimentLedger.get_epoch2_clean_prospective_count() == 0
+
+
+# ---------------------------------------------------------------------------
+# Phase 3, 4, 5 Verification: Activation Record Validation & Deployment Boundary
+# ---------------------------------------------------------------------------
+
+def test_16_activation_record_future_timestamp_rejected():
+    """Phase 4: Explicit test of the activation record itself rejecting future timestamps."""
+    far_future = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    rec = {
+        "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+        "releaseSha": VALID_RELEASE_SHA,
+        "deploymentId": "deploy-uuid-001",
+        "deploymentStatus": "SUCCESS",
+        "activatedAtUtc": far_future,
+        "runtimeIdentityAttestation": "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED",
+        "prospectiveObservationAuthorized": True,
+    }
+    valid, reason = ExperimentLedger.validate_activation_record(rec)
+    assert valid is False
+    assert reason == "FUTURE_ACTIVATION_TIMESTAMP"
+
+
+def test_17_activation_vs_deployment_boundary_scenarios():
+    """Phase 3: Verify the 6 deployment boundary vs activation timestamp scenarios."""
+    dep_boundary = "2026-09-23T10:00:00Z"
+    base_rec = {
+        "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+        "releaseSha": VALID_RELEASE_SHA,
+        "deploymentId": "deploy-uuid-001",
+        "deploymentStatus": "SUCCESS",
+        "activatedAtUtc": "2026-09-23T10:00:00Z",
+        "deploymentFinishedAtUtc": dep_boundary,
+        "runtimeIdentityAttestation": "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED",
+        "prospectiveObservationAuthorized": True,
+    }
+
+    # Scenario 1: activation timestamp before successful deployment/runtime activation -> REJECT
+    rec_pre_deploy = dict(base_rec, activatedAtUtc="2026-09-23T09:59:59Z")
+    valid, reason = ExperimentLedger.validate_activation_record(rec_pre_deploy)
+    assert valid is False
+    assert "ACTIVATION_PREDATES_DEPLOYMENT_BOUNDARY" in reason
+
+    # Scenario 2: activation timestamp equal to successful activation boundary -> ACCEPT
+    rec_equal = dict(base_rec, activatedAtUtc=dep_boundary)
+    valid, reason = ExperimentLedger.validate_activation_record(rec_equal)
+    assert valid is True
+    assert reason is None
+
+    # Scenario 3: activation timestamp after successful activation boundary -> ACCEPT
+    rec_post_deploy = dict(base_rec, activatedAtUtc="2026-09-23T10:00:01Z")
+    valid, reason = ExperimentLedger.validate_activation_record(rec_post_deploy)
+    assert valid is True
+    assert reason is None
+
+    # Scenario 4: deployment status != SUCCESS -> REJECT
+    rec_failed = dict(base_rec, deploymentStatus="FAILED")
+    valid, reason = ExperimentLedger.validate_activation_record(rec_failed)
+    assert valid is False
+    assert "DEPLOYMENT_STATUS_NOT_SUCCESS" in reason
+
+    # Scenario 5: deployment identity absent -> REJECT
+    rec_no_deploy_id = dict(base_rec, deploymentId="")
+    valid, reason = ExperimentLedger.validate_activation_record(rec_no_deploy_id)
+    assert valid is False
+    assert "MISSING_DEPLOYMENT_ID" in reason
+
+    # Scenario 6: deployment identity mismatches release identity -> REJECT
+    valid, reason = ExperimentLedger.validate_activation_record(
+        base_rec, expected_release_sha="different_release_sha_12345"
+    )
+    assert valid is False
+    assert "RELEASE_SHA_MISMATCH" in reason
+
+
+def test_18_activation_record_cannot_overwrite_prior_immutable_record():
+    """Phase 5: Activation record creation cannot overwrite an existing record silently."""
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".json") as f:
+        temp_path = f.name
+    try:
+        # Create initial record
+        ExperimentLedger.create_activation_record(
+            epoch_id="ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+            release_sha=VALID_RELEASE_SHA,
+            deployment_id="deploy-1",
+            activated_at_utc="2026-09-23T10:00:00Z",
+            output_path=temp_path,
+            overwrite=True,
+        )
+        assert os.path.exists(temp_path)
+
+        # Attempt to overwrite without overwrite=True must raise FileExistsError
+        with pytest.raises(FileExistsError) as exc_info:
+            ExperimentLedger.create_activation_record(
+                epoch_id="ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+                release_sha=VALID_RELEASE_SHA,
+                deployment_id="deploy-2",
+                activated_at_utc="2026-09-23T10:05:00Z",
+                output_path=temp_path,
+                overwrite=False,
+            )
+        assert "already exists and is immutable" in str(exc_info.value)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
