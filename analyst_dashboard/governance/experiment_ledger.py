@@ -456,7 +456,10 @@ class ExperimentLedger:
         activation_record_path: Optional[str] = None,
         db_path: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Loads and validates the Epoch 2 activation record. SQLite is canonical authority."""
+        """Loads and validates the Epoch 2 activation record. SQLite is canonical authority.
+        In production paths (activation_record_path is None), SQLite is the ONLY authority.
+        JSON fallback is strictly forbidden and never consulted in production.
+        """
         # 1. Canonical SQLite authority
         if activation_record_path is None:
             try:
@@ -473,22 +476,23 @@ class ExperimentLedger:
                         "runtimeIdentityAttestation": sqlite_record.get("activation_source", "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED"),
                         "prospectiveObservationAuthorized": True,
                     }
+                return None
             except Exception as e:
-                logger.debug(f"SQLite activation lookup failed: {e}")
+                logger.error(f"SQLite activation lookup failed: {e}")
+                return None
 
-        # 2. File fallback for explicit test path
-        path = activation_record_path or os.getenv("ARX_EPOCH_2_ACTIVATION_RECORD_PATH") or cls.DEFAULT_ACTIVATION_RECORD_PATH
-        if not os.path.exists(path):
+        # 2. Hermetic test isolation ONLY: Explicit activation_record_path provided by test suite
+        if not os.path.exists(activation_record_path):
             return None
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(activation_record_path, "r", encoding="utf-8") as f:
                 record = json.load(f)
             valid, reason = cls.validate_activation_record(record)
             if valid:
                 return record
-            logger.warning(f"Invalid activation record at {path}: {reason}")
+            logger.warning(f"Invalid activation record at {activation_record_path}: {reason}")
         except Exception as e:
-            logger.warning(f"Error loading activation record from {path}: {e}")
+            logger.warning(f"Error loading activation record from {activation_record_path}: {e}")
         return None
 
     @classmethod
@@ -626,23 +630,70 @@ class ExperimentLedger:
 
     @classmethod
     def is_record_epoch2_eligible(
-        cls, record: Dict[str, Any], activation_record_path: Optional[str] = None
+        cls,
+        record: Dict[str, Any],
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
         """Evaluates whether a single signal record meets all strict Epoch 2 prospective eligibility gates."""
         if record.get("epochId") != cls.EPOCH_ID:
             return False, "EPOCH_ID_MISMATCH"
 
-        act_record = cls.get_activation_record(activation_record_path)
+        act_record = cls.get_activation_record(activation_record_path, db_path=db_path)
         if not act_record:
             return False, "NO_VALID_ACTIVATION_RECORD"
 
         # Verify release attribution
-        expected_release = act_record.get("releaseSha")
         record_release = record.get("releaseSha") or record.get("engineCommit")
         if not record_release:
             return False, "MISSING_RUNTIME_IDENTITY"
-        if expected_release and not (record_release == expected_release or record_release.startswith(expected_release[:7])):
-            return False, f"RELEASE_ATTRIBUTION_MISMATCH: expected {expected_release}, got {record_release}"
+
+        # 1. Canonical SQLite authority: verify release has valid PASS authorization
+        if activation_record_path is None:
+            try:
+                from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+                gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+                conn = gov_engine.get_connection()
+                try:
+                    record_deployment = record.get("deploymentId")
+                    if record_deployment:
+                        cur = conn.execute(
+                            """
+                            SELECT production_certification_status FROM epoch_release_authorizations
+                            WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
+                            """,
+                            (cls.EPOCH_ID, record_release, record_deployment),
+                        )
+                        rev_cur = conn.execute(
+                            """
+                            SELECT COUNT(*) FROM epoch_release_revocations
+                            WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
+                            """,
+                            (cls.EPOCH_ID, record_release, record_deployment),
+                        )
+                        if rev_cur.fetchone()[0] > 0:
+                            return False, "RUNTIME_REVOKED"
+                    else:
+                        cur = conn.execute(
+                            """
+                            SELECT production_certification_status FROM epoch_release_authorizations
+                            WHERE epoch_id = ? AND authorized_release_sha = ?
+                            """,
+                            (cls.EPOCH_ID, record_release),
+                        )
+                    row = cur.fetchone()
+                    if not row or row["production_certification_status"] != "PASS":
+                        return False, f"RELEASE_NOT_AUTHORIZED: {record_release}"
+                finally:
+                    conn.close()
+            except Exception as e:
+                logger.error(f"SQLite release authorization lookup failed: {e}")
+                return False, f"AUTHORIZATION_LOOKUP_ERROR: {e}"
+        else:
+            # Hermetic test isolation fallback: verify against explicit activation record
+            expected_release = act_record.get("releaseSha")
+            if expected_release and not (record_release == expected_release or record_release.startswith(expected_release[:7])):
+                return False, f"RELEASE_ATTRIBUTION_MISMATCH: expected {expected_release}, got {record_release}"
 
         if cls.classify_provenance_cohort(record) != ProvenanceCohort.PROSPECTIVE_CLEAN:
             return False, "NOT_PROSPECTIVE_CLEAN_COHORT"
@@ -670,17 +721,22 @@ class ExperimentLedger:
 
     @classmethod
     def get_epoch2_clean_prospective_count(
-        cls, ledger_path: Optional[str] = None, activation_record_path: Optional[str] = None
+        cls,
+        ledger_path: Optional[str] = None,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
     ) -> int:
         """Returns the count of certified natural prospective records admitted to Epoch 2.
         Fails closed (returns 0) if no valid activation record exists.
         """
-        if not cls.is_epoch2_observation_authorized(activation_record_path):
+        if not cls.is_epoch2_observation_authorized(activation_record_path, db_path=db_path):
             return 0
         ledger = cls.load_ledger(ledger_path)
         count = 0
         for s in ledger.get("signals", []):
-            is_eligible, _ = cls.is_record_epoch2_eligible(s, activation_record_path)
+            is_eligible, _ = cls.is_record_epoch2_eligible(
+                s, activation_record_path=activation_record_path, db_path=db_path
+            )
             if is_eligible:
                 count += 1
         return count

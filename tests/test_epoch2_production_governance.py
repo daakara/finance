@@ -461,3 +461,251 @@ def test_activation_lifecycle_and_fail_closed_semantics():
     act_rec = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
     assert act_rec is not None
     assert act_rec["release_sha"] == rel_sha
+
+
+# ==============================================================================
+# 7. LATER-RELEASE RE-ATTESTATION & CONTINUITY TESTS (SECTIONS 6 & 7)
+# ==============================================================================
+
+@pytest.mark.asyncio
+async def test_later_release_re_attestation_and_epoch_continuity(clean_test_db):
+    """Verifies that later releases can be certified and authorized without resetting Epoch 2."""
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    evaluator = ProductionCertificationEvaluator(db_path=clean_test_db)
+
+    rel_a = "1111111111111111111111111111111111111111"
+    dep_a = "dep-alpha-001"
+    rel_b = "2222222222222222222222222222222222222222"
+    dep_b = "dep-bravo-002"
+
+    # Step A: Certify Release A / Dep A
+    res_a = await evaluator.execute_full_certification_suite(
+        mock_release_sha=rel_a, mock_deployment_id=dep_a
+    )
+    assert res_a["overallStatus"] == "PASS"
+
+    # Step B & C: Epoch 2 activates under A at T0
+    t0 = datetime.now(timezone.utc).isoformat()
+    success, msg = gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=rel_a,
+        deployment_id=dep_a,
+        activated_at_utc=t0,
+        activation_source="TEST_RELEASE_A",
+        activation_auth_token_hash="hash-a",
+    )
+    assert success is True
+
+    # Capture under A is authorized
+    is_auth_a, _ = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_a, deployment_id=dep_a
+    )
+    assert is_auth_a is True
+
+    # Step D & E: Later release B running before certification -> SUPPRESSED
+    is_auth_b_pre, reason_b_pre = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_b, deployment_id=dep_b
+    )
+    assert is_auth_b_pre is False
+    assert reason_b_pre == "RUNTIME_NOT_AUTHORIZED"
+
+    # Step F: Certify and authorize Release B
+    res_b = await evaluator.execute_full_certification_suite(
+        mock_release_sha=rel_b, mock_deployment_id=dep_b
+    )
+    assert res_b["overallStatus"] == "PASS"
+    assert res_b["checks"]["check_pre_activation_record_state"]["status"] == "PASS"
+    assert res_b["checks"]["check_pre_activation_record_state"]["measuredValue"]["state"] == "ACTIVE_EPOCH_BOUND"
+
+    # Step G: Capture under B is now AUTHORIZED
+    is_auth_b_post, reason_b_post = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_b, deployment_id=dep_b
+    )
+    assert is_auth_b_post is True
+    assert reason_b_post == "AUTHORIZED"
+
+    # Step H: epoch_activation_records row count remains exactly 1
+    conn = gov_engine.get_connection()
+    try:
+        cur = conn.execute("SELECT COUNT(*) FROM epoch_activation_records")
+        assert cur.fetchone()[0] == 1
+    finally:
+        conn.close()
+
+    # Step I & J: activatedAtUtc and provenance remain exactly T0 and Release A
+    act_row = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+    assert act_row is not None
+    assert act_row["activated_at_utc"] == t0
+    assert act_row["release_sha"] == rel_a
+    assert act_row["deployment_id"] == dep_a
+
+    # Step K: No second activation call is required, and attempting conflicting activation fails closed
+    conf_success, conf_msg = gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=rel_b,
+        deployment_id=dep_b,
+        activated_at_utc=datetime.now(timezone.utc).isoformat(),
+        activation_source="TEST_RELEASE_B",
+        activation_auth_token_hash="hash-b",
+    )
+    assert conf_success is False
+    assert "CONFLICT" in conf_msg
+
+
+@pytest.mark.asyncio
+async def test_same_sha_new_deployment_id_re_attestation(clean_test_db):
+    """Verifies that same code release with a new deployment container ID requires re-attestation."""
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    evaluator = ProductionCertificationEvaluator(db_path=clean_test_db)
+
+    rel_sha = "3333333333333333333333333333333333333333"
+    dep_1 = "dep-container-001"
+    dep_2 = "dep-container-002"
+
+    # 1. Certify and activate under dep_1
+    await evaluator.execute_full_certification_suite(mock_release_sha=rel_sha, mock_deployment_id=dep_1)
+    t0 = datetime.now(timezone.utc).isoformat()
+    gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=rel_sha,
+        deployment_id=dep_1,
+        activated_at_utc=t0,
+        activation_source="DEPLOY_1",
+        activation_auth_token_hash="hash-1",
+    )
+
+    # 2. Before dep_2 is certified -> SUPPRESSED
+    is_auth_dep2_pre, reason = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_sha, deployment_id=dep_2
+    )
+    assert is_auth_dep2_pre is False
+    assert reason == "RUNTIME_NOT_AUTHORIZED"
+
+    # 3. Certify dep_2
+    res_dep2 = await evaluator.execute_full_certification_suite(
+        mock_release_sha=rel_sha, mock_deployment_id=dep_2
+    )
+    assert res_dep2["overallStatus"] == "PASS"
+
+    # 4. Now dep_2 is AUTHORIZED
+    is_auth_dep2_post, _ = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_sha, deployment_id=dep_2
+    )
+    assert is_auth_dep2_post is True
+
+    # 5. Activation boundary unchanged
+    act_row = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+    assert act_row["activated_at_utc"] == t0
+    assert act_row["deployment_id"] == dep_1
+
+
+@pytest.mark.asyncio
+async def test_revocation_continuity_and_recovery_without_new_activation(clean_test_db):
+    """Verifies that revoking release B suppresses B, preserves activation boundary, and allows release C."""
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    evaluator = ProductionCertificationEvaluator(db_path=clean_test_db)
+
+    rel_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    dep_a = "dep-a"
+    rel_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    dep_b = "dep-b"
+    rel_c = "cccccccccccccccccccccccccccccccccccccccc"
+    dep_c = "dep-c"
+
+    # 1. Activate under A
+    await evaluator.execute_full_certification_suite(mock_release_sha=rel_a, mock_deployment_id=dep_a)
+    t0 = datetime.now(timezone.utc).isoformat()
+    gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=rel_a,
+        deployment_id=dep_a,
+        activated_at_utc=t0,
+        activation_source="TEST_A",
+        activation_auth_token_hash="hash-a",
+    )
+
+    # 2. Authorize B -> B capture allowed
+    await evaluator.execute_full_certification_suite(mock_release_sha=rel_b, mock_deployment_id=dep_b)
+    is_auth_b, _ = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_b, deployment_id=dep_b
+    )
+    assert is_auth_b is True
+
+    # 3. Revoke B -> B capture suppressed
+    gov_engine.record_revocation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=rel_b,
+        deployment_id=dep_b,
+        revoked_at_utc=datetime.now(timezone.utc).isoformat(),
+        revocation_reason="Quarantine release B for investigation 16+ chars",
+        revoked_by="SEC_OP",
+    )
+    is_auth_b_rev, reason_rev = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_b, deployment_id=dep_b
+    )
+    assert is_auth_b_rev is False
+    assert reason_rev == "RUNTIME_REVOKED"
+
+    # 4. Activation row unchanged
+    act_row = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+    assert act_row["activated_at_utc"] == t0
+    assert act_row["release_sha"] == rel_a
+
+    # 5. Later release C is certified and authorized without new activation record
+    await evaluator.execute_full_certification_suite(mock_release_sha=rel_c, mock_deployment_id=dep_c)
+    is_auth_c, reason_c = gov_engine.evaluate_capture_authorization_predicate(
+        epoch_id=ExperimentLedger.EPOCH_ID, release_sha=rel_c, deployment_id=dep_c
+    )
+    assert is_auth_c is True
+    assert reason_c == "AUTHORIZED"
+
+    # Row count remains 1
+    conn = gov_engine.get_connection()
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM epoch_activation_records").fetchone()[0] == 1
+    finally:
+        conn.close()
+
+
+def test_legacy_json_fallback_cannot_authorize_production(clean_test_db, tmp_path, monkeypatch):
+    """Forensic audit: presence of epoch2_activation_record.json can NEVER activate production."""
+    # Ensure database is clean (no activation record)
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    assert gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID) is None
+
+    # Plant a fake active activation record JSON in the default location
+    fake_json_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "analyst_dashboard", "data")
+    os.makedirs(fake_json_dir, exist_ok=True)
+    fake_json_path = os.path.join(fake_json_dir, "epoch2_activation_record.json")
+
+    try:
+        with open(fake_json_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "epochId": ExperimentLedger.EPOCH_ID,
+                "releaseSha": "9999999999999999999999999999999999999999",
+                "deploymentId": "dep-fake-json",
+                "deploymentStatus": "SUCCESS",
+                "activatedAtUtc": "2026-09-01T00:00:00Z",
+                "runtimeIdentityAttestation": "FAKE_JSON_FILE",
+                "prospectiveObservationAuthorized": True,
+            }, f)
+
+        # In production path (activation_record_path is None):
+        # 1. get_activation_record MUST return None
+        act_rec = ExperimentLedger.get_activation_record(activation_record_path=None, db_path=clean_test_db)
+        assert act_rec is None, "SECURITY VIOLATION: Production path consulted legacy JSON file!"
+
+        # 2. is_epoch2_observation_authorized MUST return False
+        is_auth = ExperimentLedger.is_epoch2_observation_authorized(activation_record_path=None, db_path=clean_test_db)
+        assert is_auth is False, "SECURITY VIOLATION: Legacy JSON file authorized observation in production!"
+
+        # 3. is_temporal_gate_satisfied MUST return False
+        is_gate = PassiveCaptureHook.is_temporal_gate_satisfied(activation_record_path=None, db_path=clean_test_db)
+        assert is_gate is False, "SECURITY VIOLATION: Legacy JSON file satisfied temporal gate!"
+
+    finally:
+        if os.path.exists(fake_json_path):
+            try:
+                os.remove(fake_json_path)
+            except Exception:
+                pass

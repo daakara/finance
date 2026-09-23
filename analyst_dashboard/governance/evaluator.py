@@ -278,18 +278,26 @@ class ProductionCertificationEvaluator:
         logger.critical(f"[GOVERNANCE_FIREWALL_BREACH] Prospective delta during certification is {delta} > 0!")
         return "FAIL", {"error": "GOVERNANCE_FIREWALL_BREACH", "prospectiveDelta": delta}
 
-    def check_pre_activation_record_state(self) -> Tuple[str, Any]:
-        """Check 11: Audits that no conflicting active epoch record exists."""
+    def check_pre_activation_record_state(self, current_release: Optional[str] = None) -> Tuple[str, Any]:
+        """Check 11: Audits active epoch boundary state.
+        Validates that Epoch 2 is either:
+        1. In PRE_ACTIVATION state (no activation record yet), OR
+        2. In ACTIVE_EPOCH_BOUND state (already activated with a valid historical boundary).
+        Both states are valid for certification. A later release certification does NOT conflict with an already active epoch.
+        """
         try:
             record = self.gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
             if record is None:
                 return "PASS", {"activeEpochRecords": 0, "state": "PRE_ACTIVATION"}
-            # If already activated for this same release, valid idempotent state
-            current_release = self.get_running_release_sha()
-            if record["release_sha"] == current_release:
-                return "PASS", {"activeEpochRecords": 1, "state": "ACTIVATED_FOR_THIS_RELEASE"}
-            return "FAIL", {
-                "error": f"Conflicting activation record found for release {record['release_sha']}"
+            act_time = record.get("activated_at_utc")
+            if not act_time:
+                return "FAIL", {"error": "Corrupt activation record: missing activated_at_utc"}
+            return "PASS", {
+                "activeEpochRecords": 1,
+                "state": "ACTIVE_EPOCH_BOUND",
+                "initialActivationRelease": record.get("release_sha"),
+                "initialActivationDeployment": record.get("deployment_id"),
+                "activatedAtUtc": act_time,
             }
         except Exception as e:
             return "FAIL", {"error": str(e)}
@@ -391,7 +399,7 @@ class ProductionCertificationEvaluator:
             if st != "PASS": all_passed = False
 
             # 11. Pre-Activation Record State
-            st, val = self.check_pre_activation_record_state()
+            st, val = self.check_pre_activation_record_state(current_release=release_sha)
             checks_output["check_pre_activation_record_state"] = {"status": st, "measuredValue": val, "evaluatedAtUtc": datetime.now(timezone.utc).isoformat()}
             if st != "PASS": all_passed = False
 
