@@ -463,6 +463,152 @@ def test_activation_lifecycle_and_fail_closed_semantics():
     assert act_rec["release_sha"] == rel_sha
 
 
+def test_activation_revocation_precondition_enforcement(clean_test_db, monkeypatch, tmp_path):
+    """Hermetic test suite for activation revocation safety guard:
+    A. Authorized + not revoked -> SUCCESS
+    B. Authorized then revoked before activation -> DENIED (RUNTIME_REVOKED), row count 0
+    C. Revocation for another deployment does not block activation of unrevoked deployment
+    D. Revocation for another release does not block activation of unrevoked release
+    E. API route POST /activate rejects revoked authorized runtime with 422 and 0 rows written
+    """
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    epoch_id = ExperimentLedger.EPOCH_ID
+
+    rel_a = "5813f147e785d6c952e436fe83802c2ea9a8a3ad"
+    dep_b = "dep-bravo-002"
+    dep_c = "dep-charlie-003"
+    rel_x = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    # Setup PASS authorizations
+    for r, d, cert_sha in [
+        (rel_a, dep_b, "cert-ab"),
+        (rel_a, dep_c, "cert-ac"),
+        (rel_x, dep_b, "cert-xb"),
+    ]:
+        gov_engine.record_certification_and_authorization(
+            epoch_id=epoch_id,
+            release_sha=r,
+            deployment_id=d,
+            overall_status="PASS",
+            result_payload_json="{}",
+            result_sha256=cert_sha,
+            certified_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+
+    # Precondition B: Revoke (rel_a, dep_c) BEFORE activation
+    gov_engine.record_revocation(
+        epoch_id=epoch_id,
+        release_sha=rel_a,
+        deployment_id=dep_c,
+        revoked_at_utc=datetime.now(timezone.utc).isoformat(),
+        revocation_reason="Operational quarantine before activation",
+        revoked_by="SECURITY_OFFICER",
+    )
+
+    # Test B: Attempting to activate revoked (rel_a, dep_c) -> DENIED
+    success_rev, reason_rev = gov_engine.record_activation(
+        epoch_id=epoch_id,
+        release_sha=rel_a,
+        deployment_id=dep_c,
+        activated_at_utc=datetime.now(timezone.utc).isoformat(),
+        activation_source="TEST_REVOKED",
+        activation_auth_token_hash="hash-rev",
+    )
+    assert success_rev is False
+    assert "RUNTIME_REVOKED" in reason_rev
+
+    # Verify no activation row was inserted
+    conn = gov_engine.get_connection()
+    try:
+        cur = conn.execute("SELECT COUNT(*) FROM epoch_activation_records WHERE epoch_id = ?", (epoch_id,))
+        assert cur.fetchone()[0] == 0
+    finally:
+        conn.close()
+
+    # Precondition D: Revoke (rel_x, dep_b)
+    gov_engine.record_revocation(
+        epoch_id=epoch_id,
+        release_sha=rel_x,
+        deployment_id=dep_b,
+        revoked_at_utc=datetime.now(timezone.utc).isoformat(),
+        revocation_reason="Old release revoked for safety reasons",
+        revoked_by="SECURITY_OFFICER",
+    )
+
+    # Test C & D: (rel_a, dep_b) is authorized and NOT revoked
+    # Neither dep_c's revocation nor rel_x's revocation should block (rel_a, dep_b)
+    success_ok, reason_ok = gov_engine.record_activation(
+        epoch_id=epoch_id,
+        release_sha=rel_a,
+        deployment_id=dep_b,
+        activated_at_utc=datetime.now(timezone.utc).isoformat(),
+        activation_source="TEST_AUTHORIZED",
+        activation_auth_token_hash="hash-ok",
+    )
+    assert success_ok is True
+    assert reason_ok == "ACTIVATION_SUCCESSFUL"
+
+    # Verify exactly one activation row exists now
+    conn = gov_engine.get_connection()
+    try:
+        cur = conn.execute("SELECT release_sha, deployment_id FROM epoch_activation_records WHERE epoch_id = ?", (epoch_id,))
+        row = cur.fetchone()
+        assert row["release_sha"] == rel_a
+        assert row["deployment_id"] == dep_b
+    finally:
+        conn.close()
+
+    # Test E: API route verification with fresh isolated database
+    api_db = str(tmp_path / "governance_api_test.db")
+    init_governance_db(api_db)
+    monkeypatch.setenv("ARX_GOVERNANCE_DB_PATH", api_db)
+
+    act_key = "test-act-key-api-guard"
+    monkeypatch.setenv("ARX_EPOCH_ACTIVATION_KEY", act_key)
+    import api.routes.governance as gov_mod
+    monkeypatch.setattr(gov_mod, "SERVER_ACT_KEY", act_key)
+
+    api_engine = GovernanceDatabaseEngine(api_db)
+    api_rel = "9999999999999999999999999999999999999999"
+    api_dep = "dep-api-revoked"
+
+    api_engine.record_certification_and_authorization(
+        epoch_id=epoch_id,
+        release_sha=api_rel,
+        deployment_id=api_dep,
+        overall_status="PASS",
+        result_payload_json="{}",
+        result_sha256="cert-api-revoked",
+        certified_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    api_engine.record_revocation(
+        epoch_id=epoch_id,
+        release_sha=api_rel,
+        deployment_id=api_dep,
+        revoked_at_utc=datetime.now(timezone.utc).isoformat(),
+        revocation_reason="Revoked before API activation call",
+        revoked_by="SECURITY_OFFICER",
+    )
+
+    monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", api_rel)
+    monkeypatch.setenv("RAILWAY_DEPLOYMENT_ID", api_dep)
+
+    resp = client.post(
+        "/api/v1/governance/epoch-2/activate",
+        headers={"X-Arx-Activation-Key": act_key},
+    )
+    assert resp.status_code == 422
+    assert "RUNTIME_REVOKED" in resp.json()["detail"]
+
+    # Verify API db has 0 activation rows
+    api_conn = api_engine.get_connection()
+    try:
+        cur = api_conn.execute("SELECT COUNT(*) FROM epoch_activation_records WHERE epoch_id = ?", (epoch_id,))
+        assert cur.fetchone()[0] == 0
+    finally:
+        api_conn.close()
+
+
 # ==============================================================================
 # 7. LATER-RELEASE RE-ATTESTATION & CONTINUITY TESTS (SECTIONS 6 & 7)
 # ==============================================================================

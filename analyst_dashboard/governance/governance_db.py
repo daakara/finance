@@ -308,6 +308,17 @@ class GovernanceDatabaseEngine:
                 if not auth or auth["production_certification_status"] != "PASS":
                     return False, "UNAUTHORIZED: No valid PASS release authorization found"
 
+                # Ensure exact runtime is not revoked
+                rev_cur = conn.execute(
+                    """
+                    SELECT COUNT(*) FROM epoch_release_revocations
+                    WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
+                    """,
+                    (epoch_id, release_sha, deployment_id),
+                )
+                if rev_cur.fetchone()[0] > 0:
+                    return False, f"RUNTIME_REVOKED: Target release authorization for {release_sha} on deployment {deployment_id} has been revoked"
+
                 conn.execute(
                     """
                     INSERT INTO epoch_activation_records (

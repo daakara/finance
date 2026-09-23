@@ -469,6 +469,16 @@ def activate_epoch2(
     token_hash = hashlib.sha256(candidate_key.encode("utf-8")).hexdigest()
 
     gov_engine = GovernanceDatabaseEngine()
+    if gov_engine.is_runtime_revoked(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=current_release,
+        deployment_id=current_deployment,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Activation Rejected: RUNTIME_REVOKED: Target release {current_release} on deployment {current_deployment} has been revoked."
+        )
+
     success, reason = gov_engine.record_activation(
         epoch_id=ExperimentLedger.EPOCH_ID,
         release_sha=current_release,
