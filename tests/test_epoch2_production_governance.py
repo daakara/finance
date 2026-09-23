@@ -609,6 +609,141 @@ def test_activation_revocation_precondition_enforcement(clean_test_db, monkeypat
         api_conn.close()
 
 
+def test_concurrent_activation_revocation_race_safety(clean_test_db):
+    """Hermetic concurrency and race interleaving verification:
+    Case A: Revocation commits before activation -> ACTIVATION DENIED (RUNTIME_REVOKED), rows = 0
+    Case B: Activation commits before revocation -> ACTIVATION SUCCEEDS, subsequent revocation makes
+            PROSPECTIVE_CAPTURE_AUTHORIZED = FALSE, historical activation remains.
+    Case C: True concurrency / lock contention interleavings between activation and revocation:
+            Verifies that under interleaved concurrent execution, UNSAFE_STATE is IMPOSSIBLE:
+            It is mathematically impossible for a revocation to commit while activation commits as if unrevoked.
+            Either activation finishes before revocation (valid serialization B), or revocation commits before/during
+            activation causing activation to fail-closed or detect revocation on retry (valid serialization A).
+    """
+    import threading
+
+    epoch_id = ExperimentLedger.EPOCH_ID
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+
+    # --------------------------------------------------------------------------
+    # Case A: Revocation commits first
+    # --------------------------------------------------------------------------
+    rel_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    dep_a = "dep-case-a"
+    gov_engine.record_certification_and_authorization(
+        epoch_id, rel_a, dep_a, "PASS", "{}", "cert-a", datetime.now(timezone.utc).isoformat()
+    )
+    # Revocation committed first
+    gov_engine.record_revocation(
+        epoch_id, rel_a, dep_a, datetime.now(timezone.utc).isoformat(),
+        "Quarantine prior to activation attempt", "SECURITY_ADMIN"
+    )
+    # Activation attempt
+    ok_a, reason_a = gov_engine.record_activation(
+        epoch_id, rel_a, dep_a, datetime.now(timezone.utc).isoformat(), "TEST_A", "hash-a"
+    )
+    assert ok_a is False
+    assert "RUNTIME_REVOKED" in reason_a
+    conn = gov_engine.get_connection()
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM epoch_activation_records WHERE epoch_id = ?", (epoch_id,)).fetchone()[0] == 0
+    finally:
+        conn.close()
+
+    # --------------------------------------------------------------------------
+    # Case B: Activation commits first
+    # --------------------------------------------------------------------------
+    rel_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    dep_b = "dep-case-b"
+    gov_engine.record_certification_and_authorization(
+        epoch_id, rel_b, dep_b, "PASS", "{}", "cert-b", datetime.now(timezone.utc).isoformat()
+    )
+    # Activation commits first
+    act_time_b = datetime.now(timezone.utc).isoformat()
+    ok_b, reason_b = gov_engine.record_activation(
+        epoch_id, rel_b, dep_b, act_time_b, "TEST_B", "hash-b"
+    )
+    assert ok_b is True
+    assert reason_b == "ACTIVATION_SUCCESSFUL"
+
+    # Prior to revocation, capture is authorized
+    is_auth_pre, _ = gov_engine.evaluate_capture_authorization_predicate(epoch_id, rel_b, dep_b)
+    assert is_auth_pre is True
+
+    # Subsequent revocation commits
+    gov_engine.record_revocation(
+        epoch_id, rel_b, dep_b, datetime.now(timezone.utc).isoformat(),
+        "Emergency operational revocation post-activation", "SECURITY_ADMIN"
+    )
+
+    # Subsequent capture is immediately demoted / false
+    is_auth_post, reason_post = gov_engine.evaluate_capture_authorization_predicate(epoch_id, rel_b, dep_b)
+    assert is_auth_post is False
+    assert reason_post == "RUNTIME_REVOKED"
+
+    # Historical activation boundary remains intact
+    act_rec = gov_engine.get_activation_record(epoch_id)
+    assert act_rec is not None
+    assert act_rec["release_sha"] == rel_b
+    assert act_rec["deployment_id"] == dep_b
+
+    # --------------------------------------------------------------------------
+    # Case C: True concurrency / lock contention across multiple threads
+    # --------------------------------------------------------------------------
+    for trial in range(10):
+        t_rel = f"cccccccccccccccccccccccccccccccccc{trial:06d}"
+        t_dep = f"dep-trial-{trial}"
+        gov_engine.record_certification_and_authorization(
+            epoch_id, t_rel, t_dep, "PASS", "{}", f"cert-trial-{trial}", datetime.now(timezone.utc).isoformat()
+        )
+
+        barrier = threading.Barrier(2)
+        outcome = {}
+
+        def _do_activation():
+            barrier.wait()
+            success, reason = gov_engine.record_activation(
+                epoch_id, t_rel, t_dep, datetime.now(timezone.utc).isoformat(), f"TRIAL_{trial}", f"hash-{trial}"
+            )
+            outcome["activation"] = (success, reason)
+
+        def _do_revocation():
+            barrier.wait()
+            success, reason = gov_engine.record_revocation(
+                epoch_id, t_rel, t_dep, datetime.now(timezone.utc).isoformat(),
+                "Concurrent revocation safety trial check", "SECURITY_OFFICER"
+            )
+            outcome["revocation"] = (success, reason)
+
+        t_act = threading.Thread(target=_do_activation)
+        t_rev = threading.Thread(target=_do_revocation)
+        t_act.start()
+        t_rev.start()
+        t_act.join(timeout=10.0)
+        t_rev.join(timeout=10.0)
+
+        act_ok, act_reason = outcome["activation"]
+        rev_ok, rev_reason = outcome["revocation"]
+        assert rev_ok is True
+
+        conn = gov_engine.get_connection()
+        try:
+            row_count = conn.execute("SELECT COUNT(*) FROM epoch_activation_records WHERE release_sha = ?", (t_rel,)).fetchone()[0]
+        finally:
+            conn.close()
+
+        # Invariant check: Downstream prospective capture MUST be revoked
+        is_capture_auth, capture_reason = gov_engine.evaluate_capture_authorization_predicate(epoch_id, t_rel, t_dep)
+        assert is_capture_auth is False
+        assert capture_reason == "RUNTIME_REVOKED"
+
+        if act_ok:
+            assert row_count == 1
+        else:
+            assert row_count == 0
+            assert "RUNTIME_REVOKED" in act_reason or "CONFLICT" in act_reason
+
+
 # ==============================================================================
 # 7. LATER-RELEASE RE-ATTESTATION & CONTINUITY TESTS (SECTIONS 6 & 7)
 # ==============================================================================
