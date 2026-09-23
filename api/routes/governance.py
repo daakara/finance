@@ -16,8 +16,10 @@ GOVERNING INVARIANTS:
 import os
 import hmac
 import logging
+import hashlib
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, Header, Response, HTTPException, status
+from fastapi import APIRouter, Header, Response, HTTPException, status, Request, Body
 from fastapi.responses import JSONResponse
 
 from analyst_dashboard.governance.experiment_ledger import (
@@ -25,17 +27,47 @@ from analyst_dashboard.governance.experiment_ledger import (
     ProvenanceCohort,
 )
 from analyst_dashboard.governance.baseline_engine import BaselineEngine
+from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+from analyst_dashboard.governance.evaluator import ProductionCertificationEvaluator
 
 logger = logging.getLogger("api.routes.governance")
 
 router = APIRouter()
 
 # Evaluation Secret Key Configuration
-# Set ARX_EVALUATION_KEY in backend environment (Render/Railway/local .env).
-# In production, missing key disables endpoint (fail-closed).
 DEFAULT_DEV_EVAL_KEY = "arx-eval-prospective-2026-secret"
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
 SERVER_EVAL_KEY = os.getenv("ARX_EVALUATION_KEY", "" if IS_PRODUCTION else DEFAULT_DEV_EVAL_KEY)
+
+# Dedicated Epoch 2 Governance Keys (Zero Scope Overlap)
+DEFAULT_DEV_CERT_KEY = "arx-epoch2-cert-dev-key"
+DEFAULT_DEV_ACT_KEY = "arx-epoch2-act-dev-key"
+DEFAULT_DEV_REV_KEY = "arx-epoch2-rev-dev-key"
+
+SERVER_CERT_KEY = os.getenv("ARX_EPOCH_CERTIFICATION_KEY", "" if IS_PRODUCTION else DEFAULT_DEV_CERT_KEY)
+SERVER_ACT_KEY = os.getenv("ARX_EPOCH_ACTIVATION_KEY", "" if IS_PRODUCTION else DEFAULT_DEV_ACT_KEY)
+SERVER_REV_KEY = os.getenv("ARX_EPOCH_REVOCATION_KEY", "" if IS_PRODUCTION else DEFAULT_DEV_REV_KEY)
+
+
+def _extract_bearer_or_header(authorization: Optional[str], header_val: Optional[str]) -> str:
+    """Extracts candidate key from header or Authorization Bearer."""
+    candidate_key = ""
+    if authorization:
+        parts = authorization.strip().split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            candidate_key = parts[1]
+        elif len(parts) == 1:
+            candidate_key = parts[0]
+    elif header_val:
+        candidate_key = header_val.strip()
+    return candidate_key
+
+
+def _verify_credential(candidate_key: str, expected_key: str) -> bool:
+    """Constant-time verification of credential strings."""
+    if not expected_key or not candidate_key:
+        return False
+    return hmac.compare_digest(candidate_key.encode("utf-8"), expected_key.encode("utf-8"))
 
 
 def _verify_evaluation_access(
@@ -365,3 +397,218 @@ def get_prospective_ledger(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prospective ledger fetch error: {str(e)}"
         )
+
+
+# ==============================================================================
+# EPOCH 2 PRODUCTION GOVERNANCE ENDPOINTS
+# ==============================================================================
+
+@router.post("/epoch-2/certify-release", tags=["Model Governance & Prospective Evaluation"])
+async def certify_epoch2_release(
+    request: Request,
+    response: Response,
+    authorization: Optional[str] = Header(None),
+    x_arx_certification_key: Optional[str] = Header(None, alias="X-Arx-Certification-Key"),
+):
+    """Executes the canonical in-process 12-check production certification suite.
+    Gated strictly by ARX_EPOCH_CERTIFICATION_KEY.
+    """
+    _set_security_headers(response)
+    candidate_key = _extract_bearer_or_header(authorization, x_arx_certification_key)
+    if not _verify_credential(candidate_key, SERVER_CERT_KEY):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Valid ARX_EPOCH_CERTIFICATION_KEY required for certification execution."
+        )
+
+    try:
+        evaluator = ProductionCertificationEvaluator()
+        result = await evaluator.execute_full_certification_suite()
+        status_code = status.HTTP_200_OK if result.get("overallStatus") == "PASS" else status.HTTP_422_UNPROCESSABLE_ENTITY
+        return JSONResponse(status_code=status_code, content=result)
+    except Exception as e:
+        logger.error(f"Runtime certification evaluation failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Certification evaluation error: {str(e)}"
+        )
+
+
+@router.post("/epoch-2/activate", tags=["Model Governance & Prospective Evaluation"])
+def activate_epoch2(
+    request: Request,
+    response: Response,
+    authorization: Optional[str] = Header(None),
+    x_arx_activation_key: Optional[str] = Header(None, alias="X-Arx-Activation-Key"),
+):
+    """Activates Epoch 2 prospective observation once and only once in production SQLite.
+    Gated strictly by ARX_EPOCH_ACTIVATION_KEY.
+    Requires an existing PASS release authorization for current container runtime.
+    """
+    _set_security_headers(response)
+    candidate_key = _extract_bearer_or_header(authorization, x_arx_activation_key)
+    if not _verify_credential(candidate_key, SERVER_ACT_KEY):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Valid ARX_EPOCH_ACTIVATION_KEY required for Epoch 2 activation."
+        )
+
+    current_release = os.getenv("RAILWAY_GIT_COMMIT_SHA") or os.getenv("GIT_COMMIT_SHA")
+    current_deployment = os.getenv("RAILWAY_DEPLOYMENT_ID") or os.getenv("DEPLOYMENT_ID")
+
+    if not current_release or not current_deployment:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Runtime Error: RAILWAY_GIT_COMMIT_SHA and RAILWAY_DEPLOYMENT_ID must be present in container environment."
+        )
+
+    current_release = current_release.strip().lower()
+    current_deployment = current_deployment.strip()
+
+    activated_at_utc = datetime.now(timezone.utc).isoformat()
+    token_hash = hashlib.sha256(candidate_key.encode("utf-8")).hexdigest()
+
+    gov_engine = GovernanceDatabaseEngine()
+    success, reason = gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=current_release,
+        deployment_id=current_deployment,
+        activated_at_utc=activated_at_utc,
+        activation_source="RAILWAY_CONTAINER_PRODUCTION_RUNTIME",
+        activation_auth_token_hash=token_hash,
+    )
+
+    if not success:
+        if "CONFLICT" in reason:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Activation Conflict: {reason}"
+            )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Activation Rejected: {reason}"
+        )
+
+    existing_record = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+
+    return {
+        "status": "SUCCESS",
+        "result": reason,
+        "epochId": ExperimentLedger.EPOCH_ID,
+        "releaseSha": current_release,
+        "deploymentId": current_deployment,
+        "activatedAtUtc": existing_record["activated_at_utc"] if existing_record else activated_at_utc,
+    }
+
+
+@router.post("/epoch-2/revoke-runtime", tags=["Model Governance & Prospective Evaluation"])
+def revoke_epoch2_runtime(
+    request: Request,
+    response: Response,
+    payload: Dict[str, Any] = Body(...),
+    authorization: Optional[str] = Header(None),
+    x_arx_revocation_key: Optional[str] = Header(None, alias="X-Arx-Revocation-Key"),
+):
+    """Appends an operational runtime participation revocation to the append-only ledger.
+    Gated strictly by ARX_EPOCH_REVOCATION_KEY.
+    Does NOT modify or deactivate the underlying epoch activation boundary.
+    """
+    _set_security_headers(response)
+    candidate_key = _extract_bearer_or_header(authorization, x_arx_revocation_key)
+    if not _verify_credential(candidate_key, SERVER_REV_KEY):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized: Valid ARX_EPOCH_REVOCATION_KEY required for runtime revocation."
+        )
+
+    epoch_id = payload.get("epochId", ExperimentLedger.EPOCH_ID)
+    release_sha = payload.get("releaseSha")
+    deployment_id = payload.get("deploymentId")
+    reason = payload.get("revocationReason")
+
+    if not release_sha or not deployment_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing required target fields: releaseSha and deploymentId must be specified."
+        )
+
+    if not reason or len(str(reason).strip()) < 16:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid revocationReason: Reason must be at least 16 characters explaining revocation rationale."
+        )
+
+    # Server derives authoritative principal from revocation credential fingerprint
+    revoked_by = f"KEY_FINGERPRINT:{hashlib.sha256(candidate_key.encode('utf-8')).hexdigest()[:12]}"
+    revoked_at_utc = datetime.now(timezone.utc).isoformat()
+
+    gov_engine = GovernanceDatabaseEngine()
+    success, result_msg = gov_engine.record_revocation(
+        epoch_id=epoch_id,
+        release_sha=release_sha.strip().lower(),
+        deployment_id=deployment_id.strip(),
+        revoked_at_utc=revoked_at_utc,
+        revocation_reason=str(reason).strip(),
+        revoked_by=revoked_by,
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Revocation Target Not Found: {result_msg}"
+        )
+
+    return {
+        "status": "SUCCESS",
+        "result": result_msg,
+        "epochId": epoch_id,
+        "releaseSha": release_sha,
+        "deploymentId": deployment_id,
+        "revokedAtUtc": revoked_at_utc,
+        "revokedBy": revoked_by,
+    }
+
+
+@router.get("/epoch-2/status", tags=["Model Governance & Prospective Evaluation"])
+def get_epoch2_governance_status(response: Response):
+    """Returns canonical SQLite governance and runtime authorization status."""
+    _set_security_headers(response)
+    gov_engine = GovernanceDatabaseEngine()
+
+    current_release = os.getenv("RAILWAY_GIT_COMMIT_SHA") or os.getenv("GIT_COMMIT_SHA")
+    current_deployment = os.getenv("RAILWAY_DEPLOYMENT_ID") or os.getenv("DEPLOYMENT_ID")
+
+    activation_record = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+    release_auth = None
+    is_revoked = False
+    is_authorized = False
+    auth_reason = "UNEVALUATED"
+
+    if current_release and current_deployment:
+        clean_rel = current_release.strip().lower()
+        clean_dep = current_deployment.strip()
+        release_auth = gov_engine.get_release_authorization(
+            epoch_id=ExperimentLedger.EPOCH_ID,
+            release_sha=clean_rel,
+            deployment_id=clean_dep,
+        )
+        is_revoked = gov_engine.is_runtime_revoked(
+            epoch_id=ExperimentLedger.EPOCH_ID,
+            release_sha=clean_rel,
+            deployment_id=clean_dep,
+        )
+        is_authorized, auth_reason = gov_engine.evaluate_capture_authorization_predicate(
+            epoch_id=ExperimentLedger.EPOCH_ID,
+            release_sha=clean_rel,
+            deployment_id=clean_dep,
+        )
+
+    return {
+        "epochId": ExperimentLedger.EPOCH_ID,
+        "runningReleaseSha": current_release,
+        "runningDeploymentId": current_deployment,
+        "activationRecord": activation_record,
+        "releaseAuthorization": release_auth,
+        "isRuntimeRevoked": is_revoked,
+        "prospectiveCaptureAuthorized": is_authorized,
+    }

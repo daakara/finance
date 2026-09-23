@@ -7,16 +7,16 @@
   "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
   "observationGovernanceVersion": "2.0.0",
   "observationGovernanceIdentity": "MANIFEST_HASH",
-  "observationGovernanceManifestHash": "1128c3096d587e4968afa008f9e13e0f26552def99ff886ba98cfed1fd9b1810",
-  "observationGovernanceArtifactIdentity": "1128c3096d587e4968afa008f9e13e0f26552def99ff886ba98cfed1fd9b1810",
-  "observationGovernanceSha": "1128c3096d587e4968afa008f9e13e0f26552def99ff886ba98cfed1fd9b1810",
+  "observationGovernanceManifestHash": "869c59d692f18efd712e927627ffa14e17c31605c440b7c3e6d0e3ad773751e3",
+  "observationGovernanceArtifactIdentity": "869c59d692f18efd712e927627ffa14e17c31605c440b7c3e6d0e3ad773751e3",
+  "observationGovernanceSha": "869c59d692f18efd712e927627ffa14e17c31605c440b7c3e6d0e3ad773751e3",
   "decisionEngineSha": "7ad44595826c147cc77f93cd676af520764c7442",
   "executableGovernanceFiles": {
     "analyst_dashboard/governance/passive_capture.py": {
-      "sha256": "8117156e9fe190bab27482010263bbd9fd4f8e3406b543adbce58f9e458006c2"
+      "sha256": "559a7d9c98ff02a74bae51fdd4b3c654cf5e77ab5df281d3d5d9713aa706254c"
     },
     "analyst_dashboard/governance/experiment_ledger.py": {
-      "sha256": "911ba4a6f8e2de754e1730db411f99d3ec8db13ffab0d4ca28d373c8aaf1e26d"
+      "sha256": "b1d58d1626e8530864fd8f2911421520b76c29e37c0fc25556b9fb9844c8c919"
     },
     "analyst_dashboard/data/fred_fetcher.py": {
       "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"

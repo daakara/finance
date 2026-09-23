@@ -451,8 +451,32 @@ class ExperimentLedger:
         ])
 
     @classmethod
-    def get_activation_record(cls, activation_record_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Loads and validates the Epoch 2 activation record. Returns None if absent or invalid."""
+    def get_activation_record(
+        cls,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Loads and validates the Epoch 2 activation record. SQLite is canonical authority."""
+        # 1. Canonical SQLite authority
+        if activation_record_path is None:
+            try:
+                from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+                gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+                sqlite_record = gov_engine.get_activation_record(cls.EPOCH_ID)
+                if sqlite_record:
+                    return {
+                        "epochId": sqlite_record["epoch_id"],
+                        "releaseSha": sqlite_record["release_sha"],
+                        "deploymentId": sqlite_record["deployment_id"],
+                        "deploymentStatus": "SUCCESS",
+                        "activatedAtUtc": sqlite_record["activated_at_utc"],
+                        "runtimeIdentityAttestation": sqlite_record.get("activation_source", "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED"),
+                        "prospectiveObservationAuthorized": True,
+                    }
+            except Exception as e:
+                logger.debug(f"SQLite activation lookup failed: {e}")
+
+        # 2. File fallback for explicit test path
         path = activation_record_path or os.getenv("ARX_EPOCH_2_ACTIVATION_RECORD_PATH") or cls.DEFAULT_ACTIVATION_RECORD_PATH
         if not os.path.exists(path):
             return None
@@ -561,17 +585,44 @@ class ExperimentLedger:
         return record
 
     @classmethod
-    def get_epoch2_activation_timestamp(cls, activation_record_path: Optional[str] = None) -> Optional[str]:
+    def get_epoch2_activation_timestamp(
+        cls,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> Optional[str]:
         """Returns authoritative ISO UTC activation timestamp if valid record exists, else None."""
-        record = cls.get_activation_record(activation_record_path)
+        record = cls.get_activation_record(activation_record_path=activation_record_path, db_path=db_path)
         if record and record.get("prospectiveObservationAuthorized"):
             return record.get("activatedAtUtc")
         return None
 
     @classmethod
-    def is_epoch2_observation_authorized(cls, activation_record_path: Optional[str] = None) -> bool:
-        """Returns True only if a verified production activation record authorizes observation."""
-        return cls.get_epoch2_activation_timestamp(activation_record_path) is not None
+    def is_epoch2_observation_authorized(
+        cls,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> bool:
+        """Returns True only if a verified production activation record authorizes observation.
+        SQLite is canonical authority; JSON is derived non-authoritative projection.
+        """
+        # 1. Canonical authority: SQLite governance engine
+        try:
+            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+            gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+            is_auth, _ = gov_engine.evaluate_capture_authorization_predicate(
+                epoch_id=cls.EPOCH_ID
+            )
+            if is_auth:
+                return True
+        except Exception as e:
+            logger.debug(f"SQLite governance check bypassed or failed: {e}")
+
+        # 2. Test isolation fallback: Explicit activation_record_path provided
+        if activation_record_path is not None:
+            ts = cls.get_epoch2_activation_timestamp(activation_record_path=activation_record_path)
+            return ts is not None
+
+        return False
 
     @classmethod
     def is_record_epoch2_eligible(
