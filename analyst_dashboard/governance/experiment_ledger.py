@@ -10,10 +10,13 @@ import os
 import json
 import math
 import hashlib
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 import numpy as np
+
+logger = logging.getLogger(__name__)
 try:
     from scipy.stats import spearmanr
 except ImportError:
@@ -41,9 +44,16 @@ class ExperimentLedger:
 
     # Prospective Validation Epoch Constants
     EPOCH_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
-    EPOCH_START_UTC = "2026-09-23T00:00:00Z"
+    EPOCH_LIFECYCLE_STATE = "PRE_ACTIVATION"
+    EPOCH_ACTIVATION_POLICY = "SUCCESSFUL_PRODUCTION_ACTIVATION"
+    EPOCH_START_UTC: Optional[str] = None
+    EPOCH_START_AUTHORITY = "PRODUCTION_ACTIVATION_RECORD"
+    EPOCH_1_START_UTC = "2026-09-19T00:00:00Z"
     EPOCH_1_FINAL_N = 0
     EPOCH_2_INITIAL_N = 0
+    DEFAULT_ACTIVATION_RECORD_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "epoch2_activation_record.json"
+    )
 
     # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
     DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
@@ -441,14 +451,153 @@ class ExperimentLedger:
         ])
 
     @classmethod
-    def get_epoch2_clean_prospective_count(cls, ledger_path: Optional[str] = None) -> int:
-        """Returns the count of certified natural prospective records admitted to Epoch 2."""
+    def get_activation_record(cls, activation_record_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Loads and validates the Epoch 2 activation record. Returns None if absent or invalid."""
+        path = activation_record_path or os.getenv("ARX_EPOCH_2_ACTIVATION_RECORD_PATH") or cls.DEFAULT_ACTIVATION_RECORD_PATH
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                record = json.load(f)
+            valid, reason = cls.validate_activation_record(record)
+            if valid:
+                return record
+            logger.warning(f"Invalid activation record at {path}: {reason}")
+        except Exception as e:
+            logger.warning(f"Error loading activation record from {path}: {e}")
+        return None
+
+    @classmethod
+    def validate_activation_record(cls, record: Any, expected_release_sha: Optional[str] = None) -> Tuple[bool, Optional[str]]:
+        """Validates schema, fields, and consistency of an Epoch 2 activation record."""
+        if not isinstance(record, dict):
+            return False, "RECORD_NOT_A_DICT"
+        if record.get("epochId") != cls.EPOCH_ID:
+            return False, f"EPOCH_ID_MISMATCH: expected {cls.EPOCH_ID}, got {record.get('epochId')}"
+        if record.get("deploymentStatus") != "SUCCESS":
+            return False, f"DEPLOYMENT_STATUS_NOT_SUCCESS: {record.get('deploymentStatus')}"
+        if not record.get("prospectiveObservationAuthorized"):
+            return False, "PROSPECTIVE_OBSERVATION_NOT_AUTHORIZED"
+        if not record.get("releaseSha") or not isinstance(record.get("releaseSha"), str):
+            return False, "MISSING_RELEASE_SHA"
+        if expected_release_sha and record.get("releaseSha") != expected_release_sha:
+            return False, f"RELEASE_SHA_MISMATCH: expected {expected_release_sha}, got {record.get('releaseSha')}"
+        if not record.get("deploymentId") or not isinstance(record.get("deploymentId"), str):
+            return False, "MISSING_DEPLOYMENT_ID"
+        activated_at = record.get("activatedAtUtc")
+        if not activated_at or not isinstance(activated_at, str):
+            return False, "MISSING_ACTIVATED_AT_UTC"
+        parsed_dt = cls._parse_utc_timestamp(activated_at)
+        if parsed_dt is None:
+            return False, "MALFORMED_ACTIVATED_AT_UTC"
+        if not record.get("runtimeIdentityAttestation"):
+            return False, "MISSING_RUNTIME_IDENTITY_ATTESTATION"
+        return True, None
+
+    @classmethod
+    def create_activation_record(
+        cls,
+        epoch_id: str = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+        release_sha: str = "",
+        deployment_id: str = "",
+        activated_at_utc: str = "",
+        deployment_status: str = "SUCCESS",
+        runtime_identity_attestation: str = "CONTAINER_ENTRYPOINT_MANIFEST_VERIFIED",
+        prospective_observation_authorized: bool = True,
+        output_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Creates, validates, and optionally persists an immutable production activation record."""
+        record = {
+            "epochId": epoch_id,
+            "releaseSha": release_sha,
+            "deploymentId": deployment_id,
+            "deploymentStatus": deployment_status,
+            "activatedAtUtc": activated_at_utc,
+            "runtimeIdentityAttestation": runtime_identity_attestation,
+            "prospectiveObservationAuthorized": prospective_observation_authorized,
+        }
+        valid, reason = cls.validate_activation_record(record)
+        if not valid:
+            raise ValueError(f"Cannot create invalid activation record: {reason}")
+        if output_path:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(record, f, indent=2)
+        return record
+
+    @classmethod
+    def get_epoch2_activation_timestamp(cls, activation_record_path: Optional[str] = None) -> Optional[str]:
+        """Returns authoritative ISO UTC activation timestamp if valid record exists, else None."""
+        record = cls.get_activation_record(activation_record_path)
+        if record and record.get("prospectiveObservationAuthorized"):
+            return record.get("activatedAtUtc")
+        return None
+
+    @classmethod
+    def is_epoch2_observation_authorized(cls, activation_record_path: Optional[str] = None) -> bool:
+        """Returns True only if a verified production activation record authorizes observation."""
+        return cls.get_epoch2_activation_timestamp(activation_record_path) is not None
+
+    @classmethod
+    def is_record_epoch2_eligible(
+        cls, record: Dict[str, Any], activation_record_path: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """Evaluates whether a single signal record meets all strict Epoch 2 prospective eligibility gates."""
+        if record.get("epochId") != cls.EPOCH_ID:
+            return False, "EPOCH_ID_MISMATCH"
+
+        act_record = cls.get_activation_record(activation_record_path)
+        if not act_record:
+            return False, "NO_VALID_ACTIVATION_RECORD"
+
+        # Verify release attribution
+        expected_release = act_record.get("releaseSha")
+        record_release = record.get("releaseSha") or record.get("engineCommit")
+        if not record_release:
+            return False, "MISSING_RUNTIME_IDENTITY"
+        if expected_release and not (record_release == expected_release or record_release.startswith(expected_release[:7])):
+            return False, f"RELEASE_ATTRIBUTION_MISMATCH: expected {expected_release}, got {record_release}"
+
+        if cls.classify_provenance_cohort(record) != ProvenanceCohort.PROSPECTIVE_CLEAN:
+            return False, "NOT_PROSPECTIVE_CLEAN_COHORT"
+
+        act_ts_str = act_record.get("activatedAtUtc")
+        act_dt = cls._parse_utc_timestamp(act_ts_str) if act_ts_str else None
+        if not act_dt:
+            return False, "INVALID_ACTIVATION_TIMESTAMP"
+
+        rec_str = record.get("recommended_at") or record.get("signalTimestamp") or record.get("timestamp")
+        rec_dt = cls._parse_utc_timestamp(rec_str)
+        if not rec_dt:
+            return False, "MISSING_OR_MALFORMED_RECORD_TIMESTAMP"
+
+        # Invariant: Record must not precede activation (rec_dt >= act_dt)
+        if rec_dt < act_dt:
+            return False, f"RECORD_PRECEDES_ACTIVATION: rec={rec_str} < act={act_ts_str}"
+
+        # Invariant: Record must not be future-dated relative to now
+        now_dt = datetime.now(timezone.utc)
+        if rec_dt > now_dt + timedelta(seconds=60): # 60s clock skew tolerance
+            return False, "FUTURE_DATED_RECORD"
+
+        return True, None
+
+    @classmethod
+    def get_epoch2_clean_prospective_count(
+        cls, ledger_path: Optional[str] = None, activation_record_path: Optional[str] = None
+    ) -> int:
+        """Returns the count of certified natural prospective records admitted to Epoch 2.
+        Fails closed (returns 0) if no valid activation record exists.
+        """
+        if not cls.is_epoch2_observation_authorized(activation_record_path):
+            return 0
         ledger = cls.load_ledger(ledger_path)
-        return len([
-            s for s in ledger.get("signals", [])
-            if s.get("epochId") == cls.EPOCH_ID
-            and cls.classify_provenance_cohort(s) == ProvenanceCohort.PROSPECTIVE_CLEAN
-        ])
+        count = 0
+        for s in ledger.get("signals", []):
+            is_eligible, _ = cls.is_record_epoch2_eligible(s, activation_record_path)
+            if is_eligible:
+                count += 1
+        return count
 
     @classmethod
     def compute_decision_snapshot_hash(cls, record: Dict[str, Any]) -> str:

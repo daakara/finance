@@ -115,10 +115,11 @@ def _build_fixture_payload(
 
 
 def test_stage1_temporal_gate_satisfied():
-    """Stage 1: Verify current UTC is at or beyond EPOCH_START_UTC (2026-09-19T00:00:00Z)."""
-    assert PassiveCaptureHook.is_temporal_gate_satisfied() is True
+    """Stage 1: Verify temporal gate behavior for Epoch 1 baseline and Epoch 2 pre-activation."""
     now_utc = datetime.now(timezone.utc).isoformat()
-    assert now_utc >= ExperimentLedger.EPOCH_START_UTC
+    assert now_utc >= ExperimentLedger.EPOCH_1_START_UTC
+    # Pre-activation: Without an activation record, prospective observation is suppressed / fails closed
+    assert PassiveCaptureHook.is_temporal_gate_satisfied() is False
 
 
 def test_stage2_production_deployment_identity():

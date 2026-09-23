@@ -1,19 +1,22 @@
 {
-  "manifestVersion": "1.0.0",
+  "manifestVersion": "2.0.0",
   "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
-  "epochStartUtc": "2026-09-23T00:00:00Z",
+  "lifecycleState": "PRE_ACTIVATION",
+  "activationPolicy": "SUCCESSFUL_PRODUCTION_ACTIVATION",
+  "epochStartUtc": null,
+  "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
   "observationGovernanceVersion": "2.0.0",
   "observationGovernanceIdentity": "MANIFEST_HASH",
-  "observationGovernanceManifestHash": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
-  "observationGovernanceArtifactIdentity": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
-  "observationGovernanceSha": "976643ff3f7786e0e0a1704f667bc3faa623dd71c7391ef0549e011b8dea1745",
+  "observationGovernanceManifestHash": "4013aeec88ada830cc85a37df69b7cd681a32624b5769fe393152927153f6ffa",
+  "observationGovernanceArtifactIdentity": "4013aeec88ada830cc85a37df69b7cd681a32624b5769fe393152927153f6ffa",
+  "observationGovernanceSha": "4013aeec88ada830cc85a37df69b7cd681a32624b5769fe393152927153f6ffa",
   "decisionEngineSha": "7ad44595826c147cc77f93cd676af520764c7442",
   "executableGovernanceFiles": {
     "analyst_dashboard/governance/passive_capture.py": {
-      "sha256": "9d2d5316d7e942aef3f29bf000cf368a0077bdc5266ddffdec75f463df52ded1"
+      "sha256": "8117156e9fe190bab27482010263bbd9fd4f8e3406b543adbce58f9e458006c2"
     },
     "analyst_dashboard/governance/experiment_ledger.py": {
-      "sha256": "4e8fb0f65dc1abddf2090fc2db27b0591dd8062b905ee0b9f32a8115afc7c028"
+      "sha256": "769f0c44734e12039f414cb881c0d08739536883a4cc455445f2414821a53a4e"
     },
     "analyst_dashboard/data/fred_fetcher.py": {
       "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"

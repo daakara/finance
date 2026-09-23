@@ -52,10 +52,16 @@ class PassiveCaptureHook:
         return ExperimentLedger.get_observation_governance_sha()
 
     @classmethod
-    def is_temporal_gate_satisfied(cls) -> bool:
-        """Evaluates whether current UTC has crossed the active Epoch boundary."""
-        now_utc = datetime.now(timezone.utc).isoformat()
-        return now_utc >= cls.EPOCH_START_UTC
+    def is_temporal_gate_satisfied(cls, activation_record_path: Optional[str] = None) -> bool:
+        """Evaluates whether prospective observation is authorized for the active Epoch.
+        For Epoch 2 (PRE_ACTIVATION), requires an authoritative activation record in production.
+        """
+        if cls.EPOCH_ID == "ARX_PROSPECTIVE_VALIDATION_EPOCH_2":
+            return ExperimentLedger.is_epoch2_observation_authorized(activation_record_path)
+        if cls.EPOCH_START_UTC is not None:
+            now_utc = datetime.now(timezone.utc).isoformat()
+            return now_utc >= cls.EPOCH_START_UTC
+        return False
 
     @classmethod
     def compute_sha256(cls, payload: Any) -> str:
@@ -86,6 +92,7 @@ class PassiveCaptureHook:
         provider_source: str = "YAHOO_AUTHENTIC",
         candles: Optional[list] = None,
         ledger_path: Optional[str] = None,
+        activation_record_path: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Passively captures a single natural production recommendation.
 
@@ -97,6 +104,12 @@ class PassiveCaptureHook:
             # Safeguard: Never contaminate production ledger during automated test execution
             if ledger_path is None and ("PYTEST_CURRENT_TEST" in os.environ or os.getenv("ARX_TEST_MODE") == "1"):
                 logger.debug("[PASSIVE_CAPTURE] Bypassing capture to production ledger during automated test execution.")
+                return None
+
+            # Epoch 2 Pre-Activation Gate: In production (ledger_path is None) or when explicit activation_record_path is supplied,
+            # prospective observation is strictly suppressed unless authorized by a valid activation record.
+            if (ledger_path is None or activation_record_path is not None) and not cls.is_temporal_gate_satisfied(activation_record_path):
+                logger.warning(f"[PASSIVE_CAPTURE] Suppressed: Epoch 2 prospective observation not yet activated in production for symbol {symbol}")
                 return None
 
             # Non-finite and invalid price firewall (Fail-closed defense-in-depth)
