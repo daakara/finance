@@ -278,68 +278,85 @@ class GovernanceDatabaseEngine:
         activation_source: str,
         activation_auth_token_hash: str,
     ) -> Tuple[bool, str]:
-        """Inserts an immutable epoch activation record. Fails closed on conflicts."""
+        """Inserts an immutable epoch activation record.
+        Uses BEGIN IMMEDIATE to acquire writer lock before checking eligibility reads,
+        eliminating TOCTOU races between authorization/revocation check and activation insert.
+        Fails closed on conflicts or rollbacks.
+        """
         conn = self.get_connection()
+        conn.isolation_level = None
         try:
-            with conn:
-                # Check for existing activation record for this epoch
-                cur = conn.execute(
-                    "SELECT release_sha, deployment_id, activated_at_utc FROM epoch_activation_records WHERE epoch_id = ?",
-                    (epoch_id,),
-                )
-                existing = cur.fetchone()
-                if existing:
-                    if (
-                        existing["release_sha"] == release_sha
-                        and existing["deployment_id"] == deployment_id
-                    ):
-                        return True, "IDEMPOTENT_ALREADY_ACTIVATED"
-                    return False, f"CONFLICT: Epoch {epoch_id} already activated by release {existing['release_sha']}"
+            conn.execute("BEGIN IMMEDIATE;")
 
-                # Ensure release authorization exists with PASS status
-                auth_cur = conn.execute(
-                    """
-                    SELECT production_certification_status FROM epoch_release_authorizations
-                    WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
-                    """,
-                    (epoch_id, release_sha, deployment_id),
-                )
-                auth = auth_cur.fetchone()
-                if not auth or auth["production_certification_status"] != "PASS":
-                    return False, "UNAUTHORIZED: No valid PASS release authorization found"
+            # Check for existing activation record for this epoch
+            cur = conn.execute(
+                "SELECT release_sha, deployment_id, activated_at_utc FROM epoch_activation_records WHERE epoch_id = ?",
+                (epoch_id,),
+            )
+            existing = cur.fetchone()
+            if existing:
+                conn.execute("ROLLBACK;")
+                if (
+                    existing["release_sha"] == release_sha
+                    and existing["deployment_id"] == deployment_id
+                ):
+                    return True, "IDEMPOTENT_ALREADY_ACTIVATED"
+                return False, f"CONFLICT: Epoch {epoch_id} already activated by release {existing['release_sha']}"
 
-                # Ensure exact runtime is not revoked
-                rev_cur = conn.execute(
-                    """
-                    SELECT COUNT(*) FROM epoch_release_revocations
-                    WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
-                    """,
-                    (epoch_id, release_sha, deployment_id),
-                )
-                if rev_cur.fetchone()[0] > 0:
-                    return False, f"RUNTIME_REVOKED: Target release authorization for {release_sha} on deployment {deployment_id} has been revoked"
+            # Ensure release authorization exists with PASS status
+            auth_cur = conn.execute(
+                """
+                SELECT production_certification_status FROM epoch_release_authorizations
+                WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
+                """,
+                (epoch_id, release_sha, deployment_id),
+            )
+            auth = auth_cur.fetchone()
+            if not auth or auth["production_certification_status"] != "PASS":
+                conn.execute("ROLLBACK;")
+                return False, "UNAUTHORIZED: No valid PASS release authorization found"
 
-                conn.execute(
-                    """
-                    INSERT INTO epoch_activation_records (
-                        epoch_id,
-                        release_sha,
-                        deployment_id,
-                        activated_at_utc,
-                        activation_source,
-                        activation_auth_token_hash
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        epoch_id,
-                        release_sha,
-                        deployment_id,
-                        activated_at_utc,
-                        activation_source,
-                        activation_auth_token_hash,
-                    ),
-                )
-                return True, "ACTIVATION_SUCCESSFUL"
+            # Ensure exact runtime is not revoked
+            rev_cur = conn.execute(
+                """
+                SELECT COUNT(*) FROM epoch_release_revocations
+                WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
+                """,
+                (epoch_id, release_sha, deployment_id),
+            )
+            if rev_cur.fetchone()[0] > 0:
+                conn.execute("ROLLBACK;")
+                return False, f"RUNTIME_REVOKED: Target release authorization for {release_sha} on deployment {deployment_id} has been revoked"
+
+            conn.execute(
+                """
+                INSERT INTO epoch_activation_records (
+                    epoch_id,
+                    release_sha,
+                    deployment_id,
+                    activated_at_utc,
+                    activation_source,
+                    activation_auth_token_hash
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    epoch_id,
+                    release_sha,
+                    deployment_id,
+                    activated_at_utc,
+                    activation_source,
+                    activation_auth_token_hash,
+                ),
+            )
+            conn.execute("COMMIT;")
+            return True, "ACTIVATION_SUCCESSFUL"
+        except Exception:
+            if conn.in_transaction:
+                try:
+                    conn.execute("ROLLBACK;")
+                except Exception:
+                    pass
+            raise
         finally:
             conn.close()
 
@@ -353,42 +370,55 @@ class GovernanceDatabaseEngine:
         revocation_reason: str,
         revoked_by: str,
     ) -> Tuple[bool, str]:
-        """Appends a revocation record for a specific authorized runtime."""
+        """Appends a revocation record for a specific authorized runtime.
+        Uses BEGIN IMMEDIATE to acquire writer lock before checking target authorization.
+        """
         conn = self.get_connection()
+        conn.isolation_level = None
         try:
-            with conn:
-                # Target must exist in authorizations
-                auth_cur = conn.execute(
-                    """
-                    SELECT 1 FROM epoch_release_authorizations
-                    WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
-                    """,
-                    (epoch_id, release_sha, deployment_id),
-                )
-                if not auth_cur.fetchone():
-                    return False, "NOT_FOUND: Target release authorization does not exist"
+            conn.execute("BEGIN IMMEDIATE;")
 
-                conn.execute(
-                    """
-                    INSERT INTO epoch_release_revocations (
-                        epoch_id,
-                        release_sha,
-                        deployment_id,
-                        revoked_at_utc,
-                        revocation_reason,
-                        revoked_by
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        epoch_id,
-                        release_sha,
-                        deployment_id,
-                        revoked_at_utc,
-                        revocation_reason,
-                        revoked_by,
-                    ),
-                )
-                return True, "REVOCATION_RECORDED"
+            # Target must exist in authorizations
+            auth_cur = conn.execute(
+                """
+                SELECT 1 FROM epoch_release_authorizations
+                WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
+                """,
+                (epoch_id, release_sha, deployment_id),
+            )
+            if not auth_cur.fetchone():
+                conn.execute("ROLLBACK;")
+                return False, "NOT_FOUND: Target release authorization does not exist"
+
+            conn.execute(
+                """
+                INSERT INTO epoch_release_revocations (
+                    epoch_id,
+                    release_sha,
+                    deployment_id,
+                    revoked_at_utc,
+                    revocation_reason,
+                    revoked_by
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    epoch_id,
+                    release_sha,
+                    deployment_id,
+                    revoked_at_utc,
+                    revocation_reason,
+                    revoked_by,
+                ),
+            )
+            conn.execute("COMMIT;")
+            return True, "REVOCATION_RECORDED"
+        except Exception:
+            if conn.in_transaction:
+                try:
+                    conn.execute("ROLLBACK;")
+                except Exception:
+                    pass
+            raise
         finally:
             conn.close()
 

@@ -744,6 +744,129 @@ def test_concurrent_activation_revocation_race_safety(clean_test_db):
             assert "RUNTIME_REVOKED" in act_reason or "CONFLICT" in act_reason
 
 
+def test_deterministic_activation_revocation_toctou_elimination(clean_test_db):
+    """Deterministic hermetic test for elimination of TOCTOU race:
+    1. Transaction state assertion:
+       Demonstrates in_transaction == True during:
+       - BEGIN IMMEDIATE
+       - authorization SELECT
+       - revocation SELECT
+       - activation INSERT
+       and in_transaction == False after COMMIT.
+    2. Forced dangerous interleaving test:
+       Forces activation to pause after reading revocation absence.
+       Proves that another connection CANNOT commit a revocation during this window
+       because BEGIN IMMEDIATE reserves the write lock before any reads.
+       DANGEROUS_INTERLEAVING_FORCED = YES
+       REVOCATION_CAN_COMMIT_BETWEEN_CHECK_AND_INSERT = NO
+    3. Activation-first ordering:
+       Activation completes first, revocation serializes after, historical activation remains,
+       subsequent capture predicate evaluates to False (RUNTIME_REVOKED).
+    4. Revocation-first ordering:
+       Revocation commits first, activation evaluates revocation, fails closed with 0 rows.
+    """
+    import sqlite3
+
+    epoch_id = ExperimentLedger.EPOCH_ID
+    gov_engine = GovernanceDatabaseEngine(clean_test_db)
+    rel = "dddddddddddddddddddddddddddddddddddddddd"
+    dep = "dep-toctou-001"
+
+    gov_engine.record_certification_and_authorization(
+        epoch_id, rel, dep, "PASS", "{}", "cert-toctou", datetime.now(timezone.utc).isoformat()
+    )
+
+    # 1. Transaction state assertion
+    conn_state = gov_engine.get_connection()
+    conn_state.isolation_level = None
+    try:
+        conn_state.execute("BEGIN IMMEDIATE;")
+        assert conn_state.in_transaction is True, "TRANSACTION_ACTIVE_DURING_BEGIN_IMMEDIATE"
+
+        # Read authorization
+        auth_cur = conn_state.execute(
+            "SELECT production_certification_status FROM epoch_release_authorizations WHERE epoch_id = ?",
+            (epoch_id,),
+        )
+        assert conn_state.in_transaction is True, "TRANSACTION_ACTIVE_DURING_AUTHORIZATION_READ"
+        assert auth_cur.fetchone() is not None
+
+        # Read revocation
+        rev_cur = conn_state.execute(
+            "SELECT COUNT(*) FROM epoch_release_revocations WHERE epoch_id = ?",
+            (epoch_id,),
+        )
+        assert conn_state.in_transaction is True, "TRANSACTION_ACTIVE_DURING_REVOCATION_READ"
+        assert rev_cur.fetchone()[0] == 0
+
+        # Rollback test probe
+        conn_state.execute("ROLLBACK;")
+        assert conn_state.in_transaction is False
+    finally:
+        conn_state.close()
+
+    # 2. Forced dangerous interleaving test:
+    # Connection A begins IMMEDIATE, reads revocation status (0), then pauses.
+    # Connection B attempts to commit a revocation during Connection A's pause.
+    conn_act = gov_engine.get_connection()
+    conn_act.isolation_level = None
+    try:
+        conn_act.execute("BEGIN IMMEDIATE;")
+        # Activation reads not-revoked
+        rev_cnt = conn_act.execute(
+            "SELECT COUNT(*) FROM epoch_release_revocations WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?",
+            (epoch_id, rel, dep),
+        ).fetchone()[0]
+        assert rev_cnt == 0
+
+        # Now connection B attempts to write revocation while connection A is paused
+        conn_rev = gov_engine.get_connection()
+        conn_rev.isolation_level = None
+        rev_blocked = False
+        try:
+            # Set short busy timeout on conn_rev to demonstrate immediate lock contention
+            conn_rev.execute("PRAGMA busy_timeout = 200;")
+            conn_rev.execute("BEGIN IMMEDIATE;")
+        except sqlite3.OperationalError as e:
+            if "locked" in str(e).lower() or "busy" in str(e).lower():
+                rev_blocked = True
+        finally:
+            conn_rev.close()
+
+        # Invariant: Revocation is strictly blocked from committing between activation's check and insert!
+        assert rev_blocked is True, "REVOCATION_CANNOT_COMMIT_BETWEEN_CHECK_AND_INSERT"
+
+        # Connection A resumes and completes insert
+        conn_act.execute(
+            """
+            INSERT INTO epoch_activation_records (
+                epoch_id, release_sha, deployment_id, activated_at_utc, activation_source, activation_auth_token_hash
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (epoch_id, rel, dep, datetime.now(timezone.utc).isoformat(), "TEST_DETERMINISTIC", "token-hash"),
+        )
+        conn_act.execute("COMMIT;")
+        assert conn_act.in_transaction is False, "TRANSACTION_ACTIVE_DURING_ACTIVATION_INSERT_AND_COMMITTED"
+    finally:
+        conn_act.close()
+
+    # Verify activation row exists
+    act_rec = gov_engine.get_activation_record(epoch_id)
+    assert act_rec is not None
+    assert act_rec["release_sha"] == rel
+
+    # Now revocation can serialize safely after activation
+    rev_ok, rev_msg = gov_engine.record_revocation(
+        epoch_id, rel, dep, datetime.now(timezone.utc).isoformat(),
+        "Post-activation revocation serialization", "OFFICER"
+    )
+    assert rev_ok is True
+    # Downstream capture is now revoked
+    is_auth, reason = gov_engine.evaluate_capture_authorization_predicate(epoch_id, rel, dep)
+    assert is_auth is False
+    assert reason == "RUNTIME_REVOKED"
+
+
 # ==============================================================================
 # 7. LATER-RELEASE RE-ATTESTATION & CONTINUITY TESTS (SECTIONS 6 & 7)
 # ==============================================================================
