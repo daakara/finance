@@ -20,6 +20,20 @@ import urllib3
 # Disable SSL warnings for corporate environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+from analyst_dashboard.data.market_evidence import (
+    MarketProvenance,
+    MarketEvidence,
+    Provider,
+    IngestionSource,
+    ServingSource,
+    CacheOrigin,
+    ObservationPrecision,
+    ObservationSource,
+    AdjustmentState,
+    StructuralQuality,
+    assess_structural_quality,
+)
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -128,6 +142,56 @@ class MultiAssetDataPipeline:
                 'error': str(e),
                 'timestamp': datetime.now()
             }
+
+    def fetch_stock_data_with_evidence(self, ticker: str, period: str = "1y") -> Tuple[Dict[str, Any], MarketEvidence]:
+        """Additive companion method returning stock data alongside its factual MarketEvidence."""
+        cache_key = f"stock_{ticker}_{period}"
+        was_cached = False
+        if hasattr(self, 'disk_cache') and self.disk_cache is not None:
+            try:
+                if self.disk_cache.get(cache_key) is not None:
+                    was_cached = True
+            except Exception:
+                pass
+
+        data = self.fetch_stock_data(ticker, period)
+        now_utc = datetime.utcnow().isoformat() + "Z"
+
+        price_data = data.get("price_data")
+        observed_date = None
+        candle_count = 0
+        quality = StructuralQuality.UNKNOWN
+
+        if isinstance(price_data, pd.DataFrame) and not price_data.empty:
+            candle_count = len(price_data)
+            quality = assess_structural_quality(price_data)
+            last_idx = price_data.index[-1]
+            observed_date = last_idx.strftime("%Y-%m-%d") if hasattr(last_idx, "strftime") else str(last_idx).split("T")[0]
+        elif data.get("error"):
+            quality = StructuralQuality.CORRUPT
+
+        prov = MarketProvenance(
+            provider=Provider.YFINANCE,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at=None,
+            observed_date=observed_date,
+            observation_precision=ObservationPrecision.DATE if observed_date else ObservationPrecision.UNKNOWN,
+            observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE if observed_date else ObservationSource.UNKNOWN,
+            ingested_at=now_utc,
+            adjustment_state=AdjustmentState.SPLIT_AND_DIVIDEND_ADJUSTED,
+            structural_quality=quality,
+            fallback_status=False,
+        )
+
+        evidence = MarketEvidence(
+            provenance=prov,
+            serving_source=ServingSource.LOCAL_CACHE if was_cached else ServingSource.DIRECT_PROVIDER,
+            cache_origin=CacheOrigin.DISKCACHE_PIPELINE if was_cached else CacheOrigin.NONE,
+            served_at=now_utc,
+            candle_count=candle_count,
+        )
+
+        return data, evidence
     
     def fetch_etf_data(self, ticker: str, period: str = "1y") -> Dict[str, Any]:
         """

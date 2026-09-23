@@ -13,6 +13,18 @@ from fastapi import APIRouter, Response
 import yfinance as yf
 import exchange_calendars as xcals
 from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
+from analyst_dashboard.data.market_evidence import (
+    MarketEvidence,
+    MarketProvenance,
+    Provider,
+    IngestionSource,
+    ServingSource,
+    CacheOrigin,
+    ObservationPrecision,
+    ObservationSource,
+    AdjustmentState,
+    StructuralQuality,
+)
 
 logger = logging.getLogger("api.macro")
 router = APIRouter()
@@ -275,6 +287,29 @@ def get_macro_ribbon(response: Response = None):
 
     is_open = session_info.get("status") == "OPEN"
 
+    spy_obs = spy_data.get("observationTime")
+    macro_evidence = MarketEvidence(
+        provenance=MarketProvenance(
+            provider=Provider.YFINANCE,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at=spy_obs,
+            observed_date=spy_obs[:10] if spy_obs else None,
+            observation_precision=ObservationPrecision.TIMESTAMP if (spy_obs and "T" in spy_obs) else ObservationPrecision.DATE,
+            observation_source=ObservationSource.PROVIDER_BAR_TIMESTAMP,
+            ingested_at=generated_at,
+            adjustment_state=AdjustmentState.UNADJUSTED,
+            structural_quality=(
+                StructuralQuality.COMPLETE if available_count == len(fields)
+                else (StructuralQuality.PARTIAL if available_count > 0 else StructuralQuality.UNKNOWN)
+            ),
+            fallback_status=False,
+        ),
+        serving_source=ServingSource.DIRECT_PROVIDER,
+        cache_origin=CacheOrigin.NONE,
+        served_at=generated_at,
+        candle_count=available_count,
+    )
+
     return {
         "generatedAt": generated_at,
         "observationTime": spy_data.get("observationTime"),
@@ -294,4 +329,5 @@ def get_macro_ribbon(response: Response = None):
         "tenYearYield": treasury_data,
         # Legacy/UI compatibility aliases populated strictly from authentic fields
         "updatedAt": generated_at,
+        "evidence": macro_evidence.to_dict(),
     }

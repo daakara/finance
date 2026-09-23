@@ -12,6 +12,18 @@ from analyst_dashboard.analyzers.smart_money import SmartMoneyEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.analyzers.tactical_regime import get_shared_macro_snapshot
+from analyst_dashboard.data.market_evidence import (
+    MarketEvidence,
+    MarketProvenance,
+    Provider,
+    IngestionSource,
+    ServingSource,
+    CacheOrigin,
+    ObservationPrecision,
+    ObservationSource,
+    AdjustmentState,
+    StructuralQuality,
+)
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -475,6 +487,26 @@ def run_screener_get(
     else:
         filtered = mapped_candidates
 
+    radar_now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    radar_evidence = MarketEvidence(
+        provenance=MarketProvenance(
+            provider=Provider.YFINANCE,
+            ingestion_source=IngestionSource.DIRECT_PROVIDER,
+            observed_at=None,
+            observed_date=time.strftime("%Y-%m-%d", time.gmtime()),
+            observation_precision=ObservationPrecision.DATE,
+            observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE,
+            ingested_at=radar_now,
+            adjustment_state=AdjustmentState.SPLIT_AND_DIVIDEND_ADJUSTED,
+            structural_quality=StructuralQuality.COMPLETE if filtered else StructuralQuality.UNKNOWN,
+            fallback_status=False,
+        ),
+        serving_source=ServingSource.DIRECT_PROVIDER,
+        cache_origin=CacheOrigin.NONE,
+        served_at=radar_now,
+        candle_count=len(filtered),
+    )
+
     return {
         "totalCandidates": len(active_universe),
         "gemsFound": len(filtered),
@@ -485,6 +517,7 @@ def run_screener_get(
         "macroDifficulty": shared_macro,
         "candidates": filtered,
         "results": results,
+        "evidence": radar_evidence.to_dict(),
     }
 
 

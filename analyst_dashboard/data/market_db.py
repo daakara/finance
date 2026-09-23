@@ -5,7 +5,7 @@ import time
 import functools
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,22 @@ try:
     import pandas as pd
 except ImportError:
     pd = None
+
+from analyst_dashboard.data.market_evidence import (
+    MarketProvenance,
+    MarketEvidence,
+    Provider,
+    IngestionSource,
+    ServingSource,
+    CacheOrigin,
+    ObservationPrecision,
+    ObservationSource,
+    AdjustmentState,
+    StructuralQuality,
+    create_legacy_provenance,
+    create_cached_evidence,
+    assess_structural_quality,
+)
 
 DATA_DIR = os.getenv("FINANCE_DATA_DIR", os.getenv("DATA_DIR", os.path.expanduser("~")))
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -84,6 +100,26 @@ class MarketDatabaseEngine:
                     )
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_ohlcv_sym_date ON asset_ohlcv_daily (symbol, trade_date)")
+
+                # 1b. Historical Daily Candles Provenance Sidecar (F_13A Additive)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS asset_ohlcv_provenance (
+                        symbol TEXT NOT NULL,
+                        trade_date TEXT NOT NULL,
+                        provider TEXT NOT NULL,
+                        ingestion_source TEXT NOT NULL,
+                        observed_at TEXT,
+                        observed_date TEXT,
+                        observation_precision TEXT NOT NULL,
+                        observation_source TEXT NOT NULL,
+                        ingested_at TEXT,
+                        adjustment_state TEXT NOT NULL,
+                        structural_quality TEXT NOT NULL,
+                        fallback_status INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY (symbol, trade_date)
+                    )
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_provenance_sym_date ON asset_ohlcv_provenance (symbol, trade_date)")
 
                 # 2. Asset Factor & Fundamentals Snapshot (Versioned Point-in-Time Schema)
                 cursor.execute("PRAGMA table_info(asset_factor_snapshots)")
@@ -273,6 +309,170 @@ class MarketDatabaseEngine:
                 return []
             candles = [dict(row) for row in reversed(rows)]
             return candles
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def save_daily_candles_with_evidence(
+        self,
+        symbol: str,
+        data: Any,
+        provenance: Union[MarketProvenance, MarketEvidence],
+    ) -> None:
+        """Atomically save OHLCV candles AND sidecar provenance to database.
+
+        Both writes occur within a single SQLite transaction. If either fails,
+        the entire operation is rolled back.
+        """
+        if data is None:
+            return
+        prov = provenance.provenance if isinstance(provenance, MarketEvidence) else provenance
+        if not isinstance(prov, MarketProvenance):
+            prov = MarketProvenance.from_dict(prov)
+
+        upper = symbol.upper().strip()
+        candle_rows = []
+        provenance_rows = []
+
+        if pd is not None and isinstance(data, pd.DataFrame):
+            if data.empty:
+                return
+            for idx, row in data.iterrows():
+                date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx).split("T")[0]
+                candle_rows.append((
+                    upper,
+                    date_str,
+                    round(float(row["Open"]), 2),
+                    round(float(row["High"]), 2),
+                    round(float(row["Low"]), 2),
+                    round(float(row["Close"]), 2),
+                    int(row.get("Volume", 0)),
+                ))
+                provenance_rows.append((
+                    upper,
+                    date_str,
+                    prov.provider,
+                    prov.ingestion_source,
+                    prov.observed_at,
+                    date_str,
+                    prov.observation_precision,
+                    prov.observation_source,
+                    prov.ingested_at,
+                    prov.adjustment_state,
+                    prov.structural_quality,
+                    1 if prov.fallback_status else 0,
+                ))
+        elif isinstance(data, list):
+            if not data:
+                return
+            for item in data:
+                date_str = str(item.get("time") or item.get("trade_date") or item.get("date")).split("T")[0]
+                candle_rows.append((
+                    upper,
+                    date_str,
+                    round(float(item.get("open", item.get("Open", 0.0))), 2),
+                    round(float(item.get("high", item.get("High", 0.0))), 2),
+                    round(float(item.get("low", item.get("Low", 0.0))), 2),
+                    round(float(item.get("close", item.get("Close", 0.0))), 2),
+                    int(item.get("volume", item.get("Volume", 0))),
+                ))
+                provenance_rows.append((
+                    upper,
+                    date_str,
+                    prov.provider,
+                    prov.ingestion_source,
+                    prov.observed_at,
+                    date_str,
+                    prov.observation_precision,
+                    prov.observation_source,
+                    prov.ingested_at,
+                    prov.adjustment_state,
+                    prov.structural_quality,
+                    1 if prov.fallback_status else 0,
+                ))
+
+        conn = self._get_connection()
+        try:
+            with conn:
+                cursor = conn.cursor()
+                cursor.executemany("""
+                    INSERT OR REPLACE INTO asset_ohlcv_daily (symbol, trade_date, open, high, low, close, volume)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, candle_rows)
+                cursor.executemany("""
+                    INSERT OR REPLACE INTO asset_ohlcv_provenance (
+                        symbol, trade_date, provider, ingestion_source, observed_at, observed_date,
+                        observation_precision, observation_source, ingested_at, adjustment_state,
+                        structural_quality, fallback_status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, provenance_rows)
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_daily_candles_with_evidence(self, symbol: str, limit: int = 252) -> Tuple[List[Dict[str, Any]], MarketEvidence]:
+        """Retrieve stored historical daily candles along with their factual provenance envelope."""
+        upper = symbol.upper().strip()
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    c.trade_date AS time, c.open, c.high, c.low, c.close, c.volume,
+                    p.provider, p.ingestion_source, p.observed_at, p.observed_date,
+                    p.observation_precision, p.observation_source, p.ingested_at,
+                    p.adjustment_state, p.structural_quality, p.fallback_status
+                FROM asset_ohlcv_daily c
+                LEFT JOIN asset_ohlcv_provenance p
+                    ON c.symbol = p.symbol AND c.trade_date = p.trade_date
+                WHERE c.symbol = ?
+                ORDER BY c.trade_date DESC
+                LIMIT ?
+            """, (upper, limit))
+            rows = cursor.fetchall()
+            if not rows:
+                empty_prov = create_legacy_provenance(trade_date=None)
+                return [], create_cached_evidence(empty_prov, cache_origin=CacheOrigin.SQLITE_MARKET_STORE, candle_count=0)
+
+            candles = [
+                {
+                    "time": r["time"],
+                    "open": r["open"],
+                    "high": r["high"],
+                    "low": r["low"],
+                    "close": r["close"],
+                    "volume": r["volume"],
+                }
+                for r in reversed(rows)
+            ]
+
+            latest_row = rows[0]  # Most recent by trade_date DESC
+            if latest_row["provider"] is None:
+                # Legacy unmigrated row: derive factual legacy provenance
+                prov = create_legacy_provenance(
+                    trade_date=str(latest_row["time"])[:10],
+                    structural_quality=assess_structural_quality(candles),
+                )
+            else:
+                prov = MarketProvenance(
+                    provider=latest_row["provider"],
+                    ingestion_source=latest_row["ingestion_source"],
+                    observed_at=latest_row["observed_at"],
+                    observed_date=latest_row["observed_date"],
+                    observation_precision=latest_row["observation_precision"],
+                    observation_source=latest_row["observation_source"],
+                    ingested_at=latest_row["ingested_at"],
+                    adjustment_state=latest_row["adjustment_state"],
+                    structural_quality=latest_row["structural_quality"] or assess_structural_quality(candles),
+                    fallback_status=bool(latest_row["fallback_status"]),
+                )
+
+            evidence = create_cached_evidence(
+                provenance=prov,
+                cache_origin=CacheOrigin.SQLITE_MARKET_STORE,
+                candle_count=len(candles),
+            )
+            return candles, evidence
         finally:
             conn.close()
 

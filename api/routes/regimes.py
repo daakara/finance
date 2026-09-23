@@ -6,6 +6,12 @@ import yfinance as yf
 
 from analyst_dashboard.analyzers.advanced_risk_analyzer import AdvancedRiskAnalyzer
 from analyst_dashboard.analyzers.tactical_regime import TacticalRegimeEngine
+from analyst_dashboard.data.market_evidence import (
+    create_direct_evidence,
+    Provider,
+    ObservationPrecision,
+    ObservationSource,
+)
 
 logger = logging.getLogger(__name__)
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "production").lower() == "production"
@@ -44,6 +50,22 @@ def _compute_regime_for_symbol(symbol: str = "SPY"):
     adv = risk_output.get("advanced_metrics", {})
     sortino = adv.get("Sortino_Ratio", 1.8)
 
+    # Descriptive MarketEvidence envelope (zero computation or filtering side effects)
+    observed_date_str = None
+    if hist is not None and not hist.empty:
+        last_idx = hist.index[-1]
+        observed_date_str = last_idx.strftime("%Y-%m-%d") if hasattr(last_idx, "strftime") else str(last_idx).split("T")[0]
+
+    evidence = create_direct_evidence(
+        provider=Provider.YFINANCE,
+        candles=hist,
+        observed_date=observed_date_str,
+        observation_precision=ObservationPrecision.DATE,
+        observation_source=ObservationSource.DERIVED_FROM_TRADE_DATE,
+        fallback_status=(upper_sym != symbol.upper().strip()) if symbol else False,
+        candle_count=len(hist) if hist is not None else 0,
+    )
+
     return {
         "symbol": upper_sym,
         "regime": current_regime,
@@ -60,6 +82,7 @@ def _compute_regime_for_symbol(symbol: str = "SPY"):
             "trend_strength": trend_strength,
             "regime_recommendations": [action],
         },
+        "evidence": evidence.to_dict(),
     }
 
 
