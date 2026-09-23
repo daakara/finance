@@ -14,9 +14,6 @@ class AppSettings:
     """Validated environment settings container."""
     def __init__(self):
         self.alpha_vantage_api_key: str = os.getenv('ALPHA_VANTAGE_API_KEY', '')
-        self.alpaca_api_key_id: str = os.getenv('ALPACA_API_KEY_ID', os.getenv('APCA_API_KEY_ID', os.getenv('ALPACA_API_KEY', '')))
-        self.alpaca_api_secret_key: str = os.getenv('ALPACA_API_SECRET_KEY', os.getenv('APCA_API_SECRET_KEY', os.getenv('ALPACA_SECRET_KEY', '')))
-        self.alpaca_data_feed: str = os.getenv('ALPACA_DATA_FEED', 'iex')
         self.news_api_key: str = os.getenv('NEWS_API_KEY', '')
         self.twitter_bearer_token: str = os.getenv('TWITTER_BEARER_TOKEN', '')
         self.cache_ttl_seconds: int = int(os.getenv('CACHE_TTL_SECONDS', '300'))
@@ -34,9 +31,6 @@ class Config:
     
     # API Configuration
     ALPHA_VANTAGE_API_KEY = _settings.alpha_vantage_api_key
-    ALPACA_API_KEY_ID = _settings.alpaca_api_key_id
-    ALPACA_API_SECRET_KEY = _settings.alpaca_api_secret_key
-    ALPACA_DATA_FEED = _settings.alpaca_data_feed
     NEWS_API_KEY = _settings.news_api_key
     TWITTER_BEARER_TOKEN = _settings.twitter_bearer_token
     
