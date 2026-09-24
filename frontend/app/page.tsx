@@ -362,8 +362,12 @@ function TerminalContent() {
                     </span>
                   ) : (
                     <div className="text-slate-500 flex items-center gap-2">
-                      <span className="hidden md:inline">NYSE/NASDAQ Session State</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">{dataSource.isRealtime ? "IEX Real-Time" : dataSource.freshness === "Unknown" ? "15m Delayed / EOD" : dataSource.freshness}</span>
+                      <span className="hidden md:inline">Reference Baseline:</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">
+                        {data.quoteStatus === "COMPLETED_SESSION" || interval === "1d" || interval.includes("hist")
+                          ? "Prior Completed Session"
+                          : (data._dataSource === "live" ? "Live Intraday" : "Delayed Intraday")}
+                      </span>
                     </div>
                   )}
                 </div>

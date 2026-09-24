@@ -1162,8 +1162,9 @@ export async function fetchAssetAnalytics(
         const isHealthy = (maxP - minP) >= 0.01;
 
         if (isHealthy) {
-          // Reject STALE_HISTORICAL or UNAVAILABLE backend data from being labeled live
+          // Reject STALE_HISTORICAL, UNAVAILABLE, or COMPLETED_SESSION backend data from being labeled live
           const freshnessStatus = data.freshness?.status;
+          const isBackendCompletedSession = data.quoteStatus === "COMPLETED_SESSION" || data.freshness?.priceSemantic === "COMPLETED_SESSION" || freshnessStatus === "COMPLETED_SESSION" || interval === "1d" || interval.includes("hist");
           const isBackendStale = freshnessStatus === "STALE_HISTORICAL" || freshnessStatus === "UNAVAILABLE";
 
           // Extract authentic observation timestamp strictly from provider metadata.
@@ -1175,7 +1176,9 @@ export async function fetchAssetAnalytics(
             observationTime = data.freshness.observedAt;
           }
 
-          const isObservationFresh = !isBackendStale && observationTime > 0 && isQuoteFresh(observationTime);
+          // Invariant: Completed daily session data must never be marked live.
+          const isRealtime = Boolean(data.freshness?.isRealtime ?? (!isBackendCompletedSession && interval !== "1d"));
+          const isObservationFresh = isRealtime && !isBackendStale && observationTime > 0 && isQuoteFresh(observationTime);
           const fetchedTime = Date.now();
 
           const validPrice = (typeof data.currentPrice === "number" && Number.isFinite(data.currentPrice) && data.currentPrice > 0)
@@ -1207,6 +1210,12 @@ export async function fetchAssetAnalytics(
             observedAt: observationTime > 0 ? observationTime : undefined,
             fetchedAt: fetchedTime,
             _dataSource: isObservationFresh ? ("live" as const) : ("historical" as const),
+            freshness: data.freshness ? {
+              ...data.freshness,
+              status: isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.status || "RECENT"),
+              isRealtime: !isBackendCompletedSession && isObservationFresh,
+              priceSemantic: isBackendCompletedSession ? "COMPLETED_SESSION" : (data.freshness.priceSemantic || "LIVE_INTRADAY"),
+            } : undefined,
             factorScores: data.factorScores || data.dnaScores,
           };
 

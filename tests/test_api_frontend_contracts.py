@@ -158,7 +158,7 @@ def test_contract_freshness_metadata_schema():
 
         assert "freshness" in data
         freshness = data["freshness"]
-        assert freshness["status"] in ["LIVE", "RECENT", "STALE_HISTORICAL", "UNAVAILABLE"]
+        assert freshness["status"] in ["LIVE", "RECENT", "COMPLETED_SESSION", "DELAYED", "STALE_HISTORICAL", "UNAVAILABLE"]
         assert freshness["providerSource"] in ["yfinance", "yfinance_crypto", "eodhd", "sqlite_cache"]
         assert isinstance(freshness["lastTradeDate"], str)
         assert isinstance(freshness["stalenessDays"], int)
