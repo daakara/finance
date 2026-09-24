@@ -56,21 +56,17 @@ def retry_sqlite(max_retries: int = 5, base_delay: float = 0.05):
     return decorator
 
 
+from analyst_dashboard.governance.storage import (
+    resolve_governance_db_path as _storage_resolve_governance_db_path,
+    ensure_data_root,
+    attest_persistent_storage,
+    is_production_runtime,
+)
+
+
 def resolve_governance_db_path(custom_path: Optional[str] = None) -> str:
-    """Resolves the authoritative SQLite governance database path."""
-    if custom_path:
-        return os.path.abspath(custom_path)
-    env_path = os.getenv("ARX_GOVERNANCE_DB_PATH")
-    if env_path:
-        return os.path.abspath(env_path)
-    if os.path.exists("/root/analyst_dashboard/data"):
-        return DEFAULT_PRODUCTION_GOVERNANCE_DB_PATH
-    # Fallback for local development/testing inside repository tree
-    local_data_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"
-    )
-    os.makedirs(local_data_dir, exist_ok=True)
-    return os.path.join(local_data_dir, "governance.db")
+    """Resolves the authoritative SQLite governance database path using shared storage authority."""
+    return _storage_resolve_governance_db_path(custom_path)
 
 
 def get_governance_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
@@ -327,6 +323,13 @@ class GovernanceDatabaseEngine:
             if rev_cur.fetchone()[0] > 0:
                 conn.execute("ROLLBACK;")
                 return False, f"RUNTIME_REVOKED: Target release authorization for {release_sha} on deployment {deployment_id} has been revoked"
+
+            # Invariant: Persistent storage assertion (Fail-closed defense-in-depth)
+            if is_production_runtime():
+                attest = attest_persistent_storage()
+                if not attest.get("isValid", False):
+                    conn.execute("ROLLBACK;")
+                    return False, f"STORAGE_NOT_PERSISTENT: Cannot activate epoch on non-persistent storage: {attest.get('error', 'attestation failed')}"
 
             conn.execute(
                 """

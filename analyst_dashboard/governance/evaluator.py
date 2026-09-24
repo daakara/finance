@@ -81,7 +81,7 @@ async def run_in_evaluator_thread(func: Callable[..., T], *args: Any, **kwargs: 
 
 
 class ProductionCertificationEvaluator:
-    """Evaluates the canonical 12-check production certification suite."""
+    """Evaluates the canonical 13-check production certification suite."""
 
     CANONICAL_CHECKS: List[str] = [
         "check_production_health",
@@ -96,6 +96,7 @@ class ProductionCertificationEvaluator:
         "check_certification_prospective_delta_zero",
         "check_pre_activation_record_state",
         "check_model_tuning_frozen",
+        "check_persistent_governance_storage",
     ]
 
     def __init__(self, db_path: Optional[str] = None):
@@ -313,12 +314,23 @@ class ProductionCertificationEvaluator:
         except Exception as e:
             return "FAIL", {"error": str(e)}
 
+    def check_persistent_governance_storage(self) -> Tuple[str, Any]:
+        """Check 13: Verifies governance DB and prospective ledger physical persistence on /root."""
+        from analyst_dashboard.governance.storage import attest_persistent_storage
+        try:
+            attestation = attest_persistent_storage()
+            is_valid = attestation.get("isValid", False)
+            status = "PASS" if is_valid else "FAIL"
+            return status, attestation
+        except Exception as e:
+            return "FAIL", {"error": str(e)}
+
     async def execute_full_certification_suite(
         self,
         mock_release_sha: Optional[str] = None,
         mock_deployment_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Executes the complete 12-check production certification suite under strict firewall context."""
+        """Executes the complete 13-check production certification suite under strict firewall context."""
         release_sha = mock_release_sha or self.get_running_release_sha()
         deployment_id = mock_deployment_id or self.get_running_deployment_id()
         eval_timestamp = datetime.now(timezone.utc).isoformat()
@@ -408,10 +420,15 @@ class ProductionCertificationEvaluator:
             checks_output["check_model_tuning_frozen"] = {"status": st, "measuredValue": val, "evaluatedAtUtc": datetime.now(timezone.utc).isoformat()}
             if st != "PASS": all_passed = False
 
+            # 13. Persistent Governance Storage
+            st, val = self.check_persistent_governance_storage()
+            checks_output["check_persistent_governance_storage"] = {"status": st, "measuredValue": val, "evaluatedAtUtc": datetime.now(timezone.utc).isoformat()}
+            if st != "PASS": all_passed = False
+
         overall_status = "PASS" if all_passed and release_sha and deployment_id else "FAIL"
 
         result_payload = {
-            "schemaVersion": "1.0.0",
+            "schemaVersion": "2.0.0",
             "epochId": ExperimentLedger.EPOCH_ID,
             "evaluatedReleaseSha": release_sha or "UNKNOWN",
             "evaluatedDeploymentId": deployment_id or "UNKNOWN",

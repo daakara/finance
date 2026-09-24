@@ -64,6 +64,19 @@ async def warmup_core_assets():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Pre-flight storage persistence check in production runtime
+    from analyst_dashboard.governance.storage import (
+        is_production_runtime,
+        attest_persistent_storage,
+        ensure_data_root,
+    )
+    if is_production_runtime():
+        ensure_data_root()
+        attestation = attest_persistent_storage()
+        if not attestation.get("isValid", False):
+            err = attestation.get("error", "Unknown storage verification error")
+            logger.critical(f"FATAL: Governance storage is not persistent: {err}")
+            raise RuntimeError(f"FATAL: Governance storage is not persistent. Mount /root is ephemeral or absent: {err}")
     task = asyncio.create_task(warmup_core_assets())
     try:
         yield

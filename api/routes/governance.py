@@ -29,6 +29,7 @@ from analyst_dashboard.governance.experiment_ledger import (
 from analyst_dashboard.governance.baseline_engine import BaselineEngine
 from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
 from analyst_dashboard.governance.evaluator import ProductionCertificationEvaluator
+from analyst_dashboard.governance.storage import is_storage_persistent
 
 logger = logging.getLogger("api.routes.governance")
 
@@ -621,4 +622,5 @@ def get_epoch2_governance_status(response: Response):
         "releaseAuthorization": release_auth,
         "isRuntimeRevoked": is_revoked,
         "prospectiveCaptureAuthorized": is_authorized,
+        "storagePersistence": "VERIFIED" if is_storage_persistent() else "EPHEMERAL",
     }

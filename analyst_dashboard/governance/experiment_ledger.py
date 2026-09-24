@@ -414,8 +414,14 @@ class ExperimentLedger:
         return ProvenanceCohort.UNKNOWN
 
     @classmethod
+    def resolve_ledger_path(cls, custom_path: Optional[str] = None) -> str:
+        """Resolves the authoritative prospective ledger path using shared storage authority."""
+        from analyst_dashboard.governance.storage import resolve_ledger_path as _storage_resolve_ledger_path
+        return _storage_resolve_ledger_path(custom_path)
+
+    @classmethod
     def load_ledger(cls, ledger_path: Optional[str] = None) -> Dict[str, Any]:
-        path = ledger_path or cls.DEFAULT_LEDGER_PATH
+        path = ledger_path or cls.resolve_ledger_path()
         if not os.path.exists(path):
             return {
                 "version": "1.0.0",
@@ -435,7 +441,7 @@ class ExperimentLedger:
 
     @classmethod
     def save_ledger(cls, data: Dict[str, Any], ledger_path: Optional[str] = None) -> None:
-        path = ledger_path or cls.DEFAULT_LEDGER_PATH
+        path = ledger_path or cls.resolve_ledger_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)

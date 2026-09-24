@@ -322,10 +322,12 @@ async def test_certification_evaluator_full_suite_and_prospective_delta(monkeypa
     assert result["overallStatus"] == "PASS"
     assert result["evaluatedReleaseSha"] == mock_sha
     assert result["evaluatedDeploymentId"] == mock_dep
+    assert len(result["checks"]) == 13
     assert result["checks"]["check_epoch1_denominator_zero"]["status"] == "PASS"
     assert result["checks"]["check_certification_prospective_delta_zero"]["status"] == "PASS"
     assert result["checks"]["check_epoch2_manifest_hashes"]["status"] == "PASS"
     assert result["checks"]["check_frozen_engine_manifest_hashes"]["status"] == "PASS"
+    assert result["checks"]["check_persistent_governance_storage"]["status"] == "PASS"
 
     # Confirm authorization row written to SQLite
     gov_engine = GovernanceDatabaseEngine()
@@ -1113,3 +1115,339 @@ def test_legacy_json_fallback_cannot_authorize_production(clean_test_db, tmp_pat
                 os.remove(fake_json_path)
             except Exception:
                 pass
+
+
+# ==============================================================================
+# 11. GOVERNANCE PERSISTENT STORAGE ATTESTATION & ADMISSIBILITY TESTS
+# ==============================================================================
+
+def test_persistent_storage_attestation_production_distinct_mount(monkeypatch, tmp_path):
+    """Simulate production volume mount with distinct device ID -> PASS."""
+    from analyst_dashboard.governance.storage import (
+        attest_persistent_storage,
+        is_storage_persistent,
+    )
+    import analyst_dashboard.governance.storage as storage_mod
+
+    vol_dir = tmp_path / "root"
+    data_dir = vol_dir / "analyst_dashboard" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    vol_str = str(vol_dir)
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", vol_str)
+
+    vol_dev = 64022080
+    root_dev = 40894528
+
+    # Create dummy files
+    (data_dir / "governance.db").touch()
+    (data_dir / "paper_trading_ledger.json").touch()
+
+    # Mock mount distinctness check
+    monkeypatch.setattr(storage_mod, "_check_mount_distinct_from_root", lambda p: (True, vol_dev, root_dev))
+
+    # Mock os.stat so any path under vol_str returns st_dev = vol_dev
+    real_stat = os.stat
+    class MockStat:
+        def __init__(self, dev):
+            self.st_dev = dev
+    def mock_stat(path, *args, **kwargs):
+        p_str = str(path)
+        if vol_str in p_str:
+            return MockStat(vol_dev)
+        return real_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "stat", mock_stat)
+
+    attestation = attest_persistent_storage()
+    assert attestation["isValid"] is True
+    assert attestation["error"] is None
+    assert attestation["volumeDistinctFromContainerRoot"] is True
+    assert attestation["volumeDeviceId"] == vol_dev
+    assert is_storage_persistent() is True
+
+
+def test_persistent_storage_attestation_production_ephemeral_fallback(monkeypatch, tmp_path):
+    """Simulate production where volume mount has same st_dev as container root -> FAIL."""
+    from analyst_dashboard.governance.storage import attest_persistent_storage, is_storage_persistent
+    import analyst_dashboard.governance.storage as storage_mod
+
+    vol_dir = tmp_path / "root"
+    vol_dir.mkdir(parents=True, exist_ok=True)
+    vol_str = str(vol_dir)
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", vol_str)
+
+    # Both mount and root share dev 40894528 (ephemeral overlay)
+    monkeypatch.setattr(storage_mod, "_check_mount_distinct_from_root", lambda p: (False, 40894528, 40894528))
+
+    attestation = attest_persistent_storage()
+    assert attestation["isValid"] is False
+    assert "not distinct" in attestation["error"]
+    assert is_storage_persistent() is False
+
+
+def test_persistent_storage_attestation_production_missing_mount(monkeypatch):
+    """Simulate production where volume mount directory does not exist -> FAIL."""
+    from analyst_dashboard.governance.storage import attest_persistent_storage, is_storage_persistent
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", "/nonexistent_production_volume_mount")
+
+    attestation = attest_persistent_storage()
+    assert attestation["isValid"] is False
+    assert is_storage_persistent() is False
+
+
+def test_persistent_storage_attestation_production_wrong_db_dev(monkeypatch, tmp_path):
+    """Simulate volume mount valid, but governance.db is on container root device -> FAIL."""
+    from analyst_dashboard.governance.storage import attest_persistent_storage, is_storage_persistent
+    import analyst_dashboard.governance.storage as storage_mod
+
+    vol_dir = tmp_path / "root"
+    data_dir = vol_dir / "analyst_dashboard" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    vol_str = str(vol_dir)
+
+    (data_dir / "governance.db").touch()
+    (data_dir / "paper_trading_ledger.json").touch()
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", vol_str)
+
+    vol_dev = 64022080
+    root_dev = 40894528
+
+    monkeypatch.setattr(storage_mod, "_check_mount_distinct_from_root", lambda p: (True, vol_dev, root_dev))
+
+    # Mock os.stat so governance.db returns root_dev (ephemeral)
+    class MockStat:
+        def __init__(self, dev):
+            self.st_dev = dev
+    def mock_stat(path, *args, **kwargs):
+        p_str = str(path)
+        if "governance.db" in p_str:
+            return MockStat(root_dev)
+        if vol_str in p_str:
+            return MockStat(vol_dev)
+        return MockStat(root_dev)
+
+    monkeypatch.setattr(os, "stat", mock_stat)
+
+    attestation = attest_persistent_storage()
+    assert attestation["isValid"] is False
+    assert "Governance DB" in attestation["error"]
+    assert is_storage_persistent() is False
+
+
+def test_persistent_storage_attestation_production_wrong_ledger_dev(monkeypatch, tmp_path):
+    """Simulate volume mount valid, db on volume, but ledger is on container root device -> FAIL."""
+    from analyst_dashboard.governance.storage import attest_persistent_storage, is_storage_persistent
+    import analyst_dashboard.governance.storage as storage_mod
+
+    vol_dir = tmp_path / "root"
+    data_dir = vol_dir / "analyst_dashboard" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    vol_str = str(vol_dir)
+
+    (data_dir / "governance.db").touch()
+    (data_dir / "paper_trading_ledger.json").touch()
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", vol_str)
+
+    vol_dev = 64022080
+    root_dev = 40894528
+
+    monkeypatch.setattr(storage_mod, "_check_mount_distinct_from_root", lambda p: (True, vol_dev, root_dev))
+
+    class MockStat:
+        def __init__(self, dev):
+            self.st_dev = dev
+    def mock_stat(path, *args, **kwargs):
+        p_str = str(path)
+        if "paper_trading_ledger.json" in p_str:
+            return MockStat(root_dev)
+        if vol_str in p_str:
+            return MockStat(vol_dev)
+        return MockStat(root_dev)
+
+    monkeypatch.setattr(os, "stat", mock_stat)
+
+    attestation = attest_persistent_storage()
+    assert attestation["isValid"] is False
+    assert "Prospective ledger" in attestation["error"]
+    assert is_storage_persistent() is False
+
+
+def test_seed_ledger_initialization_admissibility(tmp_path):
+    """Verify ensure_ledger_initialized creates a valid ledger matching seed with exactly 10 signals and 0 clean prospective signals."""
+    from analyst_dashboard.governance.storage import ensure_ledger_initialized
+
+    target_ledger = str(tmp_path / "analyst_dashboard" / "data" / "paper_trading_ledger.json")
+    ensure_ledger_initialized(target_ledger)
+
+    assert os.path.exists(target_ledger)
+    with open(target_ledger, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    signals = data.get("signals", [])
+    assert len(signals) == 10
+
+    # Invariants
+    e1_prospective = [
+        s for s in signals
+        if s.get("epochId") == "ARX_PROSPECTIVE_VALIDATION_EPOCH_1"
+        and s.get("provenanceCohort") == "PROSPECTIVE_CLEAN"
+    ]
+    e2_prospective = [
+        s for s in signals
+        if s.get("epochId") == "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
+    ]
+    assert len(e1_prospective) == 0
+    assert len(e2_prospective) == 0
+
+    # Ensure calling again does NOT overwrite or mutate
+    data["customTestMarker"] = "DO_NOT_OVERWRITE"
+    with open(target_ledger, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    ensure_ledger_initialized(target_ledger)
+    with open(target_ledger, "r", encoding="utf-8") as f:
+        reloaded = json.load(f)
+    assert reloaded.get("customTestMarker") == "DO_NOT_OVERWRITE"
+
+
+def test_certification_check_13_persistent_storage_pass(monkeypatch, tmp_path):
+    """Evaluator check_persistent_governance_storage passes under valid production simulation and local dev."""
+    evaluator = ProductionCertificationEvaluator()
+
+    # 1. Non-production (local development): passes
+    monkeypatch.delenv("RAILWAY_ENVIRONMENT_NAME", raising=False)
+    monkeypatch.delenv("RAILWAY_SERVICE_NAME", raising=False)
+    st_dev, val_dev = evaluator.check_persistent_governance_storage()
+    assert st_dev == "PASS"
+    assert val_dev["isProduction"] is False
+
+    # 2. Simulated production with verified volume mount: passes
+    vol_dir = tmp_path / "root"
+    vol_dir.mkdir(parents=True, exist_ok=True)
+    vol_str = str(vol_dir)
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", vol_str)
+
+    import analyst_dashboard.governance.storage as storage_mod
+    monkeypatch.setattr(storage_mod, "is_storage_persistent", lambda: True)
+    monkeypatch.setattr(storage_mod, "attest_persistent_storage", lambda: {
+        "isValid": True,
+        "isProduction": True,
+        "expectedVolumeRoot": vol_str,
+        "volumeMountPresent": True,
+        "volumeDistinctFromContainerRoot": True,
+        "volumeDeviceId": 64022080,
+        "containerRootDeviceId": 40894528,
+        "governanceDbPath": f"{vol_str}/analyst_dashboard/data/governance.db",
+        "governanceDbOnVolume": True,
+        "ledgerPath": f"{vol_str}/analyst_dashboard/data/paper_trading_ledger.json",
+        "ledgerOnVolume": True,
+        "error": None,
+    })
+
+    st_prod, val_prod = evaluator.check_persistent_governance_storage()
+    assert st_prod == "PASS"
+    assert val_prod["isValid"] is True
+
+
+def test_certification_check_13_persistent_storage_fail(monkeypatch):
+    """Evaluator check_persistent_governance_storage fails when storage is ephemeral or absent in production."""
+    evaluator = ProductionCertificationEvaluator()
+
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", "/nonexistent_volume_path")
+
+    st, val = evaluator.check_persistent_governance_storage()
+    assert st == "FAIL"
+    assert val["isValid"] is False
+    assert val.get("error") is not None
+
+
+def test_activation_blocked_when_storage_not_persistent(monkeypatch, tmp_path):
+    """Verify record_activation fails closed and rolls back when storage is not persistent in production."""
+    mock_sha = "3333333333333333333333333333333333333333"
+    mock_dep = "dep-test-storage-defect"
+
+    vol_dir = tmp_path / "root"
+    data_dir = vol_dir / "analyst_dashboard" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    db_path = str(data_dir / "governance.db")
+
+    monkeypatch.delenv("ARX_GOVERNANCE_DB_PATH", raising=False)
+    monkeypatch.delenv("ARX_DATA_DIR", raising=False)
+    monkeypatch.delenv("ARX_PAPER_TRADING_LEDGER_PATH", raising=False)
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(vol_dir))
+
+    gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+    # Record valid certification authorization first
+    gov_engine.record_certification_and_authorization(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=mock_sha,
+        deployment_id=mock_dep,
+        overall_status="PASS",
+        result_payload_json="{}",
+        result_sha256="hash-12345",
+        certified_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+
+    # Now simulate production environment with failed persistence attestation
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+    monkeypatch.setenv("RAILWAY_SERVICE_NAME", "analyst-dashboard")
+    monkeypatch.setattr("analyst_dashboard.governance.storage.is_storage_persistent", lambda: False)
+    monkeypatch.setattr(
+        "analyst_dashboard.governance.storage.attest_persistent_storage",
+        lambda: {"isValid": False, "error": "Simulated persistent volume defect"},
+    )
+
+    # Activation must fail closed due to persistent storage defect
+    success, msg = gov_engine.record_activation(
+        epoch_id=ExperimentLedger.EPOCH_ID,
+        release_sha=mock_sha,
+        deployment_id=mock_dep,
+        activated_at_utc=datetime.now(timezone.utc).isoformat(),
+        activation_source="operator_test",
+        activation_auth_token_hash="hash-abc",
+    )
+    assert success is False
+    assert "STORAGE_NOT_PERSISTENT" in msg
+
+    # Verify no activation row was committed
+    act = gov_engine.get_activation_record(ExperimentLedger.EPOCH_ID)
+    assert act is None
