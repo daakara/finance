@@ -156,9 +156,9 @@ class ProductionCertificationEvaluator:
         return "FAIL", {"error": "RAILWAY_DEPLOYMENT_ID missing or empty"}
 
     def check_epoch2_manifest_hashes(self) -> Tuple[str, Any]:
-        """Check 4: Verifies executable governance files against EPOCH_2_MANIFEST.json."""
+        """Check 4: Verifies executable governance files against active manifest (EPOCH_3, EPOCH_2 or EPOCH_1)."""
         try:
-            audit = ExperimentLedger.verify_epoch2_manifest()
+            audit = ExperimentLedger.verify_observation_governance_manifest()
             if audit.get("valid") is True and audit.get("status") == "VERIFIED":
                 return "PASS", {
                     "manifestVersion": audit.get("manifestVersion"),

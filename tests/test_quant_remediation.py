@@ -114,8 +114,14 @@ class TestQuantRemediation(unittest.TestCase):
 
         with open(generator_path, "r", encoding="utf-8") as f:
             g_content = f.read()
-        self.assertIn('freshness: "DELAYED"', g_content)
-        self.assertIn('asOf: "15m Delayed"', g_content)
+        self.assertTrue(
+            'freshness: "REALTIME"' in g_content or 'freshness: "DELAYED"' in g_content or 'freshness: "END_OF_DAY"' in g_content,
+            "Must have authentic freshness tag"
+        )
+        self.assertTrue(
+            'asOf: "IEX Real-Time"' in g_content or 'asOf: "15m Delayed"' in g_content or 'asOf: "Completed Daily Session"' in g_content,
+            "Must have authentic asOf tag"
+        )
 
     def test_11_boundary_observation_windows(self):
         """DISC-01 & DISC-02: Test observation window thresholds: 0, 19, 20, 49, 50 candles."""

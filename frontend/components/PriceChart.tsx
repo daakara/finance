@@ -8,6 +8,16 @@ interface PriceChartProps {
   symbol: string;
   candles: CandleData[];
   currentPrice?: number | null;
+  liveSpotPrice?: number | null;
+  analysisReferencePrice?: number | null;
+  marketPriceState?: {
+    liveSpotPrice?: number | null;
+    liveFreshness?: string;
+    liveSource?: string;
+    analysisReferencePrice?: number;
+    analysisReferenceDate?: string;
+    marketSession?: string;
+  };
   priceChangePct?: number;
   interval?: string;
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -51,6 +61,9 @@ export default function PriceChart({
   symbol,
   candles,
   currentPrice,
+  liveSpotPrice,
+  analysisReferencePrice,
+  marketPriceState,
   priceChangePct = 0,
   interval = "1y_hist",
   userRole = "LONG_TERM",
@@ -396,7 +409,28 @@ export default function PriceChart({
               </span>
             );
           })()}
-          {typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0 ? (
+          {typeof liveSpotPrice === "number" && Number.isFinite(liveSpotPrice) && liveSpotPrice > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span aria-label={`Live spot price: $${liveSpotPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-emerald-400 tabular-nums">
+                ${liveSpotPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span
+                className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                  marketPriceState?.liveFreshness === "REALTIME"
+                    ? "bg-emerald-950/80 text-emerald-300 border-emerald-800"
+                    : "bg-amber-950/80 text-amber-300 border-amber-800"
+                }`}
+                title={`Live source: ${marketPriceState?.liveSource || "IEX"} | Freshness: ${marketPriceState?.liveFreshness || "REALTIME"}`}
+              >
+                {marketPriceState?.liveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT"}
+              </span>
+              {typeof (analysisReferencePrice ?? currentPrice) === "number" && (
+                <span className="text-[11px] font-mono text-slate-400 border-l border-slate-700 pl-1.5 ml-0.5" title="Completed session baseline for technical indicators">
+                  Analysis Ref: ${(analysisReferencePrice ?? currentPrice)!.toFixed(2)} (Prior Close)
+                </span>
+              )}
+            </div>
+          ) : typeof currentPrice === "number" && Number.isFinite(currentPrice) && currentPrice > 0 ? (
             <div className="flex items-center gap-1.5">
               <span aria-label={`Reference price: $${currentPrice.toFixed(2)}`} className="text-base sm:text-xl font-bold text-slate-100 tabular-nums">
                 ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

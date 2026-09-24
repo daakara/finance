@@ -338,6 +338,9 @@ function TerminalContent() {
               optimalExecution={data?.optimalExecution}
               freshness={data?.freshness}
               userRole={userRole}
+              liveSpotPrice={data?.liveSpotPrice}
+              liveFreshness={data?.liveFreshness}
+              analysisReferencePrice={data?.analysisReferencePrice}
             />
           )}
 
@@ -430,6 +433,9 @@ function TerminalContent() {
               symbol={selectedSymbol}
               candles={data?.candles || []}
               currentPrice={data?.currentPrice}
+              liveSpotPrice={data?.liveSpotPrice}
+              analysisReferencePrice={data?.analysisReferencePrice}
+              marketPriceState={data?.marketPriceState}
               priceChangePct={data?.priceChangePct24h}
               interval={interval}
               userRole={userRole}

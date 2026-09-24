@@ -24,6 +24,8 @@ export interface PortfolioPosition {
   stopLossPrice?: number;
   addedAt: string;
   assetType: "Stock" | "ETF" | "Crypto";
+  liveFreshness?: string;
+  liveSource?: string;
 }
 
 export interface PortfolioSummary {

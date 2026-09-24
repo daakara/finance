@@ -38,9 +38,11 @@ class OptimalExecutionEngine:
         price_df: Any,
         current_price: float,
         user_role: str = "LONG_TERM",
-        technicals: Optional[Dict[str, Any]] = None
+        technicals: Optional[Dict[str, Any]] = None,
+        live_spot_price: Optional[float] = None,
     ) -> Dict[str, Any]:
         current_price = max(0.0001, float(current_price))
+        eval_price = float(live_spot_price) if (live_spot_price is not None and math.isfinite(float(live_spot_price)) and float(live_spot_price) > 0) else current_price
         dec = 6 if current_price < 0.01 else (4 if current_price < 1.0 else 2)
         min_tick = 10 ** (-dec)
 
@@ -48,9 +50,12 @@ class OptimalExecutionEngine:
 
         # Epistemic Invariant: Missing or empty price history strictly suppresses actionable trade levels
         if pd is None or not isinstance(price_df, pd.DataFrame) or price_df.empty:
-            liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price)
+            liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, eval_price)
             return {
                 "current_price": current_price,
+                "analysis_reference_price": current_price,
+                "live_spot_price": live_spot_price,
+                "eval_price": eval_price,
                 "optimal_entry_min": None,
                 "optimal_entry_max": None,
                 "stop_loss": None,
@@ -89,12 +94,15 @@ class OptimalExecutionEngine:
             atr_14 = current_price * 0.025
         # Clamp ATR between 0.8% and 9.5% of spot price (Phase 22 calibration: prevents distortion on high-beta and defensive assets)
         atr_14 = min(current_price * 0.095, max(current_price * 0.008, atr_14))
-        liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, current_price)
+        liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, eval_price)
 
         # Strict Epistemic Invariant: Insufficient history cannot synthesize actionable trade levels
         if len(close) < 50 and user_role != "DAY_TRADER":
             return {
                 "current_price": current_price,
+                "analysis_reference_price": current_price,
+                "live_spot_price": live_spot_price,
+                "eval_price": eval_price,
                 "optimal_entry_min": None,
                 "optimal_entry_max": None,
                 "stop_loss": None,
@@ -120,6 +128,9 @@ class OptimalExecutionEngine:
         if len(close) < 15 and user_role == "DAY_TRADER":
             return {
                 "current_price": current_price,
+                "analysis_reference_price": current_price,
+                "live_spot_price": live_spot_price,
+                "eval_price": eval_price,
                 "optimal_entry_min": None,
                 "optimal_entry_max": None,
                 "stop_loss": None,
@@ -292,18 +303,27 @@ class OptimalExecutionEngine:
         else:
             stop_loss_pct = max(-6.5, min(-3.5, raw_stop_pct))
 
-        if entry_min is not None and entry_max is not None and current_price >= entry_min and current_price <= entry_max:
+        if stop_loss is not None and eval_price < stop_loss:
+            exec_status = "STOPPED_OUT"
+        elif entry_min is not None and entry_max is not None and eval_price >= entry_min and eval_price <= entry_max:
             if is_stabilized:
                 exec_status = "IN_BUY_ZONE"
             else:
                 exec_status = "IN_BUY_ZONE_AWAITING_TRIGGER"
-        elif take_profit_1 is not None and entry_max is not None and current_price > entry_max and current_price < take_profit_1:
+        elif take_profit_1 is not None and entry_max is not None and eval_price > entry_max and eval_price < take_profit_1:
             exec_status = "APPROACHING_TARGET"
         else:
             exec_status = "WAITING_PULLBACK"
 
+        distance_to_entry = round(((eval_price - entry_min) / entry_min) * 100, 2) if entry_min else None
+        distance_to_stop = round(((eval_price - stop_loss) / eval_price) * 100, 2) if (stop_loss and eval_price > 0) else None
+        distance_to_tp1 = round(((take_profit_1 - eval_price) / eval_price) * 100, 2) if (take_profit_1 and eval_price > 0) else None
+
         raw_plan = {
             "current_price": current_price,
+            "analysis_reference_price": current_price,
+            "live_spot_price": live_spot_price,
+            "eval_price": eval_price,
             "optimal_entry_min": entry_min,
             "optimal_entry_max": entry_max,
             "stop_loss": stop_loss,
@@ -312,8 +332,12 @@ class OptimalExecutionEngine:
             "take_profit_1_pct": round(((take_profit_1 - current_price) / current_price) * 100, 2),
             "take_profit_2": take_profit_2,
             "take_profit_2_pct": round(((take_profit_2 - current_price) / current_price) * 100, 2),
+            "distance_to_entry_pct": distance_to_entry,
+            "distance_to_stop_pct": distance_to_stop,
+            "distance_to_tp1_pct": distance_to_tp1,
             "risk_reward_ratio": max(1.85, rr_ratio),
             "execution_status": exec_status,
+            "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES,
             "setup_pattern": setup_name,
             "entry_thesis": thesis,
             "invalidation_condition": invalidation,
@@ -321,7 +345,7 @@ class OptimalExecutionEngine:
             "vcp_contraction_status": vcp,
             "breakout_pivot": round(breakout_pivot, dec) if is_stage_4_downtrend else None,
             "atr_14": round(atr_14, dec),
-            "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, current_price),
+            "liquidity_defense": LiquidityGuard.evaluate_liquidity(price_df, eval_price),
         }
         return OptimalExecutionEngine._enforce_execution_invariants(raw_plan, user_role)
 
@@ -506,7 +530,25 @@ class OptimalExecutionEngine:
             plan["execution_hazard"] = True
             plan["liquidity_warning"] = liq.get("pro_summary")
 
-        # 7. Actionability verification based on authoritative taxonomy and non-null levels
+        # 7. Live market spot price re-evaluation for execution status
+        eval_p = plan.get("eval_price")
+        if eval_p is not None and plan.get("stop_loss") is not None and eval_p < plan["stop_loss"]:
+            plan["execution_status"] = "STOPPED_OUT"
+        elif "execution_status" not in plan:
+            eval_p = eval_p if eval_p is not None else spot
+            if plan.get("stop_loss") is not None and eval_p < plan["stop_loss"]:
+                plan["execution_status"] = "STOPPED_OUT"
+            elif plan.get("optimal_entry_min") is not None and plan.get("optimal_entry_max") is not None:
+                if plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
+                    plan["execution_status"] = "IN_BUY_ZONE"
+                elif plan.get("take_profit_1") is not None and eval_p > plan["optimal_entry_max"] and eval_p < plan["take_profit_1"]:
+                    plan["execution_status"] = "APPROACHING_TARGET"
+                else:
+                    plan["execution_status"] = "WAITING_PULLBACK"
+
+        plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+
+        # 8. Actionability verification based on authoritative taxonomy and non-null levels
         plan["is_actionable"] = bool(
             plan.get("stop_loss") is not None
             and plan.get("optimal_entry_max") is not None

@@ -349,13 +349,19 @@ def test_frozen_production_ledger_live_cohort_hashes_intact():
 
 def test_production_engine_freeze_manifest_compliance():
     """Verify that all 3 production engines match the frozen cryptographic manifest."""
-    manifest_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "FROZEN_ENGINE_MANIFEST.json")
-    assert os.path.exists(manifest_path), "FROZEN_ENGINE_MANIFEST.json must exist in repository root"
+    repo_root = os.path.dirname(os.path.dirname(__file__))
+    manifest_v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
+    manifest_v240_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_4_0.json")
+    manifest_default_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
 
+    assert os.path.exists(manifest_default_path) or os.path.exists(manifest_v240_path), (
+        "Historical 2.4.0 freeze manifest must exist"
+    )
+
+    manifest_path = manifest_v250_path if os.path.exists(manifest_v250_path) else manifest_default_path
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    repo_root = os.path.dirname(os.path.dirname(__file__))
     import hashlib
 
     for engine_name, meta in manifest["engines"].items():

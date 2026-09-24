@@ -140,6 +140,19 @@ def init_governance_db(db_path: Optional[str] = None) -> None:
                     REFERENCES epoch_release_authorizations(epoch_id, authorized_release_sha, authorized_deployment_id)
             ) STRICT;
 
+            -- 5. Append-only Epoch Supersession Records
+            CREATE TABLE IF NOT EXISTS epoch_supersession_records (
+                supersession_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                previous_epoch_id TEXT NOT NULL,
+                target_epoch_id TEXT NOT NULL,
+                superseded_at_utc TEXT NOT NULL,
+                supersession_status TEXT NOT NULL CHECK(supersession_status = 'SUPERSEDED_PRE_OBSERVATION'),
+                reason TEXT NOT NULL,
+                clean_prospective_signals_captured INTEGER NOT NULL,
+                empirical_evidence_lost INTEGER NOT NULL,
+                supersession_payload_json TEXT NOT NULL
+            ) STRICT;
+
             -- IMMUTABILITY TRIGGERS
             CREATE TRIGGER IF NOT EXISTS prevent_update_epoch_certification_results
             BEFORE UPDATE ON epoch_certification_results
@@ -187,6 +200,18 @@ def init_governance_db(db_path: Optional[str] = None) -> None:
             BEFORE DELETE ON epoch_activation_records
             BEGIN
                 SELECT RAISE(FAIL, 'FAIL_CLOSED: epoch_activation_records cannot be deleted');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS prevent_update_epoch_supersession_records
+            BEFORE UPDATE ON epoch_supersession_records
+            BEGIN
+                SELECT RAISE(FAIL, 'FAIL_CLOSED: epoch_supersession_records is immutable');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS prevent_delete_epoch_supersession_records
+            BEFORE DELETE ON epoch_supersession_records
+            BEGIN
+                SELECT RAISE(FAIL, 'FAIL_CLOSED: epoch_supersession_records cannot be deleted');
             END;
             """)
     finally:
@@ -532,5 +557,84 @@ class GovernanceDatabaseEngine:
         except Exception as e:
             logger.error("Error evaluating capture authorization predicate: %s", e)
             return False, f"PREDICATE_ERROR: {str(e)}"
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def record_epoch_supersession(
+        self,
+        previous_epoch_id: str,
+        target_epoch_id: str,
+        superseded_at_utc: str,
+        reason: str,
+        clean_prospective_signals_captured: int,
+        empirical_evidence_lost: int,
+        supersession_payload: Dict[str, Any],
+    ) -> int:
+        """Atomically inserts an append-only epoch supersession record."""
+        import json
+        conn = self.get_connection()
+        try:
+            with conn:
+                cur = conn.execute(
+                    """
+                    INSERT INTO epoch_supersession_records (
+                        previous_epoch_id,
+                        target_epoch_id,
+                        superseded_at_utc,
+                        supersession_status,
+                        reason,
+                        clean_prospective_signals_captured,
+                        empirical_evidence_lost,
+                        supersession_payload_json
+                    ) VALUES (?, ?, ?, 'SUPERSEDED_PRE_OBSERVATION', ?, ?, ?, ?)
+                    """,
+                    (
+                        previous_epoch_id,
+                        target_epoch_id,
+                        superseded_at_utc,
+                        reason,
+                        clean_prospective_signals_captured,
+                        empirical_evidence_lost,
+                        json.dumps(supersession_payload, sort_keys=True),
+                    ),
+                )
+                return cur.lastrowid
+        finally:
+            conn.close()
+
+    def get_epoch_supersession_record(
+        self, previous_epoch_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieves the latest supersession record for a given epoch."""
+        import json
+        conn = self.get_connection()
+        try:
+            cur = conn.execute(
+                """
+                SELECT supersession_id, previous_epoch_id, target_epoch_id,
+                       superseded_at_utc, supersession_status, reason,
+                       clean_prospective_signals_captured, empirical_evidence_lost,
+                       supersession_payload_json
+                FROM epoch_supersession_records
+                WHERE previous_epoch_id = ?
+                ORDER BY supersession_id DESC LIMIT 1
+                """,
+                (previous_epoch_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            return {
+                "supersession_id": row["supersession_id"],
+                "previous_epoch_id": row["previous_epoch_id"],
+                "target_epoch_id": row["target_epoch_id"],
+                "superseded_at_utc": row["superseded_at_utc"],
+                "supersession_status": row["supersession_status"],
+                "reason": row["reason"],
+                "clean_prospective_signals_captured": row["clean_prospective_signals_captured"],
+                "empirical_evidence_lost": row["empirical_evidence_lost"],
+                "supersession_payload": json.loads(row["supersession_payload_json"]),
+            }
         finally:
             conn.close()

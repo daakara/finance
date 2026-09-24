@@ -29,6 +29,9 @@ interface AdaptiveTerminalProps {
   optimalExecution?: OptimalExecutionPlan;
   freshness?: FreshnessInfo;
   userRole?: "DAY_TRADER" | "LONG_TERM";
+  liveSpotPrice?: number | null;
+  liveFreshness?: string;
+  analysisReferencePrice?: number | null;
 }
 
 export default function AdaptiveTerminal({
@@ -45,6 +48,9 @@ export default function AdaptiveTerminal({
   optimalExecution,
   freshness,
   userRole = "LONG_TERM",
+  liveSpotPrice,
+  liveFreshness,
+  analysisReferencePrice,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -255,6 +261,9 @@ export default function AdaptiveTerminal({
         onClose={() => setIsSizerOpen(false)}
         symbol={symbol}
         entryPrice={currentPrice}
+        liveSpotPrice={liveSpotPrice}
+        liveFreshness={liveFreshness}
+        analysisReferencePrice={analysisReferencePrice}
         stopLoss={insight.standard.keyLevels.stopLoss}
         takeProfit1={insight.standard.keyLevels.target1}
         riskRewardRatio={insight.standard.keyLevels.profitRiskRatio}

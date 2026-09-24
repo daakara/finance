@@ -84,8 +84,13 @@ class PassiveCaptureHook:
         db_path: Optional[str] = None,
     ) -> bool:
         """Evaluates whether prospective observation is authorized for the active Epoch.
-        For Epoch 2 (PRE_ACTIVATION), requires an authoritative activation record in production.
+        For Epoch 3 or Epoch 2 (PRE_ACTIVATION), requires an authoritative activation record in production.
         """
+        if cls.EPOCH_ID == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3":
+            return ExperimentLedger.is_epoch3_observation_authorized(
+                activation_record_path=activation_record_path,
+                db_path=db_path,
+            )
         if cls.EPOCH_ID == "ARX_PROSPECTIVE_VALIDATION_EPOCH_2":
             return ExperimentLedger.is_epoch2_observation_authorized(
                 activation_record_path=activation_record_path,
@@ -127,38 +132,95 @@ class PassiveCaptureHook:
         ledger_path: Optional[str] = None,
         activation_record_path: Optional[str] = None,
         db_path: Optional[str] = None,
+        live_spot_price: Optional[float] = None,
+        market_price_state: Optional[Dict[str, Any]] = None,
+        runtime_release_sha: Optional[str] = None,
+        runtime_deployment_id: Optional[str] = None,
+        execution_context: Optional[ExecutionContext] = None,
     ) -> Optional[Dict[str, Any]]:
         """Passively captures a single natural production recommendation.
+
+        CANONICAL WRITE-TIME SEQUENCE:
+        1. Determine execution context (prohibit CERTIFICATION, TEST, REPLAY, SIMULATION)
+        2. Verify production runtime identity & deployment-scoped authorization predicate
+        3. Verify active epoch boundary
+        4. Verify natural recommendation eligibility & finite prices
+        5. Verify anti-lookahead temporal integrity
+        6. Deduplicate before write
+        7. ONLY THEN write prospective record to ledger
 
         Fail-closed: Returns the captured record on success, or None on failure/quarantine.
         Never raises exceptions to callers.
         Zero side-effects on capital, orders, or broker connections.
         """
         try:
-            # GATE 0: In-Process Governance Context Isolation
-            # Strictly evaluates the in-process Python ContextVar.
-            # External HTTP headers have ZERO authority to set or influence this variable.
-            if CURRENT_EXECUTION_CONTEXT.get() == ExecutionContext.GOVERNANCE_CERTIFICATION:
+            # 1. EXECUTION CONTEXT & SYNTHETIC ENVIRONMENT GATE
+            effective_context = execution_context or CURRENT_EXECUTION_CONTEXT.get()
+            if effective_context != ExecutionContext.NATURAL_CLIENT:
                 logger.debug(
-                    f"[PASSIVE_CAPTURE] Structural bypass: Execution context is "
-                    f"{ExecutionContext.GOVERNANCE_CERTIFICATION} for {symbol}"
+                    f"[PASSIVE_CAPTURE] Suppressed write: Execution context is {effective_context} for {symbol}"
                 )
                 return None
 
-            # Safeguard: Never contaminate production ledger during automated test execution
-            if ledger_path is None and ("PYTEST_CURRENT_TEST" in os.environ or os.getenv("ARX_TEST_MODE") == "1"):
-                logger.debug("[PASSIVE_CAPTURE] Bypassing capture to production ledger during automated test execution.")
+            # Environmental prohibitions
+            if (
+                os.getenv("ARX_TEST_MODE") == "1"
+                or os.getenv("ARX_REPLAY_MODE") == "1"
+                or os.getenv("ARX_SIMULATION_MODE") == "1"
+                or os.getenv("ARX_CERTIFICATION_MODE") == "1"
+            ):
+                logger.debug(f"[PASSIVE_CAPTURE] Suppressed write: Synthetic/test/replay mode active for {symbol}")
                 return None
 
-            # Epoch 2 Pre-Activation Gate: In production (ledger_path is None) or when explicit activation_record_path/db_path is supplied,
-            # prospective observation is strictly suppressed unless authorized by a valid activation record.
+            # Test runner safeguard: Never contaminate default production ledger
+            if ledger_path is None and "PYTEST_CURRENT_TEST" in os.environ:
+                logger.debug("[PASSIVE_CAPTURE] Suppressed write: Pytest runner targeting default production ledger.")
+                return None
+
+            # Payload-level synthetic/simulation/certification prohibition
+            if (
+                optimal_execution_plan.get("isSynthetic")
+                or optimal_execution_plan.get("isSimulated")
+                or optimal_execution_plan.get("isCertification")
+                or optimal_execution_plan.get("isReplay")
+                or optimal_execution_plan.get("isTest")
+                or (macro_inputs or {}).get("isSynthetic")
+                or (macro_inputs or {}).get("isCertification")
+                or factor_scores.get("isSynthetic")
+                or factor_scores.get("isCertification")
+                or provider_source in ("SYNTHETIC_MOCK", "SYNTHETIC_FALLBACK", "SIMULATION", "REPLAY", "CERTIFICATION")
+            ):
+                logger.warning(f"[PASSIVE_CAPTURE] Suppressed write: Non-natural synthetic/certification payload for {symbol}")
+                return None
+
+            # 2. RUNTIME IDENTITY & DEPLOYMENT-SCOPED AUTHORIZATION PREDICATE GATE
+            current_release = runtime_release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
+            current_deployment = runtime_deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
+            from analyst_dashboard.governance.storage import is_production_runtime
+            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+
+            if is_production_runtime() or (ledger_path is None and db_path is None) or db_path is not None or runtime_release_sha is not None or runtime_deployment_id is not None:
+                gov_db = GovernanceDatabaseEngine(db_path=db_path)
+                auth_ok, auth_reason = gov_db.evaluate_capture_authorization_predicate(
+                    epoch_id=cls.EPOCH_ID,
+                    release_sha=current_release,
+                    deployment_id=current_deployment,
+                    now_utc=datetime.now(timezone.utc).isoformat(),
+                )
+                if not auth_ok:
+                    logger.warning(
+                        f"[PASSIVE_CAPTURE] Suppressed write: Runtime authorization check failed ({auth_reason}) for {symbol}"
+                    )
+                    return None
+
+            # 3. ACTIVE EPOCH BOUNDARY GATE
             if (ledger_path is None or activation_record_path is not None or db_path is not None) and not cls.is_temporal_gate_satisfied(
                 activation_record_path=activation_record_path, db_path=db_path
             ):
-                logger.warning(f"[PASSIVE_CAPTURE] Suppressed: Epoch 2 prospective observation not yet activated in production for symbol {symbol}")
+                logger.warning(f"[PASSIVE_CAPTURE] Suppressed write: Epoch not active for symbol {symbol}")
                 return None
 
-            # Non-finite and invalid price firewall (Fail-closed defense-in-depth)
+            # 4. NATURAL RECOMMENDATION ELIGIBILITY & FINITE PRICE FIREWALL
             if current_price is None:
                 logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price=None for symbol {symbol}")
                 return None
@@ -284,6 +346,13 @@ class PassiveCaptureHook:
                 "evidenceCompleteness": "COMPLETE" if confluence_output.get("overall_eligibility") == "FULL" else "PARTIAL",
                 "modelConfigHash": cls.CONFIG_HASH,
                 "pointInTimePrecision": "TIMESTAMP",
+                "analysisReferencePrice": current_price,
+                "analysisReferenceSource": "COMPLETED_SESSION",
+                "liveSpotPrice": live_spot_price,
+                "liveObservedAt": (market_price_state or {}).get("liveObservedAt"),
+                "liveSource": (market_price_state or {}).get("liveSource", "UNAVAILABLE"),
+                "liveFreshness": (market_price_state or {}).get("liveFreshness", "UNAVAILABLE"),
+                "marketSession": (market_price_state or {}).get("marketSession", "UNKNOWN"),
                 "rawMarketPayload": candle_summary if candle_summary else None,
                 "rawFundamentalPayload": factor_scores if factor_scores else None,
                 "rawMacroPayload": macro_data if macro_data else None,
@@ -301,7 +370,17 @@ class PassiveCaptureHook:
                 "catalystScore": None,
             }
 
-            # 6. Immutable Registration into Governance Ledger
+            # 6. Deduplication Check BEFORE Physical Ledger Mutation
+            ledger = ExperimentLedger.load_ledger(ledger_path)
+            sig_id = f"{upper_sym}_{sig_date}"
+            existing = next((s for s in ledger.get("signals", []) if s.get("signalId") == sig_id), None)
+            if existing:
+                logger.info(
+                    f"[PASSIVE_CAPTURE] Deduplicated natural recommendation: {sig_id} already exists. Zero ledger mutation."
+                )
+                return existing
+
+            # 7. Immutable Registration into Governance Ledger (ONLY AFTER all gates pass)
             conf_val = confluence_output.get("confluenceScore") if confluence_output.get("confluenceScore") is not None else confluence_output.get("overall_score", 0.0)
             record = ExperimentLedger.register_signal(
                 symbol=upper_sym,
@@ -310,19 +389,36 @@ class PassiveCaptureHook:
                 confluence_score=float(conf_val or 0.0),
                 inputs_meta=inputs_meta,
                 engine_commit=cls.DECISION_ENGINE_SHA,
-                engine_tag="v2.4.0-phase24-freeze",
+                engine_tag=getattr(ExperimentLedger, "FROZEN_ENGINE_TAG", "v2.5.0-live-dual-price-freeze"),
                 ledger_path=ledger_path,
                 signal_date=sig_date,
                 component_scores=component_scores,
                 epoch_id=cls.EPOCH_ID,
                 provenance_cohort=ProvenanceCohort.PROSPECTIVE_CLEAN,
+                release_sha=current_release,
+                deployment_id=current_deployment,
+                capture_source="NATURAL_PRODUCTION_API",
+                analysis_reference_price=current_price,
+                analysis_reference_source="COMPLETED_SESSION",
+                live_spot_price=live_spot_price,
+                live_observed_at=(market_price_state or {}).get("liveObservedAt"),
+                live_source=(market_price_state or {}).get("liveSource", "UNAVAILABLE"),
+                live_freshness=(market_price_state or {}).get("liveFreshness", "UNAVAILABLE"),
+                market_session=(market_price_state or {}).get("marketSession", "UNKNOWN"),
             )
 
-            # Ensure dual-SHA identity is explicitly annotated on the record
+            # Ensure dual-SHA identity and dual-price attributes are explicitly annotated on the record
             record["decisionEngineSha"] = cls.DECISION_ENGINE_SHA
             record["observationGovernanceSha"] = cls.get_observation_governance_sha()
             record["recommended_at"] = rec_iso
             record["signalTimestamp"] = rec_iso
+            record["analysisReferencePrice"] = current_price
+            record["analysisReferenceSource"] = "COMPLETED_SESSION"
+            record["liveSpotPrice"] = live_spot_price
+            record["liveObservedAt"] = (market_price_state or {}).get("liveObservedAt")
+            record["liveSource"] = (market_price_state or {}).get("liveSource", "UNAVAILABLE")
+            record["liveFreshness"] = (market_price_state or {}).get("liveFreshness", "UNAVAILABLE")
+            record["marketSession"] = (market_price_state or {}).get("marketSession", "UNKNOWN")
 
             # 7. Cohort Classification & Integrity Validation
             cohort = ExperimentLedger.classify_provenance_cohort(record)

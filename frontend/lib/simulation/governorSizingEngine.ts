@@ -186,6 +186,10 @@ export interface TradeSetupSpec {
   entryThesis?: string;
   invalidationCondition?: string;
   stagePhase?: string;
+  currentPrice?: number | null;
+  liveSpotPrice?: number | null;
+  analysisReferencePrice?: number | null;
+  marketPriceState?: any;
 }
 
 export interface GovernorSizingOutput {

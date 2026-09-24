@@ -26,8 +26,10 @@ pytestmark = pytest.mark.tier1
 def test_epoch_1_manifest_hashes_unmodified():
     """Verify that all executable governance files in active manifest remain bitwise unchanged."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
+    epoch3_path = os.path.join(repo_root, "EPOCH_3_MANIFEST.json")
     epoch2_path = os.path.join(repo_root, "EPOCH_2_MANIFEST.json")
-    manifest_path = epoch2_path if os.path.exists(epoch2_path) else os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+    epoch1_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
+    manifest_path = epoch3_path if os.path.exists(epoch3_path) else (epoch2_path if os.path.exists(epoch2_path) else epoch1_path)
     assert os.path.exists(manifest_path), "Governance manifest missing!"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
@@ -50,8 +52,10 @@ def test_epoch_1_manifest_hashes_unmodified():
 def test_frozen_engine_manifest_hashes_unmodified():
     """Verify that all 3 production engines match the frozen cryptographic manifest."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    manifest_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
-    assert os.path.exists(manifest_path), "FROZEN_ENGINE_MANIFEST.json missing!"
+    v250_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST_V2_5_0.json")
+    default_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
+    manifest_path = v250_path if os.path.exists(v250_path) else default_path
+    assert os.path.exists(manifest_path), "Frozen engine manifest missing!"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)

@@ -11,6 +11,9 @@ interface PositionSizerProps {
   onClose: () => void;
   symbol: string;
   entryPrice: number;
+  liveSpotPrice?: number | null;
+  liveFreshness?: string;
+  analysisReferencePrice?: number | null;
   stopLoss: number;
   takeProfit1?: number;
   riskRewardRatio?: number;
@@ -26,6 +29,9 @@ export default function PositionSizerModal({
   onClose,
   symbol,
   entryPrice = 0,
+  liveSpotPrice,
+  liveFreshness,
+  analysisReferencePrice,
   stopLoss,
   takeProfit1,
   riskRewardRatio = 2.5,
@@ -106,8 +112,15 @@ export default function PositionSizerModal({
 
   if (!isOpen) return null;
 
-  const hasValidPricing = typeof entryPrice === "number" && !isNaN(entryPrice) && entryPrice > 0 && typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
-  const safeEntry = hasValidPricing ? entryPrice : 0;
+  const isUsingLiveSpot = Boolean(
+    typeof liveSpotPrice === "number" &&
+    Number.isFinite(liveSpotPrice) &&
+    liveSpotPrice > 0 &&
+    liveFreshness === "REALTIME"
+  );
+  const effectivePrice = isUsingLiveSpot ? liveSpotPrice! : entryPrice;
+  const hasValidPricing = typeof effectivePrice === "number" && !isNaN(effectivePrice) && effectivePrice > 0 && typeof stopLoss === "number" && !isNaN(stopLoss) && stopLoss > 0;
+  const safeEntry = hasValidPricing ? effectivePrice : 0;
   const safeStop = hasValidPricing ? stopLoss : 0;
   const safeTarget = hasValidPricing && typeof takeProfit1 === "number" && !isNaN(takeProfit1) && takeProfit1 > 0 ? takeProfit1 : 0;
 
@@ -201,9 +214,20 @@ export default function PositionSizerModal({
               <h2 id="position-sizer-modal-title" className="text-sm sm:text-base font-black text-white tracking-tight">
                 Institutional Position Sizer & Kelly Risk
               </h2>
-              <p className="text-[10px] sm:text-[11px] text-slate-400">
-                Calibrated for <span className="text-cyan-400 font-bold font-mono">{symbol}</span> @ ${safeEntry.toFixed(2)}
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-[10px] sm:text-[11px] text-slate-400">
+                  Calibrated for <span className="text-cyan-400 font-bold font-mono">{symbol}</span> @ ${safeEntry.toFixed(2)}
+                </p>
+                {isUsingLiveSpot ? (
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    ● LIVE SPOT
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#162030] text-slate-400 border border-[#243044]" title="Anchor is completed session prior close">
+                    PRIOR CLOSE
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <button

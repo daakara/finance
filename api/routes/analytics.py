@@ -28,6 +28,8 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
 from analyst_dashboard.governance.passive_capture import PassiveCaptureHook
+from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
+from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -42,6 +44,7 @@ optimal_execution_engine = OptimalExecutionEngine()
 confluence_engine = ConfluenceEngine()
 market_db = MarketDatabaseEngine()
 history_db = HistoryDatabaseEngine()
+alpaca_fetcher = AlpacaMarketFetcher()
 
 KNOWN_ETFS = {"SPY", "QQQ", "SMH", "XLK", "XLE", "XLI", "TLT", "UNG", "FXI", "ARKG", "IWM", "VTI", "VOO", "EEM", "GLD"}
 INFO_CACHE: dict[str, tuple[float, dict]] = {}
@@ -232,11 +235,20 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         return None
 
     technicals = compute_intraday_technicals(hist_df) if not hist_df.empty else None
+    market_price_state = resolve_dual_price_state(
+        symbol=sym,
+        analysis_reference_price=cur_price,
+        analysis_reference_date=obs_date,
+        alpaca_fetcher=alpaca_fetcher,
+    )
+    live_spot_price = market_price_state.live_spot_price
+
     plan = optimal_execution_engine.calculate_trade_levels(
         price_df=hist_df,
         current_price=cur_price,
         user_role=clean_role,
         technicals=technicals,
+        live_spot_price=live_spot_price,
     )
 
     exec_status = plan.get("execution_status", "WAITING_PULLBACK")
@@ -322,6 +334,10 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
         "ticker": sym,
         "userRole": clean_role,
         "setupName": plan.get("setup_pattern") or "Consolidation Setup",
+        "currentPrice": live_spot_price if (live_spot_price and market_price_state.live_freshness == "REALTIME") else cur_price,
+        "liveSpotPrice": live_spot_price,
+        "analysisReferencePrice": cur_price,
+        "marketPriceState": market_price_state.to_dict(),
         "entryPivot": round(entry_pivot, 2) if entry_pivot else None,
         "stopLoss": round(stop_loss, 2) if stop_loss else None,
         "target1": round(target1, 2) if target1 else None,
@@ -1034,12 +1050,23 @@ def get_asset_analytics(
         except Exception:
             pass
 
-        # Compute optimal execution plan
+        # Resolve Dual-Price Market State (Live Spot vs Completed Session Reference)
+        market_price_state = resolve_dual_price_state(
+            symbol=upper_sym,
+            analysis_reference_price=current_price,
+            analysis_reference_date=last_trade_date_str,
+            alpaca_fetcher=alpaca_fetcher,
+            ticker_obj=ticker_obj,
+        )
+        live_spot_price = market_price_state.live_spot_price
+
+        # Compute optimal execution plan (evaluates executionStatus against live spot when available)
         optimal_execution_plan = optimal_execution_engine.calculate_trade_levels(
             price_df=hist,
             current_price=current_price,
             user_role=user_role if user_role in ["DAY_TRADER", "LONG_TERM"] else ("DAY_TRADER" if clean_interval in ["1m", "5m", "15m", "1h"] else "LONG_TERM"),
             technicals=technicals,
+            live_spot_price=live_spot_price,
         )
 
         # Log recommendation into persistent History SQLite
@@ -1104,19 +1131,34 @@ def get_asset_analytics(
                         freshness_status=freshness_status,
                         provider_source=provider_source,
                         candles=candles,
+                        live_spot_price=live_spot_price,
+                        market_price_state=market_price_state.to_dict(),
                     )
         except Exception as e:
             logger.warning(f"Passive recommendation capture bypassed on error: {e}")
+
+        effective_display_price = (
+            live_spot_price
+            if (live_spot_price is not None and market_price_state.live_freshness == "REALTIME")
+            else current_price
+        )
 
         return {
             "symbol": upper_sym,
             "period": clean_period,
             "interval": clean_interval,
             "userRole": clean_role,
-            "currentPrice": current_price,
+            "currentPrice": effective_display_price,
+            "liveSpotPrice": live_spot_price,
+            "liveObservedAt": market_price_state.live_observed_at,
+            "liveSource": market_price_state.live_source,
+            "liveFreshness": market_price_state.live_freshness,
+            "marketSession": market_price_state.market_session,
+            "marketPriceState": market_price_state.to_dict(),
             "priceState": "AVAILABLE",
             "analysisReferencePrice": current_price,
             "analysisReferenceDate": candles[-1]["time"] if candles else None,
+            "analysisReferenceSource": "COMPLETED_SESSION",
             "quoteStatus": "COMPLETED_SESSION" if clean_interval == "1d" else "LIVE_INTRADAY",
             "priceChangePct24h": price_change_pct,
             "candles": candles,

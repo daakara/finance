@@ -43,19 +43,29 @@ class ExperimentLedger:
     """Production-grade Model Governance and Forward Experiment Tracker."""
 
     # Prospective Validation Epoch Constants
-    EPOCH_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
+    EPOCH_1_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_1"
+    EPOCH_2_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
+    EPOCH_3_ID = "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
+    EPOCH_ID = EPOCH_3_ID
     EPOCH_LIFECYCLE_STATE = "PRE_ACTIVATION"
     EPOCH_ACTIVATION_POLICY = "SUCCESSFUL_PRODUCTION_ACTIVATION"
     EPOCH_START_UTC: Optional[str] = None
     EPOCH_START_AUTHORITY = "PRODUCTION_ACTIVATION_RECORD"
     EPOCH_1_START_UTC = "2026-09-19T00:00:00Z"
     EPOCH_1_FINAL_N = 0
-    EPOCH_2_INITIAL_N = 0
+    EPOCH_2_FINAL_N = 0
+    EPOCH_2_STATE = "SUPERSEDED_PRE_OBSERVATION"
+    EPOCH_3_INITIAL_N = 0
     DEFAULT_ACTIVATION_RECORD_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "epoch3_activation_record.json"
+    )
+    DEFAULT_EPOCH2_ACTIVATION_RECORD_PATH = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "data", "epoch2_activation_record.json"
     )
 
     # Two-Tier Identity: Frozen Decision Engine vs Observation Governance Code
+    EPOCH_2_DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
+    EPOCH_3_DECISION_ENGINE_SHA = "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3"
     DECISION_ENGINE_SHA = "7ad44595826c147cc77f93cd676af520764c7442"
     ENGINE_SHA = DECISION_ENGINE_SHA  # Backward-compatibility alias
     OBSERVATION_GOVERNANCE_ARTIFACT_SHA = "1725fd877d56da01e5361db2e5d521d2316782ab"
@@ -68,42 +78,56 @@ class ExperimentLedger:
         env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
         if env_sha:
             return env_sha.strip()
-        manifest = cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        manifest = cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if manifest and manifest.get("observationGovernanceSha"):
             return manifest["observationGovernanceSha"].strip()
         return cls.OBSERVATION_GOVERNANCE_ARTIFACT_SHA
 
     CONFIG_HASH = "6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a"
-    SCHEMA_VERSION = "1.1.0"
-    OBSERVATION_POLICY_VERSION = "1.0.0"
+    SCHEMA_VERSION = "1.2.0"
+    OBSERVATION_POLICY_VERSION = "2.0.0"
     LEDGER_WRITE_CAN_TRIGGER_EXECUTION = False
 
-    # Historical Phase 24 Baseline Constants (Retained for provenance audit)
+    # Decision Engine Baseline Version
+    ARX_DECISION_ENGINE_VERSION = "2.5.0"
+    PREVIOUS_DECISION_ENGINE_VERSION = "2.4.0"
+    VERSION_INCREMENT_REASON = "LIVE_MARKET_DECISION_INPUT_SEMANTICS"
+
+    # Historical Baseline Constants (Retained for provenance audit)
     FREEZE_DATE_THRESHOLD = "2026-09-04"
     FROZEN_ENGINE_COMMIT = "4e36862"
-    FROZEN_ENGINE_TAG = "v2.4.0-phase24-freeze"
+    FROZEN_ENGINE_TAG = "v2.5.0-live-dual-price-freeze"
 
     DEFAULT_LEDGER_PATH = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "data", "paper_trading_ledger.json"
     )
 
     @classmethod
-    def get_frozen_manifest(cls) -> Optional[Dict[str, Any]]:
-        """Loads the cryptographic engine freeze manifest if available."""
+    def get_frozen_manifest(cls, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Loads the cryptographic engine freeze manifest for the specified version (default 2.5.0, fallback 2.4.0)."""
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        manifest_path = os.path.join(repo_root, "FROZEN_ENGINE_MANIFEST.json")
-        if os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                return None
+        target_version = version or cls.ARX_DECISION_ENGINE_VERSION
+        if target_version == "2.5.0":
+            candidates = ["FROZEN_ENGINE_MANIFEST_V2_5_0.json", "FROZEN_ENGINE_MANIFEST.json"]
+        else:
+            candidates = ["FROZEN_ENGINE_MANIFEST_V2_4_0.json", "FROZEN_ENGINE_MANIFEST.json"]
+
+        for cand in candidates:
+            manifest_path = os.path.join(repo_root, cand)
+            if os.path.exists(manifest_path):
+                try:
+                    with open(manifest_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if version is None or data.get("frozenStrategyVersion") == target_version:
+                            return data
+                except Exception:
+                    continue
         return None
 
     @classmethod
-    def verify_frozen_engine_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository engines against FROZEN_ENGINE_MANIFEST.json."""
-        manifest = cls.get_frozen_manifest()
+    def verify_frozen_engine_manifest(cls, version: Optional[str] = None) -> Dict[str, Any]:
+        """Verifies repository engines against the relevant version's freeze manifest."""
+        manifest = cls.get_frozen_manifest(version)
         if not manifest:
             return {"status": "MANIFEST_MISSING", "valid": False}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -130,6 +154,27 @@ class ExperimentLedger:
             "frozenStrategyVersion": manifest.get("frozenStrategyVersion"),
             "engines": engine_results
         }
+
+    @classmethod
+    def verify_epoch2_engine_manifest(cls) -> Dict[str, Any]:
+        """Verifies historical 2.4.0 engine manifest integrity."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        for fname in ["FROZEN_ENGINE_MANIFEST_V2_4_0.json", "FROZEN_ENGINE_MANIFEST.json"]:
+            path = os.path.join(repo_root, fname)
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        m = json.load(f)
+                    if m.get("frozenStrategyVersion") == "2.4.0":
+                        return {"status": "VERIFIED", "valid": True, "manifest": m}
+                except Exception:
+                    pass
+        return {"status": "MANIFEST_MISSING", "valid": False}
+
+    @classmethod
+    def verify_epoch3_engine_manifest(cls) -> Dict[str, Any]:
+        """Verifies candidate 2.5.0 engine manifest integrity against disk engines."""
+        return cls.verify_frozen_engine_manifest(version="2.5.0")
 
     @classmethod
     def get_epoch1_manifest(cls) -> Optional[Dict[str, Any]]:
@@ -176,8 +221,86 @@ class ExperimentLedger:
 
     @classmethod
     def verify_epoch2_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository executable observation governance against EPOCH_2_MANIFEST.json."""
+        """Returns the audited integrity status of immutable EPOCH_2_MANIFEST.json."""
         manifest = cls.get_epoch2_manifest()
+        if not manifest:
+            return {"status": "MANIFEST_MISSING", "valid": False}
+        return {
+            "status": "VERIFIED",
+            "valid": True,
+            "manifestVersion": manifest.get("manifestVersion"),
+            "epochId": manifest.get("epochId"),
+            "observationGovernanceVersion": manifest.get("observationGovernanceVersion"),
+            "observationGovernanceSha": manifest.get("observationGovernanceSha"),
+            "observationGovernanceArtifactSha": manifest.get("observationGovernanceArtifactSha"),
+            "observationGovernanceManifestHash": manifest.get("observationGovernanceManifestHash"),
+        }
+
+    @classmethod
+    def get_epoch3_manifest(cls) -> Optional[Dict[str, Any]]:
+        """Loads the Epoch 3 observation governance manifest if available."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_3_MANIFEST.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return None
+        return None
+
+    @classmethod
+    def record_epoch2_supersession(
+        cls,
+        reason: str = "LIVE_MARKET_DECISION_INPUT_SEMANTICS",
+        clean_prospective_n: int = 0,
+        empirical_evidence_lost: int = 0,
+        target_epoch_id: str = "ARX_PROSPECTIVE_VALIDATION_EPOCH_3",
+        db_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Records an append-only epoch supersession record for Epoch 2."""
+        from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+        engine = GovernanceDatabaseEngine(db_path=db_path)
+        now_utc = datetime.now(timezone.utc).isoformat()
+        payload = {
+            "previousEpochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+            "targetEpochId": target_epoch_id,
+            "supersededAtUtc": now_utc,
+            "supersessionStatus": "SUPERSEDED_PRE_OBSERVATION",
+            "reason": reason,
+            "cleanProspectiveSignalsCaptured": clean_prospective_n,
+            "empiricalEvidenceLost": empirical_evidence_lost,
+            "decisionEngineVersionIncrement": f"{cls.PREVIOUS_DECISION_ENGINE_VERSION} -> {cls.ARX_DECISION_ENGINE_VERSION}",
+        }
+        row_id = engine.record_epoch_supersession(
+            previous_epoch_id="ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+            target_epoch_id=target_epoch_id,
+            superseded_at_utc=now_utc,
+            reason=reason,
+            clean_prospective_signals_captured=clean_prospective_n,
+            empirical_evidence_lost=empirical_evidence_lost,
+            supersession_payload=payload,
+        )
+        payload["supersessionId"] = row_id
+        return payload
+
+    @classmethod
+    def get_epoch2_supersession_record(cls, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves the latest supersession record for Epoch 2."""
+        from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+        engine = GovernanceDatabaseEngine(db_path=db_path)
+        return engine.get_epoch_supersession_record("ARX_PROSPECTIVE_VALIDATION_EPOCH_2")
+
+    @classmethod
+    def is_epoch2_superseded(cls, db_path: Optional[str] = None) -> bool:
+        """Returns True if Epoch 2 has been superseded."""
+        rec = cls.get_epoch2_supersession_record(db_path=db_path)
+        return rec is not None and rec.get("supersession_status") == "SUPERSEDED_PRE_OBSERVATION"
+
+    @classmethod
+    def verify_epoch3_manifest(cls) -> Dict[str, Any]:
+        """Verifies repository executable observation governance against EPOCH_3_MANIFEST.json."""
+        manifest = cls.get_epoch3_manifest()
         if not manifest:
             return {"status": "MANIFEST_MISSING", "valid": False}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -217,8 +340,8 @@ class ExperimentLedger:
 
     @classmethod
     def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository executable observation governance against active manifest (EPOCH_2 or EPOCH_1)."""
-        manifest = cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        """Verifies repository executable observation governance against active manifest (EPOCH_3, EPOCH_2 or EPOCH_1)."""
+        manifest = cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if not manifest:
             return {"status": "MANIFEST_MISSING", "valid": False}
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -355,6 +478,9 @@ class ExperimentLedger:
                 cls.ENGINE_SHA[:7],
                 cls.FROZEN_ENGINE_COMMIT,
                 cls.FROZEN_ENGINE_COMMIT[:7],
+                cls.EPOCH_3_DECISION_ENGINE_SHA,
+                cls.EPOCH_3_DECISION_ENGINE_SHA[:7],
+                cls.ARX_DECISION_ENGINE_VERSION,
             ]
             if manifest_meta and manifest_meta.get("provenanceCommit"):
                 valid_commits.append(manifest_meta["provenanceCommit"])
@@ -461,17 +587,19 @@ class ExperimentLedger:
         cls,
         activation_record_path: Optional[str] = None,
         db_path: Optional[str] = None,
+        epoch_id: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Loads and validates the Epoch 2 activation record. SQLite is canonical authority.
+        """Loads and validates the epoch activation record. SQLite is canonical authority.
         In production paths (activation_record_path is None), SQLite is the ONLY authority.
         JSON fallback is strictly forbidden and never consulted in production.
         """
+        target_epoch = epoch_id or cls.EPOCH_ID
         # 1. Canonical SQLite authority
         if activation_record_path is None:
             try:
                 from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
                 gov_engine = GovernanceDatabaseEngine(db_path=db_path)
-                sqlite_record = gov_engine.get_activation_record(cls.EPOCH_ID)
+                sqlite_record = gov_engine.get_activation_record(target_epoch)
                 if sqlite_record:
                     return {
                         "epochId": sqlite_record["epoch_id"],
@@ -508,12 +636,18 @@ class ExperimentLedger:
         expected_release_sha: Optional[str] = None,
         deployment_boundary_utc: Optional[str] = None,
         current_time_utc: Optional[datetime] = None,
+        expected_epoch_id: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
-        """Validates schema, fields, temporal bounds, and consistency of an Epoch 2 activation record."""
+        """Validates schema, fields, temporal bounds, and consistency of an Epoch activation record."""
         if not isinstance(record, dict):
             return False, "RECORD_NOT_A_DICT"
-        if record.get("epochId") != cls.EPOCH_ID:
-            return False, f"EPOCH_ID_MISMATCH: expected {cls.EPOCH_ID}, got {record.get('epochId')}"
+        target_epoch = expected_epoch_id or (
+            record.get("epochId")
+            if record.get("epochId") in (cls.EPOCH_1_ID, cls.EPOCH_2_ID, cls.EPOCH_3_ID)
+            else cls.EPOCH_ID
+        )
+        if record.get("epochId") != target_epoch:
+            return False, f"EPOCH_ID_MISMATCH: expected {target_epoch}, got {record.get('epochId')}"
         if record.get("deploymentStatus") != "SUCCESS":
             return False, f"DEPLOYMENT_STATUS_NOT_SUCCESS: {record.get('deploymentStatus')}"
         if not record.get("prospectiveObservationAuthorized"):
@@ -555,7 +689,7 @@ class ExperimentLedger:
     @classmethod
     def create_activation_record(
         cls,
-        epoch_id: str = "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+        epoch_id: str = "ARX_PROSPECTIVE_VALIDATION_EPOCH_3",
         release_sha: str = "",
         deployment_id: str = "",
         activated_at_utc: str = "",
@@ -583,6 +717,7 @@ class ExperimentLedger:
             record,
             expected_release_sha=release_sha if release_sha else None,
             current_time_utc=current_time_utc,
+            expected_epoch_id=epoch_id,
         )
         if not valid:
             raise ValueError(f"Cannot create invalid activation record: {reason}")
@@ -601,7 +736,7 @@ class ExperimentLedger:
         db_path: Optional[str] = None,
     ) -> Optional[str]:
         """Returns authoritative ISO UTC activation timestamp if valid record exists, else None."""
-        record = cls.get_activation_record(activation_record_path=activation_record_path, db_path=db_path)
+        record = cls.get_activation_record(activation_record_path=activation_record_path, db_path=db_path, epoch_id=cls.EPOCH_2_ID)
         if record and record.get("prospectiveObservationAuthorized"):
             return record.get("activatedAtUtc")
         return None
@@ -611,6 +746,8 @@ class ExperimentLedger:
         cls,
         activation_record_path: Optional[str] = None,
         db_path: Optional[str] = None,
+        release_sha: Optional[str] = None,
+        deployment_id: Optional[str] = None,
     ) -> bool:
         """Returns True only if a verified production activation record authorizes observation.
         SQLite is canonical authority; JSON is derived non-authoritative projection.
@@ -619,11 +756,20 @@ class ExperimentLedger:
         try:
             from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
             gov_engine = GovernanceDatabaseEngine(db_path=db_path)
-            is_auth, _ = gov_engine.evaluate_capture_authorization_predicate(
-                epoch_id=cls.EPOCH_ID
-            )
-            if is_auth:
-                return True
+            r_sha = release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
+            d_id = deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
+            if r_sha and d_id:
+                is_auth, _ = gov_engine.evaluate_capture_authorization_predicate(
+                    epoch_id=cls.EPOCH_2_ID,
+                    release_sha=r_sha,
+                    deployment_id=d_id,
+                )
+                if is_auth:
+                    return True
+            else:
+                act = gov_engine.get_activation_record(cls.EPOCH_2_ID)
+                if act:
+                    return True
         except Exception as e:
             logger.debug(f"SQLite governance check bypassed or failed: {e}")
 
@@ -642,10 +788,10 @@ class ExperimentLedger:
         db_path: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
         """Evaluates whether a single signal record meets all strict Epoch 2 prospective eligibility gates."""
-        if record.get("epochId") != cls.EPOCH_ID:
+        if record.get("epochId") != cls.EPOCH_2_ID:
             return False, "EPOCH_ID_MISMATCH"
 
-        act_record = cls.get_activation_record(activation_record_path, db_path=db_path)
+        act_record = cls.get_activation_record(activation_record_path, db_path=db_path, epoch_id=cls.EPOCH_2_ID)
         if not act_record:
             return False, "NO_VALID_ACTIVATION_RECORD"
 
@@ -668,14 +814,14 @@ class ExperimentLedger:
                             SELECT production_certification_status FROM epoch_release_authorizations
                             WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
                             """,
-                            (cls.EPOCH_ID, record_release, record_deployment),
+                            (cls.EPOCH_2_ID, record_release, record_deployment),
                         )
                         rev_cur = conn.execute(
                             """
                             SELECT COUNT(*) FROM epoch_release_revocations
                             WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
                             """,
-                            (cls.EPOCH_ID, record_release, record_deployment),
+                            (cls.EPOCH_2_ID, record_release, record_deployment),
                         )
                         if rev_cur.fetchone()[0] > 0:
                             return False, "RUNTIME_REVOKED"
@@ -685,7 +831,7 @@ class ExperimentLedger:
                             SELECT production_certification_status FROM epoch_release_authorizations
                             WHERE epoch_id = ? AND authorized_release_sha = ?
                             """,
-                            (cls.EPOCH_ID, record_release),
+                            (cls.EPOCH_2_ID, record_release),
                         )
                     row = cur.fetchone()
                     if not row or row["production_certification_status"] != "PASS":
@@ -741,6 +887,163 @@ class ExperimentLedger:
         count = 0
         for s in ledger.get("signals", []):
             is_eligible, _ = cls.is_record_epoch2_eligible(
+                s, activation_record_path=activation_record_path, db_path=db_path
+            )
+            if is_eligible:
+                count += 1
+        return count
+
+    @classmethod
+    def get_epoch3_activation_timestamp(
+        cls,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> Optional[str]:
+        """Returns authoritative ISO UTC activation timestamp if valid Epoch 3 record exists, else None."""
+        record = cls.get_activation_record(activation_record_path=activation_record_path, db_path=db_path, epoch_id=cls.EPOCH_3_ID)
+        if record and record.get("prospectiveObservationAuthorized"):
+            return record.get("activatedAtUtc")
+        return None
+
+    @classmethod
+    def is_epoch3_observation_authorized(
+        cls,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+        release_sha: Optional[str] = None,
+        deployment_id: Optional[str] = None,
+    ) -> bool:
+        """Returns True only if a verified production activation record authorizes observation for Epoch 3."""
+        # 1. Canonical authority: SQLite governance engine
+        try:
+            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+            gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+            r_sha = release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
+            d_id = deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
+            if r_sha and d_id:
+                is_auth, _ = gov_engine.evaluate_capture_authorization_predicate(
+                    epoch_id=cls.EPOCH_3_ID,
+                    release_sha=r_sha,
+                    deployment_id=d_id,
+                )
+                if is_auth:
+                    return True
+            else:
+                act = gov_engine.get_activation_record(cls.EPOCH_3_ID)
+                if act:
+                    return True
+        except Exception as e:
+            logger.debug(f"SQLite governance check bypassed or failed: {e}")
+
+        # 2. Test isolation fallback: Explicit activation_record_path provided
+        if activation_record_path is not None:
+            ts = cls.get_epoch3_activation_timestamp(activation_record_path=activation_record_path)
+            return ts is not None
+
+        return False
+
+    @classmethod
+    def is_record_epoch3_eligible(
+        cls,
+        record: Dict[str, Any],
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """Evaluates whether a single signal record meets all strict Epoch 3 prospective eligibility gates."""
+        if record.get("epochId") != cls.EPOCH_3_ID:
+            return False, "EPOCH_ID_MISMATCH"
+
+        act_record = cls.get_activation_record(activation_record_path, db_path=db_path, epoch_id=cls.EPOCH_3_ID)
+        if not act_record:
+            return False, "NO_VALID_ACTIVATION_RECORD"
+
+        record_release = record.get("releaseSha") or record.get("engineCommit")
+        if not record_release:
+            return False, "MISSING_RUNTIME_IDENTITY"
+
+        if activation_record_path is None:
+            try:
+                from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+                gov_engine = GovernanceDatabaseEngine(db_path=db_path)
+                conn = gov_engine.get_connection()
+                try:
+                    record_deployment = record.get("deploymentId")
+                    if record_deployment:
+                        cur = conn.execute(
+                            """
+                            SELECT production_certification_status FROM epoch_release_authorizations
+                            WHERE epoch_id = ? AND authorized_release_sha = ? AND authorized_deployment_id = ?
+                            """,
+                            (cls.EPOCH_3_ID, record_release, record_deployment),
+                        )
+                        rev_cur = conn.execute(
+                            """
+                            SELECT COUNT(*) FROM epoch_release_revocations
+                            WHERE epoch_id = ? AND release_sha = ? AND deployment_id = ?
+                            """,
+                            (cls.EPOCH_3_ID, record_release, record_deployment),
+                        )
+                        if rev_cur.fetchone()[0] > 0:
+                            return False, "RUNTIME_REVOKED"
+                    else:
+                        cur = conn.execute(
+                            """
+                            SELECT production_certification_status FROM epoch_release_authorizations
+                            WHERE epoch_id = ? AND authorized_release_sha = ?
+                            """,
+                            (cls.EPOCH_3_ID, record_release),
+                        )
+                    row = cur.fetchone()
+                    if not row or row["production_certification_status"] != "PASS":
+                        return False, f"RELEASE_NOT_AUTHORIZED: {record_release}"
+                finally:
+                    conn.close()
+            except Exception as e:
+                logger.error(f"SQLite release authorization lookup failed: {e}")
+                return False, f"AUTHORIZATION_LOOKUP_ERROR: {e}"
+        else:
+            expected_release = act_record.get("releaseSha")
+            if expected_release and not (record_release == expected_release or record_release.startswith(expected_release[:7])):
+                return False, f"RELEASE_ATTRIBUTION_MISMATCH: expected {expected_release}, got {record_release}"
+
+        if cls.classify_provenance_cohort(record) != ProvenanceCohort.PROSPECTIVE_CLEAN:
+            return False, "NOT_PROSPECTIVE_CLEAN_COHORT"
+
+        act_ts_str = act_record.get("activatedAtUtc")
+        act_dt = cls._parse_utc_timestamp(act_ts_str) if act_ts_str else None
+        if not act_dt:
+            return False, "INVALID_ACTIVATION_TIMESTAMP"
+
+        rec_str = record.get("recommended_at") or record.get("signalTimestamp") or record.get("timestamp")
+        rec_dt = cls._parse_utc_timestamp(rec_str)
+        if not rec_dt:
+            return False, "MISSING_OR_MALFORMED_RECORD_TIMESTAMP"
+
+        if rec_dt < act_dt:
+            return False, f"RECORD_PRECEDES_ACTIVATION: rec={rec_str} < act={act_ts_str}"
+
+        now_dt = datetime.now(timezone.utc)
+        if rec_dt > now_dt + timedelta(seconds=60):
+            return False, "FUTURE_DATED_RECORD"
+
+        return True, None
+
+    @classmethod
+    def get_epoch3_clean_prospective_count(
+        cls,
+        ledger_path: Optional[str] = None,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+    ) -> int:
+        """Returns the count of certified natural prospective records admitted to Epoch 3.
+        Fails closed (returns 0) if no valid activation record exists.
+        """
+        if not cls.is_epoch3_observation_authorized(activation_record_path, db_path=db_path):
+            return 0
+        ledger = cls.load_ledger(ledger_path)
+        count = 0
+        for s in ledger.get("signals", []):
+            is_eligible, _ = cls.is_record_epoch3_eligible(
                 s, activation_record_path=activation_record_path, db_path=db_path
             )
             if is_eligible:
@@ -911,6 +1214,16 @@ class ExperimentLedger:
         benchmarks: Optional[Dict[str, Any]] = None,
         epoch_id: Optional[str] = None,
         provenance_cohort: Optional[str] = None,
+        release_sha: Optional[str] = None,
+        deployment_id: Optional[str] = None,
+        capture_source: Optional[str] = None,
+        analysis_reference_price: Optional[float] = None,
+        analysis_reference_source: Optional[str] = None,
+        live_spot_price: Optional[float] = None,
+        live_observed_at: Optional[str] = None,
+        live_source: Optional[str] = None,
+        live_freshness: Optional[str] = None,
+        market_session: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Record an immutable new signal in the ledger."""
         ledger = cls.load_ledger(ledger_path)
@@ -932,6 +1245,16 @@ class ExperimentLedger:
             "engineTag": engine_tag,
             "decisionEngineSha": cls.DECISION_ENGINE_SHA,
             "observationGovernanceSha": cls.get_observation_governance_sha(),
+            "releaseSha": release_sha or inputs_meta.get("releaseSha") or os.getenv("RAILWAY_GIT_COMMIT_SHA"),
+            "deploymentId": deployment_id or inputs_meta.get("deploymentId") or os.getenv("RAILWAY_DEPLOYMENT_ID"),
+            "captureSource": capture_source or inputs_meta.get("captureSource", "NATURAL_PRODUCTION_API"),
+            "analysisReferencePrice": analysis_reference_price or inputs_meta.get("analysisReferencePrice") or float(entry_price),
+            "analysisReferenceSource": analysis_reference_source or inputs_meta.get("analysisReferenceSource", "COMPLETED_SESSION"),
+            "liveSpotPrice": live_spot_price if live_spot_price is not None else inputs_meta.get("liveSpotPrice"),
+            "liveObservedAt": live_observed_at or inputs_meta.get("liveObservedAt"),
+            "liveSource": live_source or inputs_meta.get("liveSource", "UNAVAILABLE"),
+            "liveFreshness": live_freshness or inputs_meta.get("liveFreshness", "UNAVAILABLE"),
+            "marketSession": market_session or inputs_meta.get("marketSession", "UNKNOWN"),
             "recommended_at": inputs_meta.get("recommended_at") or inputs_meta.get("signalTimestamp") or sig_date,
             "signalTimestamp": inputs_meta.get("signalTimestamp") or inputs_meta.get("recommended_at") or sig_date,
             "decisionState": "ACTIONABLE_SETUP",

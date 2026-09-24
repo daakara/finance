@@ -556,6 +556,18 @@ export interface ConfluenceData {
 
 export type MarketDataSource = "live" | "historical" | "fallback" | "unavailable";
 
+export interface MarketPriceState {
+  symbol: string;
+  liveSpotPrice: number | null;
+  liveObservedAt: number | null;
+  liveSource: "ALPACA_IEX" | "YAHOO" | "UNAVAILABLE" | string;
+  liveFreshness: "REALTIME" | "DELAYED" | "UNAVAILABLE" | string;
+  analysisReferencePrice: number;
+  analysisReferenceDate: string;
+  analysisReferenceSource: string;
+  marketSession: "REGULAR_SESSION" | "PREMARKET" | "AFTER_HOURS" | "CLOSED" | "WEEKEND" | "HOLIDAY" | string;
+}
+
 export interface AnalyticsResponse {
   _dataSource?: MarketDataSource;
   degradedMode?: boolean;
@@ -564,9 +576,16 @@ export interface AnalyticsResponse {
   period: string;
   interval: string;
   currentPrice: number | null;
+  liveSpotPrice?: number | null;
+  liveObservedAt?: number | null;
+  liveSource?: string;
+  liveFreshness?: string;
+  marketSession?: string;
+  marketPriceState?: MarketPriceState;
   priceState?: "AVAILABLE" | "DATA_UNAVAILABLE";
   analysisReferencePrice?: number | null;
   analysisReferenceDate?: string | null;
+  analysisReferenceSource?: string;
   quoteStatus?: string;
   priceChangePct24h: number;
   candles: CandleData[];

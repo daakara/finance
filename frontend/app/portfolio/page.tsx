@@ -180,9 +180,12 @@ export default function PortfolioPage() {
         try {
           const res = await fetchAssetAnalytics(pos.symbol, "1mo", "1d");
           if (res && res.currentPrice && !isNaN(res.currentPrice) && res.currentPrice > 0) {
+            const effectivePrice = (res.liveSpotPrice && res.liveFreshness === "REALTIME") ? res.liveSpotPrice : res.currentPrice;
             return {
               ...pos,
-              currentPrice: res.currentPrice,
+              currentPrice: effectivePrice,
+              liveFreshness: res.liveFreshness,
+              liveSource: res.liveSource,
             };
           }
         } catch {
@@ -885,7 +888,18 @@ export default function PortfolioPage() {
                       <td className="py-3 px-4 text-slate-200">{typeof pos.shares === "number" ? Number(pos.shares.toFixed(6)) : pos.shares}</td>
                       <td className="py-3 px-4 text-slate-300">${pos.entryPrice.toFixed(2)}</td>
                       <td className="py-3 px-4 text-white font-bold">
-                        {isPriced ? `$${pos.currentPrice!.toFixed(2)}` : <span className="text-amber-400 font-mono text-[11px] font-bold">Unpriced</span>}
+                        {isPriced ? (
+                          <span className="flex items-center gap-1.5">
+                            <span>${pos.currentPrice!.toFixed(2)}</span>
+                            {pos.liveFreshness && pos.liveFreshness !== "REALTIME" && (
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-950/80 text-amber-400 border border-amber-800 font-mono font-normal" title="Delayed quote">
+                                DELAYED
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 font-mono text-[11px] font-bold">Unpriced</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-slate-100 font-bold">
                         {mktVal !== null ? `$${mktVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : <span className="text-slate-500 font-mono">--</span>}
