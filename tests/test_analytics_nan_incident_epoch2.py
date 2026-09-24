@@ -166,16 +166,17 @@ def test_12_prune_trailing_nan_bar():
 
 def test_13_prune_trailing_open_session_bar():
     df = _generate_clean_history(30)
-    now_utc = datetime.now(timezone.utc)
-    today_dt = pd.Timestamp(now_utc.date())
+    session_date = pd.Timestamp("2026-09-24")
+    now_utc = datetime(2026, 9, 24, 15, 0, tzinfo=timezone.utc)
     open_row = pd.DataFrame([{
         "Open": 120.0, "High": 122.0, "Low": 119.0, "Close": 121.0, "Volume": 50000
-    }], index=[today_dt])
+    }], index=[session_date])
     active_df = pd.concat([df, open_row])
 
-    pruned, meta = validate_and_prune_daily_history(active_df, is_crypto=False)
+    pruned, meta = validate_and_prune_daily_history(active_df, is_crypto=False, now_utc=now_utc)
     assert meta["valid"] is True
-    assert pruned.index[-1] != today_dt
+    assert pruned.index[-1] != session_date
+    assert pruned.index[-1] == df.index[-1]
 
 
 def test_14_interior_corruption_fails_closed():
