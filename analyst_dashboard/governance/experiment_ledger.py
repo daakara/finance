@@ -1026,6 +1026,26 @@ class ExperimentLedger:
         if rec_dt > now_dt + timedelta(seconds=60):
             return False, "FUTURE_DATED_RECORD"
 
+        # Market Data Admissibility (Dual-Price Contract)
+        freshness = record.get("liveFreshness") or (record.get("inputs") or {}).get("liveFreshness")
+        session = record.get("marketSession") or (record.get("inputs") or {}).get("marketSession")
+        live_spot = record.get("liveSpotPrice")
+        if live_spot is None:
+            live_spot = (record.get("inputs") or {}).get("liveSpotPrice")
+
+        if freshness != "REALTIME":
+            return False, f"QUOTE_NOT_REALTIME: freshness={freshness}"
+        if session != "REGULAR_SESSION":
+            return False, f"MARKET_SESSION_NOT_REGULAR: session={session}"
+        if live_spot is None:
+            return False, "LIVE_SPOT_MISSING"
+        try:
+            ls_float = float(live_spot)
+            if not math.isfinite(ls_float) or ls_float <= 0:
+                return False, f"LIVE_SPOT_INVALID: {live_spot}"
+        except (ValueError, TypeError):
+            return False, f"LIVE_SPOT_INVALID: {live_spot}"
+
         return True, None
 
     @classmethod

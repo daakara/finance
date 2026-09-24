@@ -102,8 +102,10 @@ def _build_natural_payload(symbol="NVDA", current_price=120.0):
     return {
         "symbol": symbol,
         "current_price": current_price,
+        "is_actionable": True,
+        "decision_state": "ACTIONABLE_SETUP",
         "optimal_execution_plan": {
-            "execution_status": "ENTER_EARLY_ZONE",
+            "execution_status": "IN_BUY_ZONE",
             "optimal_entry_min": 118.0,
             "optimal_entry_max": 122.0,
             "stop_loss": 114.0,
@@ -135,7 +137,7 @@ def _build_natural_payload(symbol="NVDA", current_price=120.0):
             "liveObservedAt": "2026-09-24T15:30:00Z",
             "liveSource": "ALPACA_IEX",
             "liveFreshness": "REALTIME",
-            "marketSession": "REGULAR_TRADING_HOURS",
+            "marketSession": "REGULAR_SESSION",
         },
     }
 

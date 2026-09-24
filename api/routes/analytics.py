@@ -1111,29 +1111,66 @@ def get_asset_analytics(
             macro_data=macro_inputs,
         )
 
+        # Canonical Decision Trace (Single source of truth for actionability & explainability)
+        decision_trace = DecisionTraceEngine.build_decision_trace(
+            symbol=upper_sym,
+            current_price=current_price,
+            candles=candles,
+            freshness={
+                "status": freshness_status,
+                "providerSource": provider_source,
+                "lastTradeDate": last_trade_date_str,
+                "stalenessDays": staleness_days,
+                "candleCount": len(candles),
+            },
+            technicals=technicals,
+            confluence=confluence_output,
+            factor_scores=factor_scores,
+            optimal_execution=optimal_execution_plan,
+            smart_money={
+                "has_congress_buy": has_congress_buy,
+                "has_insider_buy": False,
+                "optionsFlow": options_flow,
+            },
+            macro_difficulty=macro_difficulty,
+            catalyst_report=catalyst_report,
+            user_role=clean_role,
+        )
+
         # Step 2: Passive Prospective Recommendation Capture (Zero execution mutation, Fail-closed)
+        # Defense in depth: Never invoke capture when quote freshness, session, or actionability is ineligible
         try:
-            if optimal_execution_plan and (
-                optimal_execution_plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-                or (optimal_execution_plan.get("optimal_entry_min") and optimal_execution_plan.get("stop_loss"))
+            is_actionable = bool(decision_trace.get("isActionable", False))
+            decision_state_val = decision_trace.get("decisionState")
+            if (
+                is_actionable
+                and market_price_state.live_freshness == "REALTIME"
+                and market_price_state.market_session == "REGULAR_SESSION"
+                and live_spot_price is not None
+                and math.isfinite(live_spot_price)
+                and live_spot_price > 0
+                and current_price is not None
+                and math.isfinite(current_price)
+                and current_price > 0
             ):
-                if current_price is not None and math.isfinite(current_price) and current_price > 0:
-                    PassiveCaptureHook.record_natural_recommendation(
-                        symbol=upper_sym,
-                        current_price=current_price,
-                        optimal_execution_plan=optimal_execution_plan,
-                        confluence_output=confluence_output,
-                        technicals=technicals,
-                        factor_scores=factor_scores,
-                        macro_inputs=macro_inputs,
-                        observed_at=observed_at,
-                        fetched_at=fetched_at,
-                        freshness_status=freshness_status,
-                        provider_source=provider_source,
-                        candles=candles,
-                        live_spot_price=live_spot_price,
-                        market_price_state=market_price_state.to_dict(),
-                    )
+                PassiveCaptureHook.record_natural_recommendation(
+                    symbol=upper_sym,
+                    current_price=current_price,
+                    optimal_execution_plan=optimal_execution_plan,
+                    confluence_output=confluence_output,
+                    technicals=technicals,
+                    factor_scores=factor_scores,
+                    macro_inputs=macro_inputs,
+                    observed_at=observed_at,
+                    fetched_at=fetched_at,
+                    freshness_status=freshness_status,
+                    provider_source=provider_source,
+                    candles=candles,
+                    live_spot_price=live_spot_price,
+                    market_price_state=market_price_state.to_dict(),
+                    is_actionable=is_actionable,
+                    decision_state=decision_state_val,
+                )
         except Exception as e:
             logger.warning(f"Passive recommendation capture bypassed on error: {e}")
 
@@ -1190,30 +1227,7 @@ def get_asset_analytics(
                 "observedAt": observed_at,
                 "fetchedAt": fetched_at,
             },
-            "decisionTrace": DecisionTraceEngine.build_decision_trace(
-                symbol=upper_sym,
-                current_price=current_price,
-                candles=candles,
-                freshness={
-                    "status": freshness_status,
-                    "providerSource": provider_source,
-                    "lastTradeDate": last_trade_date_str,
-                    "stalenessDays": staleness_days,
-                    "candleCount": len(candles),
-                },
-                technicals=technicals,
-                confluence=confluence_output,
-                factor_scores=factor_scores,
-                optimal_execution=optimal_execution_plan,
-                smart_money={
-                    "has_congress_buy": has_congress_buy,
-                    "has_insider_buy": False,
-                    "optionsFlow": options_flow,
-                },
-                macro_difficulty=macro_difficulty,
-                catalyst_report=catalyst_report,
-                user_role=clean_role,
-            ),
+            "decisionTrace": decision_trace,
         }
 
     except HTTPException:

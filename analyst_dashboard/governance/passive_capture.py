@@ -114,6 +114,224 @@ class PassiveCaptureHook:
         except Exception:
             return ""
 
+    last_admission_result: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def evaluate_prospective_admission(
+        cls,
+        symbol: str,
+        is_actionable: bool = False,
+        decision_state: Optional[str] = None,
+        market_price_state: Optional[Dict[str, Any]] = None,
+        live_spot_price: Optional[float] = None,
+        current_price: Optional[float] = None,
+        execution_context: Optional[ExecutionContext] = None,
+        runtime_release_sha: Optional[str] = None,
+        runtime_deployment_id: Optional[str] = None,
+        activation_record_path: Optional[str] = None,
+        db_path: Optional[str] = None,
+        ledger_path: Optional[str] = None,
+        sig_date: Optional[str] = None,
+        optimal_execution_plan: Optional[Dict[str, Any]] = None,
+        factor_scores: Optional[Dict[str, Any]] = None,
+        macro_inputs: Optional[Dict[str, Any]] = None,
+        provider_source: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Evaluates whether an observation meets all strict prospective admission criteria.
+
+        Returns a dict with 'prospectiveCaptureEligible' and 'prospectiveCaptureRejectionReason'.
+        Rejection reasons (in canonical priority order):
+        - NON_NATURAL_CONTEXT
+        - RELEASE_NOT_CERTIFIED / DEPLOYMENT_NOT_AUTHORIZED
+        - EPOCH_NOT_ACTIVATED
+        - DECISION_NOT_ACTIONABLE
+        - QUOTE_NOT_REALTIME
+        - MARKET_SESSION_NOT_REGULAR
+        - LIVE_SPOT_INVALID
+        - DUPLICATE
+        """
+        # 1. EXECUTION CONTEXT & SYNTHETIC ENVIRONMENT GATE
+        effective_context = execution_context or CURRENT_EXECUTION_CONTEXT.get()
+        if effective_context != ExecutionContext.NATURAL_CLIENT:
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+            }
+
+        if (
+            os.getenv("ARX_TEST_MODE") == "1"
+            or os.getenv("ARX_REPLAY_MODE") == "1"
+            or os.getenv("ARX_SIMULATION_MODE") == "1"
+            or os.getenv("ARX_CERTIFICATION_MODE") == "1"
+        ):
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+            }
+
+        if ledger_path is None and "PYTEST_CURRENT_TEST" in os.environ:
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+            }
+
+        opt_exec = optimal_execution_plan or {}
+        macro = macro_inputs or {}
+        factors = factor_scores or {}
+        if (
+            opt_exec.get("isSynthetic")
+            or opt_exec.get("isSimulated")
+            or opt_exec.get("isCertification")
+            or opt_exec.get("isReplay")
+            or opt_exec.get("isTest")
+            or macro.get("isSynthetic")
+            or macro.get("isCertification")
+            or factors.get("isSynthetic")
+            or factors.get("isCertification")
+            or provider_source in ("SYNTHETIC_MOCK", "SYNTHETIC_FALLBACK", "SIMULATION", "REPLAY", "CERTIFICATION")
+        ):
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+            }
+
+        # 2. RUNTIME IDENTITY & DEPLOYMENT-SCOPED AUTHORIZATION PREDICATE GATE
+        current_release = runtime_release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
+        current_deployment = runtime_deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
+        from analyst_dashboard.governance.storage import is_production_runtime
+        from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+
+        if is_production_runtime() or (ledger_path is None and db_path is None) or db_path is not None or runtime_release_sha is not None or runtime_deployment_id is not None:
+            gov_db = GovernanceDatabaseEngine(db_path=db_path)
+            auth_ok, auth_reason = gov_db.evaluate_capture_authorization_predicate(
+                epoch_id=cls.EPOCH_ID,
+                release_sha=current_release,
+                deployment_id=current_deployment,
+                now_utc=datetime.now(timezone.utc).isoformat(),
+            )
+            if not auth_ok:
+                rejection = "DEPLOYMENT_NOT_AUTHORIZED"
+                if auth_reason and "CERTIFICATION" in auth_reason:
+                    rejection = "RELEASE_NOT_CERTIFIED"
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": rejection,
+                    "detail": auth_reason,
+                }
+
+        # 3. ACTIVE EPOCH BOUNDARY GATE
+        if (ledger_path is None or activation_record_path is not None or db_path is not None) and not cls.is_temporal_gate_satisfied(
+            activation_record_path=activation_record_path, db_path=db_path
+        ):
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "EPOCH_NOT_ACTIVATED",
+            }
+
+        # 4. CANONICAL DECISION ACTIONABILITY GATE
+        # Must require canonical DecisionHierarchy result (isActionable == True, state == ACTIONABLE_SETUP)
+        if not is_actionable or (decision_state is not None and decision_state != "ACTIONABLE_SETUP"):
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "DECISION_NOT_ACTIONABLE",
+            }
+
+        # 5. MARKET DATA FRESHNESS GATE (Dual-Price Contract)
+        mps = market_price_state or {}
+        freshness = mps.get("liveFreshness")
+        if freshness != "REALTIME":
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "QUOTE_NOT_REALTIME",
+            }
+
+        # 6. MARKET SESSION GATE (Dual-Price Contract)
+        session = mps.get("marketSession")
+        if session != "REGULAR_SESSION":
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "MARKET_SESSION_NOT_REGULAR",
+            }
+
+        # 7. PRICE VALIDITY GATE (Live Spot Price & Execution Corridor)
+        if live_spot_price is None:
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+            }
+        try:
+            lsp_float = float(live_spot_price)
+            if not math.isfinite(lsp_float) or lsp_float <= 0.0:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                }
+        except (ValueError, TypeError):
+            return {
+                "prospectiveCaptureEligible": False,
+                "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+            }
+
+        if current_price is not None:
+            try:
+                cp_float = float(current_price)
+                if not math.isfinite(cp_float) or cp_float <= 0.0:
+                    return {
+                        "prospectiveCaptureEligible": False,
+                        "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                    }
+            except (ValueError, TypeError):
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                }
+
+        if opt_exec:
+            try:
+                entry_p = float(opt_exec.get("optimal_entry_min") or current_price or 0.0)
+                if not math.isfinite(entry_p) or entry_p <= 0.0:
+                    return {
+                        "prospectiveCaptureEligible": False,
+                        "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                    }
+            except (ValueError, TypeError):
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                }
+            for level_k in ("stop_loss", "take_profit_1", "take_profit_2"):
+                v = opt_exec.get(level_k)
+                if v is not None:
+                    try:
+                        fv = float(v)
+                        if not math.isfinite(fv) or fv <= 0.0:
+                            return {
+                                "prospectiveCaptureEligible": False,
+                                "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                            }
+                    except (ValueError, TypeError):
+                        return {
+                            "prospectiveCaptureEligible": False,
+                            "prospectiveCaptureRejectionReason": "LIVE_SPOT_INVALID",
+                        }
+
+        # 8. DEDUPLICATION GATE
+        if sig_date and symbol:
+            ledger = ExperimentLedger.load_ledger(ledger_path)
+            sig_id = f"{symbol.upper().strip()}_{sig_date}"
+            existing = next((s for s in ledger.get("signals", []) if s.get("signalId") == sig_id), None)
+            if existing:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "DUPLICATE",
+                    "existingRecord": existing,
+                }
+
+        return {
+            "prospectiveCaptureEligible": True,
+            "prospectiveCaptureRejectionReason": None,
+        }
+
     @classmethod
     def record_natural_recommendation(
         cls,
@@ -137,125 +355,21 @@ class PassiveCaptureHook:
         runtime_release_sha: Optional[str] = None,
         runtime_deployment_id: Optional[str] = None,
         execution_context: Optional[ExecutionContext] = None,
+        is_actionable: bool = False,
+        decision_state: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Passively captures a single natural production recommendation.
 
         CANONICAL WRITE-TIME SEQUENCE:
-        1. Determine execution context (prohibit CERTIFICATION, TEST, REPLAY, SIMULATION)
-        2. Verify production runtime identity & deployment-scoped authorization predicate
-        3. Verify active epoch boundary
-        4. Verify natural recommendation eligibility & finite prices
-        5. Verify anti-lookahead temporal integrity
-        6. Deduplicate before write
-        7. ONLY THEN write prospective record to ledger
+        1. Evaluate prospective admission criteria (context, authorization, epoch, actionability, freshness, session, prices, deduplication)
+        2. Verify anti-lookahead temporal integrity
+        3. ONLY THEN write prospective record to ledger
 
         Fail-closed: Returns the captured record on success, or None on failure/quarantine.
         Never raises exceptions to callers.
         Zero side-effects on capital, orders, or broker connections.
         """
         try:
-            # 1. EXECUTION CONTEXT & SYNTHETIC ENVIRONMENT GATE
-            effective_context = execution_context or CURRENT_EXECUTION_CONTEXT.get()
-            if effective_context != ExecutionContext.NATURAL_CLIENT:
-                logger.debug(
-                    f"[PASSIVE_CAPTURE] Suppressed write: Execution context is {effective_context} for {symbol}"
-                )
-                return None
-
-            # Environmental prohibitions
-            if (
-                os.getenv("ARX_TEST_MODE") == "1"
-                or os.getenv("ARX_REPLAY_MODE") == "1"
-                or os.getenv("ARX_SIMULATION_MODE") == "1"
-                or os.getenv("ARX_CERTIFICATION_MODE") == "1"
-            ):
-                logger.debug(f"[PASSIVE_CAPTURE] Suppressed write: Synthetic/test/replay mode active for {symbol}")
-                return None
-
-            # Test runner safeguard: Never contaminate default production ledger
-            if ledger_path is None and "PYTEST_CURRENT_TEST" in os.environ:
-                logger.debug("[PASSIVE_CAPTURE] Suppressed write: Pytest runner targeting default production ledger.")
-                return None
-
-            # Payload-level synthetic/simulation/certification prohibition
-            if (
-                optimal_execution_plan.get("isSynthetic")
-                or optimal_execution_plan.get("isSimulated")
-                or optimal_execution_plan.get("isCertification")
-                or optimal_execution_plan.get("isReplay")
-                or optimal_execution_plan.get("isTest")
-                or (macro_inputs or {}).get("isSynthetic")
-                or (macro_inputs or {}).get("isCertification")
-                or factor_scores.get("isSynthetic")
-                or factor_scores.get("isCertification")
-                or provider_source in ("SYNTHETIC_MOCK", "SYNTHETIC_FALLBACK", "SIMULATION", "REPLAY", "CERTIFICATION")
-            ):
-                logger.warning(f"[PASSIVE_CAPTURE] Suppressed write: Non-natural synthetic/certification payload for {symbol}")
-                return None
-
-            # 2. RUNTIME IDENTITY & DEPLOYMENT-SCOPED AUTHORIZATION PREDICATE GATE
-            current_release = runtime_release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
-            current_deployment = runtime_deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
-            from analyst_dashboard.governance.storage import is_production_runtime
-            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
-
-            if is_production_runtime() or (ledger_path is None and db_path is None) or db_path is not None or runtime_release_sha is not None or runtime_deployment_id is not None:
-                gov_db = GovernanceDatabaseEngine(db_path=db_path)
-                auth_ok, auth_reason = gov_db.evaluate_capture_authorization_predicate(
-                    epoch_id=cls.EPOCH_ID,
-                    release_sha=current_release,
-                    deployment_id=current_deployment,
-                    now_utc=datetime.now(timezone.utc).isoformat(),
-                )
-                if not auth_ok:
-                    logger.warning(
-                        f"[PASSIVE_CAPTURE] Suppressed write: Runtime authorization check failed ({auth_reason}) for {symbol}"
-                    )
-                    return None
-
-            # 3. ACTIVE EPOCH BOUNDARY GATE
-            if (ledger_path is None or activation_record_path is not None or db_path is not None) and not cls.is_temporal_gate_satisfied(
-                activation_record_path=activation_record_path, db_path=db_path
-            ):
-                logger.warning(f"[PASSIVE_CAPTURE] Suppressed write: Epoch not active for symbol {symbol}")
-                return None
-
-            # 4. NATURAL RECOMMENDATION ELIGIBILITY & FINITE PRICE FIREWALL
-            if current_price is None:
-                logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price=None for symbol {symbol}")
-                return None
-            try:
-                cp_float = float(current_price)
-                if not math.isfinite(cp_float) or cp_float <= 0.0:
-                    logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price={current_price} for symbol {symbol}")
-                    return None
-            except (ValueError, TypeError):
-                logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: current_price={current_price} invalid float for symbol {symbol}")
-                return None
-
-            try:
-                entry_price = float(
-                    optimal_execution_plan.get("optimal_entry_min")
-                    or current_price
-                    or 0.0
-                )
-                if not math.isfinite(entry_price) or entry_price <= 0.0:
-                    logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: entry_price={entry_price} for symbol {symbol}")
-                    return None
-            except (ValueError, TypeError):
-                return None
-
-            for level_key in ("stop_loss", "take_profit_1", "take_profit_2"):
-                val = optimal_execution_plan.get(level_key)
-                if val is not None:
-                    try:
-                        f_val = float(val)
-                        if not math.isfinite(f_val) or f_val <= 0.0:
-                            logger.warning(f"[PASSIVE_CAPTURE] SUPPRESSED_NONFINITE_INPUT: {level_key}={val} for symbol {symbol}")
-                            return None
-                    except (ValueError, TypeError):
-                        return None
-
             now_dt = datetime.now(timezone.utc)
 
             def _to_iso(ts_val: Any) -> Optional[str]:
@@ -270,8 +384,48 @@ class PassiveCaptureHook:
             rec_iso = _to_iso(fetched_at) or now_dt.isoformat()
             market_iso = _to_iso(observed_at) or rec_iso
             sig_date = rec_iso[:10] if len(rec_iso) >= 10 else now_dt.strftime("%Y-%m-%d")
-
             upper_sym = symbol.upper().strip()
+            current_release = runtime_release_sha or os.getenv("RAILWAY_GIT_COMMIT_SHA")
+            current_deployment = runtime_deployment_id or os.getenv("RAILWAY_DEPLOYMENT_ID")
+
+            admission = cls.evaluate_prospective_admission(
+                symbol=upper_sym,
+                is_actionable=is_actionable,
+                decision_state=decision_state,
+                market_price_state=market_price_state,
+                live_spot_price=live_spot_price,
+                current_price=current_price,
+                execution_context=execution_context,
+                runtime_release_sha=runtime_release_sha,
+                runtime_deployment_id=runtime_deployment_id,
+                activation_record_path=activation_record_path,
+                db_path=db_path,
+                ledger_path=ledger_path,
+                sig_date=sig_date,
+                optimal_execution_plan=optimal_execution_plan,
+                factor_scores=factor_scores,
+                macro_inputs=macro_inputs,
+                provider_source=provider_source,
+            )
+            cls.last_admission_result = admission
+
+            if not admission["prospectiveCaptureEligible"]:
+                rejection = admission.get("prospectiveCaptureRejectionReason")
+                if rejection == "DUPLICATE":
+                    logger.info(
+                        f"[PASSIVE_CAPTURE] Deduplicated natural recommendation: {upper_sym}_{sig_date} already exists. Zero ledger mutation."
+                    )
+                    return admission.get("existingRecord")
+                logger.warning(
+                    f"[PASSIVE_CAPTURE] Suppressed write: {rejection} for symbol {upper_sym}"
+                )
+                return None
+
+            entry_price = float(
+                optimal_execution_plan.get("optimal_entry_min")
+                or current_price
+                or 0.0
+            )
 
             # 1. Content-addressed Market Snapshot
             candle_list = candles or []

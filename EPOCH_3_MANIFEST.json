@@ -7,18 +7,18 @@
   "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
   "observationGovernanceVersion": "2.0.0",
   "observationGovernanceIdentity": "MANIFEST_HASH",
-  "observationGovernanceManifestHash": "ab79db31629c1f383d0f599c62e4eab58a115281c36edc661fb6aa97086300c2",
-  "observationGovernanceArtifactIdentity": "ab79db31629c1f383d0f599c62e4eab58a115281c36edc661fb6aa97086300c2",
-  "observationGovernanceSha": "ab79db31629c1f383d0f599c62e4eab58a115281c36edc661fb6aa97086300c2",
+  "observationGovernanceManifestHash": "932f44982b52a043dc186cd3e93651d465c2e90f3ee533e89170f73ce6b45258",
+  "observationGovernanceArtifactIdentity": "932f44982b52a043dc186cd3e93651d465c2e90f3ee533e89170f73ce6b45258",
+  "observationGovernanceSha": "932f44982b52a043dc186cd3e93651d465c2e90f3ee533e89170f73ce6b45258",
   "decisionEngineSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
   "decisionEngineCompositeSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
   "decisionEngineVersion": "2.5.0",
   "executableGovernanceFiles": {
     "analyst_dashboard/governance/passive_capture.py": {
-      "sha256": "c02ae9a719a73f0b8801a41311b2c0dba9cd3694c3650f675c1c6d15b0899652"
+      "sha256": "e62fd5bba72ec5a17be59f493a41e35d95f722a57a19e2df4f46c54399c61460"
     },
     "analyst_dashboard/governance/experiment_ledger.py": {
-      "sha256": "a0743405726c765dd87731e6561043aea5870022c5f31b85670f2283a7e00909"
+      "sha256": "e1495467fe10445b79e88425a0745d849d0cfff1781318fd7069766ebb0052cc"
     },
     "analyst_dashboard/governance/governance_db.py": {
       "sha256": "27e484a8ab4c925f43ab815c296cb0dbc0cb9b52fc2656eac51a8e28bdaf7129"
@@ -30,7 +30,7 @@
       "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"
     },
     "api/routes/analytics.py": {
-      "sha256": "690fc910edf23dc60043f56a92225ffc6c8a8a926ddff93ae274c895f752704b"
+      "sha256": "abe84ed7fc882961d44944662ddbdfa665d1237e95e2626559662aa633d81871"
     },
     "analyst_dashboard/data/alpaca_fetcher.py": {
       "sha256": "f409b75627bd95b588c2ccac8028ea22f106dedb957912b0c3bcab7271c64ff9"

@@ -108,9 +108,18 @@ def _build_fixture_payload(
         "macro_inputs": macro_inputs,
         "observed_at": market_time,
         "fetched_at": rec_time,
-        "freshness_status": "END_OF_DAY",
+        "freshness_status": "REALTIME",
         "provider_source": "YAHOO_AUTHENTIC",
         "candles": candles,
+        "is_actionable": True,
+        "decision_state": "ACTIONABLE_SETUP",
+        "live_spot_price": 227.8,
+        "market_price_state": {
+            "liveObservedAt": market_time,
+            "liveSource": "ALPACA_IEX",
+            "liveFreshness": "REALTIME",
+            "marketSession": "REGULAR_SESSION",
+        },
     }
 
 
