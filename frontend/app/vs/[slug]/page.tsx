@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `ARX Terminal vs ${comp.competitorName} | Feature & Pricing Comparison`,
+    title: `${comp.competitorName} Comparison: Features, Pricing & Capabilities`,
     description: `Comprehensive comparison of ARX Terminal vs ${comp.competitorName}. Compare pricing, STOCK Act tracking, algorithmic execution corridors, and risk modeling.`,
     alternates: {
       canonical: `https://www.arxterminal.com/vs/${comp.slug}/`,

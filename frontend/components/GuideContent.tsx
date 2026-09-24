@@ -136,7 +136,7 @@ export default function GuideContent() {
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
               {isPlain
                 ? "Answers: 'What are US politicians, CEOs, and big institutional funds buying?' Shows legal House/Senate STOCK Act filings and Form 4 C-Suite insider purchases."
-                : "Answers: 'What are politicians, corporate executives, and option market makers doing?' Displays US House/Senate STOCK Act filings, Legislative Alignment Index (0-100), dark pool ATS volumes, and options sweeps."}
+                : "Answers: 'What are politicians, corporate executives, and option market makers doing?' Displays US House/Senate STOCK Act filings, Legislative Alignment Index (0-100), institutional flow signals (curated research archive), and options sweeps."}
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function GuideContent() {
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
               {isPlain
                 ? "Answers: 'If the market crashes or a major supplier collapses, how much could I lose?' Tests worst-case single-day losses and supply chain ripple risks."
-                : "Answers: 'If a peer or supplier collapses, how does the shock cascade?' Displays directed supply-chain topologies, Cornish-Fisher M-VaR, and self-healing hit rate calibrations."}
+                : "Answers: 'If a peer or supplier collapses, how does the shock cascade?' Displays directed supply-chain topologies, Cornish-Fisher M-VaR, and historical forecast accuracy evaluation."}
             </p>
           </div>
         </div>
@@ -190,7 +190,7 @@ export default function GuideContent() {
           <p className="text-slate-300 font-sans leading-relaxed">
             {isPlain
               ? "Why does the terminal highlight a focused group of stocks, and can you search your own favorites? Here is how our 4-tier engine works:"
-              : "To maintain sub-10ms edge delivery while providing open-universe flexibility, the platform operates a 4-tier hierarchical asset pipeline:"}
+              : "To maintain fast in-memory retrieval with edge caching while providing open-universe flexibility, the platform operates a 4-tier hierarchical asset pipeline:"}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="bg-[#06090f] p-3 rounded-lg border border-[#1b2434] space-y-1">
@@ -476,7 +476,7 @@ export default function GuideContent() {
               <strong>{isPlain ? "Big Dollar Bet Size (+5 to +15 pts):" : "Dollar Sizing Bracket (+5 to +15 pts):"}</strong> {isPlain ? "Gives higher points to massive trades ($250k to $1M+) vs minor $1,000 purchases." : "Scales conviction according to transaction size ($50k to $1M+)."}
             </li>
             <li>
-              <strong>{isPlain ? "Politician's Historical Win Rate (+4 to +10 pts):" : "3-Year Historical Track Record (+4 to +10 pts):"}</strong> {isPlain ? "Factors in the politician's multi-year track record of beating the S&P 500." : "Factors in audited multi-year politician win rates (>75%)."}
+              <strong>{isPlain ? "Politician's Historical Win Rate (+4 to +10 pts):" : "3-Year Historical Track Record (+4 to +10 pts):"}</strong> {isPlain ? "Factors in the politician's multi-year track record of beating the S&P 500." : "Factors in estimated historical politician win rates (>75%, heuristic)."}
             </li>
           </ul>
         </div>
@@ -732,7 +732,7 @@ export default function GuideContent() {
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
               {isPlain
                 ? "Catches when retail price and big institutional money are doing opposite things:"
-                : "Detects decoupling between retail price direction and dark pool block flow:"}
+                : "Models potential divergence between retail price direction and institutional positioning:"}
             </p>
             <ul className="text-[11px] text-slate-400 font-sans space-y-1 list-disc pl-4">
               <li><strong>{isPlain ? "Stealth Accumulation (Bullish):" : "Stealth Accumulation:"}</strong> {isPlain ? "Price is flat, but big institutions and CEOs are quietly loading shares." : "Consolidation with high dark pool & C-suite buying."}</li>
@@ -751,8 +751,8 @@ export default function GuideContent() {
             </div>
             <p className="text-xs text-slate-300 font-sans leading-relaxed">
               {isPlain
-                ? "Shows real backtested win rates (>65%) and profit factors across 5 proven trading patterns so you know the odds before risking capital."
-                : "Audits empirical performance across 5 proven quantitative archetypes (Minervini VCP, Magic Formula, Peter Lynch GARP, Rule Breakers, and Turnaround Watch), reporting backtested win rates (>65%) and profit factors (>=2.0)."}
+                ? "Shows historical backtested win rates (>65%) and profit factors across 5 quantitative patterns so you understand past performance before risking capital. (Based on historical backtesting; past performance does not guarantee future results.)"
+                : "Audits empirical performance across 5 quantitative archetypes (Minervini VCP, Magic Formula, Peter Lynch GARP, Rule Breakers, and Turnaround Watch), reporting backtested win rates (>65%) and profit factors (>=2.0). Based on historical backtesting; past performance does not guarantee future results."}
             </p>
           </div>
 
@@ -791,8 +791,8 @@ export default function GuideContent() {
               <strong className="text-cyan-400 block font-mono">{isPlain ? "Edge Speed & Zero-Cookie Privacy" : "Cloudflare Edge SWR & Cookieless Privacy"}</strong>
               <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
                 {isPlain
-                  ? "Supercharged with Cloudflare edge caching for instant <10ms loading, with 100% cookieless privacy and zero tracking cookies."
-                  : "Engineered with RFC 5861 stale-while-revalidate edge caching delivering <10ms query responses, coupled with 100% cookieless, privacy-first GDPR compliance and Do Not Track (DNT) enforcement."}
+                  ? "Supercharged with Cloudflare edge caching for fast cached query responses, with 100% cookieless privacy and zero tracking cookies."
+                  : "Engineered with RFC 5861 stale-while-revalidate edge caching delivering fast cached query responses, coupled with 100% cookieless, privacy-first GDPR compliance and Do Not Track (DNT) enforcement."}
               </p>
             </div>
           </div>

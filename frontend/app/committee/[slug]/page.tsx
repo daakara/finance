@@ -15,7 +15,7 @@ interface CommitteeDefinition {
   chamber: "House" | "Senate" | "Joint";
   jurisdictionSummary: string;
   regulatedSectors: string[];
-  keyMembers: { name: string; slug: string; party: string; winRate: string }[];
+  keyMembers: { name: string; slug: string; party: string }[];
   trades: {
     politician: string;
     politicianSlug: string;
@@ -38,8 +38,8 @@ const COMMITTEE_DATABASE: CommitteeDefinition[] = [
     jurisdictionSummary: "Direct statutory oversight and annual National Defense Authorization Act (NDAA) budget allocations for Department of Defense procurement, military AI telemetry, cybersecurity, and aerospace defense contracting.",
     regulatedSectors: ["Aerospace & Defense", "Military AI & Telemetry", "Autonomous Drone Swarms", "Defense Cybersecurity"],
     keyMembers: [
-      { name: "Sen. Tommy Tuberville", slug: "tommy-tuberville", party: "R-AL", winRate: "69.5%" },
-      { name: "Rep. Ro Khanna", slug: "ro-khanna", party: "D-CA", winRate: "72.8%" }
+      { name: "Sen. Tommy Tuberville", slug: "tommy-tuberville", party: "R-AL" },
+      { name: "Rep. Ro Khanna", slug: "ro-khanna", party: "D-CA" }
     ],
     trades: [
       {
@@ -63,8 +63,8 @@ const COMMITTEE_DATABASE: CommitteeDefinition[] = [
     jurisdictionSummary: "Broadest legislative jurisdiction over telecommunications, semiconductor supply chains, energy grid modernization, pharmaceutical drug manufacturing, and interstate commerce regulations.",
     regulatedSectors: ["Semiconductors", "Datacenter Power Infrastructure", "Telecommunications", "Biotechnology"],
     keyMembers: [
-      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX", winRate: "74.0%" },
-      { name: "Rep. Nancy Pelosi (Leadership)", slug: "nancy-pelosi", party: "D-CA", winRate: "78.5%" }
+      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX" },
+      { name: "Rep. Nancy Pelosi (Leadership)", slug: "nancy-pelosi", party: "D-CA" }
     ],
     trades: [
       {
@@ -100,8 +100,8 @@ const COMMITTEE_DATABASE: CommitteeDefinition[] = [
     jurisdictionSummary: "Classified oversight of the 18 United States intelligence agencies (CIA, NSA, DIA, NGA, NRO), cyber warfare capabilities, and sovereign national security software platforms.",
     regulatedSectors: ["Sovereign Enterprise Software", "Classified Cloud Hosting", "Signals Intelligence", "Satellite Reconnaissance"],
     keyMembers: [
-      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX", winRate: "74.0%" },
-      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ", winRate: "68.4%" }
+      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX" },
+      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ" }
     ],
     trades: [
       {
@@ -125,8 +125,8 @@ const COMMITTEE_DATABASE: CommitteeDefinition[] = [
     jurisdictionSummary: "Oversight of international treaties, pharmaceutical import/export supply-chain agreements, foreign military sales, and geopolitical tech export restrictions.",
     regulatedSectors: ["Global Pharmaceutical Supply Chains", "Semiconductor Foundry Exports", "Cross-Border Energy Infrastructure"],
     keyMembers: [
-      { name: "Rep. Michael McCaul (Chairman)", slug: "michael-mccaul", party: "R-TX", winRate: "71.0%" },
-      { name: "Rep. Mark Green", slug: "mark-green", party: "R-TN", winRate: "73.2%" }
+      { name: "Rep. Michael McCaul (Chairman)", slug: "michael-mccaul", party: "R-TX" },
+      { name: "Rep. Mark Green", slug: "mark-green", party: "R-TN" }
     ],
     trades: [
       {
@@ -162,7 +162,7 @@ const COMMITTEE_DATABASE: CommitteeDefinition[] = [
     jurisdictionSummary: "Regulatory oversight of the SEC, Federal Reserve, CFTC, digital asset market structure legislation, public company reporting standards, and banking capital liquidity ratios.",
     regulatedSectors: ["Digital Asset Exchanges", "Commercial Banking", "Asset Management", "Payment Processors"],
     keyMembers: [
-      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ", winRate: "68.4%" }
+      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ" }
     ],
     trades: [
       {
@@ -195,7 +195,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
   }
 
   return {
-    title: `🏛️ ${committee.name} Stock Trades & Legislative Conflict Tracking | ARX Terminal`,
+    title: `🏛️ ${committee.name} Stock Trades & Legislative Conflict Tracking`,
     description: `Track securities transactions and STOCK Act disclosures by members of the ${committee.name}. Review Legislative Alignment Index (0-100) and regulatory oversight conflicts.`,
     openGraph: {
       title: `${committee.name} Congressional Stock Trading Hub`,
@@ -334,15 +334,14 @@ export default function CommitteeHubPage({ params }: PageProps) {
               <Link
                 key={idx}
                 href={`/politician/${member.slug}/`}
-                className="bg-[#111722] hover:bg-[#1a2332] p-3.5 rounded-xl border border-[#243044] flex items-center justify-between transition-colors"
+                className="bg-[#111722] hover:bg-[#1a2332] p-3.5 rounded-xl border border-[#243044] flex items-center justify-between transition-colors group"
               >
                 <div>
                   <strong className="text-white block font-bold">{member.name}</strong>
                   <span className="text-slate-500 text-[11px] font-sans">{member.party}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-500 block uppercase">Win Rate</span>
-                  <strong className="text-emerald-400 font-mono">{member.winRate}</strong>
+                  <span className="text-xs text-cyan-400 font-mono group-hover:translate-x-0.5 transition-transform">View Dossier →</span>
                 </div>
               </Link>
             ))}

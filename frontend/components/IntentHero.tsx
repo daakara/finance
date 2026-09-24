@@ -28,103 +28,120 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
 
   return (
     <div className="bg-[#0b101b] border border-[#1e2a3c] rounded-2xl p-4 sm:p-5 shadow-2xl space-y-4 font-sans text-slate-100">
-      <div className="text-center max-w-xl mx-auto space-y-1">
+      <div className="text-center max-w-2xl mx-auto space-y-1">
         <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
-          ARX Objective-Driven Workspace
+          Your Market Workflow
         </span>
         <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-          What are you looking to do today?
+          Four steps from opportunity to conviction
         </h2>
         <p className="text-xs text-slate-400 font-sans">
-          Select an objective to launch a guided, goal-oriented market journey.
+          Find → Analyze → Decide → Manage. Each step builds on the last.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card 1: Find an investment */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Step 1: Find opportunities */}
         <Link
-          href="/screener"
-          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
+          href="/radar"
+          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-2xl">🔎</span>
-              <span className="text-[10px] font-mono font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                Explore →
+              <span className="text-lg sm:text-2xl">🔎</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+                Step 1
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                Find an investment
+              <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Find opportunities
               </h3>
-              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
-                &ldquo;Show me stocks worth researching&rdquo;
+              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+                Scan setups, compounders, and value candidates
               </p>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed pt-1">
-              Scan high-conviction setups, growing compounders, and undervalued bargains.
-            </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
-            Goal-Driven Screener
+          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+            Radar
           </span>
         </Link>
 
-        {/* Card 2: Understand a stock */}
+        {/* Step 2: Analyze a stock */}
         <div
           onClick={() => setIsSearchOpen(true)}
-          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between cursor-pointer"
+          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between cursor-pointer"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-2xl">📊</span>
-              <span className="text-[10px] font-mono font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                Analyze →
+              <span className="text-lg sm:text-2xl">📊</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+                Step 2
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                Understand a stock
+              <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Understand one
               </h3>
-              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
-                &ldquo;I have a ticker and want to evaluate it&rdquo;
+              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+                Confluence, thesis health, and invalidation levels
               </p>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed pt-1">
-              Check confluence evidence, thesis health, and downside invalidation levels.
-            </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
-            Adaptive Terminal Engine
+          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+            Analysis
           </span>
         </div>
 
-        {/* Card 3: Check my portfolio */}
+        {/* Step 3: Decide whether/how */}
         <Link
-          href="/portfolio"
-          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
+          href="/setups"
+          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-2xl">🛡️</span>
-              <span className="text-[10px] font-mono font-bold text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                Review →
+              <span className="text-lg sm:text-2xl">🎯</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+                Step 3
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                Check my portfolio
+              <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Decide whether/how
               </h3>
-              <p className="text-[11px] text-cyan-400 font-mono mt-0.5">
-                &ldquo;Show me where my biggest risks are&rdquo;
+              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+                Position sizing, entry rules, and risk parameters
               </p>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed pt-1">
-              Inspect position concentration, Cornish-Fisher VaR (95%), and cash reserve buffers.
-            </p>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 mt-3 block border-t border-[#131d2b] pt-2">
-            Zero-Login Private Storage
+          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+            Trade Plan
+          </span>
+        </Link>
+
+        {/* Step 4: Manage what I own */}
+        <Link
+          href="/portfolio"
+          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-lg sm:text-2xl">🛡️</span>
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/50 px-1.5 py-0.5 rounded">
+                Step 4
+              </span>
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                Manage what I own
+              </h3>
+              <p className="text-[10px] sm:text-xs text-slate-400 leading-relaxed pt-0.5">
+                Concentration, VaR, and cash reserve monitoring
+              </p>
+            </div>
+          </div>
+          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+            Portfolio
           </span>
         </Link>
       </div>

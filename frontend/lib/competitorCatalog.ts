@@ -47,7 +47,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
     featuresMatrix: [
       {
         featureName: "Congressional STOCK Act Disclosures",
-        arxTerminal: "Real-Time PTR Ingestion with Committee Jurisdictional Scoring",
+        arxTerminal: "Curated PTR Disclosure Tracking with Committee Jurisdictional Scoring",
         competitor: "Real-Time Tracking & Politician Portfolios",
         notes: "Both platforms monitor Senate and House disclosures; ARX scores committee jurisdiction overlap (+16 to +32 pts)."
       },
@@ -59,7 +59,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
       },
       {
         featureName: "Downside Risk Modeling (VaR)",
-        arxTerminal: "Cornish-Fisher Modified VaR (95% & 99%) with Kupiec Auditing",
+        arxTerminal: "Cornish-Fisher Modified VaR (95% & 99%) with Kupiec Calibration (N ≥ 35)",
         competitor: false,
         notes: "Quiver provides raw holding returns without statistical tail-risk or kurtosis adjustments."
       },
@@ -169,7 +169,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
       },
       {
         featureName: "Tail Risk Modeling",
-        arxTerminal: "Cornish-Fisher M-VaR (95% & 99%) with Kupiec Auditing",
+        arxTerminal: "Cornish-Fisher M-VaR (95% & 99%) with Kupiec Calibration (N ≥ 35)",
         competitor: "Standard Historical Volatility & Beta",
         notes: "ARX adjusts for real-world fat tails and negative return skewness."
       }
@@ -208,7 +208,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
         featureName: "Deployment & Accessibility",
         arxTerminal: "Web-native (Next.js, PWA, Cloudflare Edge)",
         competitor: "Desktop Client / Dedicated Terminal Hardware",
-        notes: "ARX loads in under 10ms with offline caching."
+        notes: "In-memory caching architecture for high-speed client-side queries."
       },
       {
         featureName: "Quantitative Execution Geometry",

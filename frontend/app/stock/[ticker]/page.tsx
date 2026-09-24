@@ -87,7 +87,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
   const statusIcon = isStage4 ? "🔴" : isStage1 ? "🟡" : (hasVerifiedData ? "🟢" : "⚪");
 
   return {
-    title: `${statusIcon} ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders | ARX Terminal`,
+    title: `${statusIcon} ${name} (${sym}) Trading Blueprint • Minervini VCP Levels & Insiders`,
     description: `Institutional quantitative analysis for ${name} (${sym}) at ${price}. Review 4 ATR execution states, Mark Minervini VCP levels, 5-Factor radar score, and Congressional STOCK Act disclosures.`,
     openGraph: {
       title: `${statusIcon} ${name} (${sym}) at ${price} — Quantitative Analysis & Invalidation Levels`,

@@ -2,24 +2,42 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-
-# AI Crawlers & LLM Agents
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: GPTBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Applebot
-Allow: /
+Disallow: /action-center
+Disallow: /adoption-center
+Disallow: /audit-explorer
+Disallow: /autonomous-governance
+Disallow: /coaching-intelligence
+Disallow: /committee-intelligence
+Disallow: /committee-network
+Disallow: /decision-explorer
+Disallow: /decision-inbox
+Disallow: /dissent-explorer
+Disallow: /evaluation
+Disallow: /executive-sandbox
+Disallow: /executive-workspace
+Disallow: /governance-center
+Disallow: /graph-explorer
+Disallow: /intelligence-center
+Disallow: /learning-intelligence
+Disallow: /oos
+Disallow: /optimization-intelligence
+Disallow: /release-dashboard
+Disallow: /resilience-intelligence
+Disallow: /risks-and-groupthink
+Disallow: /simulation-intelligence
+Disallow: /strategy-laboratory
+Disallow: /strategy-orchestrator
+Disallow: /workspace
+Disallow: /design-system-preview
+Disallow: /me
+Disallow: /cockpit
+Disallow: /future
+Disallow: /household
+Disallow: /progress
+Disallow: /today
+Disallow: /journal
+Disallow: /performance
+Disallow: /workbench/
+Disallow: /research
 
 Sitemap: https://www.arxterminal.com/sitemap.xml

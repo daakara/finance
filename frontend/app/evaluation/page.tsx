@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -51,6 +53,13 @@ interface MilestoneData {
 }
 
 export default function ProspectiveEvaluationPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
   const [evalKey, setEvalKey] = useState<string>("");
   const [inputKey, setInputKey] = useState<string>("");
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
@@ -182,6 +191,10 @@ export default function ProspectiveEvaluationPage() {
       return matchCohort && matchStatus && matchSymbol;
     });
   }, [ledgerData, selectedCohort, selectedStatus, searchSymbol]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">

@@ -22,23 +22,17 @@ export default function CompareSsrShell() {
             </Link>
 
             <nav aria-label="Navigation" className="hidden md:flex items-center gap-1 text-xs font-semibold">
+              <Link href="/radar" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
+                Radar
+              </Link>
               <Link href="/" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
                 Terminal
               </Link>
-              <Link href="/screener" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
-                Gems Screener
-              </Link>
-              <Link href="/smart-money" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
-                Smart Money
-              </Link>
-              <Link href="/compare" className="px-3 py-1.5 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                Compare
+              <Link href="/setups" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
+                Trade Plan
               </Link>
               <Link href="/portfolio" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
                 Portfolio
-              </Link>
-              <Link href="/guide" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors">
-                Field Manual
               </Link>
             </nav>
           </div>

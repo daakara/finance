@@ -1,10 +1,24 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import CertificationStatusBanner from "../../components/committee/CertificationStatusBanner";
 import GovernanceAlertFeed from "../../components/committee/GovernanceAlertFeed";
 
 export default function GovernanceCenterPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#0c1017] text-slate-100 font-mono">
       <ExecutiveIntelligenceNav badgeText="13/13 GATES CERTIFIED" />

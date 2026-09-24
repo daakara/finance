@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Head-to-Head Asset & Pipeline Comparison Matrix | ARX Terminal",
+  title: "Head-to-Head Asset & Pipeline Comparison Matrix",
   description: "Compare global stocks, ETFs, and cryptocurrencies side-by-side across fundamental valuations, volatility, Sharpe ratios, and beta sensitivity.",
   openGraph: {
-    title: "Asset & Pipeline Comparison Matrix | ARX Terminal",
+    title: "Asset & Pipeline Comparison Matrix",
     description: "Multi-asset quantitative comparison matrix evaluating valuation, beta, and Sharpe ratios.",
     url: "https://www.arxterminal.com/compare/",
     siteName: "ARX Terminal",

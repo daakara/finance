@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import CommitteeMetricsPanel from "../../components/committee/CommitteeMetricsPanel";
 import CommitteeHealthGrid from "../../components/committee/CommitteeHealthGrid";
@@ -10,6 +13,17 @@ import {
 } from "../../lib/telemetry/committeeIntelligenceEngine";
 
 export default function CommitteeIntelligencePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   const dashboard = getCommitteeIntelligenceDashboard();
 
   return (

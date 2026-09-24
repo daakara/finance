@@ -1,5 +1,7 @@
 "use client";
 
+import { trackSearchResolve } from "../lib/matomo";
+
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SHARED_WATCHLIST_ITEMS } from "../lib/constants";
@@ -80,6 +82,7 @@ export default function UniversalOmniSearch() {
   const handleSelectTicker = (sym: string) => {
     const cleanSym = sym.trim().toUpperCase();
     if (!cleanSym) return;
+    trackSearchResolve(cleanQ || sym, true, cleanSym);
     setIsOpen(false);
     if (typeof window !== "undefined") {
       window.location.href = `/?symbol=${encodeURIComponent(cleanSym)}`;

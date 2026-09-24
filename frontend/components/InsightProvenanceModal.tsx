@@ -1,5 +1,7 @@
 "use client";
 
+import { trackProvenanceExpand } from "../lib/matomo";
+
 import { useState } from "react";
 import { OptimalExecutionPlan } from "../lib/api";
 
@@ -24,7 +26,7 @@ export default function InsightProvenanceModal({
     <>
       {/* Trigger Button: Progressive Disclosure */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => { trackProvenanceExpand(symbol, "InsightProvenanceModal"); setIsOpen(true); }}
         type="button"
         aria-label={`Inspect ${symbol} quantitative thesis and source provenance`}
         className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#090d14] hover:bg-[#162030] border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all text-xs font-mono font-bold shadow cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"

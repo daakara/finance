@@ -376,6 +376,12 @@ async function main() {
     assert.equal(tourSrc.includes('encrypted on your device'), false);
   });
 
+  await runTest('IntentHero.tsx has zero private-storage or zero-login claims', () => {
+    const heroSrc = fs.readFileSync(path.join(rootDir, 'frontend/components/IntentHero.tsx'), 'utf-8');
+    assert.equal(heroSrc.includes('Zero-Login Private Storage'), false);
+    assert.equal(heroSrc.includes('100% private to your browser'), false);
+  });
+
   // -------------------------------------------------------------------------
   // SUMMARY
   // -------------------------------------------------------------------------

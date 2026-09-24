@@ -14,7 +14,9 @@
  * - INV-OI74: Signal-to-Outcome Traceability
  */
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import IntelligenceHeader from '../../components/ui/IntelligenceHeader';
 import HorizonCard from '../../components/ui/HorizonCard';
 import HorizonMetricCard from '../../components/ui/HorizonMetricCard';
@@ -696,6 +698,17 @@ Invariants Certified: INV-OI67..INV-OI74 (100% Pass)
 }
 
 export default function StrategyOrchestratorPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-950 text-slate-400 p-8">Loading Strategy Orchestrator...</div>}>
       <StrategyOrchestratorContent />

@@ -59,7 +59,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
       "The Cornish-Fisher expansion applies a polynomial adjustment to the normal critical value z_alpha using sample skewness (S) and excess kurtosis (K), capturing true tail vulnerability without requiring computationally intensive Monte Carlo simulations.",
       "This modified quantile allows portfolio managers to estimate downside capital at risk with institutional precision during market shocks."
     ],
-    arxApplication: "ARX Terminal computes 95% and 99% Cornish-Fisher Modified VaR across every individual stock and multi-asset portfolio, continuously auditing forecast accuracy through automated Kupiec exception tests.",
+    arxApplication: "ARX Terminal computes 95% and 99% Cornish-Fisher Modified VaR across individual stocks and multi-asset portfolios, including on-demand Kupiec POF test calibration for assets with sufficient sample depth (N ≥ 35).",
     keyTakeaway: "Cornish-Fisher M-VaR prevents catastrophic underestimation of downside risk by explicitly accounting for market fat tails and asymmetric crash skewness.",
     relatedTerms: ["arx-model", "kupiec-pof-test", "amihud-illiquidity"],
     relatedRoute: { title: "Analyze Portfolio Cornish-Fisher VaR", url: "/portfolio/" }
@@ -75,7 +75,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
       "The law requires lawmakers to file Periodic Transaction Reports (PTRs) within 30 to 45 days of any securities transaction exceeding $1,000 made by themselves, their spouses, or dependent children.",
       "While intended to deter conflicts of interest, delays in filing and modest late-filing fines ($200) have led to persistent late disclosures, providing critical forensic signals for retail market observers."
     ],
-    arxApplication: "ARX Terminal ingests statutory Senate and House PTR filings in real time, scoring legislative committee jurisdiction overlap (+16 to +32 points) and decaying stale signals via an automated time-decay algorithm.",
+    arxApplication: "ARX Terminal tracks statutory Senate and House PTR filings with jurisdictional scoring (+16 to +32 points) and decays stale signals via an automated time-decay algorithm.",
     keyTakeaway: "STOCK Act disclosures provide an unprecedented public window into legislative capital movement, but require forensic decay analysis to account for filing latency.",
     relatedTerms: ["late-filer-decay", "amihud-illiquidity"],
     relatedRoute: { title: "Explore Congressional Smart Money Radar", url: "/smart-money/" }
@@ -155,7 +155,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
       "Under the null hypothesis, the model is perfectly calibrated. If the likelihood ratio statistic exceeds the critical chi-square value (3.84 at the 5% significance level), the VaR model is rejected for either underestimating risk (dangerous) or overestimating risk (capital-inefficient).",
       "This test forms the backbone of the Basel Committee's regulatory traffic-light system for internal market risk models."
     ],
-    arxApplication: "ARX Terminal features an autonomous Self-Healing Forecast Auditor that runs Kupiec POF tests on historical returns, expanding confidence intervals whenever volatility regimes shift.",
+    arxApplication: "ARX Terminal historical forecast evaluation applies Kupiec POF tests on historical returns when sample size permits (N ≥ 35), expanding confidence intervals whenever volatility regimes shift.",
     keyTakeaway: "Kupiec tests ensure risk models remain statistically honest and self-calibrating rather than relying on unverified assumptions.",
     relatedTerms: ["cornish-fisher-var", "arx-model"],
     relatedRoute: { title: "Review Model Governance & Calibration", url: "/guide/" }

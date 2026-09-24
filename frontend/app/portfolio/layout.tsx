@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Portfolio & Risk Allocations | Zero-Login Private Asset Tracker",
+  title: "My Portfolio & Risk Allocations | Browser-First Asset Tracker",
   description:
-    "Zero-login private portfolio tracker calculating real-time profit & loss (P&L), position sizing, downside Value-at-Risk (VaR), and target risk ladders across global equities and crypto.",
+    "Browser-first private portfolio tracker calculating real-time profit & loss (P&L), position sizing, downside Value-at-Risk (VaR), and target risk ladders across global equities and crypto.",
   openGraph: {
-    title: "My Portfolio & Risk Allocations | ARX Terminal",
-    description: "Track your equity holdings, cost basis, unrealized P&L, and downside risk with zero-login private client storage.",
+    title: "My Portfolio & Risk Allocations",
+    description: "Track your equity holdings, cost basis, unrealized P&L, and downside risk with browser-first client storage.",
     url: "https://www.arxterminal.com/portfolio/",
     siteName: "ARX Terminal",
     type: "website",

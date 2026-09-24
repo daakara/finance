@@ -235,7 +235,7 @@ export default function ThirtySecondCockpit() {
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href="/me/execute"
+            href="/setups"
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg transition-all flex items-center gap-1.5"
           >
             <span>▶</span> Execute Now
@@ -360,36 +360,6 @@ export default function ThirtySecondCockpit() {
           Deep Exploration Workspaces
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          <Link href="/me/allocator" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Capacity Allocator (H5)
-          </Link>
-          <Link href="/me/signals" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Telemetry Signals (H6)
-          </Link>
-          <Link href="/me/twin" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Causal Twin DAG (H7)
-          </Link>
-          <Link href="/me/household" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Household OS (H8)
-          </Link>
-          <Link href="/me/trajectories" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Trajectory Sequencer (H9)
-          </Link>
-          <Link href="/me/strategy" className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
-            Household Strategy (H9/10)
-          </Link>
-          <Link href="/me/execute" className="px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/80 font-semibold">
-            Execution Cockpit (H11)
-          </Link>
-          <Link href="/me/decisions" className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/80 font-semibold">
-            Decision Journal (H11)
-          </Link>
-          <Link href="/me/patterns" className="px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-700/80 font-semibold">
-            Behavioral Patterns (H12)
-          </Link>
-          <Link href="/me/identity" className="px-3 py-1.5 rounded-lg bg-indigo-950/90 hover:bg-indigo-900/90 text-indigo-200 border border-indigo-600/90 font-semibold">
-            Identity Intelligence (H13)
-          </Link>
           <Link href="/screener" className="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60">
             Market Screener Terminal
           </Link>

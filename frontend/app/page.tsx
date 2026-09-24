@@ -1,5 +1,8 @@
 "use client";
 
+import { trackAnalysisToSetup } from "../lib/matomo";
+import { useDataSource } from "../lib/DataSourceContext";
+
 import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -31,6 +34,7 @@ import TerminalSsrShell from "../components/TerminalSsrShell";
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
 function TerminalContent() {
+  const dataSource = useDataSource();
   const searchParams = useSearchParams();
   const urlSymbol = searchParams.get("symbol") || searchParams.get("ticker");
   const urlTab = searchParams.get("tab")?.toUpperCase();
@@ -259,6 +263,7 @@ function TerminalContent() {
             primaryAction={{
               label: `Prepare Trade Setup (${selectedSymbol}) →`,
               href: `/setups?symbol=${selectedSymbol}`,
+              onClick: () => trackAnalysisToSetup(selectedSymbol),
             }}
             secondaryAction={{
               label: "Scan Radar Candidates →",
@@ -358,7 +363,7 @@ function TerminalContent() {
                   ) : (
                     <div className="text-slate-500 flex items-center gap-2">
                       <span className="hidden md:inline">NYSE/NASDAQ Session State</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">15m Delayed/EOD</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">{dataSource.isRealtime ? "IEX Real-Time" : dataSource.freshness === "Unknown" ? "15m Delayed / EOD" : dataSource.freshness}</span>
                     </div>
                   )}
                 </div>

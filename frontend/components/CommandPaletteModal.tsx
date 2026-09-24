@@ -11,11 +11,12 @@ import MiniSparkline from "./MiniSparkline";
 
 interface CommandItem {
   id: string;
-  category: "HUB" | "ACTION" | "TICKET" | "ASSET" | "POLITICIAN" | "GOVERNOR" | "NAVIGATION";
+  category: "HUB" | "ACTION" | "TICKET" | "ASSET" | "POLITICIAN" | "GOVERNOR";
   title: string;
   subtitle: string;
   badge?: string;
   icon: string;
+  keywords?: string[];
   price?: number;
   changePct?: number;
   action: () => void;
@@ -83,6 +84,13 @@ export default function CommandPaletteModal({
     const items: CommandItem[] = [];
 
     // 1. Canonical 4 Flagship Release 1 Hubs (Radar → Analysis → Trade Plan → Portfolio)
+    const hubKeywords: Record<string, string[]> = {
+      radar: ["radar", "screener", "gems", "find", "/radar"],
+      terminal: ["terminal", "analysis", "blueprint", "understand", "/terminal", "/analysis"],
+      setups: ["setups", "trade plan", "decide", "execution", "/setups"],
+      portfolio: ["portfolio", "holdings", "manage", "tracker", "/portfolio"],
+    };
+
     CANONICAL_HUBS.forEach((hub) => {
       items.push({
         id: `hub-${hub.id}`,
@@ -91,11 +99,41 @@ export default function CommandPaletteModal({
         subtitle: `${hub.mentalModel} — ${hub.question}`,
         badge: hub.badge,
         icon: hub.icon,
+        keywords: hubKeywords[hub.id] || [hub.id],
         action: () => {
           router.push(hub.href);
           onClose();
         },
       });
+    });
+
+    // Supporting Workspaces: Smart Money & Asset Comparison
+    items.push({
+      id: "hub-smart-money",
+      category: "HUB",
+      title: "Smart Money Flow Hub",
+      subtitle: "Congress Trades, Institutional 13F Filings, SEC Form 4 & Dark Pool Flow",
+      badge: "Institutional",
+      icon: "🏛️",
+      keywords: ["smart-money", "smart money", "congress", "stock act", "insiders", "capitol", "/smart-money"],
+      action: () => {
+        router.push("/smart-money");
+        onClose();
+      },
+    });
+
+    items.push({
+      id: "hub-compare",
+      category: "HUB",
+      title: "Asset Comparison Workspace",
+      subtitle: "Head-to-head multi-factor quant thesis comparison",
+      badge: "Quant",
+      icon: "⚖️",
+      keywords: ["compare", "comparison", "matrix", "head-to-head", "/compare"],
+      action: () => {
+        router.push("/compare");
+        onClose();
+      },
     });
 
     items.push({
@@ -309,7 +347,7 @@ export default function CommandPaletteModal({
       { slug: "dan-crenshaw", name: "Dan Crenshaw", chamber: "House", desc: "Energy & Commerce Committee Trades" },
       { slug: "tommy-tuberville", name: "Tommy Tuberville", chamber: "Senate", desc: "Armed Services & Ag Flow" },
       { slug: "ro-khanna", name: "Ro Khanna", chamber: "House", desc: "Silicon Valley Tech Committee Overlap" },
-      { slug: "mitch-mcconnell", name: "Mitch McConnell", chamber: "Senate", desc: "Defense & Infrastructure Appropriations" },
+      { slug: "michael-mccaul", name: "Michael McCaul", chamber: "House", desc: "Foreign Affairs & Healthcare GLP-1 Disclosures" },
     ];
 
     politicians.forEach((pol) => {
@@ -320,6 +358,7 @@ export default function CommandPaletteModal({
         subtitle: `${pol.chamber} • ${pol.desc}`,
         badge: "STOCK Act",
         icon: "🏛️",
+        keywords: [pol.slug, pol.name.toLowerCase(), "politician", "congress", "stock act"],
         action: () => {
           router.push(`/politician/${pol.slug}`);
           onClose();
@@ -332,17 +371,19 @@ export default function CommandPaletteModal({
 
   // Filter commands by query with dynamic ticker navigation support
   const filteredCommands = useMemo(() => {
-    const q = query.trim().toUpperCase();
+    const cleanQuery = query.trim().replace(/^\//, "");
+    const q = cleanQuery.toUpperCase();
     const isTickerQuery = /^[A-Z]{1,5}$/.test(q);
 
     let base = allCommands;
-    if (query.trim()) {
-      const qLower = query.toLowerCase().trim();
+    if (cleanQuery) {
+      const qLower = cleanQuery.toLowerCase();
       base = allCommands.filter((cmd) => {
         return (
           cmd.title.toLowerCase().includes(qLower) ||
           cmd.subtitle.toLowerCase().includes(qLower) ||
-          (cmd.badge && cmd.badge.toLowerCase().includes(qLower))
+          (cmd.badge && cmd.badge.toLowerCase().includes(qLower)) ||
+          (cmd.keywords && cmd.keywords.some((k) => k.toLowerCase().includes(qLower)))
         );
       });
     }

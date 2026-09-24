@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import IntelligenceHeader from "../../components/ui/IntelligenceHeader";
 import HorizonMetricCard from "../../components/ui/HorizonMetricCard";
 import { HorizonCard } from "../../components/ui/HorizonCard";
@@ -296,6 +298,17 @@ function AdoptionCenterContent() {
 }
 
 export default function AdoptionCenterPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense
       fallback={

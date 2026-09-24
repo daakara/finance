@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import Link from "next/link";
 import IntelligenceShell from "../../components/ui/IntelligenceShell";
 import HorizonCard from "../../components/ui/HorizonCard";
@@ -432,6 +434,17 @@ function SimulationIntelligenceContent() {
 }
 
 export default function SimulationIntelligencePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<IntelligenceLoadingState message="Loading Simulation Intelligence..." />}>
       <SimulationIntelligenceContent />

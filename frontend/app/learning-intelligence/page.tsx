@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useMemo, Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "@/components/committee/ExecutiveIntelligenceNav";
 import RelatedArtifactsCard from "@/components/committee/RelatedArtifactsCard";
 import {
@@ -645,6 +646,17 @@ function LearningDashboardContent() {
 }
 
 export default function LearningIntelligencePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400 font-mono">Loading Learning Intelligence...</div>}>
       <LearningDashboardContent />

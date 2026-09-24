@@ -14,6 +14,7 @@ import {
   OptionsFlowItem,
   SecInsiderTradeItem,
 } from "../../lib/api";
+import { trackSmartMoneyAssetClick } from "../../lib/matomo";
 
 type TimeframeOption = "7D" | "30D" | "90D" | "180D" | "1Y" | "ALL";
 
@@ -71,7 +72,7 @@ function SmartMoneyContent() {
         const res = await fetchSmartMoneyOverview();
         if (isMounted) {
           setData(res);
-          setDataSource(res._dataSource === "live" ? "delayed" : "curated");
+          setDataSource(res._dataSource === "live" ? "delayed" : res._dataSource === "curated" ? "curated" : res._dataSource === "fallback" ? "fallback" : "curated");
         }
       } catch (err) {
         console.error("Failed to load smart money overview:", err);
@@ -161,10 +162,11 @@ function SmartMoneyContent() {
       { bg: "bg-[#111722]", border: "border-amber-700/60", badge: "Whale Tier" },
     ];
     const styling = bgMap[idx % bgMap.length];
+    const polName = item.politician.replace(/^(Rep\.|Sen\.)\s*/, "");
     return {
       ticker: item.ticker,
       name: item.asset_name,
-      type: `${item.politician.split(" ")[0]} ${item.transaction_type.includes("Call") ? "Calls" : "Position"}`,
+      type: `${polName} · ${item.transaction_type.includes("Call") ? "Calls" : "Equity"}`,
       postTradeAlpha: `${item.performance_since_pct > 0 ? "+" : ""}${item.performance_since_pct}%`,
       amountRange: item.amount_range || "Undisclosed",
       sector: item.sector || "Equity",
@@ -190,7 +192,7 @@ function SmartMoneyContent() {
         <div className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500/80 border border-cyan-400/40" title="Curated Research Database"></span>
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                 <span>🏛️ Follow The Money: Smart Money & Insider Radar</span>
               </h1>
@@ -216,7 +218,7 @@ function SmartMoneyContent() {
               <span className="text-base font-bold text-cyan-400 tabular-nums">{secInsiders.length}</span>
             </div>
             <div className="bg-[#090d14] px-3 py-1.5 rounded-lg border border-[#243044] text-right">
-              <span className="text-[10px] text-slate-500 block uppercase">Options Volume</span>
+              <span className="text-[10px] text-slate-500 block uppercase">Options Volume (Archive)</span>
               <span className="text-base font-bold text-amber-400 tabular-nums">$112.8M</span>
             </div>
           </div>
@@ -237,6 +239,7 @@ function SmartMoneyContent() {
               <Link
                 key={i}
                 href={`/?symbol=${card.ticker}`}
+                onClick={() => trackSmartMoneyAssetClick(card.ticker, card.badge)}
                 className={`${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
               >
                 <div className="flex items-start justify-between gap-1">
@@ -581,7 +584,7 @@ function SmartMoneyContent() {
                   {loading ? (
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-slate-500">
-                        Synchronizing US House & Senate STOCK Act disclosures...
+                        Loading curated STOCK Act disclosure archive...
                       </td>
                     </tr>
                   ) : congressTrades.length === 0 ? (

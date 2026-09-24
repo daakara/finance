@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import IntelligenceShell from "../../components/ui/IntelligenceShell";
 import IntelligenceHeader from "../../components/ui/IntelligenceHeader";
 import SeverityBadge from "../../components/ui/SeverityBadge";
@@ -387,6 +389,17 @@ function ActionCenterContent() {
 }
 
 export default function ActionCenterPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="p-8 font-mono text-cyan-400">Loading Executive Action Center...</div>}>
       <ActionCenterContent />

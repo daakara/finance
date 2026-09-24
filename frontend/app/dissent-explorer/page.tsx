@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import DissentImpactCard from "../../components/committee/DissentImpactCard";
 import DissentExplorer from "../../components/committee/DissentExplorer";
@@ -9,6 +12,17 @@ import {
 } from "../../lib/telemetry/committeeIntelligenceEngine";
 
 export default function DissentExplorerPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   const utilizationRate = computeDissentUtilizationRate(CANONICAL_DISSENTS);
 
   return (

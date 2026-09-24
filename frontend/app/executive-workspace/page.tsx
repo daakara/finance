@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import React, { useState, useMemo, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import Link from "next/link";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import IntelligenceHeader from "../../components/ui/IntelligenceHeader";
@@ -965,6 +967,17 @@ function ExecutiveWorkspaceInner() {
 }
 
 export default function ExecutiveWorkspacePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#070D17] text-slate-400 p-8 font-mono text-xs">Loading Executive Decision Workspace...</div>}>
       <ExecutiveWorkspaceInner />

@@ -78,6 +78,7 @@ export const metadata: Metadata = {
 };
 
 import { ExperienceModeProvider } from "../context/ExperienceModeContext";
+import { DataSourceProvider } from "../lib/DataSourceContext";
 
 export const viewport = {
   themeColor: "#06b6d4",
@@ -184,13 +185,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] antialiased transition-colors duration-200">
         <ExperienceModeProvider>
-          <OfflineStatusBanner />
-          <ServiceWorkerRegister />
-          <Suspense fallback={null}>
-            <MatomoTracker />
-          </Suspense>
-          {children}
-          <FinancialDisclaimer />
+          <DataSourceProvider>
+            <OfflineStatusBanner />
+            <ServiceWorkerRegister />
+            <Suspense fallback={null}>
+              <MatomoTracker />
+            </Suspense>
+            {children}
+            <FinancialDisclaimer />
+          </DataSourceProvider>
         </ExperienceModeProvider>
       </body>
     </html>

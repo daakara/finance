@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo, Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import RelatedArtifactsCard from "../../components/committee/RelatedArtifactsCard";
 import {
@@ -740,6 +741,17 @@ function ResilienceContent() {
 }
 
 export default function ResiliencePage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense
       fallback={

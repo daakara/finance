@@ -23,6 +23,7 @@ import { formatOrderPlanString, copyOrderPlanToClipboard } from '../../lib/order
 import { validateFillParams, generateIdempotencyKey } from '../../lib/tradeLifecycle';
 import { isStatusActionable, isDecisionActionable } from '../../types/decisionContract';
 import { formatConfluenceScore } from '../../lib/confluenceFormat';
+import { trackSetupToPortfolio } from '../../lib/matomo';
 
 type SetupLoadState = 'LOADING' | 'ACTIONABLE' | 'SUPPRESSED_CRITERIA' | 'UNSUPPORTED_ASSET' | 'REQUEST_FAILURE' | 'BROWSE_ALL';
 
@@ -388,6 +389,7 @@ function SetupsContent() {
       }
 
       setFillSuccess(true);
+      trackSetupToPortfolio(effectiveSetup.ticker, s);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("finance:portfolio-updated"));
       }

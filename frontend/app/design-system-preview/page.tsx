@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import { WorkstationGrid } from '@/components/layout/WorkstationGrid';
 import TickerCommandStrip, {
   TickerCommandStripSkeleton,
@@ -56,6 +58,14 @@ import Phase28MasterDashboard from '@/components/behavioral/Phase28MasterDashboa
 import Phase29MasterDashboard from '@/components/organizational/Phase29MasterDashboard';
 
 export default function DesignSystemPreviewPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS && process.env.NODE_ENV === 'production') {
+      router.replace('/');
+    }
+  }, [router]);
+
   const [activeTab, setActiveTab] = useState<
     'tokens' | 'grid' | 'cards' | 'checklist' | 'command-strip' | 'watchlist-drawer' | 'workspace-canvas' | 'sprint-3' | 'sprint-4' | 'sprint-5' | 'sprint-6' | 'sprint-7' | 'sprint-8' | 'sprint-8-5' | 'phase-27' | 'phase-28' | 'phase-29'
   >('tokens');
@@ -64,6 +74,10 @@ export default function DesignSystemPreviewPage() {
   const [sizerOpenAlert, setSizerOpenAlert] = useState<boolean>(false);
   const [sprint3Scenario, setSprint3Scenario] = useState<'noise' | 'material' | 'critical'>('material');
   const [sprint3Acknowledged, setSprint3Acknowledged] = useState<boolean>(false);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS && process.env.NODE_ENV === 'production') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-bg-app text-text-primary p-6 lg:p-10 font-sans">

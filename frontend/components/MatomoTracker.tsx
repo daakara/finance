@@ -1,5 +1,7 @@
 "use client";
 
+import { trackPageExitNoAction } from "../lib/matomo";
+
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
@@ -44,6 +46,22 @@ export default function MatomoTracker() {
 
     previousUrlRef.current = fullUrl;
   }, [pathname, searchParams]);
+
+    // Friction detection: Track page exit with no user interaction
+  useEffect(() => {
+    let actionTaken = false;
+    const markAction = () => { actionTaken = true; };
+    window.addEventListener("click", markAction, { passive: true });
+    window.addEventListener("keydown", markAction, { passive: true });
+
+    return () => {
+      window.removeEventListener("click", markAction);
+      window.removeEventListener("keydown", markAction);
+      if (!actionTaken && pathname) {
+        trackPageExitNoAction(pathname);
+      }
+    };
+  }, [pathname]);
 
   return null;
 }

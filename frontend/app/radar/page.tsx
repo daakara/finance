@@ -12,6 +12,7 @@ import {
   RadarCapabilities,
   RadarCapabilityStatus,
 } from '../../lib/api';
+import { trackRadarAssetClick } from '../../lib/matomo';
 
 interface RadarAsset {
   ticker: string;
@@ -484,6 +485,7 @@ function RadarContent() {
               <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
                 <Link
                   href={`/?symbol=${heroAsset.ticker}`}
+                  onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
                   className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <span>Analyze {heroAsset.ticker}</span>
@@ -491,6 +493,7 @@ function RadarContent() {
                 </Link>
                 <Link
                   href={`/setups?symbol=${heroAsset.ticker}`}
+                  onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 flex items-center justify-center gap-1.5 hover:border-slate-600"
                 >
                   <span>Inspect Setup in /setups</span>
@@ -805,7 +808,13 @@ function RadarContent() {
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
                         <td className="p-3">
-                          <div className="font-black text-white text-sm tracking-tight">{asset.ticker}</div>
+                          <Link
+                            href={`/?symbol=${asset.ticker}`}
+                            onClick={() => trackRadarAssetClick(asset.ticker)}
+                            className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block"
+                          >
+                            {asset.ticker}
+                          </Link>
                           <div className="text-[10px] text-slate-400 font-sans truncate max-w-[120px]">{asset.name}</div>
                         </td>
                         <td className="p-3">
@@ -840,6 +849,7 @@ function RadarContent() {
                         <td className="p-3 text-right">
                           <Link
                             href={`/setups?ticker=${asset.ticker}`}
+                            onClick={() => trackRadarAssetClick(asset.ticker)}
                             className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block ${
                               isActionableBuy
                                 ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-300 border border-emerald-500/40'

@@ -1,11 +1,24 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import DecisionExplorer from "../../components/committee/DecisionExplorer";
 import { CANONICAL_COMMITTEE_DECISIONS } from "../../lib/telemetry/committeeIntelligenceEngine";
 
 export default function DecisionExplorerPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#0c1017] text-slate-100 font-mono">
       <ExecutiveIntelligenceNav badgeText="INV-OI13 VERIFIED" />

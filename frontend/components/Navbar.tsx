@@ -1,5 +1,7 @@
 "use client";
 
+import { trackFirstHubNavigation } from "../lib/matomo";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -120,19 +122,24 @@ export default function Navbar({
         return;
       }
 
-      if (e.key === "d" || e.key === "D") {
+      if ((e.key === "d" || e.key === "D") && e.altKey) {
+        e.preventDefault();
         const nextRole = activeRole === "DAY_TRADER" ? "LONG_TERM" : "DAY_TRADER";
         handleRoleToggle(nextRole);
-      } else if (e.key === "v" || e.key === "V") {
+      } else if ((e.key === "v" || e.key === "V") && e.altKey) {
+        e.preventDefault();
         const nextV = vernacularMode === "PLAIN_ENGLISH" ? "PRO_QUANT" : "PLAIN_ENGLISH";
         handleVernacularToggle(nextV);
-      } else if (e.key === "s" || e.key === "S") {
+      } else if ((e.key === "s" || e.key === "S") && e.altKey) {
+        e.preventDefault();
         const radarHref = buildHubHref("radar", effectiveSymbol);
         if (pathname !== "/radar") router.push(radarHref);
-      } else if (e.key === "p" || e.key === "P") {
+      } else if ((e.key === "p" || e.key === "P") && e.altKey) {
+        e.preventDefault();
         const portfolioHref = buildHubHref("portfolio", effectiveSymbol);
         if (pathname !== "/portfolio") router.push(portfolioHref);
-      } else if (e.key === "t" || e.key === "T") {
+      } else if ((e.key === "t" || e.key === "T") && e.altKey) {
+        e.preventDefault();
         const analysisHref = buildHubHref("analysis", effectiveSymbol);
         if (pathname !== "/") router.push(analysisHref);
       } else if (e.key === "?") {
@@ -225,7 +232,7 @@ export default function Navbar({
                 </div>
               </Link>
 
-              {/* Desktop Navigation Links (Canonical 6 Hubs) */}
+              {/* — Canonical 4 Hubs (Journal + Performance deferred post-R1) — */}
               <nav
                 aria-label="Main Navigation"
                 data-testid="desktop-nav-links"
@@ -238,6 +245,7 @@ export default function Navbar({
                     <Link
                       key={hub.id}
                       href={href}
+                      onClick={() => trackFirstHubNavigation(hub.id)}
                       aria-current={active ? "page" : undefined}
                       className={`px-1.5 xl:px-2.5 2xl:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                         active
@@ -496,10 +504,11 @@ export default function Navbar({
             <div className="space-y-2.5 text-xs">
               {[
                 { key: "/", desc: "Open Universal Omni-Search & Ticker Scanner" },
-                { key: "D", desc: "Toggle Day Trader ⚡ / Long Term 🏛️ Mode" },
-                { key: "T", desc: "Navigate to Main Terminal Workspace" },
-                { key: "S", desc: "Navigate to Screener & Pattern Radar" },
-                { key: "P", desc: "Navigate to Private Portfolio Sizer" },
+                { key: "Alt+D", desc: "Toggle Day Trader ⚡ / Long Term 🏛️ Mode" },
+                { key: "Alt+T", desc: "Navigate to Main Terminal Workspace" },
+                { key: "Alt+S", desc: "Navigate to Screener & Pattern Radar" },
+                { key: "Alt+P", desc: "Navigate to Private Portfolio Sizer" },
+                { key: "Alt+V", desc: "Toggle Plain English / Pro-Quant Vernacular" },
                 { key: "?", desc: "Open / Close Shortcuts Cheatsheet" },
                 { key: "Esc", desc: "Dismiss Open Modals & Dialogs" },
               ].map((s) => (

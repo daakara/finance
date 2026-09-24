@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import CommitteeNetworkGraph from "../../components/committee/CommitteeNetworkGraph";
 import InfluenceHeatmap from "../../components/committee/InfluenceHeatmap";
@@ -9,6 +12,17 @@ import {
 } from "../../lib/telemetry/committeeIntelligenceEngine";
 
 export default function CommitteeNetworkPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#0c1017] text-slate-100 font-mono">
       <ExecutiveIntelligenceNav badgeText="INV-OI15 &amp; INV-OI16 VERIFIED" />

@@ -66,7 +66,7 @@ export default function GuidePage() {
           "name": "How does the Smart Money Divergence Radar identify stealth accumulation vs distribution traps?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The radar compares price trend direction against institutional order flow (dark pool ATS block prints, C-suite Form 4 buys, and STOCK Act disclosures). Price consolidation during high institutional accumulation signals a high-conviction breakout setup, whereas price spikes during net insider distribution flag dangerous distribution traps."
+            "text": "The radar compares price trend direction against institutional order flow (institutional flow signals including C-suite Form 4 buys, curated ATS research, and STOCK Act disclosures). Price consolidation during high institutional accumulation signals a high-conviction breakout setup, whereas price spikes during net insider distribution flag dangerous distribution traps."
           }
         },
         {
@@ -90,7 +90,7 @@ export default function GuidePage() {
           "name": "How is the Legislative Alignment Index calculated?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The Legislative Alignment Index (0–100) quantifies the correlation between a politician's trade and their legislative influence by evaluating committee jurisdiction overlap (+16 to +32 pts), transaction sizing tiers ($50k to $1M+), and audited multi-year politician win rates."
+            "text": "The Legislative Alignment Index (0–100) quantifies the correlation between a politician's trade and their legislative influence by evaluating committee jurisdiction overlap (+16 to +32 pts), transaction sizing tiers ($50k to $1M+), and estimated historical politician win rates (heuristic)."
           }
         },
         {

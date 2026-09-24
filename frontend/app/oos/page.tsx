@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo, Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import ExecutiveIntelligenceNav from "../../components/committee/ExecutiveIntelligenceNav";
 import RelatedArtifactsCard from "../../components/committee/RelatedArtifactsCard";
 import {
@@ -696,6 +697,17 @@ function OOSContent() {
 }
 
 export default function OOSPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0c1017] text-slate-400 p-8">Loading Operating System...</div>}>
       <OOSContent />

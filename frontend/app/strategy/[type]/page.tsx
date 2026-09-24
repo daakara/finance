@@ -323,7 +323,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
   }
 
   return {
-    title: `🎯 ${strategy.name} Stock Screener & Quantitative Invalidation Levels | ARX Terminal`,
+    title: `🎯 ${strategy.name} Stock Screener & Quantitative Invalidation Levels`,
     description: `Screen top ${strategy.name} equities: ${strategy.tagline} Review candidate entry ranges, ATR stop loss targets, and Piotroski F-Scores.`,
     openGraph: {
       title: `${strategy.name} Quantitative Screener Matrix`,

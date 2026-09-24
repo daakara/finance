@@ -129,6 +129,9 @@ export default function SmartMoneyDivergenceRadar() {
             <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded font-mono font-bold">
               STOCK ACT + 13F MATRIX
             </span>
+            <span className="text-[10px] bg-slate-900 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono font-semibold">
+              Curated Research Archive
+            </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
             {isPlain

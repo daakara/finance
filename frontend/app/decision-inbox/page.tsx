@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import IntelligenceShell from "../../components/ui/IntelligenceShell";
 import HorizonCard from "../../components/ui/HorizonCard";
 import HorizonMetricCard from "../../components/ui/HorizonMetricCard";
@@ -367,6 +369,17 @@ function DecisionInboxContent() {
 }
 
 export default function DecisionInboxPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<IntelligenceLoadingState message="Loading Decision Inbox..." />}>
       <DecisionInboxContent />

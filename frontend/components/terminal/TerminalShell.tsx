@@ -67,7 +67,7 @@ export default function TerminalShell({
       <section
         role="region"
         aria-label="Terminal Hub Header"
-        className="w-full bg-[#0b1019]/90 border-b border-[#1b2537] border-t border-[#1e293b] px-4 md:px-8 py-2"
+        className="w-full bg-[#0b1019]/90 border-b border-[#1b2537] px-4 md:px-8 py-2"
       >
         <div className="max-w-[1750px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center space-x-3">

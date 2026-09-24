@@ -25,11 +25,11 @@ export default function SelfHealingAccuracyCard({ symbol, auditData }: SelfHeali
               <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
               </svg>
-              <span>{symbol} Forecast Track Record & Accuracy Verification</span>
+              <span>{symbol} Historical Track Record & Retrospective Verification</span>
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Continuous walk-forward feedback loop comparing past quantitative predictions against realized market price action
+            Retrospective accuracy check comparing past quantitative predictions against realized market price action
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-[9px] font-bold px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
@@ -48,7 +48,7 @@ export default function SelfHealingAccuracyCard({ symbol, auditData }: SelfHeali
               ? "bg-emerald-950/80 border-emerald-700/80"
               : "bg-slate-900 border-slate-700"
           }`}>
-            <span className="text-[10px] text-slate-400 block uppercase leading-none font-bold">Accuracy</span>
+            <span className="text-[10px] text-slate-400 block uppercase leading-none font-bold">Track Record</span>
             <span className={`text-base font-bold ${isCalibrated ? "text-emerald-400" : "text-slate-400"}`}>
               {isCalibrated ? `${auditData?.accuracyScore}%` : "Unavailable"}
             </span>
@@ -62,7 +62,7 @@ export default function SelfHealingAccuracyCard({ symbol, auditData }: SelfHeali
       {/* 4 Feedback Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-center">
         <div className="bg-[#090d14] p-3 rounded-lg border border-[#243044]">
-          <span className="text-[10px] text-slate-400 block uppercase">Directional Trend Win Rate</span>
+          <span className="text-[10px] text-slate-400 block uppercase">Historical Realized Direction</span>
           <span className={`text-base font-bold ${auditData?.hitRatePct != null ? "text-emerald-400" : "text-slate-400"}`}>
             {auditData?.hitRatePct != null ? `${auditData.hitRatePct}%` : "Unavailable"}
           </span>
@@ -93,7 +93,7 @@ export default function SelfHealingAccuracyCard({ symbol, auditData }: SelfHeali
             {isCalibrated ? "Active & Synced" : "Pending Historical Tape"}
           </span>
           <span className="text-[9px] text-slate-500 block mt-0.5">
-            {isCalibrated ? "Regime Factor Calibrated" : "Minimum 35 Bars Required"}
+            {isCalibrated ? "Sample Depth Calibrated" : "Minimum 35 Bars Required"}
           </span>
         </div>
       </div>

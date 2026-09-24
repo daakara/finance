@@ -207,3 +207,67 @@ export function isMatomoUserOptedOut(): boolean {
   }
   return false;
 }
+
+// ==========================================
+// Phase 3G: Core 4-Hub User Journey Funnels
+// ==========================================
+
+/**
+ * Funnel 1: Radar → Analysis: User clicks an asset card/row to begin analysis
+ */
+export function trackRadarAssetClick(symbol: string, rank?: number) {
+  trackMatomoEvent("User Journey", "radar_asset_click", symbol, rank);
+}
+
+/**
+ * Funnel 2: Analysis → Setup: User requests tactical trade setup or execution corridor
+ */
+export function trackAnalysisToSetup(symbol: string) {
+  trackMatomoEvent("User Journey", "analysis_to_setup", symbol);
+}
+
+/**
+ * Funnel 3: Setup → Portfolio: User logs trade or adds setup to portfolio
+ */
+export function trackSetupToPortfolio(symbol: string, shares?: number) {
+  trackMatomoEvent("User Journey", "setup_to_portfolio", symbol, shares);
+}
+
+/**
+ * Funnel 4: Smart Money → Analysis: User converts from regulatory signal to ticker analysis
+ */
+export function trackSmartMoneyAssetClick(symbol: string, sourceBadge?: string) {
+  trackMatomoEvent("Smart Money", "smartmoney_asset_click", sourceBadge ? `${symbol} (${sourceBadge})` : symbol);
+}
+
+/**
+ * Funnel 5: Search Resolution Success vs Failure
+ */
+export function trackSearchResolve(query: string, success: boolean, resolvedSymbol?: string) {
+  trackMatomoEvent(
+    "Terminal Interaction",
+    success ? "search_resolve_success" : "search_resolve_fail",
+    resolvedSymbol ? `${query} -> ${resolvedSymbol}` : query
+  );
+}
+
+/**
+ * Funnel 6: First Hub Navigation (Comprehension Speed)
+ */
+export function trackFirstHubNavigation(hubId: string, durationSeconds?: number) {
+  trackMatomoEvent("User Journey", "first_hub_navigation", hubId, durationSeconds);
+}
+
+/**
+ * Funnel 8: Trust Verification: User expands or inspects provenance metadata
+ */
+export function trackProvenanceExpand(symbol: string, component: string) {
+  trackMatomoEvent("Decision Intelligence", "provenance_expand", `${symbol} @ ${component}`);
+}
+
+/**
+ * Funnel 9: Friction Detection: Dead-end bounce with no action
+ */
+export function trackPageExitNoAction(pathname: string) {
+  trackMatomoEvent("User Journey", "page_exit_no_action", pathname);
+}

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Congressional STOCK Act & Smart Money Insider Scanner | ARX Terminal",
+  title: "Congressional STOCK Act & Smart Money Insider Scanner",
   description: "Track US House & Senate legislative stock disclosures (STOCK Act PL 112-105), SEC Form 4 insider transactions, and unusual options flow sweeps in real time.",
   openGraph: {
-    title: "Congressional STOCK Act & Smart Money Scanner | ARX Terminal",
+    title: "Congressional STOCK Act & Smart Money Scanner",
     description: "Track US Congress stock trades and institutional smart money flow in real time.",
     url: "https://www.arxterminal.com/smart-money/",
     siteName: "ARX Terminal",

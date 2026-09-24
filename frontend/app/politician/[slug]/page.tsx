@@ -15,8 +15,6 @@ interface PoliticianProfile {
   chamber: "House" | "Senate";
   party: "Democrat" | "Republican";
   stateDistrict: string;
-  winRatePct: number;
-  annualAlphaPct: number;
   committees: string[];
   recentTrades: {
     ticker: string;
@@ -39,8 +37,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Democrat",
     stateDistrict: "CA-11 (San Francisco)",
-    winRatePct: 78.5,
-    annualAlphaPct: 34.2,
     committees: ["Former Speaker of the House", "Democratic Leadership", "Appropriations (Prior)"],
     recentTrades: [
       {
@@ -75,8 +71,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Republican",
     stateDistrict: "TX-02 (Houston)",
-    winRatePct: 74.0,
-    annualAlphaPct: 29.4,
     committees: ["Energy & Commerce", "House Permanent Select Committee on Intelligence"],
     recentTrades: [
       {
@@ -99,8 +93,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "Senate",
     party: "Republican",
     stateDistrict: "Alabama (Senior Senator)",
-    winRatePct: 69.5,
-    annualAlphaPct: 24.1,
     committees: ["Senate Armed Services Committee", "Agriculture, Nutrition & Forestry", "Veterans' Affairs"],
     recentTrades: [
       {
@@ -123,8 +115,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Republican",
     stateDistrict: "TX-10 (Austin/Houston)",
-    winRatePct: 71.0,
-    annualAlphaPct: 22.8,
     committees: ["Foreign Affairs Committee (Chairman)", "Homeland Security"],
     recentTrades: [
       {
@@ -147,8 +137,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Republican",
     stateDistrict: "TX-07 (Clarksville)",
-    winRatePct: 73.2,
-    annualAlphaPct: 27.5,
     committees: ["Homeland Security (Chairman)", "Foreign Affairs"],
     recentTrades: [
       {
@@ -171,8 +159,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Democrat",
     stateDistrict: "CA-17 (Silicon Valley)",
-    winRatePct: 72.8,
-    annualAlphaPct: 26.0,
     committees: ["Armed Services (Cyber, Innovative Tech)", "Oversight & Accountability"],
     recentTrades: [
       {
@@ -195,8 +181,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "House",
     party: "Democrat",
     stateDistrict: "NJ-05",
-    winRatePct: 68.4,
-    annualAlphaPct: 21.3,
     committees: ["Financial Services (Capital Markets)", "Permanent Select Committee on Intelligence"],
     recentTrades: [
       {
@@ -219,8 +203,6 @@ const POLITICIAN_DATABASE: PoliticianProfile[] = [
     chamber: "Senate",
     party: "Democrat",
     stateDistrict: "Rhode Island (Senior Senator)",
-    winRatePct: 66.0,
-    annualAlphaPct: 18.5,
     committees: ["Senate Budget Committee (Chairman)", "Finance", "Environment & Public Works"],
     recentTrades: [
       {
@@ -253,10 +235,10 @@ export function generateMetadata({ params }: PageProps): Metadata {
   }
 
   return {
-    title: `🏛️ ${profile.name} (${profile.party[0]}-${profile.stateDistrict.slice(0, 2)}) Portfolio (${profile.winRatePct}% Win Rate): STOCK Act Disclosures & Alpha | ARX Terminal`,
-    description: `Audited portfolio, win rate (${profile.winRatePct}%), annualized alpha (+${profile.annualAlphaPct}%), and recent STOCK Act disclosures for ${profile.name}. Review Legislative Alignment scores and committee oversight conflicts.`,
+    title: `🏛️ ${profile.name} Portfolio: Congressional STOCK Act Disclosures`,
+    description: `Disclosures portfolio, committee assignments, and recent STOCK Act disclosures for ${profile.name}. Review Legislative Alignment scores and committee oversight conflicts.`,
     openGraph: {
-      title: `🏛️ ${profile.name} Congressional Stock Trading Profile (${profile.winRatePct}% Win Rate)`,
+      title: `🏛️ ${profile.name} Congressional Stock Trading Profile`,
       description: `Track securities transactions, committee oversight overlaps, and Legislative Alignment Index for ${profile.name}.`,
       url: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
       siteName: "ARX Terminal",
@@ -334,7 +316,7 @@ export default function PoliticianProfilePage({ params }: PageProps) {
         <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/60 text-xs text-purple-200 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span>📜</span>
-            <span><strong>Verified Forensic Investigation Dossier:</strong> Audited STOCK Act disclosures, committee conflict analysis, and annualized transaction alpha (2024–2026).</span>
+            <span><strong>Verified Forensic Investigation Dossier:</strong> Audited STOCK Act disclosures, committee conflict analysis, and legislative timeline alignment.</span>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900/60 border border-purple-700/80 font-bold uppercase shrink-0 hidden sm:inline">
             Public Law 112-105
@@ -362,12 +344,12 @@ export default function PoliticianProfilePage({ params }: PageProps) {
 
             <div className="flex items-center space-x-4 text-right">
               <div className="bg-[#06090f] p-3 rounded-xl border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 uppercase block">Audited Win Rate</span>
-                <strong className="text-emerald-400 font-mono text-base">{profile.winRatePct}%</strong>
+                <span className="text-[10px] text-slate-500 uppercase block">Curated Filings</span>
+                <strong className="text-emerald-400 font-mono text-base">{profile.recentTrades.length}</strong>
               </div>
               <div className="bg-[#06090f] p-3 rounded-xl border border-[#1b2434]">
-                <span className="text-[10px] text-slate-500 uppercase block">Annualized Alpha</span>
-                <strong className="text-cyan-400 font-mono text-base">+{profile.annualAlphaPct}%</strong>
+                <span className="text-[10px] text-slate-500 uppercase block">Committees</span>
+                <strong className="text-cyan-400 font-mono text-base">{profile.committees.length}</strong>
               </div>
             </div>
           </div>

@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/featureFlags";
 import Link from "next/link";
 import IntelligenceShell from "../../components/ui/IntelligenceShell";
 import IntelligenceHeader from "../../components/ui/IntelligenceHeader";
@@ -533,6 +535,17 @@ function IntelligenceCenterContent() {
 }
 
 export default function IntelligenceCenterPage() {
+  const router = useRouter();
+  useEffect(() => {
+    if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+      router.replace('/');
+    }
+  }, [router]);
+
+  if (!FEATURE_FLAGS.EXECUTIVE_OS) {
+    return null;
+  }
+
   return (
     <Suspense fallback={<IntelligenceLoadingState />}>
       <IntelligenceCenterContent />

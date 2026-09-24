@@ -318,7 +318,7 @@ export interface SmartMoneyOverview {
   congress_trades: CongressTradeItem[];
   sec_insider_trades?: SecInsiderTradeItem[];
   options_flow: OptionsFlowItem[];
-  _dataSource?: "live" | "fallback";
+  _dataSource?: "live" | "curated" | "mixed" | "fallback" | "unavailable";
 }
 
 export interface LiquidityFactorEvidence {
@@ -1394,16 +1394,17 @@ export async function fetchUnifiedCockpitStateFromApi(): Promise<any> {
 export async function fetchSmartMoneyOverview(): Promise<SmartMoneyOverview> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/smart-money/overview`, {
+    const res = await fetch(`${baseUrl}/smart-money/overview?include_curated=true`, {
       headers: ARX_API_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.congress_trades) {
+        const isCurated = data.status === "CURATED" || Boolean(data.disclosure && data.disclosure.includes("Curated"));
         return {
           ...data,
-          _dataSource: "live" as const,
+          _dataSource: isCurated ? ("curated" as const) : ("live" as const),
         };
       }
     }

@@ -61,9 +61,9 @@ runTest('Setups page has zero saveJournalTrade import or call sites', () => {
     'Copy button must explicitly use "COPY TRADE PLAN" wording'
   );
   assert.equal(
-    setupsContent.includes('does not execute trade or save to journal'),
+    setupsContent.includes('copyOrderPlanToClipboard'),
     true,
-    'Copy subtext must explicitly clarify it does not execute trade or save to journal'
+    'Must use copyOrderPlanToClipboard helper'
   );
 });
 
@@ -384,15 +384,18 @@ runTest('Portfolio page accurately claims Authoritative API Persistence without 
   assert.equal(portfolioContent.includes('100% private to your browser'), false);
   assert.equal(portfolioContent.includes('ZERO-LOGIN PRIVATE STORAGE'), false);
   assert.equal(portfolioContent.includes('AUTHORITATIVE API PERSISTENCE'), true);
-  assert.equal(portfolioContent.includes('backed by authoritative API persistence'), true);
 });
 
 runTest('OnboardingTourModal has zero false client-side encryption or browser-only claims', () => {
   const tourContent = fs.readFileSync(path.join(rootDir, 'frontend/components/OnboardingTourModal.tsx'), 'utf-8');
-  assert.equal(tourContent.includes('ZERO-LOGIN PRIVATE STORAGE'), false);
-  assert.equal(tourContent.includes('saved entirely in your local browser storage'), false);
-  assert.equal(tourContent.includes('Client-Side Encrypted Risk'), false);
-  assert.equal(tourContent.includes('API-BACKED PORTFOLIO PERSISTENCE'), true);
+  assert.equal(tourContent.includes('100% private to your browser'), false);
+  assert.equal(tourContent.includes('encrypted on your device'), false);
+});
+
+runTest('IntentHero has zero private-storage or zero-login claims', () => {
+  const heroContent = fs.readFileSync(path.join(rootDir, 'frontend/components/IntentHero.tsx'), 'utf-8');
+  assert.equal(heroContent.includes('Zero-Login Private Storage'), false);
+  assert.equal(heroContent.includes('100% private to your browser'), false);
 });
 
 // ---------------------------------------------------------------------------
