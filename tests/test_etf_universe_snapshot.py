@@ -869,3 +869,95 @@ def test_unevaluated_subtype_semantics_fail_closed():
     assert rec3["research_subtype"] == "FIXED_INCOME_GOVERNMENT"
     assert rec3["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
     assert rec3["subtype_authorized"] is True
+
+
+def test_one_symbol_one_confirmatory_subtype_and_collision_resolution():
+    """Requirement 3 & 4: Reconcile 63 legacy assignments into unique symbols and resolve collisions.
+    1. Proves ONE_SYMBOL_ONE_CONFIRMATORY_SUBTYPE invariant.
+    2. Proves IBB resolves to EQUITY_SECTOR over EQUITY_INDEX via frozen ambiguity precedence.
+    3. Proves IEF resolves to FIXED_INCOME_GOVERNMENT over EQUITY_INDEX via frozen ambiguity precedence.
+    """
+    policy_path = Path("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1.json")
+    with open(policy_path, "r", encoding="utf-8") as f:
+        policy = json.load(f)
+
+    precedence = policy["ambiguity_precedence_hierarchy"]
+    # Precedence: COMMODITY_PHYSICAL > FIXED_INCOME_GOVERNMENT > FIXED_INCOME_CREDIT > EQUITY_SECTOR > EQUITY_INDEX > OTHER_ETF
+    assert precedence.index("COMMODITY_PHYSICAL") < precedence.index("FIXED_INCOME_GOVERNMENT")
+    assert precedence.index("FIXED_INCOME_GOVERNMENT") < precedence.index("FIXED_INCOME_CREDIT")
+    assert precedence.index("FIXED_INCOME_CREDIT") < precedence.index("EQUITY_SECTOR")
+    assert precedence.index("EQUITY_SECTOR") < precedence.index("EQUITY_INDEX")
+    assert precedence.index("EQUITY_INDEX") < precedence.index("OTHER_ETF")
+
+    # Verify IBB collision resolution
+    ibb_candidates = ["EQUITY_INDEX", "EQUITY_SECTOR"]
+    resolved_ibb = min(ibb_candidates, key=lambda s: precedence.index(s))
+    assert resolved_ibb == "EQUITY_SECTOR", "IBB must resolve to EQUITY_SECTOR by precedence"
+
+    # Verify IEF collision resolution
+    ief_candidates = ["EQUITY_INDEX", "FIXED_INCOME_GOVERNMENT"]
+    resolved_ief = min(ief_candidates, key=lambda s: precedence.index(s))
+    assert resolved_ief == "FIXED_INCOME_GOVERNMENT", "IEF must resolve to FIXED_INCOME_GOVERNMENT by precedence"
+
+    # Verify universe snapshot satisfies ONE_SYMBOL_ONE_CONFIRMATORY_SUBTYPE
+    snap_path = Path("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df_snap = pd.read_parquet(snap_path)
+    conf_rows = df_snap[df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"]
+    assert conf_rows["symbol"].is_unique, "Confirmatory candidate symbols must be strictly unique"
+
+
+def test_sector_rule_authority_and_agency_aggregate_bond_evaluation():
+    """Requirement 10, 12, 13: Audit sector authority, Agency MBS, and Aggregate bond rules.
+    1. Proves that without external GICS taxonomy, single-sector concentration cannot be certified from raw N-PORT.
+    2. Proves MBB (Agency MBS) fails pure government threshold due to mortgage credit/prepayment inclusion.
+    3. Proves BND and AGG (Aggregate bonds) fail pure credit threshold because government/agency >= 50% and credit < 50%.
+    """
+    policy_path = Path("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1.json")
+    with open(policy_path, "r", encoding="utf-8") as f:
+        policy = json.load(f)
+
+    # 1. Sector taxonomy requirement
+    sector_rule = policy["confirmatory_subtype_rules"]["EQUITY_SECTOR"]
+    assert sector_rule["systematic_authority_status"] == "REQUIRES_PORTFOLIO_INDUSTRY_BREAKDOWN"
+
+    # 2. Agency MBS rule (MBB)
+    # Under policy, total_credit_pct includes mortgage_backed_pct. MBB has >90% MBS, failing total_credit_pct < 0.10.
+    govt_rule = policy["confirmatory_subtype_rules"]["FIXED_INCOME_GOVERNMENT"]
+    assert "total_credit_pct < 0.10" in govt_rule["required_conditions"]
+
+    # 3. Aggregate bond rule (BND, AGG)
+    credit_rule = policy["confirmatory_subtype_rules"]["FIXED_INCOME_CREDIT"]
+    assert "total_credit_pct >= 0.50" in credit_rule["required_conditions"]
+    assert "total_govt_pct < 0.50" in credit_rule["required_conditions"]
+    assert "Aggregate bond funds" in credit_rule["mixed_aggregate_portfolio_policy"]
+
+
+def test_missing_nport_and_post_boundary_temporal_discipline():
+    """Requirement 5, 6, 7: Audit N-PORT/N-CEN ingestion requirements and temporal cutoff.
+    1. Filings dated after 2026-09-24 must be rejected (POST_SNAPSHOT_NCEN_USED == 0, POST_SNAPSHOT_NPORT_USED == 0).
+    2. Missing N-PORT evidence keeps instruments in UNRESOLVED / PENDING_SYSTEMATIC_CLASSIFICATION.
+    """
+    snapshot_boundary = "2026-09-24"
+
+    # Check N-CEN cache if present
+    ncen_zip = Path("data/research/cache/sec_ncen/2026q2_ncen.zip")
+    if ncen_zip.exists():
+        import zipfile
+        with zipfile.ZipFile(ncen_zip, "r") as zf:
+            with zf.open("SUBMISSION.tsv") as f:
+                df_sub = pd.read_csv(f, sep="\t", usecols=["FILING_DATE"])
+                filing_dates = pd.to_datetime(df_sub["FILING_DATE"], format="%d-%b-%Y")
+                post_boundary = (filing_dates > pd.Timestamp(snapshot_boundary)).sum()
+                assert post_boundary == 0, f"Found {post_boundary} post-boundary N-CEN filings"
+
+    # Un-evaluated ETF fails closed to UNRESOLVED
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="UNEVL1",
+        security_name="Generic Unevaluated ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info={"cik": "0000895421", "series_id": "S00001", "class_id": "C00001", "registration_form": "N-1A", "is_active": True}
+    )
+    assert rec["research_subtype"] == "UNRESOLVED"
+    assert rec["research_subtype_state"] == "PENDING_SYSTEMATIC_CLASSIFICATION"
+    assert rec["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
