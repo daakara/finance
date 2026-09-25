@@ -1290,16 +1290,22 @@ def build_universe_snapshot(
         "complete_mandate_evidence_population": len(mandate_map),
         "potential_confirmatory_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
         "denominator_blocking_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
-        "candidate_denominator_closure_status": "BLOCKED_PENDING_MANDATE_EVIDENCE",
+        "candidate_denominator_closure_status": "BLOCKED",
+        "etf_surviving_universe_v1": "NOT_CERTIFIED",
         "initial_blocker_count": 3823,
+        "resolved_non_blocking_count": 217,
         "mandate_blockers_resolved": 0,
         "missing_nport_blockers_resolved": 0,
         "reconciliation_blockers_resolved": 226,
         "remaining_denominator_blockers": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
-        "final_candidate_denominator": len(candidate_symbols),
-        "final_confirmatory_denominator": len(candidate_symbols),
-        "final_adv80": eval_adv80_thresh,
-        "final_eligible_denominator": eligible_count
+        "provisional_candidate_denominator": len(candidate_symbols),
+        "provisional_confirmatory_denominator": len(candidate_symbols),
+        "provisional_adv80": eval_adv80_thresh,
+        "provisional_eligible_denominator": eligible_count,
+        "final_candidate_denominator": None,
+        "final_confirmatory_denominator": None,
+        "final_adv80": None,
+        "final_eligible_denominator": None
     }
 
     with open(output_manifest, "w", encoding="utf-8") as f:
