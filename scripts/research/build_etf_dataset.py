@@ -1287,6 +1287,10 @@ def build_universe_snapshot(
             "INSUFFICIENT_MANDATE_EVIDENCE": int((df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE").sum()),
             "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION": int((df_snap["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION").sum())
         },
+        "complete_mandate_evidence_population": len(mandate_map),
+        "potential_confirmatory_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
+        "denominator_blocking_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
+        "candidate_denominator_closure_status": "BLOCKED_PENDING_MANDATE_EVIDENCE",
         "final_candidate_denominator": len(candidate_symbols),
         "final_adv80": eval_adv80_thresh,
         "final_eligible_denominator": eligible_count

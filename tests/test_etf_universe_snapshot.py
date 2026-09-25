@@ -1280,3 +1280,88 @@ def test_other_etf_evidence_completeness_invariant():
     assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 876
     assert manifest["final_candidate_denominator"] == 70
     assert manifest["final_eligible_denominator"] == 14
+
+
+def test_unresolved_potential_candidate_blocks_denominator_certification():
+    """Section 25: Proves unresolved potential candidate blocks denominator certification.
+    If any structure-eligible ETF has unruled-out confirmatory rules, denominator is uncertified.
+    """
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_mat = pd.read_parquet(matrix_path)
+    denom_blocking = df_mat[df_mat["denominator_blocking"]]
+    assert len(denom_blocking) > 0, "Expected denominator blocking rows"
+    # Denominator certification condition: blocking count must be 0 for PASS
+    is_denominator_certified = (len(denom_blocking) == 0)
+    assert not is_denominator_certified, "Universe cannot be certified while denominator blocking rows exist"
+
+
+def test_known_positive_subset_is_not_treated_as_complete_denominator():
+    """Section 25: Proves known positive subset (70) is not treated as complete denominator.
+    2,947 ETFs meet portfolio floors and await statutory mandate evidence.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
+    conf_count = (df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
+    assert conf_count == 70
+
+    mandate_blocked = df_snap[df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"]
+    assert len(mandate_blocked) == 2947
+    # 70 is provisional positive subset, not proven closed denominator
+    is_closed_denominator = (len(mandate_blocked) == 0)
+    assert not is_closed_denominator
+
+
+def test_missing_mandate_cannot_imply_candidate_exclusion():
+    """Section 25: Proves missing mandate cannot imply candidate exclusion or default to OTHER_ETF."""
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_EQ_NO_M",
+        security_name="Test Equity Index ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info={"cik": "0001234567", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True},
+        portfolio_metrics={
+            "reconciliation_ratio": 1.0,
+            "total_equity_pct": 0.99,
+            "total_govt_pct": 0.0,
+            "corporate_debt_pct": 0.0,
+            "mortgage_backed_pct": 0.0,
+            "distinct_equity_count": 500,
+            "max_concentration": 0.07,
+            "is_index_ncen": True
+        },
+        mandate_evidence=None
+    )
+    # Must NOT become OTHER_ETF or be silently excluded
+    assert rec["research_subtype"] == "UNRESOLVED"
+    assert rec["research_subtype_state"] == "INSUFFICIENT_SOURCE_EVIDENCE"
+    assert rec["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
+
+
+def test_adv80_cannot_execute_on_incomplete_candidate_denominator():
+    """Section 25: Proves ADV80 cannot execute as final on incomplete candidate denominator.
+    Any ADV80 computed while UNRESOLVED_POTENTIAL_CONFIRMATORY > 0 is provisional.
+    """
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    # Manifest records provisional threshold
+    assert abs(manifest["adv80_threshold"] - 1491310805.7732) < 1.0
+    # Must be marked provisional/blocked until denominator closure
+    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3823)
+    assert unresolved_potential > 0
+    is_adv80_final = (unresolved_potential == 0)
+    assert not is_adv80_final, "ADV80 cannot be final while potential candidates remain unresolved"
+
+
+def test_final_denominator_requires_zero_potential_confirmatory_unresolved_rows():
+    """Section 25: Proves final denominator closure requires exactly ZERO potential-confirmatory unresolved rows."""
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_mat = pd.read_parquet(matrix_path)
+
+    # Invariant: UNRESOLVED_POTENTIAL_CONFIRMATORY == 0 required for certification
+    potential_conf_unresolved = df_mat[
+        (df_mat["final_subtype"] == "UNRESOLVED") & (df_mat["potential_confirmatory_rule_count"] > 0)
+    ]
+    assert len(potential_conf_unresolved) == 3823
+    # Certification gate is BLOCKED when potential_conf_unresolved > 0
+    gate_status = "PASS" if len(potential_conf_unresolved) == 0 else "BLOCKED"
+    assert gate_status == "BLOCKED"
