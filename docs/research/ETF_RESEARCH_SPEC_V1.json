@@ -1,11 +1,12 @@
 {
-  "spec_version": "1.0.2",
-  "created_at": "2026-09-25T08:45:00Z",
-  "governance_status": "CANDIDATE_RESEARCH_SPECIFICATION_V1_0_2",
+  "spec_version": "1.0.3",
+  "created_at": "2026-09-25T15:45:00Z",
+  "governance_status": "CANDIDATE_RESEARCH_SPECIFICATION_V1_0_3",
   "production_actionability_status": "NOT_AUTHORIZED",
   "instrument_scope": {
     "included": [
       "1940_ACT_OPEN_END_ETFS",
+      "1940_ACT_UNIT_INVESTMENT_TRUST_ETFS",
       "VERIFIED_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS"
     ],
     "excluded": [
@@ -16,6 +17,7 @@
     ],
     "allowed_structure_classes": [
       "1940_ACT_OPEN_END_ETF",
+      "1940_ACT_UNIT_INVESTMENT_TRUST_ETF",
       "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "EXCHANGE_TRADED_NOTE",
       "COMMODITY_FUTURES_POOL",
@@ -28,6 +30,7 @@
     ],
     "research_eligible_structures": [
       "1940_ACT_OPEN_END_ETF",
+      "1940_ACT_UNIT_INVESTMENT_TRUST_ETF",
       "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST"
     ],
     "excluded_structures": [
@@ -140,9 +143,9 @@
     ],
     "classification_authority_hierarchy": [
       "Tier 1: Exchange Discovery Metadata (NasdaqTraded Directory; marks traded, non-test, ETF=Y)",
-      "Tier 2: Structured Provider Metadata (SEC / Morningstar / yfinance quoteType and category)",
-      "Tier 3: Verified Vehicle-Structure Registry (Point-in-time verified physical grantor trusts allowlist; known commodity pools and ETNs blocklist)",
-      "Tier 4: Defensive Heuristic Evidence (Negative safety net; string patterns like 2x/3x/Ultra/Inverse/ETN/YieldMax reject or quarantine)",
+      "Tier 2: Structured Provider Metadata (SEC EDGAR series registration directory company_tickers_mf.json)",
+      "Tier 3: Verified Vehicle-Structure Registry (Point-in-time verified physical grantor trusts, UITs, and 1940 Act open-end allowlists; known commodity pools and ETNs blocklists)",
+      "Tier 4: Defensive Heuristic Evidence (Negative safety net; refined string patterns for Leveraged, Inverse, ETN, Commodity Pools, Crypto reject or quarantine)",
       "Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from research eligibility)"
     ],
     "unknown_structure_policy": "FAIL_CLOSED_EXCLUSION (unknown_structure_defaults_to_research_eligible = false)",
@@ -1143,6 +1146,22 @@
         "Mandated pre-generation builder identity (builder_git_commit and builder_file_sha256) and source cache manifest.",
         "Refined econometric language for small-cluster inference across 5 subtypes.",
         "Resolved statistical inference contradiction: replaced premature fixed p-value engine across all 15 confirmatory hypothesis pairs with DEPENDENCE_CORRECTION_POLICY_V1 (PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT); codified inference-selection gate based on dependence structure and estimator validity, strictly prohibiting p-value- or effect-size-driven selection and family redefinition."
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "date": "2026-09-25",
+      "parent_spec_sha256": "448cbb130a4ddd551965137234b01178d07cf4c0b49325927e8d047a258c6b24",
+      "summary": "Formal addition of 1940 Act Unit Investment Trust ETFs (1940_ACT_UNIT_INVESTMENT_TRUST_ETF) to the legal-structure ontology, decoupling of legal structure from research subtype, and operationalization of Tier 2 SEC registration metadata.",
+      "semantic_changes": [
+        "Added 1940_ACT_UNIT_INVESTMENT_TRUST_ETF as an explicit, distinct legal structure class under allowed_structure_classes and research_eligible_structures.",
+        "Decoupled vehicle_structure verification from research_subtype authorization: legal vehicle structure and investment subtype are evaluated as independent dimensions.",
+        "Refined Tier 4 negative heuristics to prevent false-positive inverse classification of short-term and ultra-short fixed-income ETFs."
+      ],
+      "contractual_governance_changes": [
+        "Recognized SPY, DIA, and QQQ under their authentic statutory status as 1940 Act Unit Investment Trusts (UITs) registered on Form S-6 / N-8B-2, eliminating false open-end fund labeling.",
+        "Operationalized Tier 2 structured provider metadata against SEC EDGAR mutual fund / ETF series registrations (company_tickers_mf.json).",
+        "Codified evidence standards requiring semantic distinction between authentic regulatory filings and synthetic metadata records."
       ]
     }
   ],

@@ -34,13 +34,24 @@ def spec():
 
 
 def test_spec_canonical_load_and_version(spec):
-    assert spec["spec_version"] == "1.0.2"
+    assert spec["spec_version"] == "1.0.3"
     assert spec["production_actionability_status"] == "NOT_AUTHORIZED"
     assert "amendment_history" in spec
-    assert len(spec["amendment_history"]) == 3
-    v102 = spec["amendment_history"][2]
-    assert v102["version"] == "1.0.2"
-    assert v102["parent_spec_sha256"] == "736cec7da411adf08af4326e136312da2ffd9eb3499c60a2d878ed0735805fd7"
+    assert len(spec["amendment_history"]) == 4
+    v103 = spec["amendment_history"][3]
+    assert v103["version"] == "1.0.3"
+    assert v103["parent_spec_sha256"] == "448cbb130a4ddd551965137234b01178d07cf4c0b49325927e8d047a258c6b24"
+
+
+def test_uit_structure_ontology(spec):
+    scope = spec["instrument_scope"]
+    assert "1940_ACT_UNIT_INVESTMENT_TRUST_ETFS" in scope["included"]
+    assert "1940_ACT_UNIT_INVESTMENT_TRUST_ETF" in scope["allowed_structure_classes"]
+    assert "1940_ACT_UNIT_INVESTMENT_TRUST_ETF" in scope["research_eligible_structures"]
+    assert "1940_ACT_OPEN_END_ETF" in scope["research_eligible_structures"]
+    # Distinct legal classes
+    assert "1940_ACT_OPEN_END_ETF" != "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+
 
 
 def test_f7_deprecated_and_public_source_wording(spec):
