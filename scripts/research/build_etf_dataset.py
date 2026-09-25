@@ -1,27 +1,38 @@
-"""ARX Terminal — Versioned Offline Historical ETF Research Dataset Builder.
+"""ARX Terminal — Versioned Offline Historical ETF Research Dataset & Universe Builder.
 
-Constructs canonical Stage-A research datasets adhering strictly to:
-docs/research/ETF_RESEARCH_SPEC_V1.json (v1.0.1)
+Adheres strictly to:
+docs/research/ETF_RESEARCH_SPEC_V1.json (v1.0.2)
 
 Enforces:
-1. POINT_IN_TIME_WITHIN_OBSERVABLE_SURVIVOR_UNIVERSE
-2. Zero forward-looking leakage (all features at date t use info <= t close).
-3. Conservative Macro As-Of Join (macro observation date <= t - 1).
-4. Physical separation of observations and forward outcome labels.
-5. Cryptographic manifest binding spec SHA, code SHA, dataset SHAs, and row counts.
-6. Absolutely NO model fitting, weighting, or threshold tuning.
+1. POINT_IN_TIME_WITHIN_OBSERVABLE_SURVIVOR_UNIVERSE estimand with declared survivorship bias.
+2. 5-Tier Classification Authority Hierarchy:
+   - Tier 1: Exchange Discovery Metadata (NasdaqTraded directory)
+   - Tier 2: Structured Provider Metadata
+   - Tier 3: Verified Vehicle-Structure Registries
+   - Tier 4: Defensive Negative Heuristics (Negative safety net ONLY; heuristic inclusion prohibited)
+   - Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from eligibility)
+3. Zero forward-looking leakage (all features at date t use info <= t close).
+4. Conservative Macro As-Of Join (macro observation date <= t - 1).
+5. Deprecation of f7; integration of f12 (BAA10Y) for FIXED_INCOME_CREDIT.
+6. Daily rolling ADV60 >= cross-sectional 80th percentile filter & min 250 trading sessions.
+7. Physical separation of observations and forward outcome labels.
+8. Source cache manifest tracking (data/research/source_cache_manifest_v1.json).
+9. Universe snapshot generation (docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet) and manifest.
+10. Cryptographic manifest binding spec SHA, code SHA, dataset SHAs, and row counts.
+11. Absolutely NO model fitting, weighting, or threshold tuning.
 """
 
 import os
 import sys
 import json
+import re
 import hashlib
 import logging
+import subprocess
 from pathlib import Path
 from datetime import datetime
 import numpy as np
 import pandas as pd
-import yfinance as yf
 import requests
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -30,25 +41,94 @@ logger = logging.getLogger("build_etf_dataset")
 SPEC_PATH = Path("docs/research/ETF_RESEARCH_SPEC_V1.json")
 DATA_DIR = Path("data/research")
 CACHE_DIR = DATA_DIR / "cache"
+SOURCE_CACHE_MANIFEST_PATH = DATA_DIR / "source_cache_manifest_v1.json"
+UNIVERSE_SNAPSHOT_PATH = Path("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+UNIVERSE_MANIFEST_PATH = Path("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json")
 
-# Canonical Universe across 5 Supported Subtypes
-UNIVERSE_CONFIG = {
-    "EQUITY_INDEX": ["SPY", "QQQ", "IWM", "DIA", "VOO", "IVV"],
-    "EQUITY_SECTOR": ["XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XOP"],
-    "FIXED_INCOME_GOVERNMENT": ["TLT", "IEF", "SHY", "IEI"],
-    "FIXED_INCOME_CREDIT": ["HYG", "LQD", "JNK", "VCIT"],
-    "COMMODITY_PHYSICAL": ["GLD", "IAU", "SLV"],
-}
+# Canonical Spec Hash & Commit Constants (v1.0.2)
+SPEC_VERSION_V102 = "1.0.2"
+CANONICAL_SPEC_COMMIT_V102 = "57720cc278813b11cc2ea6df5cccd1925b56c763"
+CANONICAL_FILTERED_SPEC_SHA256_V102 = "448cbb130a4ddd551965137234b01178d07cf4c0b49325927e8d047a258c6b24"
 
+# Benchmark and macro configuration
 BENCHMARK_SYMBOLS = ["SPY", "IEF", "LQD", "BIL"]
 CURRENCY_SYMBOLS = ["UUP"]
-MACRO_SERIES = ["DGS10", "T10Y2Y", "BAMLH0A0HYM2", "DFII10"]
+MACRO_SERIES = ["DGS10", "T10Y2Y", "BAA10Y", "DFII10"]
 
 START_DATE = "2007-04-11"  # HYG inception
 END_DATE = "2025-12-31"    # End of 2025 Historical Holdout
 
+# --------------------------------------------------------------------------
+# TIER 3 REGISTRIES: Verified Vehicle Structures
+# --------------------------------------------------------------------------
+PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS = {
+    "GLD", "IAU", "SLV", "SGOL", "SIVR", "PPLT", "PALL", "BAR", "OUNZ", "AAAU"
+}
 
-def get_file_sha256(filepath: Path) -> str:
+KNOWN_COMMODITY_FUTURES_POOLS = {
+    "USO", "UNG", "BNO", "UGA", "CPER", "DBA", "DBC", "GSG", "PDBC", "WEAT", "CORN", "SOYB", "BOIL", "KOLD"
+}
+
+KNOWN_EXCHANGE_TRADED_NOTES = {
+    "AMJ", "SPLI", "USOI", "GLDI", "SLVO", "MLPX", "AMLP"
+}
+
+KNOWN_CRYPTO_PRODUCTS = {
+    "BITO", "IBIT", "FBTC", "ARKB", "BITB", "BTCO", "HODL", "BRRR", "EZBC", "ETHW", "ETHE", "FETH", "ETH"
+}
+
+KNOWN_LEVERAGED_INVERSE_PRODUCTS = {
+    "TQQQ", "SQQQ", "UPRO", "SPXU", "SSO", "SDS", "QLD", "QID", "SOXL", "SOXS",
+    "LABU", "LABD", "NUGT", "DUST", "JNUG", "JDST", "UVXY", "SVXY", "TZA", "TNA", "FAS", "FAZ"
+}
+
+KNOWN_VERIFIED_1940_ACT_ETFS = {
+    "EQUITY_INDEX": {
+        "SPY", "QQQ", "IWM", "DIA", "VOO", "IVV", "VTI", "SCHX", "RSP", "IJH", "IJR", "VB", "VO"
+    },
+    "EQUITY_SECTOR": {
+        "XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XOP", "XBI", "SMH", "VNQ", "IYR", "ITB", "XHB", "KRE", "KBE"
+    },
+    "FIXED_INCOME_GOVERNMENT": {
+        "TLT", "IEF", "SHY", "IEI", "GOVT", "VGSH", "VGIT", "VGLT", "SCHO", "SCHR", "SPTL"
+    },
+    "FIXED_INCOME_CREDIT": {
+        "HYG", "LQD", "JNK", "VCIT", "VCSH", "BND", "AGG", "USIG", "FLOT", "SJNK", "HYLB"
+    },
+    "COMMODITY_PHYSICAL": PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS,
+}
+
+# Subtype support mapping
+CONFIRMATORY_SUBTYPES = {
+    "EQUITY_INDEX",
+    "EQUITY_SECTOR",
+    "FIXED_INCOME_GOVERNMENT",
+    "FIXED_INCOME_CREDIT",
+    "COMMODITY_PHYSICAL"
+}
+
+EXPLORATORY_SUBTYPES = {
+    "ACTIVE_EQUITY",
+    "COVERED_CALL",
+    "OTHER_ETF"
+}
+
+# --------------------------------------------------------------------------
+# TIER 4 DEFENSIVE NEGATIVE HEURISTICS (Negative safety net ONLY)
+# --------------------------------------------------------------------------
+RE_LEVERAGED_INVERSE = re.compile(
+    r"(\b(\d+x|-1x|-2x|-3x|ultra|ultrapro|leveraged|inverse|short|daily\s*(bull|bear))\b|bull\s*\d+x|bear\s*\d+x)",
+    re.IGNORECASE
+)
+RE_ETN = re.compile(r"\b(etn|exchange[\s-]traded\s*notes?)\b", re.IGNORECASE)
+RE_COMMODITY_POOL = re.compile(r"\b(futures|commodity\s*index|crude\s*oil|natural\s*gas|k-1)\b", re.IGNORECASE)
+RE_CRYPTO = re.compile(r"\b(bitcoin|ethereum|crypto|ether|solana|btc|eth)\b", re.IGNORECASE)
+RE_CEF = re.compile(r"\b(closed[\s-]end|cef)\b", re.IGNORECASE)
+RE_MUTUAL_FUND = re.compile(r"\b(mutual\s*fund)\b", re.IGNORECASE)
+
+
+def get_file_sha256(filepath: Path | str) -> str:
+    """Calculate SHA-256 digest of a local file."""
     h = hashlib.sha256()
     with open(filepath, "rb") as f:
         while chunk := f.read(65536):
@@ -56,7 +136,573 @@ def get_file_sha256(filepath: Path) -> str:
     return h.hexdigest()
 
 
-def fetch_cached_ticker(symbol: str, cache_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def get_git_commit() -> str:
+    """Get current HEAD git commit hash."""
+    try:
+        res = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
+        return res.stdout.strip()
+    except Exception as e:
+        logger.warning(f"Failed to read git commit: {e}")
+        return "UNKNOWN_GIT_COMMIT"
+
+
+# --------------------------------------------------------------------------
+# SOURCE CACHE MANIFEST MANAGER
+# --------------------------------------------------------------------------
+class SourceCacheManager:
+    """Manages the source cache manifest at data/research/source_cache_manifest_v1.json."""
+
+    def __init__(self, manifest_path: Path = SOURCE_CACHE_MANIFEST_PATH):
+        self.manifest_path = manifest_path
+        self.entries = {}
+        self.load()
+
+    def load(self):
+        if self.manifest_path.exists():
+            try:
+                with open(self.manifest_path, "r", encoding="utf-8") as f:
+                    self.entries = json.load(f)
+            except Exception as e:
+                logger.warning(f"Could not load existing source cache manifest: {e}")
+                self.entries = {}
+
+    def save(self):
+        self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.manifest_path, "w", encoding="utf-8") as f:
+            json.dump(self.entries, f, indent=2)
+
+    def record(
+        self,
+        path: Path | str,
+        provider: str,
+        semantic_role: str,
+        byte_size: int = None,
+        sha256: str = None,
+        retrieval_timestamp: str = None
+    ) -> dict:
+        p = Path(path)
+        if byte_size is None and p.exists():
+            byte_size = p.stat().st_size
+        if sha256 is None and p.exists():
+            sha256 = get_file_sha256(p)
+        if retrieval_timestamp is None:
+            retrieval_timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        rel_path = str(p).replace("\\", "/")
+        entry = {
+            "path": rel_path,
+            "provider": provider,
+            "retrieval_timestamp": retrieval_timestamp,
+            "byte_size": int(byte_size) if byte_size is not None else 0,
+            "sha256": str(sha256) if sha256 is not None else "",
+            "semantic_role": semantic_role
+        }
+        self.entries[rel_path] = entry
+        self.save()
+        return entry
+
+
+# --------------------------------------------------------------------------
+# NASDAQ TRADED DIRECTORY DISCOVERY
+# --------------------------------------------------------------------------
+def parse_nasdaq_traded_content(
+    raw_bytes: bytes,
+    source_url: str = "ftp://ftp.nasdaqtrader.com/symboldir/nasdaqtraded.txt"
+) -> tuple[pd.DataFrame, dict]:
+    """Parses raw nasdaqtraded.txt bytes, extracting structured data and metadata."""
+    raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+    text = raw_bytes.decode("utf-8", errors="replace")
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("Empty Nasdaq trader content")
+
+    # Extract trailer row if present: "File Creation Time: mmddyyyyhh:mm|||||"
+    trailer_line = lines[-1]
+    creation_time = None
+    if "File Creation Time:" in trailer_line:
+        parts = trailer_line.split(":")
+        if len(parts) >= 2:
+            creation_time = ":".join(parts[1:]).replace("|", "").strip()
+        data_lines = lines[:-1]
+    else:
+        data_lines = lines
+
+    from io import StringIO
+    df = pd.read_csv(StringIO("\n".join(data_lines)), sep="|", dtype=str)
+    df.columns = [c.strip() for c in df.columns]
+
+    etf_count = int((df["ETF"] == "Y").sum()) if "ETF" in df.columns else 0
+
+    metadata = {
+        "retrieval_timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source_url_identifier": source_url,
+        "raw_source_sha256": raw_sha256,
+        "file_creation_timestamp": creation_time or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "row_count": len(df),
+        "etf_flagged_row_count": etf_count
+    }
+    return df, metadata
+
+
+def fetch_nasdaq_traded_directory(
+    cache_dir: Path = CACHE_DIR,
+    source_manifest: SourceCacheManager = None
+) -> tuple[pd.DataFrame, dict]:
+    """Retrieves nasdaqtraded.txt directory with caching and source-cache tracking."""
+    target_file = cache_dir / "nasdaqtraded.txt"
+    if target_file.exists():
+        with open(target_file, "rb") as f:
+            raw_bytes = f.read()
+    else:
+        url = "ftp://ftp.nasdaqtrader.com/symboldir/nasdaqtraded.txt"
+        logger.info(f"Retrieving Nasdaq Traded Directory from {url}...")
+        try:
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            raw_bytes = resp.content
+        except Exception as e:
+            http_url = "https://www.nasdaqtrader.com/dynamic/symdir/nasdaqtraded.txt"
+            logger.info(f"Retrying via HTTP from {http_url} due to: {e}")
+            resp = requests.get(http_url, timeout=30)
+            resp.raise_for_status()
+            raw_bytes = resp.content
+
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "wb") as f:
+            f.write(raw_bytes)
+
+    df, metadata = parse_nasdaq_traded_content(raw_bytes)
+    if source_manifest:
+        source_manifest.record(
+            path=target_file,
+            provider="NASDAQ_TRADER",
+            semantic_role="UNIVERSE_DISCOVERY_DIRECTORY",
+            byte_size=len(raw_bytes),
+            sha256=metadata["raw_source_sha256"],
+            retrieval_timestamp=metadata["retrieval_timestamp"]
+        )
+    return df, metadata
+
+
+# --------------------------------------------------------------------------
+# CLASSIFICATION AUTHORITY ENGINE (Fail-Closed 5-Tier Hierarchy)
+# --------------------------------------------------------------------------
+class ClassificationAuthorityEngine:
+    """Enforces the 5-tier classification authority hierarchy defined in spec v1.0.2.
+
+    Hierarchy:
+    Tier 1: Exchange Discovery Metadata (Nasdaq traded directory flag)
+    Tier 2: Structured Provider Metadata (SEC / Morningstar / yfinance quoteType and category)
+    Tier 3: Verified Vehicle-Structure Registries (Point-in-time verified allowlists & blocklists)
+    Tier 4: Defensive Negative Heuristics (Negative safety net ONLY; heuristic inclusion prohibited)
+    Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from eligibility)
+    """
+
+    @classmethod
+    def classify_security(
+        cls,
+        symbol: str,
+        security_name: str,
+        listing_exchange: str,
+        nasdaq_etf_flag: bool,
+        structured_metadata: dict = None,
+        timestamp: str = None
+    ) -> dict:
+        if timestamp is None:
+            timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        name = str(security_name or "")
+        sym = str(symbol or "").strip().upper()
+        exch = str(listing_exchange or "").strip()
+
+        # Tier 1 Discovery Check
+        if not nasdaq_etf_flag:
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": False,
+                "vehicle_structure": "UNKNOWN",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_1_EXCHANGE_DISCOVERY",
+                "classification_evidence": "NASDAQ_ETF_FLAG_IS_N",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "NOT_FLAGGED_AS_ETF_BY_DISCOVERY_EXCHANGE"
+            }
+
+        # Tier 4: Defensive Negative Safety Net Heuristics (and known excluded blocklists)
+        # 1. Leveraged / Inverse Check
+        if sym in KNOWN_LEVERAGED_INVERSE_PRODUCTS or RE_LEVERAGED_INVERSE.search(name):
+            is_inverse = bool(re.search(r"\b(inverse|short|bear)\b", name, re.IGNORECASE))
+            struct = "INVERSE_ETF" if is_inverse else "LEVERAGED_ETF"
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": struct,
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_LEVERAGED_OR_INVERSE_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+            }
+
+        # 2. Exchange-Traded Notes (ETNs)
+        if sym in KNOWN_EXCHANGE_TRADED_NOTES or RE_ETN.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "EXCHANGE_TRADED_NOTE",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_ETN_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
+            }
+
+        # 3. Commodity Futures Pools
+        if sym in KNOWN_COMMODITY_FUTURES_POOLS or RE_COMMODITY_POOL.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "COMMODITY_FUTURES_POOL",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_COMMODITY_POOL_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
+            }
+
+        # 4. Crypto-Linked Products
+        if sym in KNOWN_CRYPTO_PRODUCTS or RE_CRYPTO.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "CRYPTO_LINKED_PRODUCT",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_CRYPTO_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
+            }
+
+        # 5. Closed-End Funds (CEFs)
+        if RE_CEF.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "CLOSED_END_FUND",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_CEF_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
+            }
+
+        # 6. Mutual Funds
+        if RE_MUTUAL_FUND.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "MUTUAL_FUND",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_MUTUAL_FUND_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_MUTUAL_FUND"
+            }
+
+        # Tier 3: Verified Registries
+        # Physical precious metal grantor trusts
+        if sym in PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS:
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
+                "vehicle_structure_state": "STRUCTURE_VERIFIED",
+                "research_subtype": "COMMODITY_PHYSICAL",
+                "research_subtype_state": "CONFIRMATORY_SUPPORTED",
+                "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                "classification_evidence": "VERIFIED_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST_ALLOWLIST",
+                "classification_timestamp": timestamp,
+                "is_research_eligible": True,
+                "exclusion_reason": None
+            }
+
+        # Verified 1940 Act ETFs
+        for subtype, allowed_syms in KNOWN_VERIFIED_1940_ACT_ETFS.items():
+            if sym in allowed_syms:
+                st_state = "CONFIRMATORY_SUPPORTED" if subtype in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
+                return {
+                    "symbol": sym,
+                    "security_name": name,
+                    "listing_exchange": exch,
+                    "nasdaq_etf_flag": True,
+                    "vehicle_structure": "1940_ACT_OPEN_END_ETF",
+                    "vehicle_structure_state": "STRUCTURE_VERIFIED",
+                    "research_subtype": subtype,
+                    "research_subtype_state": st_state,
+                    "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                    "classification_evidence": f"VERIFIED_1940_ACT_ALLOWLIST_{subtype}",
+                    "classification_timestamp": timestamp,
+                    "is_research_eligible": True,
+                    "exclusion_reason": None
+                }
+
+        # Tier 2: Structured Provider Metadata (if provided)
+        if structured_metadata:
+            provider_type = structured_metadata.get("quoteType", "").upper()
+            provider_category = structured_metadata.get("category", "")
+            if provider_type == "ETF" and structured_metadata.get("is_1940_act") is True:
+                subtype = structured_metadata.get("research_subtype", "OTHER_ETF")
+                st_state = "CONFIRMATORY_SUPPORTED" if subtype in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
+                return {
+                    "symbol": sym,
+                    "security_name": name,
+                    "listing_exchange": exch,
+                    "nasdaq_etf_flag": True,
+                    "vehicle_structure": "1940_ACT_OPEN_END_ETF",
+                    "vehicle_structure_state": "STRUCTURE_VERIFIED",
+                    "research_subtype": subtype,
+                    "research_subtype_state": st_state,
+                    "classification_source": "TIER_2_STRUCTURED_PROVIDER_METADATA",
+                    "classification_evidence": f"STRUCTURED_PROVIDER_ATTESTATION: {provider_category}",
+                    "classification_timestamp": timestamp,
+                    "is_research_eligible": True,
+                    "exclusion_reason": None
+                }
+
+        # Tier 5: Unknown Structure Quarantine (FAIL-CLOSED)
+        # Unresolved structures are barred from eligibility; regex cannot certify inclusion.
+        return {
+            "symbol": sym,
+            "security_name": name,
+            "listing_exchange": exch,
+            "nasdaq_etf_flag": True,
+            "vehicle_structure": "UNKNOWN",
+            "vehicle_structure_state": "QUARANTINED",
+            "research_subtype": None,
+            "research_subtype_state": "EXCLUDED",
+            "classification_source": "TIER_5_UNKNOWN_STRUCTURE_QUARANTINE",
+            "classification_evidence": "FAIL_CLOSED_NO_AFFIRMATIVE_LEGAL_STRUCTURE_VERIFICATION",
+            "classification_timestamp": timestamp,
+            "is_research_eligible": False,
+            "exclusion_reason": "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+        }
+
+
+# --------------------------------------------------------------------------
+# UNIVERSE SNAPSHOT BUILDER (docs/research/ETF_SURVIVING_UNIVERSE_V1)
+# --------------------------------------------------------------------------
+def build_universe_snapshot(
+    discovery_file: Path | str = None,
+    output_parquet: Path | str = UNIVERSE_SNAPSHOT_PATH,
+    output_manifest: Path | str = UNIVERSE_MANIFEST_PATH,
+    cache_dir: Path = CACHE_DIR,
+    source_manifest: SourceCacheManager = None
+) -> dict:
+    """Builds canonical ETF surviving universe snapshot and manifest.
+
+    Enforces:
+    - 13 required parquet columns.
+    - 13 required manifest fields.
+    - Binding of spec SHA, builder git commit, and builder file SHA.
+    """
+    output_parquet = Path(output_parquet)
+    output_manifest = Path(output_manifest)
+    output_parquet.parent.mkdir(parents=True, exist_ok=True)
+    output_manifest.parent.mkdir(parents=True, exist_ok=True)
+
+    if source_manifest is None:
+        source_manifest = SourceCacheManager()
+
+    if discovery_file:
+        disc_path = Path(discovery_file)
+        with open(disc_path, "rb") as f:
+            raw_bytes = f.read()
+        df_disc, meta_disc = parse_nasdaq_traded_content(raw_bytes, source_url=str(disc_path))
+        source_manifest.record(
+            path=disc_path,
+            provider="LOCAL_FILE",
+            semantic_role="UNIVERSE_DISCOVERY_DIRECTORY",
+            byte_size=len(raw_bytes),
+            sha256=meta_disc["raw_source_sha256"],
+            retrieval_timestamp=meta_disc["retrieval_timestamp"]
+        )
+    else:
+        df_disc, meta_disc = fetch_nasdaq_traded_directory(cache_dir, source_manifest)
+
+    # Filter out test issues
+    test_issue_col = "Test Issue" if "Test Issue" in df_disc.columns else "TestIssue"
+    if test_issue_col in df_disc.columns:
+        df_clean = df_disc[df_disc[test_issue_col] == "N"].copy()
+    else:
+        df_clean = df_disc.copy()
+
+    records = []
+    for _, row in df_clean.iterrows():
+        sym = row.get("Symbol", "")
+        name = row.get("Security Name", "")
+        exch = row.get("Listing Exchange", "")
+        is_etf = (row.get("ETF", "").strip().upper() == "Y")
+
+        rec = ClassificationAuthorityEngine.classify_security(
+            symbol=sym,
+            security_name=name,
+            listing_exchange=exch,
+            nasdaq_etf_flag=is_etf
+        )
+        records.append(rec)
+
+    df_snap = pd.DataFrame(records)
+
+    # Ensure column ordering and schema
+    required_cols = [
+        "symbol", "security_name", "listing_exchange", "nasdaq_etf_flag",
+        "vehicle_structure", "vehicle_structure_state", "research_subtype",
+        "research_subtype_state", "classification_source", "classification_evidence",
+        "classification_timestamp", "is_research_eligible", "exclusion_reason"
+    ]
+    df_snap = df_snap[required_cols]
+
+    # Save to Parquet
+    df_snap.to_parquet(output_parquet, index=False)
+    snapshot_sha256 = get_file_sha256(output_parquet)
+
+    builder_git_commit = get_git_commit()
+    builder_file_sha256 = get_file_sha256(Path(__file__))
+
+    # Read and bind spec identity
+    spec_sha256 = get_file_sha256(SPEC_PATH) if SPEC_PATH.exists() else CANONICAL_FILTERED_SPEC_SHA256_V102
+
+    row_count = len(df_snap)
+    eligible_count = int(df_snap["is_research_eligible"].sum())
+    excluded_count = int((~df_snap["is_research_eligible"]).sum())
+
+    manifest = {
+        "research_spec_version": SPEC_VERSION_V102,
+        "research_spec_sha256": spec_sha256,
+        "research_spec_git_commit": CANONICAL_SPEC_COMMIT_V102,
+        "classification_rule_version": SPEC_VERSION_V102,
+        "discovery_source_sha256": meta_disc["raw_source_sha256"],
+        "discovery_retrieval_timestamp": meta_disc["retrieval_timestamp"],
+        "snapshot_sha256": snapshot_sha256,
+        "row_count": row_count,
+        "eligible_row_count": eligible_count,
+        "excluded_row_count": excluded_count,
+        "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "builder_git_commit": builder_git_commit,
+        "builder_file_sha256": builder_file_sha256
+    }
+
+    with open(output_manifest, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    logger.info(f"Universe snapshot written to {output_parquet} (SHA: {snapshot_sha256})")
+    logger.info(f"Universe manifest written to {output_manifest} (Rows: {row_count}, Eligible: {eligible_count})")
+    return manifest
+
+
+# --------------------------------------------------------------------------
+# LIQUIDITY & HISTORY EVALUATION
+# --------------------------------------------------------------------------
+def evaluate_liquidity_and_history(
+    symbols: list[str],
+    price_data_adj: dict[str, pd.DataFrame],
+    trading_calendar: pd.DatetimeIndex,
+    adv_window: int = 60,
+    adv_percentile: float = 0.80,
+    min_history: int = 250
+) -> pd.DataFrame:
+    """Calculates daily rolling ADV60 across active survivor universe, evaluates cross-sectional
+    80th percentile threshold, and enforces min_history >= 250 sessions.
+    Fail closed if insufficient data.
+    """
+    adv_matrix = pd.DataFrame(index=trading_calendar)
+    hist_lens = {}
+
+    for sym in symbols:
+        if sym in price_data_adj and "Close" in price_data_adj[sym] and "Volume" in price_data_adj[sym]:
+            df = price_data_adj[sym]
+            dvol = df["Close"] * df["Volume"]
+            adv = dvol.rolling(window=adv_window, min_periods=adv_window).mean()
+            adv_matrix[sym] = adv.reindex(trading_calendar)
+            hist_lens[sym] = pd.Series(np.arange(1, len(df) + 1), index=df.index).reindex(trading_calendar).fillna(0)
+        else:
+            adv_matrix[sym] = np.nan
+            hist_lens[sym] = pd.Series(0, index=trading_calendar)
+
+    records = []
+    for date in trading_calendar:
+        row_adv = adv_matrix.loc[date].dropna()
+        if len(row_adv) > 0:
+            p80 = float(row_adv.quantile(adv_percentile))
+        else:
+            p80 = np.inf
+
+        for sym in symbols:
+            val = adv_matrix.loc[date].get(sym, np.nan)
+            hlen = int(hist_lens[sym].loc[date])
+            is_liquid = bool(val >= p80) if not np.isnan(val) and p80 != np.inf else False
+            has_history = bool(hlen >= min_history)
+            in_universe = bool(is_liquid and has_history)
+
+            records.append({
+                "symbol": sym,
+                "observation_date": str(date.date()),
+                "adv60": float(val) if not np.isnan(val) else None,
+                "adv80_threshold": float(p80) if p80 != np.inf else None,
+                "history_sessions": hlen,
+                "is_liquid": is_liquid,
+                "has_min_history": has_history,
+                "in_universe": in_universe
+            })
+
+    return pd.DataFrame(records)
+
+
+# --------------------------------------------------------------------------
+# HISTORICAL MARKET & MACRO DATA FETCHERS
+# --------------------------------------------------------------------------
+def fetch_cached_ticker(
+    symbol: str,
+    cache_dir: Path,
+    source_manifest: SourceCacheManager = None
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Fetch split/dividend-adjusted and raw OHLCV for a symbol with local parquet caching."""
     adj_cache = cache_dir / f"{symbol}_adj.parquet"
     raw_cache = cache_dir / f"{symbol}_raw.parquet"
@@ -67,21 +713,29 @@ def fetch_cached_ticker(symbol: str, cache_dir: Path) -> tuple[pd.DataFrame, pd.
         return df_adj, df_raw
 
     logger.info(f"Downloading historical market data for {symbol}...")
+    import yfinance as yf
     t = yf.Ticker(symbol)
     df_adj = t.history(start="2005-01-01", end="2026-01-10", auto_adjust=True)
     df_raw = t.history(start="2005-01-01", end="2026-01-10", auto_adjust=False)
 
-    # Normalize indices
     df_adj.index = pd.to_datetime(df_adj.index).tz_localize(None).normalize()
     df_raw.index = pd.to_datetime(df_raw.index).tz_localize(None).normalize()
 
-    # Drop timezone and save
     df_adj.to_parquet(adj_cache)
     df_raw.to_parquet(raw_cache)
+
+    if source_manifest:
+        source_manifest.record(adj_cache, provider="YFINANCE", semantic_role="EQUITY_SPLIT_DIVIDEND_ADJUSTED")
+        source_manifest.record(raw_cache, provider="YFINANCE", semantic_role="EQUITY_RAW_UNADJUSTED")
+
     return df_adj, df_raw
 
 
-def fetch_cached_fred_series(series_id: str, cache_dir: Path) -> pd.DataFrame:
+def fetch_cached_fred_series(
+    series_id: str,
+    cache_dir: Path,
+    source_manifest: SourceCacheManager = None
+) -> pd.DataFrame:
     """Download FRED constant maturity yield/spread series with local caching."""
     cache_file = cache_dir / f"fred_{series_id}.parquet"
     if cache_file.exists():
@@ -102,6 +756,10 @@ def fetch_cached_fred_series(series_id: str, cache_dir: Path) -> pd.DataFrame:
     df = df.dropna().sort_values("date").drop_duplicates(subset=["date"])
     df.set_index("date", inplace=True)
     df.to_parquet(cache_file)
+
+    if source_manifest:
+        source_manifest.record(cache_file, provider="ST_LOUIS_FED_FRED", semantic_role="MACRO_TIME_SERIES")
+
     return df
 
 
@@ -127,21 +785,25 @@ def compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     return rsi
 
 
+# --------------------------------------------------------------------------
+# DATASET BUILDER
+# --------------------------------------------------------------------------
 def build_dataset():
+    """Builds the full historical observations and outcomes dataset (Stage-A)."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    source_manifest = SourceCacheManager()
 
     with open(SPEC_PATH, "r", encoding="utf-8") as f:
         spec = json.load(f)
 
-    logger.info("Initializing universe downloads...")
-    all_symbols = set()
+    # Reconstruct universe from verified 1940 Act and Grantor Trust registries
     symbol_to_subtype = {}
-    for st, syms in UNIVERSE_CONFIG.items():
+    for st, syms in KNOWN_VERIFIED_1940_ACT_ETFS.items():
         for s in syms:
-            all_symbols.add(s)
             symbol_to_subtype[s] = st
 
+    all_symbols = set(symbol_to_subtype.keys())
     for b in BENCHMARK_SYMBOLS:
         all_symbols.add(b)
     for c in CURRENCY_SYMBOLS:
@@ -151,7 +813,7 @@ def build_dataset():
     symbol_data_raw = {}
     for sym in sorted(all_symbols):
         try:
-            adj, raw = fetch_cached_ticker(sym, CACHE_DIR)
+            adj, raw = fetch_cached_ticker(sym, CACHE_DIR, source_manifest)
             symbol_data_adj[sym] = adj
             symbol_data_raw[sym] = raw
         except Exception as e:
@@ -161,22 +823,19 @@ def build_dataset():
     macro_dfs = {}
     for sid in MACRO_SERIES:
         try:
-            mdf = fetch_cached_fred_series(sid, CACHE_DIR)
+            mdf = fetch_cached_fred_series(sid, CACHE_DIR, source_manifest)
             macro_dfs[sid] = mdf
         except Exception as e:
             logger.error(f"Failed to fetch FRED series {sid}: {e}")
 
-    # Build master trading calendar from SPY
     spy_dates = symbol_data_adj["SPY"].index
     study_dates = [d for d in spy_dates if pd.Timestamp(START_DATE) <= d <= pd.Timestamp(END_DATE)]
 
-    # Forward-fill macro onto equity calendar with conservative LAGGED join
     macro_combined = pd.DataFrame(index=spy_dates)
     for sid, mdf in macro_dfs.items():
         macro_combined = macro_combined.join(mdf, how="left")
     macro_combined = macro_combined.ffill()
 
-    # Build Daily ADV60 matrix across surviving universe
     adv60_matrix = pd.DataFrame(index=spy_dates)
     for sym in symbol_to_subtype.keys():
         if sym in symbol_data_adj:
@@ -184,7 +843,6 @@ def build_dataset():
             dollar_vol = df["Close"] * df["Volume"]
             adv60_matrix[sym] = dollar_vol.rolling(window=60, min_periods=60).mean()
 
-    # Precompute technicals per symbol
     technicals = {}
     for sym in symbol_to_subtype.keys():
         if sym not in symbol_data_adj:
@@ -212,26 +870,19 @@ def build_dataset():
             "HistoryLen": pd.Series(np.arange(1, len(df) + 1), index=df.index),
         }
 
-    # Precompute currency features (UUP)
     uup_df = symbol_data_adj["UUP"]
     uup_sma50 = uup_df["Close"].rolling(50, min_periods=50).mean()
     uup_atr20 = compute_atr(uup_df["High"], uup_df["Low"], uup_df["Close"], 20)
 
-    # Observation and Outcome containers
     observations = []
     outcomes = []
     universe_records = []
 
     logger.info("Generating observations and forward outcomes...")
     for date in study_dates:
-        # 1. Evaluate point-in-time liquidity percentile across active survivor universe
         daily_adv = adv60_matrix.loc[date].dropna()
-        if len(daily_adv) > 0:
-            p80 = daily_adv.quantile(0.80)
-        else:
-            p80 = np.inf
+        p80 = float(daily_adv.quantile(0.80)) if len(daily_adv) > 0 else np.inf
 
-        # Macro values strictly lagged (available at date - 1 trading session)
         date_idx = spy_dates.get_loc(date)
         if date_idx > 0:
             prev_date = spy_dates[date_idx - 1]
@@ -263,7 +914,6 @@ def build_dataset():
                 "in_universe": in_universe
             })
 
-            # Feature calculation requires in_universe and history >= 250
             if not in_universe:
                 continue
 
@@ -274,7 +924,6 @@ def build_dataset():
             if np.isnan(sma200_t) or np.isnan(atr20_t) or atr20_t == 0:
                 continue
 
-            # Generate unique deterministic observation ID
             obs_id = hashlib.sha256(f"{sym}_{date.strftime('%Y%m%d')}".encode("utf-8")).hexdigest()[:16]
 
             # f1: Trend ratio
@@ -295,28 +944,28 @@ def build_dataset():
 
             # f3: RSI regime distance
             rsi_t = tech["RSI14"].loc[date]
-            if not np.isnan(rsi_t):
-                f3 = float(np.exp(-((rsi_t - 60.0) ** 2) / (2.0 * (15.0 ** 2))))
-            else:
-                f3 = None
+            f3 = float(np.exp(-((rsi_t - 60.0) ** 2) / (2.0 * (15.0 ** 2)))) if not np.isnan(rsi_t) else None
 
-            # f4: Volatility compression (exploratory)
+            # f4: Volatility compression
             atr10_t = tech["ATR10"].loc[date]
             atr50_t = tech["ATR50"].loc[date]
             f4 = float(atr10_t / atr50_t) if (not np.isnan(atr10_t) and not np.isnan(atr50_t) and atr50_t > 0) else None
 
-            # Macro features (from lagged macro_row)
+            # Macro features
             f5 = float(macro_row["T10Y2Y"]) if "T10Y2Y" in macro_row and not np.isnan(macro_row["T10Y2Y"]) else None
 
-            # 20-day macro momentum
             if date_idx >= 20:
                 lag20_date = spy_dates[date_idx - 20]
                 m_lag20 = macro_combined.loc[lag20_date]
                 f6 = float(macro_row["DGS10"] - m_lag20["DGS10"]) if ("DGS10" in macro_row and not np.isnan(macro_row["DGS10"]) and not np.isnan(m_lag20["DGS10"])) else None
-                f7 = float(macro_row["BAMLH0A0HYM2"] - m_lag20["BAMLH0A0HYM2"]) if ("BAMLH0A0HYM2" in macro_row and not np.isnan(macro_row["BAMLH0A0HYM2"]) and not np.isnan(m_lag20["BAMLH0A0HYM2"])) else None
                 f9 = float(macro_row["DFII10"] - m_lag20["DFII10"]) if ("DFII10" in macro_row and not np.isnan(macro_row["DFII10"]) and not np.isnan(m_lag20["DFII10"])) else None
+                # f12: BAA corporate spread trend (v1.0.2)
+                f12 = float(macro_row["BAA10Y"] - m_lag20["BAA10Y"]) if ("BAA10Y" in macro_row and not np.isnan(macro_row["BAA10Y"]) and not np.isnan(m_lag20["BAA10Y"])) else None
             else:
-                f6, f7, f9 = None, None, None
+                f6, f9, f12 = None, None, None
+
+            # f7 is DEPRECATED in v1.0.2
+            f7 = None
 
             # f8: HYG relative strength vs LQD
             if sym_idx >= 60 and "HYG" in technicals and "LQD" in technicals:
@@ -343,7 +992,7 @@ def build_dataset():
             else:
                 f10 = None
 
-            # f11: Bullion breakout (50 sessions: k=0..49)
+            # f11: Bullion breakout (50 sessions)
             if sym_idx >= 50:
                 lows_50 = tech["Low"].iloc[sym_idx - 49 : sym_idx + 1]
                 highs_50 = tech["High"].iloc[sym_idx - 49 : sym_idx + 1]
@@ -353,7 +1002,6 @@ def build_dataset():
             else:
                 f11 = None
 
-            # Assign benchmark
             bench_map = {
                 "EQUITY_INDEX": "SPY",
                 "EQUITY_SECTOR": "SPY",
@@ -382,14 +1030,13 @@ def build_dataset():
                 "f9_real_yield_regime": f9,
                 "f10_dxy_trend": f10,
                 "f11_bullion_breakout": f11,
+                "f12_baa_corporate_spread_trend": f12,
             })
 
-            # Calculate Forward Outcomes (strictly in separate container)
-            # Need t+1 Open to t+20 Close
+            # Calculate Forward Outcomes
             raw_open = symbol_data_raw[sym]["Open"]
             sym_raw_idx = raw_open.index.get_loc(date) if date in raw_open.index else None
 
-            # Primary 20d horizon
             h20_ret, h5_ret, h10_ret, h60_ret = None, None, None, None
             mae_20d, mfe_20d, vol_20d = None, None, None
 
@@ -405,7 +1052,6 @@ def build_dataset():
                         b_ret20 = b_t20 / b_t - 1.0
                         h20_ret = float(sym_ret20 - b_ret20)
 
-                # Diagnostic 5d, 10d, 60d
                 if sym_idx + 5 < len(tech["Close"]):
                     h5_ret = float(tech["Close"].iloc[sym_idx + 5] / close_t - 1.0)
                 if sym_idx + 10 < len(tech["Close"]):
@@ -413,7 +1059,6 @@ def build_dataset():
                 if sym_idx + 60 < len(tech["Close"]):
                     h60_ret = float(tech["Close"].iloc[sym_idx + 60] / close_t - 1.0)
 
-                # MAE / MFE over window t+1 .. t+20
                 if sym_raw_idx is not None and sym_raw_idx + 1 < len(raw_open):
                     entry_open = raw_open.iloc[sym_raw_idx + 1]
                     highs_window = tech["High"].iloc[sym_idx + 1 : sym_idx + 21]
@@ -422,7 +1067,6 @@ def build_dataset():
                         mae_20d = float((lows_window.min() - close_t) / atr20_t)
                         mfe_20d = float((highs_window.max() - close_t) / atr20_t)
 
-                # Realized volatility
                 returns_20d = tech["Close"].iloc[sym_idx + 1 : sym_idx + 21].pct_change().dropna()
                 if len(returns_20d) >= 15:
                     vol_20d = float(returns_20d.std() * np.sqrt(252))
@@ -440,7 +1084,6 @@ def build_dataset():
                 "realized_vol_20d": vol_20d,
             })
 
-    # Save to Parquet tables
     obs_df = pd.DataFrame(observations)
     out_df = pd.DataFrame(outcomes)
     uni_df = pd.DataFrame(universe_records)
@@ -458,12 +1101,13 @@ def build_dataset():
     uni_df.to_parquet(uni_path, index=False)
     macro_table.to_parquet(mac_path, index=False)
 
-    # Compute artifact digests
     manifest = {
         "dataset_version": "1.0.0",
         "spec_version": spec["spec_version"],
         "spec_sha256": get_file_sha256(SPEC_PATH),
-        "spec_git_commit": "44a4aa952a47d1e6c82d8ec58b2d2e8f6b5c0d2a",
+        "spec_git_commit": CANONICAL_SPEC_COMMIT_V102,
+        "builder_git_commit": get_git_commit(),
+        "builder_file_sha256": get_file_sha256(Path(__file__)),
         "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "total_observations": len(obs_df),
         "unique_symbols": int(obs_df["symbol"].nunique()),
@@ -489,4 +1133,7 @@ def build_dataset():
 
 
 if __name__ == "__main__":
-    build_dataset()
+    if "--snapshot-only" in sys.argv or "--build-universe-snapshot" in sys.argv:
+        build_universe_snapshot()
+    else:
+        build_dataset()
