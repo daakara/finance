@@ -367,9 +367,9 @@ def test_end_to_end_composite_snapshot_pipeline_and_10_cases():
         assert df.loc["VUSB", "vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
         assert df.loc["VUSB", "research_subtype"] == "FIXED_INCOME_CREDIT"
 
-        # Common stock not flagged as ETF -> False (NOT_NASDAQ_ETF_DISCOVERED)
-        assert bool(df.loc["NONETF", "is_research_eligible"]) is False
-        assert df.loc["NONETF", "exclusion_reason"] == "NOT_NASDAQ_ETF_DISCOVERED"
+        # Non-ETF common stock dropped before classification into snapshot
+        assert "NONETF" not in df.index
+        assert (df["nasdaq_etf_flag"] == True).all()
 
         # Verify composite count binding
         assert manifest["eligible_row_count"] == int(df["is_research_eligible"].sum())
@@ -400,3 +400,110 @@ def test_source_cache_lineage():
         mgr2 = SourceCacheManager(manifest_path=tmp_path / "source_cache.json")
         rel_key = str(test_file).replace("\\", "/")
         assert rel_key in mgr2.entries
+
+
+def test_discovery_domain_etf_flag_only():
+    """Section 14: Verifies discovery domain integrity - ETF == 'Y' strictly enforced."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        disc_file = tmp_path / "nasdaqtraded.txt"
+        disc_file.write_bytes(SAMPLE_NASDAQ_DATA)
+
+        snap_parquet = tmp_path / "ETF_SURVIVING_UNIVERSE_V1.parquet"
+        snap_manifest = tmp_path / "ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json"
+
+        build_universe_snapshot(
+            discovery_file=disc_file,
+            price_data_dict={},
+            output_parquet=snap_parquet,
+            output_manifest=snap_manifest,
+            cache_dir=tmp_path,
+        )
+
+        df = pd.read_parquet(snap_parquet)
+        assert len(df) > 0
+        # Invariant 1: No row in the snapshot has nasdaq_etf_flag == False
+        assert (df["nasdaq_etf_flag"] == True).all()
+        # Invariant 2: Non-ETF securities from source are completely absent from snapshot
+        assert "NONETF" not in df["symbol"].values
+        # Invariant 3: Test issues from source are completely absent from snapshot
+        assert "TESTS" not in df["symbol"].values
+
+
+def test_market_eligibility_as_of_freshness():
+    """Section 15: Verifies market data freshness requirement - stale sessions fail-closed."""
+    trading_cal = pd.date_range("2026-01-01", "2026-09-24", freq="B")
+
+    # Stale candidate ending earlier (e.g. 2026-09-18)
+    stale_dates = pd.date_range("2026-01-01", "2026-09-18", freq="B")
+    df_stale = pd.DataFrame({
+        "Close": 100.0,
+        "Volume": 50_000_000.0
+    }, index=stale_dates)
+
+    # Fresh candidate ending on current session (2026-09-24)
+    df_fresh = pd.DataFrame({
+        "Close": 100.0,
+        "Volume": 50_000_000.0
+    }, index=trading_cal)
+
+    price_dict = {
+        "STALE": df_stale,
+        "FRESH": df_fresh
+    }
+
+    res_df = evaluate_liquidity_and_history(
+        symbols=["STALE", "FRESH"],
+        price_data_adj=price_dict,
+        trading_calendar=trading_cal,
+        adv_window=60,
+        adv_percentile=0.80,
+        min_history=100
+    )
+
+    # Inspect the observation on the current session (2026-09-24)
+    last_date = str(trading_cal.max().date())
+    as_of_res = res_df[res_df["observation_date"] == last_date].set_index("symbol")
+
+    # Fresh candidate should have valid data and be in universe
+    assert bool(as_of_res.loc["FRESH", "has_valid_data"]) is True
+    assert bool(as_of_res.loc["FRESH", "in_universe"]) is True
+
+    # Stale candidate must fail-closed on current session (reindexed to NaN/0 sessions)
+    assert bool(as_of_res.loc["STALE", "has_valid_data"]) is False
+    assert bool(as_of_res.loc["STALE", "in_universe"]) is False
+
+
+def test_registry_source_validation_and_no_contradictions():
+    """Section 16: Verifies vehicle registry evidence integrity and absence of contradictions."""
+    evidence_path = Path("data/research/etf_vehicle_registry_evidence_v1.json")
+    assert evidence_path.exists(), "Registry evidence file must exist"
+
+    with open(evidence_path, "r", encoding="utf-8") as f:
+        evidence = json.load(f)
+
+    assert "entries" in evidence
+    entries = evidence["entries"]
+    assert len(entries) > 0
+
+    # Contradiction check: PDBC must NOT be in commodity futures pool registry
+    commodity_pool_syms = [
+        e["symbol"] for e in entries
+        if e.get("target_registry") == "REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS"
+    ]
+    assert "PDBC" not in commodity_pool_syms, "PDBC must not be classified as a K-1 commodity pool"
+
+    # Contradiction check: AMLP and MLPX must NOT be in ETN registry
+    etn_syms = [
+        e["symbol"] for e in entries
+        if e.get("target_registry") == "REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES"
+    ]
+    assert "AMLP" not in etn_syms, "AMLP must not be classified as an ETN"
+    assert "MLPX" not in etn_syms, "MLPX must not be classified as an ETN"
+
+    # Lineage & schema validation: every entry must have verified source retrieval and sha256
+    for entry in entries:
+        assert entry.get("source_retrieval_status") in ("VERIFIED", "VERIFIED_SUCCESSFUL"), f"Unverified status for {entry.get('symbol')}"
+        assert bool(entry.get("legal_structure_supported")) is True, f"Unsupported structure for {entry.get('symbol')}"
+        sha = entry.get("source_artifact_sha256")
+        assert sha and len(sha) == 64, f"Invalid SHA-256 for {entry.get('symbol')}"

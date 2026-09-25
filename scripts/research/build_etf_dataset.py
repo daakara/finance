@@ -93,7 +93,7 @@ REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS = RegistryMetadata(
 
 REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS = RegistryMetadata(
     registry_name="KNOWN_COMMODITY_FUTURES_POOLS",
-    entries=frozenset({"USO", "UNG", "BNO", "UGA", "CPER", "DBA", "DBC", "GSG", "PDBC", "WEAT", "CORN", "SOYB", "BOIL", "KOLD"}),
+    entries=frozenset({"USO", "UNG", "BNO", "UGA", "CPER", "DBA", "DBC", "GSG", "WEAT", "CORN", "SOYB", "BOIL", "KOLD"}),
     source_authority="CFTC_AND_SEC_EDGAR_K1_POOLS",
     source_identifier="SEC_FORM_10K_COMMODITY_POOL_OPERATOR_DISCLOSURES",
     as_of_date="2026-09-25",
@@ -105,7 +105,7 @@ REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS = RegistryMetadata(
 
 REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES = RegistryMetadata(
     registry_name="KNOWN_EXCHANGE_TRADED_NOTES",
-    entries=frozenset({"AMJ", "SPLI", "USOI", "GLDI", "SLVO", "MLPX", "AMLP"}),
+    entries=frozenset({"AMJ", "SPLI", "USOI", "GLDI", "SLVO"}),
     source_authority="ISSUER_DEBT_PROSPECTUSES",
     source_identifier="SEC_FORM_424B2_UNSECURED_SENIOR_DEBT_OBLIGATIONS",
     as_of_date="2026-09-25",
@@ -835,12 +835,16 @@ def build_universe_snapshot(
     else:
         df_clean = df_disc.copy()
 
+    # Defect 1: Discovery domain strictly requires ETF == 'Y'
+    etf_col = "ETF" if "ETF" in df_clean.columns else "etf"
+    df_discovered_etfs = df_clean[df_clean[etf_col].astype(str).str.strip().str.upper() == "Y"].copy()
+
     records = []
-    for _, row in df_clean.iterrows():
+    for _, row in df_discovered_etfs.iterrows():
         sym = row.get("Symbol", "")
         name = row.get("Security Name", "")
         exch = row.get("Listing Exchange", "")
-        is_etf = (row.get("ETF", "").strip().upper() == "Y")
+        is_etf = True
 
         rec = ClassificationAuthorityEngine.classify_security(
             symbol=sym,
@@ -860,7 +864,7 @@ def build_universe_snapshot(
     else:
         for sym in candidate_symbols:
             try:
-                adj, _ = fetch_cached_ticker(sym, cache_dir, source_manifest)
+                adj, _ = fetch_cached_ticker(sym, cache_dir, source_manifest, required_as_of_session=as_of_date)
                 market_price_data[sym] = adj
             except Exception as e:
                 logger.warning(f"Could not retrieve eligibility market data for candidate {sym}: {e}")
@@ -872,12 +876,24 @@ def build_universe_snapshot(
             all_dates = all_dates.union(df_p.index)
     all_dates = all_dates.sort_values()
 
+    # Determine latest completed market session
+    latest_completed_session = str(all_dates.max().date()) if not all_dates.empty else None
+    eval_as_of = as_of_date if as_of_date else latest_completed_session
+
     if len(all_dates) == 0:
         eval_calendar = pd.date_range("2026-01-01", periods=250, freq="B")
-    elif as_of_date:
-        eval_calendar = all_dates[all_dates <= pd.Timestamp(as_of_date)]
+    elif eval_as_of:
+        eval_calendar = all_dates[all_dates <= pd.Timestamp(eval_as_of)]
     else:
         eval_calendar = all_dates
+
+    # Freshness audit: verify candidate series reach eval_as_of
+    if eval_as_of:
+        for sym, df_p in market_price_data.items():
+            if df_p is not None and not df_p.empty:
+                last_s = str(df_p.index.max().date())
+                if last_s < eval_as_of:
+                    logger.warning(f"Candidate {sym} market data is stale: {last_s} < {eval_as_of}")
 
     # Execute liquidity & history evaluation (Section 3: Call Graph Wiring)
     market_eligibility_df = evaluate_liquidity_and_history(
@@ -1001,7 +1017,8 @@ def build_universe_snapshot(
 def fetch_cached_ticker(
     symbol: str,
     cache_dir: Path,
-    source_manifest: SourceCacheManager = None
+    source_manifest: SourceCacheManager = None,
+    required_as_of_session: str = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Fetch split/dividend-adjusted and raw OHLCV for a symbol with local parquet caching."""
     adj_cache = cache_dir / f"{symbol}_adj.parquet"
@@ -1010,13 +1027,22 @@ def fetch_cached_ticker(
     if adj_cache.exists() and raw_cache.exists():
         df_adj = pd.read_parquet(adj_cache)
         df_raw = pd.read_parquet(raw_cache)
-        return df_adj, df_raw
+        is_fresh = True
+        if required_as_of_session and not df_adj.empty:
+            last_date_str = str(df_adj.index.max().date())
+            if last_date_str < required_as_of_session:
+                is_fresh = False
+        if is_fresh:
+            if source_manifest:
+                source_manifest.record(adj_cache, provider="YFINANCE", semantic_role="UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY")
+                source_manifest.record(raw_cache, provider="YFINANCE", semantic_role="UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY")
+            return df_adj, df_raw
 
     logger.info(f"Downloading historical market data for {symbol}...")
     import yfinance as yf
     t = yf.Ticker(symbol)
-    df_adj = t.history(start="2005-01-01", end="2026-01-10", auto_adjust=True)
-    df_raw = t.history(start="2005-01-01", end="2026-01-10", auto_adjust=False)
+    df_adj = t.history(start="2005-01-01", auto_adjust=True)
+    df_raw = t.history(start="2005-01-01", auto_adjust=False)
 
     df_adj.index = pd.to_datetime(df_adj.index).tz_localize(None).normalize()
     df_raw.index = pd.to_datetime(df_raw.index).tz_localize(None).normalize()
