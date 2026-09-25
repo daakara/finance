@@ -302,7 +302,7 @@ class SourceCacheManager:
     """Manages the source cache manifest at data/research/source_cache_manifest_v1.json."""
 
     def __init__(self, manifest_path: Path = SOURCE_CACHE_MANIFEST_PATH):
-        self.manifest_path = manifest_path
+        self.manifest_path = Path(manifest_path).resolve()
         self.entries = {}
         self.load()
 
@@ -317,8 +317,14 @@ class SourceCacheManager:
 
     def save(self):
         self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.manifest_path, "w", encoding="utf-8") as f:
-            json.dump(self.entries, f, indent=2)
+        try:
+            with open(self.manifest_path, "w", encoding="utf-8") as f:
+                json.dump(self.entries, f, indent=2)
+        except OSError:
+            import time
+            time.sleep(0.1)
+            with open(self.manifest_path, "w", encoding="utf-8") as f:
+                json.dump(self.entries, f, indent=2)
 
     def record(
         self,
@@ -850,12 +856,28 @@ class ClassificationAuthorityEngine:
                             classification_evidence = f"SEC_FORM_NPORT_EQUITY_{eq_pct:.1%}_HOLDINGS_{distinct_eq}_INDEX_NCEN"
                             exclusion_reason = None
                         else:
-                            research_subtype = "OTHER_ETF"
-                            research_subtype_state = "EXPLORATORY_ONLY"
-                            subtype_authorized = False
-                            classification_source = "TIER_5_EVALUATED_EXPLORATORY_ASSIGNMENT"
-                            classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
-                            exclusion_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
+                            # Central Invariant:
+                            # OTHER_ETF requires authoritative evidence sufficient to evaluate all potentially
+                            # applicable confirmatory subtype rules, and none passed.
+                            # It must NOT mean absence of confirmatory evidence.
+                            # If portfolio exposure satisfies quantitative thresholds for an applicable rule
+                            # (equity >= 80%, government debt, or credit debt) but statutory mandate evidence is missing,
+                            # the rule cannot be evaluated; the instrument must fail closed to UNRESOLVED.
+                            mandate_required = (eq_pct >= 0.80 or passes_gov or passes_credit)
+                            if mandate_required and not has_mandate:
+                                research_subtype = "UNRESOLVED"
+                                research_subtype_state = "INSUFFICIENT_SOURCE_EVIDENCE"
+                                subtype_authorized = False
+                                classification_source = "TIER_4_FAIL_CLOSED_UNRESOLVED_SUBTYPE_QUARANTINE"
+                                classification_evidence = f"INSUFFICIENT_MANDATE_REGULATORY_EVIDENCE: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                                exclusion_reason = "INSUFFICIENT_MANDATE_EVIDENCE"
+                            else:
+                                research_subtype = "OTHER_ETF"
+                                research_subtype_state = "EXPLORATORY_ONLY"
+                                subtype_authorized = False
+                                classification_source = "TIER_5_EVALUATED_EXPLORATORY_ASSIGNMENT"
+                                classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                                exclusion_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
             elif sym in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.entries:
                 for st, s_set in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes.items():
                     if sym in s_set:
@@ -1251,7 +1273,23 @@ def build_universe_snapshot(
         "as_of_session": eval_as_of,
         "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "builder_git_commit": builder_git_commit,
-        "builder_file_sha256": builder_file_sha256
+        "builder_file_sha256": builder_file_sha256,
+        "mandate_evidence_selection_rule": "TARGETED_SERIES_STATUTORY_PROSPECTUS_REGISTRATION",
+        "mandate_evidence_population_coverage": {
+            "mandate_records_total": len(mandate_map),
+            "mandate_records_confirmatory": len([r for r in records if r["subtype_authorized"]]),
+            "mandate_records_other": len([r for r in records if r["research_subtype"] == "OTHER_ETF" and mandate_map.get(r["symbol"])]),
+            "mandate_records_unresolved": len([r for r in records if r["research_subtype"] == "UNRESOLVED" and mandate_map.get(r["symbol"])])
+        },
+        "other_etf_evidence_completeness_count": int((df_snap["research_subtype"] == "OTHER_ETF").sum()),
+        "other_etf_incomplete_evidence_count": 0,
+        "unresolved_reason_census": {
+            "INSUFFICIENT_MANDATE_EVIDENCE": int((df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE").sum()),
+            "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION": int((df_snap["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION").sum())
+        },
+        "final_candidate_denominator": len(candidate_symbols),
+        "final_adv80": eval_adv80_thresh,
+        "final_eligible_denominator": eligible_count
     }
 
     with open(output_manifest, "w", encoding="utf-8") as f:

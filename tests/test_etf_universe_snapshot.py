@@ -1078,12 +1078,12 @@ def test_subtype_collision_resolution_precedence():
 
 
 def test_other_etf_vs_unresolved_fail_closed_semantics():
-    """Step 34: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
+    """Section 24: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
     - Structure-verified population: 4,523 total.
-    - Affirmative non-confirmatory evidence -> OTHER_ETF (3,577).
-    - Missing N-PORT / reconciliation failures -> UNRESOLVED (876).
+    - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (630).
+    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,823 total: 876 N-PORT + 2,947 mandate).
     - Confirmatory candidates -> 70.
-    - Sum: 3,577 + 876 + 70 == 4,523.
+    - Sum: 630 + 3823 + 70 == 4,523.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     struct_elig = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
@@ -1093,7 +1093,190 @@ def test_other_etf_vs_unresolved_fail_closed_semantics():
     unres_count = (struct_elig["research_subtype"] == "UNRESOLVED").sum()
     conf_count = (struct_elig["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
 
-    assert other_count == 3577
-    assert unres_count == 876
+    assert other_count == 630
+    assert unres_count == 3823
     assert conf_count == 70
     assert other_count + unres_count + conf_count == 4523
+
+
+def test_missing_sector_mandate_does_not_become_other_etf():
+    """Section 24: Verifies an equity fund lacking sector mandate fails closed to UNRESOLVED, not OTHER_ETF."""
+    p_metric = {
+        "reconciliation_ratio": 1.0,
+        "total_equity_pct": 0.95,
+        "total_govt_pct": 0.0,
+        "corporate_debt_pct": 0.0,
+        "mortgage_backed_pct": 0.0,
+        "distinct_equity_count": 50,
+        "max_concentration": 0.05,
+        "is_index_ncen": False
+    }
+    sec_info = {"cik": "0001234567", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True}
+
+    # No mandate provided -> must NOT become OTHER_ETF
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_ACT_EQ",
+        security_name="Test Active Equity Fund",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=None
+    )
+    assert rec["research_subtype"] == "UNRESOLVED"
+    assert rec["research_subtype_state"] == "INSUFFICIENT_SOURCE_EVIDENCE"
+    assert rec["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
+    assert rec["subtype_authorized"] is False
+
+
+def test_non_index_equity_requires_sector_mandate_evaluation():
+    """Section 24: Verifies non-index equity funds evaluate to EQUITY_SECTOR with valid mandate or UNRESOLVED without."""
+    p_metric = {
+        "reconciliation_ratio": 1.0,
+        "total_equity_pct": 0.90,
+        "total_govt_pct": 0.0,
+        "corporate_debt_pct": 0.0,
+        "mortgage_backed_pct": 0.0,
+        "distinct_equity_count": 40,
+        "max_concentration": 0.08,
+        "is_index_ncen": False
+    }
+    sec_info = {"cik": "0001234567", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True}
+
+    # Case 1: Missing mandate -> UNRESOLVED
+    rec_no_m = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_SEC_NO_M",
+        security_name="Test Sector ETF Without Mandate",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=None
+    )
+    assert rec_no_m["research_subtype"] == "UNRESOLVED"
+    assert rec_no_m["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
+
+    # Case 2: Qualifying sector mandate -> EQUITY_SECTOR
+    mandate_sec = {
+        "symbol": "TEST_SEC_M",
+        "is_sector_specific_mandate": True,
+        "approved_sector": "TECHNOLOGY",
+        "is_broad_or_multi_sector_mandate": False
+    }
+    rec_sec = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_SEC_M",
+        security_name="Test Sector ETF With Mandate",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=mandate_sec
+    )
+    assert rec_sec["research_subtype"] == "EQUITY_SECTOR"
+    assert rec_sec["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+    assert rec_sec["subtype_authorized"] is True
+
+
+def test_index_equity_requires_broad_vs_sector_mandate_evaluation():
+    """Section 24: Verifies index equity funds require statutory mandate to distinguish broad index vs sector."""
+    p_metric = {
+        "reconciliation_ratio": 1.0,
+        "total_equity_pct": 0.95,
+        "total_govt_pct": 0.0,
+        "corporate_debt_pct": 0.0,
+        "mortgage_backed_pct": 0.0,
+        "distinct_equity_count": 100,
+        "max_concentration": 0.04,
+        "is_index_ncen": True
+    }
+    sec_info = {"cik": "0001234567", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True}
+
+    # Case 1: Missing mandate -> UNRESOLVED
+    rec_no_m = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_IDX_NO_M",
+        security_name="Test Index ETF Without Mandate",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=None
+    )
+    assert rec_no_m["research_subtype"] == "UNRESOLVED"
+    assert rec_no_m["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
+
+    # Case 2: Broad index mandate -> EQUITY_INDEX
+    mandate_broad = {
+        "symbol": "TEST_IDX_BROAD",
+        "is_sector_specific_mandate": False,
+        "approved_sector": None,
+        "is_broad_or_multi_sector_mandate": True
+    }
+    rec_broad = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_IDX_BROAD",
+        security_name="Test Index ETF With Broad Mandate",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=mandate_broad
+    )
+    assert rec_broad["research_subtype"] == "EQUITY_INDEX"
+    assert rec_broad["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+
+
+def test_fixed_income_rules_conclusively_produce_other_without_mandate():
+    """Section 24: Verifies fixed-income funds failing both gov and credit thresholds legitimately evaluate to OTHER_ETF."""
+    # Mixed aggregate bond fund: 45% gov, 35% corp, 20% mbs
+    p_metric = {
+        "reconciliation_ratio": 1.0,
+        "total_equity_pct": 0.0,
+        "total_govt_pct": 0.45,
+        "corporate_debt_pct": 0.35,
+        "mortgage_backed_pct": 0.20,
+        "distinct_equity_count": 0,
+        "max_concentration": 0.02,
+        "is_index_ncen": True
+    }
+    sec_info = {"cik": "0001234567", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True}
+
+    # Fails gov (gov_pct < 0.80) and fails credit (corp_pct < 0.50) -> conclusively OTHER_ETF even without mandate
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="TEST_AGG",
+        security_name="Test Aggregate Bond ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info,
+        portfolio_metrics=p_metric,
+        mandate_evidence=None
+    )
+    assert rec["research_subtype"] == "OTHER_ETF"
+    assert rec["research_subtype_state"] == "EXPLORATORY_ONLY"
+    assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+
+
+def test_other_etf_evidence_completeness_invariant():
+    """Section 24: Proves OTHER_ETF implies all applicable confirmatory rules were evaluable.
+    OTHER_ETF_WITH_INCOMPLETE_APPLICABLE_RULE_EVIDENCE must equal 0 across the entire population.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
+    other_df = df_snap[df_snap["research_subtype"] == "OTHER_ETF"]
+    assert len(other_df) == 630
+
+    # Read evidence completeness matrix
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    assert matrix_path.exists(), "Evidence completeness matrix must exist"
+    df_mat = pd.read_parquet(matrix_path)
+
+    other_mat = df_mat[df_mat["final_subtype"] == "OTHER_ETF"]
+    incomplete_other = other_mat[~other_mat["all_applicable_rules_evaluable"]]
+    assert len(incomplete_other) == 0, f"Found {len(incomplete_other)} OTHER_ETF rows with incomplete evidence"
+
+    # Verify manifest reflects exact counts
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    assert manifest["other_etf_evidence_completeness_count"] == 630
+    assert manifest["other_etf_incomplete_evidence_count"] == 0
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2947
+    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 876
+    assert manifest["final_candidate_denominator"] == 70
+    assert manifest["final_eligible_denominator"] == 14
