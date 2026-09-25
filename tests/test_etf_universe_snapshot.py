@@ -29,18 +29,24 @@ from scripts.research.build_etf_dataset import (
     SPEC_VERSION_V102,
     CANONICAL_SPEC_COMMIT_V102,
     CANONICAL_FILTERED_SPEC_SHA256_V102,
+    SPEC_VERSION_V103,
+    CANONICAL_SPEC_COMMIT_V103,
+    CANONICAL_FILTERED_SPEC_SHA256_V103,
     SourceCacheManager,
     parse_nasdaq_traded_content,
     ClassificationAuthorityEngine,
     build_universe_snapshot,
     evaluate_liquidity_and_history,
     ALL_REGISTRIES,
+    REGISTRY_KNOWN_1940_ACT_UITS,
     REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS,
     REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS,
     REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES,
     REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS,
     REGISTRY_KNOWN_CRYPTO_PRODUCTS,
     REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS,
+    ALLOWED_STRUCTURE_CLASSES,
+    RESEARCH_ELIGIBLE_STRUCTURES,
     get_file_sha256,
     get_git_commit,
 )
@@ -103,9 +109,9 @@ def test_nasdaq_etf_flag_discovery_only_and_fail_closed_quarantine():
 
 
 def test_vehicle_structure_classification_and_registries():
-    # 1. 1940 Act ETF
+    # 1. 1940 Act Unit Investment Trust ETF (SPY)
     spy = ClassificationAuthorityEngine.classify_security("SPY", "SPDR S&P 500 ETF Trust", "P", True)
-    assert spy["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert spy["vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
     assert spy["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
     assert spy["research_subtype"] == "EQUITY_INDEX"
     assert spy["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
@@ -115,7 +121,18 @@ def test_vehicle_structure_classification_and_registries():
     assert spy["is_research_eligible"] is False
     assert spy["exclusion_reason"] is None
 
-    # 2. Physical precious metal grantor trust
+    # 2. 1940 Act Open-End ETF (VOO)
+    voo = ClassificationAuthorityEngine.classify_security("VOO", "Vanguard S&P 500 ETF", "P", True)
+    assert voo["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert voo["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert voo["research_subtype"] == "EQUITY_INDEX"
+    assert voo["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+    assert voo["structure_verified"] is True
+    assert voo["subtype_authorized"] is True
+    assert voo["is_research_eligible"] is False
+    assert voo["exclusion_reason"] is None
+
+    # 3. Physical precious metal grantor trust (GLD)
     gld = ClassificationAuthorityEngine.classify_security("GLD", "SPDR Gold Shares", "P", True)
     assert gld["vehicle_structure"] == "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST"
     assert gld["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
@@ -319,7 +336,7 @@ def test_end_to_end_composite_snapshot_pipeline_and_10_cases():
         # 1. SPY: verified + high ADV + >=250 sessions -> True
         assert bool(df.loc["SPY", "is_research_eligible"]) is True
         assert pd.isna(df.loc["SPY", "exclusion_reason"]) or df.loc["SPY", "exclusion_reason"] is None
-        assert df.loc["SPY", "vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert df.loc["SPY", "vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
         assert df.loc["SPY", "research_subtype"] == "EQUITY_INDEX"
 
         # 2. LOW1: verified eligible + low ADV -> False (ADV60_BELOW_80TH_PERCENTILE)
@@ -489,14 +506,14 @@ def test_registry_source_validation_and_no_contradictions():
     # Contradiction check: PDBC must NOT be in commodity futures pool registry
     commodity_pool_syms = [
         e["symbol"] for e in entries
-        if e.get("target_registry") == "REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS"
+        if e.get("target_registry") == "REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS" or e.get("registry_name") in ("REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS", "KNOWN_COMMODITY_FUTURES_POOLS")
     ]
     assert "PDBC" not in commodity_pool_syms, "PDBC must not be classified as a K-1 commodity pool"
 
     # Contradiction check: AMLP and MLPX must NOT be in ETN registry
     etn_syms = [
         e["symbol"] for e in entries
-        if e.get("target_registry") == "REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES"
+        if e.get("target_registry") == "REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES" or e.get("registry_name") in ("REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES", "KNOWN_EXCHANGE_TRADED_NOTES")
     ]
     assert "AMLP" not in etn_syms, "AMLP must not be classified as an ETN"
     assert "MLPX" not in etn_syms, "MLPX must not be classified as an ETN"
@@ -505,5 +522,109 @@ def test_registry_source_validation_and_no_contradictions():
     for entry in entries:
         assert entry.get("source_retrieval_status") in ("VERIFIED", "VERIFIED_SUCCESSFUL"), f"Unverified status for {entry.get('symbol')}"
         assert bool(entry.get("legal_structure_supported")) is True, f"Unsupported structure for {entry.get('symbol')}"
-        sha = entry.get("source_artifact_sha256")
-        assert sha and len(sha) == 64, f"Invalid SHA-256 for {entry.get('symbol')}"
+        sha = entry.get("normalized_evidence_record_sha256") or entry.get("source_artifact_sha256")
+        assert sha and (len(sha) == 64 or sha == "NOT_APPLICABLE"), f"Invalid SHA-256 for {entry.get('symbol')}"
+        if entry.get("normalized_evidence_record_sha256"):
+            assert len(entry["normalized_evidence_record_sha256"]) == 64
+
+
+def test_uit_classification_spdr_and_invesco():
+    """Verifies UIT ETFs (SPY, DIA, QQQ) are classified under 1940_ACT_UNIT_INVESTMENT_TRUST_ETF."""
+    for sym, name in [
+        ("SPY", "SPDR S&P 500 ETF Trust"),
+        ("DIA", "SPDR Dow Jones Industrial Average ETF Trust"),
+        ("QQQ", "Invesco QQQ Trust Series 1")
+    ]:
+        rec = ClassificationAuthorityEngine.classify_security(sym, name, "P", True)
+        assert rec["vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF", f"{sym} must be UIT"
+        assert rec["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+        assert rec["research_subtype"] == "EQUITY_INDEX"
+        assert rec["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+        assert rec["structure_verified"] is True
+        assert rec["subtype_authorized"] is True
+        assert rec["classification_source"] == "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY"
+        assert rec["exclusion_reason"] is None
+
+
+def test_regex_false_positive_elimination_fixed_income():
+    """Verifies short-duration bond funds do not trigger defensive geared heuristics."""
+    short_bond_funds = [
+        ("BSV", "Vanguard Short-Term Bond ETF"),
+        ("CALI", "Corbett Short Duration Bond ETF"),
+        ("FLUD", "Franklin Ultra Short-Term Bond ETF"),
+        ("FSTB", "First Trust Short Duration Bond ETF"),
+        ("VUSB", "Vanguard Ultra-Short Bond ETF"),
+        ("SHV", "iShares Short Treasury Bond ETF"),
+        ("SGOV", "iShares 0-3 Month Treasury Bond ETF"),
+    ]
+    for sym, name in short_bond_funds:
+        # Test heuristic isolation without registry match
+        rec = ClassificationAuthorityEngine.classify_security(
+            symbol="DUMMY",
+            security_name=name,
+            listing_exchange="P",
+            nasdaq_etf_flag=True
+        )
+        assert rec["vehicle_structure"] not in ("LEVERAGED_ETF", "INVERSE_ETF"), f"{name} triggered geared heuristic"
+        assert rec["exclusion_reason"] != "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+
+    # Verifies real geared funds STILL trigger the heuristic
+    geared_funds = [
+        ("SH", "ProShares Short S&P500", "INVERSE_ETF"),
+        ("PSQ", "ProShares UltraShort QQQ", "INVERSE_ETF"),
+        ("SOXS", "Direxion Daily Semiconductor Bear 3X Shares", "INVERSE_ETF"),
+        ("SOXL", "Direxion Daily Semiconductor Bull 3X Shares", "LEVERAGED_ETF"),
+    ]
+    for sym, name, expected_struct in geared_funds:
+        rec = ClassificationAuthorityEngine.classify_security(
+            symbol="DUMMY",
+            security_name=name,
+            listing_exchange="P",
+            nasdaq_etf_flag=True
+        )
+        assert rec["vehicle_structure"] == expected_struct, f"{name} did not trigger {expected_struct}"
+        assert rec["vehicle_structure_state"] == "EXCLUDED"
+        assert rec["exclusion_reason"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+
+
+def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
+    """Verifies PDBC, AMLP, MLPX are structure-verified 1940 Act open-end ETFs with unauthorized subtype."""
+    sec_info = {"cik": "0001601082", "series_id": "S000047240", "class_id": "C000148113"}
+    for sym, name in [
+        ("PDBC", "Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF"),
+        ("AMLP", "Alerian MLP ETF"),
+        ("MLPX", "Global X MLP & Energy Infrastructure ETF")
+    ]:
+        rec = ClassificationAuthorityEngine.classify_security(
+            symbol=sym,
+            security_name=name,
+            listing_exchange="P",
+            nasdaq_etf_flag=True,
+            sec_mf_info=sec_info
+        )
+        assert rec["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert rec["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+        assert rec["structure_verified"] is True
+        assert rec["research_subtype"] == "OTHER_ETF"
+        assert rec["research_subtype_state"] == "EXPLORATORY_ONLY"
+        assert rec["subtype_authorized"] is False
+        assert rec["is_research_eligible"] is False
+        assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+def test_tier_2_sec_mf_directory_classification():
+    """Verifies Tier 2 primary series registration directory operationalizes broad coverage."""
+    sec_info = {"cik": "0000895421", "series_id": "S000001234", "class_id": "C000005678"}
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="BROAD1",
+        security_name="Broad Generic 1940 Act ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info
+    )
+    assert rec["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert rec["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert rec["structure_verified"] is True
+    assert rec["classification_source"] == "TIER_2_STRUCTURED_PROVIDER_METADATA"
+    assert "SEC_EDGAR_SERIES_REGISTRATION_CIK_0000895421" in rec["classification_evidence"]
+    assert rec["research_subtype"] == "OTHER_ETF"
+    assert rec["subtype_authorized"] is False
+    assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"

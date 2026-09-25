@@ -2,8 +2,8 @@
   "artifact_version": "1.1.0",
   "generated_at": "2026-09-25T14:00:00Z",
   "semantic_role": "AUTHORITATIVE_REGISTRY_ENTRY_EVIDENCE",
-  "total_entries": 127,
-  "unique_symbols": 117,
+  "total_entries": 130,
+  "unique_symbols": 120,
   "remediation_notes": "Removed contradictory entries AMLP and MLPX from ETNs and PDBC from Commodity Pools.",
   "entries": [
     {
@@ -17,8 +17,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "Goldman Sachs Physical Gold ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-221074, Effective 2018-07-26). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "1a7954582fca650e830a0fbf65639e3f1caf07425350c157b69c1c4ddb6778e7",
-      "source_artifact_sha256": "1a7954582fca650e830a0fbf65639e3f1caf07425350c157b69c1c4ddb6778e7"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "cca1bd647fcac1483f2f4bf1663028d8ae4ab2f2315f89955d2930b393a8dbd7",
+      "immutable_source_identifier": "CIK:0001708646|FORM:S-1/S-3|SEC_FILE:333-221074"
     },
     {
       "symbol": "BAR",
@@ -31,8 +32,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "GraniteShares Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-219503, Effective 2017-08-31). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "7bad9e73146328f932109e83fbcf8ee7372b69f3c984475714952aefc89f294f",
-      "source_artifact_sha256": "7bad9e73146328f932109e83fbcf8ee7372b69f3c984475714952aefc89f294f"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "37e30aa1ec323f83ef888a817bac050e55c8e7d0a26dae4e8ca4decb270748b4",
+      "immutable_source_identifier": "CIK:0001706539|FORM:S-1|SEC_FILE:333-219503"
     },
     {
       "symbol": "GLD",
@@ -45,8 +47,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "SPDR Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-105202, Effective 2004-11-12). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "b1c5a6bdae7565eca154aa70fa77dfec3fb3577be5e3a4d366633896cbdc8398",
-      "source_artifact_sha256": "b1c5a6bdae7565eca154aa70fa77dfec3fb3577be5e3a4d366633896cbdc8398"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "384bb6cd09e9c9901b74e0550bed8123216fb0ebf37f3c8fdecc11104529c52c",
+      "immutable_source_identifier": "CIK:0001222333|FORM:S-1/S-3|SEC_FILE:333-105202"
     },
     {
       "symbol": "IAU",
@@ -59,8 +62,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "iShares Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-112589, Effective 2005-01-21). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "4ec8d78d5976a04154fb09f0e4d60738cb995db4fb2da4967b129b02c4b942d6",
-      "source_artifact_sha256": "4ec8d78d5976a04154fb09f0e4d60738cb995db4fb2da4967b129b02c4b942d6"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "126ff11442b4d600132e037b92d5667cfa41dcc6de7ba6f1307f9d3a3e096ad0",
+      "immutable_source_identifier": "CIK:0001278680|FORM:S-1/S-3|SEC_FILE:333-112589"
     },
     {
       "symbol": "OUNZ",
@@ -73,8 +77,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "VanEck Merk Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-191834, Effective 2014-05-16). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "27c8149447bdcb1b76b7da4fe39b7c227ffa55ec2dc51db53ee852fb63f2c360",
-      "source_artifact_sha256": "27c8149447bdcb1b76b7da4fe39b7c227ffa55ec2dc51db53ee852fb63f2c360"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "309c56db8be1147f85dcc2992501043ba49b72b8a6caf21d4180701d1414ed21",
+      "immutable_source_identifier": "CIK:0001587982|FORM:S-1|SEC_FILE:333-191834"
     },
     {
       "symbol": "PALL",
@@ -87,8 +92,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Palladium Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-162386, Effective 2010-01-08). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "58b81838c6bd8b728fcce56ea7479a19c1b097f74650bc86f13a97b538965b64",
-      "source_artifact_sha256": "58b81838c6bd8b728fcce56ea7479a19c1b097f74650bc86f13a97b538965b64"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "4b2eac5059f16f76b4abeb87b144ea5d37da079f1b62ee172348b867da57c17a",
+      "immutable_source_identifier": "CIK:0001474343|FORM:S-1/S-3|SEC_FILE:333-162386"
     },
     {
       "symbol": "PPLT",
@@ -101,8 +107,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Platinum Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-162387, Effective 2010-01-08). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "24b9f457d76febbb0dc2a13cf9262e5debb2a3b58200db8b8cf9d08764c3513a",
-      "source_artifact_sha256": "24b9f457d76febbb0dc2a13cf9262e5debb2a3b58200db8b8cf9d08764c3513a"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "70dab08fb91c2de79e1b34e0e3d26dd02f263400c53e00b31b360366293d342b",
+      "immutable_source_identifier": "CIK:0001474342|FORM:S-1/S-3|SEC_FILE:333-162387"
     },
     {
       "symbol": "SGOL",
@@ -115,8 +122,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Gold Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-157770, Effective 2009-09-09). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "555fcda64aa47d6fc363fb59089b5d968e9948a04b6e7fd3c81092c93cd662f3",
-      "source_artifact_sha256": "555fcda64aa47d6fc363fb59089b5d968e9948a04b6e7fd3c81092c93cd662f3"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e966e12b883f4ad74e8dd2f3ac1903de523a35f163c971499197295749a88e74",
+      "immutable_source_identifier": "CIK:0001456090|FORM:S-1/S-3|SEC_FILE:333-157770"
     },
     {
       "symbol": "SIVR",
@@ -129,8 +137,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Silver Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-157771, Effective 2009-07-24). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "3f5f8318edc92b5d47b6086521d36747c918c0788ea7b2892f55dc46e50eefc8",
-      "source_artifact_sha256": "3f5f8318edc92b5d47b6086521d36747c918c0788ea7b2892f55dc46e50eefc8"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b22edd45a5b7d723cb3b81feba9569b8a3bcf023bc7a9497867a44681c5a33c3",
+      "immutable_source_identifier": "CIK:0001456091|FORM:S-1/S-3|SEC_FILE:333-157771"
     },
     {
       "symbol": "SLV",
@@ -143,8 +152,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "iShares Silver Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-125920, Effective 2006-04-21). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "20a009137df82043ed339f3e009f0d9deae5caa0dd4c0a5078c49bb6a2c5e4f5",
-      "source_artifact_sha256": "20a009137df82043ed339f3e009f0d9deae5caa0dd4c0a5078c49bb6a2c5e4f5"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b427c9296d8c89fe2133bc8020ba05593ce2741cf6536bab279dc8bd8686736b",
+      "immutable_source_identifier": "CIK:0001330568|FORM:S-1/S-3|SEC_FILE:333-125920"
     },
     {
       "symbol": "BNO",
@@ -157,8 +167,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "United States Brent Oil Fund LP registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-158221, Effective 2010-06-02). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "ca402e70628439131c21d0f1462c442444b3f5422bc72740ab7cf29289f04229",
-      "source_artifact_sha256": "ca402e70628439131c21d0f1462c442444b3f5422bc72740ab7cf29289f04229"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e70ee85a0f8ff611e3da4d82e5ad822cc9e22f9d2ac73c861106a1b1b059000d",
+      "immutable_source_identifier": "CIK:0001459527|FORM:S-1|SEC_FILE:333-158221"
     },
     {
       "symbol": "BOIL",
@@ -171,8 +182,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "ProShares Ultra Bloomberg Natural Gas registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-155026, Effective 2011-10-04). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "9d278feb9d16121ef286797cb16f9c340ebea3ddc40d5ac1af273668f10bf45a",
-      "source_artifact_sha256": "9d278feb9d16121ef286797cb16f9c340ebea3ddc40d5ac1af273668f10bf45a"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "65280ff94cad641ac0440f5ada5eac65f1ed22cad5a4850e3b9ec0537680dcbd",
+      "immutable_source_identifier": "CIK:0001449794|FORM:S-1|SEC_FILE:333-155026"
     },
     {
       "symbol": "CORN",
@@ -185,8 +197,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "Teucrium Corn Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-167590, Effective 2010-06-09). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "3b15d656d9c6c628d69cbc4b0663c60518a651e308b0bfa4fbb89e98944e1067",
-      "source_artifact_sha256": "3b15d656d9c6c628d69cbc4b0663c60518a651e308b0bfa4fbb89e98944e1067"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e0981486aa5eea8ab020e1206cab36e723d794af3ed05aa907518fffc9f99bd7",
+      "immutable_source_identifier": "CIK:0001490142|FORM:S-1|SEC_FILE:333-167590"
     },
     {
       "symbol": "CPER",
@@ -199,8 +212,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "United States Copper Index Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-168864, Effective 2011-11-15). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "2e7e6c25fe5f382d8f1e946206d8c3c409decd5196a5e64a9149ea5e39eedffc",
-      "source_artifact_sha256": "2e7e6c25fe5f382d8f1e946206d8c3c409decd5196a5e64a9149ea5e39eedffc"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "d55c85bb1035ab94aa3ac569fa598027287be93441c5300756d6ef83d17626e9",
+      "immutable_source_identifier": "CIK:0001498897|FORM:S-1|SEC_FILE:333-168864"
     },
     {
       "symbol": "DBA",
@@ -213,8 +227,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "Invesco DB Agriculture Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-139369, Effective 2007-01-05). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "c2f96fafdb9bfe55f832f1e8d051aaebcb7c6d6b3e46c86542a83743d3f1107c",
-      "source_artifact_sha256": "c2f96fafdb9bfe55f832f1e8d051aaebcb7c6d6b3e46c86542a83743d3f1107c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "4ef38e13d7fc792081f93af38d39a07ea5941ee4332c4bc4d77f747f8595b6e3",
+      "immutable_source_identifier": "CIK:0001383058|FORM:S-1|SEC_FILE:333-139369"
     },
     {
       "symbol": "DBC",
@@ -227,8 +242,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "Invesco DB Commodity Index Tracking Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-125342, Effective 2006-02-03). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "ca5ddb73fb7d4149912d59d5f7d57b157b2a971f229feaf353adf28c5829cea3",
-      "source_artifact_sha256": "ca5ddb73fb7d4149912d59d5f7d57b157b2a971f229feaf353adf28c5829cea3"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e25a3d4f510302f4deaa9aa9d09b3d178db7c9305f7d6c38d9bf6537564fc5ef",
+      "immutable_source_identifier": "CIK:0001328237|FORM:S-1|SEC_FILE:333-125342"
     },
     {
       "symbol": "GSG",
@@ -241,8 +257,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "iShares S&P GSCI Commodity-Indexed Trust registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-135898, Effective 2006-07-10). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "7b9b778d797f5d28bcb4dbaf07df941f21e74288d847e89d5434f9d23fba531c",
-      "source_artifact_sha256": "7b9b778d797f5d28bcb4dbaf07df941f21e74288d847e89d5434f9d23fba531c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "de1b71fc592c2a4b2e5192a5ea6cb3a8b8e8eb16ef630d1766c03adb2b5a8812",
+      "immutable_source_identifier": "CIK:0001364538|FORM:S-1|SEC_FILE:333-135898"
     },
     {
       "symbol": "KOLD",
@@ -255,8 +272,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "ProShares UltraShort Bloomberg Natural Gas registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-155026, Effective 2011-10-04). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "cdbff6a2a68c3ba426ea3eab8dae23d31e0829892441071ff920c70ac414c108",
-      "source_artifact_sha256": "cdbff6a2a68c3ba426ea3eab8dae23d31e0829892441071ff920c70ac414c108"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "083be30f78bc1d9fe2790e4410f3d00666a35666bc5ab41cfb2c0efc56c81eb5",
+      "immutable_source_identifier": "CIK:0001449794|FORM:S-1|SEC_FILE:333-155026"
     },
     {
       "symbol": "SOYB",
@@ -269,8 +287,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "Teucrium Soybean Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-173867, Effective 2011-09-19). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "bdead2510f83ba5cf289f065fa6eefd8025cb36e0cc1d084cc57b01937bc9c8d",
-      "source_artifact_sha256": "bdead2510f83ba5cf289f065fa6eefd8025cb36e0cc1d084cc57b01937bc9c8d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e3e75634cd34b7795e5e129bf1cf4b9745602d15262f014f4c2fb5da0b56c54e",
+      "immutable_source_identifier": "CIK:0001519409|FORM:S-1|SEC_FILE:333-173867"
     },
     {
       "symbol": "UGA",
@@ -283,8 +302,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "United States Gasoline Fund LP registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-143431, Effective 2008-02-26). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "aa6cb1278ed68e475aaf25474fa4f481b53cc98655a923109dc25b59752eba93",
-      "source_artifact_sha256": "aa6cb1278ed68e475aaf25474fa4f481b53cc98655a923109dc25b59752eba93"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "f7def712c5e634ca1864e72fc780346d6ce8d31d7a6d67509e45626b9b474eee",
+      "immutable_source_identifier": "CIK:0001402758|FORM:S-1|SEC_FILE:333-143431"
     },
     {
       "symbol": "UNG",
@@ -297,8 +317,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "United States Natural Gas Fund LP registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-140081, Effective 2007-04-18). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "bcae94ce8c52f2061448e218293a0100b6bdf4e00b732d76498f6bf84c07f840",
-      "source_artifact_sha256": "bcae94ce8c52f2061448e218293a0100b6bdf4e00b732d76498f6bf84c07f840"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "7794997efe8af1180f246449793647e5f7503d369d64892ecd80e684321b620e",
+      "immutable_source_identifier": "CIK:0001389067|FORM:S-1|SEC_FILE:333-140081"
     },
     {
       "symbol": "USO",
@@ -311,8 +332,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "United States Oil Fund LP registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-125243, Effective 2006-04-10). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "988987678208c7d62f24b5483958f998812bf2253be3192141715354d50005fd",
-      "source_artifact_sha256": "988987678208c7d62f24b5483958f998812bf2253be3192141715354d50005fd"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b7d8060f3445a8c176155bf5ca17a9e302f8e0676c0a3a0d504388d12cf40c47",
+      "immutable_source_identifier": "CIK:0001327068|FORM:S-1|SEC_FILE:333-125243"
     },
     {
       "symbol": "WEAT",
@@ -325,8 +347,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "COMMODITY_FUTURES_POOL",
       "evidence_summary": "Teucrium Wheat Fund registered under authority CFTC_AND_SEC_CORPORATION_FINANCE (File 333-173869, Effective 2011-09-19). Confirmed structure: COMMODITY_FUTURES_POOL.",
-      "evidence_hash_or_source_artifact_hash": "9e922fe172ebf8761b20d808b76301187d069fc9038ec383bd88fc4b166be19d",
-      "source_artifact_sha256": "9e922fe172ebf8761b20d808b76301187d069fc9038ec383bd88fc4b166be19d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "346f52bfda631699328fbc61dd09d4a8b51b3465fc134cfb375aec060f456203",
+      "immutable_source_identifier": "CIK:0001519412|FORM:S-1|SEC_FILE:333-173869"
     },
     {
       "symbol": "AMJ",
@@ -339,8 +362,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "EXCHANGE_TRADED_NOTE",
       "evidence_summary": "JPMorgan Alerian MLP Index ETN registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-130051, Effective 2009-04-01). Confirmed structure: EXCHANGE_TRADED_NOTE.",
-      "evidence_hash_or_source_artifact_hash": "87f7376cf396d3db2d445f67864047e7b593b1978e342094b6e00603d7a8f944",
-      "source_artifact_sha256": "87f7376cf396d3db2d445f67864047e7b593b1978e342094b6e00603d7a8f944"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "0066de27b454858985021ecaabcd1f5e80b164ab76c24fc278c016b9a22ef41f",
+      "immutable_source_identifier": "CIK:0000019617|FORM:424B2|SEC_FILE:333-130051"
     },
     {
       "symbol": "GLDI",
@@ -353,8 +377,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "EXCHANGE_TRADED_NOTE",
       "evidence_summary": "Credit Suisse X-Links Gold Shares Covered Call ETN registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-180300, Effective 2013-01-29). Confirmed structure: EXCHANGE_TRADED_NOTE.",
-      "evidence_hash_or_source_artifact_hash": "5ab503c04aac1f0b5d0166b6443f82070b4d3ca8dd814bdd9b5c34f90a22666c",
-      "source_artifact_sha256": "5ab503c04aac1f0b5d0166b6443f82070b4d3ca8dd814bdd9b5c34f90a22666c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "c3ed7de086b48529c01af08028b9a4ac878a4da111806a83d9ee977cea0882d4",
+      "immutable_source_identifier": "CIK:0001053092|FORM:424B2|SEC_FILE:333-180300"
     },
     {
       "symbol": "SLVO",
@@ -367,8 +392,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "EXCHANGE_TRADED_NOTE",
       "evidence_summary": "Credit Suisse X-Links Silver Shares Covered Call ETN registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-180300, Effective 2013-04-16). Confirmed structure: EXCHANGE_TRADED_NOTE.",
-      "evidence_hash_or_source_artifact_hash": "b3e8f1ad605c1d03f85eb5f79c810ce916ccf1706f653346232e3842ac9de3eb",
-      "source_artifact_sha256": "b3e8f1ad605c1d03f85eb5f79c810ce916ccf1706f653346232e3842ac9de3eb"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8c40fa118f824db427ad8f19b077ac49d55de7823bfb217ea0f75e47940ddaaa",
+      "immutable_source_identifier": "CIK:0001053092|FORM:424B2|SEC_FILE:333-180300"
     },
     {
       "symbol": "SPLI",
@@ -381,8 +407,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "EXCHANGE_TRADED_NOTE",
       "evidence_summary": "Credit Suisse S&P 500 Short Index ETN registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-180300, Effective 2012-06-25). Confirmed structure: EXCHANGE_TRADED_NOTE.",
-      "evidence_hash_or_source_artifact_hash": "def8579c5131e094721cab77d09d9f89fe621934ca0acc7631b92cdcd93c21a4",
-      "source_artifact_sha256": "def8579c5131e094721cab77d09d9f89fe621934ca0acc7631b92cdcd93c21a4"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "2bf976d26389246f881775fa80807f8e3f1b77a253c7cc1814bc59a7da7c4c17",
+      "immutable_source_identifier": "CIK:0001053092|FORM:424B2|SEC_FILE:333-180300"
     },
     {
       "symbol": "USOI",
@@ -395,8 +422,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "EXCHANGE_TRADED_NOTE",
       "evidence_summary": "Credit Suisse X-Links Crude Oil Shares Covered Call ETN registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-180300, Effective 2017-04-26). Confirmed structure: EXCHANGE_TRADED_NOTE.",
-      "evidence_hash_or_source_artifact_hash": "b8c9ea4c8d3a162b70abd54c0bc4721e2c1c556b9d7593eb9b44fbd6f61fd2db",
-      "source_artifact_sha256": "b8c9ea4c8d3a162b70abd54c0bc4721e2c1c556b9d7593eb9b44fbd6f61fd2db"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "43c407c48058438d5a2c45e707282ff27745b320aef76574ed03b8d76481a043",
+      "immutable_source_identifier": "CIK:0001053092|FORM:424B2|SEC_FILE:333-180300"
     },
     {
       "symbol": "ARKB",
@@ -409,8 +437,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "ARK 21Shares Bitcoin ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-257474, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "518ff1cf204185c5a0f138132d61bb31c3a85507588e145057bf4925d34548ce",
-      "source_artifact_sha256": "518ff1cf204185c5a0f138132d61bb31c3a85507588e145057bf4925d34548ce"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "f589d6dca14072e3452a22ec3c8d56e7c0237dddf81383fed997aa40e7ad26ef",
+      "immutable_source_identifier": "CIK:0001869592|FORM:S-1|SEC_FILE:333-257474"
     },
     {
       "symbol": "BITB",
@@ -423,8 +452,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Bitwise Bitcoin ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-231326, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "ae11c076f70476cd9071b6e7f5723d1225eed46e4b530da582b82f6139fecb9e",
-      "source_artifact_sha256": "ae11c076f70476cd9071b6e7f5723d1225eed46e4b530da582b82f6139fecb9e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "64098d1baab0fc4de6c0934a4d5b74c72a83feff17ee374917b86dbea5632388",
+      "immutable_source_identifier": "CIK:0001763415|FORM:S-1|SEC_FILE:333-231326"
     },
     {
       "symbol": "BITO",
@@ -437,8 +467,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "ProShares Bitcoin Strategy ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-89822, Effective 2021-10-18). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "139dcc7c885a4a0893f1300e7f7dc3b250af3a182a6bf6a62fb247589e930f8d",
-      "source_artifact_sha256": "139dcc7c885a4a0893f1300e7f7dc3b250af3a182a6bf6a62fb247589e930f8d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "5bcbfa37130831edef8a1493aca7fc813d46699d163109e0a4d0ced628f1b1b7",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "BRRR",
@@ -451,8 +482,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Valkyrie Bitcoin Fund registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-252344, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "5602b8158acce54b0477c4eb573f6be4db553059db2dd86db53e2c7aac8f86b1",
-      "source_artifact_sha256": "5602b8158acce54b0477c4eb573f6be4db553059db2dd86db53e2c7aac8f86b1"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "1606603c654da4ab136f4e45caf6182ff243db5164071e313a63e11336c20a4c",
+      "immutable_source_identifier": "CIK:0001842790|FORM:S-1|SEC_FILE:333-252344"
     },
     {
       "symbol": "BTCO",
@@ -465,8 +497,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Invesco Galaxy Bitcoin ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-255175, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "a22fb6a81c88bd0dc00e5b86a0e0c054de5f45ea0571a64f8903226e71dc254e",
-      "source_artifact_sha256": "a22fb6a81c88bd0dc00e5b86a0e0c054de5f45ea0571a64f8903226e71dc254e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "819ca0497e77ecc1bc4c816b56031046ec0d7570bbbfa79a61fc06ddc5cec402",
+      "immutable_source_identifier": "CIK:0001859990|FORM:S-1|SEC_FILE:333-255175"
     },
     {
       "symbol": "ETH",
@@ -479,8 +512,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Grayscale Ethereum Trust (Mini) registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-278854, Effective 2024-07-22). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "9a673bde066a4d4e66d602436ffa4f74ad39d4b88a1bffe03c6eab799ac50a73",
-      "source_artifact_sha256": "9a673bde066a4d4e66d602436ffa4f74ad39d4b88a1bffe03c6eab799ac50a73"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "4aa57e6f9b7e4bcd8b1ad6ac934b31e9263b836a9386d0ca863adcd52e101f5f",
+      "immutable_source_identifier": "CIK:0001725255|FORM:S-1|SEC_FILE:333-278854"
     },
     {
       "symbol": "ETHE",
@@ -493,8 +527,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Grayscale Ethereum Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-278853, Effective 2024-07-22). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "4d48f4d2407087cf91545ef20bf68b7af7d3b26b1983c60c21bd6a68f84fd062",
-      "source_artifact_sha256": "4d48f4d2407087cf91545ef20bf68b7af7d3b26b1983c60c21bd6a68f84fd062"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e469222f99eb958ddf07e3c192935ff8908ea5ae51d52b3d2889b41eeab145d3",
+      "immutable_source_identifier": "CIK:0001725255|FORM:S-3|SEC_FILE:333-278853"
     },
     {
       "symbol": "ETHW",
@@ -507,8 +542,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Bitwise Ethereum ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-278278, Effective 2024-07-22). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "c9a50598909fa67a061d791a4c9bb45e6e52425bf7c553e3ad8a3734eae499ee",
-      "source_artifact_sha256": "c9a50598909fa67a061d791a4c9bb45e6e52425bf7c553e3ad8a3734eae499ee"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "73929efb208669ebf46ffdc82f0e9349229ea5a1b70e3779806827a91c247b92",
+      "immutable_source_identifier": "CIK:0002016467|FORM:S-1|SEC_FILE:333-278278"
     },
     {
       "symbol": "EZBC",
@@ -521,8 +557,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Franklin Bitcoin ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-274474, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "c0a9eca52604f475f638b376c2ccf534d6e860cc1fec36936b46d0f044c0b67e",
-      "source_artifact_sha256": "c0a9eca52604f475f638b376c2ccf534d6e860cc1fec36936b46d0f044c0b67e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8fd5b2995611a99ddd7133337d564de1c7b08d02dbba7d3862988b206f37a79b",
+      "immutable_source_identifier": "CIK:0001992870|FORM:S-1|SEC_FILE:333-274474"
     },
     {
       "symbol": "FBTC",
@@ -535,8 +572,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Fidelity Wise Origin Bitcoin Fund registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-254652, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "a66307ac25ec63252469812da9d96e6cb2b5268f621043226d3e5d6b544ced02",
-      "source_artifact_sha256": "a66307ac25ec63252469812da9d96e6cb2b5268f621043226d3e5d6b544ced02"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "affaa11418463b87fd9db3c8d8cfb89b609f70db3e2ee520888d9d817654ec2d",
+      "immutable_source_identifier": "CIK:0001852317|FORM:S-1|SEC_FILE:333-254652"
     },
     {
       "symbol": "FETH",
@@ -549,8 +587,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "Fidelity Ethereum Fund registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-275590, Effective 2024-07-22). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "475de1d8b193ca402622ea92c3c9109ed1b6c82addee55707e3deb1ee67772d0",
-      "source_artifact_sha256": "475de1d8b193ca402622ea92c3c9109ed1b6c82addee55707e3deb1ee67772d0"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "02ca004503610fba415383ec74423686230a67188a877881a3d178820785f102",
+      "immutable_source_identifier": "CIK:0002000000|FORM:S-1|SEC_FILE:333-275590"
     },
     {
       "symbol": "HODL",
@@ -563,8 +602,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "VanEck Bitcoin Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-251827, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "9054c10b555178d1d803cc1e92c2e23907a166ce1170696304c56107e7208898",
-      "source_artifact_sha256": "9054c10b555178d1d803cc1e92c2e23907a166ce1170696304c56107e7208898"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "9e70e225842060cfbf28163465478af71c2221384f606151871b0d49c3dd43b4",
+      "immutable_source_identifier": "CIK:0001838028|FORM:S-1|SEC_FILE:333-251827"
     },
     {
       "symbol": "IBIT",
@@ -577,8 +617,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "CRYPTO_LINKED_PRODUCT",
       "evidence_summary": "iShares Bitcoin Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-272523, Effective 2024-01-10). Confirmed structure: CRYPTO_LINKED_PRODUCT.",
-      "evidence_hash_or_source_artifact_hash": "68bcb42cdd8105604972ac76960939e03fe829d26133077a6fd2df85e22dfedf",
-      "source_artifact_sha256": "68bcb42cdd8105604972ac76960939e03fe829d26133077a6fd2df85e22dfedf"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "142aa33e59eebb59a087d250222b458bbf3fd3aaf446d27b72e474f48bbcbf4c",
+      "immutable_source_identifier": "CIK:0001981812|FORM:S-1|SEC_FILE:333-272523"
     },
     {
       "symbol": "DUST",
@@ -591,8 +632,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily Gold Miners Index Bear 2X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2010-12-08). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d34400879f9f9c3096b10d7ed3d5473529134dced8dab85dad860a3eb3f7bebf",
-      "source_artifact_sha256": "d34400879f9f9c3096b10d7ed3d5473529134dced8dab85dad860a3eb3f7bebf"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "336e0b720dd18230a683c4047b3fa7e199ca438efca48743bb87a0ccc7ad398e",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "FAS",
@@ -605,8 +647,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily Financial Bull 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2008-11-05). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d374f2f1e6f3bc6fb2a43774ea8035b262c8e930cf82ce508117d33a91bcbf2d",
-      "source_artifact_sha256": "d374f2f1e6f3bc6fb2a43774ea8035b262c8e930cf82ce508117d33a91bcbf2d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "eb2f9d8c5a47cfcbe05936bec005da7fbd0e0fe0672181336f06bd80d52b9327",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "FAZ",
@@ -619,8 +662,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily Financial Bear 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2008-11-05). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "707cf5ff2d34d9df68e7bb6b33eaf16271f44782bfc312a6b3c3a7675148d4f4",
-      "source_artifact_sha256": "707cf5ff2d34d9df68e7bb6b33eaf16271f44782bfc312a6b3c3a7675148d4f4"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "eacb005bc8ef2522f0623ef2971bd2d6891e89764d1cf662e04ec63de78021b8",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "JDST",
@@ -633,8 +677,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily Junior Gold Miners Index Bear 2X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2013-10-03). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d4c93380144a9604d71e8debd3340de830406631fc0a42e3cd2f6ca69f03dea7",
-      "source_artifact_sha256": "d4c93380144a9604d71e8debd3340de830406631fc0a42e3cd2f6ca69f03dea7"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e2c15e30c75704d07937a70ef809638a282a8b5034bcdd546a6a378b112e8b87",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "JNUG",
@@ -647,8 +692,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily Junior Gold Miners Index Bull 2X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2013-10-03). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "2db0be906201cf7b518e9b2311a7a57480988d62393ef9a622d09b30a33b6fa7",
-      "source_artifact_sha256": "2db0be906201cf7b518e9b2311a7a57480988d62393ef9a622d09b30a33b6fa7"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "566bce966061f8143900ea80da25486d5b55deb6012e6a1fa40309c3ca93729f",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "LABD",
@@ -661,8 +707,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily S&P Biotech Bear 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2015-05-28). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "b829ad7dc74e1d1b0986ac9aa1f646792aca0f46132dd9a28deb7d2402da65ec",
-      "source_artifact_sha256": "b829ad7dc74e1d1b0986ac9aa1f646792aca0f46132dd9a28deb7d2402da65ec"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "53335c5a12425134ef02231c4c4dd20866418dafb1822dd8057301382c27d92c",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "LABU",
@@ -675,8 +722,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily S&P Biotech Bull 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2015-05-28). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "559f07729bcdc246b2703c009528179825973b0c3bcfa0ca24f090eadd1f3bca",
-      "source_artifact_sha256": "559f07729bcdc246b2703c009528179825973b0c3bcfa0ca24f090eadd1f3bca"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b8624d6d3f57ac5b005f02692d6b070d429f80047102fdf24f513ebcae67cd87",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "NUGT",
@@ -689,8 +737,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily Gold Miners Index Bull 2X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2010-12-08). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "847e3c94abb75a92a071748a09a49edfce38fcd53b8e7a0fe598da449ef67c06",
-      "source_artifact_sha256": "847e3c94abb75a92a071748a09a49edfce38fcd53b8e7a0fe598da449ef67c06"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "9e8c6739ae1e5f517e178153916c4b5d76724c45053bd5967c31905069b66c4b",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "QID",
@@ -703,8 +752,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "ProShares UltraShort QQQ (-2x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2006-07-11). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "eddcc5eab71e7e8fb985172ad4c38278bd4e53c1b23d539b4c92ab0fa967d6e6",
-      "source_artifact_sha256": "eddcc5eab71e7e8fb985172ad4c38278bd4e53c1b23d539b4c92ab0fa967d6e6"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "3e53421a1895b24edfb11b144246c1a0506b38434c6622992dfb95103daa7b68",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "QLD",
@@ -717,8 +767,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "ProShares Ultra QQQ (+2x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2006-06-19). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "dbaa43dad670534e77d2053d0c700735018e860cb5ef903cb16f6a05fb831749",
-      "source_artifact_sha256": "dbaa43dad670534e77d2053d0c700735018e860cb5ef903cb16f6a05fb831749"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b473889c86df71cb992fdbc288881da6e16dda45a3f0ff5fea1f59a0cfa29aaf",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "SDS",
@@ -731,8 +782,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "ProShares UltraShort S&P500 (-2x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2006-07-11). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "5e5b86ac93717977003aa14dbfcfb91f779079f6b316c9ea96aa181c6db3cc4f",
-      "source_artifact_sha256": "5e5b86ac93717977003aa14dbfcfb91f779079f6b316c9ea96aa181c6db3cc4f"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "923bf5ace7bdb958dbbf6dee97f5987de2074995f9f7f25a317456955955dda7",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "SOXL",
@@ -745,8 +797,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily Semiconductor Bull 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2010-03-11). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "4da084fa179fd7a4bdc1d14bc2489bad54c341964250382a3a28452173e8af0b",
-      "source_artifact_sha256": "4da084fa179fd7a4bdc1d14bc2489bad54c341964250382a3a28452173e8af0b"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "59856bddc48d9b1fb201292868b7bd475c2b01762e5c7182926942e6925b5bb7",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "SOXS",
@@ -759,8 +812,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily Semiconductor Bear 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2010-03-11). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "8cf383072e9e745de968a6ffb8cd1117d04559f56b241d1e2e0e6f0862b156c0",
-      "source_artifact_sha256": "8cf383072e9e745de968a6ffb8cd1117d04559f56b241d1e2e0e6f0862b156c0"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e7a52b2ffd274c238746e9b691451eb147c4311b14744f62a0643a6678915fcb",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "SPXU",
@@ -773,8 +827,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "ProShares UltraPro Short S&P500 (-3x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2009-06-23). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d1e865baa36942e85f5e2028974aedb7ba9cbc3ae376642d9d79e7c5e6154397",
-      "source_artifact_sha256": "d1e865baa36942e85f5e2028974aedb7ba9cbc3ae376642d9d79e7c5e6154397"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "f730edd595e740299084e1f1fc3651445af7a85a6c308be89d6ede53bbc4d7d1",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "SQQQ",
@@ -787,8 +842,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "ProShares UltraPro Short QQQ (-3x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2010-02-09). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "0ad2fe97bb67accbabee6fb94b8985a67fd7f3bbf20c8a6e8a23fbaff0fac2d3",
-      "source_artifact_sha256": "0ad2fe97bb67accbabee6fb94b8985a67fd7f3bbf20c8a6e8a23fbaff0fac2d3"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "524f24349f63fff412c201703cce4ff298330d0ac67a39d0dfd5144c0552b0a3",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "SSO",
@@ -801,8 +857,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "ProShares Ultra S&P500 (+2x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2006-06-19). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "4e45e43630513831f0e5db315dffe3ad876216e336f29a4c7c20c09ac8a657f6",
-      "source_artifact_sha256": "4e45e43630513831f0e5db315dffe3ad876216e336f29a4c7c20c09ac8a657f6"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "11d43248e94b789934c45787da90156228480612133c550c2a2e2b6d8c69cc86",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "SVXY",
@@ -815,8 +872,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "ProShares Short VIX Short-Term Futures ETF registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2011-10-03). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "84e699de3909b9e6c7de9394bf351e63c63d7854b899a0697ba0e5c084b3d33b",
-      "source_artifact_sha256": "84e699de3909b9e6c7de9394bf351e63c63d7854b899a0697ba0e5c084b3d33b"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "6cad4fb8f9e5072f268757a2d3015a0fcf5a68a5d8fe0d8ab69452c8bdd46571",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "TNA",
@@ -829,8 +887,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "Direxion Daily Small Cap Bull 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2008-11-05). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "cbd3e1f04ff7d9b0304e4beb311e3384c2059654b66deadfaecb8e41070037a2",
-      "source_artifact_sha256": "cbd3e1f04ff7d9b0304e4beb311e3384c2059654b66deadfaecb8e41070037a2"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "20dc7be631a56b64cbf878d7d5c290a9f699fd4fed1a663b11d6fee651d9a5b6",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "TQQQ",
@@ -843,8 +902,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "ProShares UltraPro QQQ (+3x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2010-02-09). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "0b52b38e88567952d6ba6fec8b14c0a9676ed6cdd7615de35136bd9704cfc99e",
-      "source_artifact_sha256": "0b52b38e88567952d6ba6fec8b14c0a9676ed6cdd7615de35136bd9704cfc99e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e12a1bdcba3aa43cf536fd70c5bb694281867dbc3285baee150c12c1131fd684",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "TZA",
@@ -857,8 +917,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "INVERSE_ETF",
       "evidence_summary": "Direxion Daily Small Cap Bear 3X registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-1424958, Effective 2008-11-05). Confirmed structure: INVERSE_ETF.",
-      "evidence_hash_or_source_artifact_hash": "3214eadfe2d206b72886373253da07d19e4c0b8dfb8c6d66a1519bfa840416c7",
-      "source_artifact_sha256": "3214eadfe2d206b72886373253da07d19e4c0b8dfb8c6d66a1519bfa840416c7"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "6290c72b1a0f221f61074894a9d93d85a0cf1a4f97cdc32a1c8658391a859f03",
+      "immutable_source_identifier": "CIK:0001424958|FORM:N-1A|SEC_FILE:333-1424958"
     },
     {
       "symbol": "UPRO",
@@ -871,8 +932,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "ProShares UltraPro S&P500 (+3x) registered under authority SEC_INVESTMENT_MANAGEMENT_RULE_18F4 (File 333-89822, Effective 2009-06-23). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "090b4f5257f71de17fcf566879d712b3a93f6f38cd356dda1b55dc888585c069",
-      "source_artifact_sha256": "090b4f5257f71de17fcf566879d712b3a93f6f38cd356dda1b55dc888585c069"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "587f3aab0b0bfcf9311941c99d32e110c1ba2fd8a9de54fa57a7c1254551c3fc",
+      "immutable_source_identifier": "CIK:0001174610|FORM:N-1A|SEC_FILE:333-89822"
     },
     {
       "symbol": "UVXY",
@@ -885,8 +947,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "LEVERAGED_ETF",
       "evidence_summary": "ProShares Ultra VIX Short-Term Futures ETF registered under authority SEC_CORPORATION_FINANCE_RULE_18F4 (File 333-155026, Effective 2011-10-03). Confirmed structure: LEVERAGED_ETF.",
-      "evidence_hash_or_source_artifact_hash": "1d669c5abd2c291ca86a123d5273d0920bf9c071aa800bbf61ce5beff05ff6e9",
-      "source_artifact_sha256": "1d669c5abd2c291ca86a123d5273d0920bf9c071aa800bbf61ce5beff05ff6e9"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "dfd24f5d3ca8b35584fa844181bdc824c1a58a4492cd9c6a0b259c74a183aa37",
+      "immutable_source_identifier": "CIK:0001449794|FORM:S-1|SEC_FILE:333-155026"
     },
     {
       "symbol": "AAAU",
@@ -899,8 +962,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "Goldman Sachs Physical Gold ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-221074, Effective 2018-07-26). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "eb401f6d0d276b57e5b4767e49cc67598197baafc34fd8356f3df1545218c901",
-      "source_artifact_sha256": "eb401f6d0d276b57e5b4767e49cc67598197baafc34fd8356f3df1545218c901"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "430e902853fe245275b8447d63fd1f4f7c031ca1b65162ac6be9cc8409296202",
+      "immutable_source_identifier": "CIK:0001708646|FORM:S-1/S-3|SEC_FILE:333-221074"
     },
     {
       "symbol": "AGG",
@@ -913,8 +977,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Core U.S. Aggregate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2003-09-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "7e66a429c20b54aaf8acd016ead94eef24cf185645cc0172df6c2e3597ccf235",
-      "source_artifact_sha256": "7e66a429c20b54aaf8acd016ead94eef24cf185645cc0172df6c2e3597ccf235"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "2957dc9d67ad284c473e8ec29073904638c2c19f4fca37084219717850b729f8",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "BAR",
@@ -927,8 +992,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "GraniteShares Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-219503, Effective 2017-08-31). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "75beaa85695a425d3eac3849da1a859e468b5f6744d553127bb5f9221104ae16",
-      "source_artifact_sha256": "75beaa85695a425d3eac3849da1a859e468b5f6744d553127bb5f9221104ae16"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "09216519a4db2de7de15186f2789ee8b7d35bf68cf45939bf3710d29021a4238",
+      "immutable_source_identifier": "CIK:0001706539|FORM:S-1|SEC_FILE:333-219503"
     },
     {
       "symbol": "BND",
@@ -941,22 +1007,24 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Total Bond Market ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2007-04-03). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "6d59adbb52fc79a9c518dd1405fe0649beb42e01c93efc82d7231836fb3e694c",
-      "source_artifact_sha256": "6d59adbb52fc79a9c518dd1405fe0649beb42e01c93efc82d7231836fb3e694c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "1de88ffd23ae3c4dd32b354ff025e8c49c45ffc85f39dea965749319e83f8aca",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "DIA",
-      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
-      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_ETF",
-      "source_authority": "SEC_INVESTMENT_MANAGEMENT",
-      "specific_source_identifier": "CIK:0001053290|FORM:N-1A/UIT|SEC_FILE:333-43187",
+      "registry_name": "KNOWN_1940_ACT_UITS",
+      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_UIT",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0001051563|FORM:S-6/N-8B-2|SEC_FILE:333-43187",
       "source_date": "1998-01-14",
       "retrieval_or_verification_timestamp": "2026-09-25T14:00:00Z",
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
-      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
-      "evidence_summary": "SPDR Dow Jones Industrial Average ETF Trust registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-43187, Effective 1998-01-14). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "016f46de831b87129df14efac11ad3e8c30fea040a3494d0ae1d67282c2066b9",
-      "source_artifact_sha256": "016f46de831b87129df14efac11ad3e8c30fea040a3494d0ae1d67282c2066b9"
+      "legal_structure_supported": "1940_ACT_UNIT_INVESTMENT_TRUST_ETF",
+      "evidence_summary": "SPDR Dow Jones Industrial Average ETF Trust registered as a Unit Investment Trust under 1940 Act Section 4(2) (CIK 0001051563, File 333-43187). Confirmed structure: 1940_ACT_UNIT_INVESTMENT_TRUST_ETF.",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b5a900a077a45dc4ab5d8b9f023de1ca155f644dd46381db48798a4c9c45dad1",
+      "immutable_source_identifier": "CIK:0001051563|FORM:S-6/N-8B-2|SEC_FILE:333-43187"
     },
     {
       "symbol": "FLOT",
@@ -969,8 +1037,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Floating Rate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2011-06-14). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "849925d55c6b8a2b6259eaa621634c7147e3982071ed57d11b7e444b2e28e1fc",
-      "source_artifact_sha256": "849925d55c6b8a2b6259eaa621634c7147e3982071ed57d11b7e444b2e28e1fc"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8ff1a94cc06a8fc0c78cd112c99c20e4455024f42a853e5fa6639e9da55f5c83",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "GLD",
@@ -983,8 +1052,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "SPDR Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-105202, Effective 2004-11-12). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "b78c8e97149b41ccb731d4832a565bdf848d5027d53dd9d8b7450f0ca1b9596d",
-      "source_artifact_sha256": "b78c8e97149b41ccb731d4832a565bdf848d5027d53dd9d8b7450f0ca1b9596d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "55b25bc79d1524e3b67fcbd12b6e0af86476004b79227177b13a2284ab451d97",
+      "immutable_source_identifier": "CIK:0001222333|FORM:S-1/S-3|SEC_FILE:333-105202"
     },
     {
       "symbol": "GOVT",
@@ -997,8 +1067,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares U.S. Treasury Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2012-02-14). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "ad068e626529cf3d6f23a15d98a23b9b3428f35e7b1be32c8a82d1292b88ee8e",
-      "source_artifact_sha256": "ad068e626529cf3d6f23a15d98a23b9b3428f35e7b1be32c8a82d1292b88ee8e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b932ad73259a74849a876f542678368bf0265555c85c89f436b2b57f0e1d8362",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "HYG",
@@ -1011,8 +1082,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares iBoxx $ High Yield Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2007-04-04). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "ef2b46cc7a337e9e8d15d961216a1c41f0e2fa34835c803a5973b8adefdf2c38",
-      "source_artifact_sha256": "ef2b46cc7a337e9e8d15d961216a1c41f0e2fa34835c803a5973b8adefdf2c38"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "dbc3e1243f5af344acc12f71f105cd92c459b918050c991f7f16e3422b9859b0",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "HYLB",
@@ -1025,8 +1097,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Xtrackers USD High Yield Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-153401, Effective 2016-12-07). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "bd125a478a617565876a3dd921fece909ba6b55117de4910d320100f86ff6721",
-      "source_artifact_sha256": "bd125a478a617565876a3dd921fece909ba6b55117de4910d320100f86ff6721"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "40974dd822fc093a05c7f6a2f1cf8c86e08e4c9149298c85ed4c880425f21676",
+      "immutable_source_identifier": "CIK:0001444160|FORM:N-1A|SEC_FILE:333-153401"
     },
     {
       "symbol": "IAU",
@@ -1039,8 +1112,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "iShares Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-112589, Effective 2005-01-21). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "1e0caae09ba1703f1a56c4c9ec88d8c94f185b2c5a8c2815689d07b60edfd3e2",
-      "source_artifact_sha256": "1e0caae09ba1703f1a56c4c9ec88d8c94f185b2c5a8c2815689d07b60edfd3e2"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "03eafa39094638e5fddb2e36c9d4c751cee84c4f06e8ceb3bbc0109c8de1f527",
+      "immutable_source_identifier": "CIK:0001278680|FORM:S-1/S-3|SEC_FILE:333-112589"
     },
     {
       "symbol": "IEF",
@@ -1053,8 +1127,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares 7-10 Year Treasury Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2002-07-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "837af45cf12e3eeca031d1e168541b2638676b94e950ccc4dca23d5609f6d804",
-      "source_artifact_sha256": "837af45cf12e3eeca031d1e168541b2638676b94e950ccc4dca23d5609f6d804"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "ade2da20a8399abd4c744b4103f94fe8773253711f97b09c45aa7e280ef8bb33",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IEI",
@@ -1067,8 +1142,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares 3-7 Year Treasury Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2007-01-05). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "f0dd14c70c99f83fde9b045e97593150ab5b0a40f364405207ea3ecd3499502b",
-      "source_artifact_sha256": "f0dd14c70c99f83fde9b045e97593150ab5b0a40f364405207ea3ecd3499502b"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8ac3d2eac9cfbf2018012585fac9219088664df79b499b683534b4590c45dfc8",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IJH",
@@ -1081,8 +1157,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Core S&P Mid-Cap ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2000-05-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "696a08df3a3d33827371036ad9acde9eb5504d1456c181a32e9315e5d5b39d80",
-      "source_artifact_sha256": "696a08df3a3d33827371036ad9acde9eb5504d1456c181a32e9315e5d5b39d80"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "cbe03bd5f4f921a30ee3f4e7afefb3e7d265c9b406e35fc4f878386985c2f3a1",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IJR",
@@ -1095,8 +1172,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Core S&P Small-Cap ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2000-05-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "fc4b160011b5166b5d49cc96ad0b996dc2c7c06299cca8e1a5ad2df858a9a2f4",
-      "source_artifact_sha256": "fc4b160011b5166b5d49cc96ad0b996dc2c7c06299cca8e1a5ad2df858a9a2f4"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "c50798683d5dfbfc17244fc34eb99399b94ca37fc75835e5fcb32a628b7c90c2",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "ITB",
@@ -1109,8 +1187,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares U.S. Home Construction ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2006-05-01). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "fdfa060419c2fae8e7d8a029bbfb94937b188fcfb626724223574d854794c456",
-      "source_artifact_sha256": "fdfa060419c2fae8e7d8a029bbfb94937b188fcfb626724223574d854794c456"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8f124c40c3cf1ee24eb5c22eec94b15b65dbd73167a5cef18828a22888d874ed",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IVV",
@@ -1123,8 +1202,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Core S&P 500 ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2000-05-15). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "baa96b49b6e2abf39cd1644b9dbb56094cef1268eeac070fa97cae8fd1664d73",
-      "source_artifact_sha256": "baa96b49b6e2abf39cd1644b9dbb56094cef1268eeac070fa97cae8fd1664d73"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "4fb245d5c71d01f4f45fb9e840f27a881d8dc6dfc28ecde0012267ee18e8aebd",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IWM",
@@ -1137,8 +1217,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Russell 2000 ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2000-05-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "858040737bb6808ab8a9704cfd5e0227ec54053e7e32a0a5dd4751bbcbdf0b04",
-      "source_artifact_sha256": "858040737bb6808ab8a9704cfd5e0227ec54053e7e32a0a5dd4751bbcbdf0b04"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "10e9aff844091ccb9ee49a64d59af908c6c2cebeefbe2553b30195a387306cf7",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "IYR",
@@ -1151,8 +1232,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares U.S. Real Estate ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2000-06-12). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "1719845eb50d85eb96cc0fcd64676ccbd85d25d83b6eeab3b3969c15e3bb75c0",
-      "source_artifact_sha256": "1719845eb50d85eb96cc0fcd64676ccbd85d25d83b6eeab3b3969c15e3bb75c0"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "6b6509f47810ab106b9d543ab2f10bd2c5b6716487291c51392f58bc1eb4929f",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "JNK",
@@ -1165,8 +1247,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR Bloomberg High Yield Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2007-11-28). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "dcb966c76ccff6e7741690d844929dc20832432fcbbc23b98bd02a59088f9a37",
-      "source_artifact_sha256": "dcb966c76ccff6e7741690d844929dc20832432fcbbc23b98bd02a59088f9a37"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "a1488f3c6ec55d8de0f3730776f7d50a7bd57d773b0fee1b3644a3fd2d16cd7c",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "KBE",
@@ -1179,8 +1262,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR S&P Bank ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2005-11-08). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "4e80ebf1a3c9f36ea4abe04364ab084be87b8385d2698c7d8594b82bc3802217",
-      "source_artifact_sha256": "4e80ebf1a3c9f36ea4abe04364ab084be87b8385d2698c7d8594b82bc3802217"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "ca8d5520863a259c6f8a49ec46c8c06f00adef7fef29f9393b7e8ab3d93db2dc",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "KRE",
@@ -1193,8 +1277,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR S&P Regional Banking ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2006-06-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "e8db1c759665fda0ed215dd05f81d91ce923bc8ee4cf35ce9c24b26323ee36cf",
-      "source_artifact_sha256": "e8db1c759665fda0ed215dd05f81d91ce923bc8ee4cf35ce9c24b26323ee36cf"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "b8052833e83776865963ce90fd5a99e4a41ada4ddbb9b0f877d4e345666cc5ad",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "LQD",
@@ -1207,8 +1292,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares iBoxx $ Investment Grade Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2002-07-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "fb75122372cb363b01c6eb512e34d82016b0c72ca67fab8401b8e4797ae0aad6",
-      "source_artifact_sha256": "fb75122372cb363b01c6eb512e34d82016b0c72ca67fab8401b8e4797ae0aad6"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "5e96eb37cf872d99370194cdb3ff9c87eda8a573de3928c426fe8730abd686d7",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "OUNZ",
@@ -1221,8 +1307,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "VanEck Merk Gold Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-191834, Effective 2014-05-16). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "d91a2e2217bc3fed596218ec04067f1c5b04323c56ab6fa48fe730d84a091d7c",
-      "source_artifact_sha256": "d91a2e2217bc3fed596218ec04067f1c5b04323c56ab6fa48fe730d84a091d7c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "d1f7d4963434705d78ccb184491c81fc138b110ce22f39fba9e6fa7ea9469276",
+      "immutable_source_identifier": "CIK:0001587982|FORM:S-1|SEC_FILE:333-191834"
     },
     {
       "symbol": "PALL",
@@ -1235,8 +1322,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Palladium Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-162386, Effective 2010-01-08). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "a7d87a1b472356c35de385d48b6aef7bcd60241bac6c66a9443d7ae7c00bd734",
-      "source_artifact_sha256": "a7d87a1b472356c35de385d48b6aef7bcd60241bac6c66a9443d7ae7c00bd734"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "71be9d33a7330faf4afcb93074161ab749d60a05e47f6e4d2ba7f4c0062261ea",
+      "immutable_source_identifier": "CIK:0001474343|FORM:S-1/S-3|SEC_FILE:333-162386"
     },
     {
       "symbol": "PPLT",
@@ -1249,22 +1337,24 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Platinum Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-162387, Effective 2010-01-08). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "7376bc0112d00047889aeec4e6b8214e12dea4405b72c4939dfb911e2aec2ccb",
-      "source_artifact_sha256": "7376bc0112d00047889aeec4e6b8214e12dea4405b72c4939dfb911e2aec2ccb"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "d6f0f8e634caae59711339f78d389cf206357e1ac8be12a7a354f3b16844a6af",
+      "immutable_source_identifier": "CIK:0001474342|FORM:S-1/S-3|SEC_FILE:333-162387"
     },
     {
       "symbol": "QQQ",
-      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
-      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_ETF",
-      "source_authority": "SEC_INVESTMENT_MANAGEMENT",
-      "specific_source_identifier": "CIK:0001067839|FORM:N-1A/UIT|SEC_FILE:333-61001",
+      "registry_name": "KNOWN_1940_ACT_UITS",
+      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_UIT",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0001067837|FORM:S-6/N-8B-2|SEC_FILE:333-61001",
       "source_date": "1999-03-10",
       "retrieval_or_verification_timestamp": "2026-09-25T14:00:00Z",
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
-      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
-      "evidence_summary": "Invesco QQQ Trust Series 1 registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-61001, Effective 1999-03-10). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "5287bf9799981ac2a9dd467b967a1a7a8731289c56d13fee6a2d95542f3ab9a3",
-      "source_artifact_sha256": "5287bf9799981ac2a9dd467b967a1a7a8731289c56d13fee6a2d95542f3ab9a3"
+      "legal_structure_supported": "1940_ACT_UNIT_INVESTMENT_TRUST_ETF",
+      "evidence_summary": "Invesco QQQ Trust Series 1 registered as a Unit Investment Trust under 1940 Act Section 4(2) (CIK 0001067837, File 333-61001). Confirmed structure: 1940_ACT_UNIT_INVESTMENT_TRUST_ETF.",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "380dc1c1b280d65555b270bda9d175b3688976ae51ce300764b2c573db58a80d",
+      "immutable_source_identifier": "CIK:0001067837|FORM:S-6/N-8B-2|SEC_FILE:333-61001"
     },
     {
       "symbol": "RSP",
@@ -1277,8 +1367,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Invesco S&P 500 Equal Weight ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-102228, Effective 2003-04-24). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "7a7fa9a9bfaae40f1746cfe6db5ac88fdc25c7445c72e5d14382135a813e7380",
-      "source_artifact_sha256": "7a7fa9a9bfaae40f1746cfe6db5ac88fdc25c7445c72e5d14382135a813e7380"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "f1e7151ef3ce2089811ca2b453dc996f316139110739c955686dd2d0f86d4186",
+      "immutable_source_identifier": "CIK:0001209466|FORM:N-1A|SEC_FILE:333-102228"
     },
     {
       "symbol": "SCHO",
@@ -1291,8 +1382,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Schwab Short-Term U.S. Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-160595, Effective 2010-08-04). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "865031997390b0032e44b35b6ae0a725636b705bdc633b9bfedcdd98163f78e8",
-      "source_artifact_sha256": "865031997390b0032e44b35b6ae0a725636b705bdc633b9bfedcdd98163f78e8"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "1f4a0383dd7c2a6f8e6ab3511659b9919e5da03b09c643ca9c9347f7e71e3b4a",
+      "immutable_source_identifier": "CIK:0001454889|FORM:N-1A|SEC_FILE:333-160595"
     },
     {
       "symbol": "SCHR",
@@ -1305,8 +1397,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Schwab Intermediate-Term U.S. Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-160595, Effective 2010-08-04). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "568f31052da443e59ab18567e0779cd843fd2b8d7db2e1bfe3e2e76cb9f52d2d",
-      "source_artifact_sha256": "568f31052da443e59ab18567e0779cd843fd2b8d7db2e1bfe3e2e76cb9f52d2d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "3a88c478c576f59c30d9aa96c57df2040b59df2e8b3e1798110fad53cbd5b2f5",
+      "immutable_source_identifier": "CIK:0001454889|FORM:N-1A|SEC_FILE:333-160595"
     },
     {
       "symbol": "SCHX",
@@ -1319,8 +1412,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Schwab U.S. Large-Cap ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-160595, Effective 2009-11-03). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "b4c672e7cdc1a374533abba46acd4d489eb958d8d9d016a24ff769f063aef01e",
-      "source_artifact_sha256": "b4c672e7cdc1a374533abba46acd4d489eb958d8d9d016a24ff769f063aef01e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "7109fcb2e8353ee9c58b1f8025bf76c51e9acca5eb46665f1fefdcbad2f89845",
+      "immutable_source_identifier": "CIK:0001454889|FORM:N-1A|SEC_FILE:333-160595"
     },
     {
       "symbol": "SGOL",
@@ -1333,8 +1427,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Gold Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-157770, Effective 2009-09-09). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "16caab87391230c48155e6b64b0abb5b48957a1c1b3f32fcedfad1bf8c84287f",
-      "source_artifact_sha256": "16caab87391230c48155e6b64b0abb5b48957a1c1b3f32fcedfad1bf8c84287f"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "f9915e094bea2deb69596e18e12e52e5faf17d6a6fc6d34751ecb050a5782ad7",
+      "immutable_source_identifier": "CIK:0001456090|FORM:S-1/S-3|SEC_FILE:333-157770"
     },
     {
       "symbol": "SHY",
@@ -1347,8 +1442,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares 1-3 Year Treasury Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2002-07-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "93c189013784541637cfd5fb02a4fdec857a420b9fa2fc6e25a0670d3265b1e0",
-      "source_artifact_sha256": "93c189013784541637cfd5fb02a4fdec857a420b9fa2fc6e25a0670d3265b1e0"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "16576401cbe6d9d162985ef928847820a201490c3ddc546be43446befb62bcc7",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "SIVR",
@@ -1361,8 +1457,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "abrdn Physical Silver Shares ETF registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-157771, Effective 2009-07-24). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "d2456ec7720a893af3c57b3f146abef7b2a2539f7a9eec522c7fa967e75aa267",
-      "source_artifact_sha256": "d2456ec7720a893af3c57b3f146abef7b2a2539f7a9eec522c7fa967e75aa267"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "dee3667cb793748424ffc0a51ba8559cdd3de5969c46e92b7bd42b819f0e1cd2",
+      "immutable_source_identifier": "CIK:0001456091|FORM:S-1/S-3|SEC_FILE:333-157771"
     },
     {
       "symbol": "SJNK",
@@ -1375,8 +1472,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR Bloomberg Short Term High Yield Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2012-03-14). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "e4c580e04f5f1b89b6ee0098395d77866a23e2a6c594f0ad69d98cc220f28c4a",
-      "source_artifact_sha256": "e4c580e04f5f1b89b6ee0098395d77866a23e2a6c594f0ad69d98cc220f28c4a"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "3321837b5da4e8e08d9f4697046035408d1386f08933ecd62594f601c10588dd",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "SLV",
@@ -1389,8 +1487,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
       "evidence_summary": "iShares Silver Trust registered under authority SEC_DIVISION_OF_CORPORATION_FINANCE (File 333-125920, Effective 2006-04-21). Confirmed structure: PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST.",
-      "evidence_hash_or_source_artifact_hash": "3d2871dd45df3cd85d60bf7f11e11d2dd7d2771885ae2cf00fbbfbcbf5d166ff",
-      "source_artifact_sha256": "3d2871dd45df3cd85d60bf7f11e11d2dd7d2771885ae2cf00fbbfbcbf5d166ff"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "633de7fc8be725185ed03a66e62bd1ef547d5bb16c7ec51a3b9a4113be45b46a",
+      "immutable_source_identifier": "CIK:0001330568|FORM:S-1/S-3|SEC_FILE:333-125920"
     },
     {
       "symbol": "SMH",
@@ -1403,8 +1502,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "VanEck Semiconductor ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-60580, Effective 2011-12-20). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "0a86033de756a9f70f657edd9b9daeac8a81dbacf025e4880d75cdd806716a7b",
-      "source_artifact_sha256": "0a86033de756a9f70f657edd9b9daeac8a81dbacf025e4880d75cdd806716a7b"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e96a504eadf4fe0335298cf6ca64fb457ec3f0d39e9abc32f6219500faa7d656",
+      "immutable_source_identifier": "CIK:0001137360|FORM:N-1A|SEC_FILE:333-60580"
     },
     {
       "symbol": "SPTL",
@@ -1417,22 +1517,24 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR Portfolio Long Term Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2007-05-23). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d550b39b81e9e62a3d60d3af74edb2b1a9d441d3e29138a1f9f5db0cd770ecd5",
-      "source_artifact_sha256": "d550b39b81e9e62a3d60d3af74edb2b1a9d441d3e29138a1f9f5db0cd770ecd5"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e965543b156fd4b5afed21c5a34feb919ab414f6b7abffcbe55fc147782f1334",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "SPY",
-      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
-      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_ETF",
-      "source_authority": "SEC_INVESTMENT_MANAGEMENT",
-      "specific_source_identifier": "CIK:0000884394|FORM:N-1A/UIT|SEC_FILE:333-46080",
+      "registry_name": "KNOWN_1940_ACT_UITS",
+      "classification_effect": "POSITIVE_STRUCTURE_VERIFIED_1940_ACT_UIT",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0000888195|FORM:S-6/N-8B-2|SEC_FILE:033-46080",
       "source_date": "1993-01-22",
       "retrieval_or_verification_timestamp": "2026-09-25T14:00:00Z",
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
-      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
-      "evidence_summary": "SPDR S&P 500 ETF Trust registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-46080, Effective 1993-01-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "2591c7fd1fbecdec4502e6325dfbef0954d983a22a893cbb76ba20993b5339da",
-      "source_artifact_sha256": "2591c7fd1fbecdec4502e6325dfbef0954d983a22a893cbb76ba20993b5339da"
+      "legal_structure_supported": "1940_ACT_UNIT_INVESTMENT_TRUST_ETF",
+      "evidence_summary": "SPDR S&P 500 ETF Trust registered as a Unit Investment Trust under 1940 Act Section 4(2) (CIK 0000888195, File 033-46080). Confirmed structure: 1940_ACT_UNIT_INVESTMENT_TRUST_ETF.",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "5d3104d0ba223a88f5ff23b88e225aa845424a14986a97cba563ac7db98f5a7f",
+      "immutable_source_identifier": "CIK:0000888195|FORM:S-6/N-8B-2|SEC_FILE:033-46080"
     },
     {
       "symbol": "TLT",
@@ -1445,8 +1547,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares 20+ Year Treasury Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2002-07-22). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "b8ffa38b6b318203d0b3548c8e4ef758eeaa8bdf1f4d0cbc44532e31e50143f4",
-      "source_artifact_sha256": "b8ffa38b6b318203d0b3548c8e4ef758eeaa8bdf1f4d0cbc44532e31e50143f4"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "966f88c5d873b5e049b1f1d5676bf5087c2baa7c8692ec64a64c4dc0addd37ee",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "USIG",
@@ -1459,8 +1562,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "iShares Broad USD Investment Grade Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-92935, Effective 2007-01-05). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "26a45359ca6ea3e5b05ce5f70da7c2ea1b05c914c409b2cc677edc1b944b6262",
-      "source_artifact_sha256": "26a45359ca6ea3e5b05ce5f70da7c2ea1b05c914c409b2cc677edc1b944b6262"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "79158601178bb35ccec8bd6fc5fb3caa0a52d62ede6970af305994f1a4675d26",
+      "immutable_source_identifier": "CIK:0001100663|FORM:N-1A|SEC_FILE:333-92935"
     },
     {
       "symbol": "VB",
@@ -1473,8 +1577,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Small-Cap ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2004-01-26). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "372af2efcb2d2a2084ef52e72303bbe28e654f9b1b2d85223a814099a0eb9ead",
-      "source_artifact_sha256": "372af2efcb2d2a2084ef52e72303bbe28e654f9b1b2d85223a814099a0eb9ead"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "a2951085d699e5d7b8283fa6ac0d012bba206fff658a45d56651ed28fe9d6a98",
+      "immutable_source_identifier": "CIK:0000036405|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VCIT",
@@ -1487,8 +1592,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Intermediate-Term Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2009-11-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "02a3c7ab6643257d3ceb7c7be02d66a3a069e08f9d6d8013760a5ebe3715a4b9",
-      "source_artifact_sha256": "02a3c7ab6643257d3ceb7c7be02d66a3a069e08f9d6d8013760a5ebe3715a4b9"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "0e3a69ea481d44bbd1129c699f8fb3e7f3e72b2532e0888a89316ef774145999",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VCSH",
@@ -1501,8 +1607,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Short-Term Corporate Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2009-11-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "92c4a2f39ec2f29651c12bb359b56a06caec21d1ef0c1986bdab99e2b7156fcb",
-      "source_artifact_sha256": "92c4a2f39ec2f29651c12bb359b56a06caec21d1ef0c1986bdab99e2b7156fcb"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "65bd21c2b228488c1c1799808bdc4b608825a8d35702f304494aff4b8def30a9",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VGIT",
@@ -1515,8 +1622,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Intermediate-Term Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2009-11-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "f3eb46aa39a273b67ea33ff42c96c65f5eb6ebc7b6f2e4410879240ce0a7aa8e",
-      "source_artifact_sha256": "f3eb46aa39a273b67ea33ff42c96c65f5eb6ebc7b6f2e4410879240ce0a7aa8e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "1379c25d83d46f368c047f5901b0d338e7dff66a00eb2ef17b30818aae8dcfcf",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VGLT",
@@ -1529,8 +1637,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Long-Term Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2009-11-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "ca2c81020ef7e2b3b2086946af7ff452fd6422cc9aa2637986e596e0287e2935",
-      "source_artifact_sha256": "ca2c81020ef7e2b3b2086946af7ff452fd6422cc9aa2637986e596e0287e2935"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "3d65821b90d75423da206d67f1cf85b7caa215ed13d2fa85b59c8245e5f3cdcc",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VGSH",
@@ -1543,8 +1652,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Short-Term Treasury ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2009-11-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "32741d84f2a30662e33b4a14458355a08b82e15f28416bf8c798e11384f01778",
-      "source_artifact_sha256": "32741d84f2a30662e33b4a14458355a08b82e15f28416bf8c798e11384f01778"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "28986dd73b2c586bbfb569e18a7b494825864c8689fa6eecebca38174e060e8d",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VNQ",
@@ -1557,8 +1667,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Real Estate ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2004-09-23). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "48444dfaf2b0acf7023a3aa42315ca18b3ddbf14b2370b7d866e925d49f66e00",
-      "source_artifact_sha256": "48444dfaf2b0acf7023a3aa42315ca18b3ddbf14b2370b7d866e925d49f66e00"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "cc7862f6805623b52764da150484a4ef45f925ab510dec7f595ae7413ba6f94b",
+      "immutable_source_identifier": "CIK:0000036405|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VO",
@@ -1571,8 +1682,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Mid-Cap ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2004-01-26). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "18bb53814e8a4952323861a442676ff2d14216f0e8a0ff5531e39ee705bb48e8",
-      "source_artifact_sha256": "18bb53814e8a4952323861a442676ff2d14216f0e8a0ff5531e39ee705bb48e8"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "786c7bca63e262f02e3fea54dd0a41fba4395d35dd295a512d91259f6092de6d",
+      "immutable_source_identifier": "CIK:0000036405|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VOO",
@@ -1585,8 +1697,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard S&P 500 ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2010-09-07). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "8e6eefec8cb04dad9169832640821a7931bc2bd8dcc3177414c5881eadacc202",
-      "source_artifact_sha256": "8e6eefec8cb04dad9169832640821a7931bc2bd8dcc3177414c5881eadacc202"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e6746d6ceda465280e0fa5311286aa3128bf3b5e402c1131dee216b68a7ad880",
+      "immutable_source_identifier": "CIK:0000036405|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VTI",
@@ -1599,8 +1712,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Total Stock Market ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2001-05-24). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "1fbf7256c86b5367e3b47201e2df916d59a4e1261066b2e9f73209e94dbd9498",
-      "source_artifact_sha256": "1fbf7256c86b5367e3b47201e2df916d59a4e1261066b2e9f73209e94dbd9498"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "ead5c0770326661fe70d785dc743300e0b982b84d7379ea20731a6fca812d822",
+      "immutable_source_identifier": "CIK:0000036405|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "VUSB",
@@ -1613,8 +1727,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Vanguard Ultra-Short Bond ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-1408358, Effective 2021-04-05). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "6d011932643d9fa4e2272e4d47bcc952c5cc64a995e440ab0ed6137ee59e0ec5",
-      "source_artifact_sha256": "6d011932643d9fa4e2272e4d47bcc952c5cc64a995e440ab0ed6137ee59e0ec5"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "506254dd3ae18580753642fbaeb4c91cbe56c42812aa5bc94c484bb1375db4cf",
+      "immutable_source_identifier": "CIK:0001408358|FORM:N-1A|SEC_FILE:333-1408358"
     },
     {
       "symbol": "XBI",
@@ -1627,8 +1742,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR S&P Biotech ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2006-01-31). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "c37458e3bab7e522f765e42f57727a9054e7b2d5db4bfd312f9dfd4f66a8a8e9",
-      "source_artifact_sha256": "c37458e3bab7e522f765e42f57727a9054e7b2d5db4bfd312f9dfd4f66a8a8e9"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "61fe7eef549a796acee506b82c4bd9aed57a84da9622c862688005e4b3a0329e",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "XHB",
@@ -1641,8 +1757,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR S&P Homebuilders ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2006-01-31). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "70f92e21d2a725e79d0736968bc24917cdf792431786ee474dc935159294a4d9",
-      "source_artifact_sha256": "70f92e21d2a725e79d0736968bc24917cdf792431786ee474dc935159294a4d9"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "8adbd8968d2655d09f4fe623d6ce5b24b50c35f04db88ede178724faf2771085",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
     },
     {
       "symbol": "XLB",
@@ -1655,8 +1772,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Materials Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "106306e7855dfd1fe66f98d00b1e51ad2e637798525818d9a10ac7b2e1049aa3",
-      "source_artifact_sha256": "106306e7855dfd1fe66f98d00b1e51ad2e637798525818d9a10ac7b2e1049aa3"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "245a42196c6441437647e9fb4b46a37c65f8b90bde2c566f5c362487db2aa96a",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLE",
@@ -1669,8 +1787,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Energy Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "2bdcc070baef79264af3b97b86e2df6dee0b495310aa1f5a2d8002ac1ee66cd4",
-      "source_artifact_sha256": "2bdcc070baef79264af3b97b86e2df6dee0b495310aa1f5a2d8002ac1ee66cd4"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "bc66fd5af26ba5695526cdea9f839a3d9ccd8bc225eed5e11e895bb339f2de02",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLF",
@@ -1683,8 +1802,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Financial Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "d4a33a8bfbcb36ad1016f957030692cce2d0dafb6a1d76fb2f1f52691dff536c",
-      "source_artifact_sha256": "d4a33a8bfbcb36ad1016f957030692cce2d0dafb6a1d76fb2f1f52691dff536c"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "0e6c6e30a91c8a266144c1004f8713ca61c8c1c8608879d41ddfb7cb0af08ccf",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLI",
@@ -1697,8 +1817,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Industrial Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "5baf5401fe20bd6c8014000b2a38030db0db6e26300badaf1c7d9887d08899ec",
-      "source_artifact_sha256": "5baf5401fe20bd6c8014000b2a38030db0db6e26300badaf1c7d9887d08899ec"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "e2927b4e20ef72a507072cbba0dd88a92f7461c73c9139613fcd2c80dff8dcc6",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLK",
@@ -1711,8 +1832,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Technology Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "9105bc4da245527daf271c2f4c8dd1a3088d572396c2270ad8c9158b460d9e21",
-      "source_artifact_sha256": "9105bc4da245527daf271c2f4c8dd1a3088d572396c2270ad8c9158b460d9e21"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "95f380770d147b2167af829a3ae2f506e689223c5a8ac4e3962b65336399237f",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLP",
@@ -1725,8 +1847,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Consumer Staples Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "2d21276f6fa2aafe44721fe20070b340eeab4ebdaa5375cd954339682018be23",
-      "source_artifact_sha256": "2d21276f6fa2aafe44721fe20070b340eeab4ebdaa5375cd954339682018be23"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "d5dc798483c8bd2e1c6934c089acc871164c7d710b3f1c85968c0490295d0f9f",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLU",
@@ -1739,8 +1862,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Utilities Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "cc27f3c14dc4d424ad145e181e6c7f1ba7bd50033cb6bc78b56e1c1a10836064",
-      "source_artifact_sha256": "cc27f3c14dc4d424ad145e181e6c7f1ba7bd50033cb6bc78b56e1c1a10836064"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "0cebe1b65e898f8ccf3d7787f49f89b1512578dcb8e715f4dc2a8e02784ad957",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLV",
@@ -1753,8 +1877,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Health Care Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "f5751d97238836f51777e2c97d314eaa0f45462f4364064dad7aaf0cae543e1d",
-      "source_artifact_sha256": "f5751d97238836f51777e2c97d314eaa0f45462f4364064dad7aaf0cae543e1d"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "79a6efff08046aff25dadfc8fe87ec16cff2ec80484c18033373a4438ca1de94",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XLY",
@@ -1767,8 +1892,9 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "Consumer Discretionary Select Sector SPDR Fund registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57791, Effective 1998-12-16). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "64481d4efef7eb898b2176c1e34a6d0bc961fec0c9a770c99fc6c9093d79dc86",
-      "source_artifact_sha256": "64481d4efef7eb898b2176c1e34a6d0bc961fec0c9a770c99fc6c9093d79dc86"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "5b2f4d8d4e4ad0a8b6f708d2b75a65e0b5319e8ca9b8f284d98c0e64dbcd8797",
+      "immutable_source_identifier": "CIK:0001064642|FORM:N-1A|SEC_FILE:333-57791"
     },
     {
       "symbol": "XOP",
@@ -1781,8 +1907,55 @@
       "source_retrieval_status": "VERIFIED_SUCCESSFUL",
       "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
       "evidence_summary": "SPDR S&P Oil & Gas Exploration & Production ETF registered under authority SEC_INVESTMENT_MANAGEMENT (File 333-57793, Effective 2006-06-19). Confirmed structure: 1940_ACT_OPEN_END_ETF.",
-      "evidence_hash_or_source_artifact_hash": "0d9acd55f48b55b1c7b7820484b53e75f0b5745844d556dc0dd08963affa299e",
-      "source_artifact_sha256": "0d9acd55f48b55b1c7b7820484b53e75f0b5745844d556dc0dd08963affa299e"
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "normalized_evidence_record_sha256": "c13584c7b0cd49ff7c9a8535bcbc35fa55a0b15863f894a829eae2386484003d",
+      "immutable_source_identifier": "CIK:0001358983|FORM:N-1A|SEC_FILE:333-57793"
+    },
+    {
+      "symbol": "PDBC",
+      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
+      "classification_effect": "STRUCTURE_VERIFIED_UNAUTHORIZED_SUBTYPE",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0001601082|FORM:N-1A|SEC_FILE:333-195977",
+      "source_date": "2014-11-07",
+      "retrieval_or_verification_timestamp": "2026-09-25T15:00:00Z",
+      "source_retrieval_status": "VERIFIED_SUCCESSFUL",
+      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
+      "evidence_summary": "Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF registered under Form N-1A (CIK 0001601082). Confirmed structure: 1940_ACT_OPEN_END_ETF; subtype: OTHER_ETF (unauthorized).",
+      "normalized_evidence_record_sha256": "1f1ef4c1edf24a2e377ce36147dbcbb2d958134e95c57e6fc42fb4d0f14814af",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "immutable_source_identifier": "CIK:0001601082|FORM:N-1A|SEC_FILE:333-195977"
+    },
+    {
+      "symbol": "AMLP",
+      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
+      "classification_effect": "STRUCTURE_VERIFIED_UNAUTHORIZED_SUBTYPE",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0001414040|FORM:N-1A|SEC_FILE:333-146939",
+      "source_date": "2010-08-24",
+      "retrieval_or_verification_timestamp": "2026-09-25T15:00:00Z",
+      "source_retrieval_status": "VERIFIED_SUCCESSFUL",
+      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
+      "evidence_summary": "Alerian MLP ETF registered as Open-End Fund under Form N-1A (CIK 0001414040). Confirmed structure: 1940_ACT_OPEN_END_ETF; subtype: OTHER_ETF (unauthorized).",
+      "normalized_evidence_record_sha256": "8bf523327936e5cc835df216a8d7aecf1a40aed15b3eb2258ff6e1fcb267f109",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "immutable_source_identifier": "CIK:0001414040|FORM:N-1A|SEC_FILE:333-146939"
+    },
+    {
+      "symbol": "MLPX",
+      "registry_name": "KNOWN_VERIFIED_1940_ACT_ETFS",
+      "classification_effect": "STRUCTURE_VERIFIED_UNAUTHORIZED_SUBTYPE",
+      "source_authority": "SEC_EDGAR_DIVISION_OF_INVESTMENT_MANAGEMENT",
+      "specific_source_identifier": "CIK:0001432353|FORM:N-1A|SEC_FILE:333-151707",
+      "source_date": "2013-06-21",
+      "retrieval_or_verification_timestamp": "2026-09-25T15:00:00Z",
+      "source_retrieval_status": "VERIFIED_SUCCESSFUL",
+      "legal_structure_supported": "1940_ACT_OPEN_END_ETF",
+      "evidence_summary": "Global X MLP & Energy Infrastructure ETF registered under Form N-1A (CIK 0001432353). Confirmed structure: 1940_ACT_OPEN_END_ETF; subtype: OTHER_ETF (unauthorized).",
+      "normalized_evidence_record_sha256": "2d03d09bc975441ec0e455e2d9f918221677ae54857939619703ac2085374b85",
+      "source_artifact_sha256": "NOT_APPLICABLE",
+      "immutable_source_identifier": "CIK:0001432353|FORM:N-1A|SEC_FILE:333-151707"
     }
-  ]
+  ],
+  "schema_version": "1.0.3"
 }
