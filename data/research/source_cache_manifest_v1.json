@@ -1066,7 +1066,7 @@
   "data/research/cache/sec_company_tickers_mf.json": {
     "path": "data/research/cache/sec_company_tickers_mf.json",
     "provider": "SEC_EDGAR",
-    "retrieval_timestamp": "2026-09-25T17:18:30Z",
+    "retrieval_timestamp": "2026-09-25T17:26:52Z",
     "byte_size": 1233613,
     "sha256": "f9488ef65a80c35eab4035be567d2812ff70f1fed7997523a99bccd38f0ddbe1",
     "semantic_role": "TIER_2_SERIES_REGISTRATION_DIRECTORY"
@@ -1106,7 +1106,7 @@
   "data/research/sec_trust_legal_form_directory_v1.json": {
     "path": "data/research/sec_trust_legal_form_directory_v1.json",
     "provider": "SEC_EDGAR",
-    "retrieval_timestamp": "2026-09-25T17:18:30Z",
+    "retrieval_timestamp": "2026-09-25T17:26:52Z",
     "byte_size": 156506,
     "sha256": "09a8ae8f29e8939e177536375083590121b448945348ab23ff5c88eaff9be715",
     "semantic_role": "TIER_2_TRUST_LEGAL_FORM_DIRECTORY"
@@ -1466,7 +1466,7 @@
   "data/research/etf_mandate_evidence_v1.json": {
     "path": "data/research/etf_mandate_evidence_v1.json",
     "provider": "SEC_FORM_485BPOS_N1A",
-    "retrieval_timestamp": "2026-09-25T17:18:31Z",
+    "retrieval_timestamp": "2026-09-25T17:26:52Z",
     "byte_size": 53291,
     "sha256": "8801244489e6769abd2f4ef1fc6d3ae5f0fc1dc39851a3134e755c4cea8c5d35",
     "semantic_role": "STATUTORY_SERIES_INDEX_MANDATE_REGISTRATION"
@@ -1474,7 +1474,7 @@
   "data/research/cache/nport_derived/portfolio_metrics.parquet": {
     "path": "data/research/cache/nport_derived/portfolio_metrics.parquet",
     "provider": "SEC_FORM_NPORT_DERIVED_HOLDINGS",
-    "retrieval_timestamp": "2026-09-25T17:18:31Z",
+    "retrieval_timestamp": "2026-09-25T17:26:52Z",
     "byte_size": 454058,
     "sha256": "fc28aad3a62d972953cfccd932519aaac99b91547cfbc3475520f5acb8d2a880",
     "semantic_role": "STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
@@ -1603,6 +1603,14 @@
     "path": "C:/Users/akara/AppData/Local/Temp/tmp0k42zrcj/nasdaqtraded.txt",
     "provider": "LOCAL_FILE",
     "retrieval_timestamp": "2026-09-25T17:18:30Z",
+    "byte_size": 1622,
+    "sha256": "518d832f51b86f4f195efec009f9c0b54bd70430602df2c88a4c9c07a3486247",
+    "semantic_role": "UNIVERSE_DISCOVERY_DIRECTORY"
+  },
+  "C:/Users/akara/AppData/Local/Temp/tmprrpr44d2/nasdaqtraded.txt": {
+    "path": "C:/Users/akara/AppData/Local/Temp/tmprrpr44d2/nasdaqtraded.txt",
+    "provider": "LOCAL_FILE",
+    "retrieval_timestamp": "2026-09-25T17:26:52Z",
     "byte_size": 1622,
     "sha256": "518d832f51b86f4f195efec009f9c0b54bd70430602df2c88a4c9c07a3486247",
     "semantic_role": "UNIVERSE_DISCOVERY_DIRECTORY"

@@ -33,6 +33,10 @@
     "INSUFFICIENT_MANDATE_EVIDENCE": 2947,
     "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION": 876
   },
+  "complete_mandate_evidence_population": 77,
+  "potential_confirmatory_unresolved_count": 3823,
+  "denominator_blocking_unresolved_count": 3823,
+  "candidate_denominator_closure_status": "BLOCKED_PENDING_MANDATE_EVIDENCE",
   "final_candidate_denominator": 70,
   "final_adv80": 1491310805.7732038,
   "final_eligible_denominator": 14
