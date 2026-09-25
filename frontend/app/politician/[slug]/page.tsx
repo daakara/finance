@@ -9,217 +9,11 @@ interface PageProps {
   };
 }
 
-interface PoliticianProfile {
-  slug: string;
-  name: string;
-  chamber: "House" | "Senate";
-  party: "Democrat" | "Republican";
-  stateDistrict: string;
-  committees: string[];
-  recentTrades: {
-    ticker: string;
-    assetName: string;
-    type: string;
-    amount: string;
-    date: string;
-    lagDays: number;
-    stalenessStatus: "FRESH" | "STANDARD" | "AGING" | "LATE_FILER";
-    stalenessBadge: string;
-    alignmentScore: number;
-    thesis: string;
-  }[];
-}
-
-const POLITICIAN_DATABASE: PoliticianProfile[] = [
-  {
-    slug: "nancy-pelosi",
-    name: "Nancy Pelosi",
-    chamber: "House",
-    party: "Democrat",
-    stateDistrict: "CA-11 (San Francisco)",
-    committees: ["Former Speaker of the House", "Democratic Leadership", "Appropriations (Prior)"],
-    recentTrades: [
-      {
-        ticker: "NVDA",
-        assetName: "NVIDIA Corporation",
-        type: "Purchase (Deep ITM Calls)",
-        amount: "$1,000,000 - $5,000,000",
-        date: "2026-07-28",
-        lagDays: 17,
-        stalenessStatus: "STANDARD",
-        stalenessBadge: "⏳ Standard (17d lag)",
-        alignmentScore: 94,
-        thesis: "Strategic timing ahead of federal AI compute export rule revisions and next-generation datacenter infrastructure appropriations."
-      },
-      {
-        ticker: "MSFT",
-        assetName: "Microsoft Corporation",
-        type: "Purchase (LEAPS Calls)",
-        amount: "$500,000 - $1,000,000",
-        date: "2026-06-15",
-        lagDays: 24,
-        stalenessStatus: "STANDARD",
-        stalenessBadge: "⏳ Standard (24d lag)",
-        alignmentScore: 88,
-        thesis: "Enterprise cloud software expansion and federal defense generative AI procurement contracts."
-      }
-    ]
-  },
-  {
-    slug: "dan-crenshaw",
-    name: "Dan Crenshaw",
-    chamber: "House",
-    party: "Republican",
-    stateDistrict: "TX-02 (Houston)",
-    committees: ["Energy & Commerce", "House Permanent Select Committee on Intelligence"],
-    recentTrades: [
-      {
-        ticker: "PLTR",
-        assetName: "Palantir Technologies",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-10",
-        lagDays: 12,
-        stalenessStatus: "FRESH",
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        alignmentScore: 95,
-        thesis: "Direct oversight of intelligence community software procurement and defense AI telemetry systems."
-      }
-    ]
-  },
-  {
-    slug: "tommy-tuberville",
-    name: "Tommy Tuberville",
-    chamber: "Senate",
-    party: "Republican",
-    stateDistrict: "Alabama (Senior Senator)",
-    committees: ["Senate Armed Services Committee", "Agriculture, Nutrition & Forestry", "Veterans' Affairs"],
-    recentTrades: [
-      {
-        ticker: "CELH",
-        assetName: "Celsius Holdings",
-        type: "Purchase (Common Stock)",
-        amount: "$100,000 - $250,000",
-        date: "2026-06-25",
-        lagDays: 58,
-        stalenessStatus: "LATE_FILER",
-        stalenessBadge: "🛑 Late Filer (58d lag)",
-        alignmentScore: 48,
-        thesis: "Consumer staples and distribution expansion; non-compliant disclosure with severe time-decay penalty."
-      }
-    ]
-  },
-  {
-    slug: "michael-mccaul",
-    name: "Michael McCaul",
-    chamber: "House",
-    party: "Republican",
-    stateDistrict: "TX-10 (Austin/Houston)",
-    committees: ["Foreign Affairs Committee (Chairman)", "Homeland Security"],
-    recentTrades: [
-      {
-        ticker: "NVO",
-        assetName: "Novo Nordisk A/S",
-        type: "Purchase (Common Stock)",
-        amount: "$250,000 - $500,000",
-        date: "2026-08-02",
-        lagDays: 16,
-        stalenessStatus: "STANDARD",
-        stalenessBadge: "⏳ Standard (16d lag)",
-        alignmentScore: 92,
-        thesis: "Transatlantic pharmaceutical supply chain discussions and federal healthcare Medicare GLP-1 reimbursement expansion deliberations."
-      }
-    ]
-  },
-  {
-    slug: "mark-green",
-    name: "Mark Green",
-    chamber: "House",
-    party: "Republican",
-    stateDistrict: "TX-07 (Clarksville)",
-    committees: ["Homeland Security (Chairman)", "Foreign Affairs"],
-    recentTrades: [
-      {
-        ticker: "TSM",
-        assetName: "Taiwan Semiconductor Mfg",
-        type: "Purchase (Common Stock)",
-        amount: "$500,000 - $1,000,000",
-        date: "2026-08-04",
-        lagDays: 15,
-        stalenessStatus: "FRESH",
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        alignmentScore: 91,
-        thesis: "Direct involvement in CHIPS Act national security defense allocations and Indo-Pacific supply-chain resilience."
-      }
-    ]
-  },
-  {
-    slug: "ro-khanna",
-    name: "Ro Khanna",
-    chamber: "House",
-    party: "Democrat",
-    stateDistrict: "CA-17 (Silicon Valley)",
-    committees: ["Armed Services (Cyber, Innovative Tech)", "Oversight & Accountability"],
-    recentTrades: [
-      {
-        ticker: "IONQ",
-        assetName: "IonQ Inc.",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-05",
-        lagDays: 16,
-        stalenessStatus: "STANDARD",
-        stalenessBadge: "⏳ Standard (16d lag)",
-        alignmentScore: 89,
-        thesis: "Oversight of federal quantum computing appropriations and DoD cryptographic transition initiatives."
-      }
-    ]
-  },
-  {
-    slug: "josh-gottheimer",
-    name: "Josh Gottheimer",
-    chamber: "House",
-    party: "Democrat",
-    stateDistrict: "NJ-05",
-    committees: ["Financial Services (Capital Markets)", "Permanent Select Committee on Intelligence"],
-    recentTrades: [
-      {
-        ticker: "COIN",
-        assetName: "Coinbase Global",
-        type: "Purchase (Common Stock)",
-        amount: "$100,000 - $250,000",
-        date: "2026-08-08",
-        lagDays: 14,
-        stalenessStatus: "FRESH",
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        alignmentScore: 93,
-        thesis: "Deliberations on market structure reform legislation and digital asset regulatory clarity bills."
-      }
-    ]
-  },
-  {
-    slug: "sheldon-whitehouse",
-    name: "Sheldon Whitehouse",
-    chamber: "Senate",
-    party: "Democrat",
-    stateDistrict: "Rhode Island (Senior Senator)",
-    committees: ["Senate Budget Committee (Chairman)", "Finance", "Environment & Public Works"],
-    recentTrades: [
-      {
-        ticker: "VRT",
-        assetName: "Vertiv Holdings",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-11",
-        lagDays: 13,
-        stalenessStatus: "FRESH",
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        alignmentScore: 86,
-        thesis: "Federal grid modernization and green energy cooling infrastructure tax incentive alignment."
-      }
-    ]
-  }
-];
+import {
+  POLITICIAN_DATABASE,
+  type PoliticianProfile,
+  type PoliticianTrade,
+} from "../../../lib/seoCatalogs";
 
 export function generateStaticParams() {
   return POLITICIAN_DATABASE.map(p => ({ slug: p.slug }));
@@ -243,6 +37,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       url: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `🏛️ ${profile.name} Portfolio: Congressional STOCK Act Disclosures`,
+      description: `Track securities transactions, committee oversight overlaps, and Legislative Alignment Index for ${profile.name}.`,
+      images: ["/og-image.png"],
+      creator: "@ARXTerminal",
     },
     alternates: {
       canonical: `https://www.arxterminal.com/politician/${params.slug.toLowerCase()}/`,

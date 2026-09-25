@@ -9,177 +9,11 @@ interface PageProps {
   };
 }
 
-interface CommitteeDefinition {
-  slug: string;
-  name: string;
-  chamber: "House" | "Senate" | "Joint";
-  jurisdictionSummary: string;
-  regulatedSectors: string[];
-  keyMembers: { name: string; slug: string; party: string }[];
-  trades: {
-    politician: string;
-    politicianSlug: string;
-    ticker: string;
-    assetName: string;
-    type: string;
-    amount: string;
-    date: string;
-    alignmentScore: number;
-    stalenessBadge: string;
-    thesis: string;
-  }[];
-}
-
-const COMMITTEE_DATABASE: CommitteeDefinition[] = [
-  {
-    slug: "armed-services",
-    name: "House & Senate Armed Services Committees",
-    chamber: "Joint",
-    jurisdictionSummary: "Direct statutory oversight and annual National Defense Authorization Act (NDAA) budget allocations for Department of Defense procurement, military AI telemetry, cybersecurity, and aerospace defense contracting.",
-    regulatedSectors: ["Aerospace & Defense", "Military AI & Telemetry", "Autonomous Drone Swarms", "Defense Cybersecurity"],
-    keyMembers: [
-      { name: "Sen. Tommy Tuberville", slug: "tommy-tuberville", party: "R-AL" },
-      { name: "Rep. Ro Khanna", slug: "ro-khanna", party: "D-CA" }
-    ],
-    trades: [
-      {
-        politician: "Rep. Ro Khanna (D-CA)",
-        politicianSlug: "ro-khanna",
-        ticker: "IONQ",
-        assetName: "IonQ Inc.",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-05",
-        alignmentScore: 89,
-        stalenessBadge: "⏳ Standard (16d lag)",
-        thesis: "Oversight of federal quantum computing appropriations and DoD cryptographic transition initiatives."
-      }
-    ]
-  },
-  {
-    slug: "energy-commerce",
-    name: "House Energy & Commerce Committee",
-    chamber: "House",
-    jurisdictionSummary: "Broadest legislative jurisdiction over telecommunications, semiconductor supply chains, energy grid modernization, pharmaceutical drug manufacturing, and interstate commerce regulations.",
-    regulatedSectors: ["Semiconductors", "Datacenter Power Infrastructure", "Telecommunications", "Biotechnology"],
-    keyMembers: [
-      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX" },
-      { name: "Rep. Nancy Pelosi (Leadership)", slug: "nancy-pelosi", party: "D-CA" }
-    ],
-    trades: [
-      {
-        politician: "Rep. Nancy Pelosi (D-CA)",
-        politicianSlug: "nancy-pelosi",
-        ticker: "NVDA",
-        assetName: "NVIDIA Corporation",
-        type: "Purchase (Call Options)",
-        amount: "$1,000,000 - $5,000,000",
-        date: "2026-07-28",
-        alignmentScore: 94,
-        stalenessBadge: "⏳ Standard (17d lag)",
-        thesis: "Strategic timing ahead of federal AI compute export rule revisions and next-generation datacenter infrastructure appropriations."
-      },
-      {
-        politician: "Rep. Dan Crenshaw (R-TX)",
-        politicianSlug: "dan-crenshaw",
-        ticker: "PLTR",
-        assetName: "Palantir Technologies",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-10",
-        alignmentScore: 95,
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        thesis: "Direct oversight of intelligence community software procurement and defense AI telemetry systems."
-      }
-    ]
-  },
-  {
-    slug: "intelligence",
-    name: "House Permanent Select Committee on Intelligence",
-    chamber: "House",
-    jurisdictionSummary: "Classified oversight of the 18 United States intelligence agencies (CIA, NSA, DIA, NGA, NRO), cyber warfare capabilities, and sovereign national security software platforms.",
-    regulatedSectors: ["Sovereign Enterprise Software", "Classified Cloud Hosting", "Signals Intelligence", "Satellite Reconnaissance"],
-    keyMembers: [
-      { name: "Rep. Dan Crenshaw", slug: "dan-crenshaw", party: "R-TX" },
-      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ" }
-    ],
-    trades: [
-      {
-        politician: "Rep. Dan Crenshaw (R-TX)",
-        politicianSlug: "dan-crenshaw",
-        ticker: "PLTR",
-        assetName: "Palantir Technologies",
-        type: "Purchase (Common Stock)",
-        amount: "$50,000 - $100,000",
-        date: "2026-08-10",
-        alignmentScore: 95,
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        thesis: "Direct oversight of intelligence community software procurement and defense AI telemetry systems."
-      }
-    ]
-  },
-  {
-    slug: "foreign-affairs",
-    name: "House Foreign Affairs & Senate Foreign Relations",
-    chamber: "Joint",
-    jurisdictionSummary: "Oversight of international treaties, pharmaceutical import/export supply-chain agreements, foreign military sales, and geopolitical tech export restrictions.",
-    regulatedSectors: ["Global Pharmaceutical Supply Chains", "Semiconductor Foundry Exports", "Cross-Border Energy Infrastructure"],
-    keyMembers: [
-      { name: "Rep. Michael McCaul (Chairman)", slug: "michael-mccaul", party: "R-TX" },
-      { name: "Rep. Mark Green", slug: "mark-green", party: "R-TN" }
-    ],
-    trades: [
-      {
-        politician: "Rep. Michael McCaul (R-TX)",
-        politicianSlug: "michael-mccaul",
-        ticker: "NVO",
-        assetName: "Novo Nordisk A/S",
-        type: "Purchase (Common Stock)",
-        amount: "$250,000 - $500,000",
-        date: "2026-08-02",
-        alignmentScore: 92,
-        stalenessBadge: "⏳ Standard (16d lag)",
-        thesis: "Transatlantic pharmaceutical supply chain discussions and federal healthcare Medicare GLP-1 reimbursement expansion deliberations."
-      },
-      {
-        politician: "Rep. Mark Green (R-TN)",
-        politicianSlug: "mark-green",
-        ticker: "TSM",
-        assetName: "Taiwan Semiconductor Mfg",
-        type: "Purchase (Common Stock)",
-        amount: "$500,000 - $1,000,000",
-        date: "2026-08-04",
-        alignmentScore: 91,
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        thesis: "Direct involvement in CHIPS Act national security defense allocations and Indo-Pacific supply-chain resilience."
-      }
-    ]
-  },
-  {
-    slug: "financial-services",
-    name: "House Financial Services & Senate Banking",
-    chamber: "Joint",
-    jurisdictionSummary: "Regulatory oversight of the SEC, Federal Reserve, CFTC, digital asset market structure legislation, public company reporting standards, and banking capital liquidity ratios.",
-    regulatedSectors: ["Digital Asset Exchanges", "Commercial Banking", "Asset Management", "Payment Processors"],
-    keyMembers: [
-      { name: "Rep. Josh Gottheimer", slug: "josh-gottheimer", party: "D-NJ" }
-    ],
-    trades: [
-      {
-        politician: "Rep. Josh Gottheimer (D-NJ)",
-        politicianSlug: "josh-gottheimer",
-        ticker: "COIN",
-        assetName: "Coinbase Global",
-        type: "Purchase (Common Stock)",
-        amount: "$100,000 - $250,000",
-        date: "2026-08-08",
-        alignmentScore: 93,
-        stalenessBadge: "⚡ Fresh (<15d lag)",
-        thesis: "Deliberations on market structure reform legislation and digital asset regulatory clarity bills."
-      }
-    ]
-  }
-];
+import {
+  COMMITTEE_DATABASE,
+  type CommitteeDefinition,
+  type CommitteeTrade,
+} from "../../../lib/seoCatalogs";
 
 export function generateStaticParams() {
   return COMMITTEE_DATABASE.map(c => ({ slug: c.slug }));
@@ -203,6 +37,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       url: `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `🏛️ ${committee.name} Stock Trades & Legislative Conflict Tracking`,
+      description: `Track securities transactions and STOCK Act disclosures by members of the ${committee.name}.`,
+      images: ["/og-image.png"],
+      creator: "@ARXTerminal",
     },
     alternates: {
       canonical: `https://www.arxterminal.com/committee/${params.slug.toLowerCase()}/`,

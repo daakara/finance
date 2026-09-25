@@ -10,15 +10,10 @@ interface PageProps {
   };
 }
 
-const COMPARISON_PAIRS = [
-  { pair: "nvo-vs-lly", a: "NVO", b: "LLY", label: "Novo Nordisk (NVO) vs. Eli Lilly (LLY)" },
-  { pair: "spy-vs-qqq", a: "SPY", b: "QQQ", label: "S&P 500 (SPY) vs. Nasdaq-100 (QQQ)" },
-  { pair: "nvda-vs-aapl", a: "NVDA", b: "AAPL", label: "NVIDIA (NVDA) vs. Apple (AAPL)" },
-  { pair: "tsla-vs-pltr", a: "TSLA", b: "PLTR", label: "Tesla (TSLA) vs. Palantir (PLTR)" },
-  { pair: "amd-vs-nvda", a: "AMD", b: "NVDA", label: "AMD (AMD) vs. NVIDIA (NVDA)" },
-  { pair: "msft-vs-aapl", a: "MSFT", b: "AAPL", label: "Microsoft (MSFT) vs. Apple (AAPL)" },
-  { pair: "cprx-vs-powi", a: "CPRX", b: "POWI", label: "Catalyst Pharma (CPRX) vs. Power Integrations (POWI)" },
-];
+import {
+  COMPARISON_PAIRS,
+  type ComparisonPair,
+} from "../../../lib/seoCatalogs";
 
 export function generateStaticParams() {
   return COMPARISON_PAIRS.map(p => ({ pair: p.pair }));
@@ -44,6 +39,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       url: `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
       siteName: "ARX Terminal",
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${nameA} (${match.a}) vs. ${nameB} (${match.b}) Comparison Matrix`,
+      description: `Compare valuation, growth CAGR, Piotroski F-Score, and volatility invalidation levels between ${match.a} and ${match.b}.`,
+      images: ["/og-image.png"],
+      creator: "@ARXTerminal",
     },
     alternates: {
       canonical: `https://www.arxterminal.com/compare/${params.pair.toLowerCase()}/`,
