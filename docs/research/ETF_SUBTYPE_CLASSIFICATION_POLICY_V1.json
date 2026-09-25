@@ -1,0 +1,196 @@
+{
+  "policy_name": "ETF_CONFIRMATORY_SUBTYPE_CLASSIFICATION_POLICY",
+  "policy_version": "1.0.0",
+  "effective_spec_version": "1.0.3",
+  "spec_commit": "a5efc176da9dc9fd28bc47e740ab51f9e3d66f32",
+  "created_at": "2026-09-25T17:05:00Z",
+  "governance_status": "FROZEN_PRE_EXECUTION",
+  "primary_purpose": "Systematic, source-backed classification of research-eligible ETF structures into the five preregistered confirmatory subtypes without curated allowlist dependency.",
+  "positive_certification_restrictions": {
+    "heuristic_name_match_can_certify_confirmatory_subtype": false,
+    "name_regex_restricted_to_negative_safety_net_only": true,
+    "legacy_curated_allowlist_as_sole_authority_prohibited": true,
+    "unevaluated_etf_defaults_to_other_etf": false
+  },
+  "source_hierarchy": [
+    {
+      "tier": 1,
+      "name": "VERIFIED_REGISTRY_SUBTYPE_OVERRIDE",
+      "authority": "SEC_FORM_S6_S1_N1A_PROSPECTUS_INSPECTION",
+      "description": "Point-in-time verified physical grantor trusts allowlist and verified statutory UIT index allowlists with immutable prospectus provenance."
+    },
+    {
+      "tier": 2,
+      "name": "STRUCTURED_REGULATORY_HOLDINGS_AND_MANDATES",
+      "authority": "SEC_EDGAR_FORM_NPORT_AND_NCEN",
+      "description": "Quarterly N-PORT portfolio holdings value weights (Treasury, agency, corporate debt, common equity) and Form N-CEN Item C.3.b Index Fund flags."
+    },
+    {
+      "tier": 3,
+      "name": "STRUCTURED_PROVIDER_CATEGORY_TAXONOMY",
+      "authority": "LICENSED_CATEGORY_DIRECTORY",
+      "description": "Independent, authoritative third-party fund category classifications (e.g. Morningstar Category, CRSP, Bloomberg Industry Classification System)."
+    },
+    {
+      "tier": 4,
+      "name": "FAIL_CLOSED_UNRESOLVED_SUBTYPE_QUARANTINE",
+      "authority": "INSUFFICIENT_SOURCE_EVIDENCE",
+      "description": "Instruments lacking authoritative portfolio or category evidence remain UNRESOLVED / PENDING_SYSTEMATIC_CLASSIFICATION and are barred from confirmatory candidate pool."
+    },
+    {
+      "tier": 5,
+      "name": "EVALUATED_EXPLORATORY_ASSIGNMENT",
+      "authority": "AFFIRMATIVE_NON_CONFIRMATORY_EVIDENCE",
+      "description": "Instruments affirmatively evaluated and proven to follow non-confirmatory mandates (multi-asset, active equity, covered call, thematic, crypto, leveraged/inverse) receive OTHER_ETF / EXPLORATORY_ONLY."
+    }
+  ],
+  "portfolio_exposure_metrics": {
+    "equity_common_pct": "Percentage of portfolio net assets invested in common stock",
+    "equity_preferred_pct": "Percentage of portfolio net assets invested in preferred stock",
+    "total_equity_pct": "equity_common_pct + equity_preferred_pct",
+    "us_treasury_pct": "Percentage of portfolio net assets invested in U.S. Treasury bills, notes, bonds, and TIPS",
+    "us_agency_pct": "Percentage of portfolio net assets invested in U.S. government agency securities",
+    "total_govt_pct": "us_treasury_pct + us_agency_pct",
+    "corporate_debt_pct": "Percentage of portfolio net assets invested in corporate debt obligations (investment-grade and high-yield)",
+    "mortgage_backed_pct": "Percentage of portfolio net assets invested in agency/non-agency mortgage-backed securities and asset-backed securities",
+    "total_credit_pct": "corporate_debt_pct + mortgage_backed_pct",
+    "physical_precious_metal_pct": "Percentage of net assets represented by physical allocated bullion holdings in custody",
+    "is_index_fund": "Form N-CEN Item C.3.b affirmation that fund is an index fund tracking a designated securities index",
+    "is_single_sector_concentrated": "Determination that >= 80% of equity exposure is concentrated in a single GICS/ICB sector"
+  },
+  "confirmatory_subtype_rules": {
+    "EQUITY_INDEX": {
+      "required_legal_structures": [
+        "1940_ACT_OPEN_END_ETF",
+        "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+      ],
+      "required_conditions": [
+        "total_equity_pct >= 0.80",
+        "is_index_fund == true",
+        "is_single_sector_concentrated == false"
+      ],
+      "exclusion_conditions": [
+        "total_govt_pct >= 0.20",
+        "total_credit_pct >= 0.20",
+        "is_single_sector_concentrated == true"
+      ],
+      "benchmark": "SPY",
+      "hypotheses_features": [
+        "f1_trend_ratio",
+        "f2_relative_strength_60d",
+        "f3_rsi_regime_distance"
+      ]
+    },
+    "EQUITY_SECTOR": {
+      "required_legal_structures": [
+        "1940_ACT_OPEN_END_ETF"
+      ],
+      "required_conditions": [
+        "total_equity_pct >= 0.80",
+        "is_single_sector_concentrated == true"
+      ],
+      "exclusion_conditions": [
+        "total_equity_pct < 0.80",
+        "is_single_sector_concentrated == false"
+      ],
+      "systematic_authority_source": "STRUCTURED_SECTOR_TAXONOMY_OR_NPORT_GICS_AGGREGATE",
+      "systematic_authority_status": "REQUIRES_PORTFOLIO_INDUSTRY_BREAKDOWN",
+      "benchmark": "SPY",
+      "hypotheses_features": [
+        "f1_trend_ratio",
+        "f2_relative_strength_60d",
+        "f3_rsi_regime_distance"
+      ]
+    },
+    "FIXED_INCOME_GOVERNMENT": {
+      "required_legal_structures": [
+        "1940_ACT_OPEN_END_ETF"
+      ],
+      "required_conditions": [
+        "total_govt_pct >= 0.80",
+        "total_credit_pct < 0.10",
+        "total_equity_pct < 0.05"
+      ],
+      "exclusion_conditions": [
+        "total_govt_pct < 0.80",
+        "total_credit_pct >= 0.10"
+      ],
+      "qualifying_issuers": [
+        "US_TREASURY_BILLS_NOTES_BONDS",
+        "US_TREASURY_INFLATION_PROTECTED_SECURITIES_TIPS",
+        "US_GOVERNMENT_AGENCIES"
+      ],
+      "benchmark": "IEF",
+      "hypotheses_features": [
+        "f1_trend_ratio",
+        "f5_yield_curve_slope",
+        "f6_rate_momentum_20d"
+      ]
+    },
+    "FIXED_INCOME_CREDIT": {
+      "required_legal_structures": [
+        "1940_ACT_OPEN_END_ETF"
+      ],
+      "required_conditions": [
+        "total_credit_pct >= 0.50",
+        "total_govt_pct < 0.50",
+        "total_equity_pct < 0.05"
+      ],
+      "exclusion_conditions": [
+        "total_credit_pct < 0.50",
+        "total_govt_pct >= 0.50",
+        "total_equity_pct >= 0.05"
+      ],
+      "qualifying_instruments": [
+        "US_CORPORATE_INVESTMENT_GRADE_BONDS",
+        "US_CORPORATE_HIGH_YIELD_BONDS",
+        "COMMERCIAL_MORTGAGE_BACKED_SECURITIES"
+      ],
+      "mixed_aggregate_portfolio_policy": "Aggregate bond funds (e.g. AGG, BND) containing >=50% government/agency debt and <50% corporate credit fail the pure credit threshold and must NOT be classified as FIXED_INCOME_CREDIT unless explicitly covered by a dedicated aggregate bond research subtype.",
+      "benchmark": "LQD",
+      "hypotheses_features": [
+        "f1_trend_ratio",
+        "f8_relative_strength_vs_lqd",
+        "f12_baa_corporate_spread_trend"
+      ]
+    },
+    "COMMODITY_PHYSICAL": {
+      "required_legal_structures": [
+        "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST"
+      ],
+      "required_conditions": [
+        "legal_structure == 'PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST'",
+        "physical_precious_metal_pct >= 0.90"
+      ],
+      "exclusion_conditions": [
+        "COMMODITY_FUTURES_POOL",
+        "EXCHANGE_TRADED_NOTE",
+        "derivative_commodity_exposure > 0.05"
+      ],
+      "benchmark": "BIL",
+      "hypotheses_features": [
+        "f9_real_yield_regime",
+        "f10_dxy_trend",
+        "f11_bullion_breakout"
+      ]
+    }
+  },
+  "ambiguity_precedence_hierarchy": [
+    "COMMODITY_PHYSICAL",
+    "FIXED_INCOME_GOVERNMENT",
+    "FIXED_INCOME_CREDIT",
+    "EQUITY_SECTOR",
+    "EQUITY_INDEX",
+    "OTHER_ETF"
+  ],
+  "data_completeness_and_fail_closed_policy": {
+    "completeness_flag": "SUBTYPE_EVIDENCE_COMPLETE",
+    "insufficient_data_state": {
+      "research_subtype": "UNRESOLVED",
+      "research_subtype_state": "PENDING_SYSTEMATIC_CLASSIFICATION",
+      "subtype_authorized": false,
+      "exclusion_reason": "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+    },
+    "default_to_other_prohibited": true
+  }
+}

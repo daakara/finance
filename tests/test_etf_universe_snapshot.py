@@ -588,7 +588,7 @@ def test_regex_false_positive_elimination_fixed_income():
 
 
 def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
-    """Verifies PDBC, AMLP, MLPX are structure-verified 1940 Act open-end ETFs with unauthorized subtype."""
+    """Verifies PDBC, AMLP, MLPX are structure-verified 1940 Act open-end ETFs with unresolved/unauthorized subtype."""
     sec_info = {
         "cik": "0001601082",
         "series_id": "S000047240",
@@ -601,6 +601,7 @@ def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
         ("AMLP", "Alerian MLP ETF"),
         ("MLPX", "Global X MLP & Energy Infrastructure ETF")
     ]:
+        # Case 1: Unevaluated (no structured metadata) -> UNRESOLVED / PENDING_SYSTEMATIC_CLASSIFICATION
         rec = ClassificationAuthorityEngine.classify_security(
             symbol=sym,
             security_name=name,
@@ -611,11 +612,29 @@ def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
         assert rec["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
         assert rec["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
         assert rec["structure_verified"] is True
-        assert rec["research_subtype"] == "OTHER_ETF"
-        assert rec["research_subtype_state"] == "EXPLORATORY_ONLY"
+        assert rec["research_subtype"] == "UNRESOLVED"
+        assert rec["research_subtype_state"] == "PENDING_SYSTEMATIC_CLASSIFICATION"
         assert rec["subtype_authorized"] is False
         assert rec["is_research_eligible"] is False
-        assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+        assert rec["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+
+        # Case 2: Explicitly evaluated non-confirmatory metadata -> OTHER_ETF / EXPLORATORY_ONLY
+        rec_eval = ClassificationAuthorityEngine.classify_security(
+            symbol=sym,
+            security_name=name,
+            listing_exchange="P",
+            nasdaq_etf_flag=True,
+            structured_metadata={"research_subtype": "OTHER_ETF"},
+            sec_mf_info=sec_info
+        )
+        assert rec_eval["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert rec_eval["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+        assert rec_eval["structure_verified"] is True
+        assert rec_eval["research_subtype"] == "OTHER_ETF"
+        assert rec_eval["research_subtype_state"] == "EXPLORATORY_ONLY"
+        assert rec_eval["subtype_authorized"] is False
+        assert rec_eval["is_research_eligible"] is False
+        assert rec_eval["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
 
 
 def test_tier_2_sec_mf_directory_classification():
@@ -639,9 +658,10 @@ def test_tier_2_sec_mf_directory_classification():
     assert rec["structure_verified"] is True
     assert rec["classification_source"] == "TIER_2_STRUCTURED_PROVIDER_METADATA"
     assert "SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_0000895421" in rec["classification_evidence"]
-    assert rec["research_subtype"] == "OTHER_ETF"
+    assert rec["research_subtype"] == "UNRESOLVED"
+    assert rec["research_subtype_state"] == "PENDING_SYSTEMATIC_CLASSIFICATION"
     assert rec["subtype_authorized"] is False
-    assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+    assert rec["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
 
 
 def test_tier_2_legal_form_verification_and_fail_closed():
@@ -789,3 +809,63 @@ def test_tier_2_legal_form_verification_and_fail_closed():
         assert rec7["vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
         assert rec7["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
         assert rec7["classification_source"] == "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY"
+
+
+def test_unevaluated_subtype_semantics_fail_closed():
+    """Confirms fail-closed semantics for subtype classification:
+    1. Verified legal structure without subtype evidence maps to UNRESOLVED / PENDING_SYSTEMATIC_CLASSIFICATION, NOT OTHER_ETF.
+    2. OTHER_ETF is assigned ONLY when explicit non-confirmatory subtype metadata exists.
+    3. Fund name heuristics (regex) CANNOT certify positive confirmatory subtypes.
+    """
+    sec_info = {
+        "cik": "0000895421",
+        "series_id": "S000099999",
+        "class_id": "C000099999",
+        "registration_form": "N-1A",
+        "is_active": True
+    }
+
+    # Case 1: Unevaluated fund with suggestive name (e.g. 'Treasury Bond Index') MUST NOT be certified by name
+    rec1 = ClassificationAuthorityEngine.classify_security(
+        symbol="FAKETRS",
+        security_name="Generic Treasury Bond Index ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info
+    )
+    assert rec1["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert rec1["structure_verified"] is True
+    # MUST NOT be FIXED_INCOME_GOVERNMENT purely on name
+    assert rec1["research_subtype"] == "UNRESOLVED"
+    assert rec1["research_subtype_state"] == "PENDING_SYSTEMATIC_CLASSIFICATION"
+    assert rec1["subtype_authorized"] is False
+    assert rec1["is_research_eligible"] is False
+    assert rec1["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+
+    # Case 2: Explicit non-confirmatory metadata maps to OTHER_ETF / EXPLORATORY_ONLY
+    rec2 = ClassificationAuthorityEngine.classify_security(
+        symbol="FAKETRS",
+        security_name="Generic Treasury Bond Index ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        structured_metadata={"research_subtype": "OTHER_ETF"},
+        sec_mf_info=sec_info
+    )
+    assert rec2["research_subtype"] == "OTHER_ETF"
+    assert rec2["research_subtype_state"] == "EXPLORATORY_ONLY"
+    assert rec2["subtype_authorized"] is False
+    assert rec2["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+
+    # Case 3: Confirmatory subtype requires verified registry entry or explicit authorized source
+    rec3 = ClassificationAuthorityEngine.classify_security(
+        symbol="TLT",
+        security_name="iShares 20+ Year Treasury Bond ETF",
+        listing_exchange="Q",
+        nasdaq_etf_flag=True,
+        sec_mf_info=sec_info
+    )
+    assert rec3["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert rec3["structure_verified"] is True
+    assert rec3["research_subtype"] == "FIXED_INCOME_GOVERNMENT"
+    assert rec3["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+    assert rec3["subtype_authorized"] is True

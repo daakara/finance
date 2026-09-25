@@ -763,10 +763,11 @@ class ClassificationAuthorityEngine:
                 research_subtype_state = "CONFIRMATORY_SUPPORTED" if st in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
                 subtype_authorized = (st in CONFIRMATORY_SUBTYPES)
             else:
-                # Verified legal structure (e.g. via SEC registration) but not in authorized confirmatory subtype
-                research_subtype = "OTHER_ETF"
-                research_subtype_state = "EXPLORATORY_ONLY"
+                # Verified legal structure (e.g. via SEC registration) but not systematically evaluated against subtype policy
+                research_subtype = "UNRESOLVED"
+                research_subtype_state = "PENDING_SYSTEMATIC_CLASSIFICATION"
                 subtype_authorized = False
+                exclusion_reason = "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
 
             if not subtype_authorized and exclusion_reason is None:
                 exclusion_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
