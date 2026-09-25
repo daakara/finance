@@ -76,8 +76,9 @@ def run():
     
     # Check reconciliation
     # reconciliation residual = abs(net_assets - total_holding_val - cash) / net_assets
-    merged['reconciliation_diff'] = merged['NET_ASSETS'] - merged['total_holding_val']
-    merged['reconciliation_ratio'] = merged['total_holding_val'] / merged['NET_ASSETS']
+    total_investments_and_cash = merged['total_holding_val'] + merged['CASH_NOT_RPTD_IN_C_OR_D'].fillna(0.0)
+    merged['reconciliation_diff'] = merged['NET_ASSETS'] - total_investments_and_cash
+    merged['reconciliation_ratio'] = total_investments_and_cash / merged['NET_ASSETS']
     
     # Save
     out_path = Path('data/research/cache/nport_derived/portfolio_metrics.parquet')

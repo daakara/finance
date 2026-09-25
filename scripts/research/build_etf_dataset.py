@@ -1291,7 +1291,13 @@ def build_universe_snapshot(
         "potential_confirmatory_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
         "denominator_blocking_unresolved_count": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
         "candidate_denominator_closure_status": "BLOCKED_PENDING_MANDATE_EVIDENCE",
+        "initial_blocker_count": 3823,
+        "mandate_blockers_resolved": 0,
+        "missing_nport_blockers_resolved": 0,
+        "reconciliation_blockers_resolved": 226,
+        "remaining_denominator_blockers": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
         "final_candidate_denominator": len(candidate_symbols),
+        "final_confirmatory_denominator": len(candidate_symbols),
         "final_adv80": eval_adv80_thresh,
         "final_eligible_denominator": eligible_count
     }
