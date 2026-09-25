@@ -4,12 +4,12 @@
   "research_spec_git_commit": "a5efc1777d130c23631986422731b7efd75e4624",
   "classification_rule_version": "1.0.3",
   "discovery_source_sha256": "e1968b129dbcd8f570b178c057f7515e66895098b4a58f86593c42e6886cc604",
-  "discovery_retrieval_timestamp": "2026-09-25T15:07:18Z",
-  "snapshot_sha256": "d96305f3e5d7091350d428e2d1a1c50c30d2b6224c51ce7b149f84ee55c8aa6b",
+  "discovery_retrieval_timestamp": "2026-09-25T15:10:15Z",
+  "snapshot_sha256": "fe5e0ce2af0e818446c762ee71e9922c391ac7fefe1ae6d34d25f4a6d936b750",
   "row_count": 5733,
   "eligible_row_count": 13,
   "excluded_row_count": 5720,
-  "generated_at": "2026-09-25T15:08:16Z",
-  "builder_git_commit": "87aa356451ca24172425d8b1fb83c3a1aa6c914c",
+  "generated_at": "2026-09-25T15:11:04Z",
+  "builder_git_commit": "ef7810e51634cf0d06fa576f678ae0b7a18092a3",
   "builder_file_sha256": "bb3b8167cf5f220232faa87545eeb495b4a6fd84d79ae3ac77a31275f869a353"
 }
