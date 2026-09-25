@@ -7,19 +7,22 @@ Enforces:
 1. POINT_IN_TIME_WITHIN_OBSERVABLE_SURVIVOR_UNIVERSE estimand with declared survivorship bias.
 2. 5-Tier Classification Authority Hierarchy:
    - Tier 1: Exchange Discovery Metadata (NasdaqTraded directory)
-   - Tier 2: Structured Provider Metadata
-   - Tier 3: Verified Vehicle-Structure Registries
-   - Tier 4: Defensive Negative Heuristics (Negative safety net ONLY; heuristic inclusion prohibited)
+   - Tier 2: Structured Provider Metadata (SEC filings / provider attestation)
+   - Tier 3: Verified Vehicle-Structure Registries (Point-in-time verified allowlists & blocklists with formal provenance)
+   - Tier 4: Defensive Negative Heuristics (Negative safety net ONLY for unverified instruments; cannot override Tier 3 positive registries)
    - Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from eligibility)
-3. Zero forward-looking leakage (all features at date t use info <= t close).
-4. Conservative Macro As-Of Join (macro observation date <= t - 1).
-5. Deprecation of f7; integration of f12 (BAA10Y) for FIXED_INCOME_CREDIT.
-6. Daily rolling ADV60 >= cross-sectional 80th percentile filter & min 250 trading sessions.
-7. Physical separation of observations and forward outcome labels.
-8. Source cache manifest tracking (data/research/source_cache_manifest_v1.json).
-9. Universe snapshot generation (docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet) and manifest.
-10. Cryptographic manifest binding spec SHA, code SHA, dataset SHAs, and row counts.
-11. Absolutely NO model fitting, weighting, or threshold tuning.
+3. Composite Research Eligibility:
+   IS_RESEARCH_ELIGIBLE = DISCOVERED AND STRUCTURE_VERIFIED AND SUBTYPE_AUTHORIZED AND MARKET_DATA_VALID AND (HISTORY >= 250) AND (ADV60 >= ADV80)
+   Structure-only eligibility is impossible.
+4. Deterministic exclusion reason precedence.
+5. Zero forward-looking leakage (all features at date t use info <= t close).
+6. Conservative Macro As-Of Join (macro observation date <= t - 1).
+7. Deprecation of f7; integration of f12 (BAA10Y) for FIXED_INCOME_CREDIT.
+8. Physical separation of observations and forward outcome labels.
+9. Source cache manifest tracking (data/research/source_cache_manifest_v1.json).
+10. Universe snapshot generation (docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet) and manifest.
+11. Cryptographic manifest binding spec SHA, code SHA, dataset SHAs, and row counts.
+12. Absolutely NO model fitting, weighting, or threshold tuning.
 """
 
 import os
@@ -29,6 +32,7 @@ import re
 import hashlib
 import logging
 import subprocess
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -58,47 +62,135 @@ MACRO_SERIES = ["DGS10", "T10Y2Y", "BAA10Y", "DFII10"]
 START_DATE = "2007-04-11"  # HYG inception
 END_DATE = "2025-12-31"    # End of 2025 Historical Holdout
 
+
 # --------------------------------------------------------------------------
-# TIER 3 REGISTRIES: Verified Vehicle Structures
+# REGISTRY PROVENANCE DEFINITIONS (Section 7)
 # --------------------------------------------------------------------------
-PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS = {
-    "GLD", "IAU", "SLV", "SGOL", "SIVR", "PPLT", "PALL", "BAR", "OUNZ", "AAAU"
-}
+@dataclass(frozen=True)
+class RegistryMetadata:
+    registry_name: str
+    entries: frozenset
+    source_authority: str
+    source_identifier: str
+    as_of_date: str
+    temporality: str  # "CURRENT"
+    update_policy: str
+    failure_policy: str
+    semantic_role: str
 
-KNOWN_COMMODITY_FUTURES_POOLS = {
-    "USO", "UNG", "BNO", "UGA", "CPER", "DBA", "DBC", "GSG", "PDBC", "WEAT", "CORN", "SOYB", "BOIL", "KOLD"
-}
 
-KNOWN_EXCHANGE_TRADED_NOTES = {
-    "AMJ", "SPLI", "USOI", "GLDI", "SLVO", "MLPX", "AMLP"
-}
+REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS = RegistryMetadata(
+    registry_name="PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS",
+    entries=frozenset({"GLD", "IAU", "SLV", "SGOL", "SIVR", "PPLT", "PALL", "BAR", "OUNZ", "AAAU"}),
+    source_authority="SEC_EDGAR_AND_TRUST_PROSPECTUSES",
+    source_identifier="SEC_SCHEDULE_13D_S1_FILINGS_PHYSICAL_BULLION_GRANTOR_TRUSTS",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_ANNUAL_REGISTRATION_AUDIT",
+    failure_policy="EXCLUDE_IF_NOT_EXPLICITLY_VERIFIED",
+    semantic_role="VERIFIED_POSITIVE_ALLOWLIST"
+)
 
-KNOWN_CRYPTO_PRODUCTS = {
-    "BITO", "IBIT", "FBTC", "ARKB", "BITB", "BTCO", "HODL", "BRRR", "EZBC", "ETHW", "ETHE", "FETH", "ETH"
-}
+REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS = RegistryMetadata(
+    registry_name="KNOWN_COMMODITY_FUTURES_POOLS",
+    entries=frozenset({"USO", "UNG", "BNO", "UGA", "CPER", "DBA", "DBC", "GSG", "PDBC", "WEAT", "CORN", "SOYB", "BOIL", "KOLD"}),
+    source_authority="CFTC_AND_SEC_EDGAR_K1_POOLS",
+    source_identifier="SEC_FORM_10K_COMMODITY_POOL_OPERATOR_DISCLOSURES",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_SEMIANNUAL_AUDIT",
+    failure_policy="FAIL_CLOSED_BLOCK",
+    semantic_role="VERIFIED_NEGATIVE_BLOCKLIST"
+)
 
-KNOWN_LEVERAGED_INVERSE_PRODUCTS = {
-    "TQQQ", "SQQQ", "UPRO", "SPXU", "SSO", "SDS", "QLD", "QID", "SOXL", "SOXS",
-    "LABU", "LABD", "NUGT", "DUST", "JNUG", "JDST", "UVXY", "SVXY", "TZA", "TNA", "FAS", "FAZ"
-}
+REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES = RegistryMetadata(
+    registry_name="KNOWN_EXCHANGE_TRADED_NOTES",
+    entries=frozenset({"AMJ", "SPLI", "USOI", "GLDI", "SLVO", "MLPX", "AMLP"}),
+    source_authority="ISSUER_DEBT_PROSPECTUSES",
+    source_identifier="SEC_FORM_424B2_UNSECURED_SENIOR_DEBT_OBLIGATIONS",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_SEMIANNUAL_AUDIT",
+    failure_policy="FAIL_CLOSED_BLOCK",
+    semantic_role="VERIFIED_NEGATIVE_BLOCKLIST"
+)
 
-KNOWN_VERIFIED_1940_ACT_ETFS = {
-    "EQUITY_INDEX": {
-        "SPY", "QQQ", "IWM", "DIA", "VOO", "IVV", "VTI", "SCHX", "RSP", "IJH", "IJR", "VB", "VO"
+REGISTRY_KNOWN_CRYPTO_PRODUCTS = RegistryMetadata(
+    registry_name="KNOWN_CRYPTO_PRODUCTS",
+    entries=frozenset({"BITO", "IBIT", "FBTC", "ARKB", "BITB", "BTCO", "HODL", "BRRR", "EZBC", "ETHW", "ETHE", "FETH", "ETH"}),
+    source_authority="SEC_DIGITAL_ASSET_PRODUCT_ORDERS",
+    source_identifier="SEC_RELEASE_34_99306_SPOT_AND_FUTURES_CRYPTO_EVALUATION",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_QUARTERLY_AUDIT",
+    failure_policy="FAIL_CLOSED_BLOCK",
+    semantic_role="VERIFIED_NEGATIVE_BLOCKLIST"
+)
+
+REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS = RegistryMetadata(
+    registry_name="KNOWN_LEVERAGED_INVERSE_PRODUCTS",
+    entries=frozenset({
+        "TQQQ", "SQQQ", "UPRO", "SPXU", "SSO", "SDS", "QLD", "QID", "SOXL", "SOXS",
+        "LABU", "LABD", "NUGT", "DUST", "JNUG", "JDST", "UVXY", "SVXY", "TZA", "TNA", "FAS", "FAZ"
+    }),
+    source_authority="FINRA_NOTICE_09_31_AND_PROSPECTUSES",
+    source_identifier="FINRA_NON_TRADITIONAL_GEARED_ETF_DISCLOSURES",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_SEMIANNUAL_AUDIT",
+    failure_policy="FAIL_CLOSED_BLOCK",
+    semantic_role="VERIFIED_NEGATIVE_BLOCKLIST"
+)
+
+@dataclass(frozen=True)
+class Subtyped1940ActRegistryMetadata:
+    registry_name: str
+    subtypes: dict
+    source_authority: str
+    source_identifier: str
+    as_of_date: str
+    temporality: str
+    update_policy: str
+    failure_policy: str
+    semantic_role: str
+
+    @property
+    def entries(self) -> frozenset:
+        all_syms = set()
+        for syms in self.subtypes.values():
+            all_syms.update(syms)
+        return frozenset(all_syms)
+
+
+REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS = Subtyped1940ActRegistryMetadata(
+    registry_name="KNOWN_VERIFIED_1940_ACT_ETFS",
+    subtypes={
+        "EQUITY_INDEX": frozenset({"SPY", "QQQ", "IWM", "DIA", "VOO", "IVV", "VTI", "SCHX", "RSP", "IJH", "IJR", "VB", "VO"}),
+        "EQUITY_SECTOR": frozenset({"XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XOP", "XBI", "SMH", "VNQ", "IYR", "ITB", "XHB", "KRE", "KBE"}),
+        "FIXED_INCOME_GOVERNMENT": frozenset({"TLT", "IEF", "SHY", "IEI", "GOVT", "VGSH", "VGIT", "VGLT", "SCHO", "SCHR", "SPTL"}),
+        "FIXED_INCOME_CREDIT": frozenset({"HYG", "LQD", "JNK", "VCIT", "VCSH", "BND", "AGG", "USIG", "FLOT", "SJNK", "HYLB", "VUSB"}),
+        "COMMODITY_PHYSICAL": REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS.entries,
     },
-    "EQUITY_SECTOR": {
-        "XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XOP", "XBI", "SMH", "VNQ", "IYR", "ITB", "XHB", "KRE", "KBE"
-    },
-    "FIXED_INCOME_GOVERNMENT": {
-        "TLT", "IEF", "SHY", "IEI", "GOVT", "VGSH", "VGIT", "VGLT", "SCHO", "SCHR", "SPTL"
-    },
-    "FIXED_INCOME_CREDIT": {
-        "HYG", "LQD", "JNK", "VCIT", "VCSH", "BND", "AGG", "USIG", "FLOT", "SJNK", "HYLB"
-    },
-    "COMMODITY_PHYSICAL": PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS,
-}
+    source_authority="SEC_INVESTMENT_COMPANY_ACT_OF_1940_REGISTRATIONS",
+    source_identifier="SEC_FORM_N1A_AND_ICA_1940_SERIES_FILINGS",
+    as_of_date="2026-09-25",
+    temporality="CURRENT",
+    update_policy="MANUAL_ANNUAL_REGISTRATION_AUDIT",
+    failure_policy="EXCLUDE_IF_NOT_EXPLICITLY_VERIFIED",
+    semantic_role="VERIFIED_POSITIVE_ALLOWLIST"
+)
 
-# Subtype support mapping
+# Registry inventory for testing and governance provenance verification
+ALL_REGISTRIES = [
+    REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS,
+    REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS,
+    REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES,
+    REGISTRY_KNOWN_CRYPTO_PRODUCTS,
+    REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS,
+    REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS,
+]
+
+# Supported subtype configurations
 CONFIRMATORY_SUBTYPES = {
     "EQUITY_INDEX",
     "EQUITY_SECTOR",
@@ -216,7 +308,6 @@ def parse_nasdaq_traded_content(
     if not lines:
         raise ValueError("Empty Nasdaq trader content")
 
-    # Extract trailer row if present: "File Creation Time: mmddyyyyhh:mm|||||"
     trailer_line = lines[-1]
     creation_time = None
     if "File Creation Time:" in trailer_line:
@@ -285,17 +376,21 @@ def fetch_nasdaq_traded_directory(
 
 
 # --------------------------------------------------------------------------
-# CLASSIFICATION AUTHORITY ENGINE (Fail-Closed 5-Tier Hierarchy)
+# CLASSIFICATION AUTHORITY ENGINE (Reconciled Precedence & Provenance)
 # --------------------------------------------------------------------------
 class ClassificationAuthorityEngine:
-    """Enforces the 5-tier classification authority hierarchy defined in spec v1.0.2.
+    """Enforces the reconciled 5-tier classification authority hierarchy.
 
-    Hierarchy:
-    Tier 1: Exchange Discovery Metadata (Nasdaq traded directory flag)
-    Tier 2: Structured Provider Metadata (SEC / Morningstar / yfinance quoteType and category)
-    Tier 3: Verified Vehicle-Structure Registries (Point-in-time verified allowlists & blocklists)
-    Tier 4: Defensive Negative Heuristics (Negative safety net ONLY; heuristic inclusion prohibited)
-    Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from eligibility)
+    Precedence order:
+    1. Tier 1: Exchange Discovery Metadata (Nasdaq traded directory flag ETF == 'Y')
+    2. Tier 3 Verified Blocklists (Explicit higher-authority exclusion)
+    3. Tier 3 Verified Positive Registries (Authoritative positive legal structure & subtype attestation)
+    4. Tier 2 Structured Provider Metadata (SEC / Provider legal structure attestation)
+    5. Tier 4 Defensive Negative Heuristics (Negative safety net ONLY for unverified instruments)
+    6. Tier 5 Unknown Structure Quarantine (Fail-closed)
+
+    Note: Tier 4 negative heuristics cannot override Tier 3 verified positive registries.
+    Structure verification alone DOES NOT set is_research_eligible = True.
     """
 
     @classmethod
@@ -315,7 +410,7 @@ class ClassificationAuthorityEngine:
         sym = str(symbol or "").strip().upper()
         exch = str(listing_exchange or "").strip()
 
-        # Tier 1 Discovery Check
+        # Tier 1: Discovery Check
         if not nasdaq_etf_flag:
             return {
                 "symbol": sym,
@@ -329,13 +424,71 @@ class ClassificationAuthorityEngine:
                 "classification_source": "TIER_1_EXCHANGE_DISCOVERY",
                 "classification_evidence": "NASDAQ_ETF_FLAG_IS_N",
                 "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
                 "is_research_eligible": False,
-                "exclusion_reason": "NOT_FLAGGED_AS_ETF_BY_DISCOVERY_EXCHANGE"
+                "exclusion_reason": "NOT_NASDAQ_ETF_DISCOVERED"
             }
 
-        # Tier 4: Defensive Negative Safety Net Heuristics (and known excluded blocklists)
-        # 1. Leveraged / Inverse Check
-        if sym in KNOWN_LEVERAGED_INVERSE_PRODUCTS or RE_LEVERAGED_INVERSE.search(name):
+        # Tier 3: Explicit Verified Negative Blocklists (Highest Negative Authority)
+        if sym in REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES.entries:
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "EXCHANGE_TRADED_NOTE",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                "classification_evidence": "VERIFIED_ETN_BLOCKLIST_MEMBERSHIP",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
+            }
+
+        if sym in REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS.entries:
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "COMMODITY_FUTURES_POOL",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                "classification_evidence": "VERIFIED_COMMODITY_POOL_BLOCKLIST_MEMBERSHIP",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
+            }
+
+        if sym in REGISTRY_KNOWN_CRYPTO_PRODUCTS.entries:
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "CRYPTO_LINKED_PRODUCT",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                "classification_evidence": "VERIFIED_CRYPTO_BLOCKLIST_MEMBERSHIP",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
+            }
+
+        if sym in REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS.entries:
             is_inverse = bool(re.search(r"\b(inverse|short|bear)\b", name, re.IGNORECASE))
             struct = "INVERSE_ETF" if is_inverse else "LEVERAGED_ETF"
             return {
@@ -347,106 +500,18 @@ class ClassificationAuthorityEngine:
                 "vehicle_structure_state": "EXCLUDED",
                 "research_subtype": None,
                 "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_LEVERAGED_OR_INVERSE_CRITERIA: {name}",
+                "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
+                "classification_evidence": "VERIFIED_LEVERAGED_INVERSE_BLOCKLIST_MEMBERSHIP",
                 "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
                 "is_research_eligible": False,
                 "exclusion_reason": "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
             }
 
-        # 2. Exchange-Traded Notes (ETNs)
-        if sym in KNOWN_EXCHANGE_TRADED_NOTES or RE_ETN.search(name):
-            return {
-                "symbol": sym,
-                "security_name": name,
-                "listing_exchange": exch,
-                "nasdaq_etf_flag": True,
-                "vehicle_structure": "EXCHANGE_TRADED_NOTE",
-                "vehicle_structure_state": "EXCLUDED",
-                "research_subtype": None,
-                "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_ETN_CRITERIA: {name}",
-                "classification_timestamp": timestamp,
-                "is_research_eligible": False,
-                "exclusion_reason": "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
-            }
-
-        # 3. Commodity Futures Pools
-        if sym in KNOWN_COMMODITY_FUTURES_POOLS or RE_COMMODITY_POOL.search(name):
-            return {
-                "symbol": sym,
-                "security_name": name,
-                "listing_exchange": exch,
-                "nasdaq_etf_flag": True,
-                "vehicle_structure": "COMMODITY_FUTURES_POOL",
-                "vehicle_structure_state": "EXCLUDED",
-                "research_subtype": None,
-                "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_COMMODITY_POOL_CRITERIA: {name}",
-                "classification_timestamp": timestamp,
-                "is_research_eligible": False,
-                "exclusion_reason": "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
-            }
-
-        # 4. Crypto-Linked Products
-        if sym in KNOWN_CRYPTO_PRODUCTS or RE_CRYPTO.search(name):
-            return {
-                "symbol": sym,
-                "security_name": name,
-                "listing_exchange": exch,
-                "nasdaq_etf_flag": True,
-                "vehicle_structure": "CRYPTO_LINKED_PRODUCT",
-                "vehicle_structure_state": "EXCLUDED",
-                "research_subtype": None,
-                "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_CRYPTO_CRITERIA: {name}",
-                "classification_timestamp": timestamp,
-                "is_research_eligible": False,
-                "exclusion_reason": "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
-            }
-
-        # 5. Closed-End Funds (CEFs)
-        if RE_CEF.search(name):
-            return {
-                "symbol": sym,
-                "security_name": name,
-                "listing_exchange": exch,
-                "nasdaq_etf_flag": True,
-                "vehicle_structure": "CLOSED_END_FUND",
-                "vehicle_structure_state": "EXCLUDED",
-                "research_subtype": None,
-                "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_CEF_CRITERIA: {name}",
-                "classification_timestamp": timestamp,
-                "is_research_eligible": False,
-                "exclusion_reason": "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
-            }
-
-        # 6. Mutual Funds
-        if RE_MUTUAL_FUND.search(name):
-            return {
-                "symbol": sym,
-                "security_name": name,
-                "listing_exchange": exch,
-                "nasdaq_etf_flag": True,
-                "vehicle_structure": "MUTUAL_FUND",
-                "vehicle_structure_state": "EXCLUDED",
-                "research_subtype": None,
-                "research_subtype_state": "EXCLUDED",
-                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
-                "classification_evidence": f"MATCHED_MUTUAL_FUND_CRITERIA: {name}",
-                "classification_timestamp": timestamp,
-                "is_research_eligible": False,
-                "exclusion_reason": "EXCLUDED_STRUCTURE_MUTUAL_FUND"
-            }
-
-        # Tier 3: Verified Registries
-        # Physical precious metal grantor trusts
-        if sym in PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS:
+        # Tier 3: Verified Positive Registries (Authoritative Positive Attestation)
+        # Prevails over Tier 4 negative heuristics (e.g. VUSB contains "Ultra-Short" but is verified 1940 Act)
+        if sym in REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS.entries:
             return {
                 "symbol": sym,
                 "security_name": name,
@@ -459,12 +524,13 @@ class ClassificationAuthorityEngine:
                 "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
                 "classification_evidence": "VERIFIED_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST_ALLOWLIST",
                 "classification_timestamp": timestamp,
-                "is_research_eligible": True,
+                "structure_verified": True,
+                "subtype_authorized": True,
+                "is_research_eligible": False,  # Pending market eligibility
                 "exclusion_reason": None
             }
 
-        # Verified 1940 Act ETFs
-        for subtype, allowed_syms in KNOWN_VERIFIED_1940_ACT_ETFS.items():
+        for subtype, allowed_syms in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes.items():
             if sym in allowed_syms:
                 st_state = "CONFIRMATORY_SUPPORTED" if subtype in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
                 return {
@@ -479,7 +545,9 @@ class ClassificationAuthorityEngine:
                     "classification_source": "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY",
                     "classification_evidence": f"VERIFIED_1940_ACT_ALLOWLIST_{subtype}",
                     "classification_timestamp": timestamp,
-                    "is_research_eligible": True,
+                    "structure_verified": True,
+                    "subtype_authorized": True,
+                    "is_research_eligible": False,  # Pending market eligibility
                     "exclusion_reason": None
                 }
 
@@ -490,6 +558,7 @@ class ClassificationAuthorityEngine:
             if provider_type == "ETF" and structured_metadata.get("is_1940_act") is True:
                 subtype = structured_metadata.get("research_subtype", "OTHER_ETF")
                 st_state = "CONFIRMATORY_SUPPORTED" if subtype in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
+                subtype_auth = (subtype in CONFIRMATORY_SUBTYPES or subtype in EXPLORATORY_SUBTYPES)
                 return {
                     "symbol": sym,
                     "security_name": name,
@@ -502,12 +571,130 @@ class ClassificationAuthorityEngine:
                     "classification_source": "TIER_2_STRUCTURED_PROVIDER_METADATA",
                     "classification_evidence": f"STRUCTURED_PROVIDER_ATTESTATION: {provider_category}",
                     "classification_timestamp": timestamp,
-                    "is_research_eligible": True,
-                    "exclusion_reason": None
+                    "structure_verified": True,
+                    "subtype_authorized": subtype_auth,
+                    "is_research_eligible": False,
+                    "exclusion_reason": None if subtype_auth else "UNAUTHORIZED_RESEARCH_SUBTYPE"
                 }
 
-        # Tier 5: Unknown Structure Quarantine (FAIL-CLOSED)
-        # Unresolved structures are barred from eligibility; regex cannot certify inclusion.
+        # Tier 4: Defensive Negative Safety Net Heuristics (ONLY for unregistered instruments)
+        if RE_LEVERAGED_INVERSE.search(name):
+            is_inverse = bool(re.search(r"\b(inverse|short|bear)\b", name, re.IGNORECASE))
+            struct = "INVERSE_ETF" if is_inverse else "LEVERAGED_ETF"
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": struct,
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_LEVERAGED_OR_INVERSE_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+            }
+
+        if RE_ETN.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "EXCHANGE_TRADED_NOTE",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_ETN_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
+            }
+
+        if RE_COMMODITY_POOL.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "COMMODITY_FUTURES_POOL",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_COMMODITY_POOL_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
+            }
+
+        if RE_CRYPTO.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "CRYPTO_LINKED_PRODUCT",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_CRYPTO_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
+            }
+
+        if RE_CEF.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "CLOSED_END_FUND",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_CEF_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
+            }
+
+        if RE_MUTUAL_FUND.search(name):
+            return {
+                "symbol": sym,
+                "security_name": name,
+                "listing_exchange": exch,
+                "nasdaq_etf_flag": True,
+                "vehicle_structure": "MUTUAL_FUND",
+                "vehicle_structure_state": "EXCLUDED",
+                "research_subtype": None,
+                "research_subtype_state": "EXCLUDED",
+                "classification_source": "TIER_4_DEFENSIVE_HEURISTIC",
+                "classification_evidence": f"MATCHED_MUTUAL_FUND_CRITERIA: {name}",
+                "classification_timestamp": timestamp,
+                "structure_verified": False,
+                "subtype_authorized": False,
+                "is_research_eligible": False,
+                "exclusion_reason": "EXCLUDED_STRUCTURE_MUTUAL_FUND"
+            }
+
+        # Tier 5: Unknown Structure Quarantine (Fail-Closed)
         return {
             "symbol": sym,
             "security_name": name,
@@ -520,16 +707,81 @@ class ClassificationAuthorityEngine:
             "classification_source": "TIER_5_UNKNOWN_STRUCTURE_QUARANTINE",
             "classification_evidence": "FAIL_CLOSED_NO_AFFIRMATIVE_LEGAL_STRUCTURE_VERIFICATION",
             "classification_timestamp": timestamp,
+            "structure_verified": False,
+            "subtype_authorized": False,
             "is_research_eligible": False,
             "exclusion_reason": "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
         }
 
 
 # --------------------------------------------------------------------------
-# UNIVERSE SNAPSHOT BUILDER (docs/research/ETF_SURVIVING_UNIVERSE_V1)
+# LIQUIDITY & HISTORY EVALUATION (Section 8)
+# --------------------------------------------------------------------------
+def evaluate_liquidity_and_history(
+    symbols: list[str],
+    price_data_adj: dict[str, pd.DataFrame],
+    trading_calendar: pd.DatetimeIndex,
+    adv_window: int = 60,
+    adv_percentile: float = 0.80,
+    min_history: int = 250
+) -> pd.DataFrame:
+    """Calculates daily rolling ADV60 across active survivor universe, evaluates cross-sectional
+    80th percentile threshold, and enforces min_history >= 250 sessions.
+    Fail closed if insufficient data.
+    """
+    adv_matrix = pd.DataFrame(index=trading_calendar)
+    hist_lens = {}
+
+    for sym in symbols:
+        df_sym = price_data_adj.get(sym)
+        if df_sym is not None and isinstance(df_sym, pd.DataFrame) and "Close" in df_sym and "Volume" in df_sym and not df_sym.empty:
+            df = df_sym
+            dvol = df["Close"] * df["Volume"]
+            adv = dvol.rolling(window=adv_window, min_periods=adv_window).mean()
+            adv_matrix[sym] = adv.reindex(trading_calendar)
+            hist_lens[sym] = pd.Series(np.arange(1, len(df) + 1), index=df.index).reindex(trading_calendar).fillna(0)
+        else:
+            adv_matrix[sym] = np.nan
+            hist_lens[sym] = pd.Series(0, index=trading_calendar)
+
+    records = []
+    for date in trading_calendar:
+        row_adv = adv_matrix.loc[date].dropna()
+        if len(row_adv) > 0:
+            p80 = float(row_adv.quantile(adv_percentile))
+        else:
+            p80 = np.inf
+
+        for sym in symbols:
+            val = adv_matrix.loc[date].get(sym, np.nan)
+            hlen = int(hist_lens[sym].loc[date])
+            is_liquid = bool(val >= p80) if not np.isnan(val) and p80 != np.inf else False
+            has_history = bool(hlen >= min_history)
+            has_valid_data = bool(not np.isnan(val) or hlen > 0)
+            in_universe = bool(is_liquid and has_history)
+
+            records.append({
+                "symbol": sym,
+                "observation_date": str(date.date()),
+                "adv60": float(val) if not np.isnan(val) else None,
+                "adv80_threshold": float(p80) if p80 != np.inf else None,
+                "history_sessions": hlen,
+                "has_valid_data": has_valid_data,
+                "is_liquid": is_liquid,
+                "has_min_history": has_history,
+                "in_universe": in_universe
+            })
+
+    return pd.DataFrame(records)
+
+
+# --------------------------------------------------------------------------
+# UNIVERSE SNAPSHOT BUILDER (Composite Eligibility & Call Graph Wiring)
 # --------------------------------------------------------------------------
 def build_universe_snapshot(
     discovery_file: Path | str = None,
+    price_data_dict: dict[str, pd.DataFrame] = None,
+    as_of_date: str = None,
     output_parquet: Path | str = UNIVERSE_SNAPSHOT_PATH,
     output_manifest: Path | str = UNIVERSE_MANIFEST_PATH,
     cache_dir: Path = CACHE_DIR,
@@ -537,10 +789,20 @@ def build_universe_snapshot(
 ) -> dict:
     """Builds canonical ETF surviving universe snapshot and manifest.
 
-    Enforces:
-    - 13 required parquet columns.
-    - 13 required manifest fields.
-    - Binding of spec SHA, builder git commit, and builder file SHA.
+    Call Graph:
+    CLI -> discovery -> legal/vehicle classification -> subtype classification
+    -> retrieve limited eligibility price/volume history -> evaluate_liquidity_and_history()
+    -> merge market eligibility result -> derive final is_research_eligible
+    -> derive exclusion_reason -> write snapshot -> write manifest.
+
+    Enforces deterministic exclusion-reason precedence:
+    1. NOT_NASDAQ_ETF_DISCOVERED
+    2. EXCLUDED_VEHICLE_STRUCTURE (class-specific)
+    3. UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED
+    4. UNAUTHORIZED_RESEARCH_SUBTYPE
+    5. MARKET_DATA_MISSING_OR_INVALID
+    6. INSUFFICIENT_HISTORY_LT_250
+    7. ADV60_BELOW_80TH_PERCENTILE
     """
     output_parquet = Path(output_parquet)
     output_manifest = Path(output_manifest)
@@ -588,9 +850,107 @@ def build_universe_snapshot(
         )
         records.append(rec)
 
-    df_snap = pd.DataFrame(records)
+    # Collect structure-verified candidates for market eligibility evaluation
+    candidate_symbols = [r["symbol"] for r in records if r["structure_verified"] and r["subtype_authorized"]]
 
-    # Ensure column ordering and schema
+    # Market data retrieval for eligibility window (>=250 trading sessions)
+    market_price_data = {}
+    if price_data_dict is not None:
+        market_price_data = price_data_dict
+    else:
+        for sym in candidate_symbols:
+            try:
+                adj, _ = fetch_cached_ticker(sym, cache_dir, source_manifest)
+                market_price_data[sym] = adj
+            except Exception as e:
+                logger.warning(f"Could not retrieve eligibility market data for candidate {sym}: {e}")
+
+    # Build evaluation calendar
+    all_dates = pd.DatetimeIndex([])
+    for df_p in market_price_data.values():
+        if df_p is not None and not df_p.empty:
+            all_dates = all_dates.union(df_p.index)
+    all_dates = all_dates.sort_values()
+
+    if len(all_dates) == 0:
+        eval_calendar = pd.date_range("2026-01-01", periods=250, freq="B")
+    elif as_of_date:
+        eval_calendar = all_dates[all_dates <= pd.Timestamp(as_of_date)]
+    else:
+        eval_calendar = all_dates
+
+    # Execute liquidity & history evaluation (Section 3: Call Graph Wiring)
+    market_eligibility_df = evaluate_liquidity_and_history(
+        symbols=candidate_symbols,
+        price_data_adj=market_price_data,
+        trading_calendar=eval_calendar,
+        adv_window=60,
+        adv_percentile=0.80,
+        min_history=250
+    )
+
+    # Extract as-of day market eligibility
+    as_of_market_map = {}
+    if not market_eligibility_df.empty:
+        last_eval_date = market_eligibility_df["observation_date"].max()
+        as_of_eval = market_eligibility_df[market_eligibility_df["observation_date"] == last_eval_date]
+        for _, mrow in as_of_eval.iterrows():
+            as_of_market_map[mrow["symbol"]] = mrow
+
+    # Composite eligibility derivation with deterministic exclusion precedence (Section 4)
+    final_records = []
+    for r in records:
+        sym = r["symbol"]
+        is_disc = r["nasdaq_etf_flag"]
+        v_state = r["vehicle_structure_state"]
+        s_verified = r["structure_verified"]
+        sub_auth = r["subtype_authorized"]
+        struct_reason = r["exclusion_reason"]
+
+        final_eligible = False
+        final_reason = None
+
+        if not is_disc:
+            final_reason = "NOT_NASDAQ_ETF_DISCOVERED"
+        elif v_state == "EXCLUDED":
+            final_reason = struct_reason
+        elif v_state == "QUARANTINED" or not s_verified:
+            final_reason = "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+        elif not sub_auth:
+            final_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
+        else:
+            # Legal structure & subtype verified -> inspect market eligibility
+            m_info = as_of_market_map.get(sym)
+            if m_info is None or not m_info.get("has_valid_data", False):
+                final_reason = "MARKET_DATA_MISSING_OR_INVALID"
+            elif not m_info.get("has_min_history", False):
+                final_reason = "INSUFFICIENT_HISTORY_LT_250"
+            elif not m_info.get("is_liquid", False):
+                final_reason = "ADV60_BELOW_80TH_PERCENTILE"
+            else:
+                final_eligible = True
+                final_reason = None
+
+        clean_rec = {
+            "symbol": r["symbol"],
+            "security_name": r["security_name"],
+            "listing_exchange": r["listing_exchange"],
+            "nasdaq_etf_flag": r["nasdaq_etf_flag"],
+            "vehicle_structure": r["vehicle_structure"],
+            "vehicle_structure_state": r["vehicle_structure_state"],
+            "research_subtype": r["research_subtype"],
+            "research_subtype_state": r["research_subtype_state"],
+            "classification_source": r["classification_source"],
+            "classification_evidence": r["classification_evidence"],
+            "classification_timestamp": r["classification_timestamp"],
+            "is_research_eligible": final_eligible,
+            "exclusion_reason": final_reason
+        }
+        final_records.append(clean_rec)
+
+    df_snap = pd.DataFrame(final_records)
+
+    # Column ordering contract (exact 13 required fields)
     required_cols = [
         "symbol", "security_name", "listing_exchange", "nasdaq_etf_flag",
         "vehicle_structure", "vehicle_structure_state", "research_subtype",
@@ -599,14 +959,12 @@ def build_universe_snapshot(
     ]
     df_snap = df_snap[required_cols]
 
-    # Save to Parquet
+    # Export to Parquet
     df_snap.to_parquet(output_parquet, index=False)
     snapshot_sha256 = get_file_sha256(output_parquet)
 
     builder_git_commit = get_git_commit()
     builder_file_sha256 = get_file_sha256(Path(__file__))
-
-    # Read and bind spec identity
     spec_sha256 = get_file_sha256(SPEC_PATH) if SPEC_PATH.exists() else CANONICAL_FILTERED_SPEC_SHA256_V102
 
     row_count = len(df_snap)
@@ -632,67 +990,9 @@ def build_universe_snapshot(
     with open(output_manifest, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    logger.info(f"Universe snapshot written to {output_parquet} (SHA: {snapshot_sha256})")
-    logger.info(f"Universe manifest written to {output_manifest} (Rows: {row_count}, Eligible: {eligible_count})")
+    logger.info(f"Composite universe snapshot written to {output_parquet} (SHA: {snapshot_sha256})")
+    logger.info(f"Universe manifest written to {output_manifest} (Rows: {row_count}, Eligible: {eligible_count}, Excluded: {excluded_count})")
     return manifest
-
-
-# --------------------------------------------------------------------------
-# LIQUIDITY & HISTORY EVALUATION
-# --------------------------------------------------------------------------
-def evaluate_liquidity_and_history(
-    symbols: list[str],
-    price_data_adj: dict[str, pd.DataFrame],
-    trading_calendar: pd.DatetimeIndex,
-    adv_window: int = 60,
-    adv_percentile: float = 0.80,
-    min_history: int = 250
-) -> pd.DataFrame:
-    """Calculates daily rolling ADV60 across active survivor universe, evaluates cross-sectional
-    80th percentile threshold, and enforces min_history >= 250 sessions.
-    Fail closed if insufficient data.
-    """
-    adv_matrix = pd.DataFrame(index=trading_calendar)
-    hist_lens = {}
-
-    for sym in symbols:
-        if sym in price_data_adj and "Close" in price_data_adj[sym] and "Volume" in price_data_adj[sym]:
-            df = price_data_adj[sym]
-            dvol = df["Close"] * df["Volume"]
-            adv = dvol.rolling(window=adv_window, min_periods=adv_window).mean()
-            adv_matrix[sym] = adv.reindex(trading_calendar)
-            hist_lens[sym] = pd.Series(np.arange(1, len(df) + 1), index=df.index).reindex(trading_calendar).fillna(0)
-        else:
-            adv_matrix[sym] = np.nan
-            hist_lens[sym] = pd.Series(0, index=trading_calendar)
-
-    records = []
-    for date in trading_calendar:
-        row_adv = adv_matrix.loc[date].dropna()
-        if len(row_adv) > 0:
-            p80 = float(row_adv.quantile(adv_percentile))
-        else:
-            p80 = np.inf
-
-        for sym in symbols:
-            val = adv_matrix.loc[date].get(sym, np.nan)
-            hlen = int(hist_lens[sym].loc[date])
-            is_liquid = bool(val >= p80) if not np.isnan(val) and p80 != np.inf else False
-            has_history = bool(hlen >= min_history)
-            in_universe = bool(is_liquid and has_history)
-
-            records.append({
-                "symbol": sym,
-                "observation_date": str(date.date()),
-                "adv60": float(val) if not np.isnan(val) else None,
-                "adv80_threshold": float(p80) if p80 != np.inf else None,
-                "history_sessions": hlen,
-                "is_liquid": is_liquid,
-                "has_min_history": has_history,
-                "in_universe": in_universe
-            })
-
-    return pd.DataFrame(records)
 
 
 # --------------------------------------------------------------------------
@@ -725,8 +1025,8 @@ def fetch_cached_ticker(
     df_raw.to_parquet(raw_cache)
 
     if source_manifest:
-        source_manifest.record(adj_cache, provider="YFINANCE", semantic_role="EQUITY_SPLIT_DIVIDEND_ADJUSTED")
-        source_manifest.record(raw_cache, provider="YFINANCE", semantic_role="EQUITY_RAW_UNADJUSTED")
+        source_manifest.record(adj_cache, provider="YFINANCE", semantic_role="UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY")
+        source_manifest.record(raw_cache, provider="YFINANCE", semantic_role="UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY")
 
     return df_adj, df_raw
 
@@ -786,7 +1086,7 @@ def compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
 
 
 # --------------------------------------------------------------------------
-# DATASET BUILDER
+# HISTORICAL DATASET BUILDER (Full Stage-A Panel)
 # --------------------------------------------------------------------------
 def build_dataset():
     """Builds the full historical observations and outcomes dataset (Stage-A)."""
@@ -799,7 +1099,7 @@ def build_dataset():
 
     # Reconstruct universe from verified 1940 Act and Grantor Trust registries
     symbol_to_subtype = {}
-    for st, syms in KNOWN_VERIFIED_1940_ACT_ETFS.items():
+    for st, syms in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes.items():
         for s in syms:
             symbol_to_subtype[s] = st
 
@@ -959,12 +1259,11 @@ def build_dataset():
                 m_lag20 = macro_combined.loc[lag20_date]
                 f6 = float(macro_row["DGS10"] - m_lag20["DGS10"]) if ("DGS10" in macro_row and not np.isnan(macro_row["DGS10"]) and not np.isnan(m_lag20["DGS10"])) else None
                 f9 = float(macro_row["DFII10"] - m_lag20["DFII10"]) if ("DFII10" in macro_row and not np.isnan(macro_row["DFII10"]) and not np.isnan(m_lag20["DFII10"])) else None
-                # f12: BAA corporate spread trend (v1.0.2)
                 f12 = float(macro_row["BAA10Y"] - m_lag20["BAA10Y"]) if ("BAA10Y" in macro_row and not np.isnan(macro_row["BAA10Y"]) and not np.isnan(m_lag20["BAA10Y"])) else None
             else:
                 f6, f9, f12 = None, None, None
 
-            # f7 is DEPRECATED in v1.0.2
+            # f7 is deprecated in v1.0.2
             f7 = None
 
             # f8: HYG relative strength vs LQD

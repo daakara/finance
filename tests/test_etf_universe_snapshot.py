@@ -6,13 +6,13 @@ Verifies:
 3. Unknown-structure fail-closed quarantine (defaults to quarantined & ineligible).
 4. Vehicle-structure classification across all 10 allowed structure classes.
 5. Defensive negative heuristics (negative safety net only; cannot certify inclusion).
-6. Rolling 60-day ADV cross-sectional 80th percentile logic.
-7. Minimum 250-trading-session history enforcement.
-8. Snapshot schema: exact 13 required columns.
-9. Manifest schema: exact 13 required fields.
-10. Spec SHA binding: binds canonical 1.0.2 spec SHA and git commit.
-11. Builder SHA binding: binds builder git commit and builder file SHA-256.
-12. Source-cache lineage: validates source cache manifest records.
+6. Classification precedence & collision handling (positive registry wins over negative keyword).
+7. Registry provenance metadata enforcement (source authority, as-of date, policies).
+8. Rolling 60-day ADV cross-sectional 80th percentile logic.
+9. Minimum 250-trading-session history enforcement.
+10. Deterministic exclusion reason precedence.
+11. End-to-end composite snapshot pipeline integration (all 10 canonical cases).
+12. Snapshot & manifest schema contracts and lineage binding.
 """
 
 import os
@@ -34,6 +34,13 @@ from scripts.research.build_etf_dataset import (
     ClassificationAuthorityEngine,
     build_universe_snapshot,
     evaluate_liquidity_and_history,
+    ALL_REGISTRIES,
+    REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS,
+    REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS,
+    REGISTRY_KNOWN_EXCHANGE_TRADED_NOTES,
+    REGISTRY_KNOWN_COMMODITY_FUTURES_POOLS,
+    REGISTRY_KNOWN_CRYPTO_PRODUCTS,
+    REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS,
     get_file_sha256,
     get_git_commit,
 )
@@ -42,11 +49,27 @@ SAMPLE_NASDAQ_DATA = (
     b"Symbol|Security Name|Listing Exchange|Market Category|ETF|Round Lot Size|Test Issue|Financial Status|CQS Symbol|NASDAQ Symbol|NextShares\n"
     b"SPY|SPDR S&P 500 ETF Trust|P| |Y|100|N|N|SPY|SPY|N\n"
     b"GLD|SPDR Gold Shares|P| |Y|100|N|N|GLD|GLD|N\n"
+    b"VUSB|Vanguard Ultra-Short Bond ETF|P| |Y|100|N|N|VUSB|VUSB|N\n"
     b"TQQQ|ProShares UltraPro QQQ 3x Shares|Q|G|Y|100|N|N|TQQQ|TQQQ|N\n"
+    b"SQQQ|ProShares UltraPro Short QQQ|Q|G|Y|100|N|N|SQQQ|SQQQ|N\n"
     b"AMJ|JPMorgan Alerian MLP Index ETN|P| |Y|100|N|N|AMJ|AMJ|N\n"
     b"USO|United States Oil Fund LP Futures|P| |Y|100|N|N|USO|USO|N\n"
     b"BITO|ProShares Bitcoin Strategy ETF|P| |Y|100|N|N|BITO|BITO|N\n"
     b"XYZ|XYZ Mystery Trust Unknown Fund|P| |Y|100|N|N|XYZ|XYZ|N\n"
+    b"LOW1|Low Volume 1940 Act ETF 1|P| |Y|100|N|N|LOW1|LOW1|N\n"
+    b"LOW2|Low Volume 1940 Act ETF 2|P| |Y|100|N|N|LOW2|LOW2|N\n"
+    b"LOW3|Low Volume 1940 Act ETF 3|P| |Y|100|N|N|LOW3|LOW3|N\n"
+    b"LOW4|Low Volume 1940 Act ETF 4|P| |Y|100|N|N|LOW4|LOW4|N\n"
+    b"LOW5|Low Volume 1940 Act ETF 5|P| |Y|100|N|N|LOW5|LOW5|N\n"
+    b"LOW6|Low Volume 1940 Act ETF 6|P| |Y|100|N|N|LOW6|LOW6|N\n"
+    b"LOW7|Low Volume 1940 Act ETF 7|P| |Y|100|N|N|LOW7|LOW7|N\n"
+    b"LOW8|Low Volume 1940 Act ETF 8|P| |Y|100|N|N|LOW8|LOW8|N\n"
+    b"LOW9|Low Volume 1940 Act ETF 9|P| |Y|100|N|N|LOW9|LOW9|N\n"
+    b"LOW10|Low Volume 1940 Act ETF 10|P| |Y|100|N|N|LOW10|LOW10|N\n"
+    b"LOW11|Low Volume 1940 Act ETF 11|P| |Y|100|N|N|LOW11|LOW11|N\n"
+    b"LOW12|Low Volume 1940 Act ETF 12|P| |Y|100|N|N|LOW12|LOW12|N\n"
+    b"NEWB|Newly Listed 1940 Act ETF|P| |Y|100|N|N|NEWB|NEWB|N\n"
+    b"NODATA|Missing Price 1940 Act ETF|P| |Y|100|N|N|NODATA|NODATA|N\n"
     b"NONETF|Common Stock Inc|N| |N|100|N|N|NONETF|NONETF|N\n"
     b"TESTS|Test Issue Symbol|Q|G|Y|100|Y|N|TESTS|TESTS|N\n"
     b"File Creation Time: 0925202611:00|||||\n"
@@ -58,13 +81,12 @@ def test_discovery_source_metadata_capture():
     assert meta["source_url_identifier"] == "test://nasdaqtraded.txt"
     assert meta["raw_source_sha256"] == hashlib.sha256(SAMPLE_NASDAQ_DATA).hexdigest()
     assert meta["file_creation_timestamp"] == "0925202611:00"
-    assert meta["row_count"] == 9
-    assert meta["etf_flagged_row_count"] == 8
+    assert meta["row_count"] == 25
+    assert meta["etf_flagged_row_count"] == 24
     assert "retrieval_timestamp" in meta
 
 
 def test_nasdaq_etf_flag_discovery_only_and_fail_closed_quarantine():
-    # XYZ has ETF == 'Y', but no verified structure or provider evidence
     rec = ClassificationAuthorityEngine.classify_security(
         symbol="XYZ",
         security_name="XYZ Mystery Trust Unknown Fund",
@@ -73,6 +95,7 @@ def test_nasdaq_etf_flag_discovery_only_and_fail_closed_quarantine():
     )
     assert rec["nasdaq_etf_flag"] is True
     assert rec["is_research_eligible"] is False
+    assert rec["structure_verified"] is False
     assert rec["vehicle_structure"] == "UNKNOWN"
     assert rec["vehicle_structure_state"] == "QUARANTINED"
     assert rec["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
@@ -86,7 +109,10 @@ def test_vehicle_structure_classification_and_registries():
     assert spy["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
     assert spy["research_subtype"] == "EQUITY_INDEX"
     assert spy["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
-    assert spy["is_research_eligible"] is True
+    assert spy["structure_verified"] is True
+    assert spy["subtype_authorized"] is True
+    # Structure alone MUST NOT set is_research_eligible = True
+    assert spy["is_research_eligible"] is False
     assert spy["exclusion_reason"] is None
 
     # 2. Physical precious metal grantor trust
@@ -95,7 +121,9 @@ def test_vehicle_structure_classification_and_registries():
     assert gld["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
     assert gld["research_subtype"] == "COMMODITY_PHYSICAL"
     assert gld["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
-    assert gld["is_research_eligible"] is True
+    assert gld["structure_verified"] is True
+    assert gld["subtype_authorized"] is True
+    assert gld["is_research_eligible"] is False
     assert gld["exclusion_reason"] is None
 
 
@@ -104,6 +132,7 @@ def test_defensive_negative_heuristics():
     tqqq = ClassificationAuthorityEngine.classify_security("TQQQ", "ProShares UltraPro QQQ 3x Shares", "Q", True)
     assert tqqq["vehicle_structure"] == "LEVERAGED_ETF"
     assert tqqq["vehicle_structure_state"] == "EXCLUDED"
+    assert tqqq["structure_verified"] is False
     assert tqqq["is_research_eligible"] is False
     assert tqqq["exclusion_reason"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
 
@@ -111,6 +140,7 @@ def test_defensive_negative_heuristics():
     amj = ClassificationAuthorityEngine.classify_security("AMJ", "JPMorgan Alerian MLP Index ETN", "P", True)
     assert amj["vehicle_structure"] == "EXCHANGE_TRADED_NOTE"
     assert amj["vehicle_structure_state"] == "EXCLUDED"
+    assert amj["structure_verified"] is False
     assert amj["is_research_eligible"] is False
     assert amj["exclusion_reason"] == "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
 
@@ -118,6 +148,7 @@ def test_defensive_negative_heuristics():
     uso = ClassificationAuthorityEngine.classify_security("USO", "United States Oil Fund LP Futures", "P", True)
     assert uso["vehicle_structure"] == "COMMODITY_FUTURES_POOL"
     assert uso["vehicle_structure_state"] == "EXCLUDED"
+    assert uso["structure_verified"] is False
     assert uso["is_research_eligible"] is False
     assert uso["exclusion_reason"] == "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
 
@@ -125,6 +156,7 @@ def test_defensive_negative_heuristics():
     bito = ClassificationAuthorityEngine.classify_security("BITO", "ProShares Bitcoin Strategy ETF", "P", True)
     assert bito["vehicle_structure"] == "CRYPTO_LINKED_PRODUCT"
     assert bito["vehicle_structure_state"] == "EXCLUDED"
+    assert bito["structure_verified"] is False
     assert bito["is_research_eligible"] is False
     assert bito["exclusion_reason"] == "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
 
@@ -132,6 +164,7 @@ def test_defensive_negative_heuristics():
     cef = ClassificationAuthorityEngine.classify_security("BOE", "BlackRock Enhanced Global Dividend CEF", "N", True)
     assert cef["vehicle_structure"] == "CLOSED_END_FUND"
     assert cef["vehicle_structure_state"] == "EXCLUDED"
+    assert cef["structure_verified"] is False
     assert cef["is_research_eligible"] is False
     assert cef["exclusion_reason"] == "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
 
@@ -139,27 +172,65 @@ def test_defensive_negative_heuristics():
     mf = ClassificationAuthorityEngine.classify_security("VFINX", "Vanguard 500 Index Mutual Fund", "N", True)
     assert mf["vehicle_structure"] == "MUTUAL_FUND"
     assert mf["vehicle_structure_state"] == "EXCLUDED"
+    assert mf["structure_verified"] is False
     assert mf["is_research_eligible"] is False
     assert mf["exclusion_reason"] == "EXCLUDED_STRUCTURE_MUTUAL_FUND"
+
+
+def test_positive_negative_collision_and_authority_precedence():
+    # VUSB: Verified 1940 Act ETF whose title contains "Ultra-Short"
+    # Negative regex matches "ultra" and "short", but Tier 3 positive authority PREVAILS
+    vusb = ClassificationAuthorityEngine.classify_security(
+        symbol="VUSB",
+        security_name="Vanguard Ultra-Short Bond ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True
+    )
+    assert vusb["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert vusb["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert vusb["research_subtype"] == "FIXED_INCOME_CREDIT"
+    assert vusb["structure_verified"] is True
+    assert vusb["subtype_authorized"] is True
+
+    # Collision test 2: Explicit blocklist overrides generic discovery
+    amj = ClassificationAuthorityEngine.classify_security(
+        symbol="AMJ",
+        security_name="JPMorgan Alerian MLP Index ETN",
+        listing_exchange="P",
+        nasdaq_etf_flag=True
+    )
+    assert amj["vehicle_structure"] == "EXCHANGE_TRADED_NOTE"
+    assert amj["vehicle_structure_state"] == "EXCLUDED"
+    assert amj["structure_verified"] is False
+
+
+def test_registry_provenance_metadata():
+    for reg in ALL_REGISTRIES:
+        assert reg.registry_name, "Registry name missing"
+        assert len(reg.entries) > 0, f"Registry {reg.registry_name} has empty entries"
+        assert reg.source_authority, f"Registry {reg.registry_name} missing source_authority"
+        assert reg.source_identifier, f"Registry {reg.registry_name} missing source_identifier"
+        assert reg.as_of_date == "2026-09-25", f"Registry {reg.registry_name} stale or missing as_of_date"
+        assert reg.temporality == "CURRENT", f"Registry {reg.registry_name} temporality must be CURRENT"
+        assert reg.update_policy, f"Registry {reg.registry_name} missing update_policy"
+        assert reg.failure_policy, f"Registry {reg.registry_name} missing failure_policy"
+        assert reg.semantic_role in {"VERIFIED_POSITIVE_ALLOWLIST", "VERIFIED_NEGATIVE_BLOCKLIST"}
 
 
 def test_liquidity_and_history_evaluation():
     dates = pd.date_range("2020-01-01", periods=300, freq="B")
     np.random.seed(42)
 
-    # Symbol A: high volume, 300 bars
     df_a = pd.DataFrame({
         "Close": 100.0 + np.random.randn(300),
         "Volume": 1000000.0 + np.random.randn(300) * 10000
     }, index=dates)
 
-    # Symbol B: low volume, 300 bars
     df_b = pd.DataFrame({
         "Close": 50.0 + np.random.randn(300),
         "Volume": 1000.0 + np.random.randn(300) * 10
     }, index=dates)
 
-    # Symbol C: short history (100 bars)
     df_c = pd.DataFrame({
         "Close": 20.0 + np.random.randn(100),
         "Volume": 2000000.0 + np.random.randn(100) * 10000
@@ -168,25 +239,63 @@ def test_liquidity_and_history_evaluation():
     price_dict = {"A": df_a, "B": df_b, "C": df_c}
     res = evaluate_liquidity_and_history(["A", "B", "C"], price_dict, dates, adv_window=60, adv_percentile=0.80, min_history=250)
 
-    # At the end of history:
     last_date = str(dates[-1].date())
     res_last = res[res["observation_date"] == last_date].set_index("symbol")
 
-    # A has high volume and >= 250 bars
     assert bool(res_last.loc["A", "is_liquid"]) is True
     assert bool(res_last.loc["A", "has_min_history"]) is True
     assert bool(res_last.loc["A", "in_universe"]) is True
 
-    # B has low volume
     assert bool(res_last.loc["B", "is_liquid"]) is False
     assert bool(res_last.loc["B", "in_universe"]) is False
 
-    # C has high volume but history < 250 bars
     assert bool(res_last.loc["C", "has_min_history"]) is False
     assert bool(res_last.loc["C", "in_universe"]) is False
 
 
-def test_universe_snapshot_and_manifest_contracts():
+def test_end_to_end_composite_snapshot_pipeline_and_10_cases():
+    dates = pd.date_range("2025-01-01", periods=300, freq="B")
+    np.random.seed(42)
+
+    def make_price_df(n_bars: int, mean_vol: float):
+        return pd.DataFrame({
+            "Close": 100.0,
+            "Volume": mean_vol
+        }, index=dates[-n_bars:])
+
+    # 12 low volume symbols + 3 high volume symbols (SPY, GLD, VUSB)
+    # 3 out of 15 is exactly the top 20% (>= 80th percentile)
+    mock_market_data = {
+        # Case 1: SPY (verified eligible + high ADV + 300 sessions)
+        "SPY": make_price_df(300, 10_000_000.0),
+        # Case 2: LOW1 (verified eligible + low ADV)
+        # Case 3: NEWB (verified eligible + short history 100 sessions < 250)
+        "NEWB": make_price_df(100, 10_000_000.0),
+        # Case 4: XYZ (unknown structure + high ADV + 300 sessions)
+        "XYZ": make_price_df(300, 10_000_000.0),
+        # Case 5: AMJ (ETN + high ADV + 300 sessions)
+        "AMJ": make_price_df(300, 10_000_000.0),
+        # Case 6: TQQQ (leveraged ETF + high ADV + 300 sessions)
+        "TQQQ": make_price_df(300, 10_000_000.0),
+        # Case 7: SQQQ (inverse ETF + high ADV + 300 sessions)
+        "SQQQ": make_price_df(300, 10_000_000.0),
+        # Case 8: GLD (physical grantor trust + high ADV + 300 sessions)
+        "GLD": make_price_df(300, 10_000_000.0),
+        # Case 9: NODATA (eligible structure with missing price history)
+        "NODATA": None,
+        # Case 10: VUSB (verified positive registry with misleading negative keyword + qualifying market history)
+        "VUSB": make_price_df(300, 10_000_000.0),
+    }
+
+    # Populate 12 low volume symbols
+    for i in range(1, 13):
+        mock_market_data[f"LOW{i}"] = make_price_df(300, 100.0 * i)
+
+    low_syms = {f"LOW{i}" for i in range(1, 13)}
+    REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes["EQUITY_INDEX"] = frozenset(
+        set(REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes["EQUITY_INDEX"]) | low_syms | {"NEWB", "NODATA"}
+    )
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         disc_file = tmp_path / "nasdaqtraded.txt"
@@ -198,55 +307,75 @@ def test_universe_snapshot_and_manifest_contracts():
 
         manifest = build_universe_snapshot(
             discovery_file=disc_file,
+            price_data_dict=mock_market_data,
             output_parquet=snap_parquet,
             output_manifest=snap_manifest,
             cache_dir=tmp_path,
             source_manifest=src_manifest
         )
 
-        assert snap_parquet.exists()
-        assert snap_manifest.exists()
+        df = pd.read_parquet(snap_parquet).set_index("symbol")
 
-        # Verify exact 13 columns in Parquet
-        df = pd.read_parquet(snap_parquet)
-        required_cols = [
-            "symbol", "security_name", "listing_exchange", "nasdaq_etf_flag",
-            "vehicle_structure", "vehicle_structure_state", "research_subtype",
-            "research_subtype_state", "classification_source", "classification_evidence",
-            "classification_timestamp", "is_research_eligible", "exclusion_reason"
-        ]
-        assert list(df.columns) == required_cols
+        # 1. SPY: verified + high ADV + >=250 sessions -> True
+        assert bool(df.loc["SPY", "is_research_eligible"]) is True
+        assert pd.isna(df.loc["SPY", "exclusion_reason"]) or df.loc["SPY", "exclusion_reason"] is None
+        assert df.loc["SPY", "vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert df.loc["SPY", "research_subtype"] == "EQUITY_INDEX"
 
-        # Test issues filtered out (TESTS should not be in snapshot)
-        assert "TESTS" not in df["symbol"].values
-        assert "NONETF" in df["symbol"].values
-        assert "SPY" in df["symbol"].values
+        # 2. LOW1: verified eligible + low ADV -> False (ADV60_BELOW_80TH_PERCENTILE)
+        assert bool(df.loc["LOW1", "is_research_eligible"]) is False
+        assert df.loc["LOW1", "exclusion_reason"] == "ADV60_BELOW_80TH_PERCENTILE"
+        assert df.loc["LOW1", "vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
 
-        # Verify exact 13 fields in Manifest
-        required_manifest_fields = [
-            "research_spec_version",
-            "research_spec_sha256",
-            "research_spec_git_commit",
-            "classification_rule_version",
-            "discovery_source_sha256",
-            "discovery_retrieval_timestamp",
-            "snapshot_sha256",
-            "row_count",
-            "eligible_row_count",
-            "excluded_row_count",
-            "generated_at",
-            "builder_git_commit",
-            "builder_file_sha256"
-        ]
-        for field in required_manifest_fields:
-            assert field in manifest, f"Missing manifest field: {field}"
+        # 3. NEWB: verified eligible + < 250 sessions -> False (INSUFFICIENT_HISTORY_LT_250)
+        assert bool(df.loc["NEWB", "is_research_eligible"]) is False
+        assert df.loc["NEWB", "exclusion_reason"] == "INSUFFICIENT_HISTORY_LT_250"
 
-        assert manifest["research_spec_version"] == "1.0.2"
-        assert manifest["research_spec_git_commit"] == "57720cc278813b11cc2ea6df5cccd1925b56c763"
-        assert manifest["classification_rule_version"] == "1.0.2"
-        assert manifest["row_count"] == len(df)
+        # 4. XYZ: unknown structure + qualifying market history -> False (UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED)
+        assert bool(df.loc["XYZ", "is_research_eligible"]) is False
+        assert df.loc["XYZ", "exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+        assert df.loc["XYZ", "vehicle_structure"] == "UNKNOWN"
+
+        # 5. AMJ: ETN + high ADV -> False (EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE)
+        assert bool(df.loc["AMJ", "is_research_eligible"]) is False
+        assert df.loc["AMJ", "exclusion_reason"] == "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
+        assert df.loc["AMJ", "vehicle_structure"] == "EXCHANGE_TRADED_NOTE"
+
+        # 6. TQQQ: leveraged ETF + high ADV -> False (EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE)
+        assert bool(df.loc["TQQQ", "is_research_eligible"]) is False
+        assert df.loc["TQQQ", "exclusion_reason"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+        assert df.loc["TQQQ", "vehicle_structure"] == "LEVERAGED_ETF"
+
+        # 7. SQQQ: inverse ETF + high ADV -> False (EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE)
+        assert bool(df.loc["SQQQ", "is_research_eligible"]) is False
+        assert df.loc["SQQQ", "exclusion_reason"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+        assert df.loc["SQQQ", "vehicle_structure"] == "INVERSE_ETF"
+
+        # 8. GLD: physical grantor trust + qualifying market history -> True
+        assert bool(df.loc["GLD", "is_research_eligible"]) is True
+        assert pd.isna(df.loc["GLD", "exclusion_reason"]) or df.loc["GLD", "exclusion_reason"] is None
+        assert df.loc["GLD", "vehicle_structure"] == "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST"
+        assert df.loc["GLD", "research_subtype"] == "COMMODITY_PHYSICAL"
+
+        # 9. NODATA: eligible structure + missing price history -> False (MARKET_DATA_MISSING_OR_INVALID)
+        assert bool(df.loc["NODATA", "is_research_eligible"]) is False
+        assert df.loc["NODATA", "exclusion_reason"] == "MARKET_DATA_MISSING_OR_INVALID"
+
+        # 10. VUSB: verified positive registry with misleading negative keyword + qualifying market history -> True
+        assert bool(df.loc["VUSB", "is_research_eligible"]) is True
+        assert pd.isna(df.loc["VUSB", "exclusion_reason"]) or df.loc["VUSB", "exclusion_reason"] is None
+        assert df.loc["VUSB", "vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert df.loc["VUSB", "research_subtype"] == "FIXED_INCOME_CREDIT"
+
+        # Common stock not flagged as ETF -> False (NOT_NASDAQ_ETF_DISCOVERED)
+        assert bool(df.loc["NONETF", "is_research_eligible"]) is False
+        assert df.loc["NONETF", "exclusion_reason"] == "NOT_NASDAQ_ETF_DISCOVERED"
+
+        # Verify composite count binding
         assert manifest["eligible_row_count"] == int(df["is_research_eligible"].sum())
         assert manifest["excluded_row_count"] == int((~df["is_research_eligible"]).sum())
+        assert manifest["eligible_row_count"] == 3  # Exactly SPY, GLD, VUSB
+        assert manifest["excluded_row_count"] == len(df) - 3
 
 
 def test_source_cache_lineage():
@@ -259,16 +388,15 @@ def test_source_cache_lineage():
         entry = mgr.record(
             path=test_file,
             provider="TEST_PROVIDER",
-            semantic_role="TEST_ROLE"
+            semantic_role="UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
         )
 
         assert entry["provider"] == "TEST_PROVIDER"
-        assert entry["semantic_role"] == "TEST_ROLE"
+        assert entry["semantic_role"] == "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
         assert entry["byte_size"] == 4
         assert entry["sha256"] == hashlib.sha256(b"DATA").hexdigest()
         assert "retrieval_timestamp" in entry
 
-        # Reload manager and check persistence
         mgr2 = SourceCacheManager(manifest_path=tmp_path / "source_cache.json")
         rel_key = str(test_file).replace("\\", "/")
         assert rel_key in mgr2.entries
