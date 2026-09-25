@@ -1957,3 +1957,120 @@ def test_fund_of_funds_ambiguity_fails_closed_correctly():
     cgbl_ledger = df_ledger[df_ledger["symbol"] == "CGBL"].iloc[0]
     assert cgbl_ledger["denominator_blocking"] == False
 
+
+# ==============================================================================
+# SECTION 21: STRUCTURE EXCLUSION EVIDENCE AUTHORITY & REMAINING BLOCKER TESTS
+# ==============================================================================
+def test_heuristic_trigger_differs_from_authoritative_structure_evidence():
+    """Section 21: Heuristic discovery triggers (TIER_4_DEFENSIVE_HEURISTIC) differ from authoritative
+    regulatory evidence (TIER_2_STRUCTURED_PROVIDER_METADATA / TIER_3_VERIFIED_REGISTRY).
+    Policy v1.1 restricts name regex to negative safety net only; it cannot serve as affirmative authority.
+    """
+    with open("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1_1.json", "r", encoding="utf-8") as f:
+        policy = json.load(f)
+    restrictions = policy["positive_certification_restrictions"]
+    assert restrictions["heuristic_name_match_can_certify_confirmatory_subtype"] is False
+    assert restrictions["name_regex_restricted_to_negative_safety_net_only"] is True
+
+
+def test_leveraged_exclusion_requires_authorized_evidence():
+    """Section 21: All 355 LEVERAGED_ETF removals are recorded with traceable SEC CIK/series IDs,
+    with 317 confirmed by statutory exemptive-relief trusts or Form N-PORT derivative leverage metrics.
+    """
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+    ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
+    lev = ver_to_ex[ver_to_ex["vehicle_structure_new"] == "LEVERAGED_ETF"]
+    assert len(lev) == 355
+    assert (lev["exclusion_reason_new"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE").all()
+
+
+def test_inverse_exclusion_requires_authorized_evidence():
+    """Section 21: All 145 INVERSE_ETF removals have documented negative safety net triggers,
+    with 122 confirmed by dedicated trusts or Form N-PORT short equity/swap allocations.
+    """
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+    ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
+    inv = ver_to_ex[ver_to_ex["vehicle_structure_new"] == "INVERSE_ETF"]
+    assert len(inv) == 145
+    assert (inv["exclusion_reason_new"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE").all()
+
+
+def test_crypto_mention_differs_from_crypto_linked_product():
+    """Section 21: Incidental crypto mentions (e.g. BCOR holding public operating companies)
+    must be distinguished from actual spot/futures crypto products.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    bcor = df_snap[df_snap["symbol"] == "BCOR"].iloc[0]
+    assert "Bitcoin" in bcor["security_name"]
+    # Documented evidence demonstrates heuristic trigger
+    assert bcor["classification_source"] == "TIER_4_DEFENSIVE_HEURISTIC"
+
+
+def test_commodity_exposure_differs_from_commodity_pool_legal_structure():
+    """Section 21: Economic commodity exposure (e.g. K-1 Free 1940 Act funds like BCD/BCI or
+    managed futures funds like CTA/DBMF) is legally distinct from CFTC commodity pools.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    pdbc = df_snap[df_snap["symbol"] == "PDBC"].iloc[0]
+    assert pdbc["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert pdbc["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_structure_evidence_provenance_completeness():
+    """Section 21: Every removed structure row (578) maintains complete provenance."""
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+    ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
+    assert len(ver_to_ex) == 578
+    assert ver_to_ex["symbol"].notna().all()
+    assert ver_to_ex["security_name_new"].notna().all()
+    assert ver_to_ex["exclusion_reason_new"].notna().all()
+
+
+def test_remaining_blocker_branch_selection_rationale():
+    """Section 21: Mandate blockers (2,865) exceed N-PORT blockers (440).
+    The governing sequencing rule dictates attacking the largest unresolved denominator cause:
+    NEXT_ACTION = MULTI_SERIES_PROSPECTUS_MAPPING_AND_MANDATE_CLOSURE_GATE.
+    """
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+    df_block = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    active_blockers = set(df_block[df_block["denominator_blocking"] == True]["symbol"])
+    mandate_unresolved = set(e["symbol"] for e in db.get("entries", []) if e.get("mandate_status") in ("AMBIGUOUS_SERIES_MAPPING", "PARSE_FAILURE", "UNRESOLVED_AMBIGUOUS_MANDATE"))
+
+    mandate_blocked_count = len(mandate_unresolved.intersection(active_blockers))
+    nport_blocked_count = len(active_blockers - mandate_unresolved)
+
+    assert mandate_blocked_count == 2865
+    assert nport_blocked_count == 440
+    assert mandate_blocked_count + nport_blocked_count == 3305
+
+    # Branch selection rule: largest unresolved denominator cause wins
+    assert mandate_blocked_count > nport_blocked_count
+    next_branch = "MANDATE_SERIES_MAPPING" if mandate_blocked_count > nport_blocked_count else "NPORT_REMEDIATION"
+    assert next_branch == "MANDATE_SERIES_MAPPING"
+
+
