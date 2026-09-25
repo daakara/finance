@@ -25,10 +25,17 @@ def sync_governance_artifacts():
     updated_ledger = df_ledger.copy()
     for idx, row in updated_ledger.iterrows():
         sym = row["symbol"]
-        b_type = row["blocker_type"]
-        if b_type == "MANDATE_BLOCKED":
-            snap_info = snap_map.get(sym)
-            if snap_info:
+        snap_info = snap_map.get(sym)
+        if snap_info:
+            if snap_info["vehicle_structure_state"] == "EXCLUDED":
+                updated_ledger.at[idx, "blocker_type"] = "EXCLUDED_STRUCTURE"
+                updated_ledger.at[idx, "blocker_reason"] = "EXCLUDED_VEHICLE_STRUCTURE"
+                updated_ledger.at[idx, "resolution_status"] = "EXCLUDED_STRUCTURE"
+                updated_ledger.at[idx, "final_subtype"] = None
+                updated_ledger.at[idx, "denominator_blocking"] = False
+                updated_ledger.at[idx, "resolution_evidence"] = "STRUCTURE_CLASSIFIER_EXCLUDED"
+            else:
+                b_type = row["blocker_type"]
                 sub = snap_info["research_subtype"]
                 if sub != "UNRESOLVED":
                     updated_ledger.at[idx, "blocker_type"] = "RESOLVED"
@@ -56,22 +63,29 @@ def sync_governance_artifacts():
         sym = row["symbol"]
         snap_info = snap_map.get(sym)
         if snap_info:
-            sub = snap_info["research_subtype"]
-            updated_matrix.at[idx, "final_subtype"] = sub
-            if sub != "UNRESOLVED":
-                updated_matrix.at[idx, "all_applicable_rules_evaluable"] = True
-                updated_matrix.at[idx, "denominator_blocking"] = False
-                if sub in ["EQUITY_INDEX", "EQUITY_SECTOR", "FIXED_INCOME_GOVERNMENT", "FIXED_INCOME_CREDIT", "COMMODITY_PHYSICAL"]:
-                    updated_matrix.at[idx, "resolution_status"] = "RESOLVED_CONFIRMATORY_CANDIDATE"
-                    updated_matrix.at[idx, "blocker_reason"] = f"RESOLVED_{sub}"
-                else:
-                    updated_matrix.at[idx, "resolution_status"] = "RESOLVED_NON_CONFIRMATORY_OTHER_ETF"
-                    updated_matrix.at[idx, "blocker_reason"] = "RESOLVED_NON_CONFIRMATORY_MANDATE"
-                updated_matrix.at[idx, "mandate_available"] = True
-            else:
+            if snap_info["vehicle_structure_state"] == "EXCLUDED":
                 updated_matrix.at[idx, "all_applicable_rules_evaluable"] = False
-                updated_matrix.at[idx, "denominator_blocking"] = True
-                updated_matrix.at[idx, "resolution_status"] = "UNRESOLVED_BLOCKING"
+                updated_matrix.at[idx, "denominator_blocking"] = False
+                updated_matrix.at[idx, "resolution_status"] = "EXCLUDED_STRUCTURE"
+                updated_matrix.at[idx, "blocker_reason"] = "EXCLUDED_VEHICLE_STRUCTURE"
+                updated_matrix.at[idx, "final_subtype"] = None
+            else:
+                sub = snap_info["research_subtype"]
+                updated_matrix.at[idx, "final_subtype"] = sub
+                if sub != "UNRESOLVED":
+                    updated_matrix.at[idx, "all_applicable_rules_evaluable"] = True
+                    updated_matrix.at[idx, "denominator_blocking"] = False
+                    if sub in ["EQUITY_INDEX", "EQUITY_SECTOR", "FIXED_INCOME_GOVERNMENT", "FIXED_INCOME_CREDIT", "COMMODITY_PHYSICAL"]:
+                        updated_matrix.at[idx, "resolution_status"] = "RESOLVED_CONFIRMATORY_CANDIDATE"
+                        updated_matrix.at[idx, "blocker_reason"] = f"RESOLVED_{sub}"
+                    else:
+                        updated_matrix.at[idx, "resolution_status"] = "RESOLVED_NON_CONFIRMATORY_OTHER_ETF"
+                        updated_matrix.at[idx, "blocker_reason"] = "RESOLVED_NON_CONFIRMATORY_MANDATE"
+                    updated_matrix.at[idx, "mandate_available"] = True
+                else:
+                    updated_matrix.at[idx, "all_applicable_rules_evaluable"] = False
+                    updated_matrix.at[idx, "denominator_blocking"] = True
+                    updated_matrix.at[idx, "resolution_status"] = "UNRESOLVED_BLOCKING"
 
     updated_matrix.to_parquet(MATRIX_PATH, index=False)
     print(f"Updated {MATRIX_PATH}: {len(updated_matrix)} rows, {updated_matrix['denominator_blocking'].sum()} blocking")
@@ -84,10 +98,10 @@ def sync_governance_artifacts():
         manifest = json.load(f)
     manifest_blocking = manifest["remaining_denominator_blockers"]
 
-    assert ledger_blocking == matrix_blocking == snapshot_unresolved == manifest_blocking == 3580, (
+    assert ledger_blocking == matrix_blocking == snapshot_unresolved == manifest_blocking == 3305, (
         f"Parity mismatch: ledger={ledger_blocking}, matrix={matrix_blocking}, snap={snapshot_unresolved}, manifest={manifest_blocking}"
     )
-    print("Exact 4-artifact parity verified: 3580 denominator blockers across all artifacts.")
+    print("Exact 4-artifact parity verified: 3305 denominator blockers across all artifacts.")
 
 if __name__ == "__main__":
     sync_governance_artifacts()

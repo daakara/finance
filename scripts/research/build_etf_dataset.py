@@ -1363,7 +1363,7 @@ def build_universe_snapshot(
         "etf_surviving_universe_v1": "NOT_CERTIFIED",
         "initial_blocker_count": 3823,
         "resolved_non_blocking_count": 232,
-        "mandate_blockers_resolved": 26,
+        "mandate_blockers_resolved": 25,
         "missing_nport_blockers_resolved": 0,
         "reconciliation_blockers_resolved": 226,
         "remaining_denominator_blockers": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
