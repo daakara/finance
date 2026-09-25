@@ -1,0 +1,635 @@
+{
+  "spec_version": "1.0.0",
+  "created_at": "2026-09-25T08:45:00Z",
+  "governance_status": "FROZEN_RESEARCH_SPECIFICATION",
+  "production_actionability_status": "NOT_AUTHORIZED",
+  "instrument_scope": {
+    "included": [
+      "1940_ACT_OPEN_END_ETFS",
+      "VERIFIED_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS"
+    ],
+    "excluded": [
+      "EXCHANGE_TRADED_NOTES_ETNS",
+      "COMMODITY_FUTURES_POOLS",
+      "CLOSED_END_FUNDS_CEFS",
+      "LEVERAGED_AND_INVERSE_ETFS"
+    ]
+  },
+  "subtype_support": {
+    "EQUITY_INDEX": {
+      "research_eligibility": "RESEARCH_ELIGIBLE_FOR_ACTIONABILITY_MODEL",
+      "benchmark": "SPY",
+      "features": [
+        "f1_trend_ratio",
+        "f2_relative_strength_60d",
+        "f3_rsi_regime_distance"
+      ]
+    },
+    "EQUITY_SECTOR": {
+      "research_eligibility": "RESEARCH_ELIGIBLE_FOR_ACTIONABILITY_MODEL",
+      "benchmark": "SPY",
+      "features": [
+        "f1_trend_ratio",
+        "f2_relative_strength_60d",
+        "f3_rsi_regime_distance"
+      ]
+    },
+    "FIXED_INCOME_GOVERNMENT": {
+      "research_eligibility": "TECHNICAL_RESEARCH_ONLY",
+      "benchmark": "IEF",
+      "features": [
+        "f1_trend_ratio",
+        "f5_yield_curve_slope",
+        "f6_rate_momentum_20d"
+      ]
+    },
+    "FIXED_INCOME_CREDIT": {
+      "research_eligibility": "TECHNICAL_RESEARCH_ONLY",
+      "benchmark": "LQD",
+      "features": [
+        "f1_trend_ratio",
+        "f7_credit_spread_trend",
+        "f8_relative_strength_vs_lqd"
+      ]
+    },
+    "COMMODITY_PHYSICAL": {
+      "research_eligibility": "RESEARCH_ELIGIBLE_FOR_ACTIONABILITY_MODEL",
+      "benchmark": "BIL",
+      "features": [
+        "f9_real_yield_regime",
+        "f10_dxy_trend",
+        "f11_bullion_breakout"
+      ]
+    },
+    "ACTIVE_EQUITY": {
+      "research_eligibility": "ANALYTICS_RESEARCH_ONLY",
+      "benchmark": "SPY",
+      "features": []
+    },
+    "COVERED_CALL": {
+      "research_eligibility": "ANALYTICS_RESEARCH_ONLY",
+      "benchmark": "SPY",
+      "features": []
+    },
+    "OTHER_ETF": {
+      "research_eligibility": "INFORMATIONAL_ONLY",
+      "benchmark": "SPY",
+      "features": []
+    }
+  },
+  "universe_construction": {
+    "universe_membership": "POINT_IN_TIME_WITHIN_OBSERVABLE_SURVIVOR_UNIVERSE",
+    "point_in_time_cross_section_complete": false,
+    "selection_frequency": "DAILY_POINT_IN_TIME",
+    "liquidity_metric": "ADV60_t = mean(Close * Volume over trailing 60 trading days through t)",
+    "survivor_universe_adv_percentile": 0.8,
+    "liquidity_filter_rule": "ADV60_t >= 80th_percentile of observable survivor universe on day t",
+    "aum_filter_policy": "EXCLUDED_FROM_HISTORICAL_FILTERING (Current AUM is not point-in-time available)",
+    "max_feature_lookback": 200,
+    "warmup_buffer": 50,
+    "warmup_buffer_class": "PREREGISTERED_POLICY",
+    "minimum_eligible_history": 250,
+    "us_listing_only": true
+  },
+  "macro_information_timing": {
+    "observation_market_date": "t",
+    "price_information_cutoff": "16:00:00 EST on day t (Official equity market close)",
+    "macro_information_cutoff": "17:30:00 EST on day t (FRED daily release window)",
+    "signal_generation_timestamp": "18:00:00 EST on day t (Post-close batch run)",
+    "earliest_execution_timestamp": "09:30:00 EST on day t+1 (Market open)",
+    "macro_release_timing": "EXPLICITLY_MODELED",
+    "same_date_post_close_macro_leakage": "PROHIBITED",
+    "timing_contract": "ETF price features use information through 16:00 EST of t. Macro series for day t are available at 17:30 EST and ingested into signal generated at 18:00 EST for execution at 09:30 EST on t+1."
+  },
+  "historical_data_sources": {
+    "price_history": {
+      "source": "yfinance",
+      "series": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+        "Adj Close"
+      ],
+      "price_adjustment_policy": {
+        "indicator_feature_price_basis": "TOTAL_RETURN_SPLIT_AND_DIVIDEND_ADJUSTED_OHLC",
+        "atr_price_basis": "TOTAL_RETURN_SPLIT_AND_DIVIDEND_ADJUSTED_OHLC",
+        "execution_order_price_basis": "RAW_UNADJUSTED_OHLC_AT_T_PLUS_1_OPEN"
+      }
+    },
+    "macro_history": {
+      "source": "FRED",
+      "series": {
+        "DGS10": {
+          "name": "10-Year Treasury Constant Maturity Rate",
+          "revision_risk": "REVISION_RISK_LOW",
+          "publication_time": "16:15 EST"
+        },
+        "T10Y2Y": {
+          "name": "10-Year Minus 2-Year Treasury Yield Spread",
+          "revision_risk": "REVISION_RISK_LOW",
+          "publication_time": "16:15 EST"
+        },
+        "BAMLH0A0HYM2": {
+          "name": "ICE BofA US High Yield Index OAS",
+          "revision_risk": "REVISION_RISK_LOW",
+          "publication_time": "16:30 EST"
+        },
+        "DFII10": {
+          "name": "10-Year Treasury Inflation-Indexed Constant Maturity",
+          "revision_risk": "REVISION_RISK_LOW",
+          "publication_time": "16:15 EST"
+        }
+      },
+      "calendar_alignment": {
+        "missing_date_policy": "FORWARD_FILL_LAST_KNOWN_PUBLISHED_VALUE",
+        "forward_fill_uses_only_previously_published_value": true
+      }
+    },
+    "currency_history": {
+      "source": "yfinance",
+      "series": "UUP",
+      "revision_risk": "REVISION_RISK_LOW"
+    }
+  },
+  "point_in_time_rules": {
+    "feature_availability": "Features for date t must use strictly data knowable at or before signal_generation_timestamp (18:00 EST on day t)",
+    "holdings_data_prohibition": "HOLDINGS_FEATURES_IN_BACKTEST = PROHIBITED (Zero point-in-time history)",
+    "snapshot_metadata_prohibition": "Current AUM, expense ratio, and sector weights PROHIBITED from historical filtering",
+    "normalization_parameters_from_future_data": "PROHIBITED (Scaler fit strictly on training partition)"
+  },
+  "survivorship_bias_status": {
+    "status": "PARTIAL",
+    "quantification": "DOCUMENTED_BUT_UNQUANTIFIED",
+    "limitation": "Liquidated, merged, and delisted historical ETFs cannot be reconstructed from free provider feeds. Historical metrics carry systematic upward survivorship bias."
+  },
+  "feature_definitions": {
+    "f1_trend_ratio": {
+      "formula": "(Close_t - SMA(Close, period=200, t)) / ATR(period=20, t)",
+      "inputs": [
+        "Close",
+        "High",
+        "Low"
+      ],
+      "lookback_sessions": 200,
+      "parameters": {
+        "sma_period": 200,
+        "atr_period": 20
+      },
+      "expected_sign": "POSITIVE"
+    },
+    "f2_relative_strength_60d": {
+      "formula": "(Close_t / Close_{t-60}) - (SPY_t / SPY_{t-60})",
+      "inputs": [
+        "Close",
+        "SPY_Close"
+      ],
+      "lookback_sessions": 60,
+      "parameters": {
+        "momentum_period": 60
+      },
+      "expected_sign": "POSITIVE"
+    },
+    "f3_rsi_regime_distance": {
+      "formula": "exp( - ((RSI(Close, period=14, t) - 60.0)^2) / (2 * (15.0)^2) )",
+      "inputs": [
+        "Close"
+      ],
+      "lookback_sessions": 28,
+      "parameters": {
+        "rsi_period": 14,
+        "regime_center": 60.0,
+        "regime_width": 15.0
+      },
+      "expected_sign": "POSITIVE"
+    },
+    "f4_vol_compression": {
+      "formula": "ATR(period=10, t) / ATR(period=50, t)",
+      "inputs": [
+        "High",
+        "Low",
+        "Close"
+      ],
+      "lookback_sessions": 50,
+      "parameters": {
+        "short_atr_period": 10,
+        "long_atr_period": 50
+      },
+      "expected_sign": "EXPLORATORY_ONLY (Excluded from directional confirmatory models)"
+    },
+    "f5_yield_curve_slope": {
+      "formula": "FRED_T10Y2Y_t",
+      "inputs": [
+        "T10Y2Y"
+      ],
+      "lookback_sessions": 1,
+      "parameters": {
+        "lag": 0
+      },
+      "expected_sign": "POSITIVE"
+    },
+    "f6_rate_momentum_20d": {
+      "formula": "FRED_DGS10_t - FRED_DGS10_{t-20}",
+      "inputs": [
+        "DGS10"
+      ],
+      "lookback_sessions": 20,
+      "parameters": {
+        "delta_period": 20
+      },
+      "expected_sign": "NEGATIVE"
+    },
+    "f7_credit_spread_trend": {
+      "formula": "FRED_BAMLH0A0HYM2_t - FRED_BAMLH0A0HYM2_{t-20}",
+      "inputs": [
+        "BAMLH0A0HYM2"
+      ],
+      "lookback_sessions": 20,
+      "parameters": {
+        "delta_period": 20
+      },
+      "expected_sign": "NEGATIVE"
+    },
+    "f8_relative_strength_vs_lqd": {
+      "formula": "(HYG_t / HYG_{t-60}) - (LQD_t / LQD_{t-60})",
+      "inputs": [
+        "HYG_Close",
+        "LQD_Close"
+      ],
+      "lookback_sessions": 60,
+      "parameters": {
+        "momentum_period": 60
+      },
+      "expected_sign": "POSITIVE"
+    },
+    "f9_real_yield_regime": {
+      "formula": "FRED_DFII10_t - FRED_DFII10_{t-20}",
+      "inputs": [
+        "DFII10"
+      ],
+      "lookback_sessions": 20,
+      "parameters": {
+        "delta_period": 20
+      },
+      "expected_sign": "NEGATIVE"
+    },
+    "f10_dxy_trend": {
+      "formula": "(UUP_t - SMA(UUP, period=50, t)) / ATR(UUP, period=20, t)",
+      "inputs": [
+        "UUP_Close",
+        "UUP_High",
+        "UUP_Low"
+      ],
+      "lookback_sessions": 50,
+      "parameters": {
+        "sma_period": 50,
+        "atr_period": 20
+      },
+      "expected_sign": "NEGATIVE"
+    },
+    "f11_bullion_breakout": {
+      "formula": "(Close_t - min_{k=0..49}(Low_{t-k})) / (max_{k=0..49}(High_{t-k}) - min_{k=0..49}(Low_{t-k}))",
+      "inputs": [
+        "Close",
+        "High",
+        "Low"
+      ],
+      "lookback_sessions": 50,
+      "parameters": {
+        "breakout_period": 50
+      },
+      "expected_sign": "POSITIVE"
+    }
+  },
+  "feature_preprocessing": {
+    "missing_value_handling": "FAIL_CLOSED (Observation dropped if any required subtype feature evaluates to null/NaN)",
+    "winsorization": {
+      "policy": "WINSORIZE_AT_PERCENTILES",
+      "lower_percentile": 0.01,
+      "upper_percentile": 0.99,
+      "estimation_scope": "TRAINING_PARTITION_ONLY"
+    },
+    "standardization": {
+      "policy": "Z_SCORE_STANDARDIZATION",
+      "formula": "z = (x - mean_train) / std_train",
+      "estimation_scope": "TRAINING_PARTITION_ONLY (Frozen scaler applied out-of-sample to validation/holdout)"
+    },
+    "direction_alignment": {
+      "policy": "ALIGN_TO_POSITIVE_HYPOTHESIS",
+      "formula": "x_aligned = x_standardized * sign_expected",
+      "description": "Features with negative expected sign are inverted so all hypothesized regression coefficients are strictly positive"
+    }
+  },
+  "target_preprocessing": {
+    "model_training_target": "WINSORIZED_BENCHMARK_RELATIVE_EXCESS_RETURN",
+    "training_target_winsorization": "1st and 99th percentiles fit on training fold only",
+    "ic_evaluation_target": "RAW_BENCHMARK_RELATIVE_EXCESS_RETURN (Rank IC is invariant to monotonic scaling; un-winsorized)"
+  },
+  "feature_hypotheses": {
+    "confirmation_policy": {
+      "SUPPORTED": "Point estimate matches expected sign AND p-value <= 0.05 under primary two-way clustered covariance",
+      "FALSIFIED": "Point estimate has opposite sign AND p-value <= 0.05 under primary two-way clustered covariance",
+      "INCONCLUSIVE": "p-value > 0.05 under primary two-way clustered covariance"
+    }
+  },
+  "feature_source_requirements": {
+    "price_history": "Daily OHLCV via yfinance / Alpaca",
+    "macro_series": "Daily constant maturity yields and spreads via FRED API",
+    "currency_series": "Daily OHLCV of UUP / DX-Y.NYB",
+    "holdings_data": "EXCLUDED from historical backtesting"
+  },
+  "observation_generator": {
+    "stage_a_ranking": {
+      "generator_type": "ALL_ELIGIBLE_ETF_DAYS",
+      "predicate": "Instrument is US-listed, in supported subtype, in trailing ADV60 top 20% of observable survivor universe, history_sessions >= 250, and all subtype features are non-null",
+      "position_suppression": false
+    },
+    "stage_b_execution": {
+      "generator_type": "POSITION_SUPPRESSED_TRADES",
+      "predicate": "Stage-A ranking score exceeds actionability threshold AND instrument is not currently in an open simulated position",
+      "position_suppression": true
+    }
+  },
+  "duplicate_suppression": {
+    "stage_a_ranking": "Zero duplicate rows per (symbol, observation_date) key",
+    "stage_b_execution": "Position-open suppression prevents overlapping trades on same instrument"
+  },
+  "ranking_outcomes": {
+    "primary_horizon_sessions": 20,
+    "primary_outcome_formula": "Excess Return: (Close_{t+20} / Close_t) - (Benchmark_{t+20} / Benchmark_t)",
+    "secondary_diagnostic_horizons": [
+      5,
+      10,
+      60
+    ],
+    "secondary_diagnostic_policy": "Diagnostic horizons are strictly informational and cannot guide model selection"
+  },
+  "risk_outcomes": {
+    "mae_formula": "min_{k=1..20}(Low_{t+k} - Open_{t+1}) / ATR_20(t)",
+    "mfe_formula": "max_{k=1..20}(High_{t+k} - Open_{t+1}) / ATR_20(t)",
+    "realized_volatility_formula": "std(daily_returns_{t+1..t+20}) * sqrt(252)"
+  },
+  "execution_outcomes": {
+    "trade_pnl": "Net realized return after trade exit (stop, target, or time)",
+    "holding_days": "Number of trading sessions from entry to exit",
+    "exit_reason": [
+      "STOP_LOSS_HIT",
+      "PROFIT_TARGET_HIT",
+      "TIME_EXPIRY_20D"
+    ]
+  },
+  "benchmark_definitions": {
+    "EQUITY_INDEX": {
+      "symbol": "SPY",
+      "nature": "BROAD_MARKET_EQUITY_BETA"
+    },
+    "EQUITY_SECTOR": {
+      "symbol": "SPY",
+      "nature": "CROSS_SECTIONAL_SECTOR_ALLOCATION"
+    },
+    "FIXED_INCOME_GOVERNMENT": {
+      "symbol": "IEF",
+      "nature": "INTERMEDIATE_DURATION_BENCHMARK"
+    },
+    "FIXED_INCOME_CREDIT": {
+      "symbol": "LQD",
+      "nature": "INVESTMENT_GRADE_SPREAD_BENCHMARK"
+    },
+    "COMMODITY_PHYSICAL": {
+      "symbol": "BIL",
+      "nature": "RISK_FREE_CARRY_OPPORTUNITY_COST"
+    }
+  },
+  "primary_execution_model": {
+    "entry_timing": "T_PLUS_1_OPEN",
+    "entry_price": "Open_{t+1}",
+    "execution_bounds": "DAILY_OHLCV_ONLY",
+    "intraday_resolution": "WORST_CASE_STOP_PRECEDENCE (If both stop and target touched in bar k, stop triggered first)"
+  },
+  "trade_simulation_contract": {
+    "entry_timing": "T_PLUS_1_OPEN",
+    "entry_price": "Open_{t+1}",
+    "execution_bounds": "DAILY_OHLCV_ONLY",
+    "intraday_resolution": "WORST_CASE_STOP_PRECEDENCE (Stop-loss triggers first if both stop and target touched)",
+    "time_stop_sessions": 20,
+    "dividend_crediting": "Credited to cash balance on ex-dividend date"
+  },
+  "stage_b_execution_policy": {
+    "stage_b_stop_policy": "UNCALIBRATED",
+    "stage_b_target_policy": "UNCALIBRATED",
+    "stage_b_actionability_threshold": "UNCALIBRATED",
+    "stage_b_uncalibrated_acceptance_concept": true
+  },
+  "transaction_cost_policy": {
+    "policy_nature": "SENSITIVITY_SCENARIOS_ONLY",
+    "scenarios": {
+      "LOW_COST": {
+        "half_spread_bps": 1.0,
+        "round_trip_bps": 2.0
+      },
+      "BASE_COST": {
+        "half_spread_bps": 3.0,
+        "round_trip_bps": 6.0
+      },
+      "HIGH_COST": {
+        "half_spread_bps": 7.5,
+        "round_trip_bps": 15.0
+      }
+    },
+    "application_scope": "STAGE_B_EXECUTION_RESEARCH_ONLY (Stage-A ranking research is unpolluted by transaction cost assumptions)"
+  },
+  "validation_protocol": {
+    "protocol_type": "EXPANDING_WINDOW_WALK_FORWARD",
+    "folds": [
+      {
+        "train": [
+          "2008-05-01",
+          "2018-12-31"
+        ],
+        "val": [
+          "2019-01-01",
+          "2019-12-31"
+        ]
+      },
+      {
+        "train": [
+          "2008-05-01",
+          "2019-12-31"
+        ],
+        "val": [
+          "2020-01-01",
+          "2020-12-31"
+        ]
+      },
+      {
+        "train": [
+          "2008-05-01",
+          "2020-12-31"
+        ],
+        "val": [
+          "2021-01-01",
+          "2021-12-31"
+        ]
+      },
+      {
+        "train": [
+          "2008-05-01",
+          "2021-12-31"
+        ],
+        "val": [
+          "2022-01-01",
+          "2022-12-31"
+        ]
+      },
+      {
+        "train": [
+          "2008-05-01",
+          "2022-12-31"
+        ],
+        "val": [
+          "2023-01-01",
+          "2023-12-31"
+        ]
+      },
+      {
+        "train": [
+          "2008-05-01",
+          "2023-12-31"
+        ],
+        "val": [
+          "2024-01-01",
+          "2024-12-31"
+        ]
+      }
+    ],
+    "holdout_partition": {
+      "test": [
+        "2025-01-01",
+        "2025-12-31"
+      ]
+    }
+  },
+  "dependence_correction": {
+    "primary_inference": "TWO_WAY_CLUSTERED_COVARIANCE",
+    "clusters": [
+      "DATE_CLUSTER",
+      "SUBTYPE_CLUSTER"
+    ],
+    "hac_lag_choice": "H_MINUS_1 (L = 19 sessions for H = 20 overlapping returns; preregistered policy)",
+    "robustness_inference": "POLITIS_ROMANO_STATIONARY_BLOCK_BOOTSTRAP (mean block length = 20)"
+  },
+  "multiple_testing_policy": {
+    "method": "BENJAMINI_HOCHBERG_FDR",
+    "q_cutoff": 0.05,
+    "fdr_family": "GLOBAL_FAMILY (Applied across all 11 directional subtype-feature hypotheses)",
+    "policy_nature": "PREREGISTERED_POLICY"
+  },
+  "primary_model_family": {
+    "estimator_name": "RIDGE_REGRESSION_TOWARD_EQUAL_WEIGHT_PRIOR",
+    "objective_loss_function": "argmin_w (1 / (2*N)) * ||Y - X w||_2^2 + (lambda / 2) * ||w - w_prior||_2^2",
+    "estimator_formula": "w_hat = (X^T X + N * lambda * I)^{-1} (X^T Y + N * lambda * w_prior)",
+    "prior_vector": "w_prior = (1 / K) * 1_K",
+    "direction_alignment": "Features pre-aligned by expected sign; coefficients opposite prior indicate hypothesis weakness",
+    "sensitivity_alternative": "NON_NEGATIVE_LEAST_SQUARES_NNLS"
+  },
+  "baseline_models": [
+    "EQUAL_WEIGHT_BASELINE (w_i = 1 / K)",
+    "BUY_AND_HOLD_BENCHMARK",
+    "SMA_50_200_TREND_FILTER"
+  ],
+  "hyperparameter_search_space": {
+    "lambda_grid": [
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0
+    ],
+    "selection_metric": "Mean Validation Out-of-Sample Rank Information Coefficient (IC)",
+    "fold_aggregation_policy": "EQUAL_WEIGHT across validation folds",
+    "tie_break_policy": "SELECT_HIGHEST_LAMBDA (Maximal shrinkage toward prior)",
+    "holdout_access": "STRICTLY_PROHIBITED during lambda selection"
+  },
+  "exploratory_partition": {
+    "start_date": "2008-05-01",
+    "end_date": "2018-12-31",
+    "purpose": "Feature discovery, distribution inspection, and code pipeline verification"
+  },
+  "confirmatory_partition": {
+    "start_date": "2019-01-01",
+    "end_date": "2024-12-31",
+    "purpose": "Expanding-window walk-forward parameter estimation and validation"
+  },
+  "historical_holdout_policy": {
+    "partition": "2025-01-01 to 2025-12-31",
+    "2025_holdout_status": "HISTORICAL_HOLDOUT",
+    "evaluation_budget": "EXACTLY_ONCE evaluation after confirmatory candidate freeze"
+  },
+  "experiment_ledger_contract": {
+    "path": "analyst_dashboard/governance/etf_research_ledger.json",
+    "append_only": true,
+    "states": [
+      "REGISTERED",
+      "DATASET_BUILT",
+      "DATASET_VERIFIED",
+      "TRAINED",
+      "VALIDATED",
+      "FROZEN_CANDIDATE",
+      "BLIND_TESTED",
+      "ACCEPTED",
+      "REJECTED"
+    ]
+  },
+  "blind_test_policy": {
+    "true_blind_validation": "FUTURE_PROSPECTIVE_ONLY (Epoch-5 prospective ledger)",
+    "historical_holdout_gate": "Failure on 2025 historical holdout causes permanent candidate REJECTION"
+  },
+  "dataset_schema": {
+    "observations_table": {
+      "observation_id": "string (uuid4)",
+      "symbol": "string",
+      "subtype": "string",
+      "observation_date": "string (YYYY-MM-DD)",
+      "feature_timestamp": "string (ISO8601)",
+      "features": "map<string, float>",
+      "in_universe": "boolean"
+    },
+    "outcomes_table": {
+      "observation_id": "string (foreign key)",
+      "symbol": "string",
+      "observation_date": "string",
+      "horizon_20d_excess_return": "float",
+      "horizon_5d_excess_return": "float",
+      "horizon_10d_excess_return": "float",
+      "horizon_60d_excess_return": "float",
+      "mae_20d": "float",
+      "mfe_20d": "float",
+      "realized_vol_20d": "float"
+    }
+  },
+  "dataset_lineage": {
+    "artifacts": [
+      "etf_observations_v1.parquet",
+      "etf_outcomes_v1.parquet",
+      "etf_universe_membership_v1.parquet",
+      "etf_macro_v1.parquet",
+      "etf_dataset_manifest_v1.json"
+    ],
+    "hashing_requirement": "Every dataset build must produce SHA-256 digests recorded in etf_dataset_manifest_v1.json"
+  },
+  "data_quality_gates": [
+    "GATE_1_NO_DUPLICATE_OBSERVATION_KEYS",
+    "GATE_2_MONOTONIC_TIMESTAMPS_PER_SYMBOL",
+    "GATE_3_ZERO_FORWARD_LEAKAGE_IN_FEATURES",
+    "GATE_4_NO_CURRENT_AUM_OR_HOLDINGS_IN_HISTORICAL_ROWS",
+    "GATE_5_MACRO_OBSERVATIONS_PRECEDE_EXECUTION_TIMESTAMPS",
+    "GATE_6_BENCHMARK_TIMESTAMPS_ALIGNED_WITH_OBSERVATIONS",
+    "GATE_7_FEATURE_WARMUP_BOUNDS_SATISFIED"
+  ],
+  "lookahead_tests": [
+    "TEST_FEATURE_LEAKAGE: feature[t] invariant to changes in price[t+1:]",
+    "TEST_UNIVERSE_LEAKAGE: universe[t] invariant to ADV at t+1",
+    "TEST_OUTCOME_ISOLATION: outcomes table stored in physically separate parquet partition"
+  ]
+}
