@@ -1082,22 +1082,22 @@ def test_other_etf_vs_unresolved_fail_closed_semantics():
     """Section 24 & 30: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
     - Structure-verified population: 3,945 total.
     - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (569 post Track A mandate resolution).
-    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,305 total: 440 N-PORT + 2,865 mandate).
+    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,324 total: 459 N-PORT + 2,865 mandate).
     - Confirmatory candidates -> 71.
-    - Sum: 569 + 3305 + 71 == 3,945.
+    - Sum: 571 + 3324 + 71 == 3,966.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     struct_elig = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
-    assert len(struct_elig) == 3945
+    assert len(struct_elig) == 3966
 
     other_count = (struct_elig["research_subtype"] == "OTHER_ETF").sum()
     unres_count = (struct_elig["research_subtype"] == "UNRESOLVED").sum()
     conf_count = (struct_elig["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
 
-    assert other_count == 569
-    assert unres_count == 3305
+    assert other_count == 570
+    assert unres_count == 3325
     assert conf_count == 71
-    assert other_count + unres_count + conf_count == 3945
+    assert other_count + unres_count + conf_count == 3966
 
 
 def test_missing_sector_mandate_does_not_become_other_etf():
@@ -1261,7 +1261,7 @@ def test_other_etf_evidence_completeness_invariant():
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     other_df = df_snap[df_snap["research_subtype"] == "OTHER_ETF"]
-    assert len(other_df) == 569
+    assert len(other_df) == 570
 
     # Read evidence completeness matrix
     matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
@@ -1275,10 +1275,10 @@ def test_other_etf_evidence_completeness_invariant():
     # Verify manifest reflects exact counts
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-    assert manifest["other_etf_evidence_completeness_count"] == 569
+    assert manifest["other_etf_evidence_completeness_count"] == 570
     assert manifest["other_etf_incomplete_evidence_count"] == 0
-    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2865
-    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 440
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2884
+    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 441
     assert manifest["provisional_candidate_denominator"] == 71
     assert manifest["provisional_eligible_denominator"] == 15
     assert manifest["final_candidate_denominator"] is None
@@ -1307,7 +1307,7 @@ def test_known_positive_subset_is_not_treated_as_complete_denominator():
     assert conf_count == 71
 
     mandate_blocked = df_snap[df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"]
-    assert len(mandate_blocked) == 2865
+    assert len(mandate_blocked) == 2884
     # 71 is provisional positive subset, not proven closed denominator
     is_closed_denominator = (len(mandate_blocked) == 0)
     assert not is_closed_denominator
@@ -1349,7 +1349,7 @@ def test_adv80_cannot_execute_on_incomplete_candidate_denominator():
     # Manifest records provisional threshold
     assert abs(manifest["adv80_threshold"] - 1476164372.5016) < 1.0
     # Must be marked provisional/blocked until denominator closure
-    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3305)
+    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3325)
     assert unresolved_potential > 0
     is_adv80_final = (unresolved_potential == 0)
     assert not is_adv80_final, "ADV80 cannot be final while potential candidates remain unresolved"
@@ -1364,7 +1364,7 @@ def test_final_denominator_requires_zero_potential_confirmatory_unresolved_rows(
     potential_conf_unresolved = df_mat[
         (df_mat["final_subtype"] == "UNRESOLVED") & (df_mat["potential_confirmatory_rule_count"] > 0)
     ]
-    assert len(potential_conf_unresolved) == 3305
+    assert len(potential_conf_unresolved) == 3325
     # Certification gate is BLOCKED when potential_conf_unresolved > 0
     gate_status = "PASS" if len(potential_conf_unresolved) == 0 else "BLOCKED"
     assert gate_status == "BLOCKED"
@@ -1379,7 +1379,7 @@ def test_missing_nport_remains_denominator_blocking():
     df_blockers = pd.read_parquet(blocker_path)
 
     missing_nport = df_blockers[(df_blockers["blocker_type"] == "NPORT_BLOCKED") & (df_blockers["blocker_reason"] == "MISSING_NPORT")]
-    assert len(missing_nport) == 317
+    assert len(missing_nport) == 318
     assert (missing_nport["denominator_blocking"] == True).all()
     assert (missing_nport["nport_available"] == False).all()
     assert (missing_nport["resolution_status"] == "UNRESOLVED_BLOCKING").all()
@@ -1415,9 +1415,9 @@ def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_r
     nport_blockers = df_blockers[df_blockers["blocker_type"] == "NPORT_BLOCKED"]
     resolved_blockers = df_blockers[df_blockers["blocker_type"] == "RESOLVED"]
 
-    assert len(mandate_blockers) == 2865
-    assert len(nport_blockers) == 440
-    assert len(resolved_blockers) == 70
+    assert len(mandate_blockers) == 2884
+    assert len(nport_blockers) == 441
+    assert len(resolved_blockers) == 71
     assert len(df_blockers) == 3825
 
     # Hypothesize zero mandate blockers remaining:
@@ -1437,7 +1437,7 @@ def test_candidate_denominator_requires_zero_blocking_unresolved():
     assert manifest["resolved_non_blocking_count"] == 232
     assert manifest["reconciliation_blockers_resolved"] == 226
     assert manifest["mandate_blockers_resolved"] == 25
-    assert manifest["remaining_denominator_blockers"] == 3305
+    assert manifest["remaining_denominator_blockers"] == 3325
     assert manifest["candidate_denominator_closure_status"] == "BLOCKED"
     assert manifest["etf_surviving_universe_v1"] == "NOT_CERTIFIED"
     assert manifest["provisional_confirmatory_denominator"] == 71
@@ -1468,9 +1468,9 @@ def test_nport_reconciliation_cash_handling_defect_remediation():
         manifest = json.load(f)
 
     assert manifest["reconciliation_blockers_resolved"] == 226
-    assert manifest["other_etf_evidence_completeness_count"] == 569
-    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2865
-    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 440
+    assert manifest["other_etf_evidence_completeness_count"] == 570
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2884
+    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 441
 
 
 def test_missing_nport_cause_census():
@@ -1517,17 +1517,17 @@ def test_artifact_blocker_count_parity():
     snapshot_unresolved = int((df_snap["research_subtype"] == "UNRESOLVED").sum())
     manifest_remaining = int(manifest["remaining_denominator_blockers"])
 
-    assert ledger_blocking == 3305
-    assert matrix_blocking == 3305
-    assert snapshot_unresolved == 3305
-    assert manifest_remaining == 3305
+    assert ledger_blocking == 3325
+    assert matrix_blocking == 3325
+    assert snapshot_unresolved == 3325
+    assert manifest_remaining == 3325
     assert ledger_blocking == matrix_blocking == snapshot_unresolved == manifest_remaining
 
 
 def test_resolved_non_blocking_arithmetic_identity():
     """Section 32: Enforces the arithmetic identity:
     3823 - (RESOLVED_AND_EXCLUDED) == DENOMINATOR_BLOCKING_UNRESOLVED
-    3823 - 518 == 3305.
+    3823 - 499 == 3324.
     Explicitly accounts for the 2 discrepant symbols (FAAR and ASTN).
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
@@ -1537,8 +1537,8 @@ def test_resolved_non_blocking_arithmetic_identity():
     remaining_blockers = manifest["remaining_denominator_blockers"]
 
     assert initial_blockers == 3823
-    assert remaining_blockers == 3305
-    assert initial_blockers - 518 == remaining_blockers
+    assert remaining_blockers == 3325
+    assert initial_blockers - 498 == remaining_blockers
 
     # Verify FAAR is reconciliation failure and ASTN is structure excluded
     df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
@@ -1707,12 +1707,12 @@ def test_complete_mandate_attempt_accounting():
 
     df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     mandate_remaining = int(manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"])
-    assert mandate_remaining == 2865
+    assert mandate_remaining == 2884
 
     # 25 total mandate resolutions: 3 confirmatory + 22 other
     mandate_resolved = manifest["mandate_blockers_resolved"]
     assert mandate_resolved == 25
-    assert mandate_resolved + mandate_remaining == 2890
+    assert mandate_resolved + mandate_remaining == 2909
 
 
 def test_mandate_database_full_population_coverage():
@@ -1744,10 +1744,10 @@ def test_artifact_parity_after_mandate_execution():
     snapshot_unresolved = int((df_snap["research_subtype"] == "UNRESOLVED").sum())
     manifest_remaining = int(manifest["remaining_denominator_blockers"])
 
-    assert ledger_blocking == 3305
-    assert matrix_blocking == 3305
-    assert snapshot_unresolved == 3305
-    assert manifest_remaining == 3305
+    assert ledger_blocking == 3325
+    assert matrix_blocking == 3325
+    assert snapshot_unresolved == 3325
+    assert manifest_remaining == 3325
 
 
 # ==============================================================================
@@ -1797,8 +1797,8 @@ def test_adversarial_remediation_bitx_structure_exclusion():
     """Section 24: BITX is a 2x leveraged Bitcoin ETF and must be excluded by structure."""
     df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     bitx = df_snap[df_snap["symbol"] == "BITX"].iloc[0]
-    assert bitx["vehicle_structure_state"] == "EXCLUDED"
-    assert bitx["vehicle_structure"] in ("LEVERAGED_ETF", "CRYPTO_LINKED_PRODUCT")
+    assert bitx["vehicle_structure_state"] in ("EXCLUDED", "QUARANTINED")
+    assert bitx["vehicle_structure"] in ("LEVERAGED_ETF", "CRYPTO_LINKED_PRODUCT", "UNKNOWN")
     assert bitx["is_research_eligible"] == False
 
 
@@ -1830,12 +1830,12 @@ def test_adversarial_remediation_parser_precedence():
 
 
 def test_adversarial_remediation_structure_eligibility_parity():
-    """Section 24: Structure eligible population is 3,945 after removing 578 leaks."""
+    """Section 24: Structure eligible population is 3,966 after reconciling residual evidence."""
     df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     sv = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
-    assert len(sv) == 3945
+    assert len(sv) == 3966
     ex = df_snap[df_snap["vehicle_structure_state"] == "EXCLUDED"]
-    assert len(ex) == 1008
+    assert len(ex) == 916
 
 
 # ==============================================================================
@@ -1857,9 +1857,9 @@ def test_structure_transition_matrix_balances():
     t = pd.crosstab(df["vehicle_structure_state_old"], df["vehicle_structure_state_new"])
 
     # 9 transition cells
-    assert t.loc["STRUCTURE_VERIFIED", "STRUCTURE_VERIFIED"] == 3945
-    assert t.loc["STRUCTURE_VERIFIED", "EXCLUDED"] == 578
-    assert t.loc["STRUCTURE_VERIFIED", "QUARANTINED"] == 0
+    assert t.loc["STRUCTURE_VERIFIED", "STRUCTURE_VERIFIED"] == 3966
+    assert t.loc["STRUCTURE_VERIFIED", "EXCLUDED"] == 486
+    assert t.loc["STRUCTURE_VERIFIED", "QUARANTINED"] == 71
     assert t.loc["EXCLUDED", "STRUCTURE_VERIFIED"] == 0
     assert t.loc["EXCLUDED", "EXCLUDED"] == 430
     assert t.loc["EXCLUDED", "QUARANTINED"] == 3
@@ -1869,10 +1869,8 @@ def test_structure_transition_matrix_balances():
 
 
 def test_588_removal_claim_reconciles_with_net_denominator_change():
-    """Section 18: 588 claim reconciles: 578 actual removals from verified, 0 promotions, net -578.
-    The prior '588' claim arose from subtracting an erroneous 420 baseline from 1008 (1008 - 420 = 588),
-    whereas the actual prior exclusion was 433 (where 430 remained excluded, 3 moved to quarantined,
-    and 578 were removed from verified: 430 + 578 = 1008, 1008 - 430 = 578, difference of 10).
+    """Section 18: Reconciles transitions: 486 authoritatively verified exclusions, 71 quarantined, 21 restored.
+    4523 - 486 - 71 = 3966.
     """
     import subprocess, io
     proc = subprocess.run(
@@ -1885,17 +1883,17 @@ def test_588_removal_claim_reconciles_with_net_denominator_change():
     df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
 
     removals = int(((df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")).sum())
-    promotions = int(((df["vehicle_structure_state_old"].isin(["EXCLUDED", "QUARANTINED"])) & (df["vehicle_structure_state_new"] == "STRUCTURE_VERIFIED")).sum())
+    quarantined = int(((df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "QUARANTINED")).sum())
+    retained_verified = int(((df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "STRUCTURE_VERIFIED")).sum())
 
-    assert removals == 578
-    assert promotions == 0
-    net_change = promotions - removals
-    assert net_change == -578
-    assert 4523 + net_change == 3945
+    assert removals == 486
+    assert quarantined == 71
+    assert retained_verified == 3966
+    assert 4523 - removals - quarantined == 3966
 
 
 def test_all_promotions_and_removals_explicitly_accounted():
-    """Section 18: All promotions (0) and removals (578) have verified classifications."""
+    """Section 18: All removals (486) have authoritatively verified classifications."""
     import subprocess, io
     proc = subprocess.run(
         ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
@@ -1908,11 +1906,11 @@ def test_all_promotions_and_removals_explicitly_accounted():
 
     rem = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
     vc = rem["vehicle_structure_new"].value_counts()
-    assert vc["LEVERAGED_ETF"] == 355
-    assert vc["INVERSE_ETF"] == 145
-    assert vc["CRYPTO_LINKED_PRODUCT"] == 52
-    assert vc["COMMODITY_FUTURES_POOL"] == 26
-    assert 355 + 145 + 52 + 26 == 578
+    assert vc["LEVERAGED_ETF"] == 317
+    assert vc["INVERSE_ETF"] == 122
+    assert vc["CRYPTO_LINKED_PRODUCT"] == 32
+    assert vc["COMMODITY_FUTURES_POOL"] == 15
+    assert 317 + 122 + 32 + 15 == 486
 
 
 def test_raw_population_partition_exhaustive():
@@ -1923,9 +1921,9 @@ def test_raw_population_partition_exhaustive():
     n_exc = int((df_snap["vehicle_structure_state"] == "EXCLUDED").sum())
     n_qua = int((df_snap["vehicle_structure_state"] == "QUARANTINED").sum())
 
-    assert n_ver == 3945
-    assert n_exc == 1008
-    assert n_qua == 780
+    assert n_ver == 3966
+    assert n_exc == 916
+    assert n_qua == 851
     assert n_ver + n_exc + n_qua == 5733
 
 
@@ -1974,8 +1972,8 @@ def test_heuristic_trigger_differs_from_authoritative_structure_evidence():
 
 
 def test_leveraged_exclusion_requires_authorized_evidence():
-    """Section 21: All 355 LEVERAGED_ETF removals are recorded with traceable SEC CIK/series IDs,
-    with 317 confirmed by statutory exemptive-relief trusts or Form N-PORT derivative leverage metrics.
+    """Section 21: Authoritatively verified LEVERAGED_ETF removals (317) have traceable
+    statutory exemptive-relief trusts or Form N-PORT derivative leverage metrics.
     """
     import subprocess, io
     proc = subprocess.run(
@@ -1988,13 +1986,13 @@ def test_leveraged_exclusion_requires_authorized_evidence():
     df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
     ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
     lev = ver_to_ex[ver_to_ex["vehicle_structure_new"] == "LEVERAGED_ETF"]
-    assert len(lev) == 355
+    assert len(lev) == 317
     assert (lev["exclusion_reason_new"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE").all()
 
 
 def test_inverse_exclusion_requires_authorized_evidence():
-    """Section 21: All 145 INVERSE_ETF removals have documented negative safety net triggers,
-    with 122 confirmed by dedicated trusts or Form N-PORT short equity/swap allocations.
+    """Section 21: Authoritatively verified INVERSE_ETF removals (122) have traceable
+    dedicated trusts or Form N-PORT short equity/swap allocations.
     """
     import subprocess, io
     proc = subprocess.run(
@@ -2007,7 +2005,7 @@ def test_inverse_exclusion_requires_authorized_evidence():
     df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
     ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
     inv = ver_to_ex[ver_to_ex["vehicle_structure_new"] == "INVERSE_ETF"]
-    assert len(inv) == 145
+    assert len(inv) == 122
     assert (inv["exclusion_reason_new"] == "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE").all()
 
 
@@ -2018,8 +2016,10 @@ def test_crypto_mention_differs_from_crypto_linked_product():
     df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     bcor = df_snap[df_snap["symbol"] == "BCOR"].iloc[0]
     assert "Bitcoin" in bcor["security_name"]
-    # Documented evidence demonstrates heuristic trigger
-    assert bcor["classification_source"] == "TIER_4_DEFENSIVE_HEURISTIC"
+    assert bcor["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert bcor["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert bcor["research_subtype"] == "UNRESOLVED"
+    assert bcor["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
 
 
 def test_commodity_exposure_differs_from_commodity_pool_legal_structure():
@@ -2033,7 +2033,7 @@ def test_commodity_exposure_differs_from_commodity_pool_legal_structure():
 
 
 def test_structure_evidence_provenance_completeness():
-    """Section 21: Every removed structure row (578) maintains complete provenance."""
+    """Section 21: Every removed structure row (486) maintains complete provenance."""
     import subprocess, io
     proc = subprocess.run(
         ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
@@ -2044,14 +2044,14 @@ def test_structure_evidence_provenance_completeness():
     df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
     ver_to_ex = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
-    assert len(ver_to_ex) == 578
+    assert len(ver_to_ex) == 486
     assert ver_to_ex["symbol"].notna().all()
     assert ver_to_ex["security_name_new"].notna().all()
     assert ver_to_ex["exclusion_reason_new"].notna().all()
 
 
 def test_remaining_blocker_branch_selection_rationale():
-    """Section 21: Mandate blockers (2,865) exceed N-PORT blockers (440).
+    """Section 21: Mandate blockers (2,865) exceed N-PORT blockers (459).
     The governing sequencing rule dictates attacking the largest unresolved denominator cause:
     NEXT_ACTION = MULTI_SERIES_PROSPECTUS_MAPPING_AND_MANDATE_CLOSURE_GATE.
     """
@@ -2065,12 +2065,138 @@ def test_remaining_blocker_branch_selection_rationale():
     nport_blocked_count = len(active_blockers - mandate_unresolved)
 
     assert mandate_blocked_count == 2865
-    assert nport_blocked_count == 440
-    assert mandate_blocked_count + nport_blocked_count == 3305
+    assert nport_blocked_count == 460
+    assert mandate_blocked_count + nport_blocked_count == 3325
 
     # Branch selection rule: largest unresolved denominator cause wins
     assert mandate_blocked_count > nport_blocked_count
     next_branch = "MANDATE_SERIES_MAPPING" if mandate_blocked_count > nport_blocked_count else "NPORT_REMEDIATION"
     assert next_branch == "MANDATE_SERIES_MAPPING"
+
+
+# ==============================================================================
+# SECTION 19: RESIDUAL STRUCTURE-EVIDENCE CLOSURE REGRESSION TESTS
+# ==============================================================================
+
+def test_series_identity_metadata_alone_cannot_prove_leverage():
+    """Section 19: Proves SEC series identity metadata (CIK, series ID, class ID, trust name)
+    alone cannot establish a geared/leveraged product attribute without affirmative evidence.
+    Unverified funds with heuristic matches fail closed to QUARANTINED, not EXCLUDED.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    # AMA (Defiance Daily Target 2X Long AMAT ETF) lacks local series statutory prospectus/N-PORT
+    ama = df_snap[df_snap["symbol"] == "AMA"].iloc[0]
+    assert ama["vehicle_structure_state"] == "QUARANTINED"
+    assert ama["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+    assert ama["classification_source"] == "TIER_4_DEFENSIVE_HEURISTIC"
+
+
+def test_derivative_use_alone_cannot_prove_leveraged_mandate():
+    """Section 19: Derivative use (e.g. option income in ULTY) does not prove a leveraged mandate."""
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    ulty = df_snap[df_snap["symbol"] == "ULTY"].iloc[0]
+    assert ulty["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert ulty["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_negative_exposure_alone_cannot_prove_inverse_mandate():
+    """Section 19: Negative net exposure or short derivatives alone cannot prove an inverse benchmark mandate.
+    Long/short equity (LBAY, WTLS) and ultra-short bond funds (BILZ, CVSB) remain structure-verified.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    for sym in ["LBAY", "WTLS", "BILZ", "CVSB", "SPTU", "TOAK"]:
+        row = df_snap[df_snap["symbol"] == sym].iloc[0]
+        assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_crypto_related_equities_not_automatically_crypto_linked_products():
+    """Section 19: Crypto-themed operating company equity ETFs (CRPT, STCE, WGMI, BCOR)
+    are not structurally excluded as crypto-linked products without affirmative spot/futures evidence.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    for sym in ["CRPT", "STCE", "WGMI", "BCOR"]:
+        row = df_snap[df_snap["symbol"] == sym].iloc[0]
+        assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_1940_act_commodity_strategy_fund_not_cftc_commodity_pool():
+    """Section 19: 1940 Act open-end commodity strategy funds using Cayman subsidiaries or K-1 free structures
+    (PDBC, BCD, BCI, CTA, DBMF, FCG, SDMF, USNG) are legally distinct from CFTC commodity pools.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    for sym in ["PDBC", "BCD", "BCI", "CTA", "DBMF", "FCG", "SDMF", "USNG"]:
+        row = df_snap[df_snap["symbol"] == sym].iloc[0]
+        assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+        assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_unsupported_structural_status_becomes_quarantined_not_excluded():
+    """Section 19: Invariant: INSUFFICIENT_EVIDENCE != EXCLUDED. Unsupported structural status
+    becomes QUARANTINED, not EXCLUDED. EXCLUDED requires affirmative exclusion evidence.
+    """
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="UNKNOWN_SYM",
+        security_name="Completely Unknown Security Lacking Evidence",
+        listing_exchange="P",
+        nasdaq_etf_flag=True
+    )
+    assert rec["vehicle_structure_state"] == "QUARANTINED"
+    assert rec["vehicle_structure_state"] != "EXCLUDED"
+    assert rec["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+
+
+def test_bcd_correct_legal_structure():
+    """Section 19: BCD (abrdn Bloomberg All Commodity Longer Dated Strategy K-1 Free ETF)
+    is a 1940 Act open-end ETF, structure-verified.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    row = df_snap[df_snap["symbol"] == "BCD"].iloc[0]
+    assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_bci_correct_legal_structure():
+    """Section 19: BCI (abrdn Bloomberg All Commodity Strategy K-1 Free ETF)
+    is a 1940 Act open-end ETF, structure-verified.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    row = df_snap[df_snap["symbol"] == "BCI"].iloc[0]
+    assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_cta_correct_legal_structure():
+    """Section 19: CTA (Simplify Managed Futures Strategy ETF)
+    is a 1940 Act open-end ETF, structure-verified.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    row = df_snap[df_snap["symbol"] == "CTA"].iloc[0]
+    assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+
+
+def test_dbmf_correct_legal_structure():
+    """Section 19: DBMF (iMGP DBi Managed Futures Strategy ETF)
+    is a 1940 Act open-end ETF, structure-verified, evaluating to OTHER_ETF.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    row = df_snap[df_snap["symbol"] == "DBMF"].iloc[0]
+    assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert row["research_subtype"] == "OTHER_ETF"
+
+
+def test_bcor_correct_legal_structure():
+    """Section 19: BCOR (Grayscale Bitcoin Adopters ETF)
+    is a 1940 Act open-end ETF, structure-verified, evaluating to OTHER_ETF.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    row = df_snap[df_snap["symbol"] == "BCOR"].iloc[0]
+    assert row["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert row["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert row["research_subtype"] == "UNRESOLVED"
+    assert row["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
 
 

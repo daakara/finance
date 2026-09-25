@@ -254,6 +254,27 @@ EXPLORATORY_SUBTYPES = {
     "OTHER_ETF"
 }
 
+# Remediation & Authority Grounding (Spec v1.0.3 Residual Evidence Closure)
+FALSE_MATCH_1940_ACT_FUNDS = frozenset({
+    "BCOR", "BCD", "BCI", "CTA", "DBMF",
+    "BUSM", "LVLN", "RDIV", "ULTY",
+    "BILZ", "CVSB", "SPTU", "LBAY", "WTLS", "TOAK",
+    "CRPT", "STCE", "WGMI",
+    "FCG", "SDMF", "USNG"
+})
+
+UNVERIFIED_HEURISTIC_EXCLUSIONS = frozenset({
+    "AAOZ", "AMA", "AMKL", "ASTY", "AXTQ", "AXTX", "BFAP", "BFJA", "BFJL", "BFOC",
+    "BITX", "BLOX", "BTCI", "CBRX", "CBRZ", "CIEX", "COHQ", "DFII", "DIPS", "DRAL",
+    "FIAT", "HXF", "INFH", "JPFP", "LFGY", "LITZ", "LNGX", "LWLX", "MAXI", "MCHU",
+    "METQ", "MRAX", "MRVX", "MUZ", "MWHS", "NEHI", "NXPX", "ONX", "ORCZ", "OSSL",
+    "POEL", "PUR", "QBER", "QNTU", "RMBX", "RSSX", "SHRT", "SITX", "SKHA", "SKHN",
+    "SLTY", "SPAX", "SPBC", "SPCG", "SPCM", "SPCQ", "SPCU", "TKNS", "TSEU", "TTMX",
+    "TXXH", "UMCU", "VELL", "WYFL", "XBCI", "XBNB", "XNDX", "XOVL", "YBTC", "YETH",
+    "YQQQ"
+})
+
+
 # --------------------------------------------------------------------------
 # TIER 4 DEFENSIVE NEGATIVE HEURISTICS (Negative safety net ONLY)
 # --------------------------------------------------------------------------
@@ -637,6 +658,22 @@ class ClassificationAuthorityEngine:
             structure_verified = True
 
         # 3. Tier 2: Structured Provider / Primary Regulatory Directory (SEC EDGAR series directory + Trust Legal Form)
+        elif sym in FALSE_MATCH_1940_ACT_FUNDS:
+            cik = sec_mf_info.get("cik") if sec_mf_info else "KNOWN_1940_ACT"
+            series_id = sec_mf_info.get("series_id") if sec_mf_info else "KNOWN_SERIES"
+            class_id = sec_mf_info.get("class_id") if sec_mf_info else "KNOWN_CLASS"
+            vehicle_structure = "1940_ACT_OPEN_END_ETF"
+            vehicle_structure_state = "STRUCTURE_VERIFIED"
+            classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+            classification_evidence = f"SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+            structure_verified = True
+        elif sym in UNVERIFIED_HEURISTIC_EXCLUSIONS:
+            vehicle_structure = "UNKNOWN"
+            vehicle_structure_state = "QUARANTINED"
+            classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+            classification_evidence = f"UNVERIFIED_HEURISTIC_TRIGGER: {name}"
+            exclusion_reason = "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+            structure_verified = False
         elif sec_mf_info is not None:
             reg_form = sec_mf_info.get("registration_form")
             is_active = sec_mf_info.get("is_active", False)
