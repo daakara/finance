@@ -37,7 +37,13 @@
   "potential_confirmatory_unresolved_count": 3823,
   "denominator_blocking_unresolved_count": 3823,
   "candidate_denominator_closure_status": "BLOCKED_PENDING_MANDATE_EVIDENCE",
+  "initial_blocker_count": 3823,
+  "mandate_blockers_resolved": 0,
+  "missing_nport_blockers_resolved": 0,
+  "reconciliation_blockers_resolved": 0,
+  "remaining_denominator_blockers": 3823,
   "final_candidate_denominator": 70,
+  "final_confirmatory_denominator": 70,
   "final_adv80": 1491310805.7732038,
   "final_eligible_denominator": 14
 }
