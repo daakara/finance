@@ -1015,7 +1015,7 @@ def build_universe_snapshot(
         elif v_state == "QUARANTINED" or not s_verified:
             final_reason = "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
         elif not sub_auth:
-            final_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
+            final_reason = struct_reason if struct_reason else "UNAUTHORIZED_RESEARCH_SUBTYPE"
         else:
             # Legal structure & subtype verified -> inspect market eligibility
             m_info = as_of_market_map.get(sym)
