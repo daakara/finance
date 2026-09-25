@@ -1279,8 +1279,10 @@ def test_other_etf_evidence_completeness_invariant():
     assert manifest["other_etf_incomplete_evidence_count"] == 0
     assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2956
     assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 650
-    assert manifest["final_candidate_denominator"] == 70
-    assert manifest["final_eligible_denominator"] == 14
+    assert manifest["provisional_candidate_denominator"] == 70
+    assert manifest["provisional_eligible_denominator"] == 14
+    assert manifest["final_candidate_denominator"] is None
+    assert manifest["final_eligible_denominator"] is None
 
 
 def test_unresolved_potential_candidate_blocks_denominator_certification():
@@ -1387,14 +1389,14 @@ def test_missing_nport_remains_denominator_blocking():
 
 
 def test_nport_reconciliation_failure_remains_denominator_blocking():
-    """Section 28 & 30: Proves N-PORT reconciliation failures cannot be forced or silently dropped.
-    All 245 ETFs with NPORT_RECONCILIATION_FAILURE remain denominator blocking pending audit.
+    """Section 28, 30 & 32: Proves N-PORT reconciliation failures cannot be forced or silently dropped.
+    All 247 ETFs with NPORT_RECONCILIATION_FAILURE remain denominator blocking pending audit.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
 
     recon_fail = df_blockers[df_blockers["blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
-    assert len(recon_fail) == 245
+    assert len(recon_fail) == 247
     assert (recon_fail["denominator_blocking"] == True).all()
     assert (recon_fail["nport_available"] == True).all()
     assert (recon_fail["nport_reconciliation_pass"] == False).all()
@@ -1403,8 +1405,8 @@ def test_nport_reconciliation_failure_remains_denominator_blocking():
 
 
 def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_remain():
-    """Section 28 & 30: Proves resolving mandate blockers alone cannot certify the universe.
-    Even if all 2,956 mandate blockers were resolved, 648 N-PORT blockers still block certification.
+    """Section 28, 30 & 32: Proves resolving mandate blockers alone cannot certify the universe.
+    Even if all 2,956 mandate blockers were resolved, 650 N-PORT blockers still block certification.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
@@ -1414,28 +1416,31 @@ def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_r
     resolved_blockers = df_blockers[df_blockers["blocker_type"] == "RESOLVED"]
 
     assert len(mandate_blockers) == 2956
-    assert len(nport_blockers) == 648
+    assert len(nport_blockers) == 650
     assert len(resolved_blockers) == 219
-    assert len(df_blockers) == 3823
+    assert len(df_blockers) == 3825
 
     # Hypothesize zero mandate blockers remaining:
     remaining_if_mandates_resolved = len(nport_blockers)
     is_certified = (remaining_if_mandates_resolved == 0)
-    assert not is_certified, "Universe cannot be certified while N-PORT blockers (648) remain"
+    assert not is_certified, "Universe cannot be certified while N-PORT blockers (650) remain"
 
 
 def test_candidate_denominator_requires_zero_blocking_unresolved():
-    """Section 28 & 30: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
+    """Section 28, 30 & 32: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
     Current 70 candidates remain provisional while remaining_denominator_blockers == 3606.
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     assert manifest["initial_blocker_count"] == 3823
+    assert manifest["resolved_non_blocking_count"] == 217
     assert manifest["reconciliation_blockers_resolved"] == 226
     assert manifest["remaining_denominator_blockers"] == 3606
-    assert manifest["candidate_denominator_closure_status"] == "BLOCKED_PENDING_MANDATE_EVIDENCE"
-    assert manifest["final_confirmatory_denominator"] == 70
+    assert manifest["candidate_denominator_closure_status"] == "BLOCKED"
+    assert manifest["etf_surviving_universe_v1"] == "NOT_CERTIFIED"
+    assert manifest["provisional_confirmatory_denominator"] == 70
+    assert manifest.get("final_confirmatory_denominator") is None
 
     # Denominator certification requires remaining blockers == 0
     is_denominator_certified = (manifest["remaining_denominator_blockers"] == 0)
@@ -1443,18 +1448,19 @@ def test_candidate_denominator_requires_zero_blocking_unresolved():
 
 
 def test_adv80_cannot_become_final_before_denominator_closure():
-    """Section 28 & 30: Proves ADV80 threshold cannot be final while candidate denominator is unclosed."""
+    """Section 28, 30 & 32: Proves ADV80 threshold cannot be final while candidate denominator is unclosed."""
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     assert manifest["remaining_denominator_blockers"] > 0
     # Current ADV80 is provisional
     assert manifest["candidate_denominator_closure_status"] != "CERTIFIED"
-    assert abs(manifest["final_adv80"] - 1491310805.7732) < 1.0
+    assert abs(manifest["provisional_adv80"] - 1491310805.7732) < 1.0
+    assert manifest.get("final_adv80") is None
 
 
 def test_nport_reconciliation_cash_handling_defect_remediation():
-    """Section 30: Proves cash omission defect repair in N-PORT reconciliation.
+    """Section 30 & 32: Proves cash omission defect repair in N-PORT reconciliation.
     Item B.1.c CASH_NOT_RPTD_IN_C_OR_D inclusion resolved 226 reconciliation failures:
     - 217 funds with non-confirmatory portfolios conclusively evaluated to OTHER_ETF.
     - 9 funds meeting portfolio floors transitioned to mandate blocked pending prospectus text.
@@ -1469,7 +1475,7 @@ def test_nport_reconciliation_cash_handling_defect_remediation():
 
 
 def test_missing_nport_cause_census():
-    """Section 30: Validates exact cause census for all 403 missing-NPORT ETFs.
+    """Section 30 & 32: Validates exact cause census for all 403 missing-NPORT ETFs.
     - 401 series have NO_PRE_BOUNDARY_NPORT_FILING (inceptions after 2026Q2 or no quarterly filing).
     - 2 series have ARCHIVE_COVERAGE_GAP (present in N-CEN but missing in 4 quarterly bulk archives).
     """
@@ -1481,13 +1487,116 @@ def test_missing_nport_cause_census():
 
 
 def test_nport_reconciliation_cause_census():
-    """Section 30: Validates exact cause census for all 473 reconciliation failures:
+    """Section 30 & 32: Validates exact cause census for reconciliation failures:
+    Initial 473 failures:
     - 226 CASH_HANDLING (remediated via Item B.1.c cash inclusion).
     - 164 DERIVATIVE_HANDLING (leveraged/inverse swap contracts).
     - 6 COLLATERAL_HANDLING (debt collateral vs net assets).
     - 77 TRUE_ACCOUNTING_RESIDUAL.
+    Current 247 failures:
+    - 166 DERIVATIVE_HANDLING (including post-cash FAAR and ASTN).
+    - 6 COLLATERAL_HANDLING.
+    - 75 TRUE_ACCOUNTING_RESIDUAL.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
-    recon_fail = df_blockers[df_blockers["initial_blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
-    assert len(recon_fail) == 473
+    recon_fail_init = df_blockers[df_blockers["initial_blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
+    assert len(recon_fail_init) == 473
+
+    recon_fail_curr = df_blockers[df_blockers["blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
+    assert len(recon_fail_curr) == 247
+
+
+def test_artifact_blocker_count_parity():
+    """Section 32: Proves absolute parity across all 4 governance artifacts.
+    No +2 in snapshot exceptions. Zero split-brain state.
+    """
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_matrix = pd.read_parquet("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    ledger_blocking = int((df_ledger["denominator_blocking"] == True).sum())
+    matrix_blocking = int((df_matrix["denominator_blocking"] == True).sum())
+    snapshot_unresolved = int((df_snap["research_subtype"] == "UNRESOLVED").sum())
+    manifest_remaining = int(manifest["remaining_denominator_blockers"])
+
+    assert ledger_blocking == 3606
+    assert matrix_blocking == 3606
+    assert snapshot_unresolved == 3606
+    assert manifest_remaining == 3606
+    assert ledger_blocking == matrix_blocking == snapshot_unresolved == manifest_remaining
+
+
+def test_resolved_non_blocking_arithmetic_identity():
+    """Section 32: Enforces the arithmetic identity:
+    3823 - RESOLVED_NON_BLOCKING == DENOMINATOR_BLOCKING_UNRESOLVED
+    3823 - 217 == 3606.
+    Explicitly accounts for the 2 discrepant symbols (FAAR and ASTN).
+    """
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    initial_blockers = manifest["initial_blocker_count"]
+    resolved_non_blocking = manifest["resolved_non_blocking_count"]
+    remaining_blockers = manifest["remaining_denominator_blockers"]
+
+    assert initial_blockers == 3823
+    assert resolved_non_blocking == 217
+    assert remaining_blockers == 3606
+    assert initial_blockers - resolved_non_blocking == remaining_blockers
+
+    # Verify FAAR and ASTN are accounted for as reconciliation failures
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    for sym in ["FAAR", "ASTN"]:
+        row = df_ledger[df_ledger["symbol"] == sym]
+        assert len(row) == 1
+        assert row["blocker_reason"].iloc[0] == "NPORT_RECONCILIATION_FAILURE"
+        assert row["denominator_blocking"].iloc[0] == True
+
+
+def test_jmmf_sgvt_archive_gap_handling():
+    """Section 32: Proves JMMF and SGVT are flagged as ARCHIVE_COVERAGE_GAP.
+    Both series have pre-boundary filings on EDGAR but were omitted from SEC quarterly bulk packages.
+    """
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    for sym in ["JMMF", "SGVT"]:
+        row = df_ledger[df_ledger["symbol"] == sym]
+        assert len(row) == 1
+        assert row["blocker_reason"].iloc[0] == "MISSING_NPORT"
+        assert row["denominator_blocking"].iloc[0] == True
+        assert row["nport_available"].iloc[0] == False
+
+
+def test_provisional_manifest_semantics():
+    """Section 32: Proves provisional fields are used and final_* fields are not certified."""
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["candidate_denominator_closure_status"] == "BLOCKED"
+    assert manifest["etf_surviving_universe_v1"] == "NOT_CERTIFIED"
+    assert manifest["provisional_candidate_denominator"] == 70
+    assert manifest["provisional_confirmatory_denominator"] == 70
+    assert abs(manifest["provisional_adv80"] - 1491310805.7732) < 1.0
+    assert manifest["provisional_eligible_denominator"] == 14
+    assert manifest.get("final_candidate_denominator") is None
+    assert manifest.get("final_confirmatory_denominator") is None
+    assert manifest.get("final_adv80") is None
+    assert manifest.get("final_eligible_denominator") is None
+
+
+def test_non_relaxation_of_tolerance_band():
+    """Section 32: Enforces that tolerance band [0.85, 1.15] is not relaxed.
+    Filings outside [0.85, 1.15] remain strictly UNRESOLVED.
+    """
+    df_metrics = pd.read_parquet("data/research/cache/nport_derived/portfolio_metrics.parquet")
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+
+    recon_fails = df_ledger[df_ledger["blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
+    sids = recon_fails["series_id"].tolist()
+    m = df_metrics[df_metrics["SERIES_ID"].isin(sids)]
+    tot_cash = m["total_holding_val"] + m["CASH_NOT_RPTD_IN_C_OR_D"].fillna(0.0)
+    ratios = tot_cash / m["NET_ASSETS"]
+    in_tol = (ratios >= 0.85) & (ratios <= 1.15)
+    assert in_tol.sum() == 0, "No NPORT_RECONCILIATION_FAILURE fund may be within [0.85, 1.15]"
