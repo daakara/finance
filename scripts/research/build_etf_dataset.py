@@ -645,11 +645,42 @@ class ClassificationAuthorityEngine:
             class_id = sec_mf_info.get("class_id")
 
             if reg_form == "N-1A" and is_active:
-                vehicle_structure = "1940_ACT_OPEN_END_ETF"
-                vehicle_structure_state = "STRUCTURE_VERIFIED"
-                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
-                classification_evidence = f"SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
-                structure_verified = True
+                if RE_INVERSE.search(name):
+                    vehicle_structure = "INVERSE_ETF"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_INVERSE_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+                elif RE_LEVERAGED.search(name):
+                    vehicle_structure = "LEVERAGED_ETF"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_LEVERAGED_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+                elif RE_CRYPTO.search(name):
+                    vehicle_structure = "CRYPTO_LINKED_PRODUCT"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_CRYPTO_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
+                elif RE_ETN.search(name):
+                    vehicle_structure = "EXCHANGE_TRADED_NOTE"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_ETN_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
+                elif RE_COMMODITY_POOL.search(name) and not re.search(r"\bno[\s-]k-1\b", name, re.IGNORECASE):
+                    vehicle_structure = "COMMODITY_FUTURES_POOL"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_COMMODITY_POOL_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_COMMODITY_FUTURES_POOL"
+                else:
+                    vehicle_structure = "1940_ACT_OPEN_END_ETF"
+                    vehicle_structure_state = "STRUCTURE_VERIFIED"
+                    classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                    classification_evidence = f"SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+                    structure_verified = True
             elif reg_form == "S-6" and is_active:
                 vehicle_structure = "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
                 vehicle_structure_state = "STRUCTURE_VERIFIED"
@@ -673,11 +704,30 @@ class ClassificationAuthorityEngine:
             form = structured_metadata.get("registration_form")
             cat = structured_metadata.get("category", "")
             if form == "N-1A":
-                vehicle_structure = "1940_ACT_OPEN_END_ETF"
-                vehicle_structure_state = "STRUCTURE_VERIFIED"
-                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
-                classification_evidence = f"STRUCTURED_PROVIDER_FORM_N1A_ATTESTATION: {cat}"
-                structure_verified = True
+                if RE_INVERSE.search(name):
+                    vehicle_structure = "INVERSE_ETF"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_INVERSE_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+                elif RE_LEVERAGED.search(name):
+                    vehicle_structure = "LEVERAGED_ETF"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_LEVERAGED_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_LEVERAGED_OR_INVERSE"
+                elif RE_CRYPTO.search(name):
+                    vehicle_structure = "CRYPTO_LINKED_PRODUCT"
+                    vehicle_structure_state = "EXCLUDED"
+                    classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
+                    classification_evidence = f"MATCHED_CRYPTO_CRITERIA: {name}"
+                    exclusion_reason = "EXCLUDED_STRUCTURE_CRYPTO_LINKED"
+                else:
+                    vehicle_structure = "1940_ACT_OPEN_END_ETF"
+                    vehicle_structure_state = "STRUCTURE_VERIFIED"
+                    classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                    classification_evidence = f"STRUCTURED_PROVIDER_FORM_N1A_ATTESTATION: {cat}"
+                    structure_verified = True
             elif form == "S-6":
                 vehicle_structure = "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
                 vehicle_structure_state = "STRUCTURE_VERIFIED"
@@ -716,7 +766,7 @@ class ClassificationAuthorityEngine:
             classification_source = "TIER_4_DEFENSIVE_HEURISTIC"
             classification_evidence = f"MATCHED_ETN_CRITERIA: {name}"
             exclusion_reason = "EXCLUDED_STRUCTURE_EXCHANGE_TRADED_NOTE"
-        elif RE_COMMODITY_POOL.search(name):
+        elif RE_COMMODITY_POOL.search(name) and not re.search(r"\bno[\s-]k-1\b", name, re.IGNORECASE):
             vehicle_structure = "COMMODITY_FUTURES_POOL"
             vehicle_structure_state = "EXCLUDED"
             classification_source = "TIER_4_DEFENSIVE_HEURISTIC"

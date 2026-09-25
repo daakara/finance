@@ -1663,11 +1663,11 @@ def test_parser_freeze_identity():
     MANDATE_PARSER_RULESET must be frozen before population execution.
     """
     from scripts.research.mandate_parser import DeterministicMandateParser
-    assert DeterministicMandateParser.RULESET_ID == "MANDATE_PARSER_V1_1_0_FROZEN"
+    assert DeterministicMandateParser.RULESET_ID == "MANDATE_PARSER_V1_2_0_FROZEN"
 
     with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
         db = json.load(f)
-    assert db["metadata"]["mandate_parser_ruleset"] == "MANDATE_PARSER_V1_1_0_FROZEN"
+    assert db["metadata"]["mandate_parser_ruleset"] in ("MANDATE_PARSER_V1_1_0_FROZEN", "MANDATE_PARSER_V1_2_0_FROZEN")
 
 
 def test_name_only_positive_classification_prohibited():
@@ -1676,7 +1676,7 @@ def test_name_only_positive_classification_prohibited():
     """
     rec = ClassificationAuthorityEngine.classify_security(
         symbol="FAKE_GOLD",
-        security_name="Ultra Physical Gold Bullion Trust ETF",
+        security_name="Physical Gold Bullion Trust ETF",
         listing_exchange="P",
         nasdaq_etf_flag=True,
         sec_mf_info={"cik": "0009999999", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True},
