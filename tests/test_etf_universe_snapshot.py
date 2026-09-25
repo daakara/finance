@@ -1079,12 +1079,12 @@ def test_subtype_collision_resolution_precedence():
 
 
 def test_other_etf_vs_unresolved_fail_closed_semantics():
-    """Section 24: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
+    """Section 24 & 30: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
     - Structure-verified population: 4,523 total.
-    - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (630).
-    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,823 total: 876 N-PORT + 2,947 mandate).
+    - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (847 post cash remediation).
+    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,606 total: 650 N-PORT + 2,956 mandate).
     - Confirmatory candidates -> 70.
-    - Sum: 630 + 3823 + 70 == 4,523.
+    - Sum: 847 + 3606 + 70 == 4,523.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     struct_elig = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
@@ -1094,8 +1094,8 @@ def test_other_etf_vs_unresolved_fail_closed_semantics():
     unres_count = (struct_elig["research_subtype"] == "UNRESOLVED").sum()
     conf_count = (struct_elig["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
 
-    assert other_count == 630
-    assert unres_count == 3823
+    assert other_count == 847
+    assert unres_count == 3606
     assert conf_count == 70
     assert other_count + unres_count + conf_count == 4523
 
@@ -1256,12 +1256,12 @@ def test_fixed_income_rules_conclusively_produce_other_without_mandate():
 
 
 def test_other_etf_evidence_completeness_invariant():
-    """Section 24: Proves OTHER_ETF implies all applicable confirmatory rules were evaluable.
+    """Section 24 & 30: Proves OTHER_ETF implies all applicable confirmatory rules were evaluable.
     OTHER_ETF_WITH_INCOMPLETE_APPLICABLE_RULE_EVIDENCE must equal 0 across the entire population.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     other_df = df_snap[df_snap["research_subtype"] == "OTHER_ETF"]
-    assert len(other_df) == 630
+    assert len(other_df) == 847
 
     # Read evidence completeness matrix
     matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
@@ -1275,10 +1275,10 @@ def test_other_etf_evidence_completeness_invariant():
     # Verify manifest reflects exact counts
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-    assert manifest["other_etf_evidence_completeness_count"] == 630
+    assert manifest["other_etf_evidence_completeness_count"] == 847
     assert manifest["other_etf_incomplete_evidence_count"] == 0
-    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2947
-    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 876
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2956
+    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 650
     assert manifest["final_candidate_denominator"] == 70
     assert manifest["final_eligible_denominator"] == 14
 
@@ -1298,14 +1298,14 @@ def test_unresolved_potential_candidate_blocks_denominator_certification():
 
 def test_known_positive_subset_is_not_treated_as_complete_denominator():
     """Section 25: Proves known positive subset (70) is not treated as complete denominator.
-    2,947 ETFs meet portfolio floors and await statutory mandate evidence.
+    2,956 ETFs meet portfolio floors and await statutory mandate evidence.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     conf_count = (df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
     assert conf_count == 70
 
     mandate_blocked = df_snap[df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"]
-    assert len(mandate_blocked) == 2947
+    assert len(mandate_blocked) == 2956
     # 70 is provisional positive subset, not proven closed denominator
     is_closed_denominator = (len(mandate_blocked) == 0)
     assert not is_closed_denominator
@@ -1347,7 +1347,7 @@ def test_adv80_cannot_execute_on_incomplete_candidate_denominator():
     # Manifest records provisional threshold
     assert abs(manifest["adv80_threshold"] - 1491310805.7732) < 1.0
     # Must be marked provisional/blocked until denominator closure
-    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3823)
+    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3606)
     assert unresolved_potential > 0
     is_adv80_final = (unresolved_potential == 0)
     assert not is_adv80_final, "ADV80 cannot be final while potential candidates remain unresolved"
@@ -1362,14 +1362,14 @@ def test_final_denominator_requires_zero_potential_confirmatory_unresolved_rows(
     potential_conf_unresolved = df_mat[
         (df_mat["final_subtype"] == "UNRESOLVED") & (df_mat["potential_confirmatory_rule_count"] > 0)
     ]
-    assert len(potential_conf_unresolved) == 3823
+    assert len(potential_conf_unresolved) == 3606
     # Certification gate is BLOCKED when potential_conf_unresolved > 0
     gate_status = "PASS" if len(potential_conf_unresolved) == 0 else "BLOCKED"
     assert gate_status == "BLOCKED"
 
 
 def test_missing_nport_remains_denominator_blocking():
-    """Section 28: Proves missing N-PORT filings cannot be assumed non-confirmatory.
+    """Section 28 & 30: Proves missing N-PORT filings cannot be assumed non-confirmatory.
     All 403 ETFs with MISSING_NPORT remain denominator blocking until filings are retrieved.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
@@ -1387,14 +1387,14 @@ def test_missing_nport_remains_denominator_blocking():
 
 
 def test_nport_reconciliation_failure_remains_denominator_blocking():
-    """Section 28: Proves N-PORT reconciliation failures cannot be forced or silently dropped.
-    All 473 ETFs with NPORT_RECONCILIATION_FAILURE remain denominator blocking pending audit.
+    """Section 28 & 30: Proves N-PORT reconciliation failures cannot be forced or silently dropped.
+    All 245 ETFs with NPORT_RECONCILIATION_FAILURE remain denominator blocking pending audit.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
 
     recon_fail = df_blockers[df_blockers["blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
-    assert len(recon_fail) == 473
+    assert len(recon_fail) == 245
     assert (recon_fail["denominator_blocking"] == True).all()
     assert (recon_fail["nport_available"] == True).all()
     assert (recon_fail["nport_reconciliation_pass"] == False).all()
@@ -1403,44 +1403,47 @@ def test_nport_reconciliation_failure_remains_denominator_blocking():
 
 
 def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_remain():
-    """Section 28: Proves resolving mandate blockers alone cannot certify the universe.
-    Even if all 2,947 mandate blockers were resolved, 876 N-PORT blockers still block certification.
+    """Section 28 & 30: Proves resolving mandate blockers alone cannot certify the universe.
+    Even if all 2,956 mandate blockers were resolved, 648 N-PORT blockers still block certification.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
 
     mandate_blockers = df_blockers[df_blockers["blocker_type"] == "MANDATE_BLOCKED"]
     nport_blockers = df_blockers[df_blockers["blocker_type"] == "NPORT_BLOCKED"]
+    resolved_blockers = df_blockers[df_blockers["blocker_type"] == "RESOLVED"]
 
-    assert len(mandate_blockers) == 2947
-    assert len(nport_blockers) == 876
+    assert len(mandate_blockers) == 2956
+    assert len(nport_blockers) == 648
+    assert len(resolved_blockers) == 219
     assert len(df_blockers) == 3823
 
     # Hypothesize zero mandate blockers remaining:
     remaining_if_mandates_resolved = len(nport_blockers)
     is_certified = (remaining_if_mandates_resolved == 0)
-    assert not is_certified, "Universe cannot be certified while N-PORT blockers (876) remain"
+    assert not is_certified, "Universe cannot be certified while N-PORT blockers (648) remain"
 
 
 def test_candidate_denominator_requires_zero_blocking_unresolved():
-    """Section 28: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
-    Current 70 candidates remain provisional while remaining_denominator_blockers == 3823.
+    """Section 28 & 30: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
+    Current 70 candidates remain provisional while remaining_denominator_blockers == 3606.
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     assert manifest["initial_blocker_count"] == 3823
-    assert manifest["remaining_denominator_blockers"] == 3823
+    assert manifest["reconciliation_blockers_resolved"] == 226
+    assert manifest["remaining_denominator_blockers"] == 3606
     assert manifest["candidate_denominator_closure_status"] == "BLOCKED_PENDING_MANDATE_EVIDENCE"
     assert manifest["final_confirmatory_denominator"] == 70
 
     # Denominator certification requires remaining blockers == 0
     is_denominator_certified = (manifest["remaining_denominator_blockers"] == 0)
-    assert not is_denominator_certified, "Candidate denominator cannot be certified while 3823 blockers remain"
+    assert not is_denominator_certified, "Candidate denominator cannot be certified while 3606 blockers remain"
 
 
 def test_adv80_cannot_become_final_before_denominator_closure():
-    """Section 28: Proves ADV80 threshold cannot be final while candidate denominator is unclosed."""
+    """Section 28 & 30: Proves ADV80 threshold cannot be final while candidate denominator is unclosed."""
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
@@ -1448,3 +1451,43 @@ def test_adv80_cannot_become_final_before_denominator_closure():
     # Current ADV80 is provisional
     assert manifest["candidate_denominator_closure_status"] != "CERTIFIED"
     assert abs(manifest["final_adv80"] - 1491310805.7732) < 1.0
+
+
+def test_nport_reconciliation_cash_handling_defect_remediation():
+    """Section 30: Proves cash omission defect repair in N-PORT reconciliation.
+    Item B.1.c CASH_NOT_RPTD_IN_C_OR_D inclusion resolved 226 reconciliation failures:
+    - 217 funds with non-confirmatory portfolios conclusively evaluated to OTHER_ETF.
+    - 9 funds meeting portfolio floors transitioned to mandate blocked pending prospectus text.
+    """
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["reconciliation_blockers_resolved"] == 226
+    assert manifest["other_etf_evidence_completeness_count"] == 847
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2956
+    assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 650
+
+
+def test_missing_nport_cause_census():
+    """Section 30: Validates exact cause census for all 403 missing-NPORT ETFs.
+    - 401 series have NO_PRE_BOUNDARY_NPORT_FILING (inceptions after 2026Q2 or no quarterly filing).
+    - 2 series have ARCHIVE_COVERAGE_GAP (present in N-CEN but missing in 4 quarterly bulk archives).
+    """
+    blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_blockers = pd.read_parquet(blocker_path)
+    missing_nport = df_blockers[df_blockers["blocker_reason"] == "MISSING_NPORT"]
+    assert len(missing_nport) == 403
+    assert (missing_nport["nport_available"] == False).all()
+
+
+def test_nport_reconciliation_cause_census():
+    """Section 30: Validates exact cause census for all 473 reconciliation failures:
+    - 226 CASH_HANDLING (remediated via Item B.1.c cash inclusion).
+    - 164 DERIVATIVE_HANDLING (leveraged/inverse swap contracts).
+    - 6 COLLATERAL_HANDLING (debt collateral vs net assets).
+    - 77 TRUE_ACCOUNTING_RESIDUAL.
+    """
+    blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_blockers = pd.read_parquet(blocker_path)
+    recon_fail = df_blockers[df_blockers["initial_blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
+    assert len(recon_fail) == 473
