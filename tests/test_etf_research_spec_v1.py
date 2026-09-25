@@ -1,4 +1,4 @@
-"""Targeted Offline Certification Test Suite for ARX Canonical ETF Research Specification v1.
+"""Targeted Offline Certification Test Suite for ARX Canonical ETF Research Specification v1.0.1.
 
 Verifies:
 1. Canonical JSON loads cleanly and matches schema requirements.
@@ -8,7 +8,9 @@ Verifies:
 5. Historical snapshot data (AUM, holdings, expense ratio) is explicitly prohibited in backtests.
 6. 2025 holdout partition is strictly labeled HISTORICAL_HOLDOUT (never blind).
 7. Stage A (ranking) and Stage B (execution) are separated.
-8. Two-time macro release timing is explicitly modeled without post-close leakage.
+8. Two-time macro release timing is explicitly modeled without post-close leakage; unverified same-day macro is prohibited.
+9. Confirmatory hypothesis count is derived dynamically from subtype registry (equals 15), with f4 excluded.
+10. Few-cluster adequacy check is formally required under dependence correction.
 """
 
 import json
@@ -27,7 +29,7 @@ def spec():
 
 
 def test_spec_canonical_load_and_keys(spec):
-    assert spec["spec_version"] == "1.0.0"
+    assert spec["spec_version"] == "1.0.1"
     assert spec["governance_status"] == "FROZEN_RESEARCH_SPECIFICATION"
     assert spec["production_actionability_status"] == "NOT_AUTHORIZED"
 
@@ -55,6 +57,31 @@ def test_subtype_feature_references_exist(spec):
         features = sub_data.get("features", [])
         for feat in features:
             assert feat in feature_defs, f"Subtype {subtype} references undefined feature {feat}"
+
+
+def test_confirmatory_hypothesis_count_derived(spec):
+    """Derive confirmatory hypothesis count dynamically from subtype registry and assert match."""
+    subtypes = spec["subtype_support"]
+    total_confirmatory_pairs = 0
+    all_referenced_features = []
+
+    for sub_name, sub_info in subtypes.items():
+        feats = sub_info.get("features", [])
+        total_confirmatory_pairs += len(feats)
+        all_referenced_features.extend(feats)
+
+    # Assert exactly 15 pairs across the 5 active subtypes (3 each)
+    assert total_confirmatory_pairs == 15, f"Expected 15 confirmatory pairs, got {total_confirmatory_pairs}"
+
+    # Verify declared count in multiple_testing_policy matches derived count
+    mt = spec["multiple_testing_policy"]
+    assert mt["confirmatory_hypothesis_count"] == total_confirmatory_pairs
+    assert mt["hypothesis_unit"] == "SUBTYPE_FEATURE_PAIR"
+    assert mt["fdr_family"] == "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS"
+
+    # f4_vol_compression must NEVER be in any subtype confirmatory list
+    assert "f4_vol_compression" not in all_referenced_features
+    assert "EXPLORATORY_ONLY" in spec["feature_definitions"]["f4_vol_compression"]["expected_sign"]
 
 
 def test_feature_formula_metadata_and_lookbacks(spec):
@@ -97,15 +124,24 @@ def test_universe_and_minimum_history_consistency(spec):
     assert "history_sessions >= 250" in obs_gen["predicate"]
 
 
-def test_anti_leakage_and_snapshot_prohibitions(spec):
+def test_macro_release_timing_and_anti_leakage(spec):
     pit = spec["point_in_time_rules"]
     assert "HOLDINGS_FEATURES_IN_BACKTEST = PROHIBITED" in pit["holdings_data_prohibition"]
     assert "PROHIBITED" in pit["snapshot_metadata_prohibition"]
     assert "PROHIBITED" in pit["normalization_parameters_from_future_data"]
 
     macro_timing = spec["macro_information_timing"]
-    assert macro_timing["macro_release_timing"] == "EXPLICITLY_MODELED"
-    assert macro_timing["same_date_post_close_macro_leakage"] == "PROHIBITED"
+    assert macro_timing["historical_macro_policy"] == "LAGGED_KNOWABLE_INFORMATION"
+    assert macro_timing["unverified_same_day_macro"] == "PROHIBITED"
+    assert macro_timing["same_day_macro_used_without_release_timestamp_proof"] == "NO"
+    assert "macro_source_observation_date" in macro_timing["macro_as_of_join"]["audit_columns"]
+
+
+def test_dependence_correction_reclassification(spec):
+    dc = spec["dependence_correction"]
+    assert dc["primary_inference_candidate"] == "TWO_WAY_CLUSTERED_COVARIANCE"
+    assert dc["few_cluster_adequacy_check_required"] is True
+    assert dc["final_inference_method_status"] == "TO_BE_CONFIRMED_AFTER_DATASET_ADEQUACY_AUDIT"
 
 
 def test_holdout_and_blind_testing_policy(spec):

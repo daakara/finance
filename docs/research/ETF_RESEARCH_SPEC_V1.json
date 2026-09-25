@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0.0",
+  "spec_version": "1.0.1",
   "created_at": "2026-09-25T08:45:00Z",
   "governance_status": "FROZEN_RESEARCH_SPECIFICATION",
   "production_actionability_status": "NOT_AUTHORIZED",
@@ -94,12 +94,19 @@
   "macro_information_timing": {
     "observation_market_date": "t",
     "price_information_cutoff": "16:00:00 EST on day t (Official equity market close)",
-    "macro_information_cutoff": "17:30:00 EST on day t (FRED daily release window)",
-    "signal_generation_timestamp": "18:00:00 EST on day t (Post-close batch run)",
+    "historical_macro_policy": "LAGGED_KNOWABLE_INFORMATION",
+    "historical_macro_default": "Latest macro observation date <= t - 1",
+    "same_day_macro_used_without_release_timestamp_proof": "NO",
+    "unverified_same_day_macro": "PROHIBITED",
+    "macro_as_of_join": {
+      "join_rule": "latest macro row WHERE macro_source_observation_date <= etf_observation_date - 1 session",
+      "audit_columns": [
+        "macro_source_observation_date",
+        "macro_available_timestamp"
+      ]
+    },
     "earliest_execution_timestamp": "09:30:00 EST on day t+1 (Market open)",
-    "macro_release_timing": "EXPLICITLY_MODELED",
-    "same_date_post_close_macro_leakage": "PROHIBITED",
-    "timing_contract": "ETF price features use information through 16:00 EST of t. Macro series for day t are available at 17:30 EST and ingested into signal generated at 18:00 EST for execution at 09:30 EST on t+1."
+    "timing_contract": "ETF price features use market data through close(t). Macro features use the latest macro observation known through t-1 under conservative historical policy."
   },
   "historical_data_sources": {
     "price_history": {
@@ -123,23 +130,19 @@
       "series": {
         "DGS10": {
           "name": "10-Year Treasury Constant Maturity Rate",
-          "revision_risk": "REVISION_RISK_LOW",
-          "publication_time": "16:15 EST"
+          "revision_risk": "REVISION_RISK_LOW"
         },
         "T10Y2Y": {
           "name": "10-Year Minus 2-Year Treasury Yield Spread",
-          "revision_risk": "REVISION_RISK_LOW",
-          "publication_time": "16:15 EST"
+          "revision_risk": "REVISION_RISK_LOW"
         },
         "BAMLH0A0HYM2": {
           "name": "ICE BofA US High Yield Index OAS",
-          "revision_risk": "REVISION_RISK_LOW",
-          "publication_time": "16:30 EST"
+          "revision_risk": "REVISION_RISK_LOW"
         },
         "DFII10": {
           "name": "10-Year Treasury Inflation-Indexed Constant Maturity",
-          "revision_risk": "REVISION_RISK_LOW",
-          "publication_time": "16:15 EST"
+          "revision_risk": "REVISION_RISK_LOW"
         }
       },
       "calendar_alignment": {
@@ -511,18 +514,22 @@
     }
   },
   "dependence_correction": {
-    "primary_inference": "TWO_WAY_CLUSTERED_COVARIANCE",
-    "clusters": [
+    "primary_inference_candidate": "TWO_WAY_CLUSTERED_COVARIANCE",
+    "candidate_clusters": [
       "DATE_CLUSTER",
       "SUBTYPE_CLUSTER"
     ],
-    "hac_lag_choice": "H_MINUS_1 (L = 19 sessions for H = 20 overlapping returns; preregistered policy)",
-    "robustness_inference": "POLITIS_ROMANO_STATIONARY_BLOCK_BOOTSTRAP (mean block length = 20)"
+    "few_cluster_adequacy_check_required": true,
+    "serial_overlap_horizon": 20,
+    "robustness_inference": "STATIONARY_BLOCK_BOOTSTRAP",
+    "final_inference_method_status": "TO_BE_CONFIRMED_AFTER_DATASET_ADEQUACY_AUDIT"
   },
   "multiple_testing_policy": {
     "method": "BENJAMINI_HOCHBERG_FDR",
     "q_cutoff": 0.05,
-    "fdr_family": "GLOBAL_FAMILY (Applied across all 11 directional subtype-feature hypotheses)",
+    "hypothesis_unit": "SUBTYPE_FEATURE_PAIR",
+    "confirmatory_hypothesis_count": 15,
+    "fdr_family": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
     "policy_nature": "PREREGISTERED_POLICY"
   },
   "primary_model_family": {
