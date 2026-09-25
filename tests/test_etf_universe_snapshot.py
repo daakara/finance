@@ -990,51 +990,52 @@ def test_policy_v11_hash_and_manifest_binding():
     assert manifest["portfolio_metrics_sha256"] == get_file_sha256(NPORT_DERIVED_METRICS_PATH)
 
 
-def test_systematic_70_confirmatory_candidates_and_lineage():
-    """Step 34: Verifies exact 70 unique confirmatory candidates across the 5 frozen subtypes.
+def test_systematic_confirmatory_candidates_and_lineage():
+    """Step 34: Verifies exact 81 unique confirmatory candidates across the 5 frozen subtypes after Track A mandate resolution.
     Census contract:
-    - EQUITY_SECTOR: 19
-    - EQUITY_INDEX: 18
+    - EQUITY_SECTOR: 28
+    - EQUITY_INDEX: 20
     - FIXED_INCOME_GOVERNMENT: 14
     - FIXED_INCOME_CREDIT: 10
     - COMMODITY_PHYSICAL: 9
-    Sum: Exactly 70 unique symbols.
+    Sum: Exactly 81 unique symbols.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     conf_df = df_snap[df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"]
-    assert len(conf_df) == 70
+    assert len(conf_df) == 81
     assert conf_df["symbol"].is_unique
 
     counts = conf_df["research_subtype"].value_counts().to_dict()
-    assert counts.get("EQUITY_SECTOR") == 19
-    assert counts.get("EQUITY_INDEX") == 18
+    assert counts.get("EQUITY_SECTOR") == 28
+    assert counts.get("EQUITY_INDEX") == 20
     assert counts.get("FIXED_INCOME_GOVERNMENT") == 14
     assert counts.get("FIXED_INCOME_CREDIT") == 10
     assert counts.get("COMMODITY_PHYSICAL") == 9
 
 
-def test_adv80_recomputation_and_14_eligible_instruments():
-    """Step 34: Verifies ADV80 threshold recomputation on 70 candidates and exact 14 research-eligible instruments.
-    1. Cross-sectional ADV80 threshold equals $1,491,310,805.77 (within floating point precision).
-    2. Exactly 14 instruments pass liquidity and history gates.
-    3. Exactly 56 instruments receive ADV60_BELOW_80TH_PERCENTILE.
-    4. All 5 confirmatory subtypes are represented in the surviving 14.
+def test_adv80_recomputation_and_17_eligible_instruments():
+    """Step 34: Verifies ADV80 threshold recomputation on 81 candidates and exact 17 research-eligible instruments.
+    1. Cross-sectional ADV80 threshold equals $1,351,775,341.23 (within floating point precision).
+    2. Exactly 17 instruments pass liquidity and history gates.
+    3. Exactly 64 instruments receive ADV60_BELOW_80TH_PERCENTILE.
+    4. All 5 confirmatory subtypes are represented in the surviving 17.
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
-    assert manifest["confirmatory_candidate_count"] == 70
-    assert manifest["eligible_row_count"] == 14
-    assert manifest["excluded_row_count"] == 5719
-    assert abs(manifest["adv80_threshold"] - 1491310805.7732) < 1.0
+    assert manifest["confirmatory_candidate_count"] == 81
+    assert manifest["eligible_row_count"] == 17
+    assert manifest["excluded_row_count"] == 5716
+    assert abs(manifest["adv80_threshold"] - 1351775341.2314) < 1.0
 
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     elig_df = df_snap[df_snap["is_research_eligible"]]
-    assert len(elig_df) == 14
+    assert len(elig_df) == 17
 
     expected_eligible = {
         "SPY", "QQQ", "IWM", "SMH", "VOO", "IVV", "GLD",
-        "LQD", "HYG", "TLT", "XLF", "DIA", "XLE", "RSP"
+        "LQD", "HYG", "TLT", "XLF", "DIA", "XLE", "RSP",
+        "XBI", "XLK", "XLV"
     }
     actual_eligible = set(elig_df["symbol"])
     assert actual_eligible == expected_eligible
@@ -1046,9 +1047,9 @@ def test_adv80_recomputation_and_14_eligible_instruments():
         "FIXED_INCOME_CREDIT", "COMMODITY_PHYSICAL"
     }
 
-    # Exactly 56 candidates fail liquidity threshold
+    # Exactly 64 candidates fail liquidity threshold
     adv_fails = df_snap[df_snap["exclusion_reason"] == "ADV60_BELOW_80TH_PERCENTILE"]
-    assert len(adv_fails) == 56
+    assert len(adv_fails) == 64
 
 
 def test_mbb_bnd_agg_systematic_exclusion():
@@ -1081,10 +1082,10 @@ def test_subtype_collision_resolution_precedence():
 def test_other_etf_vs_unresolved_fail_closed_semantics():
     """Section 24 & 30: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
     - Structure-verified population: 4,523 total.
-    - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (847 post cash remediation).
-    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,606 total: 650 N-PORT + 2,956 mandate).
-    - Confirmatory candidates -> 70.
-    - Sum: 847 + 3606 + 70 == 4,523.
+    - Evaluated affirmative non-confirmatory evidence -> OTHER_ETF (862 post Track A mandate resolution).
+    - Missing N-PORT or missing statutory mandate -> UNRESOLVED (3,580 total: 650 N-PORT + 2,930 mandate).
+    - Confirmatory candidates -> 81.
+    - Sum: 862 + 3580 + 81 == 4,523.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     struct_elig = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
@@ -1094,9 +1095,9 @@ def test_other_etf_vs_unresolved_fail_closed_semantics():
     unres_count = (struct_elig["research_subtype"] == "UNRESOLVED").sum()
     conf_count = (struct_elig["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
 
-    assert other_count == 847
-    assert unres_count == 3606
-    assert conf_count == 70
+    assert other_count == 862
+    assert unres_count == 3580
+    assert conf_count == 81
     assert other_count + unres_count + conf_count == 4523
 
 
@@ -1261,7 +1262,7 @@ def test_other_etf_evidence_completeness_invariant():
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     other_df = df_snap[df_snap["research_subtype"] == "OTHER_ETF"]
-    assert len(other_df) == 847
+    assert len(other_df) == 862
 
     # Read evidence completeness matrix
     matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
@@ -1275,12 +1276,12 @@ def test_other_etf_evidence_completeness_invariant():
     # Verify manifest reflects exact counts
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
-    assert manifest["other_etf_evidence_completeness_count"] == 847
+    assert manifest["other_etf_evidence_completeness_count"] == 862
     assert manifest["other_etf_incomplete_evidence_count"] == 0
-    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2956
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2930
     assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 650
-    assert manifest["provisional_candidate_denominator"] == 70
-    assert manifest["provisional_eligible_denominator"] == 14
+    assert manifest["provisional_candidate_denominator"] == 81
+    assert manifest["provisional_eligible_denominator"] == 17
     assert manifest["final_candidate_denominator"] is None
     assert manifest["final_eligible_denominator"] is None
 
@@ -1299,16 +1300,16 @@ def test_unresolved_potential_candidate_blocks_denominator_certification():
 
 
 def test_known_positive_subset_is_not_treated_as_complete_denominator():
-    """Section 25: Proves known positive subset (70) is not treated as complete denominator.
-    2,956 ETFs meet portfolio floors and await statutory mandate evidence.
+    """Section 25: Proves known positive subset (81) is not treated as complete denominator.
+    2,930 ETFs meet portfolio floors and await statutory mandate evidence.
     """
     df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
     conf_count = (df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
-    assert conf_count == 70
+    assert conf_count == 81
 
     mandate_blocked = df_snap[df_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"]
-    assert len(mandate_blocked) == 2956
-    # 70 is provisional positive subset, not proven closed denominator
+    assert len(mandate_blocked) == 2930
+    # 81 is provisional positive subset, not proven closed denominator
     is_closed_denominator = (len(mandate_blocked) == 0)
     assert not is_closed_denominator
 
@@ -1347,9 +1348,9 @@ def test_adv80_cannot_execute_on_incomplete_candidate_denominator():
         manifest = json.load(f)
 
     # Manifest records provisional threshold
-    assert abs(manifest["adv80_threshold"] - 1491310805.7732) < 1.0
+    assert abs(manifest["adv80_threshold"] - 1351775341.2314) < 1.0
     # Must be marked provisional/blocked until denominator closure
-    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3606)
+    unresolved_potential = manifest.get("potential_confirmatory_unresolved_count", 3580)
     assert unresolved_potential > 0
     is_adv80_final = (unresolved_potential == 0)
     assert not is_adv80_final, "ADV80 cannot be final while potential candidates remain unresolved"
@@ -1364,7 +1365,7 @@ def test_final_denominator_requires_zero_potential_confirmatory_unresolved_rows(
     potential_conf_unresolved = df_mat[
         (df_mat["final_subtype"] == "UNRESOLVED") & (df_mat["potential_confirmatory_rule_count"] > 0)
     ]
-    assert len(potential_conf_unresolved) == 3606
+    assert len(potential_conf_unresolved) == 3580
     # Certification gate is BLOCKED when potential_conf_unresolved > 0
     gate_status = "PASS" if len(potential_conf_unresolved) == 0 else "BLOCKED"
     assert gate_status == "BLOCKED"
@@ -1406,7 +1407,7 @@ def test_nport_reconciliation_failure_remains_denominator_blocking():
 
 def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_remain():
     """Section 28, 30 & 32: Proves resolving mandate blockers alone cannot certify the universe.
-    Even if all 2,956 mandate blockers were resolved, 650 N-PORT blockers still block certification.
+    Even if all 2,930 remaining mandate blockers were resolved, 650 N-PORT blockers still block certification.
     """
     blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
     df_blockers = pd.read_parquet(blocker_path)
@@ -1415,9 +1416,9 @@ def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_r
     nport_blockers = df_blockers[df_blockers["blocker_type"] == "NPORT_BLOCKED"]
     resolved_blockers = df_blockers[df_blockers["blocker_type"] == "RESOLVED"]
 
-    assert len(mandate_blockers) == 2956
+    assert len(mandate_blockers) == 2930
     assert len(nport_blockers) == 650
-    assert len(resolved_blockers) == 219
+    assert len(resolved_blockers) == 245
     assert len(df_blockers) == 3825
 
     # Hypothesize zero mandate blockers remaining:
@@ -1428,23 +1429,24 @@ def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_r
 
 def test_candidate_denominator_requires_zero_blocking_unresolved():
     """Section 28, 30 & 32: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
-    Current 70 candidates remain provisional while remaining_denominator_blockers == 3606.
+    Current 81 candidates remain provisional while remaining_denominator_blockers == 3580.
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     assert manifest["initial_blocker_count"] == 3823
-    assert manifest["resolved_non_blocking_count"] == 217
+    assert manifest["resolved_non_blocking_count"] == 232
     assert manifest["reconciliation_blockers_resolved"] == 226
-    assert manifest["remaining_denominator_blockers"] == 3606
+    assert manifest["mandate_blockers_resolved"] == 26
+    assert manifest["remaining_denominator_blockers"] == 3580
     assert manifest["candidate_denominator_closure_status"] == "BLOCKED"
     assert manifest["etf_surviving_universe_v1"] == "NOT_CERTIFIED"
-    assert manifest["provisional_confirmatory_denominator"] == 70
+    assert manifest["provisional_confirmatory_denominator"] == 81
     assert manifest.get("final_confirmatory_denominator") is None
 
     # Denominator certification requires remaining blockers == 0
     is_denominator_certified = (manifest["remaining_denominator_blockers"] == 0)
-    assert not is_denominator_certified, "Candidate denominator cannot be certified while 3606 blockers remain"
+    assert not is_denominator_certified, "Candidate denominator cannot be certified while 3580 blockers remain"
 
 
 def test_adv80_cannot_become_final_before_denominator_closure():
@@ -1455,7 +1457,7 @@ def test_adv80_cannot_become_final_before_denominator_closure():
     assert manifest["remaining_denominator_blockers"] > 0
     # Current ADV80 is provisional
     assert manifest["candidate_denominator_closure_status"] != "CERTIFIED"
-    assert abs(manifest["provisional_adv80"] - 1491310805.7732) < 1.0
+    assert abs(manifest["provisional_adv80"] - 1351775341.2314) < 1.0
     assert manifest.get("final_adv80") is None
 
 
@@ -1469,8 +1471,8 @@ def test_nport_reconciliation_cash_handling_defect_remediation():
         manifest = json.load(f)
 
     assert manifest["reconciliation_blockers_resolved"] == 226
-    assert manifest["other_etf_evidence_completeness_count"] == 847
-    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2956
+    assert manifest["other_etf_evidence_completeness_count"] == 862
+    assert manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"] == 2930
     assert manifest["unresolved_reason_census"]["UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"] == 650
 
 
@@ -1522,17 +1524,17 @@ def test_artifact_blocker_count_parity():
     snapshot_unresolved = int((df_snap["research_subtype"] == "UNRESOLVED").sum())
     manifest_remaining = int(manifest["remaining_denominator_blockers"])
 
-    assert ledger_blocking == 3606
-    assert matrix_blocking == 3606
-    assert snapshot_unresolved == 3606
-    assert manifest_remaining == 3606
+    assert ledger_blocking == 3580
+    assert matrix_blocking == 3580
+    assert snapshot_unresolved == 3580
+    assert manifest_remaining == 3580
     assert ledger_blocking == matrix_blocking == snapshot_unresolved == manifest_remaining
 
 
 def test_resolved_non_blocking_arithmetic_identity():
     """Section 32: Enforces the arithmetic identity:
-    3823 - RESOLVED_NON_BLOCKING == DENOMINATOR_BLOCKING_UNRESOLVED
-    3823 - 217 == 3606.
+    3823 - (RESOLVED_NON_BLOCKING + RESOLVED_CONFIRMATORY) == DENOMINATOR_BLOCKING_UNRESOLVED
+    3823 - 232 - 11 == 3580.
     Explicitly accounts for the 2 discrepant symbols (FAAR and ASTN).
     """
     with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
@@ -1541,11 +1543,12 @@ def test_resolved_non_blocking_arithmetic_identity():
     initial_blockers = manifest["initial_blocker_count"]
     resolved_non_blocking = manifest["resolved_non_blocking_count"]
     remaining_blockers = manifest["remaining_denominator_blockers"]
+    confirmatory_resolved = 11
 
     assert initial_blockers == 3823
-    assert resolved_non_blocking == 217
-    assert remaining_blockers == 3606
-    assert initial_blockers - resolved_non_blocking == remaining_blockers
+    assert resolved_non_blocking == 232
+    assert remaining_blockers == 3580
+    assert initial_blockers - resolved_non_blocking - confirmatory_resolved == remaining_blockers
 
     # Verify FAAR and ASTN are accounted for as reconciliation failures
     df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
@@ -1576,10 +1579,10 @@ def test_provisional_manifest_semantics():
 
     assert manifest["candidate_denominator_closure_status"] == "BLOCKED"
     assert manifest["etf_surviving_universe_v1"] == "NOT_CERTIFIED"
-    assert manifest["provisional_candidate_denominator"] == 70
-    assert manifest["provisional_confirmatory_denominator"] == 70
-    assert abs(manifest["provisional_adv80"] - 1491310805.7732) < 1.0
-    assert manifest["provisional_eligible_denominator"] == 14
+    assert manifest["provisional_candidate_denominator"] == 81
+    assert manifest["provisional_confirmatory_denominator"] == 81
+    assert abs(manifest["provisional_adv80"] - 1351775341.2314) < 1.0
+    assert manifest["provisional_eligible_denominator"] == 17
     assert manifest.get("final_candidate_denominator") is None
     assert manifest.get("final_confirmatory_denominator") is None
     assert manifest.get("final_adv80") is None
@@ -1600,3 +1603,156 @@ def test_non_relaxation_of_tolerance_band():
     ratios = tot_cash / m["NET_ASSETS"]
     in_tol = (ratios >= 0.85) & (ratios <= 1.15)
     assert in_tol.sum() == 0, "No NPORT_RECONCILIATION_FAILURE fund may be within [0.85, 1.15]"
+
+
+# ==============================================================================
+# TRACK A: STATUTORY PROSPECTUS ACQUISITION & MANDATE RESOLUTION REGRESSION TESTS
+# ==============================================================================
+def test_not_acquired_vs_not_found_semantics():
+    """Track A, Section 8 & 23: Verifies not-acquired vs not-found semantics.
+    SOURCE_NOT_FOUND is strictly reserved for CIKs whose EDGAR submissions were searched
+    and contained no pre-boundary statutory filing.
+    """
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    # In our 2,956 attempted population, all 217 CIKs have EDGAR submissions
+    source_not_found = [e for e in db["entries"] if e.get("mandate_status") == "SOURCE_NOT_FOUND"]
+    # All attempted records were searched against EDGAR submissions
+    assert len(source_not_found) == 0, "All 217 CIKs have pre-boundary statutory filings"
+
+
+def test_series_level_prospectus_mapping():
+    """Track A, Section 10 & 23: Verifies series-level prospectus mapping.
+    Multi-series trusts without partitioned prospectuses deterministically fail closed
+    to AMBIGUOUS_SERIES_MAPPING and remain denominator-blocking.
+    """
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    ambig_series = [e for e in db["entries"] if e.get("mandate_status") == "AMBIGUOUS_SERIES_MAPPING"]
+    assert len(ambig_series) == 2915
+
+    # Check sample: AAA belongs to multi-series CIK 1587982
+    aaa_entry = [e for e in ambig_series if e["symbol"] == "AAA"][0]
+    assert aaa_entry["derived_mandate_classification"] == "UNRESOLVED_MANDATE"
+    assert aaa_entry["confidence_state"] == "AMBIGUOUS_SOURCE_MAPPING"
+    assert aaa_entry["parser_rule_id"] == "AMBIGUOUS_MULTI_SERIES_TRUST"
+
+    # Verify that in blocker ledger and snapshot, AAA is denominator blocking
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    aaa_ledger = df_ledger[df_ledger["symbol"] == "AAA"].iloc[0]
+    assert aaa_ledger["denominator_blocking"] == True
+    assert aaa_ledger["final_subtype"] == "UNRESOLVED"
+
+
+def test_post_boundary_prospectus_exclusion():
+    """Track A, Section 8 & 23: Verifies post-boundary prospectus exclusion.
+    No filing dated after 2026-09-24 may be used as mandate evidence.
+    """
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    meta = db.get("metadata", {})
+    assert meta.get("post_boundary_source_used") == 0
+    assert meta.get("classification_boundary") == "2026-09-24T23:59:59Z"
+
+
+def test_parser_freeze_identity():
+    """Track A, Section 12 & 23: Verifies frozen parser ruleset identity and commit.
+    MANDATE_PARSER_RULESET must be frozen before population execution.
+    """
+    from scripts.research.mandate_parser import DeterministicMandateParser
+    assert DeterministicMandateParser.RULESET_ID == "MANDATE_PARSER_V1_1_0_FROZEN"
+
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+    assert db["metadata"]["mandate_parser_ruleset"] == "MANDATE_PARSER_V1_1_0_FROZEN"
+
+
+def test_name_only_positive_classification_prohibited():
+    """Track A, Section 9 & 23: Prohibits positive classification from ticker, security name, or fund name.
+    Fund names like 'Gold Miners ETF' or 'Treasury 7-10 Year' cannot classify an ETF without statutory evidence.
+    """
+    rec = ClassificationAuthorityEngine.classify_security(
+        symbol="FAKE_GOLD",
+        security_name="Ultra Physical Gold Bullion Trust ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info={"cik": "0009999999", "series_id": "S000099999", "registration_form": "N-1A", "is_active": True},
+        portfolio_metrics=None,
+        mandate_evidence=None
+    )
+    # Must fail closed to UNRESOLVED despite convincing name
+    assert rec["research_subtype"] == "UNRESOLVED"
+    assert rec["research_subtype_state"] != "CONFIRMATORY_SUPPORTED"
+    assert rec["subtype_authorized"] == False
+
+
+def test_ambiguous_mandate_fails_closed():
+    """Track A, Section 14 & 23: Verifies ambiguous mandate text fails closed to UNRESOLVED.
+    Contradictory or unclassifiable strategy sections must remain denominator-blocking.
+    """
+    from scripts.research.mandate_parser import DeterministicMandateParser
+    ambig_text = "The Fund seeks to achieve its objective by investing in a variety of global securities."
+    res = DeterministicMandateParser.parse_mandate(ambig_text, "0000000000-00-000000", "Principal Investment Strategies")
+    assert res.parser_rule_id == "RULE_FAIL_CLOSED_AMBIGUOUS"
+    assert res.confidence_state == "AMBIGUOUS_UNCLASSIFIED"
+    assert not res.broad_or_multi_sector_mandate
+    assert not res.sector_specific_mandate
+    assert not res.government_debt_mandate
+    assert not res.corporate_credit_mandate
+    assert not res.non_confirmatory_mandate
+
+
+def test_complete_mandate_attempt_accounting():
+    """Track A, Section 16 & 23: Enforces exact mandate accounting identity:
+    CONFIRMATORY_RESOLVED + OTHER_ETF_RESOLVED + MANDATE_BLOCKERS_REMAINING == 2956
+    11 + 15 + 2930 == 2956.
+    """
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    mandate_remaining = int(manifest["unresolved_reason_census"]["INSUFFICIENT_MANDATE_EVIDENCE"])
+    assert mandate_remaining == 2930
+
+    # 26 total mandate resolutions: 11 confirmatory + 15 other
+    mandate_resolved = manifest["mandate_blockers_resolved"]
+    assert mandate_resolved == 26
+    assert mandate_resolved + mandate_remaining == 2956
+
+
+def test_mandate_database_full_population_coverage():
+    """Track A, Section 15 & 23: Verifies full population coverage in mandate database.
+    Mandate database must contain 77 canonical entries + 2,956 attempted entries = 3,033 total entries.
+    """
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    meta = db["metadata"]
+    assert meta["total_canonical_entries"] == 77
+    assert meta["total_attempted_entries"] == 2956
+    assert meta["total_mandate_database_entries"] == 3033
+    assert len(db["entries"]) == 3033
+
+
+def test_artifact_parity_after_mandate_execution():
+    """Track A, Section 21 & 23: Proves exact parity across all 4 governance artifacts after Track A execution.
+    All 4 artifacts must report exactly 3,580 denominator blockers.
+    """
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_matrix = pd.read_parquet("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    ledger_blocking = int((df_ledger["denominator_blocking"] == True).sum())
+    matrix_blocking = int((df_matrix["denominator_blocking"] == True).sum())
+    snapshot_unresolved = int((df_snap["research_subtype"] == "UNRESOLVED").sum())
+    manifest_remaining = int(manifest["remaining_denominator_blockers"])
+
+    assert ledger_blocking == 3580
+    assert matrix_blocking == 3580
+    assert snapshot_unresolved == 3580
+    assert manifest_remaining == 3580
