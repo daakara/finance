@@ -659,6 +659,9 @@ export interface GemCandidate {
   riskRewardRatio?: number | null;
   current_price?: number;
   execution_status?: string;
+  screeningStatus?: string;
+  screeningGeometry?: string;
+  screeningEligible?: boolean;
   decisionState?: string;
   decisionStateLabel?: string;
   isActionable?: boolean;
@@ -1316,14 +1319,18 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
             dna_verdict: r.confluenceRating || "",
             current_price: r.currentPrice || r.current_price,
             execution_status: r.executionStatus || r.execution_status,
+            screeningStatus: r.screeningStatus || (r.executionStatus === "IN_BUY_ZONE" ? "SCREENING_ZONE" : (r.executionStatus || "PULLBACK_PENDING")),
+            screeningGeometry: r.screeningGeometry || (r.executionStatus === "IN_BUY_ZONE" ? "WITHIN_TOLERANCE" : "OUTSIDE_TOLERANCE"),
+            screeningEligible: typeof r.screeningEligible === "boolean" ? r.screeningEligible : Boolean(r.executionStatus === "IN_BUY_ZONE"),
             rvol: typeof r.rvol === "string" ? r.rvol : null,
             riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-            decisionState: r.decisionState,
-            decisionStateLabel: r.decisionStateLabel,
-            isActionable: typeof r.isActionable === "boolean" ? r.isActionable : false,
-            canSizeTrade: typeof r.canSizeTrade === "boolean" ? r.canSizeTrade : false,
-            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : [],
-            disqualificationReason: r.disqualificationReason ?? null,
+            decisionState: r.decisionState || "VALID_SETUP",
+            decisionStateLabel: r.decisionStateLabel || "Discovery Candidate — Analyze for Trigger",
+            // Invariant: Screener output is discovery-only. Canonical actionability strictly requires Single-Asset DecisionTrace.
+            isActionable: false,
+            canSizeTrade: false,
+            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+            disqualificationReason: r.disqualificationReason ?? "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
             decisionContextId: r.decisionContextId,
           };
         });

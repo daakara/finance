@@ -27,7 +27,9 @@ interface RadarAsset {
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
-  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'UNKNOWN';
+  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'APPROACHING_TARGET' | 'UNKNOWN';
+  screeningStatus?: string;
+  screeningGeometry?: string;
   decisionState?: string;
   decisionStateLabel?: string;
   isActionable?: boolean;
@@ -96,7 +98,8 @@ function RadarContent() {
           let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
           if (rawStatus.includes("BUY_ZONE") && !rawStatus.includes("AWAITING")) executionStatus = 'IN_BUY_ZONE';
           else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
-          else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
+          else if (rawStatus.includes("NEAR_PIVOT")) executionStatus = 'NEAR_PIVOT';
+          else if (rawStatus.includes("APPROACHING")) executionStatus = 'APPROACHING_TARGET';
           else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
           else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
 
@@ -124,10 +127,12 @@ function RadarContent() {
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
             executionStatus,
-            decisionState: gem.decisionState,
-            decisionStateLabel: gem.decisionStateLabel,
-            isActionable: typeof gem.isActionable === "boolean" ? gem.isActionable : false,
-            canSizeTrade: typeof gem.canSizeTrade === "boolean" ? gem.canSizeTrade : false,
+            screeningStatus: gem.screeningStatus || (executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus || 'PULLBACK_PENDING')),
+            screeningGeometry: gem.screeningGeometry || (executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE'),
+            decisionState: gem.decisionState || 'VALID_SETUP',
+            decisionStateLabel: gem.decisionStateLabel || 'Discovery Candidate — Analyze for Trigger',
+            isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
+            canSizeTrade: false,
             disqualificationReason: gem.disqualificationReason || null,
             decisionContextId: gem.decisionContextId,
           };
@@ -266,10 +271,12 @@ function RadarContent() {
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
-        decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : undefined),
-        decisionStateLabel: dec?.stateLabel,
-        isActionable: Boolean(dec?.isActionable),
-        canSizeTrade: Boolean(dec?.canSizeTrade),
+        screeningStatus: executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus || 'PULLBACK_PENDING'),
+        screeningGeometry: executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE',
+        decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : "VALID_SETUP"),
+        decisionStateLabel: dec?.stateLabel || "Discovery Candidate — Analyze for Trigger",
+        isActionable: false, // Invariant: Radar is a discovery scanner; canonical actionability reserved for DecisionTrace
+        canSizeTrade: false,
         disqualificationReason: dec?.disqualificationReason || null,
         decisionContextId: data.decisionId,
       };
@@ -450,11 +457,22 @@ function RadarContent() {
                     ATTENTION CANDIDATE
                   </span>
                   <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                    heroAsset.isActionable
+                    heroAsset.executionStatus === 'IN_BUY_ZONE'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                      : heroAsset.executionStatus === 'NEAR_PIVOT'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                       : 'bg-slate-800/80 text-slate-300 border-slate-700'
                   }`}>
-                    {heroAsset.isActionable ? 'BUY ZONE CONFIRMED' : (heroAsset.decisionStateLabel || heroAsset.executionStatus.replace(/_/g, ' '))}
+                    {heroAsset.executionStatus === 'IN_BUY_ZONE'
+                      ? 'NEAR SCREENING ZONE'
+                      : heroAsset.executionStatus === 'NEAR_PIVOT'
+                      ? 'NEAR PIVOT BREAKOUT'
+                      : heroAsset.executionStatus === 'APPROACHING_TARGET'
+                      ? 'NEAR TARGET CORRIDOR'
+                      : 'PULLBACK PENDING'}
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-slate-400">
+                    Posture: Analyze for Trigger
                   </span>
                   {heroAsset.vcpStage && (
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
@@ -730,7 +748,7 @@ function RadarContent() {
               <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
                 <tr>
                   <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[110px]">Asset</th>
-                  <th className="p-3 min-w-[130px]">Action Status</th>
+                  <th className="p-3 min-w-[140px]">Screening Status</th>
                   <th className="p-3 min-w-[80px]">Price</th>
                   <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
                   <th className="p-3 text-center min-w-[70px]">RVOL</th>
@@ -821,13 +839,16 @@ function RadarContent() {
                   </tr>
                 ) : (
                   filteredAssets.map((asset) => {
-                    const isActionable = Boolean(asset.isActionable);
-                    const isBuy = asset.executionStatus === 'IN_BUY_ZONE';
-                    const isActionableBuy = isBuy && isActionable;
+                    const isNearZone = asset.executionStatus === 'IN_BUY_ZONE';
                     const isPivot = asset.executionStatus === 'NEAR_PIVOT';
-                    const statusLabel = isActionableBuy
-                      ? 'BUY ZONE CONFIRMED'
-                      : (asset.decisionStateLabel || (isBuy ? 'AWAITING TRIGGER' : asset.executionStatus.replace(/_/g, ' ')));
+                    const isTarget = asset.executionStatus === 'APPROACHING_TARGET';
+                    const screeningLabel = isNearZone
+                      ? 'NEAR SCREENING ZONE'
+                      : isPivot
+                      ? 'NEAR PIVOT BREAKOUT'
+                      : isTarget
+                      ? 'APPROACHING TARGET'
+                      : 'PULLBACK PENDING';
 
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
@@ -845,15 +866,15 @@ function RadarContent() {
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            isActionableBuy
-                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
-                              : isBuy
-                              ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/60'
+                            isNearZone
+                              ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-700/60'
                               : isPivot
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                              : isTarget
+                              ? 'bg-blue-950 text-blue-300 border border-blue-800'
                               : 'bg-slate-800/60 text-slate-400 border border-slate-700/60'
                           }`}>
-                            {statusLabel}
+                            {screeningLabel}
                           </span>
                         </td>
                         <td className="p-3 font-bold text-white whitespace-nowrap">${asset.price.toFixed(2)}</td>
@@ -874,15 +895,12 @@ function RadarContent() {
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
                           <Link
-                            href={`/setups?ticker=${asset.ticker}`}
+                            href={`/?symbol=${asset.ticker}`}
                             onClick={() => trackRadarAssetClick(asset.ticker)}
-                            className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                              isActionableBuy
-                                ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-300 border border-emerald-500/40'
-                                : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400'
-                            }`}
+                            className="px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border border-slate-700 hover:border-cyan-500"
+                            title="Inspect in Analysis hub for live technical triggers & execution clearance"
                           >
-                            {isActionableBuy ? 'Ticket →' : 'Setup →'}
+                            Analyze →
                           </Link>
                         </td>
                       </tr>

@@ -267,7 +267,7 @@ def run_screener_get(
             status_color = "amber"
         elif entry_min is not None and entry_max is not None and current_price is not None and (entry_min <= current_price <= entry_max * 1.008 or abs(current_price - entry_max) / max(0.01, current_price) <= 0.015):
             execution_status = "IN_BUY_ZONE"
-            status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Active Buy Zone"
+            status_label = "🎯 Active VWAP Bounce" if is_day_trader else "🎯 Near Screening Buy Zone"
             status_color = "emerald"
         else:
             execution_status = "WAITING_PULLBACK"
@@ -404,7 +404,7 @@ def run_screener_get(
             is_in_buy_zone=(execution_status == "IN_BUY_ZONE"),
             risk_reward_ratio=rr_ratio,
             is_cataloged=True,
-            is_confirmed=(execution_status == "IN_BUY_ZONE"),
+            is_confirmed=False,  # Invariant: Screener represents structural discovery only; cannot confirm execution triggers
             user_role=user_role,
         )
 
@@ -427,10 +427,13 @@ def run_screener_get(
             "thesis": r.get("investment_thesis", "Disclosures and market data unavailable for unverified security." if execution_status == "UNVERIFIED_ASSET" else ("High relative volume momentum with clear intraday VWAP risk definition." if is_day_trader else "High return on capital with strong free cash flows.")),
             "catalyst": r.get("primary_catalyst", "Awaiting verified disclosures." if execution_status == "UNVERIFIED_ASSET" else ("Intraday institutional flow breakout." if is_day_trader else "Product cycle expansion and margin gains.")),
             "riskLevel": "Unverified Risk" if execution_status == "UNVERIFIED_ASSET" else ("High Volatility (Intraday)" if is_day_trader else r.get("risk_rating", "Low-to-Medium Risk")),
-            # Execution Scanner Levels
+            # Execution Scanner Levels & Structural Geometry
             "executionStatus": execution_status,
             "statusLabel": status_label,
             "statusColor": status_color,
+            "screeningStatus": "SCREENING_ZONE" if execution_status == "IN_BUY_ZONE" else execution_status,
+            "screeningGeometry": "WITHIN_TOLERANCE" if execution_status == "IN_BUY_ZONE" else "OUTSIDE_TOLERANCE",
+            "screeningEligible": bool(execution_status in ["IN_BUY_ZONE", "APPROACHING_TARGET"]),
             "optimalEntryMin": entry_min,
             "optimalEntryMax": entry_max,
             "stopLoss": stop_loss,
@@ -442,13 +445,13 @@ def run_screener_get(
             "riskRewardRatio": rr_ratio,
             "setupPattern": setup_pat,
             "entryThesis": entry_th,
-            # Canonical Decision Authority Fields (Phase 2 Consolidation)
+            # Canonical Decision Authority Fields (Discovery-Only: Execution reserved for DecisionTrace)
             "decisionState": dec_state["state"],
-            "decisionStateLabel": dec_state["label"],
-            "isActionable": dec_state["isActionable"],
-            "canSizeTrade": dec_state["canSizeTrade"],
-            "allowedActions": dec_state["allowedActions"],
-            "disqualificationReason": dec_state.get("disqualificationReason"),
+            "decisionStateLabel": "Discovery Candidate — Analyze for Trigger" if dec_state["state"] == "ACTIONABLE_SETUP" else dec_state["label"],
+            "isActionable": False,  # Screener cannot declare trade actionability; execution requires DecisionTrace
+            "canSizeTrade": False,  # Sizing disabled in discovery screener
+            "allowedActions": ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
+            "disqualificationReason": dec_state.get("disqualificationReason") or "Discovery candidate: Open in Analysis hub to evaluate canonical DecisionTrace.",
             "decisionContextId": f"dec-radar-{sym}-{int(time.time() * 1000)}",
             "macroContextId": shared_macro_context_id,
             # Confluence Conviction Score & Position Sizing
