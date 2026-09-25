@@ -51,5 +51,17 @@
   "final_candidate_denominator": null,
   "final_confirmatory_denominator": null,
   "final_adv80": null,
-  "final_eligible_denominator": null
+  "final_eligible_denominator": null,
+  "raw_etf_population": 5733,
+  "current_structure_verified_population": 3966,
+  "structure_excluded_population": 916,
+  "quarantined_population": 851,
+  "historical_blocker_lineage_count": 3825,
+  "current_denominator_blockers": 3325,
+  "mandate_database_lineage_records": 2967,
+  "current_mandate_blockers": 2884,
+  "current_nport_blockers": 441,
+  "evidence_matrix_total_rows": 4523,
+  "evidence_matrix_current_scope_rows": 3966,
+  "evidence_matrix_lineage_rows": 557
 }

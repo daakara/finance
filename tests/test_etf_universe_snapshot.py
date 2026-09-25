@@ -2200,3 +2200,128 @@ def test_bcor_correct_legal_structure():
     assert row["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE"
 
 
+# ==============================================================================
+# SECTION 20: CURRENT-POPULATION ARTIFACT SCOPE RECONCILIATION REGRESSION TESTS
+# ==============================================================================
+
+def test_evidence_matrix_scope_after_structure_population_changes():
+    """Section 20: Proves evidence matrix maintains 4,523 historical rows with explicit current-scope fields."""
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_mat = pd.read_parquet(matrix_path)
+
+    assert len(df_mat) == 4523
+    assert "current_denominator_scope" in df_mat.columns
+    assert "current_vehicle_structure_state" in df_mat.columns
+    assert "current_structure_eligible" in df_mat.columns
+
+    assert df_mat["current_denominator_scope"].sum() == 3966
+    assert (~df_mat["current_denominator_scope"]).sum() == 557
+
+    struct_census = df_mat["current_vehicle_structure_state"].value_counts()
+    assert struct_census["STRUCTURE_VERIFIED"] == 3966
+    assert struct_census["EXCLUDED"] == 486
+    assert struct_census["QUARANTINED"] == 71
+    assert struct_census["EXCLUDED"] + struct_census["QUARANTINED"] == 557
+
+
+def test_557_old_structure_rows_cannot_contaminate_current_denominator():
+    """Section 20: Proves 557 old-structure rows cannot contaminate current denominator."""
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_mat = pd.read_parquet(matrix_path)
+
+    old_rows = df_mat[~df_mat["current_denominator_scope"]]
+    assert len(old_rows) == 557
+
+    assert (old_rows["denominator_blocking"] == False).all()
+    assert (old_rows["all_applicable_rules_evaluable"] == False).all()
+    assert (old_rows["resolution_status"] == "EXCLUDED_STRUCTURE").all()
+    assert (old_rows["blocker_reason"] == "EXCLUDED_VEHICLE_STRUCTURE").all()
+    assert old_rows["final_subtype"].isna().all()
+
+
+def test_historical_blocker_ledger_may_exceed_current_blocker_count():
+    """Section 20: Proves historical blocker ledger (3,825) preserves initial blocker lineage and exceeds current blockers (3,325)."""
+    ledger_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_ledger = pd.read_parquet(ledger_path)
+
+    assert len(df_ledger) == 3825
+    assert "initial_blocker" in df_ledger.columns
+    assert "current_denominator_blocking" in df_ledger.columns
+    assert "current_structure_state" in df_ledger.columns
+    assert "current_structure_eligible" in df_ledger.columns
+
+    assert (df_ledger["initial_blocker"] == True).all()
+    assert (df_ledger["current_denominator_blocking"] == True).sum() == 3325
+    assert (df_ledger["current_denominator_blocking"] == False).sum() == 500
+
+    # 3825 initial blockers legitimately exceeds 3325 active blockers
+    assert len(df_ledger) > (df_ledger["current_denominator_blocking"] == True).sum()
+
+
+def test_mandate_database_lineage_may_exceed_current_mandate_population():
+    """Section 20: Proves mandate database lineage (2,967) legitimately exceeds current mandate attempt population (2,909)."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    assert len(db["entries"]) == 2967
+    assert db["metadata"]["total_canonical_entries"] == 77
+    assert db["metadata"]["total_attempted_entries"] == 2890
+
+    # Current mandate attempt population = 25 resolved + 2884 currently mandate blocked = 2909
+    current_attempt_pop = 25 + 2884
+    assert current_attempt_pop == 2909
+    assert len(db["entries"]) - current_attempt_pop == 58
+
+
+def test_current_scope_projection_equals_3966():
+    """Section 20: Proves current-scope projection equals exactly 3,966 across artifacts."""
+    matrix_path = Path("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    df_mat = pd.read_parquet(matrix_path)
+    curr_mat = df_mat[df_mat["current_denominator_scope"]]
+    assert len(curr_mat) == 3966
+
+    conf_count = curr_mat["final_subtype"].isin(
+        ["EQUITY_INDEX", "EQUITY_SECTOR", "FIXED_INCOME_GOVERNMENT", "FIXED_INCOME_CREDIT", "COMMODITY_PHYSICAL"]
+    ).sum()
+    other_count = (curr_mat["final_subtype"] == "OTHER_ETF").sum()
+    unres_count = (curr_mat["denominator_blocking"] == True).sum()
+
+    assert conf_count == 71
+    assert other_count == 570
+    assert unres_count == 3325
+    assert conf_count + other_count + unres_count == 3966
+
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    assert (df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED").sum() == 3966
+
+
+def test_current_blocker_projection_equals_3325():
+    """Section 20: Proves current blocker projection equals exactly 3,325 across all 4 governance artifacts."""
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_mat = pd.read_parquet("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    snap_blocking = (df_snap["research_subtype"] == "UNRESOLVED").sum()
+    ledger_blocking = (df_ledger["current_denominator_blocking"] == True).sum()
+    matrix_blocking = (df_mat[df_mat["current_denominator_scope"]]["denominator_blocking"] == True).sum()
+    manifest_blocking = manifest["current_denominator_blockers"]
+
+    assert snap_blocking == ledger_blocking == matrix_blocking == manifest_blocking == 3325
+
+
+def test_current_mandate_projection_equals_2884():
+    """Section 20: Proves current mandate blocker projection equals exactly 2,884."""
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    struct_snap = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
+    snap_mandate = (struct_snap["exclusion_reason"] == "INSUFFICIENT_MANDATE_EVIDENCE").sum()
+    ledger_mandate = len(df_ledger[(df_ledger["current_denominator_blocking"] == True) & (df_ledger["blocker_type"] == "MANDATE_BLOCKED")])
+    manifest_mandate = manifest["current_mandate_blockers"]
+
+    assert snap_mandate == ledger_mandate == manifest_mandate == 2884
+    assert manifest["current_mandate_blockers"] + manifest["current_nport_blockers"] == 3325
