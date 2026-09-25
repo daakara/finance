@@ -2,7 +2,7 @@
   "data/research/cache/nasdaqtraded.txt": {
     "path": "data/research/cache/nasdaqtraded.txt",
     "provider": "NASDAQ_TRADER",
-    "retrieval_timestamp": "2026-09-25T18:29:01Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 1002444,
     "sha256": "e1968b129dbcd8f570b178c057f7515e66895098b4a58f86593c42e6886cc604",
     "semantic_role": "UNIVERSE_DISCOVERY_DIRECTORY"
@@ -10,7 +10,7 @@
   "data/research/cache/GLD_adj.parquet": {
     "path": "data/research/cache/GLD_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 224441,
     "sha256": "512c5abaee58bbe02328cdee85496f09a57ab932449eaa8466189607e15338fe",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -18,7 +18,7 @@
   "data/research/cache/GLD_raw.parquet": {
     "path": "data/research/cache/GLD_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 259818,
     "sha256": "8b583b493a46e031a17080136d8d3fc899c04706f61ebd3214934c9181c822cb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -26,7 +26,7 @@
   "data/research/cache/XLB_adj.parquet": {
     "path": "data/research/cache/XLB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 282978,
     "sha256": "8e6493fba7d65ce3475f3871360edb433e7e4535d015fd3abad06b20b619d2fb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -34,7 +34,7 @@
   "data/research/cache/XLB_raw.parquet": {
     "path": "data/research/cache/XLB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 242519,
     "sha256": "1dd811a67659a77a7f54b20f9fc6404c551b49888276c906947fd504bbd3fc3d",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -42,7 +42,7 @@
   "data/research/cache/IEF_adj.parquet": {
     "path": "data/research/cache/IEF_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 280834,
     "sha256": "9b4f8731df8791abca24f90cf6457cd94407e75cc447aafefcea6882e73c5ca1",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -50,7 +50,7 @@
   "data/research/cache/IEF_raw.parquet": {
     "path": "data/research/cache/IEF_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 219744,
     "sha256": "0ca277606d4df8c6a04e5be3164c563675533906bcf5163043b6865f24fa6fe1",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -58,7 +58,7 @@
   "data/research/cache/IEI_adj.parquet": {
     "path": "data/research/cache/IEI_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 249715,
     "sha256": "20f7c3f2aaad06f1a516cc1df8633116e5223d9e310f12cead231600ad00c519",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -66,7 +66,7 @@
   "data/research/cache/IEI_raw.parquet": {
     "path": "data/research/cache/IEI_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 185437,
     "sha256": "3838bf4d8ef8e20e3dbff86dcbfd9ae2bc38548ebaf4483deeb7bc1e2a2816b7",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -74,7 +74,7 @@
   "data/research/cache/XOP_adj.parquet": {
     "path": "data/research/cache/XOP_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:42Z",
     "byte_size": 263767,
     "sha256": "e6336a8a01054f9bbfeec63ee62787886547bce29c1edd63c3e72488b19c3053",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -82,7 +82,7 @@
   "data/research/cache/XOP_raw.parquet": {
     "path": "data/research/cache/XOP_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:42Z",
     "byte_size": 235876,
     "sha256": "975b8ce1cb768b849994e0523ec6727a3f3290620ec71c1e81b8d3be118b9065",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -90,7 +90,7 @@
   "data/research/cache/XLE_adj.parquet": {
     "path": "data/research/cache/XLE_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 286106,
     "sha256": "9504c230ab05b4c3330a9651b03eab39716f40b47ba1ee2a10cc5f62c31a4fef",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -98,7 +98,7 @@
   "data/research/cache/XLE_raw.parquet": {
     "path": "data/research/cache/XLE_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 245103,
     "sha256": "b565265b87afaba723b762bd18f48d92fb6245726cab47dc035e1984b591592f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -106,7 +106,7 @@
   "data/research/cache/SPY_adj.parquet": {
     "path": "data/research/cache/SPY_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 287608,
     "sha256": "f4da54d246090545396a6fcddab7a41fe847720d9c34b9f45092dfb91b81996d",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -114,7 +114,7 @@
   "data/research/cache/SPY_raw.parquet": {
     "path": "data/research/cache/SPY_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 279802,
     "sha256": "7803bcc4abcd91ac97550d84783352229862769b25d0d3a6008e7d69dd430d02",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -122,7 +122,7 @@
   "data/research/cache/IVV_adj.parquet": {
     "path": "data/research/cache/IVV_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 282463,
     "sha256": "0f3986d19e6f15bc640030f887018da9d3621c1fec0b758ad8b6020a8d77fe2f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -130,7 +130,7 @@
   "data/research/cache/IVV_raw.parquet": {
     "path": "data/research/cache/IVV_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 274142,
     "sha256": "2ddfb610bac2f3299780692be559f1ba4358add2d532e082c1f012b50008bf7f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -138,7 +138,7 @@
   "data/research/cache/VCIT_adj.parquet": {
     "path": "data/research/cache/VCIT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 216779,
     "sha256": "2c54da428981c997feea51cd770488266c761e7514a3fb3c004fdfed18c05d57",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -146,7 +146,7 @@
   "data/research/cache/VCIT_raw.parquet": {
     "path": "data/research/cache/VCIT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 156719,
     "sha256": "f7664dcbfb6d00ff52f625de02c16253c1824292fe7924ec87f5e2cc62e5e3d0",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -154,7 +154,7 @@
   "data/research/cache/SHY_adj.parquet": {
     "path": "data/research/cache/SHY_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 259575,
     "sha256": "aad2d28876aeb0b92b15198c25bd29859f40c486d63c2f9923b47edae05de95e",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -162,7 +162,7 @@
   "data/research/cache/SHY_raw.parquet": {
     "path": "data/research/cache/SHY_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 156947,
     "sha256": "52462122fc7355a42cbc832f83e441480848532b355988029a4dd32f5412b5d3",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -170,7 +170,7 @@
   "data/research/cache/JNK_adj.parquet": {
     "path": "data/research/cache/JNK_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 243581,
     "sha256": "3b940ccbd79928d40b3633c5c19d6cff4f5999c307d2690eb94ba08b7073cddd",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -178,7 +178,7 @@
   "data/research/cache/JNK_raw.parquet": {
     "path": "data/research/cache/JNK_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 178413,
     "sha256": "1e8813c4449e2826277df08b2302438d738a909a3a24ded7f3a9851164b1c074",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -186,7 +186,7 @@
   "data/research/cache/IWM_adj.parquet": {
     "path": "data/research/cache/IWM_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 286494,
     "sha256": "f82a91026796294da1aae9b466a97f6f951c10b207632daa1d3dc27e05576609",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -194,7 +194,7 @@
   "data/research/cache/IWM_raw.parquet": {
     "path": "data/research/cache/IWM_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 270560,
     "sha256": "2372504c23710fdd682b5e6e86ac14e60c08474723bd02d5581d0a1f51c02e60",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -202,7 +202,7 @@
   "data/research/cache/LQD_adj.parquet": {
     "path": "data/research/cache/LQD_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 281978,
     "sha256": "09bf22e35e9d7a022e7203a0ee157369197ae31404f7ceace4756b22cac985d2",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -210,7 +210,7 @@
   "data/research/cache/LQD_raw.parquet": {
     "path": "data/research/cache/LQD_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 215939,
     "sha256": "0db756d7107db1a6b6fd117388aeb6a132160d4cfc49318e28f53a40fff5cd1b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -218,7 +218,7 @@
   "data/research/cache/XLU_adj.parquet": {
     "path": "data/research/cache/XLU_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 283048,
     "sha256": "f249f7798343c03fc7486ae8d7a5eb170f38da4d3c743d93c4bd3e4bfd72c410",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -226,7 +226,7 @@
   "data/research/cache/XLU_raw.parquet": {
     "path": "data/research/cache/XLU_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 236945,
     "sha256": "ec0b09e71f4ee66d5b12c1f454ec009a51d4a3856e0e52e6dbe764fc05c37c51",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -234,7 +234,7 @@
   "data/research/cache/XLI_adj.parquet": {
     "path": "data/research/cache/XLI_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 282649,
     "sha256": "45175b6273b6cbe24160a44c8338dc86fce507960246ab28ee9aadd786f04237",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -242,7 +242,7 @@
   "data/research/cache/XLI_raw.parquet": {
     "path": "data/research/cache/XLI_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 250280,
     "sha256": "759cf150e0478002701e563427e09305c364e15e7f99a4370b958ccab2f5e0e4",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -250,7 +250,7 @@
   "data/research/cache/XLK_adj.parquet": {
     "path": "data/research/cache/XLK_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 282536,
     "sha256": "1cc6d5259e1b651d1b127380ffd73468c2a2c3a83fe7eb23ee88cfa5ad5359a4",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -258,7 +258,7 @@
   "data/research/cache/XLK_raw.parquet": {
     "path": "data/research/cache/XLK_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 252042,
     "sha256": "0b3577532c5b8742e8ee3599c9de69f2dcee40b3401c778e934848be98078688",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -266,7 +266,7 @@
   "data/research/cache/XLY_adj.parquet": {
     "path": "data/research/cache/XLY_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:42Z",
     "byte_size": 282737,
     "sha256": "be806bf00ca149944e6867651cc91df8ed22cea93a508032d03a248631c26b65",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -274,7 +274,7 @@
   "data/research/cache/XLY_raw.parquet": {
     "path": "data/research/cache/XLY_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:42Z",
     "byte_size": 261278,
     "sha256": "4b6d77566393555d218d4573756fb6af6cd57083852a7b6ad00f803ef09feaed",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -282,7 +282,7 @@
   "data/research/cache/XLP_adj.parquet": {
     "path": "data/research/cache/XLP_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 280483,
     "sha256": "fadd4be2f8b06d235719eb0291b47d89fbf996296c1cba7e1ba1d78c0c4c0fa6",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -290,7 +290,7 @@
   "data/research/cache/XLP_raw.parquet": {
     "path": "data/research/cache/XLP_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 232582,
     "sha256": "d14b3c2fa5728bfb3e76a9cf6a4d256f7609d48c04d31851f325fca55cb6749b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -298,7 +298,7 @@
   "data/research/cache/SLV_adj.parquet": {
     "path": "data/research/cache/SLV_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 172463,
     "sha256": "c8a2df35ea3dfcbcf3b01d172d7b9b8b73732af4aafd4ad7f82b91e580b213a2",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -306,7 +306,7 @@
   "data/research/cache/SLV_raw.parquet": {
     "path": "data/research/cache/SLV_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 195657,
     "sha256": "f4ff6ccbb05a16353501b66009b6dbc4cf7b64dee2dcc8c28dadaf3513564cb4",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -314,7 +314,7 @@
   "data/research/cache/QQQ_adj.parquet": {
     "path": "data/research/cache/QQQ_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 286612,
     "sha256": "264c4541b58e1ee221c4c5dd523ca31bc85d52a6debab209019ee596b3c40063",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -322,7 +322,7 @@
   "data/research/cache/QQQ_raw.parquet": {
     "path": "data/research/cache/QQQ_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 275601,
     "sha256": "52ab7748e216679d5deb13a66e89d92e675db73dd318dbea8a45ed7947be55fb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -330,7 +330,7 @@
   "data/research/cache/TLT_adj.parquet": {
     "path": "data/research/cache/TLT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 284963,
     "sha256": "62115c41c3a58cc1b9a8dabc8c675dc453f41534d4d292b3c3a303e23fd0d5c5",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -338,7 +338,7 @@
   "data/research/cache/TLT_raw.parquet": {
     "path": "data/research/cache/TLT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 240802,
     "sha256": "e5c7d5fa0e3c6c0514d8bad9d7359990144e0118fe0a0ce07f74ea8047d7d00a",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -346,7 +346,7 @@
   "data/research/cache/XLF_adj.parquet": {
     "path": "data/research/cache/XLF_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 283712,
     "sha256": "97506815e1a62ba6829d85d1e08b10cc2d7e3b2179c48d5ae5510253b58ce44e",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -354,7 +354,7 @@
   "data/research/cache/XLF_raw.parquet": {
     "path": "data/research/cache/XLF_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 236970,
     "sha256": "272a9436dc5c180cda17d3181702804926d25bfc30f0320cbcc76ef876692391",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -362,7 +362,7 @@
   "data/research/cache/XLV_adj.parquet": {
     "path": "data/research/cache/XLV_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 281711,
     "sha256": "ad59085d9061b240dc732b27c9a81bb109a2da96b13cb0e3c875a439f882101e",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -370,7 +370,7 @@
   "data/research/cache/XLV_raw.parquet": {
     "path": "data/research/cache/XLV_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 246230,
     "sha256": "9e21d0b2d984fe6d8601aa6e680eada4c8cde0af243c2178bad8e442e353dc9f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -378,7 +378,7 @@
   "data/research/cache/VOO_adj.parquet": {
     "path": "data/research/cache/VOO_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 207226,
     "sha256": "4c493076a5d058b0ca5b6f02284c4afa68175cc3e8d7a386edc64f4d753c2c4a",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -386,7 +386,7 @@
   "data/research/cache/VOO_raw.parquet": {
     "path": "data/research/cache/VOO_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 202662,
     "sha256": "9a75c9a324876a0eca326d93b0266f614596a4de9209f3b3388affe5bf813d44",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -394,7 +394,7 @@
   "data/research/cache/IAU_adj.parquet": {
     "path": "data/research/cache/IAU_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 182251,
     "sha256": "e8c772415f0816ff20cea380eb8aba6d77172f152d92ced13d80b847bafbbd38",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -402,7 +402,7 @@
   "data/research/cache/IAU_raw.parquet": {
     "path": "data/research/cache/IAU_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 207588,
     "sha256": "ec156f3f17a8095899155557684b349bfed307f1f4d9fcec668b1c2fe3c2b866",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -410,7 +410,7 @@
   "data/research/cache/HYG_adj.parquet": {
     "path": "data/research/cache/HYG_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 254452,
     "sha256": "6f582174a0f27bb148e5036dbe2e5267809ea3a7dbe7daf9ad219d4024961a75",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -418,7 +418,7 @@
   "data/research/cache/HYG_raw.parquet": {
     "path": "data/research/cache/HYG_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 191818,
     "sha256": "64e550d323b36c2b85e630c15b5ea403ca0d3b9d363165854269ec2ed1fa5d84",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -426,7 +426,7 @@
   "data/research/cache/DIA_adj.parquet": {
     "path": "data/research/cache/DIA_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 285136,
     "sha256": "a78ce2be5d0f08f6cc7065e18cf5529b7c7e5638f26debae6018e6459e93f59a",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -434,7 +434,7 @@
   "data/research/cache/DIA_raw.parquet": {
     "path": "data/research/cache/DIA_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 274040,
     "sha256": "8d91810786efa00adb2f1bac37962b9a7ecc2dfe41359498a6816816c6fa1f9a",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -442,7 +442,7 @@
   "data/research/cache/AAAU_adj.parquet": {
     "path": "data/research/cache/AAAU_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:40Z",
     "byte_size": 71729,
     "sha256": "59c91b5828eaa9fd4bdfb03e7ad4416007833192d80677fbc4238508bb6429ff",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -450,7 +450,7 @@
   "data/research/cache/AAAU_raw.parquet": {
     "path": "data/research/cache/AAAU_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:40Z",
     "byte_size": 81705,
     "sha256": "4b30a4d08fb4867a2309e31779299399ea68c09de1b8044bd8a28e699af7db88",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -490,7 +490,7 @@
   "data/research/cache/FLOT_adj.parquet": {
     "path": "data/research/cache/FLOT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 165496,
     "sha256": "cb18872129170db4e8535198e77cdfe9b75ac867851bff080e0293d869cb86c2",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -498,7 +498,7 @@
   "data/research/cache/FLOT_raw.parquet": {
     "path": "data/research/cache/FLOT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 98310,
     "sha256": "6f7e29618ddbf9263547e90087efa598e94e174b5c4781381c1ade3a0abbb534",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -506,7 +506,7 @@
   "data/research/cache/GOVT_adj.parquet": {
     "path": "data/research/cache/GOVT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 178384,
     "sha256": "f6b656f6ab545db945336c1bc526b44a42f06cd32369dd46e2bd273db196ca21",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -514,7 +514,7 @@
   "data/research/cache/GOVT_raw.parquet": {
     "path": "data/research/cache/GOVT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 111257,
     "sha256": "c31d066c91c260bb66a79a4bd213b528b12da6209e84c16f241c23009a201c38",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -522,7 +522,7 @@
   "data/research/cache/HYLB_adj.parquet": {
     "path": "data/research/cache/HYLB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 125914,
     "sha256": "85a0e6d190b5deeadbb1316b1c0d6c920f66b2ac95f9e330bad693ae488fed00",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -530,7 +530,7 @@
   "data/research/cache/HYLB_raw.parquet": {
     "path": "data/research/cache/HYLB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 94908,
     "sha256": "edd939dca6c687126c90321d4ad3e8bbdb2e296c7b51d1e180509daf76d50c40",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -538,7 +538,7 @@
   "data/research/cache/IJH_adj.parquet": {
     "path": "data/research/cache/IJH_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 280686,
     "sha256": "5e74f3137fb964dcb27b89a000221bd05d5285ef6ad4334028209b70d6392dec",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -546,7 +546,7 @@
   "data/research/cache/IJH_raw.parquet": {
     "path": "data/research/cache/IJH_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 267977,
     "sha256": "bf02a1bd52c39e59658a655e61ed6d2131dba9262a10845e21b72c0cba4d3633",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -554,7 +554,7 @@
   "data/research/cache/IJR_adj.parquet": {
     "path": "data/research/cache/IJR_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 281227,
     "sha256": "9c004ad092ec4b4adc11841b6e6446bf886522e581503bad12d2fb1d3882aef9",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -562,7 +562,7 @@
   "data/research/cache/IJR_raw.parquet": {
     "path": "data/research/cache/IJR_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 261564,
     "sha256": "c9363547e292399720a704c5fd60c468f5158d65d0b851fc9bd0f2f567543abb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -570,7 +570,7 @@
   "data/research/cache/ITB_adj.parquet": {
     "path": "data/research/cache/ITB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 263117,
     "sha256": "36aeeeec2aa1b6f90e345fc3ed17801b8946bafced011e5767489db3bec281d5",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -578,7 +578,7 @@
   "data/research/cache/ITB_raw.parquet": {
     "path": "data/research/cache/ITB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 228798,
     "sha256": "0db81463e5e9dda5cc1660f216bdf2fb1e0aa5b3db412435a29df8e50f29e078",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -586,7 +586,7 @@
   "data/research/cache/IYR_adj.parquet": {
     "path": "data/research/cache/IYR_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 283230,
     "sha256": "e597f27240fdfd7183273dbf8f7ac50efd25148bce34d4c56d54e51ee5ca2289",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -594,7 +594,7 @@
   "data/research/cache/IYR_raw.parquet": {
     "path": "data/research/cache/IYR_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 241804,
     "sha256": "6b35432e7950b3426d5506a5ebdb9a118c09a311a7af16aa627e83b57aca0c04",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -602,7 +602,7 @@
   "data/research/cache/KBE_adj.parquet": {
     "path": "data/research/cache/KBE_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 269584,
     "sha256": "55c08a70846af813918970f321087ecb4cfbfb616ff81399a5cfc9c22a52d4a9",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -610,7 +610,7 @@
   "data/research/cache/KBE_raw.parquet": {
     "path": "data/research/cache/KBE_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 221595,
     "sha256": "616cfaeafb21f2f8e57da957b3b00f0a16564cadf4da8358fe2d2047013551b8",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -618,7 +618,7 @@
   "data/research/cache/KRE_adj.parquet": {
     "path": "data/research/cache/KRE_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 264062,
     "sha256": "bda41e15c644ec88fdab80d859b8b7bb93192fc6873d4cb0def9cdb312bafde2",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -626,7 +626,7 @@
   "data/research/cache/KRE_raw.parquet": {
     "path": "data/research/cache/KRE_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 223914,
     "sha256": "7d10ea98971bdaec3f6e2e0e83e36ce3bbe7ea1ca76c493b44cf86088e228c53",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -634,7 +634,7 @@
   "data/research/cache/OUNZ_adj.parquet": {
     "path": "data/research/cache/OUNZ_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 100382,
     "sha256": "d402d76cb0ae41862b062415705ddf5053eb893727e8d49caa57af8ae22c3995",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -642,7 +642,7 @@
   "data/research/cache/OUNZ_raw.parquet": {
     "path": "data/research/cache/OUNZ_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 114353,
     "sha256": "61dc1aafd0e1c131bf95bc90d95e4361e8f0262af87d3ee89685a41fb845046b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -650,7 +650,7 @@
   "data/research/cache/PALL_adj.parquet": {
     "path": "data/research/cache/PALL_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 160557,
     "sha256": "966721e1cdd3b34e23fbbef4d61183040b5897c84d193df752fa3e7b6911352f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -658,7 +658,7 @@
   "data/research/cache/PALL_raw.parquet": {
     "path": "data/research/cache/PALL_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 188335,
     "sha256": "6e377f361357c171bd0b3968089d8e4b4886760673af73e3519244ed63f2b718",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -666,7 +666,7 @@
   "data/research/cache/PPLT_adj.parquet": {
     "path": "data/research/cache/PPLT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 151597,
     "sha256": "ea980d61d4671664e617e0fcbfffd9d80744539a2c7cffedaed489a6058f1b29",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -674,7 +674,7 @@
   "data/research/cache/PPLT_raw.parquet": {
     "path": "data/research/cache/PPLT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 176734,
     "sha256": "46e410af9d9ca8382ef09cde24663aa08ec55d5eac6b1448810a097f65b83b0e",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -682,7 +682,7 @@
   "data/research/cache/RSP_adj.parquet": {
     "path": "data/research/cache/RSP_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 279624,
     "sha256": "65474f524ccbb7bb5a2884b45730626e1c48ef4ef6ca99b4c26861853ce9e2f4",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -690,7 +690,7 @@
   "data/research/cache/RSP_raw.parquet": {
     "path": "data/research/cache/RSP_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 258657,
     "sha256": "ab0dce3ac97b526a4892a9972022813f291cc771539c9923987fc7a9d5c32140",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -698,7 +698,7 @@
   "data/research/cache/SCHO_adj.parquet": {
     "path": "data/research/cache/SCHO_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 173590,
     "sha256": "c1679296175e793f3a221d8e0ce5fef3dbeb848a96acc6cb013a7e3c1378dc46",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -706,7 +706,7 @@
   "data/research/cache/SCHO_raw.parquet": {
     "path": "data/research/cache/SCHO_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 107361,
     "sha256": "ba3be96c7532823e05786de9dbc2b72f6305391440ea4a7d600aadaa67199c27",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -714,7 +714,7 @@
   "data/research/cache/SCHR_adj.parquet": {
     "path": "data/research/cache/SCHR_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 197813,
     "sha256": "897a293d5153a2d42d4130e730d1a72f6ac5909238e0883458bfc6bb6f5bc6c9",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -722,7 +722,7 @@
   "data/research/cache/SCHR_raw.parquet": {
     "path": "data/research/cache/SCHR_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 128754,
     "sha256": "18965257e163a8563b46ad5564e9263cdc8d18430de0b40f0afa5601f368ddfb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -730,7 +730,7 @@
   "data/research/cache/SCHX_adj.parquet": {
     "path": "data/research/cache/SCHX_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 216542,
     "sha256": "1126c8b166cafdad19280de71b526d5938ca1d18ee49fefad0c0566275b7ed43",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -738,7 +738,7 @@
   "data/research/cache/SCHX_raw.parquet": {
     "path": "data/research/cache/SCHX_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 196670,
     "sha256": "2b159e2b68a26571963c08e859609cf5e6c835b429ebb2274fffdbda36cea321",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -746,7 +746,7 @@
   "data/research/cache/SGOL_adj.parquet": {
     "path": "data/research/cache/SGOL_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 152964,
     "sha256": "7cfc5946f85cc4485ed9cccc06649dda112407704681bc775cd4f6212e9f4ae0",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -754,7 +754,7 @@
   "data/research/cache/SGOL_raw.parquet": {
     "path": "data/research/cache/SGOL_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 176743,
     "sha256": "3cdfe079b2b21cba9706b43de267618ce2e33c5070ff173abcf0b95a98af0f6b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -762,7 +762,7 @@
   "data/research/cache/SIVR_adj.parquet": {
     "path": "data/research/cache/SIVR_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 133117,
     "sha256": "7a10409cf0bc6244944fef1ac69a32dc6f18db4069208c4beb285f91c4393302",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -770,7 +770,7 @@
   "data/research/cache/SIVR_raw.parquet": {
     "path": "data/research/cache/SIVR_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 151499,
     "sha256": "e9cf635b2f70d664fe7980fa8e74e6ec32ee418fa677118e0594cea8e5c6c8cd",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -778,7 +778,7 @@
   "data/research/cache/SJNK_adj.parquet": {
     "path": "data/research/cache/SJNK_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 179017,
     "sha256": "80afd29bf1a1f64ef5cab575c18113002bf261dc469666713e7e1b6d059ed8a5",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -786,7 +786,7 @@
   "data/research/cache/SJNK_raw.parquet": {
     "path": "data/research/cache/SJNK_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 113643,
     "sha256": "1c87a0e4fc6ddf11e19e2b6ec3c9cffc5ba988907d21e7b83052839e3eca43cb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -794,7 +794,7 @@
   "data/research/cache/SMH_adj.parquet": {
     "path": "data/research/cache/SMH_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 278535,
     "sha256": "cdeb5970a4c28a7a6997cd95525783a7fdf219df52dc697cf8ff06b2151a2ba0",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -802,7 +802,7 @@
   "data/research/cache/SMH_raw.parquet": {
     "path": "data/research/cache/SMH_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 256364,
     "sha256": "fba4727250257f0be3b86c4deb43fbf63ee13b2e6c662097185833cfa3c463cc",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -810,7 +810,7 @@
   "data/research/cache/SPTL_adj.parquet": {
     "path": "data/research/cache/SPTL_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 239613,
     "sha256": "43fa91c2c1720f7ab5be00f00043eeeab8ebbe395620c42933ed57efe4ef60bb",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -818,7 +818,7 @@
   "data/research/cache/SPTL_raw.parquet": {
     "path": "data/research/cache/SPTL_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 186470,
     "sha256": "3a61bbd0bfbe0c6de1c779b89f14fc662341824dc6d2d2bf1f6a0a4ccdd6a1de",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -826,7 +826,7 @@
   "data/research/cache/USIG_adj.parquet": {
     "path": "data/research/cache/USIG_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 244350,
     "sha256": "c1ed3cb6495a5754b129150d2197f14059099034af7f8d0fedffd77b07a61004",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -834,7 +834,7 @@
   "data/research/cache/USIG_raw.parquet": {
     "path": "data/research/cache/USIG_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 175758,
     "sha256": "d089bb6d738d535630e7f96470a45a414a9292c2804e42e78cca6d8044703186",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -842,7 +842,7 @@
   "data/research/cache/VB_adj.parquet": {
     "path": "data/research/cache/VB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 275656,
     "sha256": "8b871d9979d9e74fe1a398fd3bfb27f8d70252283bb7cb3a2430883db7580a67",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -850,7 +850,7 @@
   "data/research/cache/VB_raw.parquet": {
     "path": "data/research/cache/VB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 260136,
     "sha256": "e3b479a7a0b8b453daf6a550c3b84107ffb1e7b76af7f674eff17177c6671d45",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -858,7 +858,7 @@
   "data/research/cache/VCSH_adj.parquet": {
     "path": "data/research/cache/VCSH_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 211715,
     "sha256": "e3b304032e96af8afd50844ea1f1f476b50d816f73970b412c66901acda20be7",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -866,7 +866,7 @@
   "data/research/cache/VCSH_raw.parquet": {
     "path": "data/research/cache/VCSH_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 132141,
     "sha256": "822418cd3ee8f19b26875c2d41f1cc158772bc01743020163f4c101bdc4bd3e1",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -874,7 +874,7 @@
   "data/research/cache/VGIT_adj.parquet": {
     "path": "data/research/cache/VGIT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 208725,
     "sha256": "41517e46d8ae9f55452f74a18a555d72473275fe171b3f871599373040dc0936",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -882,7 +882,7 @@
   "data/research/cache/VGIT_raw.parquet": {
     "path": "data/research/cache/VGIT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 139328,
     "sha256": "83ec5ffe83428985eb26b6c8f0225e8c776f65302d95dca9c7ebdfa8112a34bd",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -890,7 +890,7 @@
   "data/research/cache/VGLT_adj.parquet": {
     "path": "data/research/cache/VGLT_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 210435,
     "sha256": "faf648ceceeec9fc3c7e902f2efca7fbbe84ec41a8fa48f37fa33c20c39100b3",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -898,7 +898,7 @@
   "data/research/cache/VGLT_raw.parquet": {
     "path": "data/research/cache/VGLT_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 174023,
     "sha256": "9d303a8b16a483266c8179b83b14cf67829f670873f240d9d8816f81eb54b53c",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -906,7 +906,7 @@
   "data/research/cache/VGSH_adj.parquet": {
     "path": "data/research/cache/VGSH_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 188610,
     "sha256": "5f30de5a84b47caa68294182df155ab1ae9a8fba2385e56a32db678fe72d7533",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -914,7 +914,7 @@
   "data/research/cache/VGSH_raw.parquet": {
     "path": "data/research/cache/VGSH_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 113003,
     "sha256": "b2ea514b4b744d276620dc9b1fb1877e2909d8dd25f24f4105d53fab6e768710",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -922,7 +922,7 @@
   "data/research/cache/VNQ_adj.parquet": {
     "path": "data/research/cache/VNQ_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 280751,
     "sha256": "efb3e2cb7639d940e921587a03a383ad0732739da1c3c4cb677f7042b4bb15a2",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -930,7 +930,7 @@
   "data/research/cache/VNQ_raw.parquet": {
     "path": "data/research/cache/VNQ_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 238091,
     "sha256": "cc6a7a4565fe9124d8c01daee4aee9f9e374ce4a727188e5c364990a52310d1c",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -938,7 +938,7 @@
   "data/research/cache/VO_adj.parquet": {
     "path": "data/research/cache/VO_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 275467,
     "sha256": "a4d525ec864300e74a4b1ed99bca2f74345a930a0e7f80afaa2fdb8444cad367",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -946,7 +946,7 @@
   "data/research/cache/VO_raw.parquet": {
     "path": "data/research/cache/VO_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 260765,
     "sha256": "18b4f680ca6f25149409af182b802a1c14c171a4d9bdeb49b4d404655ff2e7c0",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -954,7 +954,7 @@
   "data/research/cache/VTI_adj.parquet": {
     "path": "data/research/cache/VTI_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 281252,
     "sha256": "8e11325f158b3ff3a868792336eee3365c391e919d7b2c8eb89701661dbeb759",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -962,7 +962,7 @@
   "data/research/cache/VTI_raw.parquet": {
     "path": "data/research/cache/VTI_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 268109,
     "sha256": "4b804ac662ccb092a5f8432613f3663c181a27b8a889f4edb2ec0c16dbdff2d0",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -970,7 +970,7 @@
   "data/research/cache/VUSB_adj.parquet": {
     "path": "data/research/cache/VUSB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 65797,
     "sha256": "5d0b97e4535341fa2e5660b7e182bb98bf3b1f1e8f8eef5ab80e0a857e32ac2c",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -978,7 +978,7 @@
   "data/research/cache/VUSB_raw.parquet": {
     "path": "data/research/cache/VUSB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 43128,
     "sha256": "7ea6233707a798baddb5fb96cbc6293976e61cadc8ed9cf7fab5521d87e8ab04",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -986,7 +986,7 @@
   "data/research/cache/XBI_adj.parquet": {
     "path": "data/research/cache/XBI_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 265880,
     "sha256": "6f05571b342d279d22872d42f18c8bb5cb74081747fda2e58172c3b2403dfc9b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -994,7 +994,7 @@
   "data/research/cache/XBI_raw.parquet": {
     "path": "data/research/cache/XBI_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 249268,
     "sha256": "9dc7574c16cff8211f02ef1bf5d7e49f41b9b2b6c2627d21a46cbf3a942ad89c",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1002,7 +1002,7 @@
   "data/research/cache/XHB_adj.parquet": {
     "path": "data/research/cache/XHB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 267099,
     "sha256": "c49b71aa425cf17ea0a086f8ef8521c3fca611af8c925f0e22658e064c75e685",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1010,7 +1010,7 @@
   "data/research/cache/XHB_raw.parquet": {
     "path": "data/research/cache/XHB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 231395,
     "sha256": "59938df01846d0ac5fe0f57098a430073c7612f0f4060ef34fbec5c75ab73893",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1066,7 +1066,7 @@
   "data/research/cache/sec_company_tickers_mf.json": {
     "path": "data/research/cache/sec_company_tickers_mf.json",
     "provider": "SEC_EDGAR",
-    "retrieval_timestamp": "2026-09-25T18:29:01Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 1233613,
     "sha256": "f9488ef65a80c35eab4035be567d2812ff70f1fed7997523a99bccd38f0ddbe1",
     "semantic_role": "TIER_2_SERIES_REGISTRATION_DIRECTORY"
@@ -1106,7 +1106,7 @@
   "data/research/sec_trust_legal_form_directory_v1.json": {
     "path": "data/research/sec_trust_legal_form_directory_v1.json",
     "provider": "SEC_EDGAR",
-    "retrieval_timestamp": "2026-09-25T18:29:01Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 156506,
     "sha256": "09a8ae8f29e8939e177536375083590121b448945348ab23ff5c88eaff9be715",
     "semantic_role": "TIER_2_TRUST_LEGAL_FORM_DIRECTORY"
@@ -1210,7 +1210,7 @@
   "data/research/cache/BIL_adj.parquet": {
     "path": "data/research/cache/BIL_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:40Z",
     "byte_size": 156381,
     "sha256": "3826d2cb946f7dd092542b0b44303b6dcbe86ede57d4477ded79c2b0e1fb3f0e",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1218,7 +1218,7 @@
   "data/research/cache/BIL_raw.parquet": {
     "path": "data/research/cache/BIL_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 107266,
     "sha256": "2b1c8108f7a11bd300501857e7688d77fd0506216367d682232f11c45e75756f",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1226,7 +1226,7 @@
   "data/research/cache/TIP_adj.parquet": {
     "path": "data/research/cache/TIP_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 278000,
     "sha256": "2484443fbb78d1a7988be57f1acc7a18a3024248644c711e58d9247f741475a1",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1234,7 +1234,7 @@
   "data/research/cache/TIP_raw.parquet": {
     "path": "data/research/cache/TIP_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 206780,
     "sha256": "74c785ef81811edb9cfa5020abf1e4d14a63804ef84d7f62476928b2897fe0dc",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1242,7 +1242,7 @@
   "data/research/cache/SHV_adj.parquet": {
     "path": "data/research/cache/SHV_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 185933,
     "sha256": "9fe550dc0b7f76b5942f5484ff1d2e88059f6330881f850bd8d4558ed489b499",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1250,7 +1250,7 @@
   "data/research/cache/SHV_raw.parquet": {
     "path": "data/research/cache/SHV_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 118054,
     "sha256": "a158c0446da76b793f7f5e1c2ccb9a93e4844755aec87abb6642cb108619be29",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1258,7 +1258,7 @@
   "data/research/cache/SCHD_adj.parquet": {
     "path": "data/research/cache/SCHD_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 190775,
     "sha256": "9736af7e521ba8558ec5f0c0166e1f34eb434e72c6ab54a9374a0d8bc7ff03f5",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1266,7 +1266,7 @@
   "data/research/cache/SCHD_raw.parquet": {
     "path": "data/research/cache/SCHD_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 167033,
     "sha256": "9cf8a4b0adeb9c09939ea8dc8458420faabf491cf6d5f100de0e32a830ae075b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1274,7 +1274,7 @@
   "data/research/cache/VUG_adj.parquet": {
     "path": "data/research/cache/VUG_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 278431,
     "sha256": "75a9256c58da2fd0236443b1f1b64abdab12d4d13dbc5454202b2a22399822a7",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1282,7 +1282,7 @@
   "data/research/cache/VUG_raw.parquet": {
     "path": "data/research/cache/VUG_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 263810,
     "sha256": "0fc2198bbe1465c41bbdad0a20d70e6e1ca18bd063fbf187a9d9a2318584310c",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1290,7 +1290,7 @@
   "data/research/cache/VTV_adj.parquet": {
     "path": "data/research/cache/VTV_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 278850,
     "sha256": "247a152a4cf3484b1677d8bfb2e530d9bbe33fe02b175e94115558ed78712996",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1298,7 +1298,7 @@
   "data/research/cache/VTV_raw.parquet": {
     "path": "data/research/cache/VTV_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:07Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 255805,
     "sha256": "b19a35224b1d8f708176077cc5fc5a5b9f95be1f888cd1df16450e93bd57dfa7",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1306,7 +1306,7 @@
   "data/research/cache/IEFA_adj.parquet": {
     "path": "data/research/cache/IEFA_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 179344,
     "sha256": "28036ff0e74b0f45f254cfcbebbc0d1093bdf885874f37d5a2bb954c0b108555",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1314,7 +1314,7 @@
   "data/research/cache/IEFA_raw.parquet": {
     "path": "data/research/cache/IEFA_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 151766,
     "sha256": "3e4cce19238d2730f6e6a5b3dd27f9cc38bf81f93be93c755b69cba88f9cb4df",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1322,7 +1322,7 @@
   "data/research/cache/IEMG_adj.parquet": {
     "path": "data/research/cache/IEMG_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 179816,
     "sha256": "d8f72951ddec9ce1580bdb55ff42f9a5312fe64088cefd1d79af49f2e642d0b8",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1330,7 +1330,7 @@
   "data/research/cache/IEMG_raw.parquet": {
     "path": "data/research/cache/IEMG_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 144949,
     "sha256": "4150374986c01eea4787aea14ba734b2f9c0979cab3b50e68684ede800e88bdc",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1434,7 +1434,7 @@
   "data/research/cache/IBB_adj.parquet": {
     "path": "data/research/cache/IBB_adj.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 280154,
     "sha256": "adffe122ada8b9fb64070c9aa7bef9794d035264a7a94f78899801dd8dcc8d0b",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1442,7 +1442,7 @@
   "data/research/cache/IBB_raw.parquet": {
     "path": "data/research/cache/IBB_raw.parquet",
     "provider": "YFINANCE",
-    "retrieval_timestamp": "2026-09-25T18:29:06Z",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
     "byte_size": 264893,
     "sha256": "0a6a74f98a98cc80bf72276a6f4be8101b973f81c178d2acc8ab8fa01091f3bd",
     "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
@@ -1466,15 +1466,15 @@
   "data/research/etf_mandate_evidence_v1.json": {
     "path": "data/research/etf_mandate_evidence_v1.json",
     "provider": "SEC_FORM_485BPOS_N1A",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
-    "byte_size": 53291,
-    "sha256": "8801244489e6769abd2f4ef1fc6d3ae5f0fc1dc39851a3134e755c4cea8c5d35",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
+    "byte_size": 2585371,
+    "sha256": "f2d8a85434177e2676209fb24513e0d04bfb736016a434ca20ed29c8226f2a4f",
     "semantic_role": "STATUTORY_SERIES_INDEX_MANDATE_REGISTRATION"
   },
   "data/research/cache/nport_derived/portfolio_metrics.parquet": {
     "path": "data/research/cache/nport_derived/portfolio_metrics.parquet",
     "provider": "SEC_FORM_NPORT_DERIVED_HOLDINGS",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 454058,
     "sha256": "1bacce09287dc66a21b6af4599ffaee6c9ab9ccf527bb1fb48f26419108d0336",
     "semantic_role": "STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
@@ -1482,7 +1482,7 @@
   "data/research/cache/sec_ncen/2025q1_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2025q1_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 16491772,
     "sha256": "ee6f1d6081b420f11f8742c68c75fc3804160f42c13b3d5d4136e44e8d7ff4b1",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1490,7 +1490,7 @@
   "data/research/cache/sec_ncen/2025q2_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2025q2_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 11576968,
     "sha256": "4b537576dec6d8656f82dcfc6bbc8d295eaa0f82c9b8aa4b19dbf32024ba8765",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1498,7 +1498,7 @@
   "data/research/cache/sec_ncen/2025q3_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2025q3_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 5977881,
     "sha256": "1317f2bc2f51cc5d5e9f5d27d5e3c944afbbaa1acaf259b61a51ef5adbf597ff",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1506,7 +1506,7 @@
   "data/research/cache/sec_ncen/2025q4_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2025q4_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 7571694,
     "sha256": "edbd91ac464203625dda4f00ec07083d06ebbf5f04194673b13a3362ee1c1476",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1514,7 +1514,7 @@
   "data/research/cache/sec_ncen/2026q1_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2026q1_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 16365257,
     "sha256": "3b791cdfa9c497157468a26764d508cd0a5723056c5ba75a9809bf80db9ef9fd",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1522,7 +1522,7 @@
   "data/research/cache/sec_ncen/2026q2_ncen.zip": {
     "path": "data/research/cache/sec_ncen/2026q2_ncen.zip",
     "provider": "SEC_EDGAR_BULK_NCEN",
-    "retrieval_timestamp": "2026-09-25T18:29:02Z",
+    "retrieval_timestamp": "2026-09-25T19:48:37Z",
     "byte_size": 8404110,
     "sha256": "97899fef613a151faf42b6b01573bde3d22db81af7f896598c43a62cec0c7614",
     "semantic_role": "SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
@@ -1530,7 +1530,7 @@
   "data/research/cache/sec_nport/2025q3_nport.zip": {
     "path": "data/research/cache/sec_nport/2025q3_nport.zip",
     "provider": "SEC_EDGAR_BULK_NPORT",
-    "retrieval_timestamp": "2026-09-25T18:29:03Z",
+    "retrieval_timestamp": "2026-09-25T19:48:38Z",
     "byte_size": 468940747,
     "sha256": "4cc5c2431bf8997ef0af1cb7b69568255a1d6a1840e41499d9ffd1fc42e030f6",
     "semantic_role": "SEC_MONTHLY_PORTFOLIO_HOLDINGS_BULK_TABLES"
@@ -1538,7 +1538,7 @@
   "data/research/cache/sec_nport/2025q4_nport.zip": {
     "path": "data/research/cache/sec_nport/2025q4_nport.zip",
     "provider": "SEC_EDGAR_BULK_NPORT",
-    "retrieval_timestamp": "2026-09-25T18:29:04Z",
+    "retrieval_timestamp": "2026-09-25T19:48:39Z",
     "byte_size": 417802295,
     "sha256": "4ebb169e6cc0745b4cc65de4e83ea4916c7ad39146c383007e078b6223af8dea",
     "semantic_role": "SEC_MONTHLY_PORTFOLIO_HOLDINGS_BULK_TABLES"
@@ -1546,7 +1546,7 @@
   "data/research/cache/sec_nport/2026q1_nport.zip": {
     "path": "data/research/cache/sec_nport/2026q1_nport.zip",
     "provider": "SEC_EDGAR_BULK_NPORT",
-    "retrieval_timestamp": "2026-09-25T18:29:05Z",
+    "retrieval_timestamp": "2026-09-25T19:48:39Z",
     "byte_size": 463076167,
     "sha256": "7626e33d21ab48169db412f7370190a9ba8d6a2c921718e59a445b333b23694c",
     "semantic_role": "SEC_MONTHLY_PORTFOLIO_HOLDINGS_BULK_TABLES"
@@ -1554,7 +1554,7 @@
   "data/research/cache/sec_nport/2026q2_nport.zip": {
     "path": "data/research/cache/sec_nport/2026q2_nport.zip",
     "provider": "SEC_EDGAR_BULK_NPORT",
-    "retrieval_timestamp": "2026-09-25T18:29:05Z",
+    "retrieval_timestamp": "2026-09-25T19:48:40Z",
     "byte_size": 440699889,
     "sha256": "077cc836a978a593b29012219395fbe9c303d5e930f5be3b5f4353c3b02296fc",
     "semantic_role": "SEC_MONTHLY_PORTFOLIO_HOLDINGS_BULK_TABLES"
@@ -1614,5 +1614,181 @@
     "byte_size": 1622,
     "sha256": "518d832f51b86f4f195efec009f9c0b54bd70430602df2c88a4c9c07a3486247",
     "semantic_role": "UNIVERSE_DISCOVERY_DIRECTORY"
+  },
+  "data/research/cache/CGBL_adj.parquet": {
+    "path": "data/research/cache/CGBL_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 41324,
+    "sha256": "bb8bcc12b9982dca4f3cbcff7c9733ba5d3c285961f65ea7e74d39ba0a4e3a71",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGBL_raw.parquet": {
+    "path": "data/research/cache/CGBL_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 39476,
+    "sha256": "c3386920b94ec9a6e81a65c82b46bf60695982b9c5db1076249876a5f5e1f485",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGCV_adj.parquet": {
+    "path": "data/research/cache/CGCV_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 32331,
+    "sha256": "1df97ac2882d926f2e96183b70eb7632133bbbdcc7f167df91de87954977e4ea",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGCV_raw.parquet": {
+    "path": "data/research/cache/CGCV_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 30601,
+    "sha256": "88cf0b6a8800643322c5374ffee51cff1f4ae0828e09986b68df3287a74caec5",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGDG_adj.parquet": {
+    "path": "data/research/cache/CGDG_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 41472,
+    "sha256": "85fcc2f011051e58b08fb0251671aae12fc93aaacd390416567a85a804d059d0",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGDG_raw.parquet": {
+    "path": "data/research/cache/CGDG_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 39360,
+    "sha256": "e334fd5aaa78ab891b9bed12e93dc523f4f0f573bd06ab20471f10ac8ceb4358",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGDV_adj.parquet": {
+    "path": "data/research/cache/CGDV_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 61825,
+    "sha256": "6624ba626e2086755abe49fe36cf7590aebe6907779110426eb604d3b142ca86",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGDV_raw.parquet": {
+    "path": "data/research/cache/CGDV_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 58265,
+    "sha256": "565360cd759baf4d5a48060ea6844c447db154af381389730300b577a6cf4157",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGGE_adj.parquet": {
+    "path": "data/research/cache/CGGE_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 31447,
+    "sha256": "ace47da5db6894c88375ac520d72e8805775ce2d94bdeb85ac1c4f372f9a3da3",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGGE_raw.parquet": {
+    "path": "data/research/cache/CGGE_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 30935,
+    "sha256": "807271fd82661963fb814eaca2c1e0dc96fe0323e4cc804a8496f9902cfb1c9d",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGGO_adj.parquet": {
+    "path": "data/research/cache/CGGO_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 60556,
+    "sha256": "13e5519b5c4ea8b183b0026ec34062378e8d6553f4881ef76a6ae6a86c4ceb0d",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGGO_raw.parquet": {
+    "path": "data/research/cache/CGGO_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 56818,
+    "sha256": "e6dc337bfb57b7f6ca1744be15b4b9388a635b4eeb828a01bf840777744f369f",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGIC_adj.parquet": {
+    "path": "data/research/cache/CGIC_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 32695,
+    "sha256": "d0289dec70a8e633e24be80e143870bcb3d511e1d448e082134735fbd46d2f4e",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGIC_raw.parquet": {
+    "path": "data/research/cache/CGIC_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 31759,
+    "sha256": "ef8774975b71e161512dfa9f43ba1898a3586534bedf4bd74f692a6e775977ec",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGUS_adj.parquet": {
+    "path": "data/research/cache/CGUS_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 61399,
+    "sha256": "0277e4a0eb7190a289c158364a0f5faaa58eef38e414d33e7989ebb02d7a4393",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGUS_raw.parquet": {
+    "path": "data/research/cache/CGUS_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 57724,
+    "sha256": "a5484c4f2b86a53c6eeca9c2050bf363a474b6a916ef0f7e744a7e5c17096132",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGXU_adj.parquet": {
+    "path": "data/research/cache/CGXU_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 60957,
+    "sha256": "fa69b3cea6c29b5cdd1cfe5b9c1821d7cbef02822d16c137f23b73971c34f033",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/CGXU_raw.parquet": {
+    "path": "data/research/cache/CGXU_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 54593,
+    "sha256": "ea6f85cee7496f84f2ed7af0aefc0a3fdd2c0ffe0170a362f00d0a1c115a5004",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/VEA_adj.parquet": {
+    "path": "data/research/cache/VEA_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 249007,
+    "sha256": "969103382a13e80c4f81a32090827ca2787f2d9a7cb1caa4561141b449e05e72",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/VEA_raw.parquet": {
+    "path": "data/research/cache/VEA_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 195517,
+    "sha256": "f74214838d0e3eb802f98246b461ee7fd1d957c34b291cb4c3ce16952b642eac",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/VIG_adj.parquet": {
+    "path": "data/research/cache/VIG_adj.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 260353,
+    "sha256": "6d08bf5d4e7b14edaffda7a05647cb9e8ed5a696fb6d479de32e10efb028cc7d",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
+  },
+  "data/research/cache/VIG_raw.parquet": {
+    "path": "data/research/cache/VIG_raw.parquet",
+    "provider": "YFINANCE",
+    "retrieval_timestamp": "2026-09-25T19:48:41Z",
+    "byte_size": 239877,
+    "sha256": "20458c512f6c9e957a1ca297b7759c79a0cdf1846c70f0270a227a44c1f0811c",
+    "semantic_role": "UNIVERSE_ELIGIBILITY_PRICE_VOLUME_HISTORY"
   }
 }
