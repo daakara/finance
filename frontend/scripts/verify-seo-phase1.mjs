@@ -114,24 +114,32 @@ assert(oaiSection.includes("Allow: /"), "OAI-SearchBot must allow public content
 const sitemapDirectives = [...robots.matchAll(/Sitemap:\s*https:\/\/www\.arxterminal\.com\/sitemap\.xml/g)];
 assert(sitemapDirectives.length === 1, `Sitemap directive must exist exactly once in robots.txt (found ${sitemapDirectives.length})`);
 
-// 3. STOCK DETAIL PRICE SEMANTICS
-console.log("\n[3. STOCK DETAIL PRICE SEMANTICS AUDIT]");
+// 3. STOCK DETAIL PRICE SEMANTICS & PROVENANCE AUDIT
+console.log("\n[3. STOCK DETAIL PRICE SEMANTICS & PROVENANCE AUDIT]");
 const stockTickers = fs.readdirSync("out/stock");
 assert(stockTickers.length === 49, `Stock routes count must be 49 (got ${stockTickers.length})`);
 
-let baselineRefPresent = 0;
+let catalogRefValuePresent = 0;
 let noRefAvailable = 0;
 let falseLiveClaims = 0;
+let falseCurrentClaims = 0;
+let falseSnapshotClaims = 0;
+let unsupportedMetadataClaims = 0;
 
 const problematicLivePhrases = [
-  "live price", "live market price", "current market price",
-  "realtime price", "real-time price"
+  "live market price", "live price", "realtime price", "real-time price"
+];
+const problematicCurrentPhrases = [
+  "current market price", "current price"
+];
+const problematicSnapshotPhrases = [
+  "catalog baseline snapshot", "snapshot as of", "market snapshot", "price snapshot"
 ];
 
 for (const ticker of stockTickers) {
   const html = fs.readFileSync(`out/stock/${ticker}/index.html`, "utf8");
-  if (html.includes("Baseline Reference Price")) {
-    baselineRefPresent++;
+  if (html.includes("Baseline Reference")) {
+    catalogRefValuePresent++;
   } else {
     noRefAvailable++;
   }
@@ -143,11 +151,40 @@ for (const ticker of stockTickers) {
       falseLiveClaims++;
     }
   }
+
+  for (const phrase of problematicCurrentPhrases) {
+    if (lowerHtml.includes(phrase)) {
+      console.error(`FALSE CURRENT PRICE CLAIM in stock/${ticker}: "${phrase}"`);
+      falseCurrentClaims++;
+    }
+  }
+
+  for (const phrase of problematicSnapshotPhrases) {
+    if (lowerHtml.includes(phrase)) {
+      console.error(`FALSE SNAPSHOT PROVENANCE CLAIM in stock/${ticker}: "${phrase}"`);
+      falseSnapshotClaims++;
+    }
+  }
+
+  // Check metadata tags specifically (title, meta description, og:*, twitter:*)
+  const metaMatches = [...html.matchAll(/<meta\s+[^>]*content="([^"]*)"[^>]*>/gi)].map(m => m[1].toLowerCase());
+  const titleMatch = (html.match(/<title>([^<]*)<\/title>/i) || [])[1]?.toLowerCase() || "";
+  const allMetadataText = [titleMatch, ...metaMatches].join(" ");
+
+  for (const phrase of ["live market price", "current market price", "realtime price", "real-time price", "snapshot as of", "snapshot as-of"]) {
+    if (allMetadataText.includes(phrase)) {
+      console.error(`UNSUPPORTED METADATA CLAIM in stock/${ticker}: "${phrase}"`);
+      unsupportedMetadataClaims++;
+    }
+  }
 }
 
-assert(baselineRefPresent === 44, `BASELINE_REFERENCE_PRICE_PRESENT must be 44 (got ${baselineRefPresent})`);
-assert(noRefAvailable === 5, `NO_REFERENCE_AVAILABLE must be 5 (got ${noRefAvailable})`);
-assert(falseLiveClaims === 0, `FALSE_LIVE_PRICE_CLAIMS must be 0 (got ${falseLiveClaims})`);
+assert(catalogRefValuePresent === 44, `CATALOG_REFERENCE_VALUE_PRESENT must be 44 (got ${catalogRefValuePresent})`);
+assert(noRefAvailable === 5, `NO_REFERENCE_VALUE must be 5 (got ${noRefAvailable})`);
+assert(falseLiveClaims === 0, `FALSE_LIVE_CLAIMS must be 0 (got ${falseLiveClaims})`);
+assert(falseCurrentClaims === 0, `FALSE_CURRENT_PRICE_CLAIMS must be 0 (got ${falseCurrentClaims})`);
+assert(falseSnapshotClaims === 0, `FALSE_SNAPSHOT_PROVENANCE_CLAIMS must be 0 (got ${falseSnapshotClaims})`);
+assert(unsupportedMetadataClaims === 0, `UNSUPPORTED_PRICE_PROVENANCE_METADATA_CLAIMS must be 0 (got ${unsupportedMetadataClaims})`);
 
 // 4. SOCIAL METADATA FULL SCAN
 console.log("\n[4. SOCIAL METADATA FULL SCAN]");

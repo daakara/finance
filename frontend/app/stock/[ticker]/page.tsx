@@ -239,9 +239,9 @@ export default function StockDetailPage({ params }: PageProps) {
                   <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
                     ${referencePrice.toFixed(2)}
                   </div>
-                  <div className="text-xs font-mono text-cyan-400">Baseline Reference Price</div>
+                  <div className="text-xs font-mono text-cyan-400">Baseline Reference</div>
                   <span className="text-[10px] text-slate-400 font-sans block mt-0.5">
-                    Catalog baseline snapshot • Live tape connects on execution
+                    Static catalog reference • Live market data loads during execution
                   </span>
                 </>
               ) : (
@@ -328,11 +328,16 @@ export default function StockDetailPage({ params }: PageProps) {
 
         {/* Minervini VCP Mathematical Invalidation Ladder */}
         <section className="bg-[#0b1019] p-5 rounded-2xl border border-[#1e293b] space-y-4">
-          <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <span>🎯 Mark Minervini VCP Execution Ladder</span>
-            </h2>
-            <Link href="/guide#chapter-2" className="text-[11px] text-cyan-400 hover:underline">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#1e293b] pb-3 gap-2">
+            <div>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>🎯 Mark Minervini VCP Reference Levels</span>
+              </h2>
+              <p className="text-[11px] text-slate-400 font-sans mt-0.5">
+                Derived reference calculation levels based on static catalog baseline anchor. Real-time executable setups require active live market tape.
+              </p>
+            </div>
+            <Link href="/guide#chapter-2" className="text-[11px] text-cyan-400 hover:underline whitespace-nowrap">
               View Execution Math Guide →
             </Link>
           </div>
