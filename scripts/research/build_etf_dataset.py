@@ -803,12 +803,26 @@ class ClassificationAuthorityEngine:
                         passes_gov = (gov_pct >= 0.80 and corp_pct < 0.10 and mbs_pct < 0.10 and eq_pct < 0.05)
                         passes_credit = (corp_pct >= 0.50 and gov_pct < 0.50 and eq_pct < 0.05)
 
-                        has_mandate = mandate_evidence is not None
                         m_dict = mandate_evidence if isinstance(mandate_evidence, dict) else {}
+                        mandate_class = m_dict.get("derived_mandate_classification")
+                        mandate_status = m_dict.get("mandate_status")
+
+                        # Only affirmative resolutions count as having statutory mandate evidence.
+                        # Unresolved/ambiguous/missing mandate evidence fails closed.
+                        has_mandate = (
+                            mandate_evidence is not None and
+                            mandate_class not in (None, "UNRESOLVED_MANDATE") and
+                            mandate_status not in (
+                                "SOURCE_NOT_FOUND",
+                                "AMBIGUOUS_SERIES_MAPPING",
+                                "DOWNLOAD_FAILED",
+                                "PARSE_FAILURE",
+                                "UNRESOLVED_AMBIGUOUS_MANDATE",
+                            )
+                        )
                         is_sector_fund = bool(m_dict.get("is_sector_specific_mandate", False))
                         approved_sec = m_dict.get("approved_sector")
                         is_broad_index = bool(m_dict.get("is_broad_or_multi_sector_mandate", False))
-                        mandate_class = m_dict.get("derived_mandate_classification")
 
                         is_gov_mandate = (mandate_class in ("GOVERNMENT_DEBT_MANDATE", "US_TREASURY_GOVERNMENT_MANDATE"))
                         is_credit_mandate = (mandate_class in ("CORPORATE_CREDIT_MANDATE", "CREDIT_MANDATE"))
@@ -869,14 +883,19 @@ class ClassificationAuthorityEngine:
                                 research_subtype_state = "INSUFFICIENT_SOURCE_EVIDENCE"
                                 subtype_authorized = False
                                 classification_source = "TIER_4_FAIL_CLOSED_UNRESOLVED_SUBTYPE_QUARANTINE"
-                                classification_evidence = f"INSUFFICIENT_MANDATE_REGULATORY_EVIDENCE: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                                classification_evidence = f"INSUFFICIENT_MANDATE_REGULATORY_EVIDENCE: {mandate_status or 'NO_MANDATE_RECORD'}: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
                                 exclusion_reason = "INSUFFICIENT_MANDATE_EVIDENCE"
                             else:
                                 research_subtype = "OTHER_ETF"
                                 research_subtype_state = "EXPLORATORY_ONLY"
                                 subtype_authorized = False
                                 classification_source = "TIER_5_EVALUATED_EXPLORATORY_ASSIGNMENT"
-                                classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                                if has_mandate and mandate_class == "NON_CONFIRMATORY_MANDATE":
+                                    classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_MANDATE: {m_dict.get('parser_rule_id', 'NON_CONFIRMATORY')}"
+                                elif has_mandate:
+                                    classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO_EVALUATED: {mandate_class}: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                                else:
+                                    classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
                                 exclusion_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
             elif sym in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.entries:
                 for st, s_set in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes.items():
@@ -983,7 +1002,7 @@ def evaluate_liquidity_and_history(
 def build_universe_snapshot(
     discovery_file: Path | str = None,
     price_data_dict: dict[str, pd.DataFrame] = None,
-    as_of_date: str = None,
+    as_of_date: str = "2026-09-24",
     output_parquet: Path | str = UNIVERSE_SNAPSHOT_PATH,
     output_manifest: Path | str = UNIVERSE_MANIFEST_PATH,
     cache_dir: Path = CACHE_DIR,
@@ -1293,8 +1312,8 @@ def build_universe_snapshot(
         "candidate_denominator_closure_status": "BLOCKED",
         "etf_surviving_universe_v1": "NOT_CERTIFIED",
         "initial_blocker_count": 3823,
-        "resolved_non_blocking_count": 217,
-        "mandate_blockers_resolved": 0,
+        "resolved_non_blocking_count": 232,
+        "mandate_blockers_resolved": 26,
         "missing_nport_blockers_resolved": 0,
         "reconciliation_blockers_resolved": 226,
         "remaining_denominator_blockers": int((df_snap["research_subtype"] == "UNRESOLVED").sum()),
