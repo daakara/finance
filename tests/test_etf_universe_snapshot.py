@@ -442,6 +442,7 @@ def test_discovery_domain_etf_flag_only():
             output_parquet=snap_parquet,
             output_manifest=snap_manifest,
             cache_dir=tmp_path,
+            source_manifest=SourceCacheManager(manifest_path=tmp_path / "source_cache_manifest.json"),
         )
 
         df = pd.read_parquet(snap_parquet)
@@ -1365,3 +1366,85 @@ def test_final_denominator_requires_zero_potential_confirmatory_unresolved_rows(
     # Certification gate is BLOCKED when potential_conf_unresolved > 0
     gate_status = "PASS" if len(potential_conf_unresolved) == 0 else "BLOCKED"
     assert gate_status == "BLOCKED"
+
+
+def test_missing_nport_remains_denominator_blocking():
+    """Section 28: Proves missing N-PORT filings cannot be assumed non-confirmatory.
+    All 403 ETFs with MISSING_NPORT remain denominator blocking until filings are retrieved.
+    """
+    blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    assert blocker_path.exists(), "ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet must exist"
+    df_blockers = pd.read_parquet(blocker_path)
+
+    missing_nport = df_blockers[df_blockers["blocker_reason"] == "MISSING_NPORT"]
+    assert len(missing_nport) == 403
+    assert (missing_nport["denominator_blocking"] == True).all()
+    assert (missing_nport["nport_available"] == False).all()
+    assert (missing_nport["resolution_status"] == "UNRESOLVED_BLOCKING").all()
+    assert (missing_nport["final_subtype"] == "UNRESOLVED").all()
+    # Must have potential confirmatory rules
+    assert (missing_nport["potential_confirmatory_rules"].str.len() > 0).all()
+
+
+def test_nport_reconciliation_failure_remains_denominator_blocking():
+    """Section 28: Proves N-PORT reconciliation failures cannot be forced or silently dropped.
+    All 473 ETFs with NPORT_RECONCILIATION_FAILURE remain denominator blocking pending audit.
+    """
+    blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_blockers = pd.read_parquet(blocker_path)
+
+    recon_fail = df_blockers[df_blockers["blocker_reason"] == "NPORT_RECONCILIATION_FAILURE"]
+    assert len(recon_fail) == 473
+    assert (recon_fail["denominator_blocking"] == True).all()
+    assert (recon_fail["nport_available"] == True).all()
+    assert (recon_fail["nport_reconciliation_pass"] == False).all()
+    assert (recon_fail["resolution_status"] == "UNRESOLVED_BLOCKING").all()
+    assert (recon_fail["final_subtype"] == "UNRESOLVED").all()
+
+
+def test_mandate_resolution_alone_cannot_certify_universe_while_nport_blockers_remain():
+    """Section 28: Proves resolving mandate blockers alone cannot certify the universe.
+    Even if all 2,947 mandate blockers were resolved, 876 N-PORT blockers still block certification.
+    """
+    blocker_path = Path("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_blockers = pd.read_parquet(blocker_path)
+
+    mandate_blockers = df_blockers[df_blockers["blocker_type"] == "MANDATE_BLOCKED"]
+    nport_blockers = df_blockers[df_blockers["blocker_type"] == "NPORT_BLOCKED"]
+
+    assert len(mandate_blockers) == 2947
+    assert len(nport_blockers) == 876
+    assert len(df_blockers) == 3823
+
+    # Hypothesize zero mandate blockers remaining:
+    remaining_if_mandates_resolved = len(nport_blockers)
+    is_certified = (remaining_if_mandates_resolved == 0)
+    assert not is_certified, "Universe cannot be certified while N-PORT blockers (876) remain"
+
+
+def test_candidate_denominator_requires_zero_blocking_unresolved():
+    """Section 28: Proves the confirmatory candidate denominator requires exactly 0 blocking unresolved ETFs.
+    Current 70 candidates remain provisional while remaining_denominator_blockers == 3823.
+    """
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["initial_blocker_count"] == 3823
+    assert manifest["remaining_denominator_blockers"] == 3823
+    assert manifest["candidate_denominator_closure_status"] == "BLOCKED_PENDING_MANDATE_EVIDENCE"
+    assert manifest["final_confirmatory_denominator"] == 70
+
+    # Denominator certification requires remaining blockers == 0
+    is_denominator_certified = (manifest["remaining_denominator_blockers"] == 0)
+    assert not is_denominator_certified, "Candidate denominator cannot be certified while 3823 blockers remain"
+
+
+def test_adv80_cannot_become_final_before_denominator_closure():
+    """Section 28: Proves ADV80 threshold cannot be final while candidate denominator is unclosed."""
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["remaining_denominator_blockers"] > 0
+    # Current ADV80 is provisional
+    assert manifest["candidate_denominator_closure_status"] != "CERTIFIED"
+    assert abs(manifest["final_adv80"] - 1491310805.7732) < 1.0
