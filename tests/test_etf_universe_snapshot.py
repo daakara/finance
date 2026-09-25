@@ -2250,12 +2250,15 @@ def test_historical_blocker_ledger_may_exceed_current_blocker_count():
     assert "current_structure_state" in df_ledger.columns
     assert "current_structure_eligible" in df_ledger.columns
 
-    assert (df_ledger["initial_blocker"] == True).all()
+    # 3823 original baseline blockers have initial_blocker=True; 2 post-baseline additions (ASTN, FAAR) have False
+    assert (df_ledger["initial_blocker"] == True).sum() == 3823
+    assert (df_ledger["initial_blocker"] == False).sum() == 2
     assert (df_ledger["current_denominator_blocking"] == True).sum() == 3325
     assert (df_ledger["current_denominator_blocking"] == False).sum() == 500
 
-    # 3825 initial blockers legitimately exceeds 3325 active blockers
+    # 3825 lineage rows legitimately exceeds 3325 active blockers
     assert len(df_ledger) > (df_ledger["current_denominator_blocking"] == True).sum()
+
 
 
 def test_mandate_database_lineage_may_exceed_current_mandate_population():
@@ -2325,3 +2328,277 @@ def test_current_mandate_projection_equals_2884():
 
     assert snap_mandate == ledger_mandate == manifest_mandate == 2884
     assert manifest["current_mandate_blockers"] + manifest["current_nport_blockers"] == 3325
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECTION 21 — HISTORICAL LINEAGE INTEGRITY & CANONICAL MANDATE BASELINE
+# Gate: Resolves INITIAL_BLOCKER_COUNT=3823 vs ledger rows=3825 discrepancy and
+#        validates canonical 77-record mandate baseline classification.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+ORIGINAL_BLOCKER_LEDGER_COMMIT = "d22c29d"
+ORIGINAL_BLOCKER_LEDGER_ROWS = 3823
+POST_BASELINE_DISCOVERY_COMMIT = "f64d074"
+POST_BASELINE_ADDED_SYMBOLS = {"ASTN", "FAAR"}
+
+# Canonical mandate-evidence confirmed subtypes for canonical 77 (mandate_status=None)
+CANONICAL_77_SNAPSHOT_DISTRIBUTION = {
+    "EQUITY_SECTOR": 19,
+    "EQUITY_INDEX": 18,
+    "FIXED_INCOME_GOVERNMENT": 14,
+    "FIXED_INCOME_CREDIT": 10,
+    "COMMODITY_PHYSICAL": 9,
+    "OTHER_ETF": 7,
+}
+
+# The 7 actual OTHER_ETF members in the canonical 77 (NOT BNDX, VCSH, VCIT, HYG, JNK)
+CANONICAL_77_OTHER_ETF = {"AGG", "AMLP", "BND", "BSV", "MBB", "MLPX", "PDBC"}
+
+# The 10 canonical Fixed Income Credit members
+CANONICAL_FIC_10 = {"HYG", "JNK", "VCIT", "VCSH", "LQD", "USIG", "FLOT", "SJNK", "HYLB", "VUSB"}
+
+
+def test_original_blocker_population_is_immutable_3823():
+    """Section 21: Original blocker population at baseline commit must be exactly 3823.
+    The manifest initial_blocker_count must match. This invariant is immutable."""
+    import subprocess
+    import io
+
+    out = subprocess.check_output(
+        ["git", "show", f"{ORIGINAL_BLOCKER_LEDGER_COMMIT}:docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet"]
+    )
+    df_orig = pd.read_parquet(io.BytesIO(out))
+    assert len(df_orig) == ORIGINAL_BLOCKER_LEDGER_ROWS, (
+        f"Original blocker ledger at {ORIGINAL_BLOCKER_LEDGER_COMMIT} must have {ORIGINAL_BLOCKER_LEDGER_ROWS} rows, "
+        f"got {len(df_orig)}"
+    )
+
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    assert manifest["initial_blocker_count"] == ORIGINAL_BLOCKER_LEDGER_ROWS, (
+        f"manifest.initial_blocker_count must be {ORIGINAL_BLOCKER_LEDGER_ROWS}, got {manifest['initial_blocker_count']}"
+    )
+    assert manifest["original_blocker_population"] == ORIGINAL_BLOCKER_LEDGER_ROWS, (
+        f"manifest.original_blocker_population must be {ORIGINAL_BLOCKER_LEDGER_ROWS}, got {manifest['original_blocker_population']}"
+    )
+
+
+def test_post_baseline_blockers_not_labeled_initial():
+    """Section 21: Post-baseline blocker additions (ASTN, FAAR) must have initial_blocker=False.
+    They must carry blocker_lineage_origin=POST_BASELINE_DISCOVERY."""
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+
+    for sym in POST_BASELINE_ADDED_SYMBOLS:
+        sym_rows = df_ledger[df_ledger["symbol"] == sym]
+        assert len(sym_rows) == 1, f"{sym} must appear exactly once in ledger"
+        row = sym_rows.iloc[0]
+        assert row["initial_blocker"] is False or row["initial_blocker"] == False, (
+            f"{sym} is a post-baseline discovery and must have initial_blocker=False, got {row['initial_blocker']}"
+        )
+        assert row["blocker_lineage_origin"] == "POST_BASELINE_DISCOVERY", (
+            f"{sym} must have blocker_lineage_origin=POST_BASELINE_DISCOVERY, got {row['blocker_lineage_origin']}"
+        )
+        assert row["first_blocking_commit"] == POST_BASELINE_DISCOVERY_COMMIT, (
+            f"{sym} must have first_blocking_commit={POST_BASELINE_DISCOVERY_COMMIT}, got {row['first_blocking_commit']}"
+        )
+
+
+def test_original_baseline_symbols_labeled_initial_true():
+    """Section 21: All 3823 original baseline symbols must have initial_blocker=True.
+    Retroactive modification of the original population is prohibited."""
+    import subprocess
+    import io
+
+    out = subprocess.check_output(
+        ["git", "show", f"{ORIGINAL_BLOCKER_LEDGER_COMMIT}:docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet"]
+    )
+    df_orig = pd.read_parquet(io.BytesIO(out))
+    original_symbols = set(df_orig["symbol"].unique())
+
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    orig_in_current = df_ledger[df_ledger["symbol"].isin(original_symbols)]
+
+    assert len(orig_in_current) == ORIGINAL_BLOCKER_LEDGER_ROWS, (
+        f"All {ORIGINAL_BLOCKER_LEDGER_ROWS} original symbols must still be present in ledger"
+    )
+    incorrectly_false = orig_in_current[orig_in_current["initial_blocker"] != True]
+    assert len(incorrectly_false) == 0, (
+        f"Original baseline symbols with initial_blocker!=True: {incorrectly_false['symbol'].tolist()}"
+    )
+
+
+def test_total_lineage_rows_may_exceed_original_denominator():
+    """Section 21: Total blocker lineage rows (3825) legitimately exceed original denominator (3823).
+    The difference represents post-baseline discoveries, not a data integrity error."""
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    total_rows = len(df_ledger)
+    original_pop = manifest["original_blocker_population"]
+    post_baseline = manifest["post_baseline_blocker_discoveries"]
+
+    assert manifest["total_blocker_lineage_rows"] == 3825
+    assert total_rows == 3825
+    assert original_pop == 3823
+    assert post_baseline == 2
+    assert original_pop + post_baseline == total_rows, (
+        f"original_pop({original_pop}) + post_baseline({post_baseline}) must equal total_rows({total_rows})"
+    )
+    # initial_blocker=True count must match original population exactly
+    initial_true_count = int(df_ledger["initial_blocker"].sum())
+    assert initial_true_count == original_pop, (
+        f"initial_blocker=True count ({initial_true_count}) must equal original_blocker_population ({original_pop})"
+    )
+
+
+def test_canonical_77_mandate_records_exist():
+    """Section 21: The mandate database must contain exactly 77 canonical entries
+    (mandate_status=None). All must have vehicle_structure_state=STRUCTURE_VERIFIED."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    canonical = [e for e in db["entries"] if e.get("mandate_status") is None]
+    assert len(canonical) == 77, f"Expected 77 canonical mandate entries (mandate_status=None), got {len(canonical)}"
+
+    snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    snap_map = snap.set_index("symbol")["vehicle_structure_state"].to_dict()
+
+    for e in canonical:
+        sym = e["symbol"]
+        state = snap_map.get(sym, "NOT_IN_SNAP")
+        assert state == "STRUCTURE_VERIFIED", (
+            f"Canonical mandate entry {sym} must be STRUCTURE_VERIFIED in snapshot, got {state}"
+        )
+
+
+def test_canonical_77_subtype_distribution():
+    """Section 21: The canonical 77 mandate entries must map to the expected subtype
+    distribution in the current snapshot."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    canonical_syms = {e["symbol"] for e in db["entries"] if e.get("mandate_status") is None}
+    assert len(canonical_syms) == 77
+
+    snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    snap_77 = snap[snap["symbol"].isin(canonical_syms)]
+    actual_dist = snap_77["research_subtype"].value_counts().to_dict()
+
+    for subtype, expected_count in CANONICAL_77_SNAPSHOT_DISTRIBUTION.items():
+        actual_count = actual_dist.get(subtype, 0)
+        assert actual_count == expected_count, (
+            f"Canonical 77 subtype {subtype}: expected {expected_count}, got {actual_count}"
+        )
+
+
+def test_canonical_77_other_etf_members():
+    """Section 21: Verify REPORTING_ERROR resolution. The 7 OTHER_ETF members in the
+    canonical 77 are AGG, AMLP, BND, BSV, MBB, MLPX, PDBC — NOT BNDX, VCSH, VCIT, HYG, JNK.
+    BNDX is not in the canonical 77 at all."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    canonical_syms = {e["symbol"] for e in db["entries"] if e.get("mandate_status") is None}
+    # BNDX must NOT be in the canonical 77
+    assert "BNDX" not in canonical_syms, "BNDX is NOT a canonical mandate-evidence entry"
+
+    snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    snap_77 = snap[snap["symbol"].isin(canonical_syms)]
+    actual_other_etf = set(snap_77[snap_77["research_subtype"] == "OTHER_ETF"]["symbol"].tolist())
+
+    assert actual_other_etf == CANONICAL_77_OTHER_ETF, (
+        f"OTHER_ETF members mismatch. Expected {sorted(CANONICAL_77_OTHER_ETF)}, got {sorted(actual_other_etf)}"
+    )
+
+
+def test_fic_10_canonical_classification():
+    """Section 21: All 10 Fixed Income Credit symbols specified in the gate must be
+    in the canonical 77 and classified as FIXED_INCOME_CREDIT in the snapshot."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    canonical_syms = {e["symbol"] for e in db["entries"] if e.get("mandate_status") is None}
+    snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    snap_map = snap.set_index("symbol")["research_subtype"].to_dict()
+
+    for sym in CANONICAL_FIC_10:
+        assert sym in canonical_syms, f"{sym} must be in canonical 77 mandate entries"
+        subtype = snap_map.get(sym, "NOT_IN_SNAP")
+        assert subtype == "FIXED_INCOME_CREDIT", (
+            f"{sym} must be FIXED_INCOME_CREDIT in snapshot, got {subtype}"
+        )
+
+
+def test_vcsh_vcit_hyg_jnk_are_fic_not_other_etf():
+    """Section 21: Specifically confirms VCSH, VCIT, HYG, JNK are FIXED_INCOME_CREDIT —
+    the previous reporting error that claimed them as OTHER_ETF is corrected."""
+    snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    snap_map = snap.set_index("symbol")["research_subtype"].to_dict()
+
+    for sym in ["VCSH", "VCIT", "HYG", "JNK"]:
+        actual = snap_map.get(sym, "NOT_IN_SNAP")
+        assert actual == "FIXED_INCOME_CREDIT", (
+            f"{sym} must be FIXED_INCOME_CREDIT (not OTHER_ETF). Got {actual}. "
+            "The previous Section-7 reporting error claiming these as OTHER_ETF is resolved."
+        )
+
+
+def test_oneq_distinguished_from_canonical_baseline_70():
+    """Section 21: ONEQ must be distinguished as a POST_BASELINE_VALIDATED_ADDITION.
+    Canonical baseline confirmatory = 70. ONEQ = +1 post-baseline validated addition.
+    Current provisional confirmatory = 71 (70 + ONEQ)."""
+    with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
+        db = json.load(f)
+
+    # ONEQ must NOT be in the canonical 77 (mandate_status=None cohort)
+    canonical_syms = {e["symbol"] for e in db["entries"] if e.get("mandate_status") is None}
+    assert "ONEQ" not in canonical_syms, (
+        "ONEQ must NOT be in the canonical 77 (mandate_status=None) cohort. "
+        "It was added via adversarial correction with mandate_status=RESOLVED_CONFIRMATORY_MANDATE."
+    )
+
+    # ONEQ must have mandate_status=RESOLVED_CONFIRMATORY_MANDATE
+    oneq_entries = [e for e in db["entries"] if e["symbol"] == "ONEQ"]
+    assert len(oneq_entries) == 1, "ONEQ must appear exactly once in mandate database"
+    assert oneq_entries[0]["mandate_status"] == "RESOLVED_CONFIRMATORY_MANDATE", (
+        f"ONEQ mandate_status must be RESOLVED_CONFIRMATORY_MANDATE, got {oneq_entries[0]['mandate_status']}"
+    )
+
+    # Manifest must capture the distinction
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    assert manifest["canonical_baseline_confirmatory"] == 70
+    assert manifest["post_baseline_confirmatory_additions"] == 1
+    assert manifest["current_provisional_confirmatory"] == 71
+    assert manifest["canonical_mandate_baseline_records"] == 77
+
+
+def test_current_active_blocker_projection_3325_immutable():
+    """Section 21: Verifies the current active blocker projection equals exactly 3325
+    across all 4 governance artifacts — with correct initial_blocker semantics applied."""
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    df_mat = pd.read_parquet("docs/research/ETF_EVIDENCE_COMPLETENESS_MATRIX_V1.parquet")
+    with open("docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json", "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    snap_blocking = (df_snap["research_subtype"] == "UNRESOLVED").sum()
+    ledger_blocking = (df_ledger["current_denominator_blocking"] == True).sum()
+    matrix_blocking = df_mat[df_mat["current_denominator_scope"]]["denominator_blocking"].sum()
+    manifest_blocking = manifest["current_denominator_blockers"]
+
+    assert snap_blocking == ledger_blocking == matrix_blocking == manifest_blocking == 3325, (
+        f"Active blocker 4-artifact parity failed: snap={snap_blocking}, "
+        f"ledger={ledger_blocking}, matrix={matrix_blocking}, manifest={manifest_blocking}"
+    )
+
+    # Verify post-baseline additions ASTN/FAAR do not corrupt the blocker count
+    # ASTN is EXCLUDED (structure), so current_denominator_blocking=False
+    # FAAR is STRUCTURE_VERIFIED/UNRESOLVED, so current_denominator_blocking=True
+    astn = df_ledger[df_ledger["symbol"] == "ASTN"].iloc[0]
+    faar = df_ledger[df_ledger["symbol"] == "FAAR"].iloc[0]
+    assert astn["initial_blocker"] == False
+    assert faar["initial_blocker"] == False
+    assert astn["current_denominator_blocking"] == False  # ASTN is EXCLUDED
+    assert faar["current_denominator_blocking"] == True   # FAAR is UNRESOLVED STRUCTURE_VERIFIED

@@ -63,5 +63,12 @@
   "current_nport_blockers": 441,
   "evidence_matrix_total_rows": 4523,
   "evidence_matrix_current_scope_rows": 3966,
-  "evidence_matrix_lineage_rows": 557
+  "evidence_matrix_lineage_rows": 557,
+  "original_blocker_population": 3823,
+  "post_baseline_blocker_discoveries": 2,
+  "total_blocker_lineage_rows": 3825,
+  "canonical_mandate_baseline_records": 77,
+  "canonical_baseline_confirmatory": 70,
+  "post_baseline_confirmatory_additions": 1,
+  "current_provisional_confirmatory": 71
 }
