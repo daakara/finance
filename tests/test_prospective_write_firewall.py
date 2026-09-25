@@ -40,7 +40,7 @@ def test_firewall_env():
     init_governance_db(db_path)
     gov_engine = GovernanceDatabaseEngine(db_path=db_path)
 
-    epoch_id = "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
+    epoch_id = ExperimentLedger.EPOCH_ID
     auth_release = "e9eec914b5467fca99e82ea791afbaf3f8fef2bb"
     auth_deployment = "dep_prod_authorized_epoch3"
     now_iso = datetime.now(timezone.utc).isoformat()

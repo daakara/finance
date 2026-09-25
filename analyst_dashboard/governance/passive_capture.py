@@ -84,8 +84,13 @@ class PassiveCaptureHook:
         db_path: Optional[str] = None,
     ) -> bool:
         """Evaluates whether prospective observation is authorized for the active Epoch.
-        For Epoch 3 or Epoch 2 (PRE_ACTIVATION), requires an authoritative activation record in production.
+        For Epoch 4, Epoch 3, or Epoch 2 (PRE_ACTIVATION), requires an authoritative activation record in production.
         """
+        if cls.EPOCH_ID == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4":
+            return ExperimentLedger.is_epoch4_observation_authorized(
+                activation_record_path=activation_record_path,
+                db_path=db_path,
+            )
         if cls.EPOCH_ID == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3":
             return ExperimentLedger.is_epoch3_observation_authorized(
                 activation_record_path=activation_record_path,

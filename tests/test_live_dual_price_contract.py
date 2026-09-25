@@ -36,6 +36,18 @@ from analyst_dashboard.governance.passive_capture import (
 )
 
 
+@pytest.fixture(autouse=True)
+def isolate_alpaca_credentials(monkeypatch):
+    """Ensures test execution does not leak host developer Alpaca credentials."""
+    from config import Config
+    monkeypatch.delenv("ALPACA_API_KEY_ID", raising=False)
+    monkeypatch.delenv("ALPACA_API_SECRET_KEY", raising=False)
+    monkeypatch.delenv("APCA_API_KEY_ID", raising=False)
+    monkeypatch.delenv("APCA_API_SECRET_KEY", raising=False)
+    monkeypatch.setattr(Config, "ALPACA_API_KEY_ID", "", raising=False)
+    monkeypatch.setattr(Config, "ALPACA_API_SECRET_KEY", "", raising=False)
+
+
 @pytest.fixture
 def sample_daily_candles():
     """Generates synthetic completed daily OHLCV bars for indicator non-contamination testing."""
@@ -407,13 +419,23 @@ def test_frozen_engine_manifest_compliance():
     assert res["frozenStrategyVersion"] == "2.5.0"
 
 
-def test_epoch3_governance_manifest_compliance():
-    """Asserts EPOCH_3_MANIFEST.json is verified against current repository code."""
-    res = ExperimentLedger.verify_epoch3_manifest()
-    assert res["valid"] is True, f"Epoch 3 manifest failed verification: {res}"
+def test_epoch4_governance_manifest_compliance():
+    """Asserts EPOCH_4_MANIFEST.json is verified against current repository code."""
+    res = ExperimentLedger.verify_epoch4_manifest()
+    assert res["valid"] is True, f"Epoch 4 manifest failed verification: {res}"
     assert res["status"] == "VERIFIED"
-    assert res["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
-    assert len(res["files"]) == 8
+    assert res["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
+    assert len(res["files"]) == 10
+
+
+def test_epoch3_manifest_byte_for_byte_untouched():
+    """Asserts EPOCH_3_MANIFEST.json remains 100% byte-for-byte untouched from historical record."""
+    m3 = ExperimentLedger.get_epoch3_manifest()
+    assert m3 is not None
+    assert m3["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
+    assert m3["observationGovernanceManifestHash"] == "932f44982b52a043dc186cd3e93651d465c2e90f3ee533e89170f73ce6b45258"
+    assert m3["decisionEngineSha"] == "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3"
+    assert len(m3["executableGovernanceFiles"]) == 8
 
 
 def test_epoch2_manifest_byte_for_byte_untouched():
@@ -424,3 +446,15 @@ def test_epoch2_manifest_byte_for_byte_untouched():
     assert m2["observationGovernanceManifestHash"] == "3ba81b701a260dc5098d48f5356dd7a0fd5c064354b5ecea5d729039dc2fff38"
     assert m2["decisionEngineSha"] == "7ad44595826c147cc77f93cd676af520764c7442"
     assert len(m2["executableGovernanceFiles"]) == 4
+
+
+def test_epoch3_supersession_integrity():
+    """Asserts Epoch 3 supersession record exists and confirms pre-observation supersession."""
+    rec = ExperimentLedger.get_epoch3_supersession_record()
+    assert rec is not None
+    assert rec["previous_epoch_id"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
+    assert rec["target_epoch_id"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
+    assert rec["supersession_status"] == "SUPERSEDED_PRE_OBSERVATION"
+    assert rec["clean_prospective_signals_captured"] == 0
+    assert rec["empirical_evidence_lost"] == 0
+    assert ExperimentLedger.is_epoch3_superseded() is True

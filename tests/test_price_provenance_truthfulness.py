@@ -64,10 +64,14 @@ def test_01_incident_reproduction_production_false_live_defect_confirmed():
         data = resp.json()
 
         freshness = data.get("freshness", {})
-        # The frozen backend defect: regularMarketTime within 1 day causes status to be marked 'LIVE'
+        # Historical incident 49d5d5a9 anti-regression contract:
+        # Completed prior daily session MUST NOT be falsely promoted to 'LIVE'
         raw_status = freshness.get("status")
-        assert raw_status == "LIVE", (
-            f"Expected frozen backend to exhibit false LIVE defect, got {raw_status}"
+        assert raw_status != "LIVE", (
+            f"Regression: completed prior session was falsely promoted to 'LIVE': {raw_status}"
+        )
+        assert raw_status in ("RECENT", "STALE", "DELAYED", "COMPLETED_SESSION"), (
+            f"Expected non-LIVE truthful status, got {raw_status}"
         )
         # However, lastTradeDate is yesterday's completed session
         assert freshness.get("lastTradeDate") == "2026-09-23"

@@ -102,8 +102,14 @@ class TestAdversarialPhase13Verification(unittest.TestCase):
     def test_adv_9_stop_loss_formula_parity(self):
         """Attack: Verify stock landing page stop loss aligns with insight generator (0.93 multiplier)."""
         content = self.read_file("frontend", "app", "stock", "[ticker]", "page.tsx")
-        self.assertIn("+(spotPrice * 0.93).toFixed(2)", content)
+        has_canonical_093 = (
+            "+(referencePrice * 0.93).toFixed(2)" in content
+            or "+(spotPrice * 0.93).toFixed(2)" in content
+            or "referencePrice * 0.93" in content
+        )
+        self.assertTrue(has_canonical_093, "Stock landing page must compute stop loss using canonical 0.93 multiplier")
         self.assertNotIn("spotPrice - 1.25 * atr14", content)
+        self.assertNotIn("referencePrice - 1.25 * atr14", content)
 
     def test_adv_10_compare_uncataloged_truth_integrity(self):
         """Attack: Verify uncataloged comparison tickers do not fabricate ROIC or margins."""

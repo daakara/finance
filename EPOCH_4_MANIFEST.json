@@ -1,0 +1,58 @@
+{
+  "manifestVersion": "2.0.0",
+  "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
+  "lifecycleState": "PRE_ACTIVATION",
+  "activationPolicy": "SUCCESSFUL_PRODUCTION_ACTIVATION",
+  "epochStartUtc": null,
+  "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
+  "observationGovernanceVersion": "2.0.0",
+  "observationGovernanceIdentity": "MANIFEST_HASH",
+  "observationGovernanceManifestHash": "2e550089a1f4ff56ff84322ab3aba22428d5a7079cdae5a20c456e66ea248e66",
+  "observationGovernanceArtifactIdentity": "2e550089a1f4ff56ff84322ab3aba22428d5a7079cdae5a20c456e66ea248e66",
+  "observationGovernanceSha": "2e550089a1f4ff56ff84322ab3aba22428d5a7079cdae5a20c456e66ea248e66",
+  "decisionEngineSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineCompositeSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineVersion": "2.5.0",
+  "executableGovernanceFiles": {
+    "analyst_dashboard/governance/passive_capture.py": {
+      "sha256": "ab5e42cbb73ad719ad3a585750a8f46fef0dca6b56ce8188ffe180c05b7d33f0"
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "sha256": "e97cb665058e40371d06ac64a6aa4053accf34614198ebfdbc1c4d3bcf9660c9"
+    },
+    "analyst_dashboard/governance/governance_db.py": {
+      "sha256": "27e484a8ab4c925f43ab815c296cb0dbc0cb9b52fc2656eac51a8e28bdaf7129"
+    },
+    "analyst_dashboard/governance/storage.py": {
+      "sha256": "ebb0ceecac1acef022d23637f97efb96fd751763f4078412e1f95d052354c889"
+    },
+    "analyst_dashboard/data/fred_fetcher.py": {
+      "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"
+    },
+    "api/routes/analytics.py": {
+      "sha256": "abe84ed7fc882961d44944662ddbdfa665d1237e95e2626559662aa633d81871"
+    },
+    "analyst_dashboard/data/alpaca_fetcher.py": {
+      "sha256": "f409b75627bd95b588c2ccac8028ea22f106dedb957912b0c3bcab7271c64ff9"
+    },
+    "analyst_dashboard/data/market_price_state.py": {
+      "sha256": "83846723d76a9b3e0a91cda0fc9373179075fe5773ebceb89a1e30e3e505a797"
+    },
+    "api/routes/screener.py": {
+      "sha256": "d62c5f5bac835458686ba137f9f071d93afbd1342048487610533931ae60f978"
+    },
+    "analyst_dashboard/analyzers/gem_screener.py": {
+      "sha256": "7ffbe27ab943ea5e2352f4411a7dbd065df3653f6e38bfce7f1407826b33d6b2"
+    }
+  },
+  "invariants": {
+    "zero_unauthorized_production_mutation": true,
+    "zero_brokerage_execution_side_effects": true,
+    "fail_closed_passive_capture": true,
+    "epistemic_null_unobserved_excursions": true,
+    "completed_session_market_data_authority": true,
+    "live_market_dual_price_contract": true,
+    "zero_synthetic_prospective_writes": true,
+    "single_canonical_actionability_authority": true
+  }
+}

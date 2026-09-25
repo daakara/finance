@@ -36,7 +36,9 @@ class TestPhase13Batch3Remediations(unittest.TestCase):
     def test_p2_1_stop_loss_formula_parity(self):
         """FINDING-13-09: Stock landing page stop loss must use canonical 0.93 multiplier."""
         self.assertNotIn("spotPrice - 1.25 * atr14", self.stock_page_content)
-        self.assertIn("spotPrice * 0.93", self.stock_page_content)
+        self.assertNotIn("referencePrice - 1.25 * atr14", self.stock_page_content)
+        has_canonical_093 = "referencePrice * 0.93" in self.stock_page_content or "spotPrice * 0.93" in self.stock_page_content
+        self.assertTrue(has_canonical_093, "Stock landing page must use canonical 0.93 multiplier")
 
     def test_p2_2_why_modal_focus_management(self):
         """FINDING-13-07: WhyInspectModal must trap focus and restore focus on close."""

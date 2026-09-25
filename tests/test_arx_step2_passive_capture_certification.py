@@ -201,7 +201,12 @@ def test_stage6_epoch_id_verification():
         payload["ledger_path"] = tmp_path
 
         record = PassiveCaptureHook.record_natural_recommendation(**payload)
-        assert record["epochId"] in ("ARX_PROSPECTIVE_VALIDATION_EPOCH_1", "ARX_PROSPECTIVE_VALIDATION_EPOCH_2", "ARX_PROSPECTIVE_VALIDATION_EPOCH_3")
+        assert record["epochId"] in (
+            "ARX_PROSPECTIVE_VALIDATION_EPOCH_1",
+            "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+            "ARX_PROSPECTIVE_VALIDATION_EPOCH_3",
+            "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
+        )
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -218,9 +223,18 @@ def test_stage7_and_stage8_dual_sha_verification():
         payload["ledger_path"] = tmp_path
 
         record = PassiveCaptureHook.record_natural_recommendation(**payload)
-        assert record["decisionEngineSha"] in ("7ad44595826c147cc77f93cd676af520764c7442", ExperimentLedger.EPOCH_3_DECISION_ENGINE_SHA)
+        assert record["decisionEngineSha"] in (
+            "7ad44595826c147cc77f93cd676af520764c7442",
+            ExperimentLedger.EPOCH_3_DECISION_ENGINE_SHA,
+            ExperimentLedger.EPOCH_4_DECISION_ENGINE_SHA,
+        )
         assert record["observationGovernanceSha"] in ("187f65b4c6e9447e1136b95ee387d3a0a3fe7a73", ExperimentLedger.get_observation_governance_sha())
-        assert record["engineVersion"] in ("7ad44595826c147cc77f93cd676af520764c7442", ExperimentLedger.EPOCH_3_DECISION_ENGINE_SHA, "2.5.0")
+        assert record["engineVersion"] in (
+            "7ad44595826c147cc77f93cd676af520764c7442",
+            ExperimentLedger.EPOCH_3_DECISION_ENGINE_SHA,
+            ExperimentLedger.EPOCH_4_DECISION_ENGINE_SHA,
+            "2.5.0",
+        )
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

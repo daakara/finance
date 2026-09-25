@@ -53,7 +53,7 @@ def test_governance_env():
     init_governance_db(db_path)
     gov_engine = GovernanceDatabaseEngine(db_path=db_path)
 
-    epoch_id = "ARX_PROSPECTIVE_VALIDATION_EPOCH_3"
+    epoch_id = ExperimentLedger.EPOCH_ID
     auth_release = "authorized_commit_sha_1234567890abcdef"
     auth_deployment = "dep_prod_authorized_789"
     now_iso = datetime.now(timezone.utc).isoformat()

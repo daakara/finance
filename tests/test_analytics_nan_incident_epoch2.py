@@ -323,11 +323,15 @@ def test_21_epoch2_manifest_and_denominator_accounting():
     assert manifest_audit["valid"] is True
     assert manifest_audit["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_2"
 
-    # Verify Active Manifest resolves to Epoch 2 or candidate Epoch 3
+    # Verify Active Manifest resolves to Epoch 2, candidate Epoch 3, or candidate Epoch 4
     active_audit = ExperimentLedger.verify_observation_governance_manifest()
     assert active_audit["status"] == "VERIFIED"
     assert active_audit["valid"] is True
-    assert active_audit["epochId"] in ("ARX_PROSPECTIVE_VALIDATION_EPOCH_2", "ARX_PROSPECTIVE_VALIDATION_EPOCH_3")
+    assert active_audit["epochId"] in (
+        "ARX_PROSPECTIVE_VALIDATION_EPOCH_2",
+        "ARX_PROSPECTIVE_VALIDATION_EPOCH_3",
+        "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
+    )
 
     # Denominator Accounting: Epoch 1 final N = 0, Epoch 2 initial N = 0
     assert ExperimentLedger.get_epoch1_clean_prospective_count() == 0

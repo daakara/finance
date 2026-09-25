@@ -26,10 +26,11 @@ pytestmark = pytest.mark.tier1
 def test_epoch_1_manifest_hashes_unmodified():
     """Verify that all executable governance files in active manifest remain bitwise unchanged."""
     repo_root = os.path.dirname(os.path.dirname(__file__))
+    epoch4_path = os.path.join(repo_root, "EPOCH_4_MANIFEST.json")
     epoch3_path = os.path.join(repo_root, "EPOCH_3_MANIFEST.json")
     epoch2_path = os.path.join(repo_root, "EPOCH_2_MANIFEST.json")
     epoch1_path = os.path.join(repo_root, "EPOCH_1_MANIFEST.json")
-    manifest_path = epoch3_path if os.path.exists(epoch3_path) else (epoch2_path if os.path.exists(epoch2_path) else epoch1_path)
+    manifest_path = epoch4_path if os.path.exists(epoch4_path) else (epoch3_path if os.path.exists(epoch3_path) else (epoch2_path if os.path.exists(epoch2_path) else epoch1_path))
     assert os.path.exists(manifest_path), "Governance manifest missing!"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
