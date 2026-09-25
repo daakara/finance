@@ -1,11 +1,193 @@
 # ARX Terminal Comprehensive Technical & On-Page SEO Audit, Keyword Impression Analysis & Optimization Blueprint
 
+> [!WARNING]
+> ### STATUS: SUPERSEDED
+> This audit represents an earlier repository state and must not be used as the current implementation baseline.
+> Its Phase-1 findings were subsequently remediated and verified.
+> **Current verified SEO Phase-1 release candidate**: `654398c44c4beff64d74e1667c80288e2c8f3245`
+> Use the **Current State / Remediation Outcome** section below for present status.
+
+---
+
+## Document Authority & Lifecycle Status
+
+```ini
+REPORT_STATUS =
+  SUPERSEDED_AS_IMPLEMENTATION_BASELINE
+HISTORICAL_VALUE =
+  RETAINED
+CURRENT_IMPLEMENTATION_AUTHORITY =
+  VERIFIED REPOSITORY STATE
+SUPERSEDED_BY =
+  SEO_PHASE_1_RELEASE_CANDIDATE_654398c
+DO_NOT_USE_ORIGINAL_OPEN_FINDINGS_AS_CURRENT_TODO =
+  TRUE
+```
+
+---
+
+## SEO Phase 1 — Remediation Outcome
+
+### Remediation Status Matrix
+
+| Original Finding | Historical State (Original Finding) | Current Remediated State | Current Status |
+|:---|:---|:---|:---|
+| **Core tool canonical tags** | 41 pages inherited root `/` canonical tag | Dedicated localized `layout.tsx` files emit explicit canonical URLs | **RESOLVED** |
+| **Double-branded titles** | Title template `%s \| ARX Terminal \| ARX Terminal` | Child metadata generators emit bare titles; root template applies single brand | **RESOLVED** |
+| **Politician SERP title cutoff** | Titles exceeded 100 chars (truncated on mobile/desktop) | Streamlined titles ≤ 60 chars avoid SERP truncation | **RESOLVED** |
+| **Workbench/stub soft-404 handling** | Client-side redirect stubs served thin HTTP 200 | Blocked in `robots.txt` and hard 301 redirected to `/` | **RESOLVED** |
+| **Private route noindex** | `/performance/`, `/journal/`, etc. lacked robots meta | Explicit `robots: { index: false, follow: false }` headers & excluded from sitemap | **RESOLVED** |
+| **Radar/Setups structured data** | Missing JSON-LD schemas | Injected `WebApplication` and `BreadcrumbList` JSON-LD schemas | **RESOLVED** |
+| **Sitemap coverage divergence** | Static `sitemap.xml` contained 80 URLs; 34 public routes omitted | Programmatic `frontend/app/sitemap.ts` generates exactly 99 indexable URLs | **RESOLVED** |
+| **AI/search crawler policy** | Ambiguous policies; GPTBot scraping unrestricted | Explicit crawler policy: OAI-SearchBot allowed for public content, GPTBot disallowed globally | **RESOLVED** |
+| **Twitter metadata desynchronization** | Stock & strategy pages lacked `twitter` metadata, leaking Pelosi card | Explicit route-specific `twitter` metadata added across all hubs | **RESOLVED** |
+| **Static stock-page unavailable trap** | SSG emitted `🚫 UNAVAILABLE (Live Tape Required)` | Replaced with undated reference-anchor baseline pricing semantics | **RESOLVED / replaced with undated reference-anchor semantics** |
+| **Bidirectional topic linking** | Cross-linking between strategy, politician, and stock hubs incomplete | Hub-and-spoke internal links across content clusters | **OPEN / PHASE 2** |
+| **Competitor page expansion** | 4 comparison pages present; Finviz, TradingView, Capitol Trades omitted | Target comparison pages to be added in Phase 2 | **OPEN / PHASE 2** |
+
+---
+
+## Current Verified SEO Baseline (Phase 1)
+
+```ini
+SEO_PHASE_1 =
+  IMPLEMENTED / VERIFIED / COMMITTED
+SEO_RELEASE_CANDIDATE =
+  654398c44c4beff64d74e1667c80288e2c8f3245
+SITEMAP =
+  99 / 99 VERIFIED
+MISSING_INDEXABLE_URLS =
+  0
+EXTRA_SITEMAP_URLS =
+  0
+CANONICAL_ERRORS =
+  0
+DOUBLE_BRANDED_TITLES =
+  0
+TWITTER_METADATA =
+  VERIFIED
+FALSE_LIVE_PRICE_CLAIMS =
+  0
+PRIVATE_NOINDEX =
+  VERIFIED
+STRUCTURED_DATA =
+  VERIFIED
+DECISION_ENGINE_IMPACT =
+  NONE
+EPOCH_3_GOVERNANCE_IMPACT =
+  NONE
+```
+
+---
+
+## Current Programmatic Sitemap State
+
+```ini
+SITEMAP_AUTHORITY =
+  frontend/app/sitemap.ts
+STATIC_SITEMAP =
+  REMOVED
+INDEXABLE_URLS =
+  99
+MISSING =
+  0
+EXTRA =
+  0
+DUPLICATES =
+  0
+```
+
+The sitemap now derives dynamically and programmatically from application authorities (`frontend/lib/seoCatalogs.ts`, `frontend/lib/masterCatalog.ts`, `frontend/lib/constants.ts`, `frontend/lib/competitorCatalog.ts`, and `frontend/lib/glossaryCatalog.ts`) rather than a manually maintained XML file. The legacy `frontend/public/sitemap.xml` has been removed to eliminate dual authority.
+
+---
+
+## Deliberate AI & Search Crawler Policy
+
+```ini
+OAI_SEARCHBOT =
+  PUBLIC CONTENT ALLOWED
+  PRIVATE CONTENT DISALLOWED
+GPTBOT =
+  DISALLOW /
+```
+
+- **OAI-SearchBot (Search Discovery)**: Explicitly permitted to crawl public indexable content (`Allow: /`) to surface ARX Terminal quantitative models in search, while strictly forbidden from indexing private, authenticated, or governance routes (`/api/`, `/workbench/`, `/research`, `/me`, `/cockpit`, `/action-center`, etc.).
+- **GPTBot (Model Training Scraper)**: Globally disallowed (`Disallow: /`) to prevent unauthorized scraping of proprietary quantitative models, formulas, and execution ladders for AI model training.
+- Note: Policies for other crawlers are not assumed or open; they remain subject to explicit governance review.
+
+---
+
+## Static Price Semantics & Provenance Contract
+
+```ini
+CATALOG_BASELINE_PRICE_TIMESTAMP =
+  ABSENT
+CATALOG_BASELINE_PRICE_SOURCE_PROVENANCE =
+  ABSENT
+STATIC_PRICE_CLASSIFICATION =
+  UNDATED_REFERENCE_ANCHOR
+```
+
+Static prices rendered during static site generation (SSG) are baseline references drawn from static catalog constants. They represent structural modeling anchors rather than live or executable market quotes.
+
+### Semantic Prohibitions
+Static values must **never** be interpreted, labeled, or presented as:
+- `live`
+- `current`
+- `realtime`
+- `latest`
+- `timestamped snapshot`
+- `executable market price`
+
+### Preferred Terminology
+When referring to SSG catalog reference levels, documentation and UI copy must use:
+- **Baseline Reference**
+- **Static catalog reference**
+- **Reference levels**
+
+Catalog values must **never** be termed "verified snapshots."
+
+---
+
+## Remaining Open Roadmap (Phase 2)
+
+The remaining SEO roadmap begins at Phase 2. Phase 1 technical search remediation is complete and verified.
+
+```ini
+BIDIRECTIONAL_TOPIC_LINKING =
+  OPEN / PHASE_2
+COMPETITOR_PAGE_EXPANSION =
+  OPEN / PHASE_2
+```
+
+1. **Bidirectional Topic Linking (Phase 2)**: Programmatic cross-links connecting stock detail pages (`/stock/[ticker]/`) with relevant strategy hubs (`/strategy/[type]/`), politician disclosures (`/politician/[slug]/`), and committee jurisdictions (`/committee/[slug]/`).
+2. **Competitor Comparison Expansion (Phase 2)**: Adding dedicated comparison landing pages for high-volume organic search queries:
+   - `/vs/finviz/` (*"Finviz alternative free"*)
+   - `/vs/tradingview/` (*"TradingView alternative open source"*)
+   - `/vs/capitol-trades/` (*"Capitol Trades alternative"*)
+
+---
+
+## Historical Audit Baseline (September 24, 2026)
+
+> [!NOTE]
+> The sections below preserve the original findings of the September 24, 2026 SEO audit for historical and architectural provenance. They explain why SEO Phase 1 remediation was executed.
+>
+> At the time of the original audit:
+> - `sitemap.xml` contained 80 URLs and omitted 34 public routes.
+> - `sitemap.ts` dynamic generation had not yet been created.
+> - Twitter metadata was omitted from stock and strategy routes.
+> - Static stock pages emitted `🚫 UNAVAILABLE (Live Tape Required)`.
+> - 41 routes inherited the root homepage canonical tag.
+>
+> **Do not treat the findings below as active defects.** For current verified status, refer to the **SEO Phase 1 — Remediation Outcome** and **Current Verified SEO Baseline** above.
+
 **Document Version**: 2.0.0
 **Audit Date**: September 24, 2026
 **Audited Entity**: ARX Terminal (`https://www.arxterminal.com`)
 **Target Environment**: Next.js 14 App Router (Static Export `output: "export"`, `trailingSlash: true`, Cloudflare Pages Edge)
 **Compilation Baseline**: 138 Static Routes Exported across 7 Programmatic Dynamic Clusters
-**Current SEO Health Score**: **64 / 100** (Solid structural foundation compromised by critical canonical inheritance, sitemap omission, and title double-branding)
+**Current SEO Health Score (at time of audit)**: **64 / 100** (Solid structural foundation compromised by critical canonical inheritance, sitemap omission, and title double-branding)
 
 ---
 
