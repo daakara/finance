@@ -1830,9 +1830,130 @@ def test_adversarial_remediation_parser_precedence():
 
 
 def test_adversarial_remediation_structure_eligibility_parity():
-    """Section 24: Structure eligible population is 3,945 after removing 588 leaks."""
+    """Section 24: Structure eligible population is 3,945 after removing 578 leaks."""
     df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
     sv = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
     assert len(sv) == 3945
     ex = df_snap[df_snap["vehicle_structure_state"] == "EXCLUDED"]
     assert len(ex) == 1008
+
+
+# ==============================================================================
+# SECTION 18: STRUCTURE POPULATION TRANSITION RECONCILIATION REGRESSION TESTS
+# ==============================================================================
+def test_structure_transition_matrix_balances():
+    """Section 18: Structure transition matrix between 74da184 and current HEAD balances exactly."""
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert proc.returncode == 0
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+    t = pd.crosstab(df["vehicle_structure_state_old"], df["vehicle_structure_state_new"])
+
+    # 9 transition cells
+    assert t.loc["STRUCTURE_VERIFIED", "STRUCTURE_VERIFIED"] == 3945
+    assert t.loc["STRUCTURE_VERIFIED", "EXCLUDED"] == 578
+    assert t.loc["STRUCTURE_VERIFIED", "QUARANTINED"] == 0
+    assert t.loc["EXCLUDED", "STRUCTURE_VERIFIED"] == 0
+    assert t.loc["EXCLUDED", "EXCLUDED"] == 430
+    assert t.loc["EXCLUDED", "QUARANTINED"] == 3
+    assert t.loc["QUARANTINED", "STRUCTURE_VERIFIED"] == 0
+    assert t.loc["QUARANTINED", "EXCLUDED"] == 0
+    assert t.loc["QUARANTINED", "QUARANTINED"] == 777
+
+
+def test_588_removal_claim_reconciles_with_net_denominator_change():
+    """Section 18: 588 claim reconciles: 578 actual removals from verified, 0 promotions, net -578.
+    The prior '588' claim arose from subtracting an erroneous 420 baseline from 1008 (1008 - 420 = 588),
+    whereas the actual prior exclusion was 433 (where 430 remained excluded, 3 moved to quarantined,
+    and 578 were removed from verified: 430 + 578 = 1008, 1008 - 430 = 578, difference of 10).
+    """
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+
+    removals = int(((df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")).sum())
+    promotions = int(((df["vehicle_structure_state_old"].isin(["EXCLUDED", "QUARANTINED"])) & (df["vehicle_structure_state_new"] == "STRUCTURE_VERIFIED")).sum())
+
+    assert removals == 578
+    assert promotions == 0
+    net_change = promotions - removals
+    assert net_change == -578
+    assert 4523 + net_change == 3945
+
+
+def test_all_promotions_and_removals_explicitly_accounted():
+    """Section 18: All promotions (0) and removals (578) have verified classifications."""
+    import subprocess, io
+    proc = subprocess.run(
+        ["git", "show", "74da184:docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    df_old = pd.read_parquet(io.BytesIO(proc.stdout))
+    df_new = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df = pd.merge(df_old, df_new, on="symbol", suffixes=("_old", "_new"))
+
+    rem = df[(df["vehicle_structure_state_old"] == "STRUCTURE_VERIFIED") & (df["vehicle_structure_state_new"] == "EXCLUDED")]
+    vc = rem["vehicle_structure_new"].value_counts()
+    assert vc["LEVERAGED_ETF"] == 355
+    assert vc["INVERSE_ETF"] == 145
+    assert vc["CRYPTO_LINKED_PRODUCT"] == 52
+    assert vc["COMMODITY_FUTURES_POOL"] == 26
+    assert 355 + 145 + 52 + 26 == 578
+
+
+def test_raw_population_partition_exhaustive():
+    """Section 18: Raw population 5,733 is partitioned exhaustively across verified, excluded, and quarantined."""
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    assert len(df_snap) == 5733
+    n_ver = int((df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED").sum())
+    n_exc = int((df_snap["vehicle_structure_state"] == "EXCLUDED").sum())
+    n_qua = int((df_snap["vehicle_structure_state"] == "QUARANTINED").sum())
+
+    assert n_ver == 3945
+    assert n_exc == 1008
+    assert n_qua == 780
+    assert n_ver + n_exc + n_qua == 5733
+
+
+def test_confirmatory_mandate_differs_from_final_confirmatory_subtype():
+    """Section 18: Precise terminology: mandate detection != final confirmatory subtype.
+    ONEQ detects confirmatory and resolves confirmatory (EQUITY_INDEX).
+    AOHY and FSTB detect confirmatory mandate but fail portfolio floor rules and resolve to OTHER_ETF.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    assert df_snap.loc[df_snap["symbol"] == "ONEQ", "research_subtype"].iloc[0] == "EQUITY_INDEX"
+    assert df_snap.loc[df_snap["symbol"] == "ONEQ", "research_subtype_state"].iloc[0] == "CONFIRMATORY_SUPPORTED"
+
+    assert df_snap.loc[df_snap["symbol"] == "AOHY", "research_subtype"].iloc[0] == "OTHER_ETF"
+    assert df_snap.loc[df_snap["symbol"] == "AOHY", "research_subtype_state"].iloc[0] == "EXPLORATORY_ONLY"
+
+    assert df_snap.loc[df_snap["symbol"] == "FSTB", "research_subtype"].iloc[0] == "OTHER_ETF"
+    assert df_snap.loc[df_snap["symbol"] == "FSTB", "research_subtype_state"].iloc[0] == "EXPLORATORY_ONLY"
+
+
+def test_fund_of_funds_ambiguity_fails_closed_correctly():
+    """Section 18: Fund-of-funds ambiguity semantics:
+    If mandate independently rules out all confirmatory subtypes -> OTHER_ETF (e.g. CGBL).
+    If economically ambiguous and mandate does not rule out confirmatory -> UNRESOLVED / DENOMINATOR_BLOCKING.
+    """
+    df_snap = pd.read_parquet("docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet")
+    df_ledger = pd.read_parquet("docs/research/ETF_DENOMINATOR_BLOCKER_LEDGER_V1.parquet")
+    cgbl_snap = df_snap[df_snap["symbol"] == "CGBL"].iloc[0]
+    assert cgbl_snap["research_subtype"] == "OTHER_ETF"
+    cgbl_ledger = df_ledger[df_ledger["symbol"] == "CGBL"].iloc[0]
+    assert cgbl_ledger["denominator_blocking"] == False
+
