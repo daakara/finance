@@ -1,15 +1,15 @@
 {
-  "research_spec_version": "1.0.2",
-  "research_spec_sha256": "448cbb130a4ddd551965137234b01178d07cf4c0b49325927e8d047a258c6b24",
-  "research_spec_git_commit": "57720cc278813b11cc2ea6df5cccd1925b56c763",
-  "classification_rule_version": "1.0.2",
+  "research_spec_version": "1.0.3",
+  "research_spec_sha256": "481041f08cdcf569516d69648d1a180066db17635a71896590a1ec495e88bbc5",
+  "research_spec_git_commit": "a5efc1777d130c23631986422731b7efd75e4624",
+  "classification_rule_version": "1.0.3",
   "discovery_source_sha256": "e1968b129dbcd8f570b178c057f7515e66895098b4a58f86593c42e6886cc604",
-  "discovery_retrieval_timestamp": "2026-09-25T12:21:19Z",
-  "snapshot_sha256": "6603d1fdf38a5d44d8b7b59fc70480d274c805b18d2e0a29057296479f029d92",
+  "discovery_retrieval_timestamp": "2026-09-25T14:10:22Z",
+  "snapshot_sha256": "051e22265c063fbb504322db222d5cb788b9f7ee24b1e58afb7b8978f180bbf0",
   "row_count": 5733,
   "eligible_row_count": 13,
   "excluded_row_count": 5720,
-  "generated_at": "2026-09-25T12:21:59Z",
-  "builder_git_commit": "aa3f57c61c5ecc9125f6c874e95d0ca88e2c6582",
-  "builder_file_sha256": "8328a9bc292486753ce74c69beaf76e0f189c05c66272eddce9306c1ededb6a5"
+  "generated_at": "2026-09-25T14:11:04Z",
+  "builder_git_commit": "9c6c90f5229aecc5baf53ddeaba0a5a1bb3f8715",
+  "builder_file_sha256": "46e673a096318368e3f3caa07beb43d304ce7b6766cd2434c0726b1339ed5914"
 }
