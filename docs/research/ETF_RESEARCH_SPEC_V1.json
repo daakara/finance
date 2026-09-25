@@ -1,7 +1,7 @@
 {
-  "spec_version": "1.0.1",
+  "spec_version": "1.0.2",
   "created_at": "2026-09-25T08:45:00Z",
-  "governance_status": "FROZEN_RESEARCH_SPECIFICATION",
+  "governance_status": "CANDIDATE_RESEARCH_SPECIFICATION_V1_0_2",
   "production_actionability_status": "NOT_AUTHORIZED",
   "instrument_scope": {
     "included": [
@@ -13,6 +13,32 @@
       "COMMODITY_FUTURES_POOLS",
       "CLOSED_END_FUNDS_CEFS",
       "LEVERAGED_AND_INVERSE_ETFS"
+    ],
+    "allowed_structure_classes": [
+      "1940_ACT_OPEN_END_ETF",
+      "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST",
+      "EXCHANGE_TRADED_NOTE",
+      "COMMODITY_FUTURES_POOL",
+      "LEVERAGED_ETF",
+      "INVERSE_ETF",
+      "CLOSED_END_FUND",
+      "MUTUAL_FUND",
+      "CRYPTO_LINKED_PRODUCT",
+      "UNKNOWN"
+    ],
+    "research_eligible_structures": [
+      "1940_ACT_OPEN_END_ETF",
+      "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST"
+    ],
+    "excluded_structures": [
+      "EXCHANGE_TRADED_NOTE",
+      "COMMODITY_FUTURES_POOL",
+      "LEVERAGED_ETF",
+      "INVERSE_ETF",
+      "CLOSED_END_FUND",
+      "MUTUAL_FUND",
+      "CRYPTO_LINKED_PRODUCT",
+      "UNKNOWN"
     ]
   },
   "subtype_support": {
@@ -48,8 +74,8 @@
       "benchmark": "LQD",
       "features": [
         "f1_trend_ratio",
-        "f7_credit_spread_trend",
-        "f8_relative_strength_vs_lqd"
+        "f8_relative_strength_vs_lqd",
+        "f12_baa_corporate_spread_trend"
       ]
     },
     "COMMODITY_PHYSICAL": {
@@ -89,7 +115,85 @@
     "warmup_buffer": 50,
     "warmup_buffer_class": "PREREGISTERED_POLICY",
     "minimum_eligible_history": 250,
-    "us_listing_only": true
+    "us_listing_only": true,
+    "nasdaq_semantics": {
+      "declared_field": "ETF",
+      "documented_meaning": "SECURITY IS AN EXCHANGE-TRADED FUND",
+      "arx_interpretation": "DISCOVERY FILTER ONLY / NOT SUFFICIENT LEGAL-STRUCTURE ATTESTATION",
+      "discovered_etf_flag_implies_eligibility": false
+    },
+    "canonical_discovery_source": {
+      "source": "Nasdaq Trader Symbol Directory / nasdaqtraded.txt",
+      "required_metadata_fields": [
+        "retrieval_timestamp",
+        "source_url_identifier",
+        "raw_source_sha256",
+        "file_creation_timestamp",
+        "row_count",
+        "etf_flagged_row_count"
+      ]
+    },
+    "lifecycle_states": [
+      "DISCOVERED",
+      "STRUCTURE_VERIFIED",
+      "RESEARCH_ELIGIBLE"
+    ],
+    "classification_authority_hierarchy": [
+      "Tier 1: Exchange Discovery Metadata (NasdaqTraded Directory; marks traded, non-test, ETF=Y)",
+      "Tier 2: Structured Provider Metadata (SEC / Morningstar / yfinance quoteType and category)",
+      "Tier 3: Verified Vehicle-Structure Registry (Point-in-time verified physical grantor trusts allowlist; known commodity pools and ETNs blocklist)",
+      "Tier 4: Defensive Heuristic Evidence (Negative safety net; string patterns like 2x/3x/Ultra/Inverse/ETN/YieldMax reject or quarantine)",
+      "Tier 5: Unknown Structure Quarantine (Fail-closed; unresolved securities barred from research eligibility)"
+    ],
+    "unknown_structure_policy": "FAIL_CLOSED_EXCLUSION (unknown_structure_defaults_to_research_eligible = false)",
+    "unknown_structure_defaults_to_research_eligible": false,
+    "canonical_eligible_universe_count": "DETERMINED_BY_VERSIONED_UNIVERSE_SNAPSHOT_BUILD",
+    "previous_4806_count": "NON_CANONICAL_DIAGNOSTIC_ESTIMATE",
+    "universe_snapshot_contract": {
+      "artifact_path": "docs/research/ETF_SURVIVING_UNIVERSE_V1.parquet",
+      "manifest_path": "docs/research/ETF_SURVIVING_UNIVERSE_V1_MANIFEST.json",
+      "required_fields": [
+        "symbol",
+        "security_name",
+        "listing_exchange",
+        "nasdaq_etf_flag",
+        "vehicle_structure",
+        "vehicle_structure_state",
+        "research_subtype",
+        "research_subtype_state",
+        "classification_source",
+        "classification_evidence",
+        "classification_timestamp",
+        "is_research_eligible",
+        "exclusion_reason"
+      ]
+    },
+    "universe_lineage_requirements": [
+      "universe_snapshot_sha256",
+      "universe_manifest_sha256",
+      "classification_rule_version",
+      "discovery_source_sha256",
+      "discovery_retrieval_timestamp"
+    ],
+    "historical_universe_policy": {
+      "universe_estimand": "CURRENT_ELIGIBLE_UNIVERSE_RETROSPECTIVE_HISTORY",
+      "survivorship_bias": "PRESENT_BY_DESIGN",
+      "permitted_claim_scope": "HISTORICAL_BEHAVIOR_OF_CURRENT_ELIGIBLE_UNIVERSE_ONLY",
+      "generalization_restriction": "PROHIBITED from generalizing historical results to the complete historical ETF opportunity set; liquidations, mergers, and historical delistings are unobserved."
+    },
+    "classification_authority_matrix": {
+      "current_snapshot_classification": "MAY_USE CURRENT VERIFIED STRUCTURED METADATA",
+      "historical_point_in_time_classification": "REQUIRES POINT_IN_TIME EVIDENCE OR EXPLICIT RETROSPECTIVE_STATIC_LABEL DISCLOSURE",
+      "source_temporality": {
+        "nasdaq_traded_directory": "CURRENT_ONLY",
+        "sec_edgar_filings": "POINT_IN_TIME_CAPABLE",
+        "morningstar_category": "RETROSPECTIVE_STATIC_LABEL_ONLY",
+        "yfinance_metadata": "RETROSPECTIVE_STATIC_LABEL_ONLY",
+        "verified_registries": "POINT_IN_TIME_CAPABLE",
+        "defensive_heuristics": "RETROSPECTIVE_STATIC_LABEL_ONLY"
+      },
+      "masquerade_prevention": "No current metadata may silently masquerade as historical point-in-time knowledge."
+    }
   },
   "macro_information_timing": {
     "observation_market_date": "t",
@@ -138,11 +242,17 @@
         },
         "BAMLH0A0HYM2": {
           "name": "ICE BofA US High Yield Index OAS",
-          "revision_risk": "REVISION_RISK_LOW"
+          "revision_risk": "REVISION_RISK_LOW",
+          "status": "DEPRECATED_HISTORICAL_RECORD"
         },
         "DFII10": {
           "name": "10-Year Treasury Inflation-Indexed Constant Maturity",
           "revision_risk": "REVISION_RISK_LOW"
+        },
+        "BAA10Y": {
+          "name": "Moody's Seasoned Baa Corporate Bond Yield Relative to 10-Year Treasury Constant Maturity",
+          "revision_risk": "REVISION_RISK_LOW",
+          "status": "ACTIVE_FOR_F12"
         }
       },
       "calendar_alignment": {
@@ -180,7 +290,8 @@
         "sma_period": 200,
         "atr_period": 20
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H1_trend_ratio"
     },
     "f2_relative_strength_60d": {
       "formula": "(Close_t / Close_{t-60}) - (SPY_t / SPY_{t-60})",
@@ -192,7 +303,8 @@
       "parameters": {
         "momentum_period": 60
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H2_relative_strength_60d"
     },
     "f3_rsi_regime_distance": {
       "formula": "exp( - ((RSI(Close, period=14, t) - 60.0)^2) / (2 * (15.0)^2) )",
@@ -205,7 +317,8 @@
         "regime_center": 60.0,
         "regime_width": 15.0
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H3_rsi_regime_distance"
     },
     "f4_vol_compression": {
       "formula": "ATR(period=10, t) / ATR(period=50, t)",
@@ -230,7 +343,8 @@
       "parameters": {
         "lag": 0
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H5_yield_curve_slope"
     },
     "f6_rate_momentum_20d": {
       "formula": "FRED_DGS10_t - FRED_DGS10_{t-20}",
@@ -241,9 +355,14 @@
       "parameters": {
         "delta_period": 20
       },
-      "expected_sign": "NEGATIVE"
+      "expected_sign": "NEGATIVE",
+      "hypothesis_id": "H6_rate_momentum_20d"
     },
     "f7_credit_spread_trend": {
+      "status": "DEPRECATED_IN_V1_0_2",
+      "original_source": "BAMLH0A0HYM2",
+      "original_concept": "US HIGH-YIELD OPTION-ADJUSTED SPREAD TREND",
+      "deprecation_reason": "FRED HOSTED BAMLH0A0HYM2 LIMITED TO THREE YEARS STARTING APRIL 2026; OLDER HISTORY NOT ASSUMED AVAILABLE FOR THIS RESEARCH PIPELINE",
       "formula": "FRED_BAMLH0A0HYM2_t - FRED_BAMLH0A0HYM2_{t-20}",
       "inputs": [
         "BAMLH0A0HYM2"
@@ -252,7 +371,12 @@
       "parameters": {
         "delta_period": 20
       },
-      "expected_sign": "NEGATIVE"
+      "expected_sign": "NEGATIVE",
+      "public_source_limitation": {
+        "limitation_statement": "FRED HOSTED BAMLH0A0HYM2 LIMITED TO THREE YEARS STARTING APRIL 2026",
+        "older_history_existence": "MAY EXIST FROM UNDERLYING SOURCE (ICE Benchmark Administration / ICE Data Indices)",
+        "older_history_license_and_access": "NOT ASSUMED AVAILABLE FOR THIS RESEARCH PIPELINE"
+      }
     },
     "f8_relative_strength_vs_lqd": {
       "formula": "(HYG_t / HYG_{t-60}) - (LQD_t / LQD_{t-60})",
@@ -264,7 +388,8 @@
       "parameters": {
         "momentum_period": 60
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H8_relative_strength_vs_lqd"
     },
     "f9_real_yield_regime": {
       "formula": "FRED_DFII10_t - FRED_DFII10_{t-20}",
@@ -275,7 +400,8 @@
       "parameters": {
         "delta_period": 20
       },
-      "expected_sign": "NEGATIVE"
+      "expected_sign": "NEGATIVE",
+      "hypothesis_id": "H9_real_yield_regime"
     },
     "f10_dxy_trend": {
       "formula": "(UUP_t - SMA(UUP, period=50, t)) / ATR(UUP, period=20, t)",
@@ -289,7 +415,8 @@
         "sma_period": 50,
         "atr_period": 20
       },
-      "expected_sign": "NEGATIVE"
+      "expected_sign": "NEGATIVE",
+      "hypothesis_id": "H10_dxy_trend"
     },
     "f11_bullion_breakout": {
       "formula": "(Close_t - min_{k=0..49}(Low_{t-k})) / (max_{k=0..49}(High_{t-k}) - min_{k=0..49}(Low_{t-k}))",
@@ -302,7 +429,37 @@
       "parameters": {
         "breakout_period": 50
       },
-      "expected_sign": "POSITIVE"
+      "expected_sign": "POSITIVE",
+      "hypothesis_id": "H11_bullion_breakout"
+    },
+    "f12_baa_corporate_spread_trend": {
+      "status": "PREREGISTERED_CONFIRMATORY_CANDIDATE",
+      "source": "FRED BAA10Y",
+      "economic_concept": "Moody's Seasoned Baa Corporate Bond Yield Relative to 10-Year Treasury Constant Maturity 20-day trend. Measures investment-grade corporate credit spread momentum over Treasuries.",
+      "is_high_yield_oas": false,
+      "is_semantically_equivalent_to_f7": false,
+      "formula": "FRED_BAA10Y_available_at_t - FRED_BAA10Y_available_at_{t-20}",
+      "inputs": [
+        "BAA10Y"
+      ],
+      "lookback_sessions": 20,
+      "parameters": {
+        "delta_period": 20,
+        "macro_lag": "LAGGED_KNOWABLE_INFORMATION (t-1)",
+        "missing_date_policy": "FORWARD_FILL_LAST_KNOWN_PUBLISHED_VALUE_MAX_5D"
+      },
+      "units": "PERCENTAGE_POINTS",
+      "expected_sign": "NEGATIVE",
+      "session_alignment_semantics": {
+        "observation_calendar": "ETF_PRIMARY_TRADING_SESSION_CALENDAR",
+        "value_at_session_t": "LATEST BAA10Y OBSERVATION KNOWABLE BEFORE THE SPECIFIED SESSION CUTOFF (t-1)",
+        "lookback_sessions": 20,
+        "lookback_nature": "20 ETF TRADING SESSIONS (EXPLICITLY NOT 20 CALENDAR DAYS AND NOT 20 ARBITRARY FRED ROWS)",
+        "release_lag": "CONSERVATIVE t-1 KNOWABILITY RULE",
+        "forward_fill": "MAX 5 ETF TRADING SESSIONS",
+        "gap_gt_5_sessions_policy": "FAIL_CLOSED (Evaluates to NULL / NaN; observation dropped from confirmatory matrix)"
+      },
+      "hypothesis_id": "H12_baa_corporate_spread_trend"
     }
   },
   "feature_preprocessing": {
@@ -334,6 +491,67 @@
       "SUPPORTED": "Point estimate matches expected sign AND p-value <= 0.05 under primary two-way clustered covariance",
       "FALSIFIED": "Point estimate has opposite sign AND p-value <= 0.05 under primary two-way clustered covariance",
       "INCONCLUSIVE": "p-value > 0.05 under primary two-way clustered covariance"
+    },
+    "H1_trend_ratio": {
+      "hypothesis_id": "H1_trend_ratio",
+      "feature": "f1_trend_ratio",
+      "hypothesis": "Trend-following momentum positive excess return across liquid ETF universes.",
+      "expected_sign": "POSITIVE"
+    },
+    "H2_relative_strength_60d": {
+      "hypothesis_id": "H2_relative_strength_60d",
+      "feature": "f2_relative_strength_60d",
+      "hypothesis": "Cross-sectional relative strength outperformance continues over intermediate horizons.",
+      "expected_sign": "POSITIVE"
+    },
+    "H3_rsi_regime_distance": {
+      "hypothesis_id": "H3_rsi_regime_distance",
+      "feature": "f3_rsi_regime_distance",
+      "hypothesis": "RSI optimal momentum regime proximity reflects healthy trend strength without exhaustion.",
+      "expected_sign": "POSITIVE"
+    },
+    "H5_yield_curve_slope": {
+      "hypothesis_id": "H5_yield_curve_slope",
+      "feature": "f5_yield_curve_slope",
+      "hypothesis": "Steepening yield curve economic expansion carry positive for long duration assets.",
+      "expected_sign": "POSITIVE"
+    },
+    "H6_rate_momentum_20d": {
+      "hypothesis_id": "H6_rate_momentum_20d",
+      "feature": "f6_rate_momentum_20d",
+      "hypothesis": "Falling 10Y yields capital appreciation for duration assets (negative rate change implies positive bond returns).",
+      "expected_sign": "NEGATIVE"
+    },
+    "H8_relative_strength_vs_lqd": {
+      "hypothesis_id": "H8_relative_strength_vs_lqd",
+      "feature": "f8_relative_strength_vs_lqd",
+      "hypothesis": "High yield outperforming investment grade reflects credit risk appetite and spread compression.",
+      "expected_sign": "POSITIVE"
+    },
+    "H9_real_yield_regime": {
+      "hypothesis_id": "H9_real_yield_regime",
+      "feature": "f9_real_yield_regime",
+      "hypothesis": "Falling real yields provide bullion and commodity price support (negative real yield changes correlate with positive commodity returns).",
+      "expected_sign": "NEGATIVE"
+    },
+    "H10_dxy_trend": {
+      "hypothesis_id": "H10_dxy_trend",
+      "feature": "f10_dxy_trend",
+      "hypothesis": "Weaker US dollar provides broad commodity export and purchasing power support (negative dollar momentum correlates with positive commodity returns).",
+      "expected_sign": "NEGATIVE"
+    },
+    "H11_bullion_breakout": {
+      "hypothesis_id": "H11_bullion_breakout",
+      "feature": "f11_bullion_breakout",
+      "hypothesis": "50-day price range breakout indicates momentum continuation in physical bullion assets.",
+      "expected_sign": "POSITIVE"
+    },
+    "H12_baa_corporate_spread_trend": {
+      "hypothesis_id": "H12_baa_corporate_spread_trend",
+      "feature": "f12_baa_corporate_spread_trend",
+      "hypothesis": "Widening Baa corporate/Treasury spreads indicate deteriorating corporate credit conditions and higher required risk premia, and therefore are hypothesized to have a negative relationship with subsequent fixed-income-credit ETF excess returns.",
+      "expected_sign": "NEGATIVE",
+      "is_direct_high_yield_oas_measurement": false
     }
   },
   "feature_source_requirements": {
@@ -511,7 +729,9 @@
         "2025-01-01",
         "2025-12-31"
       ]
-    }
+    },
+    "primary_validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+    "validation_metric_status": "RETAINED_PENDING_BROAD_DATASET_ADEQUACY_AUDIT"
   },
   "dependence_correction": {
     "primary_inference_candidate": "TWO_WAY_CLUSTERED_COVARIANCE",
@@ -522,7 +742,42 @@
     "few_cluster_adequacy_check_required": true,
     "serial_overlap_horizon": 20,
     "robustness_inference": "STATIONARY_BLOCK_BOOTSTRAP",
-    "final_inference_method_status": "TO_BE_CONFIRMED_AFTER_DATASET_ADEQUACY_AUDIT"
+    "final_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+    "cluster_dimensions": {
+      "date_dimension": "LARGE (Expected T > 4,000 dates; asymptotic theory plausible)",
+      "subtype_dimension": "SMALL (Fixed 5 subtypes; asymptotic theory fragile due to few clusters)"
+    },
+    "two_way_cluster_asymptotics_status": "REQUIRES_ADEQUACY_REVIEW",
+    "candidate_remedies": [
+      "DATE_BASED_BLOCK_BOOTSTRAP",
+      "WILD_CLUSTER_BOOTSTRAP_OVER_SUBTYPES",
+      "SMALL_CLUSTER_FINITE_SAMPLE_CORRECTIONS"
+    ],
+    "policy_id": "DEPENDENCE_CORRECTION_POLICY_V1",
+    "candidate_inference_methods": [
+      "TWO_WAY_CLUSTER_ROBUST_INFERENCE",
+      "DATE_BASED_BLOCK_BOOTSTRAP",
+      "WILD_CLUSTER_BOOTSTRAP_OVER_SUBTYPES",
+      "SMALL_CLUSTER_FINITE_SAMPLE_CORRECTION"
+    ],
+    "inference_selection_gate": {
+      "status": "CODIFIED_PENDING_COMPLIANT_DATASET",
+      "execution_timing": "POST_COMPLIANT_DATASET_BUILD",
+      "inference_selection_requires": "COMPLIANT_DATASET_ADEQUACY_AUDIT",
+      "evaluation_criteria": [
+        "number of dates",
+        "number of subtype clusters",
+        "observations per subtype",
+        "cross-sectional density",
+        "missingness",
+        "serial dependence",
+        "cross-sectional dependence",
+        "cluster-size imbalance"
+      ],
+      "inference_selection_may_use_outcome_effect_size": false,
+      "inference_method_selection_after_seeing_p_values": "PROHIBITED",
+      "selection_basis": "DEPENDENCE_STRUCTURE_AND_ESTIMATOR_VALIDITY_ONLY"
+    }
   },
   "multiple_testing_policy": {
     "method": "BENJAMINI_HOCHBERG_FDR",
@@ -530,7 +785,195 @@
     "hypothesis_unit": "SUBTYPE_FEATURE_PAIR",
     "confirmatory_hypothesis_count": 15,
     "fdr_family": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
-    "policy_nature": "PREREGISTERED_POLICY"
+    "policy_nature": "PREREGISTERED_POLICY",
+    "confirmatory_hypothesis_unit": "FEATURE_X_SUBTYPE_PAIR",
+    "confirmatory_family": "ALL PREREGISTERED ACTIVE FEATURE_X_SUBTYPE PAIRS",
+    "confirmatory_hypothesis_manifest": [
+      {
+        "subtype": "EQUITY_INDEX",
+        "feature": "f1_trend_ratio",
+        "pair_id": "EQUITY_INDEX x f1_trend_ratio",
+        "economic_hypothesis": "Trend-following momentum positive excess return",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H1_trend_ratio"
+      },
+      {
+        "subtype": "EQUITY_INDEX",
+        "feature": "f2_relative_strength_60d",
+        "pair_id": "EQUITY_INDEX x f2_relative_strength_60d",
+        "economic_hypothesis": "Cross-sectional relative strength outperformance",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H2_relative_strength_60d"
+      },
+      {
+        "subtype": "EQUITY_INDEX",
+        "feature": "f3_rsi_regime_distance",
+        "pair_id": "EQUITY_INDEX x f3_rsi_regime_distance",
+        "economic_hypothesis": "RSI optimal momentum regime proximity",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H3_rsi_regime_distance"
+      },
+      {
+        "subtype": "EQUITY_SECTOR",
+        "feature": "f1_trend_ratio",
+        "pair_id": "EQUITY_SECTOR x f1_trend_ratio",
+        "economic_hypothesis": "Trend-following momentum positive excess return",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H1_trend_ratio"
+      },
+      {
+        "subtype": "EQUITY_SECTOR",
+        "feature": "f2_relative_strength_60d",
+        "pair_id": "EQUITY_SECTOR x f2_relative_strength_60d",
+        "economic_hypothesis": "Cross-sectional relative strength outperformance",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H2_relative_strength_60d"
+      },
+      {
+        "subtype": "EQUITY_SECTOR",
+        "feature": "f3_rsi_regime_distance",
+        "pair_id": "EQUITY_SECTOR x f3_rsi_regime_distance",
+        "economic_hypothesis": "RSI optimal momentum regime proximity",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H3_rsi_regime_distance"
+      },
+      {
+        "subtype": "FIXED_INCOME_GOVERNMENT",
+        "feature": "f1_trend_ratio",
+        "pair_id": "FIXED_INCOME_GOVERNMENT x f1_trend_ratio",
+        "economic_hypothesis": "Trend-following momentum positive excess return",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H1_trend_ratio"
+      },
+      {
+        "subtype": "FIXED_INCOME_GOVERNMENT",
+        "feature": "f5_yield_curve_slope",
+        "pair_id": "FIXED_INCOME_GOVERNMENT x f5_yield_curve_slope",
+        "economic_hypothesis": "Steepening yield curve economic expansion carry",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H5_yield_curve_slope"
+      },
+      {
+        "subtype": "FIXED_INCOME_GOVERNMENT",
+        "feature": "f6_rate_momentum_20d",
+        "pair_id": "FIXED_INCOME_GOVERNMENT x f6_rate_momentum_20d",
+        "economic_hypothesis": "Falling 10Y yields capital appreciation",
+        "expected_sign": "NEGATIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H6_rate_momentum_20d"
+      },
+      {
+        "subtype": "FIXED_INCOME_CREDIT",
+        "feature": "f1_trend_ratio",
+        "pair_id": "FIXED_INCOME_CREDIT x f1_trend_ratio",
+        "economic_hypothesis": "Trend-following momentum positive excess return",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H1_trend_ratio"
+      },
+      {
+        "subtype": "FIXED_INCOME_CREDIT",
+        "feature": "f8_relative_strength_vs_lqd",
+        "pair_id": "FIXED_INCOME_CREDIT x f8_relative_strength_vs_lqd",
+        "economic_hypothesis": "High yield outperforming investment grade risk appetite",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H8_relative_strength_vs_lqd"
+      },
+      {
+        "subtype": "FIXED_INCOME_CREDIT",
+        "feature": "f12_baa_corporate_spread_trend",
+        "pair_id": "FIXED_INCOME_CREDIT x f12_baa_corporate_spread_trend",
+        "economic_hypothesis": "Widening Baa corporate spread reflects credit deterioration",
+        "expected_sign": "NEGATIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H12_baa_corporate_spread_trend"
+      },
+      {
+        "subtype": "COMMODITY_PHYSICAL",
+        "feature": "f9_real_yield_regime",
+        "pair_id": "COMMODITY_PHYSICAL x f9_real_yield_regime",
+        "economic_hypothesis": "Falling real yields bullion support",
+        "expected_sign": "NEGATIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H9_real_yield_regime"
+      },
+      {
+        "subtype": "COMMODITY_PHYSICAL",
+        "feature": "f10_dxy_trend",
+        "pair_id": "COMMODITY_PHYSICAL x f10_dxy_trend",
+        "economic_hypothesis": "Weaker dollar commodity support",
+        "expected_sign": "NEGATIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H10_dxy_trend"
+      },
+      {
+        "subtype": "COMMODITY_PHYSICAL",
+        "feature": "f11_bullion_breakout",
+        "pair_id": "COMMODITY_PHYSICAL x f11_bullion_breakout",
+        "economic_hypothesis": "50-day price range breakout momentum",
+        "expected_sign": "POSITIVE",
+        "validation_metric": "CROSS_SECTIONAL_SPEARMAN_RANK_IC",
+        "bh_family_membership": "GLOBAL_ACROSS_ALL_CONFIRMATORY_SUBTYPE_FEATURE_PAIRS",
+        "inference_policy": "DEPENDENCE_CORRECTION_POLICY_V1",
+        "p_value_inference_method_status": "PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT",
+        "hypothesis_id": "H11_bullion_breakout"
+      }
+    ],
+    "bh_q_level": 0.05,
+    "bh_family_size": 15,
+    "bh_family_membership": "FROZEN",
+    "family_redefinition_after_results": "PROHIBITED"
   },
   "primary_model_family": {
     "estimator_name": "RIDGE_REGRESSION_TOWARD_EQUAL_WEIGHT_PRIOR",
@@ -623,7 +1066,37 @@
       "etf_macro_v1.parquet",
       "etf_dataset_manifest_v1.json"
     ],
-    "hashing_requirement": "Every dataset build must produce SHA-256 digests recorded in etf_dataset_manifest_v1.json"
+    "hashing_requirement": "Every dataset build must produce SHA-256 digests recorded in etf_dataset_manifest_v1.json",
+    "pre_generation_builder_identity_requirement": {
+      "builder_git_commit_mandatory": true,
+      "builder_file_sha256_mandatory": true,
+      "policy": "Builder code must be committed before canonical dataset generation; post-generation commit cannot serve as sole generator identity."
+    },
+    "source_cache_manifest_requirement": {
+      "manifest_path": "data/research/source_cache_manifest_v1.json",
+      "required_fields_per_object": [
+        "path",
+        "provider",
+        "retrieval_timestamp",
+        "byte_size",
+        "sha256",
+        "semantic_role"
+      ]
+    },
+    "dataset_manifest_mandatory_fields": [
+      "research_spec_version",
+      "research_spec_sha256",
+      "research_spec_git_commit",
+      "builder_git_commit",
+      "builder_file_sha256",
+      "universe_snapshot_sha256",
+      "universe_manifest_sha256",
+      "source_cache_manifest_sha256",
+      "artifacts",
+      "total_observations",
+      "date_range",
+      "generated_at"
+    ]
   },
   "data_quality_gates": [
     "GATE_1_NO_DUPLICATE_OBSERVATION_KEYS",
@@ -638,5 +1111,62 @@
     "TEST_FEATURE_LEAKAGE: feature[t] invariant to changes in price[t+1:]",
     "TEST_UNIVERSE_LEAKAGE: universe[t] invariant to ADV at t+1",
     "TEST_OUTCOME_ISOLATION: outcomes table stored in physically separate parquet partition"
-  ]
+  ],
+  "amendment_history": [
+    {
+      "version": "1.0.0",
+      "date": "2026-09-24",
+      "parent_spec_sha256": null,
+      "summary": "Initial baseline canonical ETF research specification."
+    },
+    {
+      "version": "1.0.1",
+      "date": "2026-09-25",
+      "parent_spec_sha256": "1d6cbfbc76cc36009e986537d4dfbde155af7a20",
+      "summary": "Reconciliation and formal freeze of macro timing, warm-up buffers, and uncalibrated Stage-B execution."
+    },
+    {
+      "version": "1.0.2",
+      "date": "2026-09-25",
+      "parent_spec_sha256": "736cec7da411adf08af4326e136312da2ffd9eb3499c60a2d878ed0735805fd7",
+      "summary": "Broad-universe classification authority, f7 deprecation and f12 introduction, storage contract clarification, and dataset lineage hardening.",
+      "semantic_changes": [
+        "f7_credit_spread_trend deprecated due to provider 3-year historical cap on BAMLH0A0HYM2.",
+        "f12_baa_corporate_spread_trend introduced using unconstrained FRED series BAA10Y (Moody's Baa minus 10Y Treasury).",
+        "FIXED_INCOME_CREDIT confirmatory feature vector updated from [f1, f7, f8] to [f1, f8, f12]."
+      ],
+      "contractual_governance_changes": [
+        "Clarified Nasdaq ETF flag role as discovery filter only, not sufficient legal-structure attestation.",
+        "Defined 4-tier vehicle structure classification hierarchy and fail-closed unknown policy.",
+        "Replaced static universe count with versioned universe snapshot artifact (ETF_SURVIVING_UNIVERSE_V1.parquet).",
+        "Separated RAW FEATURE STORE (permissive diagnostics) from MODEL-READY FEATURE VIEW (strictly subtype-masked, fail-closed).",
+        "Mandated pre-generation builder identity (builder_git_commit and builder_file_sha256) and source cache manifest.",
+        "Refined econometric language for small-cluster inference across 5 subtypes.",
+        "Resolved statistical inference contradiction: replaced premature fixed p-value engine across all 15 confirmatory hypothesis pairs with DEPENDENCE_CORRECTION_POLICY_V1 (PENDING_COMPLIANT_DATASET_ADEQUACY_AUDIT); codified inference-selection gate based on dependence structure and estimator validity, strictly prohibiting p-value- or effect-size-driven selection and family redefinition."
+      ]
+    }
+  ],
+  "feature_storage_contract": {
+    "raw_feature_store": {
+      "nature": "PERMISSIVE_POINT_IN_TIME_FEATURE_STORE",
+      "description": "May contain any point-in-time-safe feature deterministically derivable for an observation. Raw availability does NOT authorize model use.",
+      "purposes": [
+        "DIAGNOSTICS",
+        "AUDIT",
+        "EXPLORATORY_RESEARCH",
+        "PIPELINE_VERIFICATION"
+      ]
+    },
+    "model_ready_feature_view": {
+      "nature": "APPLICABILITY_MASKED_ESTIMATOR_VIEW",
+      "masking_policy": "SUBTYPE_CONFIRMATORY_MASK",
+      "description": "Only features explicitly registered under subtype_support[subtype].features may be exposed to the confirmatory estimator.",
+      "unauthorized_feature_handling": "HARD_FAILURE (UNAUTHORIZED_FEATURE_ENTERING_MODEL_MATRIX = HARD_FAILURE)"
+    },
+    "f4_exploratory_contract": {
+      "feature_id": "f4_vol_compression",
+      "status": "EXPLORATORY_ONLY",
+      "model_matrix_permitted": false
+    }
+  }
 }
