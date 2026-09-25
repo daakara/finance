@@ -1,23 +1,12 @@
 # Cloudflare Pages Redirects
-# 1. Apex to WWW Canonical Redirects
-https://arxterminal.com/*  https://www.arxterminal.com/:splat  301!
-http://arxterminal.com/*   https://www.arxterminal.com/:splat  301!
-http://www.arxterminal.com/* https://www.arxterminal.com/:splat  301!
-
-# 2. Cloudflare pages.dev Subdomain to Canonical Domain Redirects
-https://finance-xp8.pages.dev/* https://www.arxterminal.com/:splat 301!
-http://finance-xp8.pages.dev/*  https://www.arxterminal.com/:splat 301!
-
-# 3. Secure Cloudflare Edge API Proxy (Shields Backend Origin URLs)
-/api/backend/*  https://web-production-e370b.up.railway.app/api/v1/:splat  200
-
-# 4. Legacy Stubs & Removed Routes Edge Redirects
-/workbench/*  /  301!
-/research/*   /  301!
-/committee    /smart-money  301!
-/politician   /smart-money  301!
-/strategy     /setups  301!
-/cockpit/*    /  301!
-/me/*         /  301!
-
-
+# Legacy Stubs & Removed Routes Edge Redirects (Permanent 301)
+/workbench/*  /  301
+/research/*   /  301
+/cockpit/*    /  301
+/me/*         /  301
+/committee    /smart-money  301
+/committee/   /smart-money  301
+/politician   /smart-money  301
+/politician/  /smart-money  301
+/strategy     /setups  301
+/strategy/    /setups  301

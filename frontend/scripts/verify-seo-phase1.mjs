@@ -98,7 +98,7 @@ assert(extraInSitemap.length === 0, `EXTRA_SITEMAP_URLS must be 0 (got ${extraIn
 
 // 2. ROBOTS.TXT AUDIT
 console.log("\n[2. ROBOTS.TXT POLICY VERIFICATION]");
-const robots = fs.readFileSync("out/robots.txt", "utf8");
+const robots = fs.readFileSync("out/robots.txt", "utf8").replace(/\r\n/g, "\n");
 assert(robots.includes("User-agent: *\nAllow: /"), "General search crawlers must be allowed root access");
 assert(robots.includes("User-agent: OAI-SearchBot"), "OAI-SearchBot block must be explicitly declared");
 assert(robots.includes("User-agent: GPTBot\nDisallow: /"), "GPTBot must be globally disallowed");
@@ -309,7 +309,7 @@ const redirectsContent = fs.readFileSync("public/_redirects", "utf8");
 const redirectLines = redirectsContent
   .split("\n")
   .map(l => l.trim())
-  .filter(l => l && !l.startsWith("#") && l.includes("301!") && l.startsWith("/"));
+  .filter(l => l && !l.startsWith("#") && l.includes("301") && l.startsWith("/"));
 
 let brokenRedirects = 0;
 let redirectLoops = 0;
@@ -326,7 +326,7 @@ for (const line of redirectLines) {
     }
 
     // Verify target exists in out
-    const targetRel = target.replace(/^\//, "");
+    const targetRel = target.replace(/^\//, "").replace(/\/$/, "");
     const targetFile = targetRel === "" ? "out/index.html" : `out/${targetRel}/index.html`;
     if (!fs.existsSync(targetFile)) {
       console.error(`Broken redirect target: ${source} -> ${target} (file ${targetFile} not found)`);
