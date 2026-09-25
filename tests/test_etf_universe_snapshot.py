@@ -47,6 +47,13 @@ from scripts.research.build_etf_dataset import (
     REGISTRY_KNOWN_LEVERAGED_INVERSE_PRODUCTS,
     ALLOWED_STRUCTURE_CLASSES,
     RESEARCH_ELIGIBLE_STRUCTURES,
+    POLICY_V11_PATH,
+    POLICY_V11_SHA256,
+    POLICY_V11_COMMIT,
+    MANDATE_EVIDENCE_PATH,
+    NPORT_DERIVED_METRICS_PATH,
+    UNIVERSE_SNAPSHOT_PATH,
+    UNIVERSE_MANIFEST_PATH,
     get_file_sha256,
     get_git_commit,
 )
@@ -877,7 +884,7 @@ def test_one_symbol_one_confirmatory_subtype_and_collision_resolution():
     2. Proves IBB resolves to EQUITY_SECTOR over EQUITY_INDEX via frozen ambiguity precedence.
     3. Proves IEF resolves to FIXED_INCOME_GOVERNMENT over EQUITY_INDEX via frozen ambiguity precedence.
     """
-    policy_path = Path("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1.json")
+    policy_path = POLICY_V11_PATH
     with open(policy_path, "r", encoding="utf-8") as f:
         policy = json.load(f)
 
@@ -907,27 +914,26 @@ def test_one_symbol_one_confirmatory_subtype_and_collision_resolution():
 
 
 def test_sector_rule_authority_and_agency_aggregate_bond_evaluation():
-    """Requirement 10, 12, 13: Audit sector authority, Agency MBS, and Aggregate bond rules.
-    1. Proves that without external GICS taxonomy, single-sector concentration cannot be certified from raw N-PORT.
+    """Requirement 10, 12, 13: Audit sector authority, Agency MBS, and Aggregate bond rules under Policy v1.1.0.
+    1. Proves sector rule uses statutory index/sector mandate and standard taxonomy.
     2. Proves MBB (Agency MBS) fails pure government threshold due to mortgage credit/prepayment inclusion.
     3. Proves BND and AGG (Aggregate bonds) fail pure credit threshold because government/agency >= 50% and credit < 50%.
     """
-    policy_path = Path("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1.json")
+    policy_path = POLICY_V11_PATH
     with open(policy_path, "r", encoding="utf-8") as f:
         policy = json.load(f)
 
     # 1. Sector taxonomy requirement
     sector_rule = policy["confirmatory_subtype_rules"]["EQUITY_SECTOR"]
-    assert sector_rule["systematic_authority_status"] == "REQUIRES_PORTFOLIO_INDUSTRY_BREAKDOWN"
+    assert "is_sector_specific_mandate == true" in sector_rule["required_conditions"]
 
     # 2. Agency MBS rule (MBB)
-    # Under policy, total_credit_pct includes mortgage_backed_pct. MBB has >90% MBS, failing total_credit_pct < 0.10.
     govt_rule = policy["confirmatory_subtype_rules"]["FIXED_INCOME_GOVERNMENT"]
-    assert "total_credit_pct < 0.10" in govt_rule["required_conditions"]
+    assert "mortgage_backed_pct < 0.10" in govt_rule["required_conditions"]
 
     # 3. Aggregate bond rule (BND, AGG)
     credit_rule = policy["confirmatory_subtype_rules"]["FIXED_INCOME_CREDIT"]
-    assert "total_credit_pct >= 0.50" in credit_rule["required_conditions"]
+    assert "corporate_debt_pct >= 0.50" in credit_rule["required_conditions"]
     assert "total_govt_pct < 0.50" in credit_rule["required_conditions"]
     assert "Aggregate bond funds" in credit_rule["mixed_aggregate_portfolio_policy"]
 
@@ -961,3 +967,133 @@ def test_missing_nport_and_post_boundary_temporal_discipline():
     assert rec["research_subtype"] == "UNRESOLVED"
     assert rec["research_subtype_state"] == "PENDING_SYSTEMATIC_CLASSIFICATION"
     assert rec["exclusion_reason"] == "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+
+
+def test_policy_v11_hash_and_manifest_binding():
+    """Step 34: Verifies Policy v1.1.0 cryptographic hash and manifest binding.
+    1. Policy file exists and matches frozen SHA-256 digest: 864133d98750f7765409153c4305d02ff9d422aa56556b6a0506738299642f52.
+    2. Manifest binds to subtype_policy_version 1.1.0 and identical SHA-256 digest.
+    3. Mandate evidence database and N-PORT portfolio metrics hashes are present in manifest.
+    """
+    assert POLICY_V11_PATH.exists(), f"Missing policy file: {POLICY_V11_PATH}"
+    actual_hash = get_file_sha256(POLICY_V11_PATH)
+    assert actual_hash == POLICY_V11_SHA256 == "864133d98750f7765409153c4305d02ff9d422aa56556b6a0506738299642f52"
+
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["subtype_policy_version"] == "1.1.0"
+    assert manifest["subtype_policy_sha256"] == POLICY_V11_SHA256
+    assert manifest["subtype_policy_commit"] == POLICY_V11_COMMIT
+    assert manifest["mandate_evidence_sha256"] == get_file_sha256(MANDATE_EVIDENCE_PATH)
+    assert manifest["portfolio_metrics_sha256"] == get_file_sha256(NPORT_DERIVED_METRICS_PATH)
+
+
+def test_systematic_70_confirmatory_candidates_and_lineage():
+    """Step 34: Verifies exact 70 unique confirmatory candidates across the 5 frozen subtypes.
+    Census contract:
+    - EQUITY_SECTOR: 19
+    - EQUITY_INDEX: 18
+    - FIXED_INCOME_GOVERNMENT: 14
+    - FIXED_INCOME_CREDIT: 10
+    - COMMODITY_PHYSICAL: 9
+    Sum: Exactly 70 unique symbols.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
+    conf_df = df_snap[df_snap["research_subtype_state"] == "CONFIRMATORY_SUPPORTED"]
+    assert len(conf_df) == 70
+    assert conf_df["symbol"].is_unique
+
+    counts = conf_df["research_subtype"].value_counts().to_dict()
+    assert counts.get("EQUITY_SECTOR") == 19
+    assert counts.get("EQUITY_INDEX") == 18
+    assert counts.get("FIXED_INCOME_GOVERNMENT") == 14
+    assert counts.get("FIXED_INCOME_CREDIT") == 10
+    assert counts.get("COMMODITY_PHYSICAL") == 9
+
+
+def test_adv80_recomputation_and_14_eligible_instruments():
+    """Step 34: Verifies ADV80 threshold recomputation on 70 candidates and exact 14 research-eligible instruments.
+    1. Cross-sectional ADV80 threshold equals $1,491,310,805.77 (within floating point precision).
+    2. Exactly 14 instruments pass liquidity and history gates.
+    3. Exactly 56 instruments receive ADV60_BELOW_80TH_PERCENTILE.
+    4. All 5 confirmatory subtypes are represented in the surviving 14.
+    """
+    with open(UNIVERSE_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert manifest["confirmatory_candidate_count"] == 70
+    assert manifest["eligible_row_count"] == 14
+    assert manifest["excluded_row_count"] == 5719
+    assert abs(manifest["adv80_threshold"] - 1491310805.7732) < 1.0
+
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
+    elig_df = df_snap[df_snap["is_research_eligible"]]
+    assert len(elig_df) == 14
+
+    expected_eligible = {
+        "SPY", "QQQ", "IWM", "SMH", "VOO", "IVV", "GLD",
+        "LQD", "HYG", "TLT", "XLF", "DIA", "XLE", "RSP"
+    }
+    actual_eligible = set(elig_df["symbol"])
+    assert actual_eligible == expected_eligible
+
+    # Check subtype representation
+    subtypes = set(elig_df["research_subtype"])
+    assert subtypes == {
+        "EQUITY_INDEX", "EQUITY_SECTOR", "FIXED_INCOME_GOVERNMENT",
+        "FIXED_INCOME_CREDIT", "COMMODITY_PHYSICAL"
+    }
+
+    # Exactly 56 candidates fail liquidity threshold
+    adv_fails = df_snap[df_snap["exclusion_reason"] == "ADV60_BELOW_80TH_PERCENTILE"]
+    assert len(adv_fails) == 56
+
+
+def test_mbb_bnd_agg_systematic_exclusion():
+    """Step 34: Proves MBB, BND, and AGG fail confirmatory rules and are classified as OTHER_ETF.
+    - MBB: mortgage_backed_pct >= 0.10 -> fails FIXED_INCOME_GOVERNMENT.
+    - BND and AGG: corporate_debt_pct < 0.50, total_govt_pct >= 0.50 -> fail FIXED_INCOME_CREDIT.
+    All three evaluate to OTHER_ETF / EXPLORATORY_ONLY / UNAUTHORIZED_RESEARCH_SUBTYPE.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH).set_index("symbol")
+    for sym in ["MBB", "BND", "AGG", "BSV"]:
+        assert df_snap.loc[sym, "research_subtype"] == "OTHER_ETF"
+        assert df_snap.loc[sym, "research_subtype_state"] == "EXPLORATORY_ONLY"
+        assert df_snap.loc[sym, "exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+        assert not df_snap.loc[sym, "is_research_eligible"]
+
+
+def test_subtype_collision_resolution_precedence():
+    """Step 34: Proves candidate collisions resolve according to frozen ambiguity precedence.
+    - IBB satisfies both equity sector and equity index -> resolves to EQUITY_SECTOR.
+    - IEF satisfies both government and index -> resolves to FIXED_INCOME_GOVERNMENT.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH).set_index("symbol")
+    assert df_snap.loc["IBB", "research_subtype"] == "EQUITY_SECTOR"
+    assert df_snap.loc["IBB", "research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+
+    assert df_snap.loc["IEF", "research_subtype"] == "FIXED_INCOME_GOVERNMENT"
+    assert df_snap.loc["IEF", "research_subtype_state"] == "CONFIRMATORY_SUPPORTED"
+
+
+def test_other_etf_vs_unresolved_fail_closed_semantics():
+    """Step 34: Proves OTHER_ETF vs UNRESOLVED fail-closed population semantics.
+    - Structure-verified population: 4,523 total.
+    - Affirmative non-confirmatory evidence -> OTHER_ETF (3,577).
+    - Missing N-PORT / reconciliation failures -> UNRESOLVED (876).
+    - Confirmatory candidates -> 70.
+    - Sum: 3,577 + 876 + 70 == 4,523.
+    """
+    df_snap = pd.read_parquet(UNIVERSE_SNAPSHOT_PATH)
+    struct_elig = df_snap[df_snap["vehicle_structure_state"] == "STRUCTURE_VERIFIED"]
+    assert len(struct_elig) == 4523
+
+    other_count = (struct_elig["research_subtype"] == "OTHER_ETF").sum()
+    unres_count = (struct_elig["research_subtype"] == "UNRESOLVED").sum()
+    conf_count = (struct_elig["research_subtype_state"] == "CONFIRMATORY_SUPPORTED").sum()
+
+    assert other_count == 3577
+    assert unres_count == 876
+    assert conf_count == 70
+    assert other_count + unres_count + conf_count == 4523

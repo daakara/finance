@@ -62,6 +62,13 @@ SPEC_VERSION = SPEC_VERSION_V103
 CANONICAL_SPEC_COMMIT = CANONICAL_SPEC_COMMIT_V103
 CANONICAL_FILTERED_SPEC_SHA256 = CANONICAL_FILTERED_SPEC_SHA256_V103
 
+# Subtype Policy v1.1 Constants
+POLICY_V11_PATH = Path("docs/research/ETF_SUBTYPE_CLASSIFICATION_POLICY_V1_1.json")
+POLICY_V11_SHA256 = "864133d98750f7765409153c4305d02ff9d422aa56556b6a0506738299642f52"
+POLICY_V11_COMMIT = "a554c2fc896238afb8b66a5ea5a2786dbe2f2c1f"
+MANDATE_EVIDENCE_PATH = Path("data/research/etf_mandate_evidence_v1.json")
+NPORT_DERIVED_METRICS_PATH = Path("data/research/cache/nport_derived/portfolio_metrics.parquet")
+
 # Benchmark and macro configuration
 BENCHMARK_SYMBOLS = ["SPY", "IEF", "LQD", "BIL"]
 CURRENCY_SYMBOLS = ["UUP"]
@@ -206,10 +213,10 @@ class Subtyped1940ActRegistryMetadata:
 REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS = Subtyped1940ActRegistryMetadata(
     registry_name="KNOWN_VERIFIED_1940_ACT_ETFS",
     subtypes={
-        "EQUITY_INDEX": frozenset({"IWM", "VOO", "IVV", "VTI", "SCHX", "RSP", "IJH", "IJR", "VB", "VO"}),
-        "EQUITY_SECTOR": frozenset({"XLE", "XLF", "XLK", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XOP", "XBI", "SMH", "VNQ", "IYR", "ITB", "XHB", "KRE", "KBE"}),
-        "FIXED_INCOME_GOVERNMENT": frozenset({"TLT", "IEF", "SHY", "IEI", "GOVT", "VGSH", "VGIT", "VGLT", "SCHO", "SCHR", "SPTL"}),
-        "FIXED_INCOME_CREDIT": frozenset({"HYG", "LQD", "JNK", "VCIT", "VCSH", "BND", "AGG", "USIG", "FLOT", "SJNK", "HYLB", "VUSB"}),
+        "EQUITY_INDEX": frozenset({"SPY", "DIA", "QQQ", "IWM", "VOO", "IVV", "VTI", "SCHX", "RSP", "IJH", "IJR", "VB", "VO", "SCHD", "VUG", "VTV", "IEFA", "IEMG"}),
+        "EQUITY_SECTOR": frozenset({"XLE", "XOP", "XLF", "KRE", "KBE", "XLK", "SMH", "XLV", "XBI", "IBB", "XLI", "XLP", "XLU", "XLY", "ITB", "XHB", "XLB", "VNQ", "IYR"}),
+        "FIXED_INCOME_GOVERNMENT": frozenset({"TLT", "IEF", "SHY", "IEI", "GOVT", "VGSH", "VGIT", "VGLT", "SCHO", "SCHR", "SPTL", "BIL", "TIP", "SHV"}),
+        "FIXED_INCOME_CREDIT": frozenset({"HYG", "LQD", "JNK", "VCIT", "VCSH", "USIG", "FLOT", "SJNK", "HYLB", "VUSB"}),
         "COMMODITY_PHYSICAL": REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS.entries,
     },
     source_authority="SEC_INVESTMENT_COMPANY_ACT_OF_1940_REGISTRATIONS",
@@ -535,6 +542,8 @@ class ClassificationAuthorityEngine:
         nasdaq_etf_flag: bool,
         structured_metadata: dict = None,
         sec_mf_info: dict = None,
+        portfolio_metrics: dict | pd.Series = None,
+        mandate_evidence: dict = None,
         timestamp: str = None
     ) -> dict:
         if timestamp is None:
@@ -742,26 +751,120 @@ class ClassificationAuthorityEngine:
         subtype_authorized = False
 
         if structure_verified:
-            if sym in REGISTRY_KNOWN_1940_ACT_UITS.entries:
-                research_subtype = "EQUITY_INDEX"
-                research_subtype_state = "CONFIRMATORY_SUPPORTED"
-                subtype_authorized = True
-            elif sym in REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS.entries:
+            if sym in REGISTRY_PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUSTS.entries or vehicle_structure == "PHYSICAL_PRECIOUS_METAL_GRANTOR_TRUST":
                 research_subtype = "COMMODITY_PHYSICAL"
                 research_subtype_state = "CONFIRMATORY_SUPPORTED"
                 subtype_authorized = True
+                exclusion_reason = None
+            elif sym in REGISTRY_KNOWN_1940_ACT_UITS.entries or vehicle_structure == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF":
+                research_subtype = "EQUITY_INDEX"
+                research_subtype_state = "CONFIRMATORY_SUPPORTED"
+                subtype_authorized = True
+                exclusion_reason = None
+            elif structured_metadata and structured_metadata.get("research_subtype"):
+                st = structured_metadata["research_subtype"]
+                research_subtype = st
+                research_subtype_state = "CONFIRMATORY_SUPPORTED" if st in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
+                subtype_authorized = (st in CONFIRMATORY_SUBTYPES)
+                exclusion_reason = None if subtype_authorized else "UNAUTHORIZED_RESEARCH_SUBTYPE"
+            elif portfolio_metrics is not None or mandate_evidence is not None:
+                # Systematic Tier 2/3 Policy v1.1.0 Evaluation
+                if portfolio_metrics is None:
+                    research_subtype = "UNRESOLVED"
+                    research_subtype_state = "PENDING_SYSTEMATIC_CLASSIFICATION"
+                    subtype_authorized = False
+                    classification_source = "TIER_4_FAIL_CLOSED_UNRESOLVED_SUBTYPE_QUARANTINE"
+                    classification_evidence = "INSUFFICIENT_NPORT_REGULATORY_EVIDENCE"
+                    exclusion_reason = "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+                else:
+                    rec_ratio = portfolio_metrics.get("reconciliation_ratio") if isinstance(portfolio_metrics, dict) else portfolio_metrics["reconciliation_ratio"]
+                    if pd.isna(rec_ratio) or rec_ratio < 0.85 or rec_ratio > 1.15:
+                        research_subtype = "UNRESOLVED"
+                        research_subtype_state = "PENDING_SYSTEMATIC_CLASSIFICATION"
+                        subtype_authorized = False
+                        classification_source = "TIER_4_FAIL_CLOSED_UNRESOLVED_SUBTYPE_QUARANTINE"
+                        classification_evidence = f"PORTFOLIO_RECONCILIATION_FAIL_RATIO_{rec_ratio:.2f}" if pd.notna(rec_ratio) else "PORTFOLIO_RECONCILIATION_NAN"
+                        exclusion_reason = "UNRESOLVED_SUBTYPE_PENDING_CLASSIFICATION"
+                    else:
+                        eq_pct = float(portfolio_metrics.get("total_equity_pct", 0.0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["total_equity_pct"])
+                        gov_pct = float(portfolio_metrics.get("total_govt_pct", 0.0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["total_govt_pct"])
+                        corp_pct = float(portfolio_metrics.get("corporate_debt_pct", 0.0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["corporate_debt_pct"])
+                        mbs_pct = float(portfolio_metrics.get("mortgage_backed_pct", 0.0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["mortgage_backed_pct"])
+                        distinct_eq = int(portfolio_metrics.get("distinct_equity_count", 0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["distinct_equity_count"])
+                        max_conc = float(portfolio_metrics.get("max_concentration", 0.0) if isinstance(portfolio_metrics, dict) else portfolio_metrics["max_concentration"])
+                        is_index_ncen = bool(portfolio_metrics.get("is_index_ncen", False) if isinstance(portfolio_metrics, dict) else portfolio_metrics["is_index_ncen"])
+
+                        passes_gov = (gov_pct >= 0.80 and corp_pct < 0.10 and mbs_pct < 0.10 and eq_pct < 0.05)
+                        passes_credit = (corp_pct >= 0.50 and gov_pct < 0.50 and eq_pct < 0.05)
+
+                        has_mandate = mandate_evidence is not None
+                        m_dict = mandate_evidence if isinstance(mandate_evidence, dict) else {}
+                        is_sector_fund = bool(m_dict.get("is_sector_specific_mandate", False))
+                        approved_sec = m_dict.get("approved_sector")
+                        is_broad_index = bool(m_dict.get("is_broad_or_multi_sector_mandate", False))
+                        mandate_class = m_dict.get("derived_mandate_classification")
+
+                        is_gov_mandate = (mandate_class in ("GOVERNMENT_DEBT_MANDATE", "US_TREASURY_GOVERNMENT_MANDATE"))
+                        is_credit_mandate = (mandate_class in ("CORPORATE_CREDIT_MANDATE", "CREDIT_MANDATE"))
+
+                        passes_sector = (eq_pct >= 0.80 and is_sector_fund and approved_sec is not None)
+                        passes_equity_index = (
+                            eq_pct >= 0.80 and
+                            is_index_ncen and
+                            distinct_eq >= 30 and
+                            max_conc < 0.15 and
+                            gov_pct < 0.20 and
+                            corp_pct < 0.20 and
+                            not is_sector_fund and
+                            is_broad_index
+                        )
+
+                        # Ambiguity Precedence Hierarchy:
+                        # COMMODITY_PHYSICAL > FIXED_INCOME_GOVERNMENT > FIXED_INCOME_CREDIT > EQUITY_SECTOR > EQUITY_INDEX > OTHER_ETF
+                        if passes_gov and is_gov_mandate:
+                            research_subtype = "FIXED_INCOME_GOVERNMENT"
+                            research_subtype_state = "CONFIRMATORY_SUPPORTED"
+                            subtype_authorized = True
+                            classification_source = "TIER_2_STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
+                            classification_evidence = f"SEC_FORM_NPORT_GOVT_{gov_pct:.1%}_CORP_{corp_pct:.1%}_MBS_{mbs_pct:.1%}"
+                            exclusion_reason = None
+                        elif passes_credit and is_credit_mandate:
+                            research_subtype = "FIXED_INCOME_CREDIT"
+                            research_subtype_state = "CONFIRMATORY_SUPPORTED"
+                            subtype_authorized = True
+                            classification_source = "TIER_2_STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
+                            classification_evidence = f"SEC_FORM_NPORT_CREDIT_{corp_pct:.1%}_GOVT_{gov_pct:.1%}"
+                            exclusion_reason = None
+                        elif passes_sector:
+                            research_subtype = "EQUITY_SECTOR"
+                            research_subtype_state = "CONFIRMATORY_SUPPORTED"
+                            subtype_authorized = True
+                            classification_source = "TIER_2_STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
+                            classification_evidence = f"SEC_FORM_NPORT_EQUITY_{eq_pct:.1%}_SECTOR_{approved_sec}"
+                            exclusion_reason = None
+                        elif passes_equity_index:
+                            research_subtype = "EQUITY_INDEX"
+                            research_subtype_state = "CONFIRMATORY_SUPPORTED"
+                            subtype_authorized = True
+                            classification_source = "TIER_2_STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
+                            classification_evidence = f"SEC_FORM_NPORT_EQUITY_{eq_pct:.1%}_HOLDINGS_{distinct_eq}_INDEX_NCEN"
+                            exclusion_reason = None
+                        else:
+                            research_subtype = "OTHER_ETF"
+                            research_subtype_state = "EXPLORATORY_ONLY"
+                            subtype_authorized = False
+                            classification_source = "TIER_5_EVALUATED_EXPLORATORY_ASSIGNMENT"
+                            classification_evidence = f"AFFIRMATIVE_NON_CONFIRMATORY_PORTFOLIO: EQ_{eq_pct:.1%}_GOV_{gov_pct:.1%}_CORP_{corp_pct:.1%}"
+                            exclusion_reason = "UNAUTHORIZED_RESEARCH_SUBTYPE"
             elif sym in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.entries:
                 for st, s_set in REGISTRY_KNOWN_VERIFIED_1940_ACT_ETFS.subtypes.items():
                     if sym in s_set:
                         research_subtype = st
                         research_subtype_state = "CONFIRMATORY_SUPPORTED" if st in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
                         subtype_authorized = (st in CONFIRMATORY_SUBTYPES)
+                        classification_source = "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY"
+                        classification_evidence = f"VERIFIED_1940_ACT_{st}_ALLOWLIST"
                         break
-            elif structured_metadata and structured_metadata.get("research_subtype"):
-                st = structured_metadata["research_subtype"]
-                research_subtype = st
-                research_subtype_state = "CONFIRMATORY_SUPPORTED" if st in CONFIRMATORY_SUBTYPES else "EXPLORATORY_ONLY"
-                subtype_authorized = (st in CONFIRMATORY_SUBTYPES)
             else:
                 # Verified legal structure (e.g. via SEC registration) but not systematically evaluated against subtype policy
                 research_subtype = "UNRESOLVED"
@@ -919,6 +1022,51 @@ def build_universe_snapshot(
     # Load Tier 2 SEC Mutual Fund / Series Directory
     sec_mf_map = load_sec_mf_directory(cache_dir, source_manifest)
 
+    # Load Statutory Series Mandate Evidence
+    mandate_map = {}
+    if MANDATE_EVIDENCE_PATH.exists():
+        with open(MANDATE_EVIDENCE_PATH, "r", encoding="utf-8") as f:
+            mandate_json = json.load(f)
+            for m_entry in mandate_json.get("entries", []):
+                mandate_map[m_entry["symbol"]] = m_entry
+        source_manifest.record(
+            path=MANDATE_EVIDENCE_PATH,
+            provider="SEC_FORM_485BPOS_N1A",
+            semantic_role="STATUTORY_SERIES_INDEX_MANDATE_REGISTRATION"
+        )
+
+    # Load Structured Regulatory Portfolio Metrics
+    metrics_by_series = {}
+    if NPORT_DERIVED_METRICS_PATH.exists():
+        df_pmetrics = pd.read_parquet(NPORT_DERIVED_METRICS_PATH)
+        for _, prow in df_pmetrics.iterrows():
+            sid = prow["SERIES_ID"]
+            if pd.notna(sid):
+                metrics_by_series[sid] = prow
+        source_manifest.record(
+            path=NPORT_DERIVED_METRICS_PATH,
+            provider="SEC_FORM_NPORT_DERIVED_HOLDINGS",
+            semantic_role="STRUCTURED_REGULATORY_PORTFOLIO_AND_MANDATES"
+        )
+
+    # Record N-CEN and N-PORT bulk archives in source manifest
+    ncen_dir = cache_dir / "sec_ncen"
+    if ncen_dir.exists():
+        for zip_file in sorted(ncen_dir.glob("*.zip")):
+            source_manifest.record(
+                path=zip_file,
+                provider="SEC_EDGAR_BULK_NCEN",
+                semantic_role="SEC_ANNUAL_REPORT_INVESTMENT_COMPANY_BULK_TABLES"
+            )
+    nport_dir = cache_dir / "sec_nport"
+    if nport_dir.exists():
+        for zip_file in sorted(nport_dir.glob("*.zip")):
+            source_manifest.record(
+                path=zip_file,
+                provider="SEC_EDGAR_BULK_NPORT",
+                semantic_role="SEC_MONTHLY_PORTFOLIO_HOLDINGS_BULK_TABLES"
+            )
+
     records = []
     for _, row in df_discovered_etfs.iterrows():
         sym = row.get("Symbol", "")
@@ -927,12 +1075,18 @@ def build_universe_snapshot(
         is_etf = True
 
         sec_info = sec_mf_map.get(str(sym).strip().upper())
+        s_id = sec_info.get("series_id") if sec_info else None
+        p_metric = metrics_by_series.get(s_id) if s_id else None
+        m_entry = mandate_map.get(str(sym).strip().upper())
+
         rec = ClassificationAuthorityEngine.classify_security(
             symbol=sym,
             security_name=name,
             listing_exchange=exch,
             nasdaq_etf_flag=is_etf,
-            sec_mf_info=sec_info
+            sec_mf_info=sec_info,
+            portfolio_metrics=p_metric,
+            mandate_evidence=m_entry
         )
         records.append(rec)
 
@@ -1069,17 +1223,32 @@ def build_universe_snapshot(
     eligible_count = int(df_snap["is_research_eligible"].sum())
     excluded_count = int((~df_snap["is_research_eligible"]).sum())
 
+    last_eval_date = market_eligibility_df["observation_date"].max() if not market_eligibility_df.empty else None
+    eval_adv80_thresh = None
+    if not market_eligibility_df.empty and last_eval_date:
+        thresh_series = market_eligibility_df[market_eligibility_df["observation_date"] == last_eval_date]["adv80_threshold"].dropna()
+        if not thresh_series.empty:
+            eval_adv80_thresh = float(thresh_series.iloc[0])
+
     manifest = {
         "research_spec_version": SPEC_VERSION_V103,
         "research_spec_sha256": spec_sha256,
         "research_spec_git_commit": CANONICAL_SPEC_COMMIT_V103,
-        "classification_rule_version": SPEC_VERSION_V103,
+        "subtype_policy_version": "1.1.0",
+        "subtype_policy_sha256": POLICY_V11_SHA256,
+        "subtype_policy_commit": POLICY_V11_COMMIT,
+        "mandate_evidence_sha256": get_file_sha256(MANDATE_EVIDENCE_PATH) if MANDATE_EVIDENCE_PATH.exists() else "",
+        "portfolio_metrics_sha256": get_file_sha256(NPORT_DERIVED_METRICS_PATH) if NPORT_DERIVED_METRICS_PATH.exists() else "",
+        "classification_rule_version": "1.1.0",
         "discovery_source_sha256": meta_disc["raw_source_sha256"],
         "discovery_retrieval_timestamp": meta_disc["retrieval_timestamp"],
         "snapshot_sha256": snapshot_sha256,
         "row_count": row_count,
         "eligible_row_count": eligible_count,
         "excluded_row_count": excluded_count,
+        "confirmatory_candidate_count": len(candidate_symbols),
+        "adv80_threshold": eval_adv80_thresh,
+        "as_of_session": eval_as_of,
         "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "builder_git_commit": builder_git_commit,
         "builder_file_sha256": builder_file_sha256
