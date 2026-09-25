@@ -460,16 +460,49 @@ def load_sec_mf_directory(
             retrieval_timestamp=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         )
 
+    # Load Trust Legal Form Directory
+    trust_dir_path = Path("data/research/sec_trust_legal_form_directory_v1.json")
+    trust_map = {}
+    if trust_dir_path.exists():
+        with open(trust_dir_path, "r", encoding="utf-8") as f:
+            trust_data = json.load(f)
+            trust_map = trust_data.get("trusts", {})
+        if source_manifest:
+            source_manifest.record(
+                path=trust_dir_path,
+                provider="SEC_EDGAR",
+                semantic_role="TIER_2_TRUST_LEGAL_FORM_DIRECTORY",
+                byte_size=trust_dir_path.stat().st_size,
+                sha256=get_file_sha256(trust_dir_path),
+                retrieval_timestamp=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+            )
+
     mf_map = {}
     rows = data.get("data", [])
     for row in rows:
         if len(row) >= 4 and row[3]:
             sym = str(row[3]).strip().upper()
+            cik_raw = str(row[0])
+            cik_padded = cik_raw.zfill(10)
+
+            trust_info = trust_map.get(cik_raw) or trust_map.get(cik_padded) or {}
+            reg_form = trust_info.get("registration_form")
+            legal_struct = trust_info.get("legal_structure")
+            is_active = trust_info.get("is_active", False)
+            trust_name = trust_info.get("trust_name")
+            record_hash = trust_info.get("normalized_record_sha256")
+
             mf_map[sym] = {
-                "cik": str(row[0]),
+                "cik": cik_raw,
+                "cik_padded": cik_padded,
                 "series_id": str(row[1]),
                 "class_id": str(row[2]),
-                "symbol": sym
+                "symbol": sym,
+                "trust_name": trust_name,
+                "registration_form": reg_form,
+                "legal_structure": legal_struct,
+                "is_active": is_active,
+                "normalized_record_sha256": record_hash
             }
     return mf_map
 
@@ -588,19 +621,66 @@ class ClassificationAuthorityEngine:
             classification_evidence = "VERIFIED_1940_ACT_OPEN_END_ALLOWLIST"
             structure_verified = True
 
-        # 3. Tier 2: Structured Provider / Primary Regulatory Directory (SEC EDGAR series directory)
+        # 3. Tier 2: Structured Provider / Primary Regulatory Directory (SEC EDGAR series directory + Trust Legal Form)
         elif sec_mf_info is not None:
-            vehicle_structure = "1940_ACT_OPEN_END_ETF"
-            vehicle_structure_state = "STRUCTURE_VERIFIED"
-            classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
-            classification_evidence = f"SEC_EDGAR_SERIES_REGISTRATION_CIK_{sec_mf_info.get('cik')}_SERIES_{sec_mf_info.get('series_id')}"
-            structure_verified = True
+            reg_form = sec_mf_info.get("registration_form")
+            is_active = sec_mf_info.get("is_active", False)
+            cik = sec_mf_info.get("cik")
+            series_id = sec_mf_info.get("series_id")
+            class_id = sec_mf_info.get("class_id")
+
+            if reg_form == "N-1A" and is_active:
+                vehicle_structure = "1940_ACT_OPEN_END_ETF"
+                vehicle_structure_state = "STRUCTURE_VERIFIED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+                structure_verified = True
+            elif reg_form == "S-6" and is_active:
+                vehicle_structure = "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+                vehicle_structure_state = "STRUCTURE_VERIFIED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"SEC_EDGAR_FORM_S6_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+                structure_verified = True
+            elif reg_form == "N-2":
+                vehicle_structure = "CLOSED_END_FUND"
+                vehicle_structure_state = "EXCLUDED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"SEC_EDGAR_FORM_N2_REGISTRATION_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+                exclusion_reason = "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
+            else:
+                # Unresolved or unsupported registration form in Tier 2 - fail closed
+                vehicle_structure = "UNKNOWN"
+                vehicle_structure_state = "QUARANTINED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"UNVERIFIED_SEC_REGISTRATION_FORM_CIK_{cik}_SERIES_{series_id}_CLASS_{class_id}"
+                exclusion_reason = "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
         elif structured_metadata and structured_metadata.get("is_1940_act") is True:
-            vehicle_structure = "1940_ACT_OPEN_END_ETF"
-            vehicle_structure_state = "STRUCTURE_VERIFIED"
-            classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
-            classification_evidence = f"STRUCTURED_PROVIDER_ATTESTATION: {structured_metadata.get('category', '')}"
-            structure_verified = True
+            form = structured_metadata.get("registration_form")
+            cat = structured_metadata.get("category", "")
+            if form == "N-1A":
+                vehicle_structure = "1940_ACT_OPEN_END_ETF"
+                vehicle_structure_state = "STRUCTURE_VERIFIED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"STRUCTURED_PROVIDER_FORM_N1A_ATTESTATION: {cat}"
+                structure_verified = True
+            elif form == "S-6":
+                vehicle_structure = "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+                vehicle_structure_state = "STRUCTURE_VERIFIED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"STRUCTURED_PROVIDER_FORM_S6_ATTESTATION: {cat}"
+                structure_verified = True
+            elif form == "N-2":
+                vehicle_structure = "CLOSED_END_FUND"
+                vehicle_structure_state = "EXCLUDED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"STRUCTURED_PROVIDER_FORM_N2_ATTESTATION: {cat}"
+                exclusion_reason = "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
+            else:
+                vehicle_structure = "UNKNOWN"
+                vehicle_structure_state = "QUARANTINED"
+                classification_source = "TIER_2_STRUCTURED_PROVIDER_METADATA"
+                classification_evidence = f"UNVERIFIED_STRUCTURED_PROVIDER_ATTESTATION: {cat}"
+                exclusion_reason = "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
 
         # 4. Tier 4: Defensive Negative Safety Net Heuristics (ONLY for unverified instruments)
         elif RE_INVERSE.search(name):

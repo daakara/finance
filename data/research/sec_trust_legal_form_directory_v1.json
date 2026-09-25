@@ -1,0 +1,4750 @@
+{
+  "metadata": {
+    "directory_version": "1.0.0",
+    "authority": "SEC_EDGAR_REGISTRATION_SUBMISSIONS",
+    "generated_at": "2026-09-25T16:30:00Z",
+    "total_ciks_audited": 251,
+    "audit_policy": "FAIL_CLOSED_LEGAL_FORM_VERIFICATION"
+  },
+  "trusts": {
+    "1004655": {
+      "cik": "0001004655",
+      "trust_name": "VANGUARD WHITEHALL FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33148",
+        "005-89981",
+        "033-64845",
+        "811-07443",
+        "811-07443,033-64845"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "e8ac6b7402572ed833ac47a33bbb4cf61471bfd99921c0ef230be2a9803b82e9"
+    },
+    "1020425": {
+      "cik": "0001020425",
+      "trust_name": "iM Global Partner Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-40813",
+        "005-95011",
+        "333-10015",
+        "333-257957",
+        "333-284464"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "a20d58cee91f843f1d60bf3674695f7dd917888abd09cf779b17623289c97e26"
+    },
+    "1021882": {
+      "cik": "0001021882",
+      "trust_name": "VANGUARD SCOTTSDALE FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "005-85747",
+        "333-11763",
+        "811-07803",
+        "811-07803,333-11763",
+        "812-15830-13"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 1034,
+      "normalized_record_sha256": "12cf2343eee93bb2b5e55bd7cabef236aedddebf2df106936294b2fd3d00981f"
+    },
+    "1026634": {
+      "cik": "0001026634",
+      "trust_name": "RENAISSANCE CAPITAL GREENWICH FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36118",
+        "333-21311",
+        "811-08049",
+        "811-08049,333-21311",
+        "812-13976"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-25",
+      "filing_count_audited": 474,
+      "normalized_record_sha256": "be787141fbde614e88277355ef83f5f708716a25153ddf1bbe6f4c627bb362ff"
+    },
+    "1027596": {
+      "cik": "0001027596",
+      "trust_name": "ADVISORS SERIES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41192",
+        "005-94353",
+        "333-17391",
+        "333-287091",
+        "333-290565"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1006,
+      "normalized_record_sha256": "4169bd9cc1c398908df77864308df1f0dcd7995c54a304d84cf10a537ebfc299"
+    },
+    "1040674": {
+      "cik": "0001040674",
+      "trust_name": "Yorkville America Investment Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-43031",
+        "333-111391",
+        "333-128891",
+        "333-29289",
+        "333-293058"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 754,
+      "normalized_record_sha256": "b4cc01e922fb473c66bfd41a0a8a96a1068fc3e57afb639d829673df2342a1f5"
+    },
+    "1041673": {
+      "cik": "0001041673",
+      "trust_name": "NUVEEN INVESTMENT TRUST II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43299",
+        "333-224331",
+        "333-238584",
+        "333-256392",
+        "333-33607"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "f9f4508906fd15e0dc3a490ff5dad465812ab3933a4137fbfc4e87e84d33ac66"
+    },
+    "105544": {
+      "cik": "0000105544",
+      "trust_name": "VANGUARD WELLESLEY INCOME FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42944",
+        "002-31333",
+        "811-01766",
+        "811-01766,002-31333",
+        "812-12827-30"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 736,
+      "normalized_record_sha256": "a544ba5b1cabc8dd7622cdca5a9f9782338b1e1b1d2f3ac634b0b344cc1b906e"
+    },
+    "105563": {
+      "cik": "0000105563",
+      "trust_name": "VANGUARD WELLINGTON FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38394",
+        "002-11444",
+        "005-94831",
+        "811-00121",
+        "811-00121,002-11444"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 960,
+      "normalized_record_sha256": "3298a637ec667ca03408acdcbbf6c99d84ccb45637855e3e37e3882ccce7e796"
+    },
+    "106444": {
+      "cik": "0000106444",
+      "trust_name": "VANGUARD FIXED INCOME SECURITIES FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42845",
+        "002-47371",
+        "811-02368",
+        "811-02368,002-47371",
+        "812-13597-08"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1012,
+      "normalized_record_sha256": "ac90a93220aab0e0cb411642e44fcdadb04cd670cb35e6b0931c86e917c59934"
+    },
+    "1064641": {
+      "cik": "0001064641",
+      "trust_name": "SELECT SECTOR SPDR TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-14647",
+        "005-56661",
+        "333-57791",
+        "811-08837",
+        "811-08837,333-57791"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "eedb2e0374f57a49a0e0d60f604c1b5562732cb5cdcbb47a6c6830586262aec1"
+    },
+    "1064642": {
+      "cik": "0001064642",
+      "trust_name": "SPDR SERIES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-16135",
+        "005-78784",
+        "333-57793",
+        "811-08839",
+        "811-08839,333-57793"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1022,
+      "normalized_record_sha256": "ee022bb96b257c0cbfe6a558b40a89c4a3e5221e1b3db0ab956bfb890e183198"
+    },
+    "1067839": {
+      "cik": "0001067839",
+      "trust_name": "INVESCO QQQ TRUST, SERIES 1",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "000-51054",
+        "001-14863",
+        "005-56657",
+        "333-61001",
+        "811-08947"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 258,
+      "normalized_record_sha256": "674fde107375cc9e95b7d9ee44d8dfcb35877d0bf378e2a041d7b5270554d05a"
+    },
+    "1096012": {
+      "cik": "0001096012",
+      "trust_name": "AMERICAN BEACON SELECT FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41791",
+        "333-283894",
+        "333-284469",
+        "333-290395",
+        "333-298700"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 796,
+      "normalized_record_sha256": "9b03dce1056ee52014ee0fea89aefbfc635e77ce2628cbdf2fee50fe42cc9c02"
+    },
+    "1100663": {
+      "cik": "0001100663",
+      "trust_name": "iSHARES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-15897",
+        "005-59405",
+        "333-92935",
+        "811-09729",
+        "811-09729,333-92935"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 2556,
+      "normalized_record_sha256": "9103281c83358cc845aaf114ce7e7bccf96a9eb4d02adb32d973aa71c97766dd"
+    },
+    "1107414": {
+      "cik": "0001107414",
+      "trust_name": "STATE STREET INSTITUTIONAL INVESTMENT TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43104",
+        "333-286313",
+        "333-30810",
+        "811-09819",
+        "811-09819,333-286313"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-14",
+      "filing_count_audited": 1012,
+      "normalized_record_sha256": "9bc565fea3f986fb57ebb8e4e3e1e7aa1a00635fa8d120d8915ae292084c2814"
+    },
+    "1137360": {
+      "cik": "0001137360",
+      "trust_name": "VanEck ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-32880",
+        "005-83562",
+        "333-123257",
+        "811-10325",
+        "811-10325,333-123257"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "21993bf3ea942d955dec568c4465e9820b4ef23e8b890f5d33da9a72c989776f"
+    },
+    "1141819": {
+      "cik": "0001141819",
+      "trust_name": "TRUST FOR PROFESSIONAL MANAGERS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-40165",
+        "333-270257",
+        "333-62298",
+        "811-10401",
+        "811-10401,333-270257"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 1005,
+      "normalized_record_sha256": "b8b53ac9189d6cd9da143361c8adf8a4543c76257adb2c0876f8b3098e64f065"
+    },
+    "1145022": {
+      "cik": "0001145022",
+      "trust_name": "HOTCHKIS & WILEY FUNDS /DE/",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42574",
+        "333-238323",
+        "333-274907",
+        "333-68740",
+        "333-68814"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 996,
+      "normalized_record_sha256": "8aab7656961018d0ff4ab82a18474fe33836b1e6016971137d381d60ea148108"
+    },
+    "1168164": {
+      "cik": "0001168164",
+      "trust_name": "SPDR INDEX SHARES FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-31471",
+        "005-79116",
+        "333-92106",
+        "811-21145",
+        "811-21145,333-92106"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-03",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "68b085848faead35f54948cb76ecb7131b12126c2b1822fd69dfc07ec815ccef"
+    },
+    "1174610": {
+      "cik": "0001174610",
+      "trust_name": "PROSHARES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-32916",
+        "005-82989",
+        "333-89822",
+        "811-21114",
+        "811-21114,333-89822"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1068,
+      "normalized_record_sha256": "78a7e521c51db355856933fd9e125fba626beedfdc8d5558da267061d193ae95"
+    },
+    "1199046": {
+      "cik": "0001199046",
+      "trust_name": "UNIFIED SERIES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39181",
+        "005-94099",
+        "333-100654",
+        "811-21237",
+        "811-21237,333-100654"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "2adf8bb328324a313d2da261d5edcb856997cdfbfed3f5faa9f2e9b22d22e214"
+    },
+    "1209466": {
+      "cik": "0001209466",
+      "trust_name": "INVESCO EXCHANGE-TRADED FUND TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "005-81469",
+        "333-102228",
+        "811-21265",
+        "811-21265,333-102228",
+        "812-15672"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "95c27ad4f26fa332bc6750ccdafb3fcfc9bc6b3cabd9010ab41c2d8ea711411b"
+    },
+    "1314414": {
+      "cik": "0001314414",
+      "trust_name": "Northern Lights Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-38404",
+        "333-122917",
+        "333-292229",
+        "811-21720",
+        "811-21720,333-122917"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1018,
+      "normalized_record_sha256": "9e426fa38ed8442def35ce7839f83f7176b34ab932204c234b74bc6de4db9512"
+    },
+    "1329377": {
+      "cik": "0001329377",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-32621",
+        "005-82728",
+        "333-125751",
+        "333-280035",
+        "333-280036"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "1301d4f6a7a90ea99922d84344625d82bd87dfe50fe570b392369e8510195704"
+    },
+    "1345125": {
+      "cik": "0001345125",
+      "trust_name": "CYBER HORNET TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41897",
+        "333-129930",
+        "811-21836",
+        "811-21836,333-129930"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 422,
+      "normalized_record_sha256": "9d630f7ca3a84101519c03136ad6b142a588d8dabb686eca46ee587f93a83ec7"
+    },
+    "1350487": {
+      "cik": "0001350487",
+      "trust_name": "WisdomTree Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-32912",
+        "005-82093",
+        "333-132380",
+        "811-21864",
+        "811-21864,333-132380"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1029,
+      "normalized_record_sha256": "4960efec4cb23b5ca301b5a4c2df88f8e5b3cae468288988e2f7d96b2c4e59b7"
+    },
+    "1359057": {
+      "cik": "0001359057",
+      "trust_name": "Manager Directed Portfolios",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-38881",
+        "333-133691",
+        "333-264199",
+        "333-274373",
+        "333-283762"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "5359ece23918d1f021aafa70aea9efe1dfd14f6d130abc826b458a5ce31c8170"
+    },
+    "1364608": {
+      "cik": "0001364608",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33673",
+        "005-87968",
+        "333-143964",
+        "811-21944",
+        "811-21944,333-143964"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-25",
+      "filing_count_audited": 1015,
+      "normalized_record_sha256": "25ce3450117d1f36b59564434d48b3abc951bd2ca83daa7fcb1d02e80b961ded"
+    },
+    "1378872": {
+      "cik": "0001378872",
+      "trust_name": "Invesco Exchange-Traded Fund Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33532",
+        "005-83054",
+        "333-138490",
+        "811-21977",
+        "811-21977,333-138490"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1010,
+      "normalized_record_sha256": "5ee876119be8c41a4fc3047221dd74c3e5147aae1c49edef78df938f9bd3e19b"
+    },
+    "1383496": {
+      "cik": "0001383496",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED ALPHADEX FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33424",
+        "005-83582",
+        "333-140895",
+        "811-22019",
+        "811-22019,333-140895"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1016,
+      "normalized_record_sha256": "9dd898beb5f9d5c069721e01e8f506ec36af9e13465b359946f2ddf23a9322f1"
+    },
+    "1396092": {
+      "cik": "0001396092",
+      "trust_name": "World Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42034",
+        "333-148723",
+        "333-280732",
+        "333-288436",
+        "811-22172"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "34d96a34231d67031e0142d8f91990b54d5259419e1ca12e4dde207536339e74"
+    },
+    "1408970": {
+      "cik": "0001408970",
+      "trust_name": "AdvisorShares Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-34450",
+        "005-86560",
+        "333-157876",
+        "811-22110",
+        "811-22110,333-157876"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-10",
+      "filing_count_audited": 1009,
+      "normalized_record_sha256": "36631954a674efc5cf4b52a608af560a46967930fab8fcdfffa31d20f0c58d7b"
+    },
+    "1414040": {
+      "cik": "0001414040",
+      "trust_name": "ALPS ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34040",
+        "005-87325",
+        "333-148826",
+        "333-263500",
+        "811-22175"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-11",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "fade1823ec55bf5e212bfe2b060bef95c1e6d9166b458bd6c507998bdee89029"
+    },
+    "1415726": {
+      "cik": "0001415726",
+      "trust_name": "Innovator ETFs Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-36910",
+        "005-91524",
+        "333-146827",
+        "811-22135",
+        "811-22135,333-146827"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1816,
+      "normalized_record_sha256": "e0a332c4d7664234587a20dbb34fbcc0671d13441a937e4d17e9ad17fab301ed"
+    },
+    "1415995": {
+      "cik": "0001415995",
+      "trust_name": "NYLIM ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34265",
+        "005-86124",
+        "333-152915",
+        "811-22227",
+        "811-22227,333-152915"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 1014,
+      "normalized_record_sha256": "faf2d3bd5d7beef091351871e5e170e6212bbc7e1a9cc35cc5211a328dfae8f6"
+    },
+    "1418144": {
+      "cik": "0001418144",
+      "trust_name": "INVESCO ACTIVELY MANAGED EXCHANGE-TRADED FUND TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34002",
+        "005-84847",
+        "333-147622",
+        "811-22148",
+        "811-22148,333-147622"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1005,
+      "normalized_record_sha256": "a7ee470a5fc4c4fca27139c1e5a283e783823c03a9955f3cfe42cfaec99809f0"
+    },
+    "1419139": {
+      "cik": "0001419139",
+      "trust_name": "Invesco India Exchange-Traded Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33973",
+        "005-87281",
+        "333-147611",
+        "811-22147",
+        "811-22147,333-147611"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-20",
+      "filing_count_audited": 357,
+      "normalized_record_sha256": "3e02311ae00fb1666b94715cf3775ea78d3e5a96e49f7b25f980eefd8b09660f"
+    },
+    "1424212": {
+      "cik": "0001424212",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND III",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34772",
+        "005-89286",
+        "333-176976",
+        "333-255787",
+        "811-22245"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1012,
+      "normalized_record_sha256": "3c6dcea8091930451e5f8751e9e24c2388a96194209b094cd486c859afd54682"
+    },
+    "1424958": {
+      "cik": "0001424958",
+      "trust_name": "Direxion Shares ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-34160",
+        "005-85362",
+        "333-150525",
+        "811-22201",
+        "811-22201,333-150525"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1030,
+      "normalized_record_sha256": "f74c97cd17a5d13e34d436197d203d53a48ed481fb04fb6306d8f0daf893af3b"
+    },
+    "1426439": {
+      "cik": "0001426439",
+      "trust_name": "NYLIM Active ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38222",
+        "005-93319",
+        "333-183489",
+        "811-22739",
+        "811-22739,333-183489"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 678,
+      "normalized_record_sha256": "1205c5f957b101c309eabb05a5d12a15bbd1763bbaca5dbfc81eaeac1956395c"
+    },
+    "1432353": {
+      "cik": "0001432353",
+      "trust_name": "Global X Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-34248",
+        "005-85039",
+        "333-151713",
+        "811-22209",
+        "811-22209,333-151713"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "bd76166e050c63dd053d5a32e9f18790687281e10cf06163f2b09d0c3bb4ad6f"
+    },
+    "1437249": {
+      "cik": "0001437249",
+      "trust_name": "VALUED ADVISERS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41088",
+        "333-151672",
+        "333-223229",
+        "333-227844",
+        "333-267037"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "6984146cf861e3fe55b03be47e02e0ed62ad2ac9f346a3832b451e8c5aa30f4e"
+    },
+    "1450011": {
+      "cik": "0001450011",
+      "trust_name": "PIMCO ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34366",
+        "005-85082",
+        "333-155395",
+        "333-279943",
+        "811-22250"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "5f7ec47cf13c3c3f3242e718c35ec7c02367a092614dc0a0cc51e59f24a63e5f"
+    },
+    "1450501": {
+      "cik": "0001450501",
+      "trust_name": "Columbia ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34363",
+        "005-85404",
+        "333-155709",
+        "811-22255",
+        "811-22255,333-155709"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 979,
+      "normalized_record_sha256": "9abac73b973d18708e524c5001858f145b3899c9de8bb32971da3fb707441834"
+    },
+    "1452937": {
+      "cik": "0001452937",
+      "trust_name": "EXCHANGE TRADED CONCEPTS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34570",
+        "333-156529",
+        "811-22263",
+        "811-22263,333-156529",
+        "812-15761"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "5e4f6ca9898314bdbd01e6c11d878f125d6f4eabb22602724a9e974f43beb399"
+    },
+    "1454889": {
+      "cik": "0001454889",
+      "trust_name": "SCHWAB STRATEGIC TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-34508",
+        "005-88430",
+        "333-160595",
+        "811-22311",
+        "811-22311,333-160595"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 1005,
+      "normalized_record_sha256": "68d22c123d4c577cc3895238bb278f6b60a4593ca296a404d129068403a47d4c"
+    },
+    "1464413": {
+      "cik": "0001464413",
+      "trust_name": "Starboard Investment Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-40390",
+        "333-159484",
+        "333-252135",
+        "333-258233",
+        "811-22298"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "074ae80e8fe0303f90a3ccb68a0f5463b3db8975fd84569596b47856ad458059"
+    },
+    "1478482": {
+      "cik": "0001478482",
+      "trust_name": "John Hancock Exchange-Traded Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-37545",
+        "333-183173",
+        "811-22733",
+        "811-22733,333-183173",
+        "812-14840"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "6ae60a218430e12f8edd726d658127cb07cea7d6c27f3ac546871b68eeac64cd"
+    },
+    "1479026": {
+      "cik": "0001479026",
+      "trust_name": "Goldman Sachs ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37554",
+        "005-89174",
+        "333-200933",
+        "333-288210",
+        "333-295361"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1012,
+      "normalized_record_sha256": "a3ec055a8b92de67c0bd2b2445e449a5aa4e7a9735b61bce740ac7da208f4ec5"
+    },
+    "1479360": {
+      "cik": "0001479360",
+      "trust_name": "PIMCO Equity Series",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "333-164077",
+        "811-22375",
+        "811-22375,333-164077",
+        "812-15708-05"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1016,
+      "normalized_record_sha256": "9594ed88ff00d74960b497fee015355783bbec0469ca6208ced21f6f77e9142b"
+    },
+    "1479599": {
+      "cik": "0001479599",
+      "trust_name": "AGF Investments Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-35290",
+        "005-95109",
+        "333-173167",
+        "811-22540",
+        "811-22540,333-173167"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 497,
+      "normalized_record_sha256": "fb11b83d72bf769097b4aae283edb5417615e2740257b006efeeb013b74f4b55"
+    },
+    "1484018": {
+      "cik": "0001484018",
+      "trust_name": "Spinnaker ETF Series",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-38189",
+        "005-94917",
+        "333-165711",
+        "333-215683",
+        "333-215942"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 858,
+      "normalized_record_sha256": "fe7841f8c1b7793c9fb3007ef0674099ce9930be692b70edae39de551b8afec5"
+    },
+    "1485894": {
+      "cik": "0001485894",
+      "trust_name": "J.P. Morgan Exchange-Traded Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-36496",
+        "005-90257",
+        "333-191837",
+        "333-285192",
+        "333-287067"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1023,
+      "normalized_record_sha256": "fbae4386dc1f3b4b08cf7a3a60a7d94074f42959dd4ccfd508ad37467db74d5d"
+    },
+    "1491978": {
+      "cik": "0001491978",
+      "trust_name": "FLEXSHARES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35291",
+        "005-88385",
+        "333-173967",
+        "333-271813",
+        "811-22555"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-14",
+      "filing_count_audited": 1023,
+      "normalized_record_sha256": "95ef382f5f817ff96bf9a6f7017a366ac6b92dc64f8ba6575c93fe1bdd137e7d"
+    },
+    "1493580": {
+      "cik": "0001493580",
+      "trust_name": "BNY Mellon ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39241",
+        "333-234030",
+        "811-23477",
+        "811-23477,333-234030",
+        "812-13782"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 753,
+      "normalized_record_sha256": "99802ce3e57568c51db80946193881ff6089ad640d713f8236987fc66fe91de5"
+    },
+    "1495922": {
+      "cik": "0001495922",
+      "trust_name": "EntrepreneurShares Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-38284",
+        "333-168040",
+        "811-22436",
+        "811-22436,333-168040",
+        "812-14803"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 389,
+      "normalized_record_sha256": "73cb3655bb76b6f4d95da64039fc86197cb4f4b9c4a430af9145e52ae3892363"
+    },
+    "1496608": {
+      "cik": "0001496608",
+      "trust_name": "AB Active ETFs, Inc.",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-41501",
+        "333-264818",
+        "333-269572",
+        "333-276359",
+        "333-283287"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 536,
+      "normalized_record_sha256": "d22f7469fa9d632341216dca722b4cbcc70936d2329bbf87fb5e5f95a938f515"
+    },
+    "1499655": {
+      "cik": "0001499655",
+      "trust_name": "Precidian ETFs Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-35225",
+        "333-171987",
+        "811-22524",
+        "811-22524,333-171987",
+        "812-13818-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 418,
+      "normalized_record_sha256": "4ac80ac56a432c95b57d441d1d8bf685376234fa9c9ccd0655525793dae63b00"
+    },
+    "1500604": {
+      "cik": "0001500604",
+      "trust_name": "Janus Detroit Street Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37701",
+        "005-91960",
+        "333-207814",
+        "333-210527",
+        "811-23112"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 901,
+      "normalized_record_sha256": "79a34ef32def1785a3b134efc8896a6c64da81abd80bc4901ab256f60077bfc7"
+    },
+    "1501825": {
+      "cik": "0001501825",
+      "trust_name": "Hartford Funds Exchange-Traded Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-38039",
+        "005-91237",
+        "333-215165",
+        "333-273214",
+        "333-297316"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 694,
+      "normalized_record_sha256": "90de0c44b1ae664e62159fbfbf4920f1e2b7d7912d2766a617523e9b2625825f"
+    },
+    "1503123": {
+      "cik": "0001503123",
+      "trust_name": "DBX ETF TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35174",
+        "005-88308",
+        "333-170122",
+        "811-22487",
+        "811-22487,333-170122"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1009,
+      "normalized_record_sha256": "2db1a13b2a96e0f3ebea5a945069984abf3339518abbf8f0a71eb85edd1906a4"
+    },
+    "1506001": {
+      "cik": "0001506001",
+      "trust_name": "Neuberger Berman ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41348",
+        "333-261613",
+        "333-266886",
+        "333-272835",
+        "333-274577"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-20",
+      "filing_count_audited": 426,
+      "normalized_record_sha256": "1619a2db913251e36921c0c46b5f25a09efdcb7f7593f4ed646b3ccd77a70d63"
+    },
+    "1506213": {
+      "cik": "0001506213",
+      "trust_name": "Strategy Shares",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-35564",
+        "333-170750",
+        "811-22497",
+        "811-22497,333-170750",
+        "812-13785-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-10",
+      "filing_count_audited": 775,
+      "normalized_record_sha256": "b71e7291451c5ce1da53591e04e8795273e4a0c2575e07c836be5f3c5c1069ad"
+    },
+    "1510337": {
+      "cik": "0001510337",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED ALPHADEX FUND II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35142",
+        "005-87583",
+        "333-171759",
+        "333-237922",
+        "811-22519"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-03",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "c358ac222b4e96af36087c205cfe0fdd612975fefb791c8a98022638b2a7c685"
+    },
+    "1511699": {
+      "cik": "0001511699",
+      "trust_name": "Managed Portfolio Series",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-38007",
+        "005-94999",
+        "333-172080",
+        "333-267072",
+        "333-280799"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "8af83e2748d2002309d7157b49981524af94a3fcd9af2c8da54359bbbb7b8089"
+    },
+    "1516212": {
+      "cik": "0001516212",
+      "trust_name": "SSGA Active Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35524",
+        "005-88502",
+        "333-173276",
+        "811-22542",
+        "811-22542,333-173276"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "e7c1e4536fd0bf8839f2c69b42d000ee0f165c88970693fcf6f40c18fe9f4387"
+    },
+    "1517936": {
+      "cik": "0001517936",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND IV",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35578",
+        "005-87789",
+        "333-174332",
+        "811-22559",
+        "811-22559,333-174332"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1010,
+      "normalized_record_sha256": "021b72d3e626c798e5690cc28f53e0e14f7c2ea38e9a91709263f62047c4308d"
+    },
+    "1518042": {
+      "cik": "0001518042",
+      "trust_name": "NORTHERN LIGHTS FUND TRUST II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-40661",
+        "333-174926",
+        "333-269370",
+        "333-272445",
+        "333-276120"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "5b4ae630fd9f0b788c4f79998e2f1cc6f6ce44b172f8af67385871c010c8ecb3"
+    },
+    "1524348": {
+      "cik": "0001524348",
+      "trust_name": "SPEND LIFE WISELY FUNDS INVESTMENT TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42929",
+        "333-175328",
+        "811-22576",
+        "811-22576,333-175328",
+        "812-14071"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 348,
+      "normalized_record_sha256": "1022f9adabd901a8d8fb5b9bf0d31cee85b5143dac5b63f239c2edc8883065ff"
+    },
+    "1524513": {
+      "cik": "0001524513",
+      "trust_name": "iShares U.S. ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35879",
+        "005-88485",
+        "333-179904",
+        "811-22649",
+        "811-22649,333-179904"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-11",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "97be3a6e8648122dfbb50a452ba586710199699cb0f1b220750c4cc59d9697e0"
+    },
+    "1527428": {
+      "cik": "0001527428",
+      "trust_name": "Arrow Investments Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36667",
+        "333-178164",
+        "333-254666",
+        "811-22638",
+        "811-22638,333-178164"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-17",
+      "filing_count_audited": 953,
+      "normalized_record_sha256": "dd0af7c456d805dfd68a9f4df5f78f0ce0029a048bd8ec05285b02db77f1bac2"
+    },
+    "1529390": {
+      "cik": "0001529390",
+      "trust_name": "Cambria ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35910",
+        "005-92595",
+        "333-180879",
+        "333-213963",
+        "811-22704"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 1006,
+      "normalized_record_sha256": "45ec7b83bf5bd5399d552dbf6479893bfc05b5a969a561f4dbdf6fcbec21e6b3"
+    },
+    "1532203": {
+      "cik": "0001532203",
+      "trust_name": "Vanguard Charlotte Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35903",
+        "333-177613",
+        "811-22619",
+        "811-22619,333-177613",
+        "812-14287-34"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 463,
+      "normalized_record_sha256": "787086723df4cd1921ef3e0e0299952fcebbe716ac25bb70db5d0d5019b2f20a"
+    },
+    "1532206": {
+      "cik": "0001532206",
+      "trust_name": "Arrow ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35545",
+        "333-177651",
+        "811-22624",
+        "811-22624,333-177651"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-17",
+      "filing_count_audited": 228,
+      "normalized_record_sha256": "99665608de964be843feb120bbc9e3bdff2c26fd50543a0bd9e1d58007e7f31d"
+    },
+    "1537140": {
+      "cik": "0001537140",
+      "trust_name": "NORTHERN LIGHTS FUND TRUST III",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-39079",
+        "333-178833",
+        "811-22655",
+        "811-22655,333-178833",
+        "812-15862-04"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "19290cea8e923fefff60d8bd12cd91c95fcdd9ad050884e1fcd87352c323579e"
+    },
+    "1540305": {
+      "cik": "0001540305",
+      "trust_name": "ETF Series Solutions",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-35559",
+        "333-179562",
+        "333-289790",
+        "803-00288",
+        "811-22668"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "b69174fe178d0bce164e780997f57573926225675c9d0623895a7b29ae5c577d"
+    },
+    "1545440": {
+      "cik": "0001545440",
+      "trust_name": "Ultimus Managers Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-40781",
+        "333-180308",
+        "333-267251",
+        "333-298342",
+        "333-298343"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "2404a6a68d6162cd8ef360b6949c58333493d0b4aa21598febd8ff90d9a683ca"
+    },
+    "1547576": {
+      "cik": "0001547576",
+      "trust_name": "Krane Shares Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36010",
+        "005-91338",
+        "333-180870",
+        "811-22698",
+        "811-22698,333-180870"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "d8eb8f75d7f1d933180c1beb84359d6d5ec60d237c94bc9e224278b0534f5688"
+    },
+    "1547580": {
+      "cik": "0001547580",
+      "trust_name": "Victory Portfolios II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36525",
+        "005-89980",
+        "333-181176",
+        "803-00284-01",
+        "811-22696"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1007,
+      "normalized_record_sha256": "6791b913c1a608ee10ba578258da48fb0467d002e8a23bb31b0f8e278faea924"
+    },
+    "1547950": {
+      "cik": "0001547950",
+      "trust_name": "Exchange Listed Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35977",
+        "005-93876",
+        "333-180871",
+        "333-275358",
+        "333-279083"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1005,
+      "normalized_record_sha256": "8bc0f2d17d1abadef22c971aff1494cc34c449d790d74224413adbb5479cc651"
+    },
+    "1549548": {
+      "cik": "0001549548",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND V",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35995",
+        "005-88271",
+        "333-181507",
+        "811-22709",
+        "811-22709,333-181507"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 292,
+      "normalized_record_sha256": "58cf667c114ea4270df8c7fbae9466677bbcd0c10cea43b1de9cc6d019a7d98e"
+    },
+    "1551895": {
+      "cik": "0001551895",
+      "trust_name": "Franklin ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36148",
+        "005-90761",
+        "333-186504",
+        "811-22801",
+        "811-22801,333-186504"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 316,
+      "normalized_record_sha256": "c671f37456e32c75905a54dbca1878537aaaea4e5ceffa80d81aa4835cf6b628"
+    },
+    "1551950": {
+      "cik": "0001551950",
+      "trust_name": "Columbia ETF Trust I",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "000-56405",
+        "001-37800",
+        "005-93647",
+        "333-183347",
+        "333-209996"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 763,
+      "normalized_record_sha256": "82e26d913618b9495132299602d0147609ec0efd7990107cfff066bb868743ad"
+    },
+    "1552740": {
+      "cik": "0001552740",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND VI",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35605",
+        "005-88070",
+        "333-182308",
+        "811-22717",
+        "811-22717,333-182308"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 1015,
+      "normalized_record_sha256": "385313c470883e0c3ea18750c279142d3600727c8889c8f64d60aed99de8c980"
+    },
+    "1552947": {
+      "cik": "0001552947",
+      "trust_name": "Two Roads Shared Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38218",
+        "005-93875",
+        "333-182417",
+        "811-22718",
+        "811-22718,333-182417"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "5f415577f01150e831be8ebcb11fe0ff2a66ad9bc36037663279c1f06ec02559"
+    },
+    "1559109": {
+      "cik": "0001559109",
+      "trust_name": "ETFis Series Trust I",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36676",
+        "005-90251",
+        "333-187668",
+        "811-22819",
+        "811-22819,333-187668"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 816,
+      "normalized_record_sha256": "a6e5ab4603c2a71bb3158b538e023fa6cd494164407cecb93ff40415e9dba015"
+    },
+    "1561785": {
+      "cik": "0001561785",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND VII",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36141",
+        "005-88955",
+        "333-184918",
+        "811-22767",
+        "811-22767,333-184918"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-03",
+      "filing_count_audited": 360,
+      "normalized_record_sha256": "fee73cd7e5ff6b8c5792f637c1a51411331e6ecd612ccd60618e2ff542aa25bc"
+    },
+    "1562565": {
+      "cik": "0001562565",
+      "trust_name": "Fidelity Merrimack Street Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36645",
+        "005-93711",
+        "333-186372",
+        "333-283250",
+        "333-284119"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 659,
+      "normalized_record_sha256": "69249db54c6f47e91c7fe7798a30560c2edb9f7cb571dd57283f0796c83e98a4"
+    },
+    "1572661": {
+      "cik": "0001572661",
+      "trust_name": "Principal Exchange-Traded Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37475",
+        "005-91326",
+        "333-201935",
+        "811-23029",
+        "811-23029,333-201935"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "d530e6d65d66f7dc17160cd3718ec72780ecf7296166e0db4efce7ae2158c6ce"
+    },
+    "1579881": {
+      "cik": "0001579881",
+      "trust_name": "Calamos ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36527",
+        "005-94966",
+        "333-191151",
+        "333-296387",
+        "811-22887"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 952,
+      "normalized_record_sha256": "75acd74b914acd9c6c57799958f775fb308c797be0206ae5215efee166d32851"
+    },
+    "1579982": {
+      "cik": "0001579982",
+      "trust_name": "ARK ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-36608",
+        "333-191019",
+        "811-22883",
+        "811-22883,333-191019",
+        "812-14172"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 634,
+      "normalized_record_sha256": "59c07baf4dea51dad6f5539a6d2c06a3a1011173a090854019de5f1d0ad35721"
+    },
+    "1587551": {
+      "cik": "0001587551",
+      "trust_name": "Capitol Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-41191",
+        "333-191495",
+        "333-270510",
+        "811-22895",
+        "811-22895,333-191495"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "37fef2967210b32f2625a661455dcafaa415a8d43f0a594e2cadf7bc9a6b12b5"
+    },
+    "1587982": {
+      "cik": "0001587982",
+      "trust_name": "Investment Managers Series Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-40704",
+        "005-95923",
+        "333-191476",
+        "333-290677",
+        "811-22894"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "3494ba7f053c1d2c53a3910a3ae52fb6b96cb2689bc6906ff171ce50fdfb4bd9"
+    },
+    "1590402": {
+      "cik": "0001590402",
+      "trust_name": "Cohen & Steers ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42441",
+        "333-192358",
+        "333-281213",
+        "333-294847",
+        "811-22913"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 104,
+      "normalized_record_sha256": "8fe3b7d3b35920ab6560d99dafe6e4286a8f70a1df32028d0500a7631a9280d2"
+    },
+    "1591939": {
+      "cik": "0001591939",
+      "trust_name": "Absolute Shares Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36606",
+        "333-192733",
+        "333-233312",
+        "811-22917",
+        "811-22917,333-192733"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 494,
+      "normalized_record_sha256": "7284a3323a16e4b5fe487a4ab4dd2a7b497269c1ed1257c77786a6d5c55f9bb4"
+    },
+    "1592900": {
+      "cik": "0001592900",
+      "trust_name": "EA Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-36698",
+        "333-195493",
+        "333-292314",
+        "333-295048",
+        "333-297904"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1148,
+      "normalized_record_sha256": "e7fd610caf25cce04d47fda8ccfa4684aced28fd881bd228802f34f5d4c201c6"
+    },
+    "1593547": {
+      "cik": "0001593547",
+      "trust_name": "Advisors' Inner Circle Fund III",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39682",
+        "005-94770",
+        "333-192858",
+        "333-280723",
+        "811-22920"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1007,
+      "normalized_record_sha256": "89d05a978e35ebff900ff6e0148f64f233558daa9854fde63590d5f26a34dbab"
+    },
+    "1595386": {
+      "cik": "0001595386",
+      "trust_name": "Invesco Actively Managed Exchange-Traded Commodity Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36726",
+        "005-91102",
+        "333-193135",
+        "811-22927",
+        "811-22927,333-193135"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-21",
+      "filing_count_audited": 377,
+      "normalized_record_sha256": "ecb61195a14a2b4333cde154473748a7d0b77c8274cb2dbdaa3222b5e869f5f0"
+    },
+    "1597389": {
+      "cik": "0001597389",
+      "trust_name": "USCF ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-36618",
+        "333-196273",
+        "811-22930",
+        "811-22930,333-196273",
+        "812-14277"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-11",
+      "filing_count_audited": 673,
+      "normalized_record_sha256": "4545083657d1c0f9207ad202d3654e3a3500560eb8986317129cbaf48951bc4c"
+    },
+    "1597934": {
+      "cik": "0001597934",
+      "trust_name": "abrdn ETFs",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36809",
+        "333-198170",
+        "811-22986",
+        "811-22986,333-198170",
+        "812-14271-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 337,
+      "normalized_record_sha256": "b4f74e2260eea0f9dc331e940eee731794b96d4f9226957323daa13c9673fb14"
+    },
+    "1602508": {
+      "cik": "0001602508",
+      "trust_name": "FundX Investment Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41530",
+        "333-194652",
+        "333-231756",
+        "333-267121",
+        "333-273993"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-19",
+      "filing_count_audited": 454,
+      "normalized_record_sha256": "5bf60654ee7dcbb3e9b3d8aba260e770395b7b1e1cf9b0a5727c280258cf9812"
+    },
+    "1604813": {
+      "cik": "0001604813",
+      "trust_name": "Abacus FCF ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37407",
+        "333-198603",
+        "811-22995",
+        "811-22995,333-198603",
+        "812-14298-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 505,
+      "normalized_record_sha256": "8ec9976e8ef92deae5f13a8347289c518f76a8ac33cc3093a1220fea093f73c0"
+    },
+    "1605803": {
+      "cik": "0001605803",
+      "trust_name": "Lattice Strategies Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-36850",
+        "333-199089",
+        "811-23002",
+        "811-23002,333-199089",
+        "812-14318-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-11",
+      "filing_count_audited": 554,
+      "normalized_record_sha256": "99e45c4431ca62843139e87739dc89e7b2871cdfa26752a7142992fb0b20581b"
+    },
+    "1611331": {
+      "cik": "0001611331",
+      "trust_name": "ALLSPRING EXCHANGE-TRADED FUNDS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42427",
+        "333-240113",
+        "811-23597",
+        "811-23597,333-240113",
+        "812-14323-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 143,
+      "normalized_record_sha256": "d92e3e4334cbe068cffa2c6fd76761e5d7d4cb009dfad11d137e593c7987602d"
+    },
+    "1612930": {
+      "cik": "0001612930",
+      "trust_name": "Angel Oak Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41539",
+        "333-197427",
+        "333-209619",
+        "333-276326",
+        "811-22980"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-17",
+      "filing_count_audited": 599,
+      "normalized_record_sha256": "e855c83047b0237ff05a5b30315cadcc66ed3ceca30b7338e5bcd171a274a3ab"
+    },
+    "1616668": {
+      "cik": "0001616668",
+      "trust_name": "Pacer Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37422",
+        "005-88923",
+        "333-201530",
+        "811-23024",
+        "811-23024,333-201530"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-02",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "cb054f9edad44a295ba09d02b4a0a088283ef20e49321d84d67501d2c3704fb5"
+    },
+    "1618627": {
+      "cik": "0001618627",
+      "trust_name": "RBB Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41582",
+        "333-200168",
+        "333-267844",
+        "333-295196",
+        "333-298564"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 622,
+      "normalized_record_sha256": "6e7bcbd5bf3fc69d267e7b6f920f89d3b33eea7249d0d41dcf87f101423ed00f"
+    },
+    "1633061": {
+      "cik": "0001633061",
+      "trust_name": "Amplify ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-37731",
+        "005-89943",
+        "333-207937",
+        "333-273457",
+        "811-23108"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "3e61da9839cec04f4f15d4544e97cfc732906be3409cbdc6f759f2550a452c8b"
+    },
+    "1635073": {
+      "cik": "0001635073",
+      "trust_name": "Nushares ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37876",
+        "005-93881",
+        "333-212032",
+        "811-23161",
+        "811-23161,333-212032"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1020,
+      "normalized_record_sha256": "bb10d9453624a2d0959d7fa8a11b1c28bad10cd3e9a692481b8ef8d404b1a338"
+    },
+    "1643174": {
+      "cik": "0001643174",
+      "trust_name": "Horizon Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42480",
+        "333-205411",
+        "333-284170",
+        "333-284739",
+        "333-293278"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 684,
+      "normalized_record_sha256": "6cf203ba513a1b13cc7e6966cbd2fdedc07b12a1983ba8b5bb6d2fe264b75c12"
+    },
+    "1644419": {
+      "cik": "0001644419",
+      "trust_name": "Northern Lights Fund Trust IV",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-37991",
+        "005-91739",
+        "333-204808",
+        "811-23066",
+        "811-23066,333-204808"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "02ef7ebac655ac5a67806dda15e348696d7740c4c0cba7d5cd4dfeba70155a42"
+    },
+    "1645194": {
+      "cik": "0001645194",
+      "trust_name": "Legg Mason ETF Investment Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37653",
+        "005-91579",
+        "333-206784",
+        "333-277633",
+        "811-23096"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "7ab9cc34710cc6fcf04f3537035eb6a35e6f5ef0f91ca2f78c0b1aeb6a4fe4e8"
+    },
+    "1648403": {
+      "cik": "0001648403",
+      "trust_name": "Virtus ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-37957",
+        "005-92676",
+        "333-205789",
+        "333-206600",
+        "333-295879"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 550,
+      "normalized_record_sha256": "5667575efd04594a2045812dc7a5dd00f467c9d210d776c0e960b2f36261ec88"
+    },
+    "1650149": {
+      "cik": "0001650149",
+      "trust_name": "Series Portfolios Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41193",
+        "333-206240",
+        "333-289608",
+        "811-23084",
+        "811-23084,333-206240"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "a91ec20c5e69d0bd2b4752613b7e1884d1524209976e3bf71bccfef4ed10619d"
+    },
+    "1655589": {
+      "cik": "0001655589",
+      "trust_name": "Franklin Templeton ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-37781",
+        "005-92558",
+        "333-208873",
+        "333-282057",
+        "811-23124"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1018,
+      "normalized_record_sha256": "de93b71d415eca7b011266a4a9aabfa55b44f3a31a188675cacc34b2bf6d442e"
+    },
+    "1657201": {
+      "cik": "0001657201",
+      "trust_name": "Invesco Exchange-Traded Self-Indexed Fund Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38450",
+        "005-91032",
+        "333-221046",
+        "811-23304",
+        "811-23304,333-221046"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "5fa77576dee258c5ff9bce409355927da8318527d87eeb8f4fe5e8cac2cf74ea"
+    },
+    "1667919": {
+      "cik": "0001667919",
+      "trust_name": "FIRST TRUST EXCHANGE-TRADED FUND VIII",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-37892",
+        "005-90766",
+        "333-210186",
+        "333-292739",
+        "811-23147"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1450,
+      "normalized_record_sha256": "0cf9be595d5531afb398d991607553887b4f45844e6d4ead9529996101db3e02"
+    },
+    "1670310": {
+      "cik": "0001670310",
+      "trust_name": "Davis Fundamental ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37978",
+        "333-213073",
+        "811-23181",
+        "811-23181,333-213073",
+        "812-14632-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-24",
+      "filing_count_audited": 279,
+      "normalized_record_sha256": "a658f3b04b8baf8bb5a75a861779727f0fa86a8e6955360c6d91fc46a369aa55"
+    },
+    "1676326": {
+      "cik": "0001676326",
+      "trust_name": "Morgan Stanley ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41602",
+        "005-95300",
+        "333-266913",
+        "333-274831",
+        "333-276097"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 576,
+      "normalized_record_sha256": "f10bdd7fde355770d2ee33a2b4dadaa0d1d16a06f8220402b568077c08b88d2f"
+    },
+    "1683471": {
+      "cik": "0001683471",
+      "trust_name": "Listed Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-38243",
+        "005-94063",
+        "333-215588",
+        "811-23226",
+        "811-23226,333-215588"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "37105f6e88e59276c734dfd8d5a63c0813ec11febb8c04c97e9942d994ae149d"
+    },
+    "1689873": {
+      "cik": "0001689873",
+      "trust_name": "GraniteShares ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-38100",
+        "005-92250",
+        "333-214796",
+        "811-23214",
+        "811-23214,333-214796"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "a20225205a8ab7481e9304538e65c1eb6298c7f60cc73043ef02a28483f407ae"
+    },
+    "1710607": {
+      "cik": "0001710607",
+      "trust_name": "AMERICAN CENTURY ETF TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38340",
+        "005-93835",
+        "333-221045",
+        "811-23305",
+        "811-23305,333-221045"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1021,
+      "normalized_record_sha256": "12e68fe6530a690ad98b5db020ec4dafe91773fc98471a045d44567c50310594"
+    },
+    "1719812": {
+      "cik": "0001719812",
+      "trust_name": "Collaborative Investment Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38946",
+        "333-221072",
+        "811-23306",
+        "811-23306,333-221072"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "a7feae770609ca3d62a62c9805f2d979c2b8ab0b363687659f117595e57950f4"
+    },
+    "1722388": {
+      "cik": "0001722388",
+      "trust_name": "Tidal Trust III",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38585",
+        "005-94994",
+        "333-221764",
+        "333-282577",
+        "811-23312"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "7f770be279db319818bcc1bcc7817dedfc48173978426b35094ee365e17a0f40"
+    },
+    "1727074": {
+      "cik": "0001727074",
+      "trust_name": "PGIM ETF TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38446",
+        "005-90698",
+        "333-222469",
+        "333-297132",
+        "811-23324"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 705,
+      "normalized_record_sha256": "c58c43c012e073b225350c346bc3264033e08f1c8656309887e9ed99dcc654e8"
+    },
+    "1727398": {
+      "cik": "0001727398",
+      "trust_name": "Procure ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38862",
+        "333-222463",
+        "811-23323",
+        "811-23323,333-222463",
+        "812-14878"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 159,
+      "normalized_record_sha256": "73416d6b7d94175e8cd5b40eaac886551b67ab6a096d621e38ac84efbbdb4770"
+    },
+    "1728683": {
+      "cik": "0001728683",
+      "trust_name": "SPROTT FUNDS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38994",
+        "005-94584",
+        "333-227545",
+        "333-228095",
+        "333-234126"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 564,
+      "normalized_record_sha256": "ce67316b7fb412bd9fd1bdcb9c9a2212b3f39aee030d571348e83122ec19acb0"
+    },
+    "1728860": {
+      "cik": "0001728860",
+      "trust_name": "Natixis ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39517",
+        "333-235466",
+        "811-23500",
+        "811-23500,333-235466",
+        "812-14870"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 227,
+      "normalized_record_sha256": "6435232a3761e9b0eaab041569cc53f0737897a98f02f360b75ccf0e20fba89e"
+    },
+    "1736078": {
+      "cik": "0001736078",
+      "trust_name": "Symmetry Panoramic Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-42825",
+        "333-224164",
+        "811-23334",
+        "811-23334,333-224164",
+        "812-14942"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 448,
+      "normalized_record_sha256": "64cf9d53550f2318a6aa9f0d63a5354bc3aaba8adb46404f248334974a7c2a3f"
+    },
+    "1742912": {
+      "cik": "0001742912",
+      "trust_name": "Tidal Trust I",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38786",
+        "005-94569",
+        "333-227298",
+        "333-281819",
+        "333-285813"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1009,
+      "normalized_record_sha256": "4ac713976f6d2a7558cbc6c1e063127f7f5c8ff013cb3d77a9dd713e06ceb107"
+    },
+    "1748425": {
+      "cik": "0001748425",
+      "trust_name": "Gabelli ETFs Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-39912",
+        "333-238109",
+        "333-249489",
+        "333-292181",
+        "811-23568"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-10",
+      "filing_count_audited": 336,
+      "normalized_record_sha256": "6e0f7c62dc6f1f1ebc7354af1735f19fbd8e77ffe9f6a770571ab20db0cb7306"
+    },
+    "1750821": {
+      "cik": "0001750821",
+      "trust_name": "Exchange Place Advisors Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42443",
+        "333-226989",
+        "333-227320",
+        "333-235497",
+        "333-252522"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-14",
+      "filing_count_audited": 829,
+      "normalized_record_sha256": "a44a6da9b58057cd93c2d75882119b741a72f738ca0a1b3075f55f85c9291e8d"
+    },
+    "1760588": {
+      "cik": "0001760588",
+      "trust_name": "Zacks Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-40746",
+        "005-95619",
+        "333-232634",
+        "333-297656",
+        "811-23435"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-24",
+      "filing_count_audited": 221,
+      "normalized_record_sha256": "4c70aae4b4bef06e8e38e39cd2b8ecb3626ed487fe33995748c1baeb67bd870a"
+    },
+    "1761055": {
+      "cik": "0001761055",
+      "trust_name": "BlackRock ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38837",
+        "005-91821",
+        "333-228832",
+        "333-278767",
+        "333-285095"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "c77d8770e27ab65982b67daaeecad2189eb3f2a135190efb7240cfbd1483c0e5"
+    },
+    "1771146": {
+      "cik": "0001771146",
+      "trust_name": "ETF Opportunities Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-39673",
+        "005-95567",
+        "333-234544",
+        "811-23439",
+        "811-23439,333-234544"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1406,
+      "normalized_record_sha256": "bf0260639c21fa7566a9befe2d025e80e16f4517172ff6e26e3613768ebdfbd4"
+    },
+    "1779306": {
+      "cik": "0001779306",
+      "trust_name": "ALTSHARES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39284",
+        "005-94129",
+        "333-233772",
+        "333-256754",
+        "811-23475"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-26",
+      "filing_count_audited": 160,
+      "normalized_record_sha256": "ff3fa68ae3bae36fb04ce20d6cbac3f8d26e8bb4bace5f37c052bdd84058e372"
+    },
+    "1782952": {
+      "cik": "0001782952",
+      "trust_name": "Kurv ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-39246",
+        "333-233633",
+        "333-281689",
+        "811-23473",
+        "811-23473,333-233633"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 333,
+      "normalized_record_sha256": "13dbaee1209dffa8a9855edb30af56a9dad31e11ab91488c29d23ebd3246b460"
+    },
+    "1795351": {
+      "cik": "0001795351",
+      "trust_name": "T. Rowe Price Exchange-Traded Funds, Inc.",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39414",
+        "005-95610",
+        "333-235450",
+        "803-00269-03",
+        "803-00270-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 992,
+      "normalized_record_sha256": "00d224a7cd22ca94513989c285ca052190da898938ac2c899620896e1ed23da0"
+    },
+    "1797318": {
+      "cik": "0001797318",
+      "trust_name": "AIM ETF Products Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39296",
+        "005-95152",
+        "333-235734",
+        "811-23504",
+        "811-23504,333-235734"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "dfb9dfd5fb7037faba940158dffd68a1786b38a6510d433f866a8a927f00ff76"
+    },
+    "1807486": {
+      "cik": "0001807486",
+      "trust_name": "Alger ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-40093",
+        "005-92467",
+        "333-248085",
+        "811-23603",
+        "811-23603,333-248085"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 253,
+      "normalized_record_sha256": "ba3333bf2174e4b94071c5ea2cf9ce4a21ee56313d04cd84c2a8370eac555d0a"
+    },
+    "1810747": {
+      "cik": "0001810747",
+      "trust_name": "Simplify Exchange Traded Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-39475",
+        "005-93607",
+        "333-238475",
+        "811-23570",
+        "811-23570,333-238475"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "8209bdcfb8a720bab83d6243e4c7e7b4c1c5386f2c1148743a50eec470d31b02"
+    },
+    "1816125": {
+      "cik": "0001816125",
+      "trust_name": "Dimensional ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-39697",
+        "005-93687",
+        "333-239440",
+        "333-262868",
+        "811-23580"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1010,
+      "normalized_record_sha256": "2f84492a263b5d1e0e7ea51efa33459ea69248b68203880eb3fcd05253842e02"
+    },
+    "1831313": {
+      "cik": "0001831313",
+      "trust_name": "TCW ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-40520",
+        "005-94354",
+        "333-249926",
+        "333-276547",
+        "333-278864"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 359,
+      "normalized_record_sha256": "e8287d92ce4416d3f6ff7cff0769fefe3c6567e29790c241e7ba6b7ea83b7aca"
+    },
+    "1848758": {
+      "cik": "0001848758",
+      "trust_name": "NEOS ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-40596",
+        "005-94283",
+        "333-253997",
+        "333-276964",
+        "333-279709"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 834,
+      "normalized_record_sha256": "3b371d6b7c5ef8afbd4c366bc57e80c74cde10263a038124546fb3785027227a"
+    },
+    "1849998": {
+      "cik": "0001849998",
+      "trust_name": "Federated Hermes ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41146",
+        "005-93993",
+        "333-258934",
+        "811-23730",
+        "811-23730,333-258934"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 375,
+      "normalized_record_sha256": "15f4f98c29a7670aa00f9a6499f20cfd2c301dd697d95c873028fa6bf0c0716b"
+    },
+    "1860434": {
+      "cik": "0001860434",
+      "trust_name": "Harbor ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-40807",
+        "005-95117",
+        "333-255778",
+        "333-255884",
+        "333-263463"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 854,
+      "normalized_record_sha256": "796a1c38b861da0b73223e491bb905d429748dd5fe1d5f86e83c5d7c68830f74"
+    },
+    "1869991": {
+      "cik": "0001869991",
+      "trust_name": "Capital Group Growth ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41298",
+        "333-259020",
+        "811-23733",
+        "811-23733,333-259020"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 96,
+      "normalized_record_sha256": "a7d71d18e44ab75443dc37e25512bb514d552e6289343eab387860e725286251"
+    },
+    "1870102": {
+      "cik": "0001870102",
+      "trust_name": "Capital Group Core Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41299",
+        "005-93625",
+        "333-259021",
+        "811-23735",
+        "811-23735,333-259021"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 101,
+      "normalized_record_sha256": "f3965223a1de6d048825f6f289048ea5defc9429247d64fbd3ecbe4253b7d15f"
+    },
+    "1870116": {
+      "cik": "0001870116",
+      "trust_name": "Capital Group Global Growth Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41302",
+        "005-93623",
+        "333-259024",
+        "811-23737",
+        "811-23737,333-259024"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 104,
+      "normalized_record_sha256": "5667e3c11f5ccff2a64bdee4b74483ae534be24e8e22624fe9273665f5cd2d56"
+    },
+    "1870117": {
+      "cik": "0001870117",
+      "trust_name": "Capital Group Fixed Income ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41303",
+        "333-259025",
+        "811-23738",
+        "811-23738,333-259025"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 262,
+      "normalized_record_sha256": "590fad33ea66b03ed045f5a5dbc6ad292d841019e34989a82ff1220f2e42e6f7"
+    },
+    "1870128": {
+      "cik": "0001870128",
+      "trust_name": "Capital Group Dividend Value ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41300",
+        "005-93622",
+        "333-259023",
+        "811-23736",
+        "811-23736,333-259023"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 100,
+      "normalized_record_sha256": "f270a1cf3f871c3ca42d30b8f87ee97fbd5517d044bf33bac7fa97904f9b92e6"
+    },
+    "1870130": {
+      "cik": "0001870130",
+      "trust_name": "Capital Group International Focus Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41301",
+        "005-93624",
+        "333-259022",
+        "811-23734",
+        "811-23734,333-259022"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 100,
+      "normalized_record_sha256": "51cc4e6f1e0281e8a39bb888bba9889d8df07621d19e218aa5134cd6de248d47"
+    },
+    "1873280": {
+      "cik": "0001873280",
+      "trust_name": "Strategic Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41190",
+        "333-258490",
+        "811-23723",
+        "811-23723,333-258490",
+        "812-15269-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 190,
+      "normalized_record_sha256": "c390bc94389a07ccc5d44d16100b54fcdba2f71298b9e74af6bbe0984cef9dd1"
+    },
+    "1875710": {
+      "cik": "0001875710",
+      "trust_name": "Build Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41258",
+        "333-259006",
+        "811-23732",
+        "811-23732,333-259006"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 84,
+      "normalized_record_sha256": "3b016c07fcea29ef4ebc40e0003de205bf3eb641b4353d06d9de5dbc98c4adbe"
+    },
+    "1877493": {
+      "cik": "0001877493",
+      "trust_name": "CoinShares ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-40917",
+        "333-258722",
+        "811-23725",
+        "811-23725,333-258722"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 280,
+      "normalized_record_sha256": "59aaaa1f41efb46086c694ed8290260b267d715360c1a23bccb5a8761490fd37"
+    },
+    "1879238": {
+      "cik": "0001879238",
+      "trust_name": "BondBloxx ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41221",
+        "333-258986",
+        "333-272788",
+        "811-23731",
+        "811-23731,333-258986"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 599,
+      "normalized_record_sha256": "0bb3069a81a3825e4ed7203430d91dbc147a3c375bf73a6ea306e483f77b62a9"
+    },
+    "1882879": {
+      "cik": "0001882879",
+      "trust_name": "Goldman Sachs ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41341",
+        "333-261420",
+        "811-23757",
+        "811-23757,333-261420",
+        "812-15762-03"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 118,
+      "normalized_record_sha256": "8104c3ad73f6c844a54a750d34664eac7fa70c4a2e9303880d773ccab515d5d3"
+    },
+    "1884021": {
+      "cik": "0001884021",
+      "trust_name": "Volatility Shares Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41689",
+        "333-263619",
+        "811-23785",
+        "811-23785,333-263619"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1089,
+      "normalized_record_sha256": "e57cf416d6f92970b3277d74811085318e046327c2ac83ab2b335b3a485b7948"
+    },
+    "1886172": {
+      "cik": "0001886172",
+      "trust_name": "DoubleLine ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41343",
+        "005-94741",
+        "333-260030",
+        "333-290900",
+        "811-23746"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-26",
+      "filing_count_audited": 277,
+      "normalized_record_sha256": "c3fb4bc5e26f8250087f604b4114ac6c78c5e7e079f963a7c5f06f7ab5ccff40"
+    },
+    "1888997": {
+      "cik": "0001888997",
+      "trust_name": "SEI Exchange Traded Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41399",
+        "333-260611",
+        "333-288319",
+        "333-294155",
+        "811-23754"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 249,
+      "normalized_record_sha256": "45e01b161b1d9ab3b459f0b22e0a9260c59ec5ab11d4c5a0b6bb45afb6d0b740"
+    },
+    "1896670": {
+      "cik": "0001896670",
+      "trust_name": "Thrivent ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41517",
+        "333-261454",
+        "333-289160",
+        "333-289161",
+        "333-294175"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 138,
+      "normalized_record_sha256": "6e59c0f3061ee4cdf058f8be332b8e8c55c3580bc14735c1c642d3028851779f"
+    },
+    "1898391": {
+      "cik": "0001898391",
+      "trust_name": "Fidelity Greenwood Street Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42006",
+        "005-94529",
+        "333-261594",
+        "811-23762",
+        "811-23762,333-261594"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 330,
+      "normalized_record_sha256": "6bc53e803d73e17da0cb4c6a5e48f1a86f84a33c6ae2d9e68e0fce495298c576"
+    },
+    "1919700": {
+      "cik": "0001919700",
+      "trust_name": "Touchstone ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41451",
+        "333-264194",
+        "333-272648",
+        "333-292360",
+        "811-23789"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 277,
+      "normalized_record_sha256": "de6d68ec7593c6bac8d55ef31512e54b74eea4c11a1982b9cd0495b3d883fba2"
+    },
+    "1924447": {
+      "cik": "0001924447",
+      "trust_name": "THOR Financial Technologies Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41499",
+        "333-264435",
+        "811-23794",
+        "811-23794,333-264435"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-10",
+      "filing_count_audited": 98,
+      "normalized_record_sha256": "b6fa12b85410cf58b03286e827a56575d36fd852355cfdc8876a3dd992561de4"
+    },
+    "1924868": {
+      "cik": "0001924868",
+      "trust_name": "Tidal Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41449",
+        "005-94640",
+        "333-264478",
+        "811-23793",
+        "811-23793,333-264478"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1715,
+      "normalized_record_sha256": "88063b306f005091784d91e866560a35dd55fd24d9eae1a96247475c0f0013f6"
+    },
+    "1928561": {
+      "cik": "0001928561",
+      "trust_name": "Bitwise Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41521",
+        "028-27113",
+        "333-264900",
+        "333-286765",
+        "811-23801"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 329,
+      "normalized_record_sha256": "8ccb4a9474c2ecb4ab66b203ca81d81495befd986a393ca4a7ba93f9b131a1ad"
+    },
+    "1936157": {
+      "cik": "0001936157",
+      "trust_name": "Elevation Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41522",
+        "333-265972",
+        "333-287352",
+        "333-287929",
+        "333-298973"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 597,
+      "normalized_record_sha256": "4578c9896a072f5563d6de7673383ffc4793002cb5286dd3ed58935449fa20bd"
+    },
+    "1944285": {
+      "cik": "0001944285",
+      "trust_name": "Tema ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41700",
+        "005-95742",
+        "333-267188",
+        "811-23823",
+        "811-23823,333-267188"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 460,
+      "normalized_record_sha256": "6907c9590e58de540fad1443f38c43f265bf1a737eee5d97d8fb352048dacf9b"
+    },
+    "1959372": {
+      "cik": "0001959372",
+      "trust_name": "Aristotle Funds Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43417",
+        "333-269217",
+        "333-269243",
+        "333-269244",
+        "333-269245"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 605,
+      "normalized_record_sha256": "4cebbe995f6c284c984e76f6d6964e0050f7c5cbff7b8120181b4326e442fcb5"
+    },
+    "1969445": {
+      "cik": "0001969445",
+      "trust_name": "Capital Group International Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41820",
+        "333-271212",
+        "811-23865",
+        "811-23865,333-271212"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 65,
+      "normalized_record_sha256": "0b1e0c6a2f1119258c2be1e4c8a4d9dc592f78027a639a9a3410c203af0e1c0e"
+    },
+    "1969489": {
+      "cik": "0001969489",
+      "trust_name": "Capital Group Dividend Growers ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41819",
+        "333-271210",
+        "811-23866",
+        "811-23866,333-271210"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 68,
+      "normalized_record_sha256": "3c3456c7ae63c818dc60ec92039ea206119e785ff468a1c194ebca552f533bd2"
+    },
+    "1969674": {
+      "cik": "0001969674",
+      "trust_name": "2023 ETF Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41758",
+        "005-95549",
+        "333-272579",
+        "811-23883",
+        "811-23883,333-272579"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 278,
+      "normalized_record_sha256": "0b77d6dc635d232af0152b49357bfe9d2ad39bbc99290ed623cf538f65e97cfb"
+    },
+    "1969995": {
+      "cik": "0001969995",
+      "trust_name": "Nomura ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41876",
+        "005-95066",
+        "333-273398",
+        "811-23890",
+        "811-23890,333-273398"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 251,
+      "normalized_record_sha256": "ee4fffcb1edd76c9d559534a1a736c0979890c9051c7216bb974e300ec05caf5"
+    },
+    "1970533": {
+      "cik": "0001970533",
+      "trust_name": "Capital Group Core Balanced ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41818",
+        "333-271211",
+        "811-23867",
+        "811-23867,333-271211"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 67,
+      "normalized_record_sha256": "ade35dda9d00538ca862e50bf39cd478d613e342f9727485e07ccd9f4d08c40c"
+    },
+    "1970751": {
+      "cik": "0001970751",
+      "trust_name": "Advisor Managed Portfolios",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41826",
+        "333-270997",
+        "333-273239",
+        "333-274704",
+        "333-274808"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 766,
+      "normalized_record_sha256": "dca9b6aa7b2a7f80fca9d578393ccdac63eb8780bb95a6b6394bd7c06c044eb0"
+    },
+    "1972459": {
+      "cik": "0001972459",
+      "trust_name": "Texas Capital Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41739",
+        "333-271134",
+        "811-23862",
+        "811-23862,333-271134"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-15",
+      "filing_count_audited": 195,
+      "normalized_record_sha256": "1ccfe29bb5ea9c9382c0efe3a22a6aa079ad2ddfe298b619ab19d29431ec49c0"
+    },
+    "1976322": {
+      "cik": "0001976322",
+      "trust_name": "Themes ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-41878",
+        "005-94967",
+        "333-271700",
+        "811-23872",
+        "811-23872,333-271700"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1034,
+      "normalized_record_sha256": "e421b6e2e139e0eb8b8f3d1c91b1d01c7a8d5e01ef077361ee86aab204d99da6"
+    },
+    "1976517": {
+      "cik": "0001976517",
+      "trust_name": "Roundhill ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41853",
+        "333-273052",
+        "811-23887",
+        "811-23887,333-273052",
+        "812-15516"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 931,
+      "normalized_record_sha256": "e6a87bd9ff9fe4386f84a98225298c45b971fddf1b07d9e5ff6767add8d604d0"
+    },
+    "1976672": {
+      "cik": "0001976672",
+      "trust_name": "Grayscale Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-42498",
+        "333-271770",
+        "811-23876",
+        "811-23876,333-271770"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 231,
+      "normalized_record_sha256": "546cdcc543891710f0adf2aefd97d3f42386298b8b4b0ee3fd89bf058453c458"
+    },
+    "1976877": {
+      "cik": "0001976877",
+      "trust_name": "Madison ETFs Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41777",
+        "333-271759",
+        "811-23875",
+        "811-23875,333-271759",
+        "812-15727-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-21",
+      "filing_count_audited": 137,
+      "normalized_record_sha256": "001d186e2cbace8e33ae4760a97508d5dc692256c9916c9ba588a4070e41ace5"
+    },
+    "1981627": {
+      "cik": "0001981627",
+      "trust_name": "GMO ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41846",
+        "333-274096",
+        "811-23895",
+        "811-23895,333-274096"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-19",
+      "filing_count_audited": 150,
+      "normalized_record_sha256": "83ecf37b00c3ee95274e1b58a930b2b44ac271043ef4b57444c52552ef74f485"
+    },
+    "1989916": {
+      "cik": "0001989916",
+      "trust_name": "SP Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41868",
+        "333-274015",
+        "811-23893",
+        "811-23893,333-274015"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 112,
+      "normalized_record_sha256": "30571f2a93e4d86b60343a40711ce1d7bd99f073294ddf83ae77e49da8b7207c"
+    },
+    "1992104": {
+      "cik": "0001992104",
+      "trust_name": "PGIM Rock ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41896",
+        "333-274664",
+        "811-23901",
+        "811-23901,333-274664"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 945,
+      "normalized_record_sha256": "e2fe065f3c502015e7003341a66663b6903715fc3eaa7d4ee64c11b74f3f7a71"
+    },
+    "2008359": {
+      "cik": "0002008359",
+      "trust_name": "Capital Group Conservative Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42145",
+        "333-276928",
+        "811-23933",
+        "811-23933,333-276928"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 55,
+      "normalized_record_sha256": "6540910791891d9a21a4b5d9bba63cffe7dd5781a88e9c0fdf837d83b5db3fed"
+    },
+    "2008374": {
+      "cik": "0002008374",
+      "trust_name": "Capital Group Global Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42146",
+        "333-276927",
+        "811-23934",
+        "811-23934,333-276927"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 58,
+      "normalized_record_sha256": "985c24c9a2b6c4b4c331753853d8883e404c2ec2dc962b274c984adc0e71685b"
+    },
+    "2008516": {
+      "cik": "0002008516",
+      "trust_name": "Capital Group International Core Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42147",
+        "333-276930",
+        "811-23935",
+        "811-23935,333-276930"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 55,
+      "normalized_record_sha256": "fb2d265f1bb2fe4ef8251809e0e5e37d76013a8305d4472dde9a32a0045f472d"
+    },
+    "2008517": {
+      "cik": "0002008517",
+      "trust_name": "Capital Group New Geography Equity ETF",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42148",
+        "333-276931",
+        "811-23936",
+        "811-23936,333-276931"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 56,
+      "normalized_record_sha256": "be9915a2aeead5a5563b08bf3668c75efc7d73ef9611f62fed885627b1c540c1"
+    },
+    "2018846": {
+      "cik": "0002018846",
+      "trust_name": "MFS Active Exchange Traded Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42017",
+        "005-95781",
+        "333-278691",
+        "811-23953",
+        "811-23953,333-278691"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 162,
+      "normalized_record_sha256": "b3737441b32ee8009e7619751bf0e471d8e719b4e756b651fe6fb6e782c4115a"
+    },
+    "2025968": {
+      "cik": "0002025968",
+      "trust_name": "BNY Mellon ETF Trust II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-42390",
+        "005-95884",
+        "333-280471",
+        "333-282141",
+        "333-288069"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 165,
+      "normalized_record_sha256": "7f515ae72f1f60220c7240998ab701749972ac7c044810dce8547493c7f7d3a9"
+    },
+    "2034406": {
+      "cik": "0002034406",
+      "trust_name": "Tortoise Capital Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42446",
+        "333-281744",
+        "333-281752",
+        "333-285062",
+        "333-285067"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-26",
+      "filing_count_audited": 172,
+      "normalized_record_sha256": "2e87405de333c482a58bc3bd2d1c1fbfcdb237c357816f567b14f92cf2b4a6cc"
+    },
+    "2034928": {
+      "cik": "0002034928",
+      "trust_name": "Capital Group Equity ETF Trust I",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42478",
+        "333-281924",
+        "811-24000",
+        "811-24000,333-281924"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 67,
+      "normalized_record_sha256": "248d92a79bc7d79056de4e58273c649022c2564592c165e3ad77bf3c5810e33f"
+    },
+    "2035827": {
+      "cik": "0002035827",
+      "trust_name": "Harris Oakmark ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42419",
+        "333-281865",
+        "811-23998",
+        "811-23998,333-281865"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-31",
+      "filing_count_audited": 49,
+      "normalized_record_sha256": "348c619d6501ff9c8aa41c0954e3fa2b0554f62d6790f0dbbaf6b2647c73df63"
+    },
+    "2038383": {
+      "cik": "0002038383",
+      "trust_name": "Thornburg ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42481",
+        "333-282372",
+        "811-24005",
+        "811-24005,333-282372",
+        "812-15688-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-25",
+      "filing_count_audited": 72,
+      "normalized_record_sha256": "0d97a567fbdcd523b56fa951c01ebbb2273f41fec560ada7799cf841cff8810f"
+    },
+    "2042513": {
+      "cik": "0002042513",
+      "trust_name": "Russell Investments Exchange Traded Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42564",
+        "005-95168",
+        "333-283326",
+        "811-24027",
+        "811-24027,333-283326"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 126,
+      "normalized_record_sha256": "76de9310b1aa6babbb3f34e1239905ae4055768fbec4b90c241ac96cb2cd578a"
+    },
+    "2043390": {
+      "cik": "0002043390",
+      "trust_name": "Tidal Trust IV",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42777",
+        "333-285633",
+        "811-24061",
+        "811-24061,333-285633",
+        "812-15643-04"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 188,
+      "normalized_record_sha256": "4798588a6939a36e7d473dfa3ee0a06d782a702a0f4a8232f808a02322b5e633"
+    },
+    "2043954": {
+      "cik": "0002043954",
+      "trust_name": "REX ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42660",
+        "333-283221",
+        "811-24023",
+        "811-24023,333-283221"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 274,
+      "normalized_record_sha256": "cac47c4376fa07b3af4f869f442ac469c7ffb4ac210f76ae72d5cd44070fb8ca"
+    },
+    "2051630": {
+      "cik": "0002051630",
+      "trust_name": "Lazard Active ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42580",
+        "333-284300",
+        "333-285466",
+        "333-287495",
+        "333-288291"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-15",
+      "filing_count_audited": 127,
+      "normalized_record_sha256": "054c8f601d554eefa4f3314616fac9a603c3b72276bd461c823dd9a38aca14cc"
+    },
+    "205323": {
+      "cik": "0000205323",
+      "trust_name": "FIDELITY COMMONWEALTH TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "002-52322",
+        "028-02904",
+        "811-02546",
+        "811-02546,002-52322",
+        "812-11618-01"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "00de182c7ac1eedc9def3b9d0a5ca136b22c2bb425bcbdf4fd73b2cacc9d8e30"
+    },
+    "2055464": {
+      "cik": "0002055464",
+      "trust_name": "Wedbush Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42676",
+        "333-284792",
+        "333-292057",
+        "811-24052",
+        "811-24052,333-284792"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 75,
+      "normalized_record_sha256": "9b2494cb2e1b061819594a1e98f5909bade1ca1f89d47cd097a13c0087e3a08b"
+    },
+    "2060280": {
+      "cik": "0002060280",
+      "trust_name": "Baillie Gifford ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43315",
+        "333-290830",
+        "333-292218",
+        "811-24127",
+        "811-24127,333-290830"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 38,
+      "normalized_record_sha256": "aadf53b0a28c711c4c3f49f154d52651e5b5ffa06dda7b63668a64c939939934"
+    },
+    "2061770": {
+      "cik": "0002061770",
+      "trust_name": "Rayliant Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42860",
+        "333-286029",
+        "811-24067",
+        "811-24067,333-286029"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 40,
+      "normalized_record_sha256": "bfab136d995a78f5a67e71a0b26de6d37178524f05b823996cd20d0f8a0d8b6c"
+    },
+    "2069687": {
+      "cik": "0002069687",
+      "trust_name": "FIS Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-43034",
+        "333-288251",
+        "333-290397",
+        "811-24099",
+        "811-24099,333-288251"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 88,
+      "normalized_record_sha256": "5b3850bc70500c1b5bcc301a3294fd1f6bbbab84cb3208ac7e025e2929696158"
+    },
+    "2071107": {
+      "cik": "0002071107",
+      "trust_name": "Thrive Series Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-42879",
+        "333-287739",
+        "811-24093",
+        "811-24093,333-287739"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 28,
+      "normalized_record_sha256": "618d27af03db542fd54be2ba04ba8e545524943f202dfbccf3b2005839d62376"
+    },
+    "2077057": {
+      "cik": "0002077057",
+      "trust_name": "Founder Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-42973",
+        "333-288898",
+        "811-24107",
+        "811-24107,333-288898"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 20,
+      "normalized_record_sha256": "9c90bc7c2f64166d6bfdf7095ecc0ff58f26e0ba91c9e5364ade33719f95870a"
+    },
+    "2081107": {
+      "cik": "0002081107",
+      "trust_name": "Tidal Trust V",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-43437",
+        "333-289817",
+        "811-24116",
+        "811-24116,333-289817",
+        "812-15643-05"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 108,
+      "normalized_record_sha256": "c61b8b6be26ee2860f0543113474e722d0024fc4276ec05f1badf2818494a36c"
+    },
+    "2081199": {
+      "cik": "0002081199",
+      "trust_name": "Baron ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42978",
+        "333-289683",
+        "333-289932",
+        "811-24115",
+        "811-24115,333-289683"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 78,
+      "normalized_record_sha256": "37bb3558f6bc4567ddef19742e224d7ed508d9eda45204dd1ceed60888e1b4c3"
+    },
+    "2083193": {
+      "cik": "0002083193",
+      "trust_name": "First Eagle ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43054",
+        "333-290276",
+        "811-24120",
+        "811-24120,333-290276",
+        "812-15683-03"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 32,
+      "normalized_record_sha256": "50e9eab51334f3396a27b5355ccb491c61cc843d7200084af794cb424bb49125"
+    },
+    "2096904": {
+      "cik": "0002096904",
+      "trust_name": "Milliman Funds Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43209",
+        "333-291555",
+        "811-24138",
+        "811-24138,333-291555"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-03",
+      "filing_count_audited": 15,
+      "normalized_record_sha256": "f57ebbdb66804662cb595d5f1d616e7065a6dfe149d0b529d396d97f40e3685b"
+    },
+    "215829": {
+      "cik": "0000215829",
+      "trust_name": "FIDELITY SCHOOL STREET TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43349",
+        "002-57167",
+        "333-39047",
+        "333-68126",
+        "811-02676"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 939,
+      "normalized_record_sha256": "577ba2d5054b6937a5b4ac52bd36b915ff776d6e5f5ef83dc9beedd9c5e32671"
+    },
+    "225997": {
+      "cik": "0000225997",
+      "trust_name": "VANGUARD MUNICIPAL BOND FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-37543",
+        "002-57689",
+        "005-95348",
+        "333-187812",
+        "811-02687"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "e71c35be73ed26b5bc5171eed35e0490ee29e440462f2dae1fc7b9ee8df33637"
+    },
+    "35315": {
+      "cik": "0000035315",
+      "trust_name": "FIDELITY SALEM STREET TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-43347",
+        "002-41839",
+        "811-02105",
+        "811-02105,002-41839",
+        "812-15936-25"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1022,
+      "normalized_record_sha256": "0047c7f28649ce81e29786cc0dfa2bf192ca22f2634c4443a796be9f93a25aeb"
+    },
+    "357204": {
+      "cik": "0000357204",
+      "trust_name": "Segall Bryant & Hamill Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41790",
+        "002-75677",
+        "333-230771",
+        "333-240059",
+        "333-274549"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 1003,
+      "normalized_record_sha256": "7c26ec84581082d323ddc4261adaf0f64857c78d607fca8da10941ddf57acce2"
+    },
+    "36405": {
+      "cik": "0000036405",
+      "trust_name": "VANGUARD INDEX FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "002-56846",
+        "333-248857",
+        "811-02652",
+        "811-02652,002-56846",
+        "811-02652,333-248857"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "c99900a0431352d3fad73ad172dc6d026f6ae304cd81c72d135bcb25b5d95631"
+    },
+    "52848": {
+      "cik": "0000052848",
+      "trust_name": "VANGUARD WORLD FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-31973",
+        "002-17620",
+        "811-01027",
+        "811-01027,002-17620",
+        "812-15830-02"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "bb525d819daaf8304deb04875379b9406c3e9c0904142cd47a96e51b6f95bdb2"
+    },
+    "734383": {
+      "cik": "0000734383",
+      "trust_name": "VANGUARD SPECIALIZED FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "002-88116",
+        "811-03916",
+        "811-03916,002-88116",
+        "812-14691-05",
+        "812-14745-16"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1121,
+      "normalized_record_sha256": "d9d2b6634112a177aa1f8621b5de1490bfa488260f1c8d159018b2bc202dae53"
+    },
+    "736054": {
+      "cik": "0000736054",
+      "trust_name": "VANGUARD STAR FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-35057",
+        "002-88373",
+        "333-269847",
+        "811-03919",
+        "811-03919,002-88373"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "91b58ff62abf00cdb2ebf7e22c3647cc55899714a22ff0863719cf4c046d9cfc"
+    },
+    "754510": {
+      "cik": "0000754510",
+      "trust_name": "FIDELITY SECURITIES FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-43348",
+        "002-93601",
+        "333-284159",
+        "811-04118",
+        "811-04118,002-93601"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1005,
+      "normalized_record_sha256": "bc4a9c85ed6e18d5fbd72c7de38a3f50ba593b4dcde2ceda08e473da4ab9acec"
+    },
+    "766285": {
+      "cik": "0000766285",
+      "trust_name": "AMANA MUTUAL FUNDS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43365",
+        "002-96924",
+        "811-04276",
+        "811-04276,002-96924"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 581,
+      "normalized_record_sha256": "3caa30bde9324ed3a81a8434ed3d5c728b93b9aab4897c66cea4233163f05a8d"
+    },
+    "768847": {
+      "cik": "0000768847",
+      "trust_name": "VanEck Funds",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42605",
+        "002-97596",
+        "028-06489",
+        "333-107821",
+        "333-288888"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-14",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "a2cb04bdf37897a184b7cd7032ecf61db149c53580c62221b4a2deddfbb35874"
+    },
+    "783401": {
+      "cik": "0000783401",
+      "trust_name": "VANGUARD CALIFORNIA TAX-FREE FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41936",
+        "033-01569",
+        "811-04474",
+        "811-04474,033-01569",
+        "812-12827-04"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 923,
+      "normalized_record_sha256": "5ad2e16ec8d7176acd37b894e141d2d7c55082c23afb678c162165002c3fe29b"
+    },
+    "788599": {
+      "cik": "0000788599",
+      "trust_name": "VANGUARD NEW YORK TAX-FREE FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42649",
+        "033-02908",
+        "811-04570",
+        "811-04570,033-02908",
+        "812-12827-20"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 852,
+      "normalized_record_sha256": "aea454d82b7660bbe540bccf3fe8ebee53ccdd79da34a3e7509bd484e170dde3"
+    },
+    "794105": {
+      "cik": "0000794105",
+      "trust_name": "VANGUARD BOND INDEX FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33394",
+        "005-83425",
+        "033-06001",
+        "811-04681",
+        "811-04681,033-06001"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 1004,
+      "normalized_record_sha256": "0a5bddc29b557ad3825b014654e590ad34adca23734bd23a0613290943b312f9"
+    },
+    "799127": {
+      "cik": "0000799127",
+      "trust_name": "VANGUARD QUANTITATIVE FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42971",
+        "033-08553",
+        "333-08900",
+        "811-04526",
+        "811-04526,033-08553"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 691,
+      "normalized_record_sha256": "0667d41d98c64a7eebbb29ea441900bff0f0ce19c4d25641ce2e1a1b524eff9d"
+    },
+    "806633": {
+      "cik": "0000806633",
+      "trust_name": "WASATCH FUNDS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43403",
+        "033-10451",
+        "333-222353",
+        "811-04920",
+        "811-04920,033-10451"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-15",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "2bd1c3b48b76f96a8d70b4c0fdcbd10eabc243047c629b759e1a68a03a3f8cf9"
+    },
+    "811030": {
+      "cik": "0000811030",
+      "trust_name": "PROFESSIONALLY MANAGED PORTFOLIOS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41787",
+        "033-12213",
+        "333-288295",
+        "333-291763",
+        "811-05037"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "47e9e21faec5bd3c88131db6d7fe88fc725c1bd60ca3fa80241fe7221d78a557"
+    },
+    "816153": {
+      "cik": "0000816153",
+      "trust_name": "THORNBURG INVESTMENT TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43223",
+        "021-245422",
+        "033-14905",
+        "811-05201",
+        "811-05201,033-14905"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "5bda0c3d69358aac7c2233858d7533d2161e672408c170fa3a19761a67879706"
+    },
+    "820892": {
+      "cik": "0000820892",
+      "trust_name": "NUVEEN INVESTMENT FUNDS INC",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-43298",
+        "033-16905",
+        "333-238576",
+        "811-05309",
+        "811-05309,033-16905"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-25",
+      "filing_count_audited": 1018,
+      "normalized_record_sha256": "e10c38dec6007d4be50a300358bf3c20c115c4fa0b2e03df5d9a005b8694eb9f"
+    },
+    "831114": {
+      "cik": "0000831114",
+      "trust_name": "RBB FUND, INC.",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-38361",
+        "033-20827",
+        "333-284236",
+        "333-286982",
+        "811-05518"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1019,
+      "normalized_record_sha256": "0789da60259184e8aab7125a3f5beeabb936a7becbb647994418cf54deff3ca2"
+    },
+    "836267": {
+      "cik": "0000836267",
+      "trust_name": "SCM Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-10237",
+        "005-40977",
+        "333-152334",
+        "333-176060",
+        "333-212689"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-08",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "4a633813c2b5c373ca1fcf8c035aa58437f73864c9671380f364324909e85335"
+    },
+    "836906": {
+      "cik": "0000836906",
+      "trust_name": "VANGUARD MALVERN FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-35697",
+        "005-91235",
+        "033-23444",
+        "811-05628",
+        "811-05628,033-23444"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-11",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "193898b164777d657b0ca7db332106907b4ed08d8629b6a1bf92d0b747f7ed32"
+    },
+    "857489": {
+      "cik": "0000857489",
+      "trust_name": "VANGUARD INTERNATIONAL EQUITY INDEX FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "033-32548",
+        "811-05972",
+        "811-05972,033-32548",
+        "812-13597-13",
+        "812-14287-24"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-27",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "6aa1696db77e9cf0ba9d5b7a50ddb1f1ef193e1e77c6a886a2bcea3e408d48fe"
+    },
+    "862084": {
+      "cik": "0000862084",
+      "trust_name": "VANGUARD INSTITUTIONAL INDEX FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42487",
+        "033-34494",
+        "811-06093",
+        "811-06093,033-34494",
+        "812-12827-12"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 740,
+      "normalized_record_sha256": "0b281710a14b241b6ede4f0b2a52d61511b3d78fcb0652c3fbd50d1d1997cff3"
+    },
+    "866256": {
+      "cik": "0000866256",
+      "trust_name": "PARNASSUS FUNDS II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42439",
+        "033-06673",
+        "033-36065",
+        "333-83554",
+        "811-06673"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 588,
+      "normalized_record_sha256": "5719aaec878d250dfc7dadb0cfbd2a1866b074dc95037ada8e221ed22ff1aa9c"
+    },
+    "875186": {
+      "cik": "0000875186",
+      "trust_name": "MORGAN STANLEY PATHWAY FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42387",
+        "033-40823",
+        "333-208432",
+        "333-281658",
+        "811-06318"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-08-28",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "9917c236401f8a6014f086710c6a0b92c78a5ee78cdf820ce20b8ed50065cd11"
+    },
+    "878719": {
+      "cik": "0000878719",
+      "trust_name": "ADVISORS' INNER CIRCLE FUND",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41618",
+        "033-42484",
+        "333-267335",
+        "333-268535",
+        "811-06400"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 1014,
+      "normalized_record_sha256": "24fb635c5f1fa0325ba443d8ff81a97fa25b60b8494bdc03a4d009ad8309e3c5"
+    },
+    "879947": {
+      "cik": "0000879947",
+      "trust_name": "AMG ETF Trust",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42923",
+        "033-43089",
+        "333-110232",
+        "811-06431",
+        "811-06431,033-43089"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 764,
+      "normalized_record_sha256": "b2f296376202872380fa716715e8d5fa39dd181d984897d4ef9d0d02e9c902d7"
+    },
+    "88525": {
+      "cik": "0000088525",
+      "trust_name": "GUGGENHEIM FUNDS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-43252",
+        "002-19458",
+        "333-233876",
+        "333-294393",
+        "811-01136"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "cc2a55afce786791a870f32da2e626707341901cf5d8711b528e4b1e2cbc14f5"
+    },
+    "890540": {
+      "cik": "0000890540",
+      "trust_name": "Advisors' Inner Circle Fund II",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-41577",
+        "033-50718",
+        "333-280664",
+        "811-07102",
+        "811-07102,033-50718"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-18",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "23bc9178780adcab29e3dd0f744f8f9c11733bfa6356890ffa1848098b8b94be"
+    },
+    "891190": {
+      "cik": "0000891190",
+      "trust_name": "VANGUARD ADMIRAL FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "005-94475",
+        "033-49023",
+        "811-07043",
+        "811-07043,033-49023",
+        "812-13597"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1010,
+      "normalized_record_sha256": "e1c8ed84ba0b4cfa91bcbcf481d3d132a05717a1421107353bb3ccacc1c2763d"
+    },
+    "897111": {
+      "cik": "0000897111",
+      "trust_name": "CARILLON SERIES TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42876",
+        "033-57986",
+        "333-200455",
+        "333-219140",
+        "333-224293"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 1006,
+      "normalized_record_sha256": "b7077fcae8161e3092572e8dcee7c3a1d6269752b70dd6972a019b9ee77ece1f"
+    },
+    "912900": {
+      "cik": "0000912900",
+      "trust_name": "PRAXIS FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42585",
+        "028-04875",
+        "033-69724",
+        "333-184242",
+        "333-184782"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 919,
+      "normalized_record_sha256": "253c3202ab97733c1a5bbd9eca8d0ce39fecc00e4845b48c3a7bbbbf2418726a"
+    },
+    "915802": {
+      "cik": "0000915802",
+      "trust_name": "FINANCIAL INVESTORS TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485APOS",
+      "file_numbers": [
+        "001-42168",
+        "033-72424",
+        "333-260125",
+        "811-08194",
+        "811-08194,033-72424"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1020,
+      "normalized_record_sha256": "72dd8b6d696feb2e1d3bb69ef112bb1d086e57b4135d25cd9916f536528a4401"
+    },
+    "916490": {
+      "cik": "0000916490",
+      "trust_name": "TIMOTHY PLAN",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-38887",
+        "033-73248",
+        "333-289295",
+        "333-289318",
+        "811-08228"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-04",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "8a458e23099ff77852876e5a78a04e11416e6a598e4d6df5e7f15715f87af1b1"
+    },
+    "916620": {
+      "cik": "0000916620",
+      "trust_name": "NORTHERN FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-42800",
+        "033-73404",
+        "811-08236",
+        "811-08236,033-73404",
+        "812-15573"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "a8e730393de3a2b491cedb2ee4acb2a62203b63167259b0d47d2a89f9d6ad17b"
+    },
+    "919160": {
+      "cik": "0000919160",
+      "trust_name": "GUINNESS ATKINSON FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BXT",
+      "file_numbers": [
+        "001-13021",
+        "033-75340",
+        "333-248959",
+        "811-08360",
+        "811-08360,033-75340"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-22",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "a6c4e2d56e01d9c9911dc9a56614892004b90844df020f41b41aed98d0da51cf"
+    },
+    "923184": {
+      "cik": "0000923184",
+      "trust_name": "MATTHEWS INTERNATIONAL FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-41442",
+        "005-94296",
+        "033-78960",
+        "333-253301",
+        "333-270696"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-10",
+      "filing_count_audited": 1013,
+      "normalized_record_sha256": "d8769e7691f62fd076130c9e4cfea12b63115da289b738c2d5328783acb7e287"
+    },
+    "923202": {
+      "cik": "0000923202",
+      "trust_name": "VANGUARD TAX-MANAGED FUNDS",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-33591",
+        "005-83801",
+        "033-53683",
+        "333-193415",
+        "811-07175"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-16",
+      "filing_count_audited": 1001,
+      "normalized_record_sha256": "2468358d3b07213960adabc214080fc2887fae9c15503f53d4d51c34be75cb24"
+    },
+    "924727": {
+      "cik": "0000924727",
+      "trust_name": "Investment Managers Series Trust III",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-06357",
+        "001-13417",
+        "001-36477",
+        "001-42010",
+        "033-79858"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-17",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "3e8c4d911c3f926459dbc7c11f7b51e76dc500e2a25b49f1368f7be4324dc9cc"
+    },
+    "930667": {
+      "cik": "0000930667",
+      "trust_name": "iShares, Inc.",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "497K",
+      "file_numbers": [
+        "001-11653",
+        "005-49345",
+        "033-97598",
+        "811-09102",
+        "811-09102,033-97598"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-23",
+      "filing_count_audited": 1000,
+      "normalized_record_sha256": "53a394a10b4a80a84ed1b570b0a3ac1a7504640762b1967502b8f234cb3031f7"
+    },
+    "945908": {
+      "cik": "0000945908",
+      "trust_name": "FIDELITY COVINGTON TRUST",
+      "entity_type": "investment",
+      "registration_form": "N-1A",
+      "legal_structure": "1940_ACT_OPEN_END_ETF",
+      "primary_filing_form": "485BPOS",
+      "file_numbers": [
+        "001-36143",
+        "005-91503",
+        "033-60973",
+        "333-291747",
+        "811-07319"
+      ],
+      "is_active": true,
+      "latest_filing_date": "2026-09-24",
+      "filing_count_audited": 1002,
+      "normalized_record_sha256": "5789f44fedda6a859ab4a4a2b66bb3ae3f00d6f42559d1b3a7ef86b96a00002b"
+    }
+  }
+}

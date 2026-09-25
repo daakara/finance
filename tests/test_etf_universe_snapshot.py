@@ -589,7 +589,13 @@ def test_regex_false_positive_elimination_fixed_income():
 
 def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
     """Verifies PDBC, AMLP, MLPX are structure-verified 1940 Act open-end ETFs with unauthorized subtype."""
-    sec_info = {"cik": "0001601082", "series_id": "S000047240", "class_id": "C000148113"}
+    sec_info = {
+        "cik": "0001601082",
+        "series_id": "S000047240",
+        "class_id": "C000148113",
+        "registration_form": "N-1A",
+        "is_active": True
+    }
     for sym, name in [
         ("PDBC", "Invesco Optimum Yield Diversified Commodity Strategy No K-1 ETF"),
         ("AMLP", "Alerian MLP ETF"),
@@ -610,9 +616,17 @@ def test_structure_subtype_decoupling_pdbc_amlp_mlpx():
         assert rec["subtype_authorized"] is False
         assert rec["is_research_eligible"] is False
         assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+
+
 def test_tier_2_sec_mf_directory_classification():
-    """Verifies Tier 2 primary series registration directory operationalizes broad coverage."""
-    sec_info = {"cik": "0000895421", "series_id": "S000001234", "class_id": "C000005678"}
+    """Verifies Tier 2 primary series registration directory operationalizes broad coverage under verified Form N-1A."""
+    sec_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "N-1A",
+        "is_active": True
+    }
     rec = ClassificationAuthorityEngine.classify_security(
         symbol="BROAD1",
         security_name="Broad Generic 1940 Act ETF",
@@ -624,7 +638,154 @@ def test_tier_2_sec_mf_directory_classification():
     assert rec["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
     assert rec["structure_verified"] is True
     assert rec["classification_source"] == "TIER_2_STRUCTURED_PROVIDER_METADATA"
-    assert "SEC_EDGAR_SERIES_REGISTRATION_CIK_0000895421" in rec["classification_evidence"]
+    assert "SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_0000895421" in rec["classification_evidence"]
     assert rec["research_subtype"] == "OTHER_ETF"
     assert rec["subtype_authorized"] is False
     assert rec["exclusion_reason"] == "UNAUTHORIZED_RESEARCH_SUBTYPE"
+
+
+def test_tier_2_legal_form_verification_and_fail_closed():
+    """Requirement 17: Tier-2 Semantic Regression Tests.
+    Proves:
+    1. company_tickers_mf association alone cannot establish open-end status (fails closed)
+    2. N-1A/open-end maps to open-end structure (STRUCTURE_VERIFIED)
+    3. S-6/UIT maps to UIT structure (STRUCTURE_VERIFIED)
+    4. N-2 maps to closed-end structure (EXCLUDED)
+    5. unknown organization/form fails closed (QUARANTINED)
+    6. inactive registration fails closed (QUARANTINED)
+    7. Tier-3 UIT override remains UIT even if Tier 2 presents conflicting metadata
+    """
+    # 1. association alone without legal form fails closed
+    assoc_only = {"cik": "0000895421", "series_id": "S000001234", "class_id": "C000005678"}
+    rec1 = ClassificationAuthorityEngine.classify_security(
+        symbol="ASSOC1",
+        security_name="Generic Association Only Fund",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=assoc_only
+    )
+    assert rec1["vehicle_structure"] == "UNKNOWN"
+    assert rec1["vehicle_structure_state"] == "QUARANTINED"
+    assert rec1["structure_verified"] is False
+    assert rec1["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+
+    # 2. N-1A active maps to 1940_ACT_OPEN_END_ETF
+    n1a_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "N-1A",
+        "is_active": True
+    }
+    rec2 = ClassificationAuthorityEngine.classify_security(
+        symbol="N1AFUND",
+        security_name="Generic Open End ETF",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=n1a_info
+    )
+    assert rec2["vehicle_structure"] == "1940_ACT_OPEN_END_ETF"
+    assert rec2["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert rec2["structure_verified"] is True
+    assert "SEC_EDGAR_FORM_N1A_REGISTRATION_CIK_0000895421" in rec2["classification_evidence"]
+
+    # 3. S-6 active maps to 1940_ACT_UNIT_INVESTMENT_TRUST_ETF
+    s6_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "S-6",
+        "is_active": True
+    }
+    rec3 = ClassificationAuthorityEngine.classify_security(
+        symbol="S6FUND",
+        security_name="Generic Unit Investment Trust",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=s6_info
+    )
+    assert rec3["vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+    assert rec3["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+    assert rec3["structure_verified"] is True
+    assert "SEC_EDGAR_FORM_S6_REGISTRATION_CIK_0000895421" in rec3["classification_evidence"]
+
+    # 4. N-2 maps to CLOSED_END_FUND
+    n2_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "N-2",
+        "is_active": True
+    }
+    rec4 = ClassificationAuthorityEngine.classify_security(
+        symbol="N2FUND",
+        security_name="Generic Closed End Fund",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=n2_info
+    )
+    assert rec4["vehicle_structure"] == "CLOSED_END_FUND"
+    assert rec4["vehicle_structure_state"] == "EXCLUDED"
+    assert rec4["structure_verified"] is False
+    assert rec4["exclusion_reason"] == "EXCLUDED_STRUCTURE_CLOSED_END_FUND"
+    assert "SEC_EDGAR_FORM_N2_REGISTRATION_CIK_0000895421" in rec4["classification_evidence"]
+
+    # 5. Unknown registration form fails closed
+    unk_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "UNKNOWN_FORM",
+        "is_active": True
+    }
+    rec5 = ClassificationAuthorityEngine.classify_security(
+        symbol="UNKFORM",
+        security_name="Generic Unknown Form Fund",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=unk_info
+    )
+    assert rec5["vehicle_structure"] == "UNKNOWN"
+    assert rec5["vehicle_structure_state"] == "QUARANTINED"
+    assert rec5["structure_verified"] is False
+    assert rec5["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+
+    # 6. Inactive registration form fails closed
+    inact_info = {
+        "cik": "0000895421",
+        "series_id": "S000001234",
+        "class_id": "C000005678",
+        "registration_form": "N-1A",
+        "is_active": False
+    }
+    rec6 = ClassificationAuthorityEngine.classify_security(
+        symbol="INACTFUND",
+        security_name="Generic Inactive Fund",
+        listing_exchange="P",
+        nasdaq_etf_flag=True,
+        sec_mf_info=inact_info
+    )
+    assert rec6["vehicle_structure"] == "UNKNOWN"
+    assert rec6["vehicle_structure_state"] == "QUARANTINED"
+    assert rec6["structure_verified"] is False
+    assert rec6["exclusion_reason"] == "UNVERIFIED_VEHICLE_STRUCTURE_FAIL_CLOSED"
+
+    # 7. Tier-3 UIT override remains UIT (SPY, QQQ, DIA) even if Tier 2 presents N-1A
+    conflicting_tier2 = {
+        "cik": "0001064642",
+        "series_id": "S000001",
+        "class_id": "C000001",
+        "registration_form": "N-1A",
+        "is_active": True
+    }
+    for uit_sym in ["SPY", "QQQ", "DIA"]:
+        rec7 = ClassificationAuthorityEngine.classify_security(
+            symbol=uit_sym,
+            security_name="Trust Series",
+            listing_exchange="P",
+            nasdaq_etf_flag=True,
+            sec_mf_info=conflicting_tier2
+        )
+        assert rec7["vehicle_structure"] == "1940_ACT_UNIT_INVESTMENT_TRUST_ETF"
+        assert rec7["vehicle_structure_state"] == "STRUCTURE_VERIFIED"
+        assert rec7["classification_source"] == "TIER_3_VERIFIED_VEHICLE_STRUCTURE_REGISTRY"
