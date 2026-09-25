@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test:sizing": "npx tsx tests/governorSizingEngine.test.ts",
     "test:unit": "vitest run",
-    "test:arch": "npx tsx tests/clientFailClosedFallback.test.ts && npx tsx tests/decisionContract.test.ts && npx tsx tests/governorSizingEngine.test.ts && npx tsx tests/marketDataProvenance.test.ts && npx tsx tests/provenanceSanitization.test.ts && npx tsx tests/radarMetricCleanup.test.ts && npx tsx tests/radarTaxonomy.test.ts && npx tsx tests/phase2AuthorityConsolidation.test.ts",
+    "test:arch": "npx tsx tests/clientFailClosedFallback.test.ts && npx tsx tests/decisionContract.test.ts && npx tsx tests/governorSizingEngine.test.ts && npx tsx tests/marketDataProvenance.test.ts && npx tsx tests/provenanceSanitization.test.ts && npx tsx tests/radarMetricCleanup.test.ts && npx tsx tests/radarTaxonomy.test.ts && npx tsx tests/phase2AuthorityConsolidation.test.ts && npx tsx tests/decisionConsistencyRemediation.test.ts",
     "test": "npm run test:unit && npm run test:arch"
   },
   "dependencies": {

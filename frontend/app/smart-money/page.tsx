@@ -431,8 +431,17 @@ function SmartMoneyContent() {
                     optionsFlow.map((f, idx) => (
                       <tr
                         key={idx}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Inspect options flow for ${f.ticker}`}
                         onClick={() => setSelectedOptions(f)}
-                        className="hover:bg-[#162030] cursor-pointer transition-colors group"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedOptions(f);
+                          }
+                        }}
+                        className="hover:bg-[#162030] cursor-pointer transition-colors group focus-visible:ring-1 focus-visible:ring-cyan-400 focus-visible:outline-none"
                       >
                         <td className="py-3 px-4 text-slate-400 tabular-nums">{f.time}</td>
                         <td className="py-3 px-4 font-bold text-white group-hover:text-cyan-400 transition-colors">
@@ -597,8 +606,17 @@ function SmartMoneyContent() {
                     congressTrades.map((t, idx) => (
                       <tr
                         key={idx}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Inspect congressional disclosure for ${t.politician} - ${t.ticker}`}
                         onClick={() => setSelectedCongress(t)}
-                        className="hover:bg-[#162030] cursor-pointer transition-colors group"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedCongress(t);
+                          }
+                        }}
+                        className="hover:bg-[#162030] cursor-pointer transition-colors group focus-visible:ring-1 focus-visible:ring-purple-400 focus-visible:outline-none"
                       >
                         <td className="py-3 px-4 font-bold text-slate-100 group-hover:text-purple-300 transition-colors">
                           <div>{t.politician}</div>

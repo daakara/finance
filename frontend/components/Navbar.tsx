@@ -50,6 +50,7 @@ export default function Navbar({
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
   const shortcutsCloseBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -285,47 +286,121 @@ export default function Navbar({
               </svg>
             </button>
 
-            {/* Theme Toggle */}
+            {/* Theme Toggle (Always visible) */}
             <ThemeToggle />
 
-            {/* Experience Mode Selector (Guided / Standard / Quant) */}
-            <ExperienceModeToggle />
+            {/* Experience Mode Selector (Guided / Standard / Quant) - Desktop/Tablet */}
+            <div className="hidden lg:flex items-center">
+              <ExperienceModeToggle />
+            </div>
 
-            {/* Keyboard Shortcuts Help Button */}
-            <button
-              id="shortcuts-help-btn"
-              type="button"
-              onClick={() => setIsShortcutsOpen(true)}
-              aria-label="Pro-Trader Keyboard Shortcuts Guide (?)"
-              title="Keyboard Shortcuts Cheatsheet (?)"
-              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-            >
-              <span aria-hidden="true" className="font-mono font-bold text-sm">?</span>
-            </button>
+            {/* Secondary Utilities - Hidden on Mobile (< 640px) to guarantee zero 375px overflow */}
+            <div className="hidden sm:flex items-center space-x-1">
+              {/* Keyboard Shortcuts Help Button */}
+              <button
+                id="shortcuts-help-btn"
+                type="button"
+                onClick={() => setIsShortcutsOpen(true)}
+                aria-label="Pro-Trader Keyboard Shortcuts Guide (?)"
+                title="Keyboard Shortcuts Cheatsheet (?)"
+                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+              >
+                <span aria-hidden="true" className="font-mono font-bold text-sm">?</span>
+              </button>
 
-            {/* Guided Onboarding Tour Button */}
-            <button
-              id="onboarding-tour-btn"
-              type="button"
-              onClick={handleOpenOnboarding}
-              aria-label="Guided Onboarding Tour"
-              title="Guided Onboarding Tour"
-              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-            >
-              <span aria-hidden="true" className="text-sm">🧭</span>
-            </button>
+              {/* Guided Onboarding Tour Button */}
+              <button
+                id="onboarding-tour-btn"
+                type="button"
+                onClick={handleOpenOnboarding}
+                aria-label="Guided Onboarding Tour"
+                title="Guided Onboarding Tour"
+                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+              >
+                <span aria-hidden="true" className="text-sm">🧭</span>
+              </button>
 
-            {/* Privacy & Telemetry Settings Button */}
-            <button
-              id="privacy-settings-btn"
-              type="button"
-              onClick={() => setIsPrivacyOpen(true)}
-              aria-label="Privacy & Telemetry Settings"
-              title="Privacy & Telemetry Settings"
-              className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-            >
-              <span aria-hidden="true" className="text-sm">🛡️</span>
-            </button>
+              {/* Privacy & Telemetry Settings Button */}
+              <button
+                id="privacy-settings-btn"
+                type="button"
+                onClick={() => setIsPrivacyOpen(true)}
+                aria-label="Privacy & Telemetry Settings"
+                title="Privacy & Telemetry Settings"
+                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+              >
+                <span aria-hidden="true" className="text-sm">🛡️</span>
+              </button>
+            </div>
+
+            {/* Mobile Utilities Overflow Menu Button (Visible strictly on mobile < sm) */}
+            <div className="relative sm:hidden">
+              <button
+                id="mobile-utilities-btn"
+                type="button"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-expanded={isMobileMenuOpen}
+                aria-label="More Terminal Options and Utilities"
+                title="More Options"
+                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+              >
+                <span aria-hidden="true" className="font-mono text-sm leading-none">⋯</span>
+              </button>
+
+              {/* Mobile Utilities Dropdown Menu */}
+              {isMobileMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Mobile Utilities"
+                  className="absolute right-0 top-12 z-50 w-56 rounded-xl border border-[#243044] bg-[#0c1017] p-2 shadow-2xl space-y-2 text-xs font-mono"
+                >
+                  <div className="px-2 py-1 text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                    Terminal Experience
+                  </div>
+                  <div className="px-1">
+                    <ExperienceModeToggle />
+                  </div>
+                  <div className="border-t border-slate-800 pt-1 space-y-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsShortcutsOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                    >
+                      <span>⌨️</span>
+                      <span>Keyboard Shortcuts</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        handleOpenOnboarding();
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                    >
+                      <span>🧭</span>
+                      <span>Guided Onboarding Tour</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsPrivacyOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                    >
+                      <span>🛡️</span>
+                      <span>Privacy & Telemetry</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Trading Horizon Switcher (Always 100% visible and unclipped across all viewports) */}
             <div role="toolbar" aria-label="Trading Horizon Mode Switcher" className="hidden sm:flex bg-[#090d14] p-0.5 rounded-xl border border-[#243044] items-center shadow-inner shrink-0">

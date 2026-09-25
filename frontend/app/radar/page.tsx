@@ -13,6 +13,7 @@ import {
   RadarCapabilityStatus,
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
+import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
 
 interface RadarAsset {
   ticker: string;
@@ -104,18 +105,24 @@ function RadarContent() {
           const rrVal = typeof gem.riskRewardRatio === 'number' ? gem.riskRewardRatio : null;
           const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Consolidation Base'));
 
+          const cleanTicker = (gem.ticker || '').toUpperCase();
+          const catalogEntry = MASTER_ASSET_CATALOG[cleanTicker];
+          const resolvedName = gem.companyName || catalogEntry?.name || '';
+
           return {
-            ticker: gem.ticker,
-            name: gem.ticker,
+            ticker: cleanTicker,
+            name: resolvedName,
             price: Number((gem.current_price || 0).toFixed(2)),
             rvol: rvolVal,
             riskRewardRatio: rrVal,
             vcpStage: stageStr,
             volumeDryUpPct: dryUp,
-            confluenceScore: Math.round(gem.composite_score || 0),
+            confluenceScore: typeof gem.confluenceScore === 'number'
+              ? Math.round(gem.confluenceScore)
+              : (typeof gem.composite_score === 'number' ? Math.round(gem.composite_score) : 0),
             catalyst: gem.primary_catalyst || gem.investment_thesis || "Stage 2 accumulation breakout with institutional liquidity flow.",
             categories: cat,
-            sector: "Broad Market",
+            sector: catalogEntry?.sector || "Broad Market",
             executionStatus,
             decisionState: gem.decisionState,
             decisionStateLabel: gem.decisionStateLabel,
@@ -410,9 +417,22 @@ function RadarContent() {
 
         {/* Attention Candidate Hero Card */}
         {!isLoading && heroAsset && (
-          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-5 md:p-6 shadow-2xl">
-            <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 border-b border-l border-emerald-500/40 text-[10px] font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-bl-xl">
-              Attention Candidate · Top Pre-Screened Confluence
+          <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 p-4 sm:p-5 md:p-6 shadow-2xl space-y-4">
+            {/* Top Flow Header: Ribbon & Context Badge in Normal Document Flow (Zero Overlap on Mobile) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/20">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-[10px] sm:text-xs font-mono uppercase tracking-widest text-emerald-300 font-bold rounded-lg">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Attention Candidate · Top Pre-Screened Confluence
+              </div>
+              <div
+                className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800"
+                title="Radar displays pre-calculated batch screening snapshot. Individual asset live indicators are calculated in Analysis hub."
+              >
+                <span>📡</span>
+                <span>Screening Snapshot</span>
+                <span className="text-slate-600">|</span>
+                <span className="text-cyan-400">Batch Universe</span>
+              </div>
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -421,14 +441,20 @@ function RadarContent() {
                   <span className="text-2xl md:text-3xl font-black font-mono tracking-tight text-white">
                     {heroAsset.ticker}
                   </span>
-                  <span className="text-sm md:text-base text-slate-300 font-medium">
-                    {heroAsset.name}
-                  </span>
+                  {heroAsset.name && heroAsset.name !== heroAsset.ticker && (
+                    <span className="text-sm md:text-base text-slate-300 font-medium">
+                      {heroAsset.name}
+                    </span>
+                  )}
                   <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
                     ATTENTION CANDIDATE
                   </span>
-                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50">
-                    {heroAsset.executionStatus.replace(/_/g, ' ')}
+                  <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                    heroAsset.isActionable
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                      : 'bg-slate-800/80 text-slate-300 border-slate-700'
+                  }`}>
+                    {heroAsset.isActionable ? 'BUY ZONE CONFIRMED' : (heroAsset.decisionStateLabel || heroAsset.executionStatus.replace(/_/g, ' '))}
                   </span>
                   {heroAsset.vcpStage && (
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
@@ -448,8 +474,8 @@ function RadarContent() {
                     <span className="text-white font-bold">${heroAsset.price.toFixed(2)}</span>
                   </div>
                   <span className="text-slate-700">•</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Confluence:</span>
+                  <div className="flex items-center gap-1.5" title="Pre-screened multi-factor confluence conviction score (0-100) from batch screener pipeline">
+                    <span className="text-slate-400">Screen Confluence:</span>
                     <span className="text-emerald-400 font-bold">{heroAsset.confluenceScore}/100</span>
                   </div>
                   {heroAsset.rvol && (
@@ -703,15 +729,15 @@ function RadarContent() {
             <table className="w-full text-left font-mono text-xs">
               <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
                 <tr>
-                  <th className="p-3">Asset</th>
-                  <th className="p-3">Action Status</th>
-                  <th className="p-3">Price</th>
-                  <th className="p-3 text-center">Score</th>
-                  <th className="p-3 text-center">RVOL</th>
-                  <th className="p-3">VCP / Base Setup</th>
-                  <th className="p-3 text-center">R:R Ratio</th>
-                  <th className="p-3">Catalyst Rationale</th>
-                  <th className="p-3 text-right">Action</th>
+                  <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[110px]">Asset</th>
+                  <th className="p-3 min-w-[130px]">Action Status</th>
+                  <th className="p-3 min-w-[80px]">Price</th>
+                  <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
+                  <th className="p-3 text-center min-w-[70px]">RVOL</th>
+                  <th className="p-3 min-w-[120px]">VCP / Base Setup</th>
+                  <th className="p-3 text-center min-w-[80px]">R:R Ratio</th>
+                  <th className="p-3 min-w-[200px]">Catalyst Rationale</th>
+                  <th className="p-3 text-right min-w-[80px]">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -801,23 +827,23 @@ function RadarContent() {
                     const isPivot = asset.executionStatus === 'NEAR_PIVOT';
                     const statusLabel = isActionableBuy
                       ? 'BUY ZONE CONFIRMED'
-                      : isBuy
-                      ? (asset.decisionState === 'EVIDENCE_INCOMPLETE' ? 'DISCLOSURES PENDING' : 'AWAITING TRIGGER')
-                      : asset.executionStatus.replace(/_/g, ' ');
+                      : (asset.decisionStateLabel || (isBuy ? 'AWAITING TRIGGER' : asset.executionStatus.replace(/_/g, ' ')));
 
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
-                        <td className="p-3">
+                        <td className="p-3 sticky left-0 bg-[#0a0f18] z-10">
                           <Link
                             href={`/?symbol=${asset.ticker}`}
                             onClick={() => trackRadarAssetClick(asset.ticker)}
-                            className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block"
+                            className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
                           >
                             {asset.ticker}
                           </Link>
-                          <div className="text-[10px] text-slate-400 font-sans truncate max-w-[120px]">{asset.name}</div>
+                          {asset.name && asset.name !== asset.ticker && (
+                            <div className="text-[10px] text-slate-400 font-sans truncate max-w-[120px]" title={asset.name}>{asset.name}</div>
+                          )}
                         </td>
-                        <td className="p-3">
+                        <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             isActionableBuy
                               ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
@@ -830,27 +856,27 @@ function RadarContent() {
                             {statusLabel}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-white">${asset.price.toFixed(2)}</td>
-                        <td className="p-3 text-center">
-                          <span className="font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded">
+                        <td className="p-3 font-bold text-white whitespace-nowrap">${asset.price.toFixed(2)}</td>
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <span className="font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded" title="Screening Snapshot Score">
                             {asset.confluenceScore}
                           </span>
                         </td>
-                        <td className="p-3 text-center font-bold text-cyan-300">
+                        <td className="p-3 text-center font-bold text-cyan-300 whitespace-nowrap">
                           {asset.rvol ? asset.rvol : <span className="text-slate-500 font-normal">—</span>}
                         </td>
-                        <td className="p-3 text-slate-300 text-[11px]">{asset.vcpStage}</td>
-                        <td className="p-3 text-center font-bold text-emerald-400">
+                        <td className="p-3 text-slate-300 text-[11px] whitespace-nowrap">{asset.vcpStage}</td>
+                        <td className="p-3 text-center font-bold text-emerald-400 whitespace-nowrap">
                           {asset.riskRewardRatio !== null && asset.riskRewardRatio !== undefined ? `${asset.riskRewardRatio.toFixed(1)}:1` : <span className="text-slate-500 font-normal">—</span>}
                         </td>
                         <td className="p-3 text-slate-300 text-[11px] font-sans max-w-xs truncate" title={asset.catalyst}>
                           {asset.catalyst}
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="p-3 text-right whitespace-nowrap">
                           <Link
                             href={`/setups?ticker=${asset.ticker}`}
                             onClick={() => trackRadarAssetClick(asset.ticker)}
-                            className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block ${
+                            className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                               isActionableBuy
                                 ? 'bg-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-300 border border-emerald-500/40'
                                 : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-400'

@@ -638,7 +638,10 @@ export type RadarCapabilities = Record<CanonicalRadarCategory, RadarCapabilityDe
 
 export interface GemCandidate {
   ticker: string;
-  composite_score: number;
+  composite_score: number | null;
+  confluenceScore?: number | null;
+  gemScore?: number | null;
+  companyName?: string | null;
   expert_model: string | null;
   categories: CanonicalRadarCategory[];
   categoryEvidence: Partial<Record<CanonicalRadarCategory, "CRITERIA_MATCHED" | "CRITERIA_UNMET" | "UNASSESSED">>;
@@ -1284,34 +1287,46 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
       const rawCandidates = data.candidates || data.results || [];
       if (Array.isArray(rawCandidates) && rawCandidates.length > 0) {
         const capabilities: RadarCapabilities | undefined = data.capabilities;
-        const candidates: GemCandidate[] = rawCandidates.map((r: any) => ({
-          ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
-          composite_score: Math.round(r.confluenceScore || r.gemScore || 0),
-          expert_model: r.expertArchetype || null,
-          categories: Array.isArray(r.categories)
-            ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
-            : [],
-          categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
-          peg_ratio: r.peg_ratio,
-          roic_pct: r.roic_pct,
-          gross_margin_pct: r.gross_margin_pct,
-          risk_rating: r.confluenceRating || "Medium",
-          investment_thesis: r.entryThesis || "",
-          primary_catalyst: r.catalyst || "",
-          factor_verdict: r.executionStatus || "WAITING_PULLBACK",
-          dna_verdict: r.confluenceRating || "",
-          current_price: r.currentPrice || r.current_price,
-          execution_status: r.executionStatus || r.execution_status,
-          rvol: typeof r.rvol === "string" ? r.rvol : null,
-          riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
-          decisionState: r.decisionState,
-          decisionStateLabel: r.decisionStateLabel,
-          isActionable: typeof r.isActionable === "boolean" ? r.isActionable : false,
-          canSizeTrade: typeof r.canSizeTrade === "boolean" ? r.canSizeTrade : false,
-          allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : [],
-          disqualificationReason: r.disqualificationReason ?? null,
-          decisionContextId: r.decisionContextId,
-        }));
+        const candidates: GemCandidate[] = rawCandidates.map((r: any) => {
+          const confluenceVal = typeof r.confluenceScore === "number" && Number.isFinite(r.confluenceScore)
+            ? Math.round(r.confluenceScore)
+            : null;
+          const gemVal = typeof r.gemScore === "number" && Number.isFinite(r.gemScore)
+            ? Math.round(r.gemScore)
+            : null;
+
+          return {
+            ticker: r.ticker || r.symbol || r.companyName || "UNKNOWN",
+            composite_score: confluenceVal,
+            confluenceScore: confluenceVal,
+            gemScore: gemVal,
+            companyName: r.companyName || r.name || null,
+            expert_model: r.expertArchetype || null,
+            categories: Array.isArray(r.categories)
+              ? (r.categories.filter((c: any) => ["VALUE_GARP", "VCP", "SMART_MONEY"].includes(c)) as CanonicalRadarCategory[])
+              : [],
+            categoryEvidence: (r.categoryEvidence && typeof r.categoryEvidence === "object") ? r.categoryEvidence : {},
+            peg_ratio: r.peg_ratio,
+            roic_pct: r.roic_pct,
+            gross_margin_pct: r.gross_margin_pct,
+            risk_rating: r.confluenceRating || "Medium",
+            investment_thesis: r.entryThesis || "",
+            primary_catalyst: r.catalyst || "",
+            factor_verdict: r.executionStatus || "WAITING_PULLBACK",
+            dna_verdict: r.confluenceRating || "",
+            current_price: r.currentPrice || r.current_price,
+            execution_status: r.executionStatus || r.execution_status,
+            rvol: typeof r.rvol === "string" ? r.rvol : null,
+            riskRewardRatio: typeof r.riskRewardRatio === "number" ? r.riskRewardRatio : null,
+            decisionState: r.decisionState,
+            decisionStateLabel: r.decisionStateLabel,
+            isActionable: typeof r.isActionable === "boolean" ? r.isActionable : false,
+            canSizeTrade: typeof r.canSizeTrade === "boolean" ? r.canSizeTrade : false,
+            allowedActions: Array.isArray(r.allowedActions) ? r.allowedActions : [],
+            disqualificationReason: r.disqualificationReason ?? null,
+            decisionContextId: r.decisionContextId,
+          };
+        });
         return {
           total_candidates: candidates.length,
           gems_found: candidates.length,

@@ -26,6 +26,8 @@ interface ConfluenceCandidate {
   rewardRiskRatio: string;
 }
 
+export type SpotlightState = 'LOADING' | 'ERROR' | 'STALE_MARKET_DATA' | 'NO_QUALIFYING_CANDIDATES' | 'READY';
+
 interface WeeklyConfluenceSpotlightProps {
   defaultCollapsed?: boolean;
   onSelectSymbol?: (symbol: string) => void;
@@ -42,6 +44,10 @@ export default function WeeklyConfluenceSpotlight({
   const [loggedSymbol, setLoggedSymbol] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(defaultCollapsed);
   const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePct: number; lastUpdated: number }>>({});
+  const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
+  const [isLoadingSetups, setIsLoadingSetups] = useState<boolean>(true);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState<number>(0);
 
   useEffect(() => {
     setIsCollapsed(defaultCollapsed);
@@ -57,8 +63,12 @@ export default function WeeklyConfluenceSpotlight({
           next[sym] = q;
         }
       }
-      // 2. Ingest fresh quotes from SpotPriceRegistry
-      for (const sym of Object.keys(MASTER_ASSET_CATALOG)) {
+      // 2. Ingest fresh quotes from SpotPriceRegistry strictly for candidate setups
+      const candidateList = tacticalSetups.length > 0
+        ? tacticalSetups.map((s) => s.ticker)
+        : Object.keys(MASTER_ASSET_CATALOG).slice(0, 5);
+
+      for (const sym of candidateList) {
         const reg = SpotPriceRegistry.get(sym);
         if (reg && reg.price > 0 && reg.lastUpdated && isQuoteFresh(reg.lastUpdated)) {
           next[sym] = { price: reg.price, changePct: reg.changePct, lastUpdated: reg.lastUpdated };
@@ -66,32 +76,64 @@ export default function WeeklyConfluenceSpotlight({
       }
       return next;
     });
-  }, []);
+  }, [tacticalSetups]);
 
+  // Fetch setups with explicit error state propagation (never swallows failures into empty list)
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingSetups(true);
+    setSetupError(null);
+
+    fetchTacticalSetups(undefined, userRole)
+      .then((data) => {
+        if (!isMounted) return;
+        setTacticalSetups(data || []);
+        setIsLoadingSetups(false);
+      })
+      .catch((err: any) => {
+        if (!isMounted) return;
+        setTacticalSetups([]);
+        setSetupError(err?.message || "Failed to load tactical setups from analytics engine.");
+        setIsLoadingSetups(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userRole, retryNonce]);
+
+  // Derive quotes strictly from actual candidate universe (Step 10 fix)
   useEffect(() => {
     refreshLocalQuotes();
 
-    // Fetch batch live exchange quotes for top candidate tickers on mount
-    const candidateSymbols = Object.keys(MASTER_ASSET_CATALOG);
-    fetchBatchQuotes(candidateSymbols).then((batch) => {
-      if (batch && Object.keys(batch).length > 0) {
-        setLiveQuotes((prev) => {
-          const next = { ...prev };
-          for (const [sym, b] of Object.entries(batch)) {
-            if (b && b.price > 0 && b.lastUpdated && isQuoteFresh(b.lastUpdated)) {
-              next[sym] = b;
-            }
-          }
-          return next;
-        });
-      }
-    }).catch(() => {});
+    if (!tacticalSetups || tacticalSetups.length === 0) return;
+    const candidateSymbols = Array.from(new Set(tacticalSetups.map((s) => s.ticker).filter(Boolean)));
+    if (candidateSymbols.length === 0) return;
 
-    // Periodic freshness reaper: prune expired observations from state
+    fetchBatchQuotes(candidateSymbols)
+      .then((batch) => {
+        if (batch && Object.keys(batch).length > 0) {
+          setLiveQuotes((prev) => {
+            const next = { ...prev };
+            for (const [sym, b] of Object.entries(batch)) {
+              if (b && b.price > 0 && b.lastUpdated && isQuoteFresh(b.lastUpdated)) {
+                next[sym] = b;
+              }
+            }
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
+
     const timer = setInterval(() => {
       refreshLocalQuotes();
     }, 15000);
 
+    return () => clearInterval(timer);
+  }, [tacticalSetups, refreshLocalQuotes]);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("ARX_VERNACULAR_MODE") as "PLAIN_ENGLISH" | "PRO_QUANT" | null;
       if (saved) setVernacularMode(saved);
@@ -102,12 +144,9 @@ export default function WeeklyConfluenceSpotlight({
       const handleStorage = () => refreshLocalQuotes();
       window.addEventListener("storage", handleStorage);
       return () => {
-        clearInterval(timer);
         window.removeEventListener("storage", handleStorage);
       };
     }
-
-    return () => clearInterval(timer);
   }, [refreshLocalQuotes]);
 
   useEffect(() => {
@@ -129,22 +168,6 @@ export default function WeeklyConfluenceSpotlight({
 
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const isDayTrader = userRole === "DAY_TRADER";
-
-  const [tacticalSetups, setTacticalSetups] = useState<TradeSetupSpec[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetchTacticalSetups(undefined, userRole)
-      .then((data) => {
-        if (isMounted) setTacticalSetups(data || []);
-      })
-      .catch(() => {
-        if (isMounted) setTacticalSetups([]);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [userRole]);
 
   // Dynamically compute the Top 3 High-Confluence Plays strictly from authoritative live setups
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
@@ -260,6 +283,30 @@ export default function WeeklyConfluenceSpotlight({
     });
   }, [tacticalSetups, liveQuotes, isDayTrader, isPlain]);
 
+  // Explicit 5-state model (Step 8 & 11)
+  const spotlightState: SpotlightState = useMemo(() => {
+    if (isLoadingSetups) return 'LOADING';
+    if (setupError) return 'ERROR';
+    if (!tacticalSetups || tacticalSetups.length === 0) return 'NO_QUALIFYING_CANDIDATES';
+
+    if (topCandidates.length > 0) {
+      return 'READY';
+    }
+
+    // Check if tactical setups exist but none had fresh quotes
+    const anyHasStaleQuote = tacticalSetups.some((s) => {
+      const live = liveQuotes[s.ticker];
+      const reg = SpotPriceRegistry.get(s.ticker);
+      return (live && !isQuoteFresh(live.lastUpdated)) || (reg && !isQuoteFresh(reg.lastUpdated));
+    });
+
+    if (anyHasStaleQuote) {
+      return 'STALE_MARKET_DATA';
+    }
+
+    return 'NO_QUALIFYING_CANDIDATES';
+  }, [isLoadingSetups, setupError, tacticalSetups, topCandidates, liveQuotes]);
+
   const handleQuickLog = async (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();
     e.stopPropagation();
@@ -342,11 +389,11 @@ export default function WeeklyConfluenceSpotlight({
               <p className="text-xs text-slate-400 mt-0.5">
                 {isDayTrader
                   ? isPlain
-                    ? "Filtered for fast-moving stocks with heavy trading volume and tight safety stops."
-                    : "Intraday & swing sieve: RVOL >= 1.3 + ATR/Price >= 2.0% + Minervini Stage 2 + R:R >= 1.85:1."
+                    ? "Filtered for fast-moving stocks with elevated trading volume and defined risk stops."
+                    : "Intraday & swing sieve: RVOL >= 1.3 + ATR risk definition + Minervini Stage 2 + R:R >= 1.85:1."
                   : isPlain
-                  ? "Strictly filtered by balance sheet health, insider flow, and minimum 1.85:1 profit-to-risk ratio."
-                  : "Multi-factor quantitative sieve: Minervini Stage 2 + Piotroski F-Score >= 7 + SEC Form 4 Inflow + Risk/Reward >= 1.85:1."}
+                  ? "Filtered by multi-factor confluence (balance sheet health, institutional flow) with minimum 1.85:1 profit-to-risk ratio."
+                  : "Multi-factor quantitative sieve: Minervini Stage 2 + Multi-Factor Confluence (Piotroski, Insider Flow) + Risk/Reward >= 1.85:1."}
               </p>
             )}
           </div>
@@ -400,8 +447,14 @@ export default function WeeklyConfluenceSpotlight({
                   </button>
                 );
               })
+            ) : spotlightState === 'LOADING' ? (
+              <span className="text-xs text-slate-500 font-mono animate-pulse">Scanning setups...</span>
+            ) : spotlightState === 'ERROR' ? (
+              <span className="text-xs text-rose-400 font-mono">⚠️ Setups telemetry error</span>
+            ) : spotlightState === 'STALE_MARKET_DATA' ? (
+              <span className="text-xs text-amber-400 font-mono">⏳ Market closed / Stale tape</span>
             ) : (
-              <span className="text-xs text-slate-500 font-mono">Awaiting verified live quotes</span>
+              <span className="text-xs text-slate-500 font-mono">0 qualifying plays</span>
             )}
           </div>
           <button
@@ -531,9 +584,47 @@ export default function WeeklyConfluenceSpotlight({
               );
             })}
           </div>
+        ) : spotlightState === 'LOADING' ? (
+          <div className="p-8 text-center text-xs font-mono text-cyan-400 bg-[#111722] rounded-xl border border-[#243044] animate-pulse flex items-center justify-center gap-3">
+            <span>⏳</span>
+            <span>Scanning multi-factor confluence setups & live quotes...</span>
+          </div>
+        ) : spotlightState === 'ERROR' ? (
+          <div className="p-6 text-center space-y-3 font-mono bg-rose-950/20 rounded-xl border border-rose-800/60 text-xs">
+            <div className="text-rose-400 font-bold text-sm flex items-center justify-center gap-2">
+              <span>⚠️</span>
+              <span>Tactical Setups Telemetry Unavailable</span>
+            </div>
+            <p className="text-slate-300 max-w-md mx-auto font-sans">
+              {setupError || "An error occurred contacting the tactical analytics engine."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setRetryNonce((n) => n + 1)}
+              className="px-3.5 py-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-800/60 text-rose-200 border border-rose-700/60 font-mono font-bold transition-all cursor-pointer"
+            >
+              🔄 Retry Sieve
+            </button>
+          </div>
+        ) : spotlightState === 'STALE_MARKET_DATA' ? (
+          <div className="p-6 text-center space-y-2 font-mono bg-amber-950/20 rounded-xl border border-amber-800/60 text-xs">
+            <div className="text-amber-400 font-bold text-sm flex items-center justify-center gap-2">
+              <span>⏳</span>
+              <span>Market Session Offline / Stale Price Telemetry</span>
+            </div>
+            <p className="text-slate-300 max-w-lg mx-auto font-sans text-xs">
+              Live exchange tape is closed or candidate prices are older than 4 trading sessions. Live execution triggers are suspended until regular trading session resumes.
+            </p>
+          </div>
         ) : (
-          <div className="p-6 text-center text-sm font-mono text-slate-400 bg-[#111722] rounded-xl border border-[#243044]">
-            No candidates with verified exchange pricing currently meet spotlight criteria. Awaiting market tape.
+          <div className="p-6 text-center space-y-2 font-mono bg-[#111722] rounded-xl border border-[#243044] text-xs">
+            <div className="text-slate-300 font-bold text-sm flex items-center justify-center gap-2">
+              <span>🎯</span>
+              <span>Zero Active Setups Meeting Spotlight Thresholds</span>
+            </div>
+            <p className="text-slate-400 max-w-md mx-auto font-sans text-xs">
+              No market assets currently meet the {isDayTrader ? "RVOL >= 1.3, ATR momentum" : "Minervini Stage 2, Confluence, R:R >= 1.85:1"} criteria in this market regime.
+            </p>
           </div>
         )
       )}

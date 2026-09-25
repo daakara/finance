@@ -223,10 +223,11 @@ export default function CongressionalTradesCard({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {cryptoMetadata.proxies.map((proxy) => (
-              <div
+              <button
                 key={proxy.symbol}
+                type="button"
                 onClick={() => onSelectSymbol && onSelectSymbol(proxy.symbol)}
-                className="flex items-center justify-between p-3 rounded-lg bg-[#06090f] hover:bg-[#162030] border border-[#1b2434] hover:border-cyan-500/50 transition-all cursor-pointer group"
+                className="flex items-center justify-between p-3 rounded-lg bg-[#06090f] hover:bg-[#162030] border border-[#1b2434] hover:border-cyan-500/50 transition-all cursor-pointer group text-left w-full focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               >
                 <div>
                   <div className="flex items-center gap-2">
@@ -235,10 +236,10 @@ export default function CongressionalTradesCard({
                   </div>
                   <p className="text-[10px] text-slate-400 font-sans mt-0.5">{proxy.reason}</p>
                 </div>
-                <button className="px-2 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded text-[10px] font-bold shrink-0">
+                <span className="px-2 py-1 bg-cyan-950 group-hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded text-[10px] font-bold shrink-0">
                   Inspect Insiders →
-                </button>
-              </div>
+                </span>
+              </button>
             ))}
           </div>
         </div>
@@ -336,8 +337,17 @@ export default function CongressionalTradesCard({
                   optionsFlow.map((flow, i) => (
                     <tr
                       key={i}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Inspect options flow ${flow.ticker || ''} strike ${flow.strike}`}
                       onClick={() => setSelectedOptions(flow)}
-                      className="hover:bg-[#162030] cursor-pointer transition-colors group"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedOptions(flow);
+                        }
+                      }}
+                      className="hover:bg-[#162030] cursor-pointer transition-colors group focus-visible:ring-1 focus-visible:ring-cyan-400 focus-visible:outline-none"
                     >
                       <td className="py-2.5 font-mono text-slate-400 text-[11px]">{flow.time}</td>
                       <td className="py-2.5">
@@ -366,7 +376,7 @@ export default function CongressionalTradesCard({
                             e.stopPropagation();
                             setSelectedOptions(flow);
                           }}
-                          className="bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded text-[10px] font-bold"
+                          className="bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded text-[10px] font-bold focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
                         >
                           Inspect
                         </button>
@@ -393,8 +403,17 @@ export default function CongressionalTradesCard({
               filteredCongressTrades.map((trade, i) => (
                 <div
                   key={i}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Inspect congressional trade by ${trade.politician}`}
                   onClick={() => setSelectedCongress(trade)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#090d14] hover:bg-[#162030] border border-[#1e293b] hover:border-purple-500/40 transition-all cursor-pointer gap-3 group"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedCongress(trade);
+                    }
+                  }}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[#090d14] hover:bg-[#162030] border border-[#1e293b] hover:border-purple-500/40 transition-all cursor-pointer gap-3 group focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none"
                 >
                   <div className="space-y-1.5 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
