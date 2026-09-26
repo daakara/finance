@@ -1,0 +1,50 @@
+{
+  "SMALL": {
+    "tier": "SMALL",
+    "funds_in_doc": 2,
+    "doc_size_mb": 0.002,
+    "index_build_sec": 0.006,
+    "index_size_kb": 0.8,
+    "avg_target_lookup_ms": 1.891,
+    "avg_mandate_parse_ms": 27.398,
+    "peak_memory_mb": 0.14,
+    "repeated_full_scan_eliminated": true,
+    "document_index_reuse": "VERIFIED"
+  },
+  "MEDIUM": {
+    "tier": "MEDIUM",
+    "funds_in_doc": 10,
+    "doc_size_mb": 0.018,
+    "index_build_sec": 0.0069,
+    "index_size_kb": 1.03,
+    "avg_target_lookup_ms": 2.164,
+    "avg_mandate_parse_ms": 6.261,
+    "peak_memory_mb": 0.22,
+    "repeated_full_scan_eliminated": true,
+    "document_index_reuse": "VERIFIED"
+  },
+  "LARGE": {
+    "tier": "LARGE",
+    "funds_in_doc": 50,
+    "doc_size_mb": 0.088,
+    "index_build_sec": 0.034,
+    "index_size_kb": 2.12,
+    "avg_target_lookup_ms": 2.124,
+    "avg_mandate_parse_ms": 3.083,
+    "peak_memory_mb": 1.06,
+    "repeated_full_scan_eliminated": true,
+    "document_index_reuse": "VERIFIED"
+  },
+  "VERY_LARGE": {
+    "tier": "VERY_LARGE",
+    "funds_in_doc": 120,
+    "doc_size_mb": 0.212,
+    "index_build_sec": 0.0817,
+    "index_size_kb": 4.05,
+    "avg_target_lookup_ms": 2.092,
+    "avg_mandate_parse_ms": 3.094,
+    "peak_memory_mb": 2.53,
+    "repeated_full_scan_eliminated": true,
+    "document_index_reuse": "VERIFIED"
+  }
+}

@@ -461,3 +461,261 @@ FIDELITY_FZFLX = SeriesMetadata(
     legal_name="Fidelity SAI Small-Mid Cap Momentum Index Fund",
     trust_name="FIDELITY SALEM STREET TRUST"
 )
+
+
+# --------------------------------------------------------------------------
+# 10. Alpha Architect Golden Fixture (EA Series Trust)
+# --------------------------------------------------------------------------
+ALPHA_ARCHITECT_OMNIBUS_HTML = """
+<html>
+<body>
+<div class="registrant">EA Series Trust CIK 0001592900</div>
+
+<div class="fund-summary-container">
+  <h2>Alpha Architect U.S. Quantitative Value ETF</h2>
+  <p>Series ID: S000046522 Class ID: C000145266 (Ticker: QVAL)</p>
+  <h3>Investment Objective</h3>
+  <p>The Alpha Architect U.S. Quantitative Value ETF seeks long-term capital appreciation.</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>The Fund employs a disciplined, systematic quantitative investment process. Under normal circumstances, the Fund invests at least 80% of its net assets in equity securities of companies listed in the United States that exhibit deeply undervalued characteristics coupled with forensic accounting quality screens.</p>
+</div>
+
+<div class="fund-summary-container">
+  <h2>Alpha Architect International Quantitative Momentum ETF</h2>
+  <p>Series ID: S000049211 Class ID: C000155099 (Ticker: IMOM)</p>
+  <h3>Investment Objective</h3>
+  <p>The Alpha Architect International Quantitative Momentum ETF seeks long-term capital appreciation.</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>The Fund employs a systematic rules-based momentum investment approach that invests at least 80% of its net assets in equity securities of non-U.S. developed market companies demonstrating high momentum profiles over medium-term horizons.</p>
+</div>
+</body>
+</html>
+"""
+
+ALPHA_ARCHITECT_QVAL = SeriesMetadata(
+    symbol="QVAL",
+    cik="1592900",
+    series_id="S000046522",
+    class_id="C000145266",
+    legal_name="Alpha Architect U.S. Quantitative Value ETF",
+    trust_name="EA Series Trust"
+)
+
+ALPHA_ARCHITECT_IMOM = SeriesMetadata(
+    symbol="IMOM",
+    cik="1592900",
+    series_id="S000049211",
+    class_id="C000155099",
+    legal_name="Alpha Architect International Quantitative Momentum ETF",
+    trust_name="EA Series Trust"
+)
+
+
+# --------------------------------------------------------------------------
+# 11. VanEck Golden Fixture (VanEck ETF Trust)
+# --------------------------------------------------------------------------
+VANECK_OMNIBUS_HTML = """
+<html>
+<body>
+<div class="header">VanEck ETF Trust CIK 0001137360</div>
+
+<div class="fund-content">
+  <h1>VanEck Gold Miners ETF</h1>
+  <p>Series ID: S000004812 Class ID: C000013144 (Ticker: GDX)</p>
+  <h2>Investment Objective</h2>
+  <p>The Fund seeks to replicate as closely as possible, before fees and expenses, the price and yield performance of the NYSE Arca Gold Miners Index.</p>
+  <h2>Principal Investment Strategies</h2>
+  <p>The Fund normally invests at least 80% of its total assets in common stocks and depositary receipts of companies involved in the gold mining industry. The Index is a modified market-capitalization weighted index comprised of publicly traded companies involved primarily in the mining for gold and silver.</p>
+</div>
+
+<div class="fund-content">
+  <h1>VanEck Semiconductor ETF</h1>
+  <p>Series ID: S000034509 Class ID: C000106202 (Ticker: SMH)</p>
+  <h2>Investment Objective</h2>
+  <p>The Fund seeks to replicate as closely as possible the price and yield performance of the MVIS US Listed Semiconductor 25 Index.</p>
+  <h2>Principal Investment Strategies</h2>
+  <p>The Fund normally invests at least 80% of its total assets in common stocks and depositary receipts of U.S. exchange-listed companies that derive at least 50% of their total revenues from semiconductors and semiconductor equipment.</p>
+</div>
+</body>
+</html>
+"""
+
+VANECK_GDX = SeriesMetadata(
+    symbol="GDX",
+    cik="1137360",
+    series_id="S000004812",
+    class_id="C000013144",
+    legal_name="VanEck Gold Miners ETF",
+    trust_name="VanEck ETF Trust"
+)
+
+VANECK_SMH = SeriesMetadata(
+    symbol="SMH",
+    cik="1137360",
+    series_id="S000034509",
+    class_id="C000106202",
+    legal_name="VanEck Semiconductor ETF",
+    trust_name="VanEck ETF Trust"
+)
+
+
+# ==========================================================================
+# ADVERSARIAL STRUCTURAL FIXTURES (Section 33)
+# ==========================================================================
+
+# 1. Table of Contents Duplicate Names & Repeated Headers
+ADVERSARIAL_TOC_DUPLICATE_HTML = """
+<html>
+<body>
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <p><a href="#fund1">Adversarial Alpha Growth ETF</a> ................... Page 3</p>
+  <p><a href="#fund2">Adversarial Beta Income ETF</a> ................... Page 12</p>
+  <p>Series ID: S000099001 (Adversarial Alpha Growth ETF)</p>
+  <p>Series ID: S000099002 (Adversarial Beta Income ETF)</p>
+</div>
+
+<hr />
+<div class="running-header">Adversarial Alpha Growth ETF - Prospectus Summary</div>
+
+<div class="fund-summary" id="fund1">
+  <h2>Adversarial Alpha Growth ETF</h2>
+  <p>Series ID: S000099001 Class ID: C000099001 (Ticker: ADV1)</p>
+  <h3>Investment Objective</h3>
+  <p>Seeks capital appreciation through equity investments.</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>The Fund invests at least 80% of its net assets in equity securities of high-growth technology and healthcare companies located in North America.</p>
+</div>
+
+<hr />
+<div class="running-header">Adversarial Beta Income ETF - Prospectus Summary</div>
+
+<div class="fund-summary" id="fund2">
+  <h2>Adversarial Beta Income ETF</h2>
+  <p>Series ID: S000099002 Class ID: C000099002 (Ticker: ADV2)</p>
+  <h3>Investment Objective</h3>
+  <p>Seeks high current income with capital preservation.</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>The Fund invests at least 80% of its net assets in investment grade and dividend-paying debt securities.</p>
+</div>
+</body>
+</html>
+"""
+
+ADVERSARIAL_ADV1 = SeriesMetadata(
+    symbol="ADV1",
+    cik="9999991",
+    series_id="S000099001",
+    class_id="C000099001",
+    legal_name="Adversarial Alpha Growth ETF",
+    trust_name="Adversarial Trust"
+)
+
+
+# 2. Conflicting Series/Class Evidence (Class ID belongs to another fund in filing)
+ADVERSARIAL_CONFLICTING_IDENTITY_HTML = """
+<html>
+<body>
+<div class="fund-summary">
+  <h2>Fund One Series A</h2>
+  <p>Series ID: S000088001 Class ID: C000088001</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>Invests in Fund One assets.</p>
+</div>
+
+<div class="fund-summary">
+  <h2>Fund Two Series B</h2>
+  <p>Series ID: S000088002 Class ID: C000088002</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>Invests in Fund Two assets.</p>
+</div>
+</body>
+</html>
+"""
+
+ADVERSARIAL_CONFLICTING_TARGET = SeriesMetadata(
+    symbol="CNFL",
+    cik="9999992",
+    series_id="S000088001",
+    class_id="C000088002",  # Belongs to Series S000088002, conflicting with S000088001!
+    legal_name="Fund One Series A",
+    trust_name="Conflicting Trust"
+)
+
+
+# 3. Malformed HTML (Broken tags, missing strategy heading)
+ADVERSARIAL_MALFORMED_NO_STRATEGY_HTML = """
+<html>
+<body>
+<div class="fund-summary"
+  <h2>Malformed Fund Series X</h2>
+  <p>Series ID: S000077001 Class ID: C000077001
+  <p>This fund has completely missing investment strategy sections and unclosed divs.
+</body>
+</html>
+"""
+
+ADVERSARIAL_MALFORMED_TARGET = SeriesMetadata(
+    symbol="MALF",
+    cik="9999993",
+    series_id="S000077001",
+    class_id="C000077001",
+    legal_name="Malformed Fund Series X",
+    trust_name="Malformed Trust"
+)
+
+
+# 4. Long Strategy Section (> 15,000 characters to test removal of silent clipping)
+_LONG_PARAGRAPH = "The Fund invests systematically across diversified global equity markets adhering to statistical factors. " * 80  # ~8,000 chars
+ADVERSARIAL_LONG_STRATEGY_HTML = f"""
+<html>
+<body>
+<div class="fund-summary">
+  <h2>Adversarial Deep Research Long Strategy ETF</h2>
+  <p>Series ID: S000066001 Class ID: C000066001 (Ticker: LONG)</p>
+  <h3>Investment Objective</h3>
+  <p>Seeks maximum long-term growth.</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>{_LONG_PARAGRAPH}</p>
+  <p>{_LONG_PARAGRAPH}</p>
+  <p>Additional quantitative constraints: {_LONG_PARAGRAPH[:2000]}</p>
+  <h3>Principal Risks</h3>
+  <p>Market risk, quantitative model risk.</p>
+</div>
+</body>
+</html>
+"""
+
+ADVERSARIAL_LONG_TARGET = SeriesMetadata(
+    symbol="LONG",
+    cik="9999994",
+    series_id="S000066001",
+    class_id="C000066001",
+    legal_name="Adversarial Deep Research Long Strategy ETF",
+    trust_name="Long Strategy Trust"
+)
+
+
+# 5. Massive Strategy Section exceeding ceiling (> 50,000 chars)
+_MASSIVE_CHUNK = "Exceeds maximum allowable strategy ceiling text pattern. " * 1000  # ~57,000 chars
+ADVERSARIAL_EXCEED_CEILING_HTML = f"""
+<html>
+<body>
+<div class="fund-summary">
+  <h2>Adversarial Ceiling Exceeded ETF</h2>
+  <p>Series ID: S000055001 Class ID: C000055001 (Ticker: CEIL)</p>
+  <h3>Principal Investment Strategies</h3>
+  <p>{_MASSIVE_CHUNK}</p>
+</div>
+</body>
+</html>
+"""
+
+ADVERSARIAL_CEILING_TARGET = SeriesMetadata(
+    symbol="CEIL",
+    cik="9999995",
+    series_id="S000055001",
+    class_id="C000055001",
+    legal_name="Adversarial Ceiling Exceeded ETF",
+    trust_name="Ceiling Trust"
+)

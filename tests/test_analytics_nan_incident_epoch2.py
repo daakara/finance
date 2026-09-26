@@ -113,7 +113,13 @@ def test_09_session_state_current_open_nyse():
     now_utc = datetime.now(timezone.utc)
     today_bar = pd.Timestamp(now_utc.date())
     state = get_daily_bar_session_state(today_bar, is_crypto=False)
-    assert state in ("CURRENT_OPEN_SESSION", "COMPLETED_EXCHANGE_SESSION")
+    assert state in ("CURRENT_OPEN_SESSION", "COMPLETED_EXCHANGE_SESSION", "INVALID_SESSION")
+
+    # Deterministic weekday test during market hours
+    weekday_open = datetime(2026, 9, 23, 14, 0, tzinfo=timezone.utc)
+    weekday_bar = pd.Timestamp("2026-09-23")
+    assert get_daily_bar_session_state(weekday_bar, now_utc=weekday_open, is_crypto=False) == "CURRENT_OPEN_SESSION"
+
 
 
 def test_10_session_state_future_bar():
