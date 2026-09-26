@@ -1,0 +1,4711 @@
+{
+  "recomputed_count": 267,
+  "unique_accessions_count": 214,
+  "unique_documents_count": 214,
+  "targets": [
+    {
+      "symbol": "ACSG",
+      "cik": "0001710607",
+      "series_id": "S000093803",
+      "class_id": "C000262251",
+      "legal_name": "American Century Small Cap Growth Insights ETF",
+      "candidate_accession": "0001710607-25-000378",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftacsg497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000378_acetftacsg497k.htm"
+    },
+    {
+      "symbol": "ACSV",
+      "cik": "0001710607",
+      "series_id": "S000093802",
+      "class_id": "C000262250",
+      "legal_name": "American Century Small Cap Value Insights ETF",
+      "candidate_accession": "0001710607-25-000379",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftacsv497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000379_acetftacsv497k.htm"
+    },
+    {
+      "symbol": "AHYB",
+      "cik": "0001710607",
+      "series_id": "S000074150",
+      "class_id": "C000231722",
+      "legal_name": "American Century Select High Yield ETF",
+      "candidate_accession": "0001710607-25-000376",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftahyb497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000376_acetftahyb497k.htm"
+    },
+    {
+      "symbol": "AVDE",
+      "cik": "0001710607",
+      "series_id": "S000066456",
+      "class_id": "C000214351",
+      "legal_name": "Avantis International Equity ETF",
+      "candidate_accession": "0001710607-25-000419",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavdex497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000419_acetftavdex497k.htm"
+    },
+    {
+      "symbol": "AVDS",
+      "cik": "0001710607",
+      "series_id": "S000080558",
+      "class_id": "C000243038",
+      "legal_name": "Avantis International Small Cap Equity ETF",
+      "candidate_accession": "0001710607-25-000401",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavds497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000401_acetftavds497k.htm"
+    },
+    {
+      "symbol": "AVDV",
+      "cik": "0001710607",
+      "series_id": "S000066457",
+      "class_id": "C000214352",
+      "legal_name": "Avantis International Small Cap Value ETF",
+      "candidate_accession": "0001710607-25-000420",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavdvx497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000420_acetftavdvx497k.htm"
+    },
+    {
+      "symbol": "AVEE",
+      "cik": "0001710607",
+      "series_id": "S000082825",
+      "class_id": "C000246147",
+      "legal_name": "Avantis Emerging Markets Small Cap Equity ETF",
+      "candidate_accession": "0001710607-25-000418",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftaveex497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000418_acetftaveex497k.htm"
+    },
+    {
+      "symbol": "AVEM",
+      "cik": "0001710607",
+      "series_id": "S000066454",
+      "class_id": "C000214349",
+      "legal_name": "Avantis Emerging Markets Equity ETF",
+      "candidate_accession": "0001710607-25-000394",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavem497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000394_acetftavem497k.htm"
+    },
+    {
+      "symbol": "AVES",
+      "cik": "0001710607",
+      "series_id": "S000072996",
+      "class_id": "C000229745",
+      "legal_name": "Avantis Emerging Markets Value ETF",
+      "candidate_accession": "0001710607-25-000397",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftaves497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000397_acetftaves497k.htm"
+    },
+    {
+      "symbol": "AVGB",
+      "cik": "0001710607",
+      "series_id": "S000083426",
+      "class_id": "C000247038",
+      "legal_name": "Avantis Credit ETF",
+      "candidate_accession": "0001710607-25-000393",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavgb497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000393_acetftavgb497k.htm"
+    },
+    {
+      "symbol": "AVGE",
+      "cik": "0001710607",
+      "series_id": "S000077486",
+      "class_id": "C000237947",
+      "legal_name": "Avantis All Equity Markets ETF",
+      "candidate_accession": "0001710607-26-000204",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftavge497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000204_acetftavge497k.htm"
+    },
+    {
+      "symbol": "AVGV",
+      "cik": "0001710607",
+      "series_id": "S000080557",
+      "class_id": "C000243037",
+      "legal_name": "Avantis All Equity Markets Value ETF",
+      "candidate_accession": "0001710607-26-000201",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftavgv497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000201_acetftavgv497k.htm"
+    },
+    {
+      "symbol": "AVIE",
+      "cik": "0001710607",
+      "series_id": "S000077485",
+      "class_id": "C000237946",
+      "legal_name": "Avantis Inflation Focused Equity ETF",
+      "candidate_accession": "0001710607-25-000398",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavie497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000398_acetftavie497k.htm"
+    },
+    {
+      "symbol": "AVIV",
+      "cik": "0001710607",
+      "series_id": "S000072997",
+      "class_id": "C000229746",
+      "legal_name": "Avantis International Large Cap Value ETF",
+      "candidate_accession": "0001710607-25-000400",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftaviv497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000400_acetftaviv497k.htm"
+    },
+    {
+      "symbol": "AVLC",
+      "cik": "0001710607",
+      "series_id": "S000080562",
+      "class_id": "C000243042",
+      "legal_name": "Avantis U.S. Large Cap Equity ETF",
+      "candidate_accession": "0001710607-25-000410",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavlc497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000410_acetftavlc497k.htm"
+    },
+    {
+      "symbol": "AVLV",
+      "cik": "0001710607",
+      "series_id": "S000072998",
+      "class_id": "C000229747",
+      "legal_name": "Avantis U.S. Large Cap Value ETF",
+      "candidate_accession": "0001710607-25-000422",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavlvx497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000422_acetftavlvx497k.htm"
+    },
+    {
+      "symbol": "AVMA",
+      "cik": "0001710607",
+      "series_id": "S000080559",
+      "class_id": "C000243039",
+      "legal_name": "Avantis Moderate Allocation ETF",
+      "candidate_accession": "0001710607-26-000198",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftavma497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000198_acetftavma497k.htm"
+    },
+    {
+      "symbol": "AVMC",
+      "cik": "0001710607",
+      "series_id": "S000082826",
+      "class_id": "C000246148",
+      "legal_name": "Avantis U.S. Mid Cap Equity ETF",
+      "candidate_accession": "0001710607-25-000412",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavmc497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000412_acetftavmc497k.htm"
+    },
+    {
+      "symbol": "AVMV",
+      "cik": "0001710607",
+      "series_id": "S000082827",
+      "class_id": "C000246149",
+      "legal_name": "Avantis U.S. Mid Cap Value ETF",
+      "candidate_accession": "0001710607-25-000413",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavmv497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000413_acetftavmv497k.htm"
+    },
+    {
+      "symbol": "AVNM",
+      "cik": "0001710607",
+      "series_id": "S000080560",
+      "class_id": "C000243040",
+      "legal_name": "Avantis All International Markets Equity ETF",
+      "candidate_accession": "0001710607-26-000195",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftavnm497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000195_acetftavnm497k.htm"
+    },
+    {
+      "symbol": "AVNV",
+      "cik": "0001710607",
+      "series_id": "S000080561",
+      "class_id": "C000243041",
+      "legal_name": "Avantis All International Markets Value ETF",
+      "candidate_accession": "0001710607-26-000192",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftavnv497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000192_acetftavnv497k.htm"
+    },
+    {
+      "symbol": "AVRE",
+      "cik": "0001710607",
+      "series_id": "S000072999",
+      "class_id": "C000229748",
+      "legal_name": "Avantis Real Estate ETF",
+      "candidate_accession": "0001710607-25-000404",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavre497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000404_acetftavre497k.htm"
+    },
+    {
+      "symbol": "AVSC",
+      "cik": "0001710607",
+      "series_id": "S000074835",
+      "class_id": "C000233056",
+      "legal_name": "Avantis U.S Small Cap Equity ETF",
+      "candidate_accession": "0001710607-25-000423",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavscx497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000423_acetftavscx497k.htm"
+    },
+    {
+      "symbol": "AVSD",
+      "cik": "0001710607",
+      "series_id": "S000075382",
+      "class_id": "C000234361",
+      "legal_name": "Avantis Responsible International Equity ETF",
+      "candidate_accession": "0001710607-25-000406",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavsd497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000406_acetftavsd497k.htm"
+    },
+    {
+      "symbol": "AVSE",
+      "cik": "0001710607",
+      "series_id": "S000075381",
+      "class_id": "C000234360",
+      "legal_name": "Avantis Responsible Emerging Markets Equity ETF",
+      "candidate_accession": "0001710607-25-000405",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavse497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000405_acetftavse497k.htm"
+    },
+    {
+      "symbol": "AVSF",
+      "cik": "0001710607",
+      "series_id": "S000069306",
+      "class_id": "C000221280",
+      "legal_name": "Avantis Short-Term Fixed Income ETF",
+      "candidate_accession": "0001710607-25-000408",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavsf497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000408_acetftavsf497k.htm"
+    },
+    {
+      "symbol": "AVSU",
+      "cik": "0001710607",
+      "series_id": "S000075383",
+      "class_id": "C000234362",
+      "legal_name": "Avantis Responsible U.S. Equity ETF",
+      "candidate_accession": "0001710607-25-000407",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavsu497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000407_acetftavsu497k.htm"
+    },
+    {
+      "symbol": "AVTM",
+      "cik": "0001710607",
+      "series_id": "S000093366",
+      "class_id": "C000261581",
+      "legal_name": "Avantis Total Equity Markets ETF",
+      "candidate_accession": "0001710607-26-000019",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-01-28",
+      "candidate_document_filename": "acetftavtm497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000019_acetftavtm497k.htm"
+    },
+    {
+      "symbol": "AVUQ",
+      "cik": "0001710607",
+      "series_id": "S000087818",
+      "class_id": "C000253784",
+      "legal_name": "Avantis U.S. Quality ETF",
+      "candidate_accession": "0001710607-25-000414",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavuq497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000414_acetftavuq497k.htm"
+    },
+    {
+      "symbol": "AVUS",
+      "cik": "0001710607",
+      "series_id": "S000066458",
+      "class_id": "C000214353",
+      "legal_name": "Avantis U.S. Equity ETF",
+      "candidate_accession": "0001710607-25-000421",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavusx497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000421_acetftavusx497k.htm"
+    },
+    {
+      "symbol": "AVUV",
+      "cik": "0001710607",
+      "series_id": "S000066459",
+      "class_id": "C000214354",
+      "legal_name": "Avantis U.S. Small Cap Value ETF",
+      "candidate_accession": "0001710607-25-000424",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavuvx497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000424_acetftavuvx497k.htm"
+    },
+    {
+      "symbol": "AVXC",
+      "cik": "0001710607",
+      "series_id": "S000083425",
+      "class_id": "C000247037",
+      "legal_name": "Avantis Emerging Markets ex-China Equity ETF",
+      "candidate_accession": "0001710607-25-000395",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftavxc497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000395_acetftavxc497k.htm"
+    },
+    {
+      "symbol": "BFOR",
+      "cik": "0001414040",
+      "series_id": "S000040588",
+      "class_id": "C000125863",
+      "legal_name": "Barron's 400 ETF",
+      "candidate_accession": "0001193125-13-254378",
+      "candidate_form": "485BPOS",
+      "candidate_filing_date": "2013-06-11",
+      "candidate_document_filename": "d484634d485bpos.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-254378_d484634d485bpos.htm"
+    },
+    {
+      "symbol": "BIGY",
+      "cik": "0001924868",
+      "series_id": "S000088623",
+      "class_id": "C000254948",
+      "legal_name": "YieldMax Target 12 Big 50 Option Income ETF",
+      "candidate_accession": "0001999371-25-018573",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-11-25",
+      "candidate_document_filename": "bigy-497k_112525.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-018573_bigy-497k_112525.htm"
+    },
+    {
+      "symbol": "BUFG",
+      "cik": "0001667919",
+      "series_id": "S000074006",
+      "class_id": "C000231328",
+      "legal_name": "FT Vest Buffered Allocation Growth ETF",
+      "candidate_accession": "0001445546-24-002022",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-03-14",
+      "candidate_document_filename": "etf8_bufg497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-002022_etf8_bufg497k.htm"
+    },
+    {
+      "symbol": "BUFQ",
+      "cik": "0001667919",
+      "series_id": "S000076430",
+      "class_id": "C000236305",
+      "legal_name": "FT Vest Laddered Nasdaq Buffer ETF",
+      "candidate_accession": "0001445546-22-004373",
+      "candidate_form": "497",
+      "candidate_filing_date": "2022-06-21",
+      "candidate_document_filename": "etf8_bufq.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-22-004373_etf8_bufq.htm"
+    },
+    {
+      "symbol": "BUFS",
+      "cik": "0001667919",
+      "series_id": "S000085089",
+      "class_id": "C000249954",
+      "legal_name": "FT Vest Laddered Small Cap Moderate Buffer ETF",
+      "candidate_accession": "0001445546-24-001795",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2024-03-07",
+      "candidate_document_filename": "etf8_bufs485a.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-001795_etf8_bufs485a.htm"
+    },
+    {
+      "symbol": "BUFT",
+      "cik": "0001667919",
+      "series_id": "S000074008",
+      "class_id": "C000231330",
+      "legal_name": "FT Vest Buffered Allocation Defensive ETF",
+      "candidate_accession": "0001445546-24-002018",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-03-14",
+      "candidate_document_filename": "etf8_buft497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-002018_etf8_buft497k.htm"
+    },
+    {
+      "symbol": "BUFY",
+      "cik": "0001667919",
+      "series_id": "S000085091",
+      "class_id": "C000249956",
+      "legal_name": "FT Vest Laddered International Moderate Buffer ETF",
+      "candidate_accession": "0001445546-24-001797",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2024-03-07",
+      "candidate_document_filename": "etf8_bufy485a.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-001797_etf8_bufy485a.htm"
+    },
+    {
+      "symbol": "CAMX",
+      "cik": "0000878719",
+      "series_id": "S000077620",
+      "class_id": "C000238108",
+      "legal_name": "Cambiar Aggressive Value ETF",
+      "candidate_accession": "0001135428-14-000592",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-09-08",
+      "candidate_document_filename": "aggressivevalue-investor497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001135428-14-000592_aggressivevalue-investor497k.txt"
+    },
+    {
+      "symbol": "CBSE",
+      "cik": "0001936157",
+      "series_id": "S000089016",
+      "class_id": "C000255433",
+      "legal_name": "Clough Select Equity ETF",
+      "candidate_accession": "0001999371-26-004945",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-03",
+      "candidate_document_filename": "cbse_497k-030226.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-004945_cbse_497k-030226.htm"
+    },
+    {
+      "symbol": "CEFZ",
+      "cik": "0001936157",
+      "series_id": "S000093615",
+      "class_id": "C000262008",
+      "legal_name": "RiverNorth Active Income ETF",
+      "candidate_accession": "0001999371-26-001878",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-01-28",
+      "candidate_document_filename": "cefz-497k_012826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-001878_cefz-497k_012826.htm"
+    },
+    {
+      "symbol": "CPAI",
+      "cik": "0001537140",
+      "series_id": "S000083027",
+      "class_id": "C000246525",
+      "legal_name": "Counterpoint Quantitative Equity ETF",
+      "candidate_accession": "0001580642-17-002679",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2017-05-01",
+      "candidate_document_filename": "counterpointlsequity_485a.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001580642-17-002679_counterpointlsequity_485a.htm"
+    },
+    {
+      "symbol": "CVRD",
+      "cik": "0001976877",
+      "series_id": "S000081094",
+      "class_id": "C000243765",
+      "legal_name": "Madison Covered Call ETF",
+      "candidate_accession": "0001999371-26-008161",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-13",
+      "candidate_document_filename": "cvrd-497k_103125.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-008161_cvrd-497k_103125.htm"
+    },
+    {
+      "symbol": "CWI",
+      "cik": "0001168164",
+      "series_id": "S000014042",
+      "class_id": "C000038341",
+      "legal_name": "State Street SPDR MSCI ACWI ex-US ETF",
+      "candidate_accession": "0000950123-11-007324",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84606a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007324_b84606a1e497k.txt"
+    },
+    {
+      "symbol": "DDDD",
+      "cik": "0001924868",
+      "series_id": "S000095359",
+      "class_id": "C000264078",
+      "legal_name": "YieldMax U.S. Stocks Target Double Distribution ETF",
+      "candidate_accession": "0001999371-26-005465",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-10",
+      "candidate_document_filename": "dddd-497k_031026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-005465_dddd-497k_031026.htm"
+    },
+    {
+      "symbol": "DECZ",
+      "cik": "0001936157",
+      "series_id": "S000092054",
+      "class_id": "C000259968",
+      "legal_name": "TrueShares Structured Outcome (December) ETF",
+      "candidate_accession": "0001999371-26-009806",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "decz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009806_decz-497k_043026.htm"
+    },
+    {
+      "symbol": "DGS",
+      "cik": "0001350487",
+      "series_id": "S000019332",
+      "class_id": "C000053725",
+      "legal_name": "WisdomTree Emerging Market SmallCap Fund",
+      "candidate_accession": "0001214659-24-021132",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-12-30",
+      "candidate_document_filename": "eld122724497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001214659-24-021132_eld122724497k.htm"
+    },
+    {
+      "symbol": "DIME",
+      "cik": "0001877493",
+      "series_id": "S000091576",
+      "class_id": "C000259254",
+      "legal_name": "CoinShares Altcoins ETF",
+      "candidate_accession": "0001999371-25-014691",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-10-03",
+      "candidate_document_filename": "dime-497k_100325.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-014691_dime-497k_100325.htm"
+    },
+    {
+      "symbol": "DIVL",
+      "cik": "0001976877",
+      "series_id": "S000081096",
+      "class_id": "C000243767",
+      "legal_name": "Madison Dividend Value ETF",
+      "candidate_accession": "0001999371-26-008170",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-13",
+      "candidate_document_filename": "divl-497k_103125.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-008170_divl-497k_103125.htm"
+    },
+    {
+      "symbol": "DIVZ",
+      "cik": "0001936157",
+      "series_id": "S000092120",
+      "class_id": "C000260043",
+      "legal_name": "Polen Dividend Income ETF",
+      "candidate_accession": "0001999371-26-009802",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "divz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009802_divz-497k_043026.htm"
+    },
+    {
+      "symbol": "DVLU",
+      "cik": "0001552740",
+      "series_id": "S000062934",
+      "class_id": "C000203941",
+      "legal_name": "First Trust Dorsey Wright Momentum & Value ETF",
+      "candidate_accession": "0001445546-24-000836",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-02-01",
+      "candidate_document_filename": "dvlu_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-000836_dvlu_497k.htm"
+    },
+    {
+      "symbol": "DVOL",
+      "cik": "0001552740",
+      "series_id": "S000062933",
+      "class_id": "C000203940",
+      "legal_name": "First Trust Dorsey Wright Momentum & Low Volatility ETF",
+      "candidate_accession": "0001445546-24-000837",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-02-01",
+      "candidate_document_filename": "dvol_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-000837_dvol_497k.htm"
+    },
+    {
+      "symbol": "DVYE",
+      "cik": "0000930667",
+      "series_id": "S000036004",
+      "class_id": "C000110341",
+      "legal_name": "iShares Emerging Markets Dividend Index Fund Exchange Traded Fund",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "DWX",
+      "cik": "0001168164",
+      "series_id": "S000020665",
+      "class_id": "C000057694",
+      "legal_name": "State Street SPDR S&P International Dividend ETF",
+      "candidate_accession": "0000950123-11-007327",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84603a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007327_b84603a1e497k.txt"
+    },
+    {
+      "symbol": "EDIV",
+      "cik": "0001168164",
+      "series_id": "S000031174",
+      "class_id": "C000096745",
+      "legal_name": "State Street SPDR S&P Emerging Markets Dividend ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "EDOG",
+      "cik": "0001414040",
+      "series_id": "S000044070",
+      "class_id": "C000136752",
+      "legal_name": "ALPS Emerging Sector Dividend Dogs ETF",
+      "candidate_accession": "0001193125-14-318346",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776041d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318346_d776041d497k.htm"
+    },
+    {
+      "symbol": "EEM",
+      "cik": "0000930667",
+      "series_id": "S000004266",
+      "class_id": "C000011970",
+      "legal_name": "iShares MSCI Emerging Index Fund",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "EEMA",
+      "cik": "0000930667",
+      "series_id": "S000034697",
+      "class_id": "C000106873",
+      "legal_name": "iShares MSCI Emerging Markets Asia ETF",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "EEMS",
+      "cik": "0000930667",
+      "series_id": "S000019125",
+      "class_id": "C000052897",
+      "legal_name": "iShares MSCI Emerging Markets Small Cap ETF",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "EEMV",
+      "cik": "0000930667",
+      "series_id": "S000032497",
+      "class_id": "C000100212",
+      "legal_name": "iShares MSCI Emerging Markets Min Vol Factor ETF",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "EEMX",
+      "cik": "0001168164",
+      "series_id": "S000053084",
+      "class_id": "C000167042",
+      "legal_name": "State Street SPDR MSCI Emerging Markets Fossil Fuel Reserves Free ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "EFAV",
+      "cik": "0001100663",
+      "series_id": "S000031837",
+      "class_id": "C000099140",
+      "legal_name": "iShares MSCI EAFE Min Vol Factor ETF",
+      "candidate_accession": "0000898430-02-004381",
+      "candidate_form": "485BPOS",
+      "candidate_filing_date": "2002-11-29",
+      "candidate_document_filename": "d485bpos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000898430-02-004381_d485bpos.txt"
+    },
+    {
+      "symbol": "EFRA",
+      "cik": "0001100663",
+      "series_id": "S000077884",
+      "class_id": "C000238488",
+      "legal_name": "iShares Environmental Infrastructure and Industrials ETF",
+      "candidate_accession": "0001193125-11-243740",
+      "candidate_form": "497",
+      "candidate_filing_date": "2011-09-09",
+      "candidate_document_filename": "d222350d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-11-243740_d222350d497.htm"
+    },
+    {
+      "symbol": "EGUS",
+      "cik": "0001100663",
+      "series_id": "S000079196",
+      "class_id": "C000240124",
+      "legal_name": "iShares ESG Aware MSCI USA Growth ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "EIPI",
+      "cik": "0001667919",
+      "series_id": "S000083823",
+      "class_id": "C000247844",
+      "legal_name": "FT Energy Income Partners Enhanced Income ETF",
+      "candidate_accession": "0001445546-24-000122",
+      "candidate_form": "497",
+      "candidate_filing_date": "2024-01-09",
+      "candidate_document_filename": "eipi_497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-000122_eipi_497.htm"
+    },
+    {
+      "symbol": "EIPX",
+      "cik": "0001517936",
+      "series_id": "S000077877",
+      "class_id": "C000238479",
+      "legal_name": "FT Energy Income Partners Strategy ETF",
+      "candidate_accession": "0001445546-26-001645",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "eipx_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001645_eipx_497k.htm"
+    },
+    {
+      "symbol": "EIRL",
+      "cik": "0001100663",
+      "series_id": "S000028681",
+      "class_id": "C000087779",
+      "legal_name": "iShares MSCI Ireland ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "EMEQ",
+      "cik": "0001969995",
+      "series_id": "S000085746",
+      "class_id": "C000251129",
+      "legal_name": "Nomura Focused Emerging Markets Equity ETF",
+      "candidate_accession": "0001206774-25-000676",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-09-10",
+      "candidate_document_filename": "emeq4533856-497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001206774-25-000676_emeq4533856-497k.htm"
+    },
+    {
+      "symbol": "EMGF",
+      "cik": "0000930667",
+      "series_id": "S000049021",
+      "class_id": "C000154544",
+      "legal_name": "iShares Emerging Markets Equity Factor ETF",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "EMLP",
+      "cik": "0001517936",
+      "series_id": "S000033458",
+      "class_id": "C000102880",
+      "legal_name": "First Trust North American Energy Infrastructure Fund",
+      "candidate_accession": "0001445546-26-001646",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "emlp_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001646_emlp_497k.htm"
+    },
+    {
+      "symbol": "EMXC",
+      "cik": "0000930667",
+      "series_id": "S000057835",
+      "class_id": "C000186806",
+      "legal_name": "iShares MSCI Emerging Markets ex China ETF",
+      "candidate_accession": "0001021408-02-011944",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-09-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001021408-02-011944_d485apos.txt"
+    },
+    {
+      "symbol": "ENFR",
+      "cik": "0001414040",
+      "series_id": "S000042676",
+      "class_id": "C000131909",
+      "legal_name": "Alerian Energy Infrastructure ETF",
+      "candidate_accession": "0001193125-14-318343",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776051d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318343_d776051d497k.htm"
+    },
+    {
+      "symbol": "EPU",
+      "cik": "0001100663",
+      "series_id": "S000024426",
+      "class_id": "C000072477",
+      "legal_name": "iShares MSCI Peru and Global Exposure ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "EQLT",
+      "cik": "0001100663",
+      "series_id": "S000081635",
+      "class_id": "C000244562",
+      "legal_name": "iShares MSCI Emerging Markets Quality Factor ETF",
+      "candidate_accession": "0001193125-11-243740",
+      "candidate_form": "497",
+      "candidate_filing_date": "2011-09-09",
+      "candidate_document_filename": "d222350d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-11-243740_d222350d497.htm"
+    },
+    {
+      "symbol": "ESGE",
+      "cik": "0000930667",
+      "series_id": "S000054183",
+      "class_id": "C000170244",
+      "legal_name": "iShares ESG Aware MSCI EM ETF",
+      "candidate_accession": "0001193125-20-053281",
+      "candidate_form": "497",
+      "candidate_filing_date": "2020-02-28",
+      "candidate_document_filename": "d885792d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-20-053281_d885792d497.htm"
+    },
+    {
+      "symbol": "EVLU",
+      "cik": "0001100663",
+      "series_id": "S000081637",
+      "class_id": "C000244564",
+      "legal_name": "iShares MSCI Emerging Markets Value Factor ETF",
+      "candidate_accession": "0001193125-11-243740",
+      "candidate_form": "497",
+      "candidate_filing_date": "2011-09-09",
+      "candidate_document_filename": "d222350d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-11-243740_d222350d497.htm"
+    },
+    {
+      "symbol": "EVUS",
+      "cik": "0001100663",
+      "series_id": "S000079198",
+      "class_id": "C000240126",
+      "legal_name": "iShares ESG Aware MSCI USA Value ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "EWJV",
+      "cik": "0001100663",
+      "series_id": "S000064903",
+      "class_id": "C000210083",
+      "legal_name": "iShares MSCI Japan Value ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "EWUS",
+      "cik": "0001100663",
+      "series_id": "S000035393",
+      "class_id": "C000108744",
+      "legal_name": "iShares MSCI United Kingdom Small Cap ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "EWX",
+      "cik": "0001168164",
+      "series_id": "S000021247",
+      "class_id": "C000060582",
+      "legal_name": "State Street SPDR S&P Emerging Markets Small Cap ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "EWY",
+      "cik": "0000930667",
+      "series_id": "S000004258",
+      "class_id": "C000011962",
+      "legal_name": "iShares MSCI South Korea ETF",
+      "candidate_accession": "0000950109-02-005946",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-11-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950109-02-005946_d485apos.txt"
+    },
+    {
+      "symbol": "EWZS",
+      "cik": "0001100663",
+      "series_id": "S000028677",
+      "class_id": "C000087775",
+      "legal_name": "iShares MSCI Brazil Small-Cap ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "EZA",
+      "cik": "0000930667",
+      "series_id": "S000004255",
+      "class_id": "C000011959",
+      "legal_name": "iShares MSCI South Africa Index Fund",
+      "candidate_accession": "0000950109-02-005946",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2002-11-19",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950109-02-005946_d485apos.txt"
+    },
+    {
+      "symbol": "FAB",
+      "cik": "0001383496",
+      "series_id": "S000017342",
+      "class_id": "C000048000",
+      "legal_name": "First Trust Multi Cap Value AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007919",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-04-08",
+      "candidate_document_filename": "summary_fab.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007919_summary_fab.txt"
+    },
+    {
+      "symbol": "FBDC",
+      "cik": "0001667919",
+      "series_id": "S000090298",
+      "class_id": "C000257285",
+      "legal_name": "FT Confluence BDC & Specialty Finance Income ETF",
+      "candidate_accession": "0001445546-25-001315",
+      "candidate_form": "497",
+      "candidate_filing_date": "2025-02-19",
+      "candidate_document_filename": "fbdc_497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-25-001315_fbdc_497.htm"
+    },
+    {
+      "symbol": "FCEF",
+      "cik": "0001667919",
+      "series_id": "S000053967",
+      "class_id": "C000169819",
+      "legal_name": "First Trust Income Opportunities ETF",
+      "candidate_accession": "0001445546-23-000027",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-01-03",
+      "candidate_document_filename": "etf8_fcef.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-000027_etf8_fcef.htm"
+    },
+    {
+      "symbol": "FDTS",
+      "cik": "0001510337",
+      "series_id": "S000036654",
+      "class_id": "C000112036",
+      "legal_name": "First Trust Developed Markets ex-US Small Cap AlphaDEX Fund",
+      "candidate_accession": "0001445546-26-003313",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-01",
+      "candidate_document_filename": "fdts_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-003313_fdts_497k.htm"
+    },
+    {
+      "symbol": "FEBZ",
+      "cik": "0001936157",
+      "series_id": "S000092055",
+      "class_id": "C000259969",
+      "legal_name": "TrueShares Structured Outcome (February) ETF",
+      "candidate_accession": "0001999371-26-009818",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "febz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009818_febz-497k_043026.htm"
+    },
+    {
+      "symbol": "FEMS",
+      "cik": "0001510337",
+      "series_id": "S000036655",
+      "class_id": "C000112037",
+      "legal_name": "First Trust Emerging Markets Small Cap AlphaDEX Fund",
+      "candidate_accession": "0001445546-26-003315",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-01",
+      "candidate_document_filename": "fems_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-003315_fems_497k.htm"
+    },
+    {
+      "symbol": "FEUZ",
+      "cik": "0001510337",
+      "series_id": "S000047035",
+      "class_id": "C000147004",
+      "legal_name": "First Trust Eurozone AlphaDEX ETF",
+      "candidate_accession": "0001445546-26-003317",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-01",
+      "candidate_document_filename": "feuz_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-003317_feuz_497k.htm"
+    },
+    {
+      "symbol": "FEX",
+      "cik": "0001383496",
+      "series_id": "S000017337",
+      "class_id": "C000047995",
+      "legal_name": "First Trust Large Cap Core AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007921",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-04-08",
+      "candidate_document_filename": "summary_fex.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007921_summary_fex.txt"
+    },
+    {
+      "symbol": "FEZ",
+      "cik": "0001168164",
+      "series_id": "S000006392",
+      "class_id": "C000017550",
+      "legal_name": "State Street SPDR EURO STOXX 50 ETF",
+      "candidate_accession": "0000950123-11-007345",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84585a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007345_b84585a1e497k.txt"
+    },
+    {
+      "symbol": "FGSI",
+      "cik": "0001517936",
+      "series_id": "S000090698",
+      "class_id": "C000257988",
+      "legal_name": "FT Vest Growth Strength & Target Income ETF",
+      "candidate_accession": "0001445546-26-001649",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "fgsi_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001649_fgsi_497k.htm"
+    },
+    {
+      "symbol": "FIXD",
+      "cik": "0001667919",
+      "series_id": "S000056501",
+      "class_id": "C000178745",
+      "legal_name": "First Trust Smith Opportunistic Fixed Income ETF",
+      "candidate_accession": "0001445546-23-008748",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_fixd.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008748_etf8_fixd.htm"
+    },
+    {
+      "symbol": "FLDZ",
+      "cik": "0001936157",
+      "series_id": "S000092119",
+      "class_id": "C000260042",
+      "legal_name": "TrueShares Patriot Defense ETF",
+      "candidate_accession": "0001999371-26-014596",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-09",
+      "candidate_document_filename": "fldz-497k_070826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014596_fldz-497k_070826.htm"
+    },
+    {
+      "symbol": "FNDC",
+      "cik": "0001454889",
+      "series_id": "S000040880",
+      "class_id": "C000126718",
+      "legal_name": "Schwab Fundamental International Small Equity ETF",
+      "candidate_accession": "0001104659-21-040160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-03-23",
+      "candidate_document_filename": "tm219225-4_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001104659-21-040160_tm219225-4_497k.htm"
+    },
+    {
+      "symbol": "FNDF",
+      "cik": "0001454889",
+      "series_id": "S000040879",
+      "class_id": "C000126717",
+      "legal_name": "Schwab Fundamental International Equity ETF",
+      "candidate_accession": "0001104659-21-040160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-03-23",
+      "candidate_document_filename": "tm219225-4_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001104659-21-040160_tm219225-4_497k.htm"
+    },
+    {
+      "symbol": "FNX",
+      "cik": "0001383496",
+      "series_id": "S000017338",
+      "class_id": "C000047996",
+      "legal_name": "First Trust Mid Cap Core AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007924",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-04-08",
+      "candidate_document_filename": "summary_fnx.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007924_summary_fnx.txt"
+    },
+    {
+      "symbol": "FPEI",
+      "cik": "0001424212",
+      "series_id": "S000058182",
+      "class_id": "C000190801",
+      "legal_name": "First Trust Institutional Preferred Securities and Income ETF",
+      "candidate_accession": "0001445546-26-001617",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "fpei_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001617_fpei_497k.htm"
+    },
+    {
+      "symbol": "FPWR",
+      "cik": "0001517936",
+      "series_id": "S000066179",
+      "class_id": "C000213865",
+      "legal_name": "First Trust EIP Power Solutions ETF",
+      "candidate_accession": "0001445546-26-001651",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "fpwr_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001651_fpwr_497k.htm"
+    },
+    {
+      "symbol": "FTA",
+      "cik": "0001383496",
+      "series_id": "S000017340",
+      "class_id": "C000047998",
+      "legal_name": "First Trust Large Cap Value AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007926",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-04-08",
+      "candidate_document_filename": "summary_fta.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007926_summary_fta.txt"
+    },
+    {
+      "symbol": "FXD",
+      "cik": "0001383496",
+      "series_id": "S000017696",
+      "class_id": "C000048896",
+      "legal_name": "First Trust Cons. Discret. AlphaDEX",
+      "candidate_accession": "0001445546-16-007510",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxd.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007510_summary_fxd.txt"
+    },
+    {
+      "symbol": "FXG",
+      "cik": "0001383496",
+      "series_id": "S000017697",
+      "class_id": "C000048897",
+      "legal_name": "First Trust Cons. Staples AlphaDEX",
+      "candidate_accession": "0001445546-16-007511",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxg.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007511_summary_fxg.txt"
+    },
+    {
+      "symbol": "FXH",
+      "cik": "0001383496",
+      "series_id": "S000017700",
+      "class_id": "C000048900",
+      "legal_name": "First Trust Health Care AlphaDEX",
+      "candidate_accession": "0001445546-16-007513",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxh.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007513_summary_fxh.txt"
+    },
+    {
+      "symbol": "FXL",
+      "cik": "0001383496",
+      "series_id": "S000017703",
+      "class_id": "C000048903",
+      "legal_name": "First Trust Technology AlphaDEX",
+      "candidate_accession": "0001445546-16-007514",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxl.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007514_summary_fxl.txt"
+    },
+    {
+      "symbol": "FXN",
+      "cik": "0001383496",
+      "series_id": "S000017698",
+      "class_id": "C000048898",
+      "legal_name": "First Trust Energy AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007515",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxn.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007515_summary_fxn.txt"
+    },
+    {
+      "symbol": "FXO",
+      "cik": "0001383496",
+      "series_id": "S000017699",
+      "class_id": "C000048899",
+      "legal_name": "First Trust Financials AlphaDEX",
+      "candidate_accession": "0001445546-16-007516",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxo.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007516_summary_fxo.txt"
+    },
+    {
+      "symbol": "FXR",
+      "cik": "0001383496",
+      "series_id": "S000017701",
+      "class_id": "C000048901",
+      "legal_name": "First Trust Industrials AlphaDEX",
+      "candidate_accession": "0001445546-16-007517",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxr.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007517_summary_fxr.txt"
+    },
+    {
+      "symbol": "FXU",
+      "cik": "0001383496",
+      "series_id": "S000017704",
+      "class_id": "C000048904",
+      "legal_name": "First Trust Utilities AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007518",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxu.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007518_summary_fxu.txt"
+    },
+    {
+      "symbol": "FXZ",
+      "cik": "0001383496",
+      "series_id": "S000017702",
+      "class_id": "C000048902",
+      "legal_name": "First Trust Materials AlphaDEX Fund",
+      "candidate_accession": "0001445546-16-007519",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2016-03-18",
+      "candidate_document_filename": "summary_fxz.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-16-007519_summary_fxz.txt"
+    },
+    {
+      "symbol": "GAPR",
+      "cik": "0001667919",
+      "series_id": "S000079967",
+      "class_id": "C000241464",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - April",
+      "candidate_accession": "0001445546-23-008757",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gapr497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008757_etf8_gapr497k.htm"
+    },
+    {
+      "symbol": "GAUG",
+      "cik": "0001667919",
+      "series_id": "S000080497",
+      "class_id": "C000242927",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - August",
+      "candidate_accession": "0001445546-23-008758",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gaug497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008758_etf8_gaug497k.htm"
+    },
+    {
+      "symbol": "GDXY",
+      "cik": "0001924868",
+      "series_id": "S000077665",
+      "class_id": "C000238153",
+      "legal_name": "YieldMax Gold Miners Option Income Strategy ETF",
+      "candidate_accession": "0001999371-26-004567",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-02-27",
+      "candidate_document_filename": "gdxy-497k_022726.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-004567_gdxy-497k_022726.htm"
+    },
+    {
+      "symbol": "GEME",
+      "cik": "0001969674",
+      "series_id": "S000088737",
+      "class_id": "C000255106",
+      "legal_name": "Pacific North of South EM Equity Active ETF",
+      "candidate_accession": "0001999371-26-009524",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-30",
+      "candidate_document_filename": "geme-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009524_geme-497k_043026.htm"
+    },
+    {
+      "symbol": "GFEB",
+      "cik": "0001667919",
+      "series_id": "S000079668",
+      "class_id": "C000240892",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - February",
+      "candidate_accession": "0001445546-23-008759",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gfeb497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008759_etf8_gfeb497k.htm"
+    },
+    {
+      "symbol": "GII",
+      "cik": "0001168164",
+      "series_id": "S000014041",
+      "class_id": "C000038340",
+      "legal_name": "State Street SPDR S&P Global Infrastructure ETF",
+      "candidate_accession": "0000950123-11-007322",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84608a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007322_b84608a1e497k.txt"
+    },
+    {
+      "symbol": "GINX",
+      "cik": "0000831114",
+      "series_id": "S000084011",
+      "class_id": "C000248137",
+      "legal_name": "SGI Enhanced Global Income ETF",
+      "candidate_accession": "0001193125-07-207764",
+      "candidate_form": "497",
+      "candidate_filing_date": "2007-09-26",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-07-207764_d497.htm"
+    },
+    {
+      "symbol": "GJAN",
+      "cik": "0001667919",
+      "series_id": "S000079228",
+      "class_id": "C000240186",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - January",
+      "candidate_accession": "0001445546-23-008760",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gjan497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008760_etf8_gjan497k.htm"
+    },
+    {
+      "symbol": "GJUL",
+      "cik": "0001667919",
+      "series_id": "S000080498",
+      "class_id": "C000242928",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - July",
+      "candidate_accession": "0001445546-23-008761",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gjul497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008761_etf8_gjul497k.htm"
+    },
+    {
+      "symbol": "GJUN",
+      "cik": "0001667919",
+      "series_id": "S000080499",
+      "class_id": "C000242929",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - June",
+      "candidate_accession": "0001445546-23-008762",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gjun497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008762_etf8_gjun497k.htm"
+    },
+    {
+      "symbol": "GMAR",
+      "cik": "0001667919",
+      "series_id": "S000079853",
+      "class_id": "C000241257",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - March",
+      "candidate_accession": "0001445546-23-008763",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gmar497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008763_etf8_gmar497k.htm"
+    },
+    {
+      "symbol": "GMAY",
+      "cik": "0001667919",
+      "series_id": "S000080201",
+      "class_id": "C000241937",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - May",
+      "candidate_accession": "0001445546-23-008764",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_gmay497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008764_etf8_gmay497k.htm"
+    },
+    {
+      "symbol": "GMF",
+      "cik": "0001168164",
+      "series_id": "S000014046",
+      "class_id": "C000038345",
+      "legal_name": "State Street SPDR S&P Emerging Asia Pacific ETF",
+      "candidate_accession": "0000950123-11-007344",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84586a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007344_b84586a1e497k.txt"
+    },
+    {
+      "symbol": "GNR",
+      "cik": "0001168164",
+      "series_id": "S000030037",
+      "class_id": "C000092104",
+      "legal_name": "State Street SPDR S&P Global Natural Resources ETF",
+      "candidate_accession": "0000950123-11-007323",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84607a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007323_b84607a1e497k.txt"
+    },
+    {
+      "symbol": "GOLS",
+      "cik": "0001748425",
+      "series_id": "S000099690",
+      "class_id": "C000269470",
+      "legal_name": "Gabelli Opportunities in Live and Sports ETF",
+      "candidate_accession": "0001829126-26-004304",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-30",
+      "candidate_document_filename": "gols_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001829126-26-004304_gols_497k.htm"
+    },
+    {
+      "symbol": "GPTY",
+      "cik": "0001924868",
+      "series_id": "S000089000",
+      "class_id": "C000255407",
+      "legal_name": "YieldMax AI & Tech Portfolio Option Income ETF",
+      "candidate_accession": "0001999371-25-018576",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-11-25",
+      "candidate_document_filename": "gpty-497k_112525.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-018576_gpty-497k_112525.htm"
+    },
+    {
+      "symbol": "GRNI",
+      "cik": "0001722388",
+      "series_id": "S000096525",
+      "class_id": "C000265405",
+      "legal_name": "Fundstrat Granny Shots US Large Cap & Income ETF",
+      "candidate_accession": "0001999371-25-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-11-14",
+      "candidate_document_filename": "grni-497k_111425.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-017780_grni-497k_111425.htm"
+    },
+    {
+      "symbol": "GWX",
+      "cik": "0001168164",
+      "series_id": "S000014039",
+      "class_id": "C000038338",
+      "legal_name": "State Street SPDR S&P International Small Cap ETF",
+      "candidate_accession": "0000950123-11-007328",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84602a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007328_b84602a1e497k.txt"
+    },
+    {
+      "symbol": "GXC",
+      "cik": "0001168164",
+      "series_id": "S000014047",
+      "class_id": "C000038346",
+      "legal_name": "State Street SPDR S&P China ETF",
+      "candidate_accession": "0000950123-11-007341",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84589a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007341_b84589a1e497k.txt"
+    },
+    {
+      "symbol": "HFXI",
+      "cik": "0001415995",
+      "series_id": "S000050195",
+      "class_id": "C000158453",
+      "legal_name": "NYLIM FTSE International Equity Currency Neutral ETF",
+      "candidate_accession": "0001999371-26-019098",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "hfxi-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019098_hfxi-497k_082826.htm"
+    },
+    {
+      "symbol": "HRTS",
+      "cik": "0001944285",
+      "series_id": "S000081541",
+      "class_id": "C000244455",
+      "legal_name": "Tema Heart & Health ETF",
+      "candidate_accession": "0001999371-26-014179",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-02",
+      "candidate_document_filename": "hrts-497k_062926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014179_hrts-497k_062926.htm"
+    },
+    {
+      "symbol": "HYTI",
+      "cik": "0001517936",
+      "series_id": "S000089945",
+      "class_id": "C000256813",
+      "legal_name": "FT Vest High Yield & Target Income ETF",
+      "candidate_accession": "0001445546-26-001657",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "hyti_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001657_hyti_497k.htm"
+    },
+    {
+      "symbol": "IBND",
+      "cik": "0001064642",
+      "series_id": "S000028947",
+      "class_id": "C000088912",
+      "legal_name": "State Street SPDR Bloomberg International Corporate Bond ETF",
+      "candidate_accession": "0001193125-12-273854",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2012-06-18",
+      "candidate_document_filename": "d368653d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-12-273854_d368653d497k.htm"
+    },
+    {
+      "symbol": "IDGT",
+      "cik": "0001100663",
+      "series_id": "S000004353",
+      "class_id": "C000012083",
+      "legal_name": "iShares U.S. Digital Infrastructure and Real Estate ETF",
+      "candidate_accession": "0001193125-11-243740",
+      "candidate_form": "497",
+      "candidate_filing_date": "2011-09-09",
+      "candidate_document_filename": "d222350d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-11-243740_d222350d497.htm"
+    },
+    {
+      "symbol": "IDOG",
+      "cik": "0001414040",
+      "series_id": "S000041000",
+      "class_id": "C000127212",
+      "legal_name": "ALPS International Sector Dividend Dogs ETF",
+      "candidate_accession": "0001193125-14-318346",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776041d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318346_d776041d497k.htm"
+    },
+    {
+      "symbol": "IDVZ",
+      "cik": "0001936157",
+      "series_id": "S000089318",
+      "class_id": "C000255835",
+      "legal_name": "Polen International Dividend Income Fund",
+      "candidate_accession": "0001999371-26-005013",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-04",
+      "candidate_document_filename": "idvz-497k_030226.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-005013_idvz-497k_030226.htm"
+    },
+    {
+      "symbol": "ILDR",
+      "cik": "0001667919",
+      "series_id": "S000071847",
+      "class_id": "C000227373",
+      "legal_name": "First Trust Innovation Leaders ETF",
+      "candidate_accession": "0001445546-23-008765",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-01-02",
+      "candidate_document_filename": "etf8_ildr.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-008765_etf8_ildr.htm"
+    },
+    {
+      "symbol": "IOO",
+      "cik": "0001100663",
+      "series_id": "S000004326",
+      "class_id": "C000012056",
+      "legal_name": "iShares Global 100 ETF",
+      "candidate_accession": "0001193125-24-067989",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-03-14",
+      "candidate_document_filename": "d810023d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-24-067989_d810023d497k.htm"
+    },
+    {
+      "symbol": "IQHI",
+      "cik": "0001426439",
+      "series_id": "S000077600",
+      "class_id": "C000238088",
+      "legal_name": "NYLIM MacKay High Income ETF",
+      "candidate_accession": "0001999371-26-019128",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iqhi-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019128_iqhi-497k_082826.htm"
+    },
+    {
+      "symbol": "IQQQ",
+      "cik": "0001174610",
+      "series_id": "S000083818",
+      "class_id": "C000247835",
+      "legal_name": "ProShares Nasdaq-100 High Income ETF",
+      "candidate_accession": "0001683863-24-008330",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-11-13",
+      "candidate_document_filename": "f39864d1.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001683863-24-008330_f39864d1.htm"
+    },
+    {
+      "symbol": "IQSI",
+      "cik": "0001415995",
+      "series_id": "S000054231",
+      "class_id": "C000170331",
+      "legal_name": "NYLIM Candriam International Equity ETF",
+      "candidate_accession": "0001999371-26-019095",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iqsi-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019095_iqsi-497k_082826.htm"
+    },
+    {
+      "symbol": "IQSM",
+      "cik": "0001415995",
+      "series_id": "S000077598",
+      "class_id": "C000238086",
+      "legal_name": "NYLIM Candriam U.S. Mid Cap Equity ETF",
+      "candidate_accession": "0001999371-26-019096",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iqsm-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019096_iqsm-497k_082826.htm"
+    },
+    {
+      "symbol": "IQSU",
+      "cik": "0001415995",
+      "series_id": "S000054232",
+      "class_id": "C000170332",
+      "legal_name": "NYLIM Candriam U.S. Large Cap Equity ETF",
+      "candidate_accession": "0001999371-26-019097",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iqsu-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019097_iqsu-497k_082826.htm"
+    },
+    {
+      "symbol": "IWFG",
+      "cik": "0001426439",
+      "series_id": "S000075561",
+      "class_id": "C000234759",
+      "legal_name": "NYLIM Winslow Focused Large Cap Growth ETF",
+      "candidate_accession": "0001999371-26-019150",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iwfg-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019150_iwfg-497k_082826.htm"
+    },
+    {
+      "symbol": "IWLG",
+      "cik": "0001426439",
+      "series_id": "S000075560",
+      "class_id": "C000234758",
+      "legal_name": "NYLIM Winslow Large Cap Growth ETF",
+      "candidate_accession": "0001999371-26-019146",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "iwlg-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019146_iwlg-497k_082826.htm"
+    },
+    {
+      "symbol": "IWR",
+      "cik": "0001100663",
+      "series_id": "S000004338",
+      "class_id": "C000012068",
+      "legal_name": "iShares Russell Mid-Cap ETF",
+      "candidate_accession": "0001193125-05-120767",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2005-06-06",
+      "candidate_document_filename": "d485apos.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-120767_d485apos.htm"
+    },
+    {
+      "symbol": "IWS",
+      "cik": "0001100663",
+      "series_id": "S000004335",
+      "class_id": "C000012065",
+      "legal_name": "iShares Russell Mid-Cap Value ETF",
+      "candidate_accession": "0001193125-05-120767",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2005-06-06",
+      "candidate_document_filename": "d485apos.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-120767_d485apos.htm"
+    },
+    {
+      "symbol": "IWX",
+      "cik": "0001100663",
+      "series_id": "S000026554",
+      "class_id": "C000079753",
+      "legal_name": "iShares Russell Top 200 Value ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "IWY",
+      "cik": "0001100663",
+      "series_id": "S000026552",
+      "class_id": "C000079751",
+      "legal_name": "iShares Russell Top 200 Growth ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "IYT",
+      "cik": "0001100663",
+      "series_id": "S000004331",
+      "class_id": "C000012061",
+      "legal_name": "iShares U.S. Transportation ETF",
+      "candidate_accession": "0001193125-03-014326",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2003-06-30",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-03-014326_d485apos.txt"
+    },
+    {
+      "symbol": "IYY",
+      "cik": "0001100663",
+      "series_id": "S000004330",
+      "class_id": "C000012060",
+      "legal_name": "iShares Dow Jones U.S. ETF",
+      "candidate_accession": "0001193125-03-014326",
+      "candidate_form": "485APOS",
+      "candidate_filing_date": "2003-06-30",
+      "candidate_document_filename": "d485apos.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-03-014326_d485apos.txt"
+    },
+    {
+      "symbol": "JANZ",
+      "cik": "0001936157",
+      "series_id": "S000092056",
+      "class_id": "C000259970",
+      "legal_name": "TrueShares Structured Outcome (January) ETF",
+      "candidate_accession": "0001999371-26-009819",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "janz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009819_janz-497k_043026.htm"
+    },
+    {
+      "symbol": "KCE",
+      "cik": "0001064642",
+      "series_id": "S000006978",
+      "class_id": "C000019031",
+      "legal_name": "State Street SPDR S&P Capital Markets ETF",
+      "candidate_accession": "0001193125-12-273835",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2012-06-18",
+      "candidate_document_filename": "d368639d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-12-273835_d368639d497k.htm"
+    },
+    {
+      "symbol": "KDVD",
+      "cik": "0001748425",
+      "series_id": "S000096300",
+      "class_id": "C000265130",
+      "legal_name": "Keeley Dividend ETF",
+      "candidate_accession": "0001829126-26-004303",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-30",
+      "candidate_document_filename": "kdvd_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001829126-26-004303_kdvd_497k.htm"
+    },
+    {
+      "symbol": "LDSF",
+      "cik": "0001667919",
+      "series_id": "S000063239",
+      "class_id": "C000205110",
+      "legal_name": "First Trust Low Duration Strategic Focus ETF",
+      "candidate_accession": "0001445546-23-000030",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-01-03",
+      "candidate_document_filename": "etf8_ldsf497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-000030_etf8_ldsf497k.htm"
+    },
+    {
+      "symbol": "LGLV",
+      "cik": "0001064642",
+      "series_id": "S000039794",
+      "class_id": "C000123372",
+      "legal_name": "State Street SPDR US Large Cap Low Volatility Index ETF",
+      "candidate_accession": "0001193125-14-387312",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-10-29",
+      "candidate_document_filename": "d799453d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-387312_d799453d497k.htm"
+    },
+    {
+      "symbol": "LOGO",
+      "cik": "0001722388",
+      "series_id": "S000092481",
+      "class_id": "C000260512",
+      "legal_name": "Alpha Brands Consumption Leaders ETF",
+      "candidate_accession": "0001999371-26-009458",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-30",
+      "candidate_document_filename": "logo_497k-043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009458_logo_497k-043026.htm"
+    },
+    {
+      "symbol": "LQTI",
+      "cik": "0001517936",
+      "series_id": "S000089947",
+      "class_id": "C000256815",
+      "legal_name": "FT Vest Investment Grade & Target Income ETF",
+      "candidate_accession": "0001445546-26-001661",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "lqti_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001661_lqti_497k.htm"
+    },
+    {
+      "symbol": "LRNZ",
+      "cik": "0001936157",
+      "series_id": "S000092123",
+      "class_id": "C000260046",
+      "legal_name": "TrueShares Technology, AI & Deep Learning ETF",
+      "candidate_accession": "0001999371-26-009840",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "lrnz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009840_lrnz-497k_043026.htm"
+    },
+    {
+      "symbol": "LSVD",
+      "cik": "0000878719",
+      "series_id": "S000089218",
+      "class_id": "C000255733",
+      "legal_name": "LSV Disciplined Value ETF",
+      "candidate_accession": "0001135428-17-000243",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2017-03-15",
+      "candidate_document_filename": "lsvglobalvalue-497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001135428-17-000243_lsvglobalvalue-497k.txt"
+    },
+    {
+      "symbol": "LTTI",
+      "cik": "0001517936",
+      "series_id": "S000089949",
+      "class_id": "C000256817",
+      "legal_name": "FT Vest 20+ Year Treasury & Target Income ETF",
+      "candidate_accession": "0001445546-26-001662",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-02",
+      "candidate_document_filename": "ltti_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-26-001662_ltti_497k.htm"
+    },
+    {
+      "symbol": "MAGA",
+      "cik": "0001540305",
+      "series_id": "S000058757",
+      "class_id": "C000192803",
+      "legal_name": "Truth Social America First ETF",
+      "candidate_accession": "0000894189-24-006521",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-10-31",
+      "candidate_document_filename": "pointbridgemagaetf-497ksum.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000894189-24-006521_pointbridgemagaetf-497ksum.htm"
+    },
+    {
+      "symbol": "MARZ",
+      "cik": "0001936157",
+      "series_id": "S000092059",
+      "class_id": "C000259973",
+      "legal_name": "TrueShares Structured Outcome (March) ETF",
+      "candidate_accession": "0001999371-26-009817",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "marz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009817_marz-497k_043026.htm"
+    },
+    {
+      "symbol": "MINY",
+      "cik": "0001924868",
+      "series_id": "S000101611",
+      "class_id": "C000271821",
+      "legal_name": "YieldMax Strategic Metals & Mining Portfolio Option Income ETF",
+      "candidate_accession": "0001999371-26-004180",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-02-25",
+      "candidate_document_filename": "miny-497k_022526.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-004180_miny-497k_022526.htm"
+    },
+    {
+      "symbol": "MMSC",
+      "cik": "0001667919",
+      "series_id": "S000073489",
+      "class_id": "C000230440",
+      "legal_name": "First Trust Multi-Manager Small Cap Opportunities ETF",
+      "candidate_accession": "0001445546-23-000033",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-01-03",
+      "candidate_document_filename": "etf8_mmsc.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-000033_etf8_mmsc.htm"
+    },
+    {
+      "symbol": "MNA",
+      "cik": "0001415995",
+      "series_id": "S000025931",
+      "class_id": "C000077928",
+      "legal_name": "NYLIM Merger Arbitrage ETF",
+      "candidate_accession": "0000891092-18-006112",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2018-08-29",
+      "candidate_document_filename": "e1897-mna.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000891092-18-006112_e1897-mna.htm"
+    },
+    {
+      "symbol": "MSTI",
+      "cik": "0001976877",
+      "series_id": "S000081095",
+      "class_id": "C000243766",
+      "legal_name": "Madison Short Term Strategic Income ETF",
+      "candidate_accession": "0001999371-26-008167",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-13",
+      "candidate_document_filename": "msti-497k_103125.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-008167_msti-497k_103125.htm"
+    },
+    {
+      "symbol": "MVPA",
+      "cik": "0001970751",
+      "series_id": "S000083084",
+      "class_id": "C000246598",
+      "legal_name": "Miller Value Partners Appreciation ETF",
+      "candidate_accession": "0000894189-26-022346",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-14",
+      "candidate_document_filename": "mvpaetf497k8-2026exchangec.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000894189-26-022346_mvpaetf497k8-2026exchangec.htm"
+    },
+    {
+      "symbol": "MVPL",
+      "cik": "0001970751",
+      "series_id": "S000083083",
+      "class_id": "C000246597",
+      "legal_name": "Miller Value Partners Leverage ETF",
+      "candidate_accession": "0000894189-26-003254",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-02-02",
+      "candidate_document_filename": "mvpletfsummarypro.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000894189-26-003254_mvpletfsummarypro.htm"
+    },
+    {
+      "symbol": "NANC",
+      "cik": "0001742912",
+      "series_id": "S000088363",
+      "class_id": "C000254622",
+      "legal_name": "Subversive Congressional Democrats Trading ETF",
+      "candidate_accession": "0001999371-26-001899",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-01-28",
+      "candidate_document_filename": "nanc-497k_012826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-001899_nanc-497k_012826.htm"
+    },
+    {
+      "symbol": "NANR",
+      "cik": "0001168164",
+      "series_id": "S000052050",
+      "class_id": "C000163789",
+      "legal_name": "State Street SPDR S&P North American Natural Resources ETF",
+      "candidate_accession": "0000950123-11-007323",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84607a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007323_b84607a1e497k.txt"
+    },
+    {
+      "symbol": "NBDS",
+      "cik": "0001506001",
+      "series_id": "S000075396",
+      "class_id": "C000234392",
+      "legal_name": "Neuberger Disrupters ETF",
+      "candidate_accession": "0001206774-24-001114",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-12-17",
+      "candidate_document_filename": "nbetf1disrupters.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001206774-24-001114_nbetf1disrupters.htm"
+    },
+    {
+      "symbol": "NBET",
+      "cik": "0001506001",
+      "series_id": "S000075395",
+      "class_id": "C000234391",
+      "legal_name": "Neuberger Energy Transition & Infrastructure ETF",
+      "candidate_accession": "0001206774-24-001118",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-12-17",
+      "candidate_document_filename": "nbetf2globalre.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001206774-24-001118_nbetf2globalre.htm"
+    },
+    {
+      "symbol": "NBGX",
+      "cik": "0001506001",
+      "series_id": "S000089172",
+      "class_id": "C000255686",
+      "legal_name": "Neuberger Growth ETF",
+      "candidate_accession": "0000898432-24-000996",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-12-11",
+      "candidate_document_filename": "form497k-growth.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000898432-24-000996_form497k-growth.htm"
+    },
+    {
+      "symbol": "NOVZ",
+      "cik": "0001936157",
+      "series_id": "S000092050",
+      "class_id": "C000259964",
+      "legal_name": "TrueShares Structured Outcome (November) ETF",
+      "candidate_accession": "0001999371-26-009807",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "novz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009807_novz-497k_043026.htm"
+    },
+    {
+      "symbol": "NUDM",
+      "cik": "0001635073",
+      "series_id": "S000057420",
+      "class_id": "C000183268",
+      "legal_name": "Nuveen ESG International Developed Markets Equity ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUDV",
+      "cik": "0001635073",
+      "series_id": "S000072489",
+      "class_id": "C000228786",
+      "legal_name": "Nuveen ESG Dividend ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUEM",
+      "cik": "0001635073",
+      "series_id": "S000057421",
+      "class_id": "C000183269",
+      "legal_name": "Nuveen ESG Emerging Markets Equity ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUHY",
+      "cik": "0001635073",
+      "series_id": "S000064846",
+      "class_id": "C000209930",
+      "legal_name": "Nuveen ESG High Yield Corporate Bond ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NULC",
+      "cik": "0001635073",
+      "series_id": "S000063599",
+      "class_id": "C000206035",
+      "legal_name": "Nuveen ESG Large-Cap ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NULG",
+      "cik": "0001635073",
+      "series_id": "S000055811",
+      "class_id": "C000175723",
+      "legal_name": "Nuveen ESG Large-Cap Growth ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NULV",
+      "cik": "0001635073",
+      "series_id": "S000055812",
+      "class_id": "C000175724",
+      "legal_name": "Nuveen ESG Large-Cap Value ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUMG",
+      "cik": "0001635073",
+      "series_id": "S000055813",
+      "class_id": "C000175725",
+      "legal_name": "Nuveen ESG Mid-Cap Growth ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUMV",
+      "cik": "0001635073",
+      "series_id": "S000055814",
+      "class_id": "C000175726",
+      "legal_name": "Nuveen ESG Mid-Cap Value ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NUSC",
+      "cik": "0001635073",
+      "series_id": "S000055815",
+      "class_id": "C000175727",
+      "legal_name": "Nuveen ESG Small-Cap ETF",
+      "candidate_accession": "0001193125-19-162556",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2019-05-31",
+      "candidate_document_filename": "d744038d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-19-162556_d744038d497k.htm"
+    },
+    {
+      "symbol": "NZAC",
+      "cik": "0001168164",
+      "series_id": "S000047509",
+      "class_id": "C000149166",
+      "legal_name": "State Street SPDR MSCI ACWI Climate Paris Aligned ETF",
+      "candidate_accession": "0000950123-11-007324",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84606a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007324_b84606a1e497k.txt"
+    },
+    {
+      "symbol": "OCTZ",
+      "cik": "0001936157",
+      "series_id": "S000092051",
+      "class_id": "C000259965",
+      "legal_name": "TrueShares Structured Outcome (October) ETF",
+      "candidate_accession": "0001999371-26-009808",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "octz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009808_octz-497k_043026.htm"
+    },
+    {
+      "symbol": "OEF",
+      "cik": "0001100663",
+      "series_id": "S000004306",
+      "class_id": "C000012036",
+      "legal_name": "iShares S&P 100 Fund",
+      "candidate_accession": "0001193125-24-067989",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-03-14",
+      "candidate_document_filename": "d810023d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-24-067989_d810023d497k.htm"
+    },
+    {
+      "symbol": "OEFA",
+      "cik": "0001414040",
+      "series_id": "S000075795",
+      "class_id": "C000235087",
+      "legal_name": "ALPS O'Shares International Developed Quality Dividend ETF",
+      "candidate_accession": "0001193125-14-318339",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776336d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318339_d776336d497k.htm"
+    },
+    {
+      "symbol": "OMAH",
+      "cik": "0001722388",
+      "series_id": "S000090687",
+      "class_id": "C000257971",
+      "legal_name": "VistaShares Target 15 Berkshire Select Income ETF",
+      "candidate_accession": "0001999371-26-013687",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-06-29",
+      "candidate_document_filename": "omah-497k_062926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-013687_omah-497k_062926.htm"
+    },
+    {
+      "symbol": "ONEZ",
+      "cik": "0001936157",
+      "series_id": "S000089479",
+      "class_id": "C000256042",
+      "legal_name": "TrueShares Seasonality Laddered Buffered ETF",
+      "candidate_accession": "0001999371-26-005014",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-04",
+      "candidate_document_filename": "onez-497_030226.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-005014_onez-497_030226.htm"
+    },
+    {
+      "symbol": "PWRZ",
+      "cik": "0001936157",
+      "series_id": "S000092122",
+      "class_id": "C000260045",
+      "legal_name": "TrueShares Eagle Global Renewable Energy Income ETF",
+      "candidate_accession": "0001999371-26-014604",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-09",
+      "candidate_document_filename": "pwrz-497k_070926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014604_pwrz-497k_070926.htm"
+    },
+    {
+      "symbol": "QAI",
+      "cik": "0001415995",
+      "series_id": "S000023661",
+      "class_id": "C000069675",
+      "legal_name": "NYLIM Hedge Multi-Strategy Tracker ETF",
+      "candidate_accession": "0000891092-18-006124",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2018-08-29",
+      "candidate_document_filename": "e1895-qai.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000891092-18-006124_e1895-qai.htm"
+    },
+    {
+      "symbol": "QBUL",
+      "cik": "0001936157",
+      "series_id": "S000085521",
+      "class_id": "C000250806",
+      "legal_name": "TrueShares Quarterly Bull Hedge ETF",
+      "candidate_accession": "0001999371-26-017331",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-07",
+      "candidate_document_filename": "qbul-497k_080526.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-017331_qbul-497k_080526.htm"
+    },
+    {
+      "symbol": "QEMM",
+      "cik": "0001168164",
+      "series_id": "S000045387",
+      "class_id": "C000141273",
+      "legal_name": "State Street SPDR MSCI Emerging Markets StrategicFactors ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "QGRO",
+      "cik": "0001710607",
+      "series_id": "S000062302",
+      "class_id": "C000202059",
+      "legal_name": "American Century U.S. Quality Growth ETF",
+      "candidate_accession": "0001710607-25-000380",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftqgro497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000380_acetftqgro497k.htm"
+    },
+    {
+      "symbol": "QINT",
+      "cik": "0001710607",
+      "series_id": "S000062301",
+      "class_id": "C000202058",
+      "legal_name": "American Century Quality Diversified International ETF",
+      "candidate_accession": "0001710607-26-000184",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-31",
+      "candidate_document_filename": "acetftqint497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-26-000184_acetftqint497k.htm"
+    },
+    {
+      "symbol": "QLDY",
+      "cik": "0001924868",
+      "series_id": "S000092044",
+      "class_id": "C000259957",
+      "legal_name": "Defiance Nasdaq 100 LightningSpread Income ETF",
+      "candidate_accession": "0001999371-25-013343",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-09-16",
+      "candidate_document_filename": "qldy_497k-091625.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-013343_qldy_497k-091625.htm"
+    },
+    {
+      "symbol": "QQQM",
+      "cik": "0001378872",
+      "series_id": "S000069448",
+      "class_id": "C000221604",
+      "legal_name": "Invesco NASDAQ 100 ETF",
+      "candidate_accession": "0001193125-24-187596",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-07-29",
+      "candidate_document_filename": "d747000d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-24-187596_d747000d497k.htm"
+    },
+    {
+      "symbol": "QQQT",
+      "cik": "0001924868",
+      "series_id": "S000084176",
+      "class_id": "C000248449",
+      "legal_name": "Defiance Nasdaq 100 Income Target ETF",
+      "candidate_accession": "0001999371-25-021160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-23",
+      "candidate_document_filename": "qqqt-497k_122325.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-021160_qqqt-497k_122325.htm"
+    },
+    {
+      "symbol": "QUSA",
+      "cik": "0001722388",
+      "series_id": "S000090690",
+      "class_id": "C000257974",
+      "legal_name": "VistaShares Target 15 USA Quality Income ETF",
+      "candidate_accession": "0001999371-26-013690",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-06-29",
+      "candidate_document_filename": "qusa-497k_062926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-013690_qusa-497k_062926.htm"
+    },
+    {
+      "symbol": "RDOG",
+      "cik": "0001414040",
+      "series_id": "S000021672",
+      "class_id": "C000062111",
+      "legal_name": "ALPS REIT Dividend Dogs ETF",
+      "candidate_accession": "0001193125-14-318346",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776041d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318346_d776041d497k.htm"
+    },
+    {
+      "symbol": "RDTY",
+      "cik": "0001924868",
+      "series_id": "S000090039",
+      "class_id": "C000256916",
+      "legal_name": "YieldMax R2000 0DTE Covered Strategy ETF",
+      "candidate_accession": "0001999371-25-018560",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-11-25",
+      "candidate_document_filename": "rdty-497k_112525.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-018560_rdty-497k_112525.htm"
+    },
+    {
+      "symbol": "REIX",
+      "cik": "0001426439",
+      "series_id": "S000079855",
+      "class_id": "C000241259",
+      "legal_name": "NYLIM CBRE Real Estate & Infrastructure ETF",
+      "candidate_accession": "0001999371-26-019123",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-08-28",
+      "candidate_document_filename": "reix-497k_082826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-019123_reix-497k_082826.htm"
+    },
+    {
+      "symbol": "RFDA",
+      "cik": "0001414040",
+      "series_id": "S000052852",
+      "class_id": "C000166225",
+      "legal_name": "ALPS Dynamic US Dividend Advantage ETF",
+      "candidate_accession": "0001049169-16-000192",
+      "candidate_form": "497",
+      "candidate_filing_date": "2016-12-30",
+      "candidate_document_filename": "alpsetftrust-rfdaandrffcpmre.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001049169-16-000192_alpsetftrust-rfdaandrffcpmre.htm"
+    },
+    {
+      "symbol": "RFFC",
+      "cik": "0001414040",
+      "series_id": "S000052853",
+      "class_id": "C000166226",
+      "legal_name": "ALPS Active Equity Opportunity ETF",
+      "candidate_accession": "0001049169-16-000192",
+      "candidate_form": "497",
+      "candidate_filing_date": "2016-12-30",
+      "candidate_document_filename": "alpsetftrust-rfdaandrffcpmre.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001049169-16-000192_alpsetftrust-rfdaandrffcpmre.htm"
+    },
+    {
+      "symbol": "RIGS",
+      "cik": "0001414040",
+      "series_id": "S000030145",
+      "class_id": "C000092591",
+      "legal_name": "ALPS Strategic Income Fund",
+      "candidate_accession": "0001414040-16-000210",
+      "candidate_form": "497",
+      "candidate_filing_date": "2016-06-17",
+      "candidate_document_filename": "rigssticker6172016.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001414040-16-000210_rigssticker6172016.htm"
+    },
+    {
+      "symbol": "RNMN",
+      "cik": "0001936157",
+      "series_id": "S000092118",
+      "class_id": "C000260041",
+      "legal_name": "RiverNorth Market Neutral ETF",
+      "candidate_accession": "0001999371-26-014594",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-09",
+      "candidate_document_filename": "rnmn-497k_070826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014594_rnmn-497k_070826.htm"
+    },
+    {
+      "symbol": "ROBT",
+      "cik": "0001552740",
+      "series_id": "S000061316",
+      "class_id": "C000198496",
+      "legal_name": "First Trust Nasdaq Artificial Intelligence and Robotics ETF",
+      "candidate_accession": "0001445546-24-000848",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-02-01",
+      "candidate_document_filename": "robt_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-24-000848_robt_497k.htm"
+    },
+    {
+      "symbol": "RSSB",
+      "cik": "0001924868",
+      "series_id": "S000079703",
+      "class_id": "C000240950",
+      "legal_name": "Return Stacked Global Stocks & Bonds ETF",
+      "candidate_accession": "0001999371-26-009149",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-27",
+      "candidate_document_filename": "rssb-497k_042726.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009149_rssb-497k_042726.htm"
+    },
+    {
+      "symbol": "RWO",
+      "cik": "0001168164",
+      "series_id": "S000021764",
+      "class_id": "C000062489",
+      "legal_name": "State Street SPDR Dow Jones Global Real Estate ETF",
+      "candidate_accession": "0000950123-11-007321",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84609a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007321_b84609a1e497k.txt"
+    },
+    {
+      "symbol": "RWX",
+      "cik": "0001168164",
+      "series_id": "S000014040",
+      "class_id": "C000038339",
+      "legal_name": "State Street SPDR Dow Jones International Real Estate ETF",
+      "candidate_accession": "0000950123-11-007321",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84609a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007321_b84609a1e497k.txt"
+    },
+    {
+      "symbol": "SBIO",
+      "cik": "0001414040",
+      "series_id": "S000047823",
+      "class_id": "C000150206",
+      "legal_name": "ALPS Medical Breakthroughs ETF",
+      "candidate_accession": "0001193125-15-006089",
+      "candidate_form": "485BPOS",
+      "candidate_filing_date": "2015-01-09",
+      "candidate_document_filename": "d805180d485bpos.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-15-006089_d805180d485bpos.htm"
+    },
+    {
+      "symbol": "SCHC",
+      "cik": "0001454889",
+      "series_id": "S000026638",
+      "class_id": "C000079985",
+      "legal_name": "Schwab International Small-Cap Equity ETF",
+      "candidate_accession": "0001104659-21-040160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-03-23",
+      "candidate_document_filename": "tm219225-4_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001104659-21-040160_tm219225-4_497k.htm"
+    },
+    {
+      "symbol": "SCHF",
+      "cik": "0001454889",
+      "series_id": "S000026637",
+      "class_id": "C000079984",
+      "legal_name": "Schwab International Equity ETF",
+      "candidate_accession": "0001104659-21-040160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-03-23",
+      "candidate_document_filename": "tm219225-4_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001104659-21-040160_tm219225-4_497k.htm"
+    },
+    {
+      "symbol": "SCHY",
+      "cik": "0001454889",
+      "series_id": "S000071197",
+      "class_id": "C000225985",
+      "legal_name": "Schwab International Dividend Equity ETF",
+      "candidate_accession": "0001104659-21-040160",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-03-23",
+      "candidate_document_filename": "tm219225-4_497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001104659-21-040160_tm219225-4_497k.htm"
+    },
+    {
+      "symbol": "SDOG",
+      "cik": "0001414040",
+      "series_id": "S000037495",
+      "class_id": "C000115754",
+      "legal_name": "ALPS Sector Dividend Dogs ETF",
+      "candidate_accession": "0001193125-14-318346",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-08-22",
+      "candidate_document_filename": "d776041d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-318346_d776041d497k.htm"
+    },
+    {
+      "symbol": "SEPI",
+      "cik": "0000836267",
+      "series_id": "S000092397",
+      "class_id": "C000260372",
+      "legal_name": "Shelton Equity Premium Income ETF",
+      "candidate_accession": "0001999371-25-011882",
+      "candidate_form": "485BPOS",
+      "candidate_filing_date": "2025-08-22",
+      "candidate_document_filename": "sepi-485bpos_090825.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-011882_sepi-485bpos_090825.htm"
+    },
+    {
+      "symbol": "SEPZ",
+      "cik": "0001936157",
+      "series_id": "S000092052",
+      "class_id": "C000259966",
+      "legal_name": "TrueShares Structured Outcome (September) ETF",
+      "candidate_accession": "0001999371-26-009809",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-04",
+      "candidate_document_filename": "sepz-497k_043026.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-009809_sepz-497k_043026.htm"
+    },
+    {
+      "symbol": "SMIN",
+      "cik": "0001100663",
+      "series_id": "S000034700",
+      "class_id": "C000106876",
+      "legal_name": "Ishares MSCI India Small Cap ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "SMMV",
+      "cik": "0001100663",
+      "series_id": "S000054723",
+      "class_id": "C000171896",
+      "legal_name": "iShares MSCI USA Small-Cap Min Vol Factor ETF",
+      "candidate_accession": "0001193125-13-455359",
+      "candidate_form": "497",
+      "candidate_filing_date": "2013-11-27",
+      "candidate_document_filename": "d636986d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-13-455359_d636986d497.htm"
+    },
+    {
+      "symbol": "SOVF",
+      "cik": "0001936157",
+      "series_id": "S000081759",
+      "class_id": "C000244753",
+      "legal_name": "Sovereign's Capital Flourish Fund",
+      "candidate_accession": "0001999371-25-019194",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-02",
+      "candidate_document_filename": "sovf-497k_1128225.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-019194_sovf-497k_1128225.htm"
+    },
+    {
+      "symbol": "SPEM",
+      "cik": "0001168164",
+      "series_id": "S000014048",
+      "class_id": "C000038347",
+      "legal_name": "State Street SPDR Portfolio Emerging Markets ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "SPEU",
+      "cik": "0001168164",
+      "series_id": "S000006391",
+      "class_id": "C000017549",
+      "legal_name": "State Street SPDR Portfolio Europe ETF",
+      "candidate_accession": "0000950123-11-007316",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-01-31",
+      "candidate_document_filename": "b84614a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-007316_b84614a1e497k.txt"
+    },
+    {
+      "symbol": "SPHY",
+      "cik": "0001064642",
+      "series_id": "S000036938",
+      "class_id": "C000113018",
+      "legal_name": "State Street SPDR Portfolio High Yield Bond ETF",
+      "candidate_accession": "0001193125-12-116458",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2012-03-15",
+      "candidate_document_filename": "d316193d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-12-116458_d316193d497k.htm"
+    },
+    {
+      "symbol": "SPIB",
+      "cik": "0001064642",
+      "series_id": "S000022923",
+      "class_id": "C000066454",
+      "legal_name": "State Street SPDR Portfolio Intermediate Term Corporate Bond ETF",
+      "candidate_accession": "0001193125-12-273854",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2012-06-18",
+      "candidate_document_filename": "d368653d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-12-273854_d368653d497k.htm"
+    },
+    {
+      "symbol": "SPMO",
+      "cik": "0001378872",
+      "series_id": "S000050154",
+      "class_id": "C000158243",
+      "legal_name": "Invesco S&P 500 Momentum ETF",
+      "candidate_accession": "0001680359-17-000677",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2017-12-22",
+      "candidate_document_filename": "sp500momentum497k12222017.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001680359-17-000677_sp500momentum497k12222017.htm"
+    },
+    {
+      "symbol": "SPTB",
+      "cik": "0001064642",
+      "series_id": "S000084968",
+      "class_id": "C000249829",
+      "legal_name": "State Street SPDR Portfolio Treasury ETF",
+      "candidate_accession": "0000950123-10-052348",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2010-05-24",
+      "candidate_document_filename": "b81056a2e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-10-052348_b81056a2e497k.txt"
+    },
+    {
+      "symbol": "SPTS",
+      "cik": "0001064642",
+      "series_id": "S000019665",
+      "class_id": "C000055009",
+      "legal_name": "State Street SPDR Portfolio Short Term Treasury ETF",
+      "candidate_accession": "0001193125-12-116458",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2012-03-15",
+      "candidate_document_filename": "d316193d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-12-116458_d316193d497k.htm"
+    },
+    {
+      "symbol": "SPXE",
+      "cik": "0001174610",
+      "series_id": "S000050775",
+      "class_id": "C000160294",
+      "legal_name": "ProShares S&P 500 Ex-Energy ETF",
+      "candidate_accession": "0001683863-24-005678",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-09-26",
+      "candidate_document_filename": "f39562d1.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001683863-24-005678_f39562d1.htm"
+    },
+    {
+      "symbol": "SPXN",
+      "cik": "0001174610",
+      "series_id": "S000050776",
+      "class_id": "C000160295",
+      "legal_name": "ProShares S&P 500 Ex-Financials ETF",
+      "candidate_accession": "0001683863-24-005677",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-09-26",
+      "candidate_document_filename": "f39563d1.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001683863-24-005677_f39563d1.htm"
+    },
+    {
+      "symbol": "SPXT",
+      "cik": "0001174610",
+      "series_id": "S000050780",
+      "class_id": "C000160299",
+      "legal_name": "ProShares S&P 500 Ex-Technology ETF",
+      "candidate_accession": "0001683863-24-005676",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-09-26",
+      "candidate_document_filename": "f39564d1.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001683863-24-005676_f39564d1.htm"
+    },
+    {
+      "symbol": "SRHQ",
+      "cik": "0001936157",
+      "series_id": "S000077516",
+      "class_id": "C000237993",
+      "legal_name": "SRH U.S. Quality GARP ETF",
+      "candidate_accession": "0001999371-23-001310",
+      "candidate_form": "485BPOS",
+      "candidate_filing_date": "2023-12-29",
+      "candidate_document_filename": "srhq_485bpos-122923.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-23-001310_srhq_485bpos-122923.htm"
+    },
+    {
+      "symbol": "SRHR",
+      "cik": "0001936157",
+      "series_id": "S000080338",
+      "class_id": "C000242685",
+      "legal_name": "SRH REIT Covered Call ETF",
+      "candidate_accession": "0001999371-26-000866",
+      "candidate_form": "497",
+      "candidate_filing_date": "2026-01-14",
+      "candidate_document_filename": "srhr-497_011426.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-000866_srhr-497_011426.htm"
+    },
+    {
+      "symbol": "TACU",
+      "cik": "0001795351",
+      "series_id": "S000095884",
+      "class_id": "C000264666",
+      "legal_name": "T. Rowe Price Active Core U.S. Equity ETF",
+      "candidate_accession": "0001999371-25-019269",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-03",
+      "candidate_document_filename": "tacu-497k_120325.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-019269_tacu-497k_120325.htm"
+    },
+    {
+      "symbol": "TAOZ",
+      "cik": "0000816153",
+      "series_id": "S000011846",
+      "class_id": "C000272858",
+      "legal_name": "Thornburg American Opportunities Fund",
+      "candidate_accession": "0001999371-26-007319",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-03-31",
+      "candidate_document_filename": "taoz-497k_032726.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-007319_taoz-497k_032726.htm"
+    },
+    {
+      "symbol": "TEMR",
+      "cik": "0001795351",
+      "series_id": "S000095885",
+      "class_id": "C000264667",
+      "legal_name": "T. Rowe Price Emerging Markets Equity Research ETF",
+      "candidate_accession": "0001999371-26-005633",
+      "candidate_form": "497",
+      "candidate_filing_date": "2026-03-11",
+      "candidate_document_filename": "temr_497-031126.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-005633_temr_497-031126.htm"
+    },
+    {
+      "symbol": "TFGZ",
+      "cik": "0000816153",
+      "series_id": "S000011850",
+      "class_id": "C000272859",
+      "legal_name": "Thornburg Focus Growth Fund",
+      "candidate_accession": "0001999371-26-007478",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-04-01",
+      "candidate_document_filename": "tfgz-497k_040126.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-007478_tfgz-497k_040126.htm"
+    },
+    {
+      "symbol": "TGLR",
+      "cik": "0001771146",
+      "series_id": "S000081285",
+      "class_id": "C000243972",
+      "legal_name": "Wedbush LAFFER TENGLER New Era Value ETF",
+      "candidate_accession": "0001387131-23-009332",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-08-04",
+      "candidate_document_filename": "tglr-497k_073123.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001387131-23-009332_tglr-497k_073123.htm"
+    },
+    {
+      "symbol": "THYF",
+      "cik": "0001795351",
+      "series_id": "S000077051",
+      "class_id": "C000237191",
+      "legal_name": "T. Rowe Price U.S. High Yield ETF",
+      "candidate_accession": "0001999371-25-017584",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-11-13",
+      "candidate_document_filename": "thyf-497k_111325.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-017584_thyf-497k_111325.htm"
+    },
+    {
+      "symbol": "TLDR",
+      "cik": "0002043954",
+      "series_id": "S000100368",
+      "class_id": "C000270192",
+      "legal_name": "The Laddered T-Bill ETF",
+      "candidate_accession": "0001999371-26-001292",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-01-21",
+      "candidate_document_filename": "tldr-497k_012126.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-001292_tldr-497k_012126.htm"
+    },
+    {
+      "symbol": "TMFM",
+      "cik": "0000831114",
+      "series_id": "S000074655",
+      "class_id": "C000232699",
+      "legal_name": "Motley Fool Mid-Cap Growth ETF",
+      "candidate_accession": "0001193125-10-024459",
+      "candidate_form": "497",
+      "candidate_filing_date": "2010-02-08",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-10-024459_d497.htm"
+    },
+    {
+      "symbol": "TMFS",
+      "cik": "0000831114",
+      "series_id": "S000063392",
+      "class_id": "C000205459",
+      "legal_name": "Motley Fool Small-Cap Growth ETF",
+      "candidate_accession": "0001193125-10-024459",
+      "candidate_form": "497",
+      "candidate_filing_date": "2010-02-08",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-10-024459_d497.htm"
+    },
+    {
+      "symbol": "TOLL",
+      "cik": "0001944285",
+      "series_id": "S000078302",
+      "class_id": "C000239062",
+      "legal_name": "Tema Monopolies and Oligopolies ETF",
+      "candidate_accession": "0001999371-26-014184",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-02",
+      "candidate_document_filename": "toll-497k_062926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014184_toll-497k_062926.htm"
+    },
+    {
+      "symbol": "TSPY",
+      "cik": "0001771146",
+      "series_id": "S000083891",
+      "class_id": "C000247976",
+      "legal_name": "TappAlpha S&P 500 Growth & Daily Income ETF",
+      "candidate_accession": "0001771146-26-001053",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-05-26",
+      "candidate_document_filename": "etfot-tappalphatspyetf497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001771146-26-001053_etfot-tappalphatspyetf497k.htm"
+    },
+    {
+      "symbol": "TXUE",
+      "cik": "0002038383",
+      "series_id": "S000089221",
+      "class_id": "C000255736",
+      "legal_name": "Thornburg International Equity ETF",
+      "candidate_accession": "0001999371-25-021310",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-30",
+      "candidate_document_filename": "txue-497k_123025.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-021310_txue-497k_123025.htm"
+    },
+    {
+      "symbol": "TXUG",
+      "cik": "0002038383",
+      "series_id": "S000089222",
+      "class_id": "C000255737",
+      "legal_name": "Thornburg International Growth Fund ETF",
+      "candidate_accession": "0001999371-25-021311",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-30",
+      "candidate_document_filename": "txug-497k_123025.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-021311_txug-497k_123025.htm"
+    },
+    {
+      "symbol": "UCON",
+      "cik": "0001667919",
+      "series_id": "S000061961",
+      "class_id": "C000200735",
+      "legal_name": "First Trust Smith Unconstrained Bond ETF",
+      "candidate_accession": "0001445546-23-003557",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-05-31",
+      "candidate_document_filename": "etf8_ucon497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-23-003557_etf8_ucon497k.htm"
+    },
+    {
+      "symbol": "ULTI",
+      "cik": "0002043954",
+      "series_id": "S000096102",
+      "class_id": "C000264889",
+      "legal_name": "REX IncomeMax Option Strategy ETF",
+      "candidate_accession": "0001999371-25-016414",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-10-29",
+      "candidate_document_filename": "ulti-497k_102925.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-016414_ulti-497k_102925.htm"
+    },
+    {
+      "symbol": "UTES",
+      "cik": "0001559109",
+      "series_id": "S000049397",
+      "class_id": "C000156214",
+      "legal_name": "Virtus Reaves Utilities ETF",
+      "candidate_accession": "0001839882-24-041897",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-11-27",
+      "candidate_document_filename": "utes-497k_112824.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001839882-24-041897_utes-497k_112824.htm"
+    },
+    {
+      "symbol": "VALQ",
+      "cik": "0001710607",
+      "series_id": "S000060786",
+      "class_id": "C000197602",
+      "legal_name": "American Century U.S. Quality Value ETF",
+      "candidate_accession": "0001710607-25-000381",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "acetftvalq497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001710607-25-000381_acetftvalq497k.htm"
+    },
+    {
+      "symbol": "VIDI",
+      "cik": "0001540305",
+      "series_id": "S000042078",
+      "class_id": "C000130685",
+      "legal_name": "Vident International Equity Strategy ETF",
+      "candidate_accession": "0000894189-25-020559",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "vidibody.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000894189-25-020559_vidibody.htm"
+    },
+    {
+      "symbol": "VLUE",
+      "cik": "0001100663",
+      "series_id": "S000040205",
+      "class_id": "C000124961",
+      "legal_name": "iShares MSCI USA Value Factor ETF",
+      "candidate_accession": "0001193125-05-162682",
+      "candidate_form": "497",
+      "candidate_filing_date": "2005-08-09",
+      "candidate_document_filename": "d497.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-05-162682_d497.htm"
+    },
+    {
+      "symbol": "VOLT",
+      "cik": "0001944285",
+      "series_id": "S000088946",
+      "class_id": "C000255347",
+      "legal_name": "Tema Electrification ETF",
+      "candidate_accession": "0001999371-26-014185",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-07-02",
+      "candidate_document_filename": "volt-497k_062926.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-014185_volt-497k_062926.htm"
+    },
+    {
+      "symbol": "VRAI",
+      "cik": "0001559109",
+      "series_id": "S000064728",
+      "class_id": "C000209671",
+      "legal_name": "Virtus Real Asset Income ETF",
+      "candidate_accession": "0001999371-26-004653",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-02-27",
+      "candidate_document_filename": "vrai-497k_022726.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-004653_vrai-497k_022726.htm"
+    },
+    {
+      "symbol": "VUSE",
+      "cik": "0001540305",
+      "series_id": "S000043147",
+      "class_id": "C000133545",
+      "legal_name": "Vident U.S. Equity Strategy ETF",
+      "candidate_accession": "0000894189-25-020561",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-31",
+      "candidate_document_filename": "vusebody.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000894189-25-020561_vusebody.htm"
+    },
+    {
+      "symbol": "WDIV",
+      "cik": "0001168164",
+      "series_id": "S000040740",
+      "class_id": "C000126352",
+      "legal_name": "State Street SPDR S&P Global Dividend ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "WGMI",
+      "cik": "0001877493",
+      "series_id": "S000075052",
+      "class_id": "C000233855",
+      "legal_name": "CoinShares Bitcoin Mining and Digital Power ETF",
+      "candidate_accession": "0001999371-26-001723",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-01-27",
+      "candidate_document_filename": "wgmi-497k_012626.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-001723_wgmi-497k_012626.htm"
+    },
+    {
+      "symbol": "XCNY",
+      "cik": "0001168164",
+      "series_id": "S000087668",
+      "class_id": "C000253543",
+      "legal_name": "State Street SPDR S&P Emerging Markets ex-China ETF",
+      "candidate_accession": "0000950123-11-017780",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2011-02-24",
+      "candidate_document_filename": "b85194a1e497k.txt",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0000950123-11-017780_b85194a1e497k.txt"
+    },
+    {
+      "symbol": "XDEC",
+      "cik": "0001667919",
+      "series_id": "S000073414",
+      "class_id": "C000230301",
+      "legal_name": "FT Vest U.S. Equity Enhance & Moderate Buffer ETF - December",
+      "candidate_accession": "0001445546-21-006254",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2021-12-20",
+      "candidate_document_filename": "etf8_xdec497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001445546-21-006254_etf8_xdec497k.htm"
+    },
+    {
+      "symbol": "XIDV",
+      "cik": "0001655589",
+      "series_id": "S000089400",
+      "class_id": "C000255929",
+      "legal_name": "Franklin International Dividend Booster Index ETF",
+      "candidate_accession": "0001741773-23-003136",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2023-09-11",
+      "candidate_document_filename": "c497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001741773-23-003136_c497k.htm"
+    },
+    {
+      "symbol": "XNTK",
+      "cik": "0001064642",
+      "series_id": "S000006980",
+      "class_id": "C000019033",
+      "legal_name": "State Street SPDR NYSE Technology ETF",
+      "candidate_accession": "0001193125-14-387307",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2014-10-29",
+      "candidate_document_filename": "d799449d497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001193125-14-387307_d799449d497k.htm"
+    },
+    {
+      "symbol": "XSOE",
+      "cik": "0001350487",
+      "series_id": "S000046464",
+      "class_id": "C000145138",
+      "legal_name": "WisdomTree Emerging Markets Ex-State Owned Enterprises Fund",
+      "candidate_accession": "0001214659-24-021132",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2024-12-30",
+      "candidate_document_filename": "eld122724497k.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001214659-24-021132_eld122724497k.htm"
+    },
+    {
+      "symbol": "YALL",
+      "cik": "0001742912",
+      "series_id": "S000077618",
+      "class_id": "C000238106",
+      "legal_name": "Truth Social God Bless America ETF",
+      "candidate_accession": "0001999371-25-021145",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2025-12-23",
+      "candidate_document_filename": "yall-497k_122325.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-25-021145_yall-497k_122325.htm"
+    },
+    {
+      "symbol": "YMAG",
+      "cik": "0001924868",
+      "series_id": "S000083695",
+      "class_id": "C000247704",
+      "legal_name": "YieldMax Magnificent 7 Fund of Option Income ETFs",
+      "candidate_accession": "0001999371-26-013109",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-06-18",
+      "candidate_document_filename": "ymag-497k_061826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-013109_ymag-497k_061826.htm"
+    },
+    {
+      "symbol": "YMAX",
+      "cik": "0001924868",
+      "series_id": "S000083696",
+      "class_id": "C000247705",
+      "legal_name": "YieldMax Universe Fund of Option Income ETFs",
+      "candidate_accession": "0001999371-26-013115",
+      "candidate_form": "497K",
+      "candidate_filing_date": "2026-06-18",
+      "candidate_document_filename": "ymax-497k_061826.htm",
+      "expected_local_cache_path": "data/research/cache/sec_prospectus/0001999371-26-013115_ymax-497k_061826.htm"
+    }
+  ],
+  "unique_documents": [
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000378",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftacsg497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000379",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftacsv497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000376",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftahyb497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000419",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavdex497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000401",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavds497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000420",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavdvx497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000418",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftaveex497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000394",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavem497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000397",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftaves497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000393",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavgb497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000204",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftavge497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000201",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftavgv497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000398",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavie497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000400",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftaviv497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000410",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavlc497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000422",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavlvx497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000198",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftavma497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000412",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavmc497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000413",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavmv497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000195",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftavnm497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000192",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftavnv497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000404",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavre497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000423",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavscx497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000406",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavsd497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000405",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavse497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000408",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavsf497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000407",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavsu497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000019",
+      "form": "497K",
+      "filing_date": "2026-01-28",
+      "document_filename": "acetftavtm497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000414",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavuq497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000421",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavusx497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000424",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavuvx497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000395",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftavxc497k.htm"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001193125-13-254378",
+      "form": "485BPOS",
+      "filing_date": "2013-06-11",
+      "document_filename": "d484634d485bpos.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-25-018573",
+      "form": "497K",
+      "filing_date": "2025-11-25",
+      "document_filename": "bigy-497k_112525.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-24-002022",
+      "form": "497K",
+      "filing_date": "2024-03-14",
+      "document_filename": "etf8_bufg497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-22-004373",
+      "form": "497",
+      "filing_date": "2022-06-21",
+      "document_filename": "etf8_bufq.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-24-001795",
+      "form": "485APOS",
+      "filing_date": "2024-03-07",
+      "document_filename": "etf8_bufs485a.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-24-002018",
+      "form": "497K",
+      "filing_date": "2024-03-14",
+      "document_filename": "etf8_buft497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-24-001797",
+      "form": "485APOS",
+      "filing_date": "2024-03-07",
+      "document_filename": "etf8_bufy485a.htm"
+    },
+    {
+      "cik": "0000878719",
+      "accession": "0001135428-14-000592",
+      "form": "497K",
+      "filing_date": "2014-09-08",
+      "document_filename": "aggressivevalue-investor497k.txt"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-004945",
+      "form": "497K",
+      "filing_date": "2026-03-03",
+      "document_filename": "cbse_497k-030226.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-001878",
+      "form": "497K",
+      "filing_date": "2026-01-28",
+      "document_filename": "cefz-497k_012826.htm"
+    },
+    {
+      "cik": "0001537140",
+      "accession": "0001580642-17-002679",
+      "form": "485APOS",
+      "filing_date": "2017-05-01",
+      "document_filename": "counterpointlsequity_485a.htm"
+    },
+    {
+      "cik": "0001976877",
+      "accession": "0001999371-26-008161",
+      "form": "497K",
+      "filing_date": "2026-04-13",
+      "document_filename": "cvrd-497k_103125.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007324",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84606a1e497k.txt"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-005465",
+      "form": "497K",
+      "filing_date": "2026-03-10",
+      "document_filename": "dddd-497k_031026.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009806",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "decz-497k_043026.htm"
+    },
+    {
+      "cik": "0001350487",
+      "accession": "0001214659-24-021132",
+      "form": "497K",
+      "filing_date": "2024-12-30",
+      "document_filename": "eld122724497k.htm"
+    },
+    {
+      "cik": "0001877493",
+      "accession": "0001999371-25-014691",
+      "form": "497K",
+      "filing_date": "2025-10-03",
+      "document_filename": "dime-497k_100325.htm"
+    },
+    {
+      "cik": "0001976877",
+      "accession": "0001999371-26-008170",
+      "form": "497K",
+      "filing_date": "2026-04-13",
+      "document_filename": "divl-497k_103125.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009802",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "divz-497k_043026.htm"
+    },
+    {
+      "cik": "0001552740",
+      "accession": "0001445546-24-000836",
+      "form": "497K",
+      "filing_date": "2024-02-01",
+      "document_filename": "dvlu_497k.htm"
+    },
+    {
+      "cik": "0001552740",
+      "accession": "0001445546-24-000837",
+      "form": "497K",
+      "filing_date": "2024-02-01",
+      "document_filename": "dvol_497k.htm"
+    },
+    {
+      "cik": "0000930667",
+      "accession": "0001021408-02-011944",
+      "form": "485APOS",
+      "filing_date": "2002-09-19",
+      "document_filename": "d485apos.txt"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007327",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84603a1e497k.txt"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-017780",
+      "form": "497K",
+      "filing_date": "2011-02-24",
+      "document_filename": "b85194a1e497k.txt"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001193125-14-318346",
+      "form": "497K",
+      "filing_date": "2014-08-22",
+      "document_filename": "d776041d497k.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0000898430-02-004381",
+      "form": "485BPOS",
+      "filing_date": "2002-11-29",
+      "document_filename": "d485bpos.txt"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-11-243740",
+      "form": "497",
+      "filing_date": "2011-09-09",
+      "document_filename": "d222350d497.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-05-162682",
+      "form": "497",
+      "filing_date": "2005-08-09",
+      "document_filename": "d497.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-24-000122",
+      "form": "497",
+      "filing_date": "2024-01-09",
+      "document_filename": "eipi_497.htm"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001645",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "eipx_497k.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-13-455359",
+      "form": "497",
+      "filing_date": "2013-11-27",
+      "document_filename": "d636986d497.htm"
+    },
+    {
+      "cik": "0001969995",
+      "accession": "0001206774-25-000676",
+      "form": "497K",
+      "filing_date": "2025-09-10",
+      "document_filename": "emeq4533856-497k.htm"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001646",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "emlp_497k.htm"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001193125-14-318343",
+      "form": "497K",
+      "filing_date": "2014-08-22",
+      "document_filename": "d776051d497k.htm"
+    },
+    {
+      "cik": "0000930667",
+      "accession": "0001193125-20-053281",
+      "form": "497",
+      "filing_date": "2020-02-28",
+      "document_filename": "d885792d497.htm"
+    },
+    {
+      "cik": "0000930667",
+      "accession": "0000950109-02-005946",
+      "form": "485APOS",
+      "filing_date": "2002-11-19",
+      "document_filename": "d485apos.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007919",
+      "form": "497K",
+      "filing_date": "2016-04-08",
+      "document_filename": "summary_fab.txt"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-25-001315",
+      "form": "497",
+      "filing_date": "2025-02-19",
+      "document_filename": "fbdc_497.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-000027",
+      "form": "497K",
+      "filing_date": "2023-01-03",
+      "document_filename": "etf8_fcef.htm"
+    },
+    {
+      "cik": "0001510337",
+      "accession": "0001445546-26-003313",
+      "form": "497K",
+      "filing_date": "2026-05-01",
+      "document_filename": "fdts_497k.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009818",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "febz-497k_043026.htm"
+    },
+    {
+      "cik": "0001510337",
+      "accession": "0001445546-26-003315",
+      "form": "497K",
+      "filing_date": "2026-05-01",
+      "document_filename": "fems_497k.htm"
+    },
+    {
+      "cik": "0001510337",
+      "accession": "0001445546-26-003317",
+      "form": "497K",
+      "filing_date": "2026-05-01",
+      "document_filename": "feuz_497k.htm"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007921",
+      "form": "497K",
+      "filing_date": "2016-04-08",
+      "document_filename": "summary_fex.txt"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007345",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84585a1e497k.txt"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001649",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "fgsi_497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008748",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_fixd.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-014596",
+      "form": "497K",
+      "filing_date": "2026-07-09",
+      "document_filename": "fldz-497k_070826.htm"
+    },
+    {
+      "cik": "0001454889",
+      "accession": "0001104659-21-040160",
+      "form": "497K",
+      "filing_date": "2021-03-23",
+      "document_filename": "tm219225-4_497k.htm"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007924",
+      "form": "497K",
+      "filing_date": "2016-04-08",
+      "document_filename": "summary_fnx.txt"
+    },
+    {
+      "cik": "0001424212",
+      "accession": "0001445546-26-001617",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "fpei_497k.htm"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001651",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "fpwr_497k.htm"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007926",
+      "form": "497K",
+      "filing_date": "2016-04-08",
+      "document_filename": "summary_fta.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007510",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxd.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007511",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxg.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007513",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxh.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007514",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxl.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007515",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxn.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007516",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxo.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007517",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxr.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007518",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxu.txt"
+    },
+    {
+      "cik": "0001383496",
+      "accession": "0001445546-16-007519",
+      "form": "497K",
+      "filing_date": "2016-03-18",
+      "document_filename": "summary_fxz.txt"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008757",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gapr497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008758",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gaug497k.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-004567",
+      "form": "497K",
+      "filing_date": "2026-02-27",
+      "document_filename": "gdxy-497k_022726.htm"
+    },
+    {
+      "cik": "0001969674",
+      "accession": "0001999371-26-009524",
+      "form": "497K",
+      "filing_date": "2026-04-30",
+      "document_filename": "geme-497k_043026.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008759",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gfeb497k.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007322",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84608a1e497k.txt"
+    },
+    {
+      "cik": "0000831114",
+      "accession": "0001193125-07-207764",
+      "form": "497",
+      "filing_date": "2007-09-26",
+      "document_filename": "d497.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008760",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gjan497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008761",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gjul497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008762",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gjun497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008763",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gmar497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008764",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_gmay497k.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007344",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84586a1e497k.txt"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007323",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84607a1e497k.txt"
+    },
+    {
+      "cik": "0001748425",
+      "accession": "0001829126-26-004304",
+      "form": "497K",
+      "filing_date": "2026-04-30",
+      "document_filename": "gols_497k.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-25-018576",
+      "form": "497K",
+      "filing_date": "2025-11-25",
+      "document_filename": "gpty-497k_112525.htm"
+    },
+    {
+      "cik": "0001722388",
+      "accession": "0001999371-25-017780",
+      "form": "497K",
+      "filing_date": "2025-11-14",
+      "document_filename": "grni-497k_111425.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007328",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84602a1e497k.txt"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007341",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84589a1e497k.txt"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0001999371-26-019098",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "hfxi-497k_082826.htm"
+    },
+    {
+      "cik": "0001944285",
+      "accession": "0001999371-26-014179",
+      "form": "497K",
+      "filing_date": "2026-07-02",
+      "document_filename": "hrts-497k_062926.htm"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001657",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "hyti_497k.htm"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0001193125-12-273854",
+      "form": "497K",
+      "filing_date": "2012-06-18",
+      "document_filename": "d368653d497k.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-005013",
+      "form": "497K",
+      "filing_date": "2026-03-04",
+      "document_filename": "idvz-497k_030226.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-008765",
+      "form": "497K",
+      "filing_date": "2024-01-02",
+      "document_filename": "etf8_ildr.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-24-067989",
+      "form": "497K",
+      "filing_date": "2024-03-14",
+      "document_filename": "d810023d497k.htm"
+    },
+    {
+      "cik": "0001426439",
+      "accession": "0001999371-26-019128",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iqhi-497k_082826.htm"
+    },
+    {
+      "cik": "0001174610",
+      "accession": "0001683863-24-008330",
+      "form": "497K",
+      "filing_date": "2024-11-13",
+      "document_filename": "f39864d1.htm"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0001999371-26-019095",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iqsi-497k_082826.htm"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0001999371-26-019096",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iqsm-497k_082826.htm"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0001999371-26-019097",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iqsu-497k_082826.htm"
+    },
+    {
+      "cik": "0001426439",
+      "accession": "0001999371-26-019150",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iwfg-497k_082826.htm"
+    },
+    {
+      "cik": "0001426439",
+      "accession": "0001999371-26-019146",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "iwlg-497k_082826.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-05-120767",
+      "form": "485APOS",
+      "filing_date": "2005-06-06",
+      "document_filename": "d485apos.htm"
+    },
+    {
+      "cik": "0001100663",
+      "accession": "0001193125-03-014326",
+      "form": "485APOS",
+      "filing_date": "2003-06-30",
+      "document_filename": "d485apos.txt"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009819",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "janz-497k_043026.htm"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0001193125-12-273835",
+      "form": "497K",
+      "filing_date": "2012-06-18",
+      "document_filename": "d368639d497k.htm"
+    },
+    {
+      "cik": "0001748425",
+      "accession": "0001829126-26-004303",
+      "form": "497K",
+      "filing_date": "2026-04-30",
+      "document_filename": "kdvd_497k.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-000030",
+      "form": "497K",
+      "filing_date": "2023-01-03",
+      "document_filename": "etf8_ldsf497k.htm"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0001193125-14-387312",
+      "form": "497K",
+      "filing_date": "2014-10-29",
+      "document_filename": "d799453d497k.htm"
+    },
+    {
+      "cik": "0001722388",
+      "accession": "0001999371-26-009458",
+      "form": "497K",
+      "filing_date": "2026-04-30",
+      "document_filename": "logo_497k-043026.htm"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001661",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "lqti_497k.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009840",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "lrnz-497k_043026.htm"
+    },
+    {
+      "cik": "0000878719",
+      "accession": "0001135428-17-000243",
+      "form": "497K",
+      "filing_date": "2017-03-15",
+      "document_filename": "lsvglobalvalue-497k.txt"
+    },
+    {
+      "cik": "0001517936",
+      "accession": "0001445546-26-001662",
+      "form": "497K",
+      "filing_date": "2026-03-02",
+      "document_filename": "ltti_497k.htm"
+    },
+    {
+      "cik": "0001540305",
+      "accession": "0000894189-24-006521",
+      "form": "497K",
+      "filing_date": "2024-10-31",
+      "document_filename": "pointbridgemagaetf-497ksum.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009817",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "marz-497k_043026.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-004180",
+      "form": "497K",
+      "filing_date": "2026-02-25",
+      "document_filename": "miny-497k_022526.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-000033",
+      "form": "497K",
+      "filing_date": "2023-01-03",
+      "document_filename": "etf8_mmsc.htm"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0000891092-18-006112",
+      "form": "497K",
+      "filing_date": "2018-08-29",
+      "document_filename": "e1897-mna.htm"
+    },
+    {
+      "cik": "0001976877",
+      "accession": "0001999371-26-008167",
+      "form": "497K",
+      "filing_date": "2026-04-13",
+      "document_filename": "msti-497k_103125.htm"
+    },
+    {
+      "cik": "0001970751",
+      "accession": "0000894189-26-022346",
+      "form": "497K",
+      "filing_date": "2026-08-14",
+      "document_filename": "mvpaetf497k8-2026exchangec.htm"
+    },
+    {
+      "cik": "0001970751",
+      "accession": "0000894189-26-003254",
+      "form": "497K",
+      "filing_date": "2026-02-02",
+      "document_filename": "mvpletfsummarypro.htm"
+    },
+    {
+      "cik": "0001742912",
+      "accession": "0001999371-26-001899",
+      "form": "497K",
+      "filing_date": "2026-01-28",
+      "document_filename": "nanc-497k_012826.htm"
+    },
+    {
+      "cik": "0001506001",
+      "accession": "0001206774-24-001114",
+      "form": "497K",
+      "filing_date": "2024-12-17",
+      "document_filename": "nbetf1disrupters.htm"
+    },
+    {
+      "cik": "0001506001",
+      "accession": "0001206774-24-001118",
+      "form": "497K",
+      "filing_date": "2024-12-17",
+      "document_filename": "nbetf2globalre.htm"
+    },
+    {
+      "cik": "0001506001",
+      "accession": "0000898432-24-000996",
+      "form": "497K",
+      "filing_date": "2024-12-11",
+      "document_filename": "form497k-growth.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009807",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "novz-497k_043026.htm"
+    },
+    {
+      "cik": "0001635073",
+      "accession": "0001193125-19-162556",
+      "form": "497K",
+      "filing_date": "2019-05-31",
+      "document_filename": "d744038d497k.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009808",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "octz-497k_043026.htm"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001193125-14-318339",
+      "form": "497K",
+      "filing_date": "2014-08-22",
+      "document_filename": "d776336d497k.htm"
+    },
+    {
+      "cik": "0001722388",
+      "accession": "0001999371-26-013687",
+      "form": "497K",
+      "filing_date": "2026-06-29",
+      "document_filename": "omah-497k_062926.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-005014",
+      "form": "497K",
+      "filing_date": "2026-03-04",
+      "document_filename": "onez-497_030226.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-014604",
+      "form": "497K",
+      "filing_date": "2026-07-09",
+      "document_filename": "pwrz-497k_070926.htm"
+    },
+    {
+      "cik": "0001415995",
+      "accession": "0000891092-18-006124",
+      "form": "497K",
+      "filing_date": "2018-08-29",
+      "document_filename": "e1895-qai.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-017331",
+      "form": "497K",
+      "filing_date": "2026-08-07",
+      "document_filename": "qbul-497k_080526.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000380",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftqgro497k.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-26-000184",
+      "form": "497K",
+      "filing_date": "2026-07-31",
+      "document_filename": "acetftqint497k.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-25-013343",
+      "form": "497K",
+      "filing_date": "2025-09-16",
+      "document_filename": "qldy_497k-091625.htm"
+    },
+    {
+      "cik": "0001378872",
+      "accession": "0001193125-24-187596",
+      "form": "497K",
+      "filing_date": "2024-07-29",
+      "document_filename": "d747000d497k.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-25-021160",
+      "form": "497K",
+      "filing_date": "2025-12-23",
+      "document_filename": "qqqt-497k_122325.htm"
+    },
+    {
+      "cik": "0001722388",
+      "accession": "0001999371-26-013690",
+      "form": "497K",
+      "filing_date": "2026-06-29",
+      "document_filename": "qusa-497k_062926.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-25-018560",
+      "form": "497K",
+      "filing_date": "2025-11-25",
+      "document_filename": "rdty-497k_112525.htm"
+    },
+    {
+      "cik": "0001426439",
+      "accession": "0001999371-26-019123",
+      "form": "497K",
+      "filing_date": "2026-08-28",
+      "document_filename": "reix-497k_082826.htm"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001049169-16-000192",
+      "form": "497",
+      "filing_date": "2016-12-30",
+      "document_filename": "alpsetftrust-rfdaandrffcpmre.htm"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001414040-16-000210",
+      "form": "497",
+      "filing_date": "2016-06-17",
+      "document_filename": "rigssticker6172016.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-014594",
+      "form": "497K",
+      "filing_date": "2026-07-09",
+      "document_filename": "rnmn-497k_070826.htm"
+    },
+    {
+      "cik": "0001552740",
+      "accession": "0001445546-24-000848",
+      "form": "497K",
+      "filing_date": "2024-02-01",
+      "document_filename": "robt_497k.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-009149",
+      "form": "497K",
+      "filing_date": "2026-04-27",
+      "document_filename": "rssb-497k_042726.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007321",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84609a1e497k.txt"
+    },
+    {
+      "cik": "0001414040",
+      "accession": "0001193125-15-006089",
+      "form": "485BPOS",
+      "filing_date": "2015-01-09",
+      "document_filename": "d805180d485bpos.htm"
+    },
+    {
+      "cik": "0000836267",
+      "accession": "0001999371-25-011882",
+      "form": "485BPOS",
+      "filing_date": "2025-08-22",
+      "document_filename": "sepi-485bpos_090825.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-009809",
+      "form": "497K",
+      "filing_date": "2026-05-04",
+      "document_filename": "sepz-497k_043026.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-25-019194",
+      "form": "497K",
+      "filing_date": "2025-12-02",
+      "document_filename": "sovf-497k_1128225.htm"
+    },
+    {
+      "cik": "0001168164",
+      "accession": "0000950123-11-007316",
+      "form": "497K",
+      "filing_date": "2011-01-31",
+      "document_filename": "b84614a1e497k.txt"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0001193125-12-116458",
+      "form": "497K",
+      "filing_date": "2012-03-15",
+      "document_filename": "d316193d497k.htm"
+    },
+    {
+      "cik": "0001378872",
+      "accession": "0001680359-17-000677",
+      "form": "497K",
+      "filing_date": "2017-12-22",
+      "document_filename": "sp500momentum497k12222017.htm"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0000950123-10-052348",
+      "form": "497K",
+      "filing_date": "2010-05-24",
+      "document_filename": "b81056a2e497k.txt"
+    },
+    {
+      "cik": "0001174610",
+      "accession": "0001683863-24-005678",
+      "form": "497K",
+      "filing_date": "2024-09-26",
+      "document_filename": "f39562d1.htm"
+    },
+    {
+      "cik": "0001174610",
+      "accession": "0001683863-24-005677",
+      "form": "497K",
+      "filing_date": "2024-09-26",
+      "document_filename": "f39563d1.htm"
+    },
+    {
+      "cik": "0001174610",
+      "accession": "0001683863-24-005676",
+      "form": "497K",
+      "filing_date": "2024-09-26",
+      "document_filename": "f39564d1.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-23-001310",
+      "form": "485BPOS",
+      "filing_date": "2023-12-29",
+      "document_filename": "srhq_485bpos-122923.htm"
+    },
+    {
+      "cik": "0001936157",
+      "accession": "0001999371-26-000866",
+      "form": "497",
+      "filing_date": "2026-01-14",
+      "document_filename": "srhr-497_011426.htm"
+    },
+    {
+      "cik": "0001795351",
+      "accession": "0001999371-25-019269",
+      "form": "497K",
+      "filing_date": "2025-12-03",
+      "document_filename": "tacu-497k_120325.htm"
+    },
+    {
+      "cik": "0000816153",
+      "accession": "0001999371-26-007319",
+      "form": "497K",
+      "filing_date": "2026-03-31",
+      "document_filename": "taoz-497k_032726.htm"
+    },
+    {
+      "cik": "0001795351",
+      "accession": "0001999371-26-005633",
+      "form": "497",
+      "filing_date": "2026-03-11",
+      "document_filename": "temr_497-031126.htm"
+    },
+    {
+      "cik": "0000816153",
+      "accession": "0001999371-26-007478",
+      "form": "497K",
+      "filing_date": "2026-04-01",
+      "document_filename": "tfgz-497k_040126.htm"
+    },
+    {
+      "cik": "0001771146",
+      "accession": "0001387131-23-009332",
+      "form": "497K",
+      "filing_date": "2023-08-04",
+      "document_filename": "tglr-497k_073123.htm"
+    },
+    {
+      "cik": "0001795351",
+      "accession": "0001999371-25-017584",
+      "form": "497K",
+      "filing_date": "2025-11-13",
+      "document_filename": "thyf-497k_111325.htm"
+    },
+    {
+      "cik": "0002043954",
+      "accession": "0001999371-26-001292",
+      "form": "497K",
+      "filing_date": "2026-01-21",
+      "document_filename": "tldr-497k_012126.htm"
+    },
+    {
+      "cik": "0000831114",
+      "accession": "0001193125-10-024459",
+      "form": "497",
+      "filing_date": "2010-02-08",
+      "document_filename": "d497.htm"
+    },
+    {
+      "cik": "0001944285",
+      "accession": "0001999371-26-014184",
+      "form": "497K",
+      "filing_date": "2026-07-02",
+      "document_filename": "toll-497k_062926.htm"
+    },
+    {
+      "cik": "0001771146",
+      "accession": "0001771146-26-001053",
+      "form": "497K",
+      "filing_date": "2026-05-26",
+      "document_filename": "etfot-tappalphatspyetf497k.htm"
+    },
+    {
+      "cik": "0002038383",
+      "accession": "0001999371-25-021310",
+      "form": "497K",
+      "filing_date": "2025-12-30",
+      "document_filename": "txue-497k_123025.htm"
+    },
+    {
+      "cik": "0002038383",
+      "accession": "0001999371-25-021311",
+      "form": "497K",
+      "filing_date": "2025-12-30",
+      "document_filename": "txug-497k_123025.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-23-003557",
+      "form": "497K",
+      "filing_date": "2023-05-31",
+      "document_filename": "etf8_ucon497k.htm"
+    },
+    {
+      "cik": "0002043954",
+      "accession": "0001999371-25-016414",
+      "form": "497K",
+      "filing_date": "2025-10-29",
+      "document_filename": "ulti-497k_102925.htm"
+    },
+    {
+      "cik": "0001559109",
+      "accession": "0001839882-24-041897",
+      "form": "497K",
+      "filing_date": "2024-11-27",
+      "document_filename": "utes-497k_112824.htm"
+    },
+    {
+      "cik": "0001710607",
+      "accession": "0001710607-25-000381",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "acetftvalq497k.htm"
+    },
+    {
+      "cik": "0001540305",
+      "accession": "0000894189-25-020559",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "vidibody.htm"
+    },
+    {
+      "cik": "0001944285",
+      "accession": "0001999371-26-014185",
+      "form": "497K",
+      "filing_date": "2026-07-02",
+      "document_filename": "volt-497k_062926.htm"
+    },
+    {
+      "cik": "0001559109",
+      "accession": "0001999371-26-004653",
+      "form": "497K",
+      "filing_date": "2026-02-27",
+      "document_filename": "vrai-497k_022726.htm"
+    },
+    {
+      "cik": "0001540305",
+      "accession": "0000894189-25-020561",
+      "form": "497K",
+      "filing_date": "2025-12-31",
+      "document_filename": "vusebody.htm"
+    },
+    {
+      "cik": "0001877493",
+      "accession": "0001999371-26-001723",
+      "form": "497K",
+      "filing_date": "2026-01-27",
+      "document_filename": "wgmi-497k_012626.htm"
+    },
+    {
+      "cik": "0001667919",
+      "accession": "0001445546-21-006254",
+      "form": "497K",
+      "filing_date": "2021-12-20",
+      "document_filename": "etf8_xdec497k.htm"
+    },
+    {
+      "cik": "0001655589",
+      "accession": "0001741773-23-003136",
+      "form": "497K",
+      "filing_date": "2023-09-11",
+      "document_filename": "c497k.htm"
+    },
+    {
+      "cik": "0001064642",
+      "accession": "0001193125-14-387307",
+      "form": "497K",
+      "filing_date": "2014-10-29",
+      "document_filename": "d799449d497k.htm"
+    },
+    {
+      "cik": "0001742912",
+      "accession": "0001999371-25-021145",
+      "form": "497K",
+      "filing_date": "2025-12-23",
+      "document_filename": "yall-497k_122325.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-013109",
+      "form": "497K",
+      "filing_date": "2026-06-18",
+      "document_filename": "ymag-497k_061826.htm"
+    },
+    {
+      "cik": "0001924868",
+      "accession": "0001999371-26-013115",
+      "form": "497K",
+      "filing_date": "2026-06-18",
+      "document_filename": "ymax-497k_061826.htm"
+    }
+  ]
+}

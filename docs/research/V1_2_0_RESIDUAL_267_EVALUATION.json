@@ -1,0 +1,1879 @@
+{
+  "total": 267,
+  "outcomes": {
+    "SELECTED_TARGET_SUMMARY_PROSPECTUS": 182,
+    "TARGET_ABSENT_FROM_ALL_CANDIDATES": 58,
+    "SELECTED_TARGET_STATUTORY_PROSPECTUS": 27
+  },
+  "results": [
+    {
+      "symbol": "ACSG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000378",
+      "doc": "acetftacsg497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "ACSV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000379",
+      "doc": "acetftacsv497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AHYB",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000376",
+      "doc": "acetftahyb497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVDE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVDS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000401",
+      "doc": "acetftavds497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVDV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVEE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVEM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000394",
+      "doc": "acetftavem497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVES",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000397",
+      "doc": "acetftaves497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVGB",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000393",
+      "doc": "acetftavgb497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVGE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVGV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000201",
+      "doc": "acetftavgv497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVIE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000398",
+      "doc": "acetftavie497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVIV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000400",
+      "doc": "acetftaviv497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVLC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000410",
+      "doc": "acetftavlc497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVLV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVMA",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000198",
+      "doc": "acetftavma497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVMC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000412",
+      "doc": "acetftavmc497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVMV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000413",
+      "doc": "acetftavmv497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVNM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000195",
+      "doc": "acetftavnm497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVNV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000192",
+      "doc": "acetftavnv497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVRE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000404",
+      "doc": "acetftavre497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVSC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000415",
+      "doc": "acetftavsc497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVSD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000406",
+      "doc": "acetftavsd497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVSE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000405",
+      "doc": "acetftavse497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVSF",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000408",
+      "doc": "acetftavsf497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVSU",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000407",
+      "doc": "acetftavsu497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVTM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000019",
+      "doc": "acetftavtm497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVUQ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000414",
+      "doc": "acetftavuq497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVUS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVUV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000204",
+      "doc": "acetftavge497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "AVXC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000395",
+      "doc": "acetftavxc497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "BFOR",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "BIGY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-018573",
+      "doc": "bigy-497k_112525.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "BUFG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-24-002022",
+      "doc": "etf8_bufg497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "BUFQ",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001445546-22-004373",
+      "doc": "etf8_bufq.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "BUFS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001445546-24-001795",
+      "doc": "etf8_bufs485a.htm",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "BUFT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-24-002018",
+      "doc": "etf8_buft497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "BUFY",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001445546-24-001797",
+      "doc": "etf8_bufy485a.htm",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "CAMX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001135428-14-000592",
+      "doc": "aggressivevalue-investor497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "CBSE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-004945",
+      "doc": "cbse_497k-030226.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "CEFZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-001878",
+      "doc": "cefz-497k_012826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "CPAI",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "CVRD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-008161",
+      "doc": "cvrd-497k_103125.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "CWI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007324",
+      "doc": "b84606a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "DDDD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-005465",
+      "doc": "dddd-497k_031026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DECZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009806",
+      "doc": "decz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DGS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-22-208877",
+      "doc": "d381375d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DIME",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-014691",
+      "doc": "dime-497k_100325.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DIVL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-008170",
+      "doc": "divl-497k_103125.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DIVZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009802",
+      "doc": "divz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DVLU",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-24-000836",
+      "doc": "dvlu_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DVOL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-24-000837",
+      "doc": "dvol_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "DVYE",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "DWX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007327",
+      "doc": "b84603a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "EDIV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-017780",
+      "doc": "b85194a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "EDOG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-318346",
+      "doc": "d776041d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "EEM",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001021408-02-011944",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "EEMA",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EEMS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001021408-02-011944",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "EEMV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EEMX",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EFAV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EFRA",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EGUS",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EIPI",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001445546-24-000122",
+      "doc": "eipi_497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "EIPX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001645",
+      "doc": "eipx_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "EIRL",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-13-455359",
+      "doc": "d636986d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "EMEQ",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EMGF",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EMLP",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001646",
+      "doc": "emlp_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "EMXC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "ENFR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-318343",
+      "doc": "d776051d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "EPU",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-13-455359",
+      "doc": "d636986d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "EQLT",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "ESGE",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EVLU",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EVUS",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EWJV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "EWUS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-13-455359",
+      "doc": "d636986d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "EWX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-017780",
+      "doc": "b85194a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "EWY",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0000950109-02-005946",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "EWZS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-13-455359",
+      "doc": "d636986d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "EZA",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0000950109-02-005946",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "FAB",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005774",
+      "doc": "summary_fab.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FBDC",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001445546-25-001315",
+      "doc": "fbdc_497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "FCEF",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-000027",
+      "doc": "etf8_fcef.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FDTS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-003313",
+      "doc": "fdts_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FEBZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009818",
+      "doc": "febz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FEMS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-003315",
+      "doc": "fems_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FEUZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-003317",
+      "doc": "feuz_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FEX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005778",
+      "doc": "summary_fex.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FEZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007345",
+      "doc": "b84585a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FGSI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001649",
+      "doc": "fgsi_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FIXD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008748",
+      "doc": "etf8_fixd.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FLDZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014596",
+      "doc": "fldz-497k_070826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FNDC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "FNDF",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "FNX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005784",
+      "doc": "summary_fnx.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FPEI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001617",
+      "doc": "fpei_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FPWR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001651",
+      "doc": "fpwr_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "FTA",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007926",
+      "doc": "summary_fta.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005792",
+      "doc": "summary_fxd.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005794",
+      "doc": "summary_fxg.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXH",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007513",
+      "doc": "summary_fxh.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007514",
+      "doc": "summary_fxl.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXN",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007515",
+      "doc": "summary_fxn.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXO",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007516",
+      "doc": "summary_fxo.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-14-005804",
+      "doc": "summary_fxr.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXU",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007518",
+      "doc": "summary_fxu.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "FXZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-16-007519",
+      "doc": "summary_fxz.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "GAPR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008757",
+      "doc": "etf8_gapr497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GAUG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008758",
+      "doc": "etf8_gaug497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GDXY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-004567",
+      "doc": "gdxy-497k_022726.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GEME",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009524",
+      "doc": "geme-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GFEB",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008759",
+      "doc": "etf8_gfeb497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GII",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007322",
+      "doc": "b84608a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "GINX",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "GJAN",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008760",
+      "doc": "etf8_gjan497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GJUL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008761",
+      "doc": "etf8_gjul497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GJUN",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008762",
+      "doc": "etf8_gjun497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GMAR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008763",
+      "doc": "etf8_gmar497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GMAY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008764",
+      "doc": "etf8_gmay497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GMF",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007344",
+      "doc": "b84586a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "GNR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007323",
+      "doc": "b84607a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "GOLS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001829126-26-004304",
+      "doc": "gols_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GPTY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-018576",
+      "doc": "gpty-497k_112525.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GRNI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-017780",
+      "doc": "grni-497k_111425.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "GWX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007320",
+      "doc": "b84610a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "GXC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007341",
+      "doc": "b84589a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "HFXI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019098",
+      "doc": "hfxi-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "HRTS",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014179",
+      "doc": "hrts-497k_062926.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "HYTI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001657",
+      "doc": "hyti_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IBND",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "IDGT",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "IDOG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-318339",
+      "doc": "d776336d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IDVZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-005013",
+      "doc": "idvz-497k_030226.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "ILDR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-008765",
+      "doc": "etf8_ildr.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IOO",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-05-168170",
+      "doc": "d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "IQHI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019128",
+      "doc": "iqhi-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IQQQ",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "IQSI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-012191",
+      "doc": "iqsi-497k_082825.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IQSM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019096",
+      "doc": "iqsm-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IQSU",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-012193",
+      "doc": "iqsu-497k_082825.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IWFG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019150",
+      "doc": "iwfg-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IWLG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019146",
+      "doc": "iwlg-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "IWR",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-05-168170",
+      "doc": "d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "IWS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-05-168170",
+      "doc": "d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "IWX",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "IWY",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "IYT",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-03-014326",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "IYY",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-03-014326",
+      "doc": "d485apos.txt",
+      "form": "485APOS"
+    },
+    {
+      "symbol": "JANZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009819",
+      "doc": "janz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "KCE",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "KDVD",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001829126-26-004303",
+      "doc": "kdvd_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LDSF",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-000030",
+      "doc": "etf8_ldsf497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LGLV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-387312",
+      "doc": "d799453d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LOGO",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009458",
+      "doc": "logo_497k-043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LQTI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001661",
+      "doc": "lqti_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LRNZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009840",
+      "doc": "lrnz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "LSVD",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "LTTI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-26-001662",
+      "doc": "ltti_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MAGA",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000894189-24-006521",
+      "doc": "pointbridgemagaetf-497ksum.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MARZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009817",
+      "doc": "marz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MINY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-004180",
+      "doc": "miny-497k_022526.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MMSC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-000033",
+      "doc": "etf8_mmsc.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MNA",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000891092-18-006112",
+      "doc": "e1897-mna.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MSTI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-008167",
+      "doc": "msti-497k_103125.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MVPA",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000894189-26-003252",
+      "doc": "mvpaetfsummarypro.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "MVPL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000894189-26-003254",
+      "doc": "mvpletfsummarypro.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NANC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-001899",
+      "doc": "nanc-497k_012826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NANR",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NBDS",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0000898432-26-000125",
+      "doc": "nbetf-20250831.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "NBET",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0000898432-22-000231",
+      "doc": "nbetf-20220330.htm",
+      "form": "N-1A/A"
+    },
+    {
+      "symbol": "NBGX",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0000898432-26-000125",
+      "doc": "nbetf-20250831.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "NOVZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009807",
+      "doc": "novz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NUDM",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NUDV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NUEM",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NUHY",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NULC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-19-162556",
+      "doc": "d744038d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NULG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-16-792036",
+      "doc": "d306864d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NULV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-16-792033",
+      "doc": "d310912d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NUMG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-16-792031",
+      "doc": "d315718d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NUMV",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-16-792028",
+      "doc": "d308509d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "NUSC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "NZAC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "OCTZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009808",
+      "doc": "octz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "OEF",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-05-168170",
+      "doc": "d497.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "OEFA",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "OMAH",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-002139",
+      "doc": "omah-497k_030325.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "ONEZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-005014",
+      "doc": "onez-497_030226.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "PWRZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014604",
+      "doc": "pwrz-497k_070926.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QAI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000891092-18-006124",
+      "doc": "e1895-qai.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QBUL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-017331",
+      "doc": "qbul-497k_080526.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QEMM",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "QGRO",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000380",
+      "doc": "acetftqgro497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QINT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-26-000184",
+      "doc": "acetftqint497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QLDY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-013343",
+      "doc": "qldy_497k-091625.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QQQM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-24-187596",
+      "doc": "d747000d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QQQT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-021160",
+      "doc": "qqqt-497k_122325.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "QUSA",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "RDOG",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "RDTY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-018560",
+      "doc": "rdty-497k_112525.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "REIX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-019123",
+      "doc": "reix-497k_082826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "RFDA",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "RFFC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "RIGS",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "RNMN",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014594",
+      "doc": "rnmn-497k_070826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "ROBT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-24-000848",
+      "doc": "robt_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "RSSB",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009149",
+      "doc": "rssb-497k_042726.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "RWO",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007330",
+      "doc": "b84600a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "RWX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-007321",
+      "doc": "b84609a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "SBIO",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001193125-14-455353",
+      "doc": "d805180d485bpos.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "SCHC",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SCHF",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SCHY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001104659-21-040160",
+      "doc": "tm219225-4_497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SDOG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-318341",
+      "doc": "d776043d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SEPI",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001999371-25-011882",
+      "doc": "sepi-485bpos_090825.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "SEPZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-009809",
+      "doc": "sepz-497k_043026.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SMIN",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SMMV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SOVF",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-019194",
+      "doc": "sovf-497k_1128225.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SPEM",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000950123-11-017780",
+      "doc": "b85194a1e497k.txt",
+      "form": "497K"
+    },
+    {
+      "symbol": "SPEU",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SPHY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-12-116458",
+      "doc": "d316193d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SPIB",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SPMO",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SPTB",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SPTS",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "SPXE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-19-257451",
+      "doc": "d747296d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SPXN",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-19-257462",
+      "doc": "d796630d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SPXT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-19-257469",
+      "doc": "d776469d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "SRHQ",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001999371-23-001310",
+      "doc": "srhq_485bpos-122923.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "SRHR",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001999371-23-001310",
+      "doc": "srhq_485bpos-122923.htm",
+      "form": "485BPOS"
+    },
+    {
+      "symbol": "TACU",
+      "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "accession": "0001999371-25-019268",
+      "doc": "tacu-497_120325.htm",
+      "form": "497"
+    },
+    {
+      "symbol": "TAOZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-007319",
+      "doc": "taoz-497k_032726.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TEMR",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "TFGZ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-007478",
+      "doc": "tfgz-497k_040126.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TGLR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001387131-23-009332",
+      "doc": "tglr-497k_073123.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "THYF",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "TLDR",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-001292",
+      "doc": "tldr-497k_012126.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TMFM",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "TMFS",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "TOLL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014184",
+      "doc": "toll-497k_062926.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TSPY",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001771146-26-001053",
+      "doc": "etfot-tappalphatspyetf497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TXUE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-021310",
+      "doc": "txue-497k_123025.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "TXUG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-021311",
+      "doc": "txug-497k_123025.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "UCON",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-23-003557",
+      "doc": "etf8_ucon497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "ULTI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-016414",
+      "doc": "ulti-497k_102925.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "UTES",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001839882-24-041897",
+      "doc": "utes-497k_112824.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "VALQ",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001710607-25-000381",
+      "doc": "acetftvalq497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "VIDI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000894189-25-020559",
+      "doc": "vidibody.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "VLUE",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "VOLT",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-014185",
+      "doc": "volt-497k_062926.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "VRAI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-004653",
+      "doc": "vrai-497k_022726.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "VUSE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0000894189-25-020561",
+      "doc": "vusebody.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "WDIV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "WGMI",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-24-001092",
+      "doc": "wgmi-497k_012924.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "XCNY",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "XDEC",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001445546-21-006254",
+      "doc": "etf8_xdec497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "XIDV",
+      "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "accession": "NONE",
+      "doc": "NONE",
+      "form": "NONE"
+    },
+    {
+      "symbol": "XNTK",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001193125-14-387307",
+      "doc": "d799449d497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "XSOE",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001214659-23-013742",
+      "doc": "g1018231497k.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "YALL",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-25-021145",
+      "doc": "yall-497k_122325.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "YMAG",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-013109",
+      "doc": "ymag-497k_061826.htm",
+      "form": "497K"
+    },
+    {
+      "symbol": "YMAX",
+      "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "accession": "0001999371-26-013115",
+      "doc": "ymax-497k_061826.htm",
+      "form": "497K"
+    }
+  ]
+}
