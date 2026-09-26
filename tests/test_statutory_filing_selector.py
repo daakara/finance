@@ -345,3 +345,119 @@ class TestStatutoryFilingSelectorIntegrationWithResolver:
             assert map_res.cross_series_text_leakage == 0
 
         assert regressions == 0
+
+
+class TestStatutoryFilingSelectorRemediationV1_1_0:
+    """Targeted regression and invariant tests for STATUTORY_FILING_SELECTOR_V1_1_0 remediation.
+
+    Covers:
+    1. Issuer-name-only false match rejection (e.g. Goldman, Sachs, SPDR tokens alone score 0).
+    2. Large multi-fund registrant handling (ensuring base prospectuses are properly prioritized).
+    3. Termination of backward walking (candidate bounding preventing runaway crawls).
+    """
+
+    def test_issuer_name_only_false_match_rejection(self, tmp_path):
+        """Tokens belonging exclusively to COMMON_ISSUER_AND_GENERIC_TOKENS must NOT produce a metadata match."""
+        target = SeriesMetadata(
+            symbol="GEM",
+            cik="1479026",
+            series_id="S000050854",
+            class_id="C000160276",
+            legal_name="Goldman Sachs ActiveBeta Emerging Markets Equity ETF"
+        )
+
+        cand = FilingCandidate(
+            accession="0001193125-24-123456",
+            form="497K",
+            filing_date="2024-05-01",
+            primary_document="goldman_sachs_other_fund.htm",
+            primary_doc_description="Goldman Sachs Physical Gold ETF 497K",
+            document_role=ROLE_SUMMARY_PROSPECTUS,
+            is_preboundary=True
+        )
+
+        match = StatutoryFilingSelector.match_target_metadata(
+            target, cand.primary_document, cand.primary_doc_description
+        )
+        # Even though "Goldman" and "Sachs" are in legal_name and primary_doc_description,
+        # they are common issuer tokens and must NOT produce a false match.
+        assert match is False
+
+    def test_large_multi_fund_registrant_base_prospectus_precedence(self, tmp_path):
+        """In multi-fund trusts, a base Form 485BPOS must be prioritized over newer 497Ks of other series."""
+        target = SeriesMetadata(
+            symbol="GEM",
+            cik="1479026",
+            series_id="S000050854",
+            class_id="C000160276",
+            legal_name="Goldman Sachs ActiveBeta Emerging Markets Equity ETF"
+        )
+
+        prospectus_dir = tmp_path / "sec_prospectus"
+        prospectus_dir.mkdir(parents=True, exist_ok=True)
+
+        # Newer Form 497K for an unrelated Goldman fund
+        unrelated_497k = """
+        <html><body>
+          <h2>Goldman Sachs Semiconductor Innovators ETF</h2>
+          <p>Series S000099999 Class C000099999</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Invests in semiconductor companies.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001193125-26-000099_goldman_semi.htm").write_text(unrelated_497k, encoding="utf-8")
+
+        # Older Form 485BPOS covering GEM
+        gem_base = """
+        <html><body>
+          <h2>Goldman Sachs ActiveBeta Emerging Markets Equity ETF</h2>
+          <p>Series S000050854 Class C000160276</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>The Fund seeks long-term capital appreciation by tracking ActiveBeta index.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001193125-25-334307_d819171d485bpos.htm").write_text(gem_base, encoding="utf-8")
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["497K", "485BPOS"],
+                    "filingDate": ["2026-09-20", "2025-12-29"],
+                    "accessionNumber": ["0001193125-26-000099", "0001193125-25-334307"],
+                    "primaryDocument": ["goldman_semi.htm", "d819171d485bpos.htm"],
+                    "primaryDocDescription": ["Goldman Sachs Semiconductor Innovators ETF", "485BPOS BASE PROSPECTUS"]
+                }
+            }
+        }
+
+        res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, tmp_path)
+        assert res.selection_outcome == OUTCOME_SELECTED_STATUTORY_PROSPECTUS
+        assert res.selected_accession == "0001193125-25-334307"
+        assert res.document_filename == "d819171d485bpos.htm"
+
+    def test_termination_of_backward_walking_without_cache_miss_leak(self, tmp_path):
+        """When candidates do not match target metadata and are uncached, they must NOT leak into cache_miss_candidate."""
+        target = SeriesMetadata(
+            symbol="NONEXIST",
+            cik="1479026",
+            series_id="S000000001",
+            class_id="C000000001",
+            legal_name="Nonexistent Hypothetical Trust ETF"
+        )
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["497K", "497K", "485BPOS"],
+                    "filingDate": ["2026-09-20", "2026-08-15", "2026-01-10"],
+                    "accessionNumber": ["0001193125-26-000001", "0001193125-26-000002", "0001193125-26-000003"],
+                    "primaryDocument": ["doc1.htm", "doc2.htm", "doc3.htm"],
+                    "primaryDocDescription": ["Goldman Sachs Asset Allocation", "Goldman Sachs Bond Fund", "Goldman Sachs Base"]
+                }
+            }
+        }
+
+        res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, tmp_path)
+        # Because none of doc1/doc2/doc3 match "Nonexistent Hypothetical Trust ETF",
+        # they must not be reported as SOURCE_CACHE_MISS, but TARGET_ABSENT_FROM_ALL.
+        assert res.selection_outcome == OUTCOME_TARGET_ABSENT_FROM_ALL

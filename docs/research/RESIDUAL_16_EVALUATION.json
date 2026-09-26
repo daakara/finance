@@ -1,0 +1,162 @@
+[
+  {
+    "symbol": "GEM",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334307",
+    "doc": "d819171d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GGUS",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334364",
+    "doc": "d67757d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GIND",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334319",
+    "doc": "d12855d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GPIX",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-26-191919",
+    "doc": "d100148d485bpos.htm",
+    "date": "2026-04-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSEE",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334364",
+    "doc": "d67757d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSEU",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334307",
+    "doc": "d819171d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSID",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334364",
+    "doc": "d67757d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSIE",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334307",
+    "doc": "d819171d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSJY",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334307",
+    "doc": "d819171d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSLC",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334307",
+    "doc": "d819171d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GSUS",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334364",
+    "doc": "d67757d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "GVUS",
+    "cik": "1479026",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-25-334364",
+    "doc": "d67757d485bpos.htm",
+    "date": "2025-12-29",
+    "candidate_count": 375
+  },
+  {
+    "symbol": "XLC",
+    "cik": "1064641",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-26-177416",
+    "doc": "d123457d485bpos.htm",
+    "date": "2026-04-24",
+    "candidate_count": 343
+  },
+  {
+    "symbol": "XLFI",
+    "cik": "1064641",
+    "outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+    "form": "485BPOS",
+    "accession": "0001193125-26-177416",
+    "doc": "d123457d485bpos.htm",
+    "date": "2026-04-24",
+    "candidate_count": 343
+  },
+  {
+    "symbol": "XOEX",
+    "cik": "1503123",
+    "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+    "form": "497K",
+    "accession": "0000088053-25-001121",
+    "doc": "k121925snpv.htm",
+    "date": "2025-12-19",
+    "candidate_count": 418
+  },
+  {
+    "symbol": "VT",
+    "cik": "857489",
+    "outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+    "form": "497K",
+    "accession": "0001193125-26-077566",
+    "doc": "f44201d1.htm",
+    "date": "2026-02-27",
+    "candidate_count": 501
+  }
+]

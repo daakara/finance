@@ -26,12 +26,25 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_0_0"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_1_0"
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
 # Statutory Forms authorized by Policy v1.1
 STATUTORY_FORMS = {"485BPOS", "485APOS", "N-1A", "N-1A/A", "S-6", "S-6/A", "497K", "497"}
+
+# Common issuer and generic non-discriminating tokens (Sections 4 & 5)
+COMMON_ISSUER_AND_GENERIC_TOKENS = {
+    "fund", "funds", "etf", "etfs", "index", "indexes", "trust", "series", "shares",
+    "portfolio", "portfolios", "capital", "management", "asset", "assets", "advisor",
+    "advisors", "adviser", "advisers", "investment", "investments", "company", "holdings",
+    # Major issuer family / umbrella names
+    "goldman", "sachs", "vanguard", "spdr", "state", "street", "ssga", "ishares",
+    "invesco", "schwab", "fidelity", "xtrackers", "first", "global", "proshares",
+    "direxion", "vaneck", "franklin", "templeton", "jpmorgan", "blackrock",
+    "wisdomtree", "dimensional", "pimco", "simplify", "amplify", "roundhill",
+    "defiance", "yieldmax", "innovator", "ft", "dws", "dbx", "select", "sector"
+}
 
 # Document Roles (Section 7)
 ROLE_BASE_STATUTORY_PROSPECTUS = "BASE_STATUTORY_PROSPECTUS"
@@ -105,6 +118,7 @@ class StatutoryFilingSelector:
     VERSION = STATUTORY_FILING_SELECTOR_VERSION
     SNAPSHOT_BOUNDARY = SNAPSHOT_BOUNDARY
     SNAPSHOT_BOUNDARY_DATE = SNAPSHOT_BOUNDARY_DATE
+    COMMON_ISSUER_AND_GENERIC_TOKENS = COMMON_ISSUER_AND_GENERIC_TOKENS
 
     # Delimiters and patterns for role classification
     SAI_PATTERNS = [
@@ -209,10 +223,17 @@ class StatutoryFilingSelector:
         if raw_name and len(raw_name) > 5:
             if raw_name.lower() in text.lower():
                 has_name = True
+            elif raw_name.replace("&", "&amp;").lower() in text.lower():
+                has_name = True
             else:
-                words = raw_name.split()
-                name_pat = r"\s+".join(re.escape(w) for w in words)
-                has_name = bool(re.search(name_pat, text, re.IGNORECASE))
+                words = [w for w in re.split(r"[\s&]+", raw_name) if len(w) > 2]
+                core_words = [w for w in words if w.lower() != "index"]
+                for wset in [words, core_words]:
+                    if len(wset) >= 2:
+                        pat = r"\s*(&amp;|&|\s)\s*".join(re.escape(w) for w in wset)
+                        if re.search(pat, text, re.IGNORECASE):
+                            has_name = True
+                            break
 
         if not has_sid and not has_cid and not has_name:
             return False, "TARGET_NOT_FOUND_IN_TEXT"
@@ -259,6 +280,42 @@ class StatutoryFilingSelector:
                 return True, f"MANDATE_PRESENT_{pat}"
 
         return False, "MANDATE_SECTION_NOT_FOUND"
+
+    @classmethod
+    def match_target_metadata(cls, target_series: SeriesMetadata, pdoc: str, pdesc: str) -> bool:
+        """Check target-specific match in metadata (Sections 4 & 5: require target-discriminating evidence)."""
+        target_sym_lower = (target_series.symbol or "").lower().strip()
+        target_sid_lower = (target_series.series_id or "").lower().strip()
+        target_cid_lower = (target_series.class_id or "").lower().strip()
+        raw_words = re.findall(r"[A-Za-z0-9]+", (target_series.legal_name or "").lower())
+        target_discriminating_words = [
+            w for w in raw_words
+            if len(w) > 2 and w not in cls.COMMON_ISSUER_AND_GENERIC_TOKENS
+        ]
+
+        pdoc_lower = (pdoc or "").lower()
+        pdesc_lower = (pdesc or "").lower()
+        combined_meta = f"{pdoc_lower} {pdesc_lower}"
+
+        if target_sym_lower and (
+            f"{target_sym_lower}." in pdoc_lower
+            or f"{target_sym_lower}sum" in pdoc_lower
+            or f"_{target_sym_lower}" in pdoc_lower
+            or f"-{target_sym_lower}" in pdoc_lower
+            or f"({target_sym_lower})" in pdesc_lower
+            or f" {target_sym_lower} " in f" {pdesc_lower} "
+        ):
+            return True
+        if target_sid_lower and target_sid_lower in combined_meta:
+            return True
+        if target_cid_lower and target_cid_lower in combined_meta:
+            return True
+        if target_discriminating_words:
+            matched_discrim = [w for w in target_discriminating_words if w in combined_meta]
+            req_count = min(2, len(set(target_discriminating_words)))
+            if len(set(matched_discrim)) >= req_count:
+                return True
+        return False
 
     @classmethod
     def compute_cache_key(
@@ -336,9 +393,10 @@ class StatutoryFilingSelector:
         target_sym_lower = (target_series.symbol or "").lower().strip()
         target_sid_lower = (target_series.series_id or "").lower().strip()
         target_cid_lower = (target_series.class_id or "").lower().strip()
-        target_name_words = [
-            w.lower() for w in (target_series.legal_name or "").split()
-            if len(w) > 3 and w.lower() not in {"fund", "etf", "index", "trust", "series"}
+        raw_words = re.findall(r"[A-Za-z0-9]+", (target_series.legal_name or "").lower())
+        target_discriminating_words = [
+            w for w in raw_words
+            if len(w) > 2 and w not in cls.COMMON_ISSUER_AND_GENERIC_TOKENS
         ]
 
         prospectus_dir = cache_dir / "sec_prospectus" if cache_dir else Path("data/research/cache/sec_prospectus")
@@ -376,29 +434,21 @@ class StatutoryFilingSelector:
                 })
                 continue
 
-            # Check target-specific match in metadata
-            pdoc_lower = pdoc.lower()
-            pdesc_lower = pdesc.lower()
-            combined_meta = f"{pdoc_lower} {pdesc_lower}"
-
-            meta_match = False
-            if target_sym_lower and (f"{target_sym_lower}." in pdoc_lower or f"{target_sym_lower}sum" in pdoc_lower or f"_{target_sym_lower}" in pdoc_lower or f"-{target_sym_lower}" in pdoc_lower or target_sym_lower in pdesc_lower):
-                meta_match = True
-            elif target_name_words and sum(1 for w in target_name_words if w in combined_meta) >= min(2, len(target_name_words)):
-                meta_match = True
+            # Check target-specific match in metadata (Sections 4 & 5: require target-discriminating evidence)
+            meta_match = cls.match_target_metadata(target_series, pdoc, pdesc)
 
             # Fast in-memory check if file is cached locally
             cached_filename = f"{acc}_{pdoc}"
             is_cached = cached_filename in cached_filenames
 
-            # Priority scoring
+            # Priority scoring (Section 5)
             score = 0
             if meta_match:
                 score += 500
             if role == ROLE_SUMMARY_PROSPECTUS:
                 score += 300 if meta_match else 50
             elif role == ROLE_BASE_STATUTORY_PROSPECTUS:
-                score += 200
+                score += 250
             elif role == ROLE_PROSPECTUS_SUPPLEMENT:
                 score += 20
 
@@ -457,7 +507,7 @@ class StatutoryFilingSelector:
                 # Document is not cached locally
                 if cand.target_metadata_match and cache_miss_candidate is None:
                     cache_miss_candidate = cand
-                # If target metadata matches specifically, we record as potential cache miss
+
                 rejected_candidates.append({
                     "accession": cand.accession,
                     "form": cand.form,

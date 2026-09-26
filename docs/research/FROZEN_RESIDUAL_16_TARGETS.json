@@ -1,0 +1,185 @@
+{
+  "total_residual_targets": 16,
+  "by_cik": {
+    "1479026": {
+      "registrant_name": "Goldman Sachs ETF Trust",
+      "targets": [
+        {
+          "symbol": "GEM",
+          "cik": "1479026",
+          "series_id": "S000048292",
+          "class_id": "C000152548",
+          "legal_name": "Goldman Sachs ActiveBeta Emerging Markets Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GGUS",
+          "cik": "1479026",
+          "series_id": "S000083005",
+          "class_id": "C000246478",
+          "legal_name": "Goldman Sachs MarketBeta Russell 1000 Growth Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GIND",
+          "cik": "1479026",
+          "series_id": "S000089154",
+          "class_id": "C000255663",
+          "legal_name": "Goldman Sachs India Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GPIX",
+          "cik": "1479026",
+          "series_id": "S000081511",
+          "class_id": "C000244421",
+          "legal_name": "Goldman Sachs S&P 500 Premium Income ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSEE",
+          "cik": "1479026",
+          "series_id": "S000066533",
+          "class_id": "C000214554",
+          "legal_name": "Goldman Sachs MarketBeta Emerging Markets Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSEU",
+          "cik": "1479026",
+          "series_id": "S000048293",
+          "class_id": "C000152549",
+          "legal_name": "Goldman Sachs ActiveBeta Europe Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSID",
+          "cik": "1479026",
+          "series_id": "S000066532",
+          "class_id": "C000214553",
+          "legal_name": "Goldman Sachs MarketBeta International Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSIE",
+          "cik": "1479026",
+          "series_id": "S000048289",
+          "class_id": "C000152545",
+          "legal_name": "Goldman Sachs ActiveBeta International Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSJY",
+          "cik": "1479026",
+          "series_id": "S000048294",
+          "class_id": "C000152550",
+          "legal_name": "Goldman Sachs ActiveBeta Japan Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSLC",
+          "cik": "1479026",
+          "series_id": "S000048295",
+          "class_id": "C000152551",
+          "legal_name": "Goldman Sachs ActiveBeta U.S. Large Cap Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GSUS",
+          "cik": "1479026",
+          "series_id": "S000066535",
+          "class_id": "C000214556",
+          "legal_name": "Goldman Sachs MarketBeta U.S. Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        },
+        {
+          "symbol": "GVUS",
+          "cik": "1479026",
+          "series_id": "S000083006",
+          "class_id": "C000246479",
+          "legal_name": "Goldman Sachs MarketBeta Russell 1000 Value Equity ETF",
+          "candidate_accession": "0001193125-25-142777",
+          "document_filename": "d921116d497k.htm",
+          "filing_date": "2025-06-18"
+        }
+      ]
+    },
+    "857489": {
+      "registrant_name": "VANGUARD INTERNATIONAL EQUITY INDEX FUNDS",
+      "targets": [
+        {
+          "symbol": "VT",
+          "cik": "857489",
+          "series_id": "S000022482",
+          "class_id": "C000065038",
+          "legal_name": "Vanguard Total World Stock Index ETF",
+          "candidate_accession": "0000932471-13-006685",
+          "document_filename": "internationalstockindexsp135.htm",
+          "filing_date": "2013-05-28"
+        }
+      ]
+    },
+    "1064641": {
+      "registrant_name": "SELECT SECTOR SPDR TRUST",
+      "targets": [
+        {
+          "symbol": "XLC",
+          "cik": "1064641",
+          "series_id": "S000062095",
+          "class_id": "C000201048",
+          "legal_name": "State Street Communication Services Select Sector SPDR ETF",
+          "candidate_accession": "0001193125-23-073696",
+          "document_filename": "d440140d497k.htm",
+          "filing_date": "2023-03-17"
+        },
+        {
+          "symbol": "XLFI",
+          "cik": "1064641",
+          "series_id": "S000093837",
+          "class_id": "C000262285",
+          "legal_name": "State Street Financial Select Sector SPDR Premium Income ETF",
+          "candidate_accession": "0001193125-23-073696",
+          "document_filename": "d440140d497k.htm",
+          "filing_date": "2023-03-17"
+        }
+      ]
+    },
+    "1503123": {
+      "registrant_name": "DBX ETF TRUST",
+      "targets": [
+        {
+          "symbol": "XOEX",
+          "cik": "1503123",
+          "series_id": "S000077074",
+          "class_id": "C000237218",
+          "legal_name": "Xtrackers S&P 100 Ex Top 20 ETF",
+          "candidate_accession": "0000088053-24-000988",
+          "document_filename": "k100124hdef.htm",
+          "filing_date": "2024-10-01"
+        }
+      ]
+    }
+  }
+}

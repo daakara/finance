@@ -108,7 +108,11 @@ def run_dry_run() -> Dict[str, Any]:
         outcome_counter[sel_res.selection_outcome] += 1
         candidate_count_distribution[sel_res.candidate_count] += 1
 
-        if sel_res.selected_accession != "NONE":
+        is_selected = sel_res.selection_outcome in {
+            OUTCOME_SELECTED_STATUTORY_PROSPECTUS,
+            OUTCOME_SELECTED_SUMMARY_PROSPECTUS,
+        }
+        if is_selected:
             form_counter[sel_res.selected_form] += 1
             selected_documents_set.add(f"{sel_res.selected_accession}_{sel_res.document_filename}")
 
