@@ -1,0 +1,522 @@
+[
+  {
+    "symbol": "NUDG",
+    "cik": "0001041673",
+    "legal_name": "Nuveen Dividend Growth Fund: ETF Class Shares",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1164,
+    "top_rejections": [
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BILS",
+    "cik": "0001064642",
+    "legal_name": "State Street SPDR Bloomberg 3-12 Month T-Bill ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 2797,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "AAXJ",
+    "cik": "0001100663",
+    "legal_name": "iShares MSCI All Country Asia ex Japan ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 9292,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "EFAX",
+    "cik": "0001168164",
+    "legal_name": "State Street SPDR MSCI EAFE Fossil Fuel Reserves Free ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1187,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BMVP",
+    "cik": "0001209466",
+    "legal_name": "Invesco Bloomberg MVP Multi-factor ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 2308,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BGLD",
+    "cik": "0001329377",
+    "legal_name": "FT Vest Gold Strategy Quarterly Buffer ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 911,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "EMDM",
+    "cik": "0001364608",
+    "legal_name": "First Trust Bloomberg Emerging Market Democracies ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 564,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BKLN",
+    "cik": "0001378872",
+    "legal_name": "Invesco Senior Loan ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 2705,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "FNK",
+    "cik": "0001383496",
+    "legal_name": "First Trust Mid Cap Value AlphaDEX Fund",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 546,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "DTEC",
+    "cik": "0001414040",
+    "legal_name": "ALPS Disruptive Technologies ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 686,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "QFLR",
+    "cik": "0001415726",
+    "legal_name": "Innovator Nasdaq-100 Managed Floor ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 3673,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "GSY",
+    "cik": "0001418144",
+    "legal_name": "Invesco Ultra Short Duration ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 559,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "MBSF",
+    "cik": "0001437249",
+    "legal_name": "Regan Floating Rate MBS ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 607,
+    "top_rejections": [
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)",
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BDBT",
+    "cik": "0001452937",
+    "legal_name": "Bluemonte Core Bond ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 606,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "FNDA",
+    "cik": "0001454889",
+    "legal_name": "Schwab Fundamental U.S. Small Company ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1283,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BBAX",
+    "cik": "0001485894",
+    "legal_name": "JPMorgan BetaBuilders Developed Asia Pacific-ex Japan ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1622,
+    "top_rejections": [
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "JA",
+    "cik": "0001500604",
+    "legal_name": "Janus Henderson AA-A CLO ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 279,
+    "top_rejections": [
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "NBCE",
+    "cik": "0001506001",
+    "legal_name": "Neuberger China Equity ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 147,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "FCA",
+    "cik": "0001510337",
+    "legal_name": "First Trust China AlphaDEX Fund",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 510,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "LCR",
+    "cik": "0001511699",
+    "legal_name": "Leuthold Core ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1549,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "DECO",
+    "cik": "0001516212",
+    "legal_name": "State Street Galaxy Digital Asset Ecosystem ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 655,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "IETC",
+    "cik": "0001524513",
+    "legal_name": "iShares U.S. Tech Independence Focused ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 697,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BLDG",
+    "cik": "0001529390",
+    "legal_name": "Cambria Global Real Estate ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 356,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "QVOY",
+    "cik": "0001545440",
+    "legal_name": "Q3 Active Rotation ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 705,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "AMOM",
+    "cik": "0001547950",
+    "legal_name": "QRAFT AI-Enhanced U.S. Large Cap Momentum ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 438,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "DALI",
+    "cik": "0001552740",
+    "legal_name": "First Trust Dorsey Wright DALI Equity ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 797,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BBC",
+    "cik": "0001559109",
+    "legal_name": "Virtus Biotech Clinical Trials ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 210,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "FAAA",
+    "cik": "0001562565",
+    "legal_name": "Fidelity AAA CLO ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 217,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "CAIE",
+    "cik": "0001579881",
+    "legal_name": "Calamos Autocallable Income ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 453,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "ARKD",
+    "cik": "0001579982",
+    "legal_name": "ARK DIET Q1 Buffer ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 199,
+    "top_rejections": [
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "NITE",
+    "cik": "0001587551",
+    "legal_name": "The Nightview Fund NITE",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 360,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "AAA",
+    "cik": "0001587982",
+    "legal_name": "Alternative Access First Priority CLO Bond ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1451,
+    "top_rejections": [
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "CSNR",
+    "cik": "0001590402",
+    "legal_name": "Cohen & Steers Natural Resources Active ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 34,
+    "top_rejections": [
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BAFE",
+    "cik": "0001593547",
+    "legal_name": "Brown Advisory Flexible Equity ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 1263,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "UDI",
+    "cik": "0001597389",
+    "legal_name": "USCF Dividend Income Fund",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 132,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "COPY",
+    "cik": "0001618627",
+    "legal_name": "Tweedy, Browne Insider + Value ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 158,
+    "top_rejections": [
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "AIVC",
+    "cik": "0001633061",
+    "legal_name": "Amplify Bloomberg AI Equal Weight ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 518,
+    "top_rejections": [
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "NPFI",
+    "cik": "0001635073",
+    "legal_name": "Nuveen Preferred and Income ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 440,
+    "top_rejections": [
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)",
+      "POST_BOUNDARY_FILING (filingDate 2026-09-25 > 2026-09-24)"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "BENJ",
+    "cik": "0001643174",
+    "legal_name": "Horizon Landmark ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 237,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (FEE_WAIVER_SUPPLEMENT)",
+      "SOURCE_NOT_CACHED_LOCALLY",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  },
+  {
+    "symbol": "MDAA",
+    "cik": "0001650149",
+    "legal_name": "Myriad Dynamic Asset Allocation ETF",
+    "outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+    "candidate_count": 467,
+    "top_rejections": [
+      "DISQUALIFIED_DOCUMENT_ROLE (SAI_PART_B)",
+      "TARGET_NOT_PRESENT (TARGET_NOT_FOUND_IN_TEXT)",
+      "SOURCE_NOT_CACHED_LOCALLY"
+    ],
+    "verdict": "GENUINE_ABSENCE"
+  }
+]

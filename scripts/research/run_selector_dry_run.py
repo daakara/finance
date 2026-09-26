@@ -58,16 +58,18 @@ def run_dry_run() -> Dict[str, Any]:
     total_targets = len(records)
     print(f"Loaded {total_targets} targets from manifest.")
 
-    # Cache submissions in memory to avoid repeated JSON disk reads
+    # Cache primary submissions in memory to avoid repeated JSON disk reads
     submission_cache: Dict[str, dict] = {}
     for p in SUBMISSIONS_DIR.glob("CIK*.json"):
+        if "-submissions-" in p.name:
+            continue
         cik_str = p.stem.replace("CIK", "").lstrip("0") or "0"
         try:
             with open(p, "r", encoding="utf-8") as f:
                 submission_cache[cik_str] = json.load(f)
         except Exception:
             pass
-    print(f"Cached {len(submission_cache)} CIK submission files in memory.")
+    print(f"Cached {len(submission_cache)} primary CIK submission files in memory.")
     file_cache: Dict[str, str] = {}
     prospectus_dir = CACHE_DIR / "sec_prospectus"
     cached_filenames: Set[str] = {p.name for p in prospectus_dir.iterdir()} if prospectus_dir.exists() else set()
@@ -92,15 +94,16 @@ def run_dry_run() -> Dict[str, Any]:
         cid = row.get("class_id", "")
         name = row.get("legal_name", "")
 
+        sub_json = submission_cache.get(cik, {})
         target = SeriesMetadata(
             symbol=sym,
             cik=cik,
             series_id=sid,
             class_id=cid,
-            legal_name=name
+            legal_name=name,
+            trust_name=sub_json.get("name", "")
         )
 
-        sub_json = submission_cache.get(cik, {})
         sel_res = StatutoryFilingSelector.select_statutory_filing(
             target, sub_json, CACHE_DIR, file_cache=file_cache, cached_filenames=cached_filenames
         )
@@ -164,6 +167,10 @@ def run_dry_run() -> Dict[str, Any]:
     OUTPUT_DIAGNOSTICS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_DIAGNOSTICS_PATH, "w", encoding="utf-8") as f:
         json.dump(diagnostics, f, indent=2)
+
+    results_path = OUTPUT_DIAGNOSTICS_PATH.parent / "STATUTORY_SELECTOR_DRY_RUN_RESULTS.json"
+    with open(results_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2)
 
     print("\nDRY-RUN RESULTS SUMMARY:")
     print(f"Total Targets: {total_targets}")

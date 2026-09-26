@@ -1,17 +1,19 @@
-"""ARX Terminal — Statutory Filing Selector (STATUTORY_FILING_SELECTOR_V1_0_0).
+"""ARX Terminal — Statutory Filing Selector (STATUTORY_FILING_SELECTOR_V1_2_0).
 
 Deterministically maps an ETF series (SeriesMetadata) to its correct eligible
 pre-boundary statutory filing and document before DocumentIndex and SeriesProspectusMapper
 are invoked.
 
-Core Principles:
-1. Registrant != Document (CIK may have multiple accessions, multiple prospectuses, multiple series).
-2. Strict temporal cutoff (filingDate <= SNAPSHOT_BOUNDARY; POST_BOUNDARY_FILING_SELECTED = 0).
-3. Statutory document roles (distinguishes Base Prospectus, Summary Prospectus, Supplements, SAI Part B).
-4. Multi-accession search (iterates through candidates if target is absent from top candidate).
-5. Target presence and mandate section verification (Item 4, StrategyNarrativeTextBlock, etc.).
-6. Deterministic audit trail & cache identity.
-7. Zero classification feedback (no tuning toward desired mandate subtypes or blocker counts).
+V1.2.0 Systematic Remediation:
+1. DEFECT_A: Load complete SEC submission history (recent + all filings.files).
+2. DEFECT_B: Defined-outcome / buffer month discrimination (no generic "500"+"buffer" collision).
+3. DEFECT_C: Context-aware ticker matching in target presence check.
+4. DEFECT_D: Concatenated ticker filename support (e.g. precidian-armhasmhandsthhs.htm).
+5. DEFECT_E: Omnibus base prospectus in-text evaluation (inspects cached 485BPOS even with generic metadata).
+6. DEFECT_F: Distinctive name token order & punctuation normalization (handles HTML entities like &#38;, &#58;, &#8482;).
+7. Strict affirmative cache-miss semantics (weak metadata matches never trigger SOURCE_CACHE_MISS).
+8. Share-class safety (mutual-fund Admiral/Investor classes never match ETF targets).
+9. Per-CIK normalized filing history indexing and deterministic cache identity.
 """
 
 import os
@@ -26,24 +28,69 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_1_0"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_2_0"
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
 # Statutory Forms authorized by Policy v1.1
 STATUTORY_FORMS = {"485BPOS", "485APOS", "N-1A", "N-1A/A", "S-6", "S-6/A", "497K", "497"}
 
-# Common issuer and generic non-discriminating tokens (Sections 4 & 5)
-COMMON_ISSUER_AND_GENERIC_TOKENS = {
-    "fund", "funds", "etf", "etfs", "index", "indexes", "trust", "series", "shares",
-    "portfolio", "portfolios", "capital", "management", "asset", "assets", "advisor",
-    "advisors", "adviser", "advisers", "investment", "investments", "company", "holdings",
-    # Major issuer family / umbrella names
+# Token Classification Hierarchy (Sections 12 & 13)
+ISSUER_TOKENS = {
     "goldman", "sachs", "vanguard", "spdr", "state", "street", "ssga", "ishares",
     "invesco", "schwab", "fidelity", "xtrackers", "first", "global", "proshares",
     "direxion", "vaneck", "franklin", "templeton", "jpmorgan", "blackrock",
     "wisdomtree", "dimensional", "pimco", "simplify", "amplify", "roundhill",
-    "defiance", "yieldmax", "innovator", "ft", "dws", "dbx", "select", "sector"
+    "defiance", "yieldmax", "innovator", "ft", "dws", "dbx", "select", "sector",
+    "guinness", "atkinson", "morgan", "stanley", "pathway", "harbor", "hotchkis",
+    "wiley", "alpha", "architect", "ea", "bridges", "precidian", "smartetfs", "matthews"
+}
+
+GENERIC_PRODUCT_TOKENS = {
+    "fund", "funds", "etf", "etfs", "index", "indexes", "trust", "series", "shares",
+    "portfolio", "portfolios", "capital", "management", "asset", "assets", "advisor",
+    "advisors", "adviser", "advisers", "investment", "investments", "company", "holdings",
+    "sp", "spi", "summary", "prospectus", "annual", "update"
+}
+
+MUTUAL_FUND_CLASS_TOKENS = {
+    "admiral", "investor shares", "institutional shares", "instl shares",
+    "class a", "class c", "class i", "class r", "class y", "investor class",
+    "institutional class", "admiral shares"
+}
+
+STRATEGY_FAMILY_TOKENS = {
+    "buffer", "buffered", "laddered", "hedged", "defined", "outcome", "target", "floor",
+    "500", "100", "1000", "2000", "large", "mid", "small", "cap", "core", "blend",
+    "rate", "treasury", "volatility", "esg", "ultra", "short", "long", "term"
+}
+
+MONTH_TOKENS = {
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
+    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
+}
+
+MONTH_MAP = {
+    "january": "jan", "jan": "jan",
+    "february": "feb", "feb": "feb",
+    "march": "mar", "mar": "mar",
+    "april": "apr", "apr": "apr",
+    "may": "may",
+    "june": "jun", "jun": "jun",
+    "july": "jul", "july": "jul", "jul": "jul",
+    "august": "aug", "aug": "aug",
+    "september": "sep", "sep": "sep",
+    "october": "oct", "oct": "oct",
+    "november": "nov", "nov": "nov",
+    "december": "dec", "dec": "dec"
+}
+
+NON_TICKER_FOUR_LETTER_WORDS = {
+    "fund", "post", "stat", "supp", "form", "base", "part", "hold", "rate",
+    "corp", "curr", "term", "debt", "risk", "tech", "core", "port", "grow",
+    "real", "inst", "stmt", "file", "text", "page", "item", "html", "head",
+    "body", "font", "span", "desc", "docs", "doc1", "doc2", "type", "size"
 }
 
 # Document Roles (Section 7)
@@ -65,6 +112,19 @@ OUTCOME_MANDATE_ABSENT_FROM_ALL = "MANDATE_SECTION_ABSENT_FROM_ALL_CANDIDATES"
 OUTCOME_CONFLICTING_DOCUMENTS = "CONFLICTING_CANDIDATE_DOCUMENTS"
 OUTCOME_AMBIGUOUS_MAPPING = "AMBIGUOUS_SERIES_TO_DOCUMENT_MAPPING"
 OUTCOME_SOURCE_CACHE_MISS = "SOURCE_CACHE_MISS"
+
+
+@dataclass
+class NormalizedFilingRecord:
+    """A canonical normalized SEC submission filing record (Section 6)."""
+    cik: str
+    accession: str
+    form: str
+    filing_date: str
+    primary_document: str
+    primary_doc_description: str
+    source_history_file: str
+    snapshot_eligible: bool
 
 
 @dataclass
@@ -113,25 +173,17 @@ class FilingSelectionResult:
 
 
 class StatutoryFilingSelector:
-    """Upstream filing-selection layer for ARX Terminal ETF research."""
+    """Upstream filing-selection layer for ARX Terminal ETF research (V1.2.0)."""
 
     VERSION = STATUTORY_FILING_SELECTOR_VERSION
     SNAPSHOT_BOUNDARY = SNAPSHOT_BOUNDARY
     SNAPSHOT_BOUNDARY_DATE = SNAPSHOT_BOUNDARY_DATE
-    COMMON_ISSUER_AND_GENERIC_TOKENS = COMMON_ISSUER_AND_GENERIC_TOKENS
 
-    # Delimiters and patterns for role classification
-    SAI_PATTERNS = [
-        r"\bStatement\s+of\s+Additional\s+Information\b",
-        r"\bPart\s+B\b",
-        r"\bCONSOLIDATED\s+SAI\b",
-        r"-sai\b",
-        r"_sai\b",
-        r"\bsai\.",
-        r"\bSAI\b",
-    ]
+    # In-memory candidate history cache per CIK (Section 23: builds per CIK = 1)
+    _normalized_history_cache: Dict[str, Tuple[List[NormalizedFilingRecord], str]] = {}
+    _history_build_counts: Dict[str, int] = {}
 
-    SUPPLEMENT_FEE_WAIVER_PATTERNS = [
+    SUPPLEMENT_DISQUALIFY_PATTERNS = [
         r"\bfee\s*waiver\b",
         r"feewaiver",
         r"\bliquidation\b",
@@ -141,6 +193,9 @@ class StatutoryFilingSelector:
         r"\bname\s*change\b",
         r"\bindex\s*reconstitution\b",
         r"\bpm\s*change\b",
+        r"\breorganization\b",
+        r"\breorgani\b",
+        r"\bclosing\b",
     ]
 
     MANDATE_SECTION_PATTERNS = [
@@ -154,12 +209,143 @@ class StatutoryFilingSelector:
     ]
 
     @classmethod
+    def reset_history_cache(cls):
+        """Reset the in-memory normalized submission history cache."""
+        cls._normalized_history_cache.clear()
+        cls._history_build_counts.clear()
+
+    @classmethod
+    def extract_months_from_text(cls, text: str) -> Set[str]:
+        """Extract canonical month tokens from text."""
+        words = re.findall(r"[a-zA-Z]+", (text or "").lower())
+        return {MONTH_MAP[w] for w in words if w in MONTH_MAP}
+
+    @classmethod
+    def load_normalized_submission_history(
+        cls,
+        cik: str,
+        submission_json: dict,
+        submissions_dir: Optional[Path] = None,
+        snapshot_boundary: str = SNAPSHOT_BOUNDARY,
+    ) -> Tuple[List[NormalizedFilingRecord], str]:
+        """Load and normalize complete SEC submission history (Sections 5, 6, 7, 23).
+
+        Merges filings.recent + all filings.files, deduplicating accessions deterministically.
+        Computes deterministic cache identity including file SHAs.
+        """
+        cik_str = str(cik).zfill(10)
+        dir_key = str(submissions_dir.resolve()) if submissions_dir else "default"
+        cache_lookup_key = f"{cik_str}:{dir_key}:{snapshot_boundary}:{cls.VERSION}"
+
+        if cache_lookup_key in cls._normalized_history_cache:
+            return cls._normalized_history_cache[cache_lookup_key]
+
+        cls._history_build_counts[cik_str] = cls._history_build_counts.get(cik_str, 0) + 1
+
+        if submissions_dir is None:
+            submissions_dir = Path("data/research/cache/sec_submissions")
+
+        hasher = hashlib.sha256()
+        hasher.update(cik_str.encode("utf-8"))
+        hasher.update(cls.VERSION.encode("utf-8"))
+        hasher.update(snapshot_boundary.encode("utf-8"))
+
+        recent = submission_json.get("filings", {}).get("recent", {})
+        recent_bytes = json.dumps(recent, sort_keys=True).encode("utf-8")
+        hasher.update(recent_bytes)
+
+        seen_accessions: Set[str] = set()
+        normalized_records: List[NormalizedFilingRecord] = []
+
+        # 1. Process filings.recent
+        if recent:
+            forms = recent.get("form", [])
+            fdates = recent.get("filingDate", [])
+            accs = recent.get("accessionNumber", [])
+            pdocs = recent.get("primaryDocument", [])
+            pdescs = recent.get("primaryDocDescription", [])
+            count = len(accs)
+
+            for i in range(count):
+                acc = accs[i] if i < len(accs) else ""
+                if not acc or acc in seen_accessions:
+                    continue
+                seen_accessions.add(acc)
+
+                form = forms[i] if i < len(forms) else ""
+                fdate = fdates[i] if i < len(fdates) else ""
+                pdoc = pdocs[i] if i < len(pdocs) else ""
+                pdesc = pdescs[i] if i < len(pdescs) else ""
+
+                eligible = bool(fdate and fdate <= snapshot_boundary[:10])
+                normalized_records.append(NormalizedFilingRecord(
+                    cik=cik_str,
+                    accession=acc,
+                    form=form,
+                    filing_date=fdate,
+                    primary_document=pdoc,
+                    primary_doc_description=pdesc,
+                    source_history_file="recent",
+                    snapshot_eligible=eligible,
+                ))
+
+        # 2. Process all historical files in filings.files (Section 5)
+        hist_files = submission_json.get("filings", {}).get("files", [])
+        for file_info in hist_files:
+            fname = file_info.get("name", "")
+            if not fname:
+                continue
+
+            fpath = submissions_dir / fname
+            if not fpath.exists():
+                raise FileNotFoundError(f"Missing required historical submission file: {fpath}")
+
+            with open(fpath, "rb") as fp:
+                file_bytes = fp.read()
+            hasher.update(fname.encode("utf-8"))
+            hasher.update(hashlib.sha256(file_bytes).digest())
+
+            hist_data = json.loads(file_bytes.decode("utf-8"))
+            h_forms = hist_data.get("form", [])
+            h_fdates = hist_data.get("filingDate", [])
+            h_accs = hist_data.get("accessionNumber", [])
+            h_pdocs = hist_data.get("primaryDocument", [])
+            h_pdescs = hist_data.get("primaryDocDescription", [])
+            h_count = len(h_accs)
+
+            for i in range(h_count):
+                acc = h_accs[i] if i < len(h_accs) else ""
+                if not acc or acc in seen_accessions:
+                    continue
+                seen_accessions.add(acc)
+
+                form = h_forms[i] if i < len(h_forms) else ""
+                fdate = h_fdates[i] if i < len(h_fdates) else ""
+                pdoc = h_pdocs[i] if i < len(h_pdocs) else ""
+                pdesc = h_pdescs[i] if i < len(h_pdescs) else ""
+
+                eligible = bool(fdate and fdate <= snapshot_boundary[:10])
+                normalized_records.append(NormalizedFilingRecord(
+                    cik=cik_str,
+                    accession=acc,
+                    form=form,
+                    filing_date=fdate,
+                    primary_document=pdoc,
+                    primary_doc_description=pdesc,
+                    source_history_file=fname,
+                    snapshot_eligible=eligible,
+                ))
+
+        history_sha = hasher.hexdigest()
+        cls._normalized_history_cache[cache_lookup_key] = (normalized_records, history_sha)
+        return normalized_records, history_sha
+
+    @classmethod
     def classify_document_role(
         cls,
         form: str,
         primary_document: str,
         primary_doc_description: str,
-        cached_text: Optional[str] = None
     ) -> str:
         """Classify candidate document by its statutory role (Section 7)."""
         form = (form or "").upper().strip()
@@ -167,12 +353,16 @@ class StatutoryFilingSelector:
         desc_lower = (primary_doc_description or "").lower()
         combined_meta = f"{doc_lower} {desc_lower}"
 
-        # 1. Check for Summary Prospectus (497K)
+        # 1. Summary Prospectus (497K) vs 497K Supplements
         if form == "497K":
+            for pat in cls.SUPPLEMENT_DISQUALIFY_PATTERNS:
+                if re.search(pat, combined_meta, re.IGNORECASE):
+                    return ROLE_FEE_WAIVER_SUPPLEMENT
+            if re.search(r"\bsupplement\b|\bcap\s*summary\b|\bcap\s*range\b", combined_meta, re.IGNORECASE):
+                return ROLE_PROSPECTUS_SUPPLEMENT
             return ROLE_SUMMARY_PROSPECTUS
 
-        # 2. Check for SAI (Statement of Additional Information) Part B
-        # Must check if description or document filename indicates SAI
+        # 2. Statement of Additional Information (SAI Part B)
         is_sai = False
         for pat in [r"\bstatement\s+of\s+additional\s+information\b", r"\bsai\b", r"-sai\b", r"_sai\b"]:
             if re.search(pat, combined_meta, re.IGNORECASE):
@@ -181,89 +371,290 @@ class StatutoryFilingSelector:
         if is_sai:
             return ROLE_SAI_PART_B
 
-        # 3. Check for 497 Supplements vs Fee Waivers
+        # 3. 497 Supplements vs Disqualified Fee/Reorganization Supplements
         if form == "497":
-            for pat in cls.SUPPLEMENT_FEE_WAIVER_PATTERNS:
+            for pat in cls.SUPPLEMENT_DISQUALIFY_PATTERNS:
                 if re.search(pat, combined_meta, re.IGNORECASE):
                     return ROLE_FEE_WAIVER_SUPPLEMENT
             return ROLE_PROSPECTUS_SUPPLEMENT
 
-        # 4. Check for Base Statutory Prospectus (485BPOS, 485APOS, N-1A)
+        # 4. Base Statutory Prospectus (485BPOS, 485APOS, N-1A)
         if form in {"485BPOS", "485APOS", "N-1A", "N-1A/A", "S-6", "S-6/A"}:
             return ROLE_BASE_STATUTORY_PROSPECTUS
 
         return ROLE_UNKNOWN
 
     @classmethod
+    def match_target_metadata(
+        cls,
+        target_series: SeriesMetadata,
+        pdoc: str,
+        pdesc: str
+    ) -> bool:
+        """Check target-specific match in metadata (Sections 8, 9, 12, 13, 14, 15, 20).
+
+        Returns boolean indicating affirmative target relevance.
+        """
+        pdoc_lower = (pdoc or "").lower()
+        pdesc_lower = (pdesc or "").lower()
+        combined_meta = f"{pdoc_lower} {pdesc_lower}"
+
+        # 1. Share-class safety (Section 20): reject mutual-fund share class filings for ETF targets
+        target_name_lower = (target_series.legal_name or "").lower()
+        is_etf_target = "etf" in target_name_lower or "shares" in target_name_lower
+        if is_etf_target:
+            for mf_tok in MUTUAL_FUND_CLASS_TOKENS:
+                if mf_tok in pdesc_lower:
+                    return False
+
+        # 2. Exact Series ID / Class ID match
+        target_sid_lower = (target_series.series_id or "").lower().strip()
+        target_cid_lower = (target_series.class_id or "").lower().strip()
+        if target_sid_lower and target_sid_lower in combined_meta:
+            return True
+        if target_cid_lower and target_cid_lower in combined_meta:
+            return True
+
+        # 3. Context-Aware Ticker Matching & Concatenated Tickers (Sections 8 & 9)
+        sym = (target_series.symbol or "").lower().strip()
+        if sym:
+            # (a) Ticker with delimiters or context in description
+            if (
+                f"({sym})" in pdesc_lower
+                or f" {sym} " in f" {pdesc_lower} "
+                or re.search(rf"\b(?:ticker|symbol|trading\s+symbol)\s*[:\-–—]?\s*{re.escape(sym)}\b", pdesc_lower)
+            ):
+                return True
+
+            # (b) Delimited ticker in document filename
+            if (
+                f"_{sym}." in pdoc_lower
+                or f"-{sym}." in pdoc_lower
+                or f"_{sym}_" in pdoc_lower
+                or f"-{sym}-" in pdoc_lower
+                or f"{sym}sum." in pdoc_lower
+                or f"{sym}." in pdoc_lower
+            ):
+                return True
+
+            # (c) Concatenated Ticker matching (Section 9)
+            # For 4+ letter tickers not in generic English words, allow substring in filename stem
+            if len(sym) >= 4 and sym not in NON_TICKER_FOUR_LETTER_WORDS:
+                stem = pdoc_lower.rsplit(".", 1)[0]
+                if sym in stem:
+                    return True
+
+        # 4. Month & Strategy Number Discrimination for Defined-Outcome / Buffer ETFs (Section 12)
+        target_months = cls.extract_months_from_text(target_name_lower)
+        meta_months = cls.extract_months_from_text(combined_meta)
+
+        # Buffer number discrimination (e.g. Buffer 12 vs Buffer 20)
+        target_has_12 = bool(re.search(r"\b12\b|\bbuffer\s*12\b", target_name_lower))
+        target_has_20 = bool(re.search(r"\b20\b|\bbuffer\s*20\b", target_name_lower))
+        meta_has_12 = bool(re.search(r"\b12\b|\bbuffer\s*12\b", combined_meta))
+        meta_has_20 = bool(re.search(r"\b20\b|\bbuffer\s*20\b", combined_meta))
+
+        if target_has_12 and meta_has_20 and not meta_has_12:
+            return False
+        if target_has_20 and meta_has_12 and not meta_has_20:
+            return False
+
+        if target_months:
+            # If target has a month (e.g. August), candidate MUST NOT contain a conflicting month
+            if meta_months and not (target_months & meta_months):
+                return False
+            # If candidate does not specify any month, generic strategy words alone CANNOT qualify
+            if not meta_months:
+                return False
+            # If month matches, and strategy matches, qualify
+            if target_months & meta_months:
+                if any(w in combined_meta for w in ["buffer", "defined", "outcome", "pgim", "500", "100", "2000"]):
+                    return True
+
+        # 5. Distinctive Name Token Matching (Sections 13, 14, 15)
+        raw_words = re.findall(r"[a-z0-9]+", target_name_lower)
+        active_issuer = set(ISSUER_TOKENS)
+        if target_series.trust_name:
+            active_issuer |= set(re.findall(r"[a-z0-9]+", target_series.trust_name.lower()))
+        substantive_words = [
+            w for w in raw_words
+            if len(w) > 2
+            and w not in active_issuer
+            and w not in GENERIC_PRODUCT_TOKENS
+            and w not in MONTH_TOKENS
+        ]
+
+        if substantive_words:
+            matched_words = []
+            for w in substantive_words:
+                stem = w.rstrip("s")
+                if w in combined_meta or (len(stem) > 3 and stem in combined_meta):
+                    matched_words.append(w)
+
+            distinctive_only = [w for w in substantive_words if w not in STRATEGY_FAMILY_TOKENS]
+            if distinctive_only:
+                matched_distinctive = [w for w in matched_words if w in distinctive_only]
+                # If target has distinctive brand/name tokens, require at least 1 distinctive match
+                # and total matched count >= min(2, len(substantive_words))
+                if len(matched_distinctive) >= 1 and len(matched_words) >= min(2, len(substantive_words)):
+                    return True
+            else:
+                # Target has only strategy family words (e.g. Large Cap ETF)
+                if len(matched_words) >= min(2, len(substantive_words)):
+                    return True
+
+        # 6. Normalized full legal name match (ignoring generic entity words)
+        norm_name = DocumentNormalizer.normalize_name(target_series.legal_name or "")
+        norm_meta = DocumentNormalizer.normalize_name(combined_meta)
+        if len(norm_name) > 8 and norm_name in norm_meta:
+            return True
+
+        return False
+
+    @classmethod
     def check_target_presence(
         cls,
         target_series: SeriesMetadata,
-        text: str
+        text: str,
+        form: str = ""
     ) -> Tuple[bool, str]:
-        """Verify whether target series is genuinely present in candidate text (Section 8).
+        """Verify whether target series is genuinely present in candidate text (Sections 8, 10, 14).
 
+        Checks:
+        - series_id, class_id
+        - context-aware ticker / symbol
+        - full normalized legal name & distinctive token sets
         Rejects candidates where target appears only in:
-        - Trustee / officer tables
-        - General compensation tables
-        - SAI investment restrictions tables
+        - SAI back-of-book tables without Fund Summary/Item 4
         """
         if not text or len(text.strip()) < 10:
             return False, "EMPTY_TEXT"
 
+        # Unescape HTML entities (converts &#38; -> &, &#58; -> :, &#8482; -> ™, etc.)
+        clean_text = html.unescape(text)
+
+        # Create plain text (tags stripped, normalized whitespace) for fast, robust label & ticker matching
+        plain_text = re.sub(r"<[^>]+>", " ", clean_text)
+        plain_text = re.sub(r"\s+", " ", plain_text)
+
         sid = (target_series.series_id or "").upper().strip()
         cid = (target_series.class_id or "").upper().strip()
         raw_name = (target_series.legal_name or "").strip()
-        norm_name = DocumentNormalizer.normalize_name(raw_name)
+        sym = (target_series.symbol or "").upper().strip()
 
-        # Fast substring check before regex
-        has_sid = bool(sid and sid in text)
-        has_cid = bool(cid and cid in text)
+        # 1. Series ID & Class ID
+        has_sid = bool(sid and sid in clean_text)
+        has_cid = bool(cid and cid in clean_text)
+        if has_sid or has_cid:
+            return cls._validate_sai_boundary(clean_text, sid, cid, sym, raw_name, has_sid, has_cid, form=form)
 
+        # 2. Context-Aware Ticker Evidence (Sections 8 & 10)
+        has_ticker = False
+        if sym and len(sym) >= 2:
+            ticker_patterns = [
+                rf"\({re.escape(sym)}\)",
+                rf"\b(?:Ticker\s+Symbol|Trading\s+Symbol|Ticker|Symbol|NASDAQ|NYSE(?:\s+Arca)?|Cboe(?:\s+BZX)?)\s*[:\-–—]?\s*{re.escape(sym)}\b",
+                rf"\b(?:Shares|Class|ETF)\s*\(?{re.escape(sym)}\b",
+            ]
+            for pat in ticker_patterns:
+                if len(sym) <= 3:
+                    if re.search(pat, plain_text):
+                        has_ticker = True
+                        break
+                else:
+                    if re.search(pat, plain_text, re.IGNORECASE):
+                        has_ticker = True
+                        break
+
+            if not has_ticker and len(sym) >= 4 and sym not in NON_TICKER_FOUR_LETTER_WORDS:
+                if re.search(rf"\b{re.escape(sym)}\b\s*Exchange", plain_text, re.IGNORECASE):
+                    has_ticker = True
+
+        # 3. Name Evidence with Plain Text Matching (Section 14)
         has_name = False
         if raw_name and len(raw_name) > 5:
-            if raw_name.lower() in text.lower():
-                has_name = True
-            elif raw_name.replace("&", "&amp;").lower() in text.lower():
+            if raw_name.lower() in plain_text.lower():
                 has_name = True
             else:
-                words = [w for w in re.split(r"[\s&]+", raw_name) if len(w) > 2]
-                core_words = [w for w in words if w.lower() != "index"]
-                for wset in [words, core_words]:
-                    if len(wset) >= 2:
-                        pat = r"\s*(&amp;|&|\s)\s*".join(re.escape(w) for w in wset)
-                        if re.search(pat, text, re.IGNORECASE):
-                            has_name = True
-                            break
+                words = [w for w in re.split(r"[\s&–—\-,]+", raw_name) if len(w) > 2]
+                if len(words) >= 2:
+                    pat = r"\s+(?:&|and|[–—\-])?\s*".join(re.escape(w) for w in words)
+                    if re.search(pat, plain_text, re.IGNORECASE):
+                        has_name = True
 
-        if not has_sid and not has_cid and not has_name:
+                if not has_name:
+                    # Check distinctive tokens (ignoring generic issuer tokens)
+                    distinctive_words = [
+                        w for w in words
+                        if w.lower() not in ISSUER_TOKENS
+                        and w.lower() not in GENERIC_PRODUCT_TOKENS
+                        and w.lower() not in STRATEGY_FAMILY_TOKENS
+                    ]
+                    if len(distinctive_words) >= 2:
+                        pat_disc = r"\s+(?:&|and|[–—\-])?\s*".join(re.escape(w) for w in distinctive_words)
+                        if re.search(pat_disc, plain_text, re.IGNORECASE):
+                            has_name = True
+
+        if not has_sid and not has_cid and not has_ticker and not has_name:
             return False, "TARGET_NOT_FOUND_IN_TEXT"
 
-        # Check if the target presence is purely inside SAI back-of-book or trustee table
-        # Identify if document has an SAI boundary
+        return cls._validate_sai_boundary(clean_text, sid, cid, sym, raw_name, has_sid, has_cid, form=form)
+
+    @classmethod
+    def _validate_sai_boundary(
+        cls,
+        text: str,
+        sid: str,
+        cid: str,
+        sym: str,
+        raw_name: str,
+        has_sid: bool,
+        has_cid: bool,
+        form: str = ""
+    ) -> Tuple[bool, str]:
+        """Check if target presence occurs only after an SAI boundary without a fund summary."""
+        # Summary prospectuses (Form 497K) never contain an SAI
+        if form == "497K":
+            return True, "TARGET_PRESENT"
+
         m_sai = re.search(
-            r"<h[1-4][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|<b>[^<]*Statement\s+of\s+Additional\s+Information|\bStatement\s+of\s+Additional\s+Information\b",
+            r"<h[1-4][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|<(?:b|strong|p|div)[^>]*align=['\"]center['\"][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|\bPart\s+B\b",
             text,
             re.IGNORECASE,
         )
         if m_sai and m_sai.start() > 5000:
             sai_start = m_sai.start()
-            # If target appears ONLY after sai_start, check if it's an SAI-only mention
             first_occ = len(text)
             if has_sid:
-                m = re.search(rf"\b{re.escape(sid)}\b", text)
-                if m:
-                    first_occ = min(first_occ, m.start())
-            if has_name:
-                words = raw_name.split()
-                name_pat = r"\s+".join(re.escape(w) for w in words)
-                m = re.search(name_pat, text, re.IGNORECASE)
-                if m:
-                    first_occ = min(first_occ, m.start())
+                idx = text.find(sid)
+                if idx >= 0:
+                    first_occ = min(first_occ, idx)
+            if has_cid:
+                idx = text.find(cid)
+                if idx >= 0:
+                    first_occ = min(first_occ, idx)
+            if sym and len(sym) >= 2:
+                m_tick = re.search(
+                    rf"\({re.escape(sym)}\)|\b(?:Ticker\s+Symbol|Trading\s+Symbol|Ticker|Symbol)\s*[:\-–—]?\s*{re.escape(sym)}\b",
+                    text,
+                    re.IGNORECASE if len(sym) >= 4 else 0,
+                )
+                if m_tick:
+                    first_occ = min(first_occ, m_tick.start())
+                elif len(sym) >= 4 and sym not in NON_TICKER_FOUR_LETTER_WORDS and text.find(sym) >= 0:
+                    first_occ = min(first_occ, text.find(sym))
+            if raw_name:
+                words = [w for w in re.split(r"[\s&–—\-,]+", raw_name) if len(w) > 2]
+                if words:
+                    m = re.search(re.escape(words[0]), text, re.IGNORECASE)
+                    if m:
+                        first_occ = min(first_occ, m.start())
 
             if first_occ > sai_start:
-                # Target occurs strictly after SAI start
-                # Verify if there's any Item 4 or Fund Summary in that region
-                has_summary_after_sai = bool(re.search(r"\bFund\s+Summary\b|oef:RiskReturnHeading", text[first_occ-500:first_occ+2000], re.IGNORECASE))
+                has_summary_after_sai = bool(
+                    re.search(r"\bFund\s+Summary\b|oef:RiskReturnHeading|oef:StrategyNarrativeTextBlock",
+                              text[max(0, first_occ - 500):first_occ + 2000], re.IGNORECASE)
+                )
                 if not has_summary_after_sai:
                     return False, "TARGET_ONLY_IN_SAI_SECTION"
 
@@ -282,56 +673,21 @@ class StatutoryFilingSelector:
         return False, "MANDATE_SECTION_NOT_FOUND"
 
     @classmethod
-    def match_target_metadata(cls, target_series: SeriesMetadata, pdoc: str, pdesc: str) -> bool:
-        """Check target-specific match in metadata (Sections 4 & 5: require target-discriminating evidence)."""
-        target_sym_lower = (target_series.symbol or "").lower().strip()
-        target_sid_lower = (target_series.series_id or "").lower().strip()
-        target_cid_lower = (target_series.class_id or "").lower().strip()
-        raw_words = re.findall(r"[A-Za-z0-9]+", (target_series.legal_name or "").lower())
-        target_discriminating_words = [
-            w for w in raw_words
-            if len(w) > 2 and w not in cls.COMMON_ISSUER_AND_GENERIC_TOKENS
-        ]
-
-        pdoc_lower = (pdoc or "").lower()
-        pdesc_lower = (pdesc or "").lower()
-        combined_meta = f"{pdoc_lower} {pdesc_lower}"
-
-        if target_sym_lower and (
-            f"{target_sym_lower}." in pdoc_lower
-            or f"{target_sym_lower}sum" in pdoc_lower
-            or f"_{target_sym_lower}" in pdoc_lower
-            or f"-{target_sym_lower}" in pdoc_lower
-            or f"({target_sym_lower})" in pdesc_lower
-            or f" {target_sym_lower} " in f" {pdesc_lower} "
-        ):
-            return True
-        if target_sid_lower and target_sid_lower in combined_meta:
-            return True
-        if target_cid_lower and target_cid_lower in combined_meta:
-            return True
-        if target_discriminating_words:
-            matched_discrim = [w for w in target_discriminating_words if w in combined_meta]
-            req_count = min(2, len(set(target_discriminating_words)))
-            if len(set(matched_discrim)) >= req_count:
-                return True
-        return False
-
-    @classmethod
     def compute_cache_key(
         cls,
         target: SeriesMetadata,
         cik: str,
         config: Optional[Dict[str, Any]] = None,
         snapshot_boundary: str = SNAPSHOT_BOUNDARY,
+        history_sha: str = "",
     ) -> str:
-        """Compute deterministic selection cache identity (Section 18)."""
+        """Compute deterministic selection cache identity (Sections 7 & 18)."""
         sid = target.series_id or ""
         cid = target.class_id or ""
         norm_name = DocumentNormalizer.normalize_name(target.legal_name or "")
         name_sha = hashlib.sha256(norm_name.encode("utf-8")).hexdigest()
         cfg_sha = hashlib.sha256(json.dumps(config or {}, sort_keys=True).encode("utf-8")).hexdigest()
-        raw = f"{sid}:{cid}:{name_sha}:{cik}:{snapshot_boundary}:{cls.VERSION}:{cfg_sha}"
+        raw = f"{sid}:{cid}:{name_sha}:{cik}:{snapshot_boundary}:{cls.VERSION}:{cfg_sha}:{history_sha}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     @classmethod
@@ -346,10 +702,10 @@ class StatutoryFilingSelector:
         file_cache: Optional[Dict[str, str]] = None,
         cached_filenames: Optional[Set[str]] = None,
     ) -> FilingSelectionResult:
-        """Deterministically selects the correct pre-boundary statutory filing for target_series.
+        """Deterministically selects the correct pre-boundary statutory filing for target_series (V1.2.0).
 
         Steps:
-        1. Enumerate candidate filings from submission_json.
+        1. Load normalized filing history (recent + historical submissions).
         2. Filter strictly by filingDate <= snapshot_boundary.
         3. Classify document roles (BASE_STATUTORY_PROSPECTUS, SUMMARY_PROSPECTUS, etc.).
         4. Prioritize candidates by target relevance and form hierarchy.
@@ -357,10 +713,44 @@ class StatutoryFilingSelector:
         6. Fail closed with informative outcome if target is absent or ambiguous.
         """
         cik = str(target_series.cik or "").zfill(10)
-        recent = submission_json.get("filings", {}).get("recent", {})
-        cache_key = cls.compute_cache_key(target_series, cik, config, snapshot_boundary)
+        submissions_dir = cache_dir / "sec_submissions" if cache_dir else Path("data/research/cache/sec_submissions")
+        prospectus_dir = cache_dir / "sec_prospectus" if cache_dir else Path("data/research/cache/sec_prospectus")
 
-        if not recent:
+        if cached_filenames is None:
+            cached_filenames = {p.name for p in prospectus_dir.iterdir()} if prospectus_dir.exists() else set()
+
+        # Step 1: Load complete normalized filing history
+        try:
+            records, history_sha = cls.load_normalized_submission_history(
+                cik=cik,
+                submission_json=submission_json,
+                submissions_dir=submissions_dir,
+                snapshot_boundary=snapshot_boundary,
+            )
+        except Exception as e:
+            cache_key = cls.compute_cache_key(target_series, cik, config, snapshot_boundary)
+            return FilingSelectionResult(
+                target_symbol=target_series.symbol,
+                cik=target_series.cik,
+                series_id=target_series.series_id,
+                class_id=target_series.class_id,
+                legal_name=target_series.legal_name,
+                selected_accession="NONE",
+                selected_form="NONE",
+                filing_date="NONE",
+                document_filename="NONE",
+                document_role=ROLE_UNKNOWN,
+                selection_outcome=OUTCOME_NO_PREBOUNDARY_CANDIDATE,
+                selection_rule_id="RULE_HISTORY_LOAD_ERROR",
+                selection_evidence=f"Failed to load historical submission records for CIK {cik}: {str(e)}",
+                candidate_count=0,
+                snapshot_boundary=snapshot_boundary,
+                cache_key=cache_key,
+            )
+
+        cache_key = cls.compute_cache_key(target_series, cik, config, snapshot_boundary, history_sha)
+
+        if not records:
             return FilingSelectionResult(
                 target_symbol=target_series.symbol,
                 cik=target_series.cik,
@@ -374,74 +764,51 @@ class StatutoryFilingSelector:
                 document_role=ROLE_UNKNOWN,
                 selection_outcome=OUTCOME_NO_PREBOUNDARY_CANDIDATE,
                 selection_rule_id="RULE_EMPTY_SUBMISSION_METADATA",
-                selection_evidence="No recent filings found in CIK submissions metadata",
+                selection_evidence="No filings found in CIK submissions metadata",
                 candidate_count=0,
                 snapshot_boundary=snapshot_boundary,
                 cache_key=cache_key,
             )
 
-        forms = recent.get("form", [])
-        filing_dates = recent.get("filingDate", [])
-        accessions = recent.get("accessionNumber", [])
-        primary_docs = recent.get("primaryDocument", [])
-        primary_descs = recent.get("primaryDocDescription", [])
-
-        # Step 1: Enumerate pre-boundary candidate filings
+        # Step 2: Enumerate pre-boundary candidate filings
         candidates: List[FilingCandidate] = []
         rejected_candidates: List[Dict[str, Any]] = []
 
-        target_sym_lower = (target_series.symbol or "").lower().strip()
-        target_sid_lower = (target_series.series_id or "").lower().strip()
-        target_cid_lower = (target_series.class_id or "").lower().strip()
-        raw_words = re.findall(r"[A-Za-z0-9]+", (target_series.legal_name or "").lower())
-        target_discriminating_words = [
-            w for w in raw_words
-            if len(w) > 2 and w not in cls.COMMON_ISSUER_AND_GENERIC_TOKENS
-        ]
-
-        prospectus_dir = cache_dir / "sec_prospectus" if cache_dir else Path("data/research/cache/sec_prospectus")
-
-        if cached_filenames is None:
-            cached_filenames = {p.name for p in prospectus_dir.iterdir()} if prospectus_dir.exists() else set()
-
-        for i, form in enumerate(forms):
-            fdate = filing_dates[i] if i < len(filing_dates) else ""
-            acc = accessions[i] if i < len(accessions) else ""
-            pdoc = primary_docs[i] if i < len(primary_docs) else ""
-            pdesc = primary_descs[i] if i < len(primary_descs) else ""
-
-            # Strict temporal boundary check (Section 24: POST_BOUNDARY_FILING_SELECTED = 0)
-            if fdate > snapshot_boundary[:10]:
+        for rec in records:
+            # Strict temporal boundary check (Section 32: POST_BOUNDARY_SELECTED = 0)
+            if not rec.snapshot_eligible:
                 rejected_candidates.append({
-                    "accession": acc,
-                    "form": form,
-                    "filing_date": fdate,
-                    "rejection_reason": f"POST_BOUNDARY_FILING (filingDate {fdate} > {snapshot_boundary[:10]})"
+                    "accession": rec.accession,
+                    "form": rec.form,
+                    "filing_date": rec.filing_date,
+                    "rejection_reason": f"POST_BOUNDARY_FILING (filingDate {rec.filing_date} > {snapshot_boundary[:10]})"
                 })
                 continue
 
-            if form not in STATUTORY_FORMS:
+            if rec.form not in STATUTORY_FORMS:
                 continue
 
-            role = cls.classify_document_role(form, pdoc, pdesc)
+            role = cls.classify_document_role(rec.form, rec.primary_document, rec.primary_doc_description)
             if role in {ROLE_SAI_PART_B, ROLE_FEE_WAIVER_SUPPLEMENT, ROLE_NON_MANDATE_DOCUMENT}:
                 rejected_candidates.append({
-                    "accession": acc,
-                    "form": form,
-                    "filing_date": fdate,
-                    "primary_doc": pdoc,
+                    "accession": rec.accession,
+                    "form": rec.form,
+                    "filing_date": rec.filing_date,
+                    "primary_doc": rec.primary_document,
                     "rejection_reason": f"DISQUALIFIED_DOCUMENT_ROLE ({role})"
                 })
                 continue
 
-            # Check target-specific match in metadata (Sections 4 & 5: require target-discriminating evidence)
-            meta_match = cls.match_target_metadata(target_series, pdoc, pdesc)
+            # Check target-specific match in metadata
+            meta_match = cls.match_target_metadata(
+                target_series, rec.primary_document, rec.primary_doc_description
+            )
 
             # Fast in-memory check if file is cached locally
-            cached_filename = f"{acc}_{pdoc}"
+            cached_filename = f"{rec.accession}_{rec.primary_document}"
             is_cached = cached_filename in cached_filenames
 
-            # Priority scoring (Section 5)
+            # Priority scoring (Section 21)
             score = 0
             if meta_match:
                 score += 500
@@ -450,14 +817,14 @@ class StatutoryFilingSelector:
             elif role == ROLE_BASE_STATUTORY_PROSPECTUS:
                 score += 250
             elif role == ROLE_PROSPECTUS_SUPPLEMENT:
-                score += 20
+                score += 20 if meta_match else 5
 
             candidates.append(FilingCandidate(
-                accession=acc,
-                form=form,
-                filing_date=fdate,
-                primary_document=pdoc,
-                primary_doc_description=pdesc,
+                accession=rec.accession,
+                form=rec.form,
+                filing_date=rec.filing_date,
+                primary_document=rec.primary_document,
+                primary_doc_description=rec.primary_doc_description,
                 document_role=role,
                 is_preboundary=True,
                 is_cached=is_cached,
@@ -493,8 +860,7 @@ class StatutoryFilingSelector:
             reverse=True
         )
 
-        # Step 2: Multi-Accession Search & Content Qualification (Sections 8, 9, 14, 15)
-        # Iterate candidates and verify series presence and mandate presence
+        # Step 3: Multi-Accession Search & Content Qualification (Sections 8, 11, 16)
         inspected_count = 0
         cache_miss_candidate: Optional[FilingCandidate] = None
 
@@ -505,6 +871,7 @@ class StatutoryFilingSelector:
 
             if not cand.is_cached:
                 # Document is not cached locally
+                # Only affirmative target relevance triggers SOURCE_CACHE_MISS (Section 16)
                 if cand.target_metadata_match and cache_miss_candidate is None:
                     cache_miss_candidate = cand
 
@@ -517,7 +884,7 @@ class StatutoryFilingSelector:
                 })
                 continue
 
-            # Read cached content and inspect (leveraging in-memory cache if provided)
+            # Read cached content (leveraging in-memory cache if provided)
             if file_cache is not None and str(cached_path) in file_cache:
                 content = file_cache[str(cached_path)]
             else:
@@ -534,7 +901,7 @@ class StatutoryFilingSelector:
                     continue
 
             # Check target presence
-            target_present, t_reason = cls.check_target_presence(target_series, content)
+            target_present, t_reason = cls.check_target_presence(target_series, content, form=cand.form)
             if not target_present:
                 cand.target_present = "NO"
                 cand.rejection_reason = t_reason
@@ -603,9 +970,9 @@ class StatutoryFilingSelector:
                 source_bytes_sha256=doc_sha,
             )
 
-        # Step 3: Exhaustive search complete without qualifying cached match
+        # Step 4: Exhaustive search complete without qualifying cached match
         if cache_miss_candidate is not None:
-            # Candidate known from SEC submissions metadata but not yet cached
+            # Candidate known from SEC submissions metadata with affirmative target match but not yet cached
             return FilingSelectionResult(
                 target_symbol=target_series.symbol,
                 cik=target_series.cik,

@@ -1,0 +1,395 @@
+{
+  "selector_version": "STATUTORY_FILING_SELECTOR_V1_2_0",
+  "known_false_negatives_remediated": "7 / 7",
+  "residual_35_cache_misses_start": 35,
+  "residual_35_cache_misses_end": 0,
+  "residual_35_distribution": {
+    "SELECTED_TARGET_SUMMARY_PROSPECTUS": 31,
+    "SELECTED_TARGET_STATUTORY_PROSPECTUS": 2,
+    "TARGET_ABSENT_FROM_ALL_CANDIDATES": 2
+  },
+  "original_10_selected": "10 / 10",
+  "residual_16_selected": "16 / 16",
+  "fn_results": [
+    {
+      "symbol": "ADIV",
+      "cik": "0000919160",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001398344-21-007103",
+      "selected_doc": "fp0063839_497k.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "ADPV",
+      "cik": "0001650149",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000894189-26-007022",
+      "selected_doc": "adaptivselectetf-497k2026.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "AFOS",
+      "cik": "0001592900",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001592900-25-001694",
+      "selected_doc": "arsfocusedopportunitiesstr.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "AIQ",
+      "cik": "0001432353",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001432353-26-000464",
+      "selected_doc": "a497kartificialintelligenc.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "ARMH",
+      "cik": "0001499655",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "selected_accession": "0001499655-26-000012",
+      "selected_doc": "ck0001499655-20260429.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "ASMH",
+      "cik": "0001499655",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "selected_accession": "0001499655-26-000012",
+      "selected_doc": "ck0001499655-20260429.htm",
+      "remediated": true
+    },
+    {
+      "symbol": "ATTR",
+      "cik": "0001592900",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001592900-25-002653",
+      "selected_doc": "arintacticaltailrisketf.htm",
+      "remediated": true
+    }
+  ],
+  "miss_results": [
+    {
+      "symbol": "APRP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - April",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000061",
+      "selected_doc": "f44635d1.htm"
+    },
+    {
+      "symbol": "AUGP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - August",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000315",
+      "selected_doc": "f45855d1.htm"
+    },
+    {
+      "symbol": "BUFP",
+      "cik": "0001992104",
+      "legal_name": "PGIM Laddered S&P 500 Buffer 12 ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "selected_accession": "0001683863-24-002298",
+      "selected_doc": "f38069d1.htm"
+    },
+    {
+      "symbol": "DECP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - December",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060874",
+      "selected_doc": "f44133d1.htm"
+    },
+    {
+      "symbol": "FEBP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - February",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060865",
+      "selected_doc": "f44129d1.htm"
+    },
+    {
+      "symbol": "HWSM",
+      "cik": "0001145022",
+      "legal_name": "Hotchkis & Wiley SMID Cap Diversified Value Fund",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000894189-26-020926",
+      "selected_doc": "hwsmidcapdiversifiedvaluefa.htm"
+    },
+    {
+      "symbol": "JANP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - January",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060869",
+      "selected_doc": "f44138d1.htm"
+    },
+    {
+      "symbol": "JULP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - July",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000265",
+      "selected_doc": "f45689d1.htm"
+    },
+    {
+      "symbol": "JUNP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - June",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000158",
+      "selected_doc": "f45374d1.htm"
+    },
+    {
+      "symbol": "MAYP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - May",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000105",
+      "selected_doc": "f45217d1.htm"
+    },
+    {
+      "symbol": "MRCP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - March",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000007",
+      "selected_doc": "f44296d1.htm"
+    },
+    {
+      "symbol": "MSLC",
+      "cik": "0000875186",
+      "legal_name": "Morgan Stanley Pathway Large Cap Equity ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "selected_accession": "NONE",
+      "selected_doc": "NONE"
+    },
+    {
+      "symbol": "MSSM",
+      "cik": "0000875186",
+      "legal_name": "Morgan Stanley Pathway Small-Mid Cap Equity ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "selected_accession": "NONE",
+      "selected_doc": "NONE"
+    },
+    {
+      "symbol": "NOVP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - November",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060875",
+      "selected_doc": "f44139d1.htm"
+    },
+    {
+      "symbol": "OCTP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - October",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060876",
+      "selected_doc": "f44128d1.htm"
+    },
+    {
+      "symbol": "PBAP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - April",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000060",
+      "selected_doc": "f44636d1.htm"
+    },
+    {
+      "symbol": "PBAU",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - August",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000316",
+      "selected_doc": "f45854d1.htm"
+    },
+    {
+      "symbol": "PBDE",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - December",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060843",
+      "selected_doc": "f44151d1.htm"
+    },
+    {
+      "symbol": "PBFB",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - February",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060859",
+      "selected_doc": "f44137d1.htm"
+    },
+    {
+      "symbol": "PBFR",
+      "cik": "0001992104",
+      "legal_name": "PGIM Laddered S&P 500 Buffer 20 ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS",
+      "selected_accession": "0001683863-24-002298",
+      "selected_doc": "f38069d1.htm"
+    },
+    {
+      "symbol": "PBJA",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - January",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060861",
+      "selected_doc": "f44146d1.htm"
+    },
+    {
+      "symbol": "PBJL",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - July",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000266",
+      "selected_doc": "f45690d1.htm"
+    },
+    {
+      "symbol": "PBJN",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - June",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000157",
+      "selected_doc": "f45373d1.htm"
+    },
+    {
+      "symbol": "PBMR",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - March",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000008",
+      "selected_doc": "f44300d1.htm"
+    },
+    {
+      "symbol": "PBMY",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - May",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000106",
+      "selected_doc": "f45211d1.htm"
+    },
+    {
+      "symbol": "PBNV",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - November",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060844",
+      "selected_doc": "f44141d1.htm"
+    },
+    {
+      "symbol": "PBOC",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - October",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001193125-26-060846",
+      "selected_doc": "f44126d1.htm"
+    },
+    {
+      "symbol": "PBSE",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - September",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000364",
+      "selected_doc": "f45996d1.htm"
+    },
+    {
+      "symbol": "SEPP",
+      "cik": "0001992104",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - September",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0001992104-26-000363",
+      "selected_doc": "f45997d1.htm"
+    },
+    {
+      "symbol": "TOAK",
+      "cik": "0001359057",
+      "legal_name": "Manager Directed Portfolios Twin Oak Short Horizon Absolute Return ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000894189-25-007916",
+      "selected_doc": "twinoaksummaryprospectus-s.htm"
+    },
+    {
+      "symbol": "VBK",
+      "cik": "0000036405",
+      "legal_name": "Vanguard Morningstar Small-Cap Growth ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000036405-26-000201",
+      "selected_doc": "f44860d1.htm"
+    },
+    {
+      "symbol": "VBR",
+      "cik": "0000036405",
+      "legal_name": "Vanguard Morningstar Small-Cap Value ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000036405-26-000204",
+      "selected_doc": "f44857d1.htm"
+    },
+    {
+      "symbol": "VOE",
+      "cik": "0000036405",
+      "legal_name": "Vanguard Morningstar Mid-Cap Value ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000036405-26-000196",
+      "selected_doc": "f44856d1.htm"
+    },
+    {
+      "symbol": "VOT",
+      "cik": "0000036405",
+      "legal_name": "Vanguard Morningstar Mid-Cap Growth ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000036405-26-000200",
+      "selected_doc": "f44859d1.htm"
+    },
+    {
+      "symbol": "VV",
+      "cik": "0000036405",
+      "legal_name": "Vanguard Morningstar Large-Cap ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "v1_2_0_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
+      "selected_accession": "0000036405-26-000195",
+      "selected_doc": "f44852d1.htm"
+    }
+  ]
+}

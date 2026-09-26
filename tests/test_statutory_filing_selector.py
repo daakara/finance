@@ -322,7 +322,7 @@ class TestStatutoryFilingSelectorIntegrationWithResolver:
                 sub_json = json.load(f)
 
             sel_res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, cache_dir)
-            assert sel_res.selection_outcome == OUTCOME_SELECTED_STATUTORY_PROSPECTUS
+            assert sel_res.selection_outcome in {OUTCOME_SELECTED_STATUTORY_PROSPECTUS, OUTCOME_SELECTED_SUMMARY_PROSPECTUS}
 
             doc_path = cache_dir / "sec_prospectus" / f"{sel_res.selected_accession}_{sel_res.document_filename}"
             assert doc_path.exists(), f"Selected document {doc_path} not found"
@@ -461,3 +461,260 @@ class TestStatutoryFilingSelectorRemediationV1_1_0:
         # Because none of doc1/doc2/doc3 match "Nonexistent Hypothetical Trust ETF",
         # they must not be reported as SOURCE_CACHE_MISS, but TARGET_ABSENT_FROM_ALL.
         assert res.selection_outcome == OUTCOME_TARGET_ABSENT_FROM_ALL
+
+
+class TestStatutoryFilingSelectorV120Unit:
+    """Unit tests for V1.2.0 improvements (Section 26)."""
+
+    def test_historical_sec_submission_loading_and_deduplication(self, tmp_path):
+        submissions_dir = tmp_path / "sec_submissions"
+        submissions_dir.mkdir(parents=True)
+
+        recent_data = {
+            "filings": {
+                "recent": {
+                    "form": ["497K", "485BPOS"],
+                    "filingDate": ["2026-05-01", "2025-10-15"],
+                    "accessionNumber": ["0001-26-0001", "0001-25-0002"],
+                    "primaryDocument": ["doc1.htm", "doc2.htm"],
+                    "primaryDocDescription": ["Doc 1", "Doc 2"]
+                },
+                "files": [
+                    {"name": "CIK0000000001-submissions-001.json", "filingCount": 2}
+                ]
+            }
+        }
+        hist_data = {
+            "form": ["485BPOS", "497"],
+            "filingDate": ["2025-10-15", "2024-03-01"],
+            "accessionNumber": ["0001-25-0002", "0001-24-0003"],  # 0001-25-0002 is duplicated
+            "primaryDocument": ["doc2.htm", "doc3.htm"],
+            "primaryDocDescription": ["Doc 2 Duplicate", "Doc 3 Historical"]
+        }
+        (submissions_dir / "CIK0000000001-submissions-001.json").write_text(json.dumps(hist_data), encoding="utf-8")
+
+        records, history_sha = StatutoryFilingSelector.load_normalized_submission_history(
+            cik="0000000001",
+            submission_json=recent_data,
+            submissions_dir=submissions_dir
+        )
+
+        assert len(records) == 3  # 0001-26-0001, 0001-25-0002, 0001-24-0003
+        accs = [r.accession for r in records]
+        assert accs == ["0001-26-0001", "0001-25-0002", "0001-24-0003"]
+        assert len(history_sha) == 64
+
+    def test_ticker_presence_context_aware(self):
+        target = SeriesMetadata(
+            symbol="ARMH",
+            cik="1499655",
+            series_id="S000089658",
+            class_id="C000256275",
+            legal_name="Arm Holdings PLC ADRhedged"
+        )
+        text_with_parens = "<html><body>Arm Holdings PLC ADRhedged&#8482; (ARMH) Summary Prospectus</body></html>"
+        present, reason = StatutoryFilingSelector.check_target_presence(target, text_with_parens)
+        assert present is True
+
+        text_with_label = "<html><body>Ticker: ARMH Exchange: Cboe</body></html>"
+        present2, reason2 = StatutoryFilingSelector.check_target_presence(target, text_with_label)
+        assert present2 is True
+
+    def test_short_ticker_collision_safety(self):
+        # Target with short ticker "IT"
+        target_it = SeriesMetadata(
+            symbol="IT",
+            cik="1234567",
+            series_id="S000012345",
+            class_id="C000012345",
+            legal_name="Gartner Tech ETF"
+        )
+        # Prose containing ordinary English word "it" or "it is"
+        prose_text = "<html><body>It is important to evaluate credit and interest rate risk for all assets.</body></html>"
+        present, reason = StatutoryFilingSelector.check_target_presence(target_it, prose_text)
+        assert present is False
+
+        # Target with short ticker "AI"
+        target_ai = SeriesMetadata(
+            symbol="AI",
+            cik="1234567",
+            series_id="S000054321",
+            class_id="C000054321",
+            legal_name="C3 AI ETF"
+        )
+        prose_ai = "<html><body>The fund uses artificial intelligence (ai) techniques in portfolio management.</body></html>"
+        # Unless formatted as (AI) or Ticker: AI, must not collide
+        present_ai, _ = StatutoryFilingSelector.check_target_presence(target_ai, prose_ai)
+        assert present_ai is False
+
+    def test_concatenated_ticker_support(self):
+        target_armh = SeriesMetadata(
+            symbol="ARMH",
+            cik="1499655",
+            series_id="S000089658",
+            class_id="C000256275",
+            legal_name="Arm Holdings PLC ADRhedged"
+        )
+        target_asmh = SeriesMetadata(
+            symbol="ASMH",
+            cik="1499655",
+            series_id="S000089657",
+            class_id="C000256274",
+            legal_name="ASML Holding NV ADRhedged"
+        )
+
+        match_armh = StatutoryFilingSelector.match_target_metadata(
+            target_armh, "precidian-armhasmhandsthhs.htm", "497"
+        )
+        assert match_armh is True
+
+        match_asmh = StatutoryFilingSelector.match_target_metadata(
+            target_asmh, "precidian-armhasmhandsthhs.htm", "497"
+        )
+        assert match_asmh is True
+
+    def test_monthly_buffer_differentiation(self):
+        target_apr = SeriesMetadata(
+            symbol="APRP",
+            cik="1992104",
+            series_id="S000084000",
+            class_id="C000248000",
+            legal_name="PGIM S&P 500 Buffer 12 ETF - April"
+        )
+        # Candidate description mentions May buffer, NOT April
+        cand_may = "PGIM S&P 500 Buffer 12 ETF - May Annual Update"
+        match = StatutoryFilingSelector.match_target_metadata(target_apr, "f44136d1.htm", cand_may)
+        assert match is False
+
+        # Candidate description does not mention any month, only generic strategy
+        cand_generic = "PGIM S&P 500 Buffer 12 ETF Base Document"
+        match2 = StatutoryFilingSelector.match_target_metadata(target_apr, "f44136d1.htm", cand_generic)
+        assert match2 is False
+
+    def test_etf_vs_mutual_fund_share_class(self):
+        target_etf = SeriesMetadata(
+            symbol="VBK",
+            cik="36405",
+            series_id="S000000001",
+            class_id="C000000001",
+            legal_name="Vanguard Small-Cap Growth ETF"
+        )
+        # Candidate description is Admiral Shares (mutual fund share class)
+        desc_admiral = "VANGUARD SMALL CAP INDEX FUND SUMMARY PROSPECTUS ADMIRAL SHARES"
+        match = StatutoryFilingSelector.match_target_metadata(target_etf, "f12170d1.htm", desc_admiral)
+        assert match is False
+
+    def test_html_entity_and_punctuation_normalization(self):
+        target = SeriesMetadata(
+            symbol="AIQ",
+            cik="1432353",
+            series_id="S000061326",
+            class_id="C000198548",
+            legal_name="Global X Artificial Intelligence & Technology ETF"
+        )
+        html_doc = """
+        <html><body>
+          <title>Global X</title>
+          <div>Ticker&#58; AIQ NASDAQ&#58; AIQ</div>
+          <h1>Global X Artificial Intelligence &#38; Technology ETF</h1>
+          <h3>Principal Investment Strategies</h3>
+          <p>The Fund invests in artificial intelligence companies.</p>
+        </body></html>
+        """
+        present, reason = StatutoryFilingSelector.check_target_presence(target, html_doc)
+        assert present is True
+
+        mandate, m_reason = StatutoryFilingSelector.check_mandate_content(html_doc)
+        assert mandate is True
+
+
+class TestStatutoryFilingSelectorV120Adversarial:
+    """Adversarial tests for fail-closed edge cases (Section 27)."""
+
+    def test_two_unrelated_funds_sharing_buffer_tokens(self, tmp_path):
+        """Two funds from same issuer sharing 'S&P 500 Buffer' must not cross-match."""
+        target_aug = SeriesMetadata(
+            symbol="AUGP",
+            cik="1992104",
+            series_id="S000084008",
+            class_id="C000248008",
+            legal_name="PGIM S&P 500 Buffer 12 ETF - August"
+        )
+        # Cached document belongs to January buffer fund
+        prospectus_dir = tmp_path / "sec_prospectus"
+        prospectus_dir.mkdir(parents=True)
+        jan_doc = """
+        <html><body>
+          <h1>PGIM S&P 500 Buffer 12 ETF - January (JANP)</h1>
+          <h3>Principal Investment Strategies</h3>
+          <p>Seeks to provide buffer protection for January cycle.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001193125-26-000001_jan_buffer.htm").write_text(jan_doc, encoding="utf-8")
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["497K"],
+                    "filingDate": ["2026-01-15"],
+                    "accessionNumber": ["0001193125-26-000001"],
+                    "primaryDocument": ["jan_buffer.htm"],
+                    "primaryDocDescription": ["PGIM S&P 500 Buffer 12 ETF - January"]
+                }
+            }
+        }
+        res = StatutoryFilingSelector.select_statutory_filing(target_aug, sub_json, tmp_path)
+        assert res.selection_outcome == OUTCOME_TARGET_ABSENT_FROM_ALL
+
+    def test_correct_target_only_in_historical_submissions_file(self, tmp_path):
+        """Target whose only filing is in a historical submission JSON must be successfully selected."""
+        submissions_dir = tmp_path / "sec_submissions"
+        prospectus_dir = tmp_path / "sec_prospectus"
+        submissions_dir.mkdir(parents=True)
+        prospectus_dir.mkdir(parents=True)
+
+        target = SeriesMetadata(
+            symbol="HISTETF",
+            cik="9999999",
+            series_id="S000099999",
+            class_id="C000099999",
+            legal_name="Historical Pioneer Growth ETF"
+        )
+
+        hist_doc = """
+        <html><body>
+          <h1>Historical Pioneer Growth ETF (HISTETF)</h1>
+          <p>Series S000099999 Class C000099999</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Seeks long term capital growth.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0000999999-23-000001_hist_growth.htm").write_text(hist_doc, encoding="utf-8")
+
+        recent_json = {
+            "filings": {
+                "recent": {
+                    "form": ["497K"],
+                    "filingDate": ["2026-08-01"],
+                    "accessionNumber": ["0000999999-26-000001"],
+                    "primaryDocument": ["recent_other.htm"],
+                    "primaryDocDescription": ["Other Modern ETF"]
+                },
+                "files": [
+                    {"name": "CIK0009999999-submissions-001.json", "filingCount": 1}
+                ]
+            }
+        }
+        hist_json = {
+            "form": ["497K"],
+            "filingDate": ["2023-05-15"],
+            "accessionNumber": ["0000999999-23-000001"],
+            "primaryDocument": ["hist_growth.htm"],
+            "primaryDocDescription": ["Historical Pioneer Growth ETF Summary Prospectus"]
+        }
+        (submissions_dir / "CIK0009999999-submissions-001.json").write_text(json.dumps(hist_json), encoding="utf-8")
+
+        res = StatutoryFilingSelector.select_statutory_filing(target, recent_json, tmp_path)
+        assert res.selection_outcome == OUTCOME_SELECTED_SUMMARY_PROSPECTUS
+        assert res.selected_accession == "0000999999-23-000001"
+        assert res.document_filename == "hist_growth.htm"

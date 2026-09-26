@@ -1,0 +1,1127 @@
+{
+  "residual_35_cache_misses": [
+    {
+      "symbol": "APRP",
+      "cik": "1992104",
+      "series_id": "S000083281",
+      "class_id": "C000246808",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - April",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001992104-26-000047",
+      "candidate_form": "497K",
+      "candidate_document": "f44578d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "AUGP",
+      "cik": "1992104",
+      "series_id": "S000083276",
+      "class_id": "C000246803",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - August",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "BUFP",
+      "cik": "1992104",
+      "series_id": "S000085401",
+      "class_id": "C000250440",
+      "legal_name": "PGIM Laddered S&P 500 Buffer 12 ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "DECP",
+      "cik": "1992104",
+      "series_id": "S000083272",
+      "class_id": "C000246799",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - December",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "FEBP",
+      "cik": "1992104",
+      "series_id": "S000083283",
+      "class_id": "C000246810",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - February",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "HWSM",
+      "cik": "1145022",
+      "series_id": "S000091359",
+      "class_id": "C000259016",
+      "legal_name": "Hotchkis & Wiley SMID Cap Diversified Value Fund",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0000894189-26-020921",
+      "candidate_form": "497K",
+      "candidate_document": "hwmidcapvaluefundsummarypro.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "JANP",
+      "cik": "1992104",
+      "series_id": "S000083284",
+      "class_id": "C000246811",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - January",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "JULP",
+      "cik": "1992104",
+      "series_id": "S000083277",
+      "class_id": "C000246804",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - July",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "JUNP",
+      "cik": "1992104",
+      "series_id": "S000083278",
+      "class_id": "C000246805",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - June",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "MAYP",
+      "cik": "1992104",
+      "series_id": "S000083280",
+      "class_id": "C000246807",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - May",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001992104-26-000068",
+      "candidate_form": "497K",
+      "candidate_document": "f45029d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "MRCP",
+      "cik": "1992104",
+      "series_id": "S000083282",
+      "class_id": "C000246809",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - March",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-083043",
+      "candidate_form": "497K",
+      "candidate_document": "f44268d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "MSLC",
+      "cik": "875186",
+      "series_id": "S000088119",
+      "class_id": "C000254172",
+      "legal_name": "Morgan Stanley Pathway Large Cap Equity ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-13-170676",
+      "candidate_form": "497K",
+      "candidate_document": "d524551d497k.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "MSSM",
+      "cik": "875186",
+      "series_id": "S000088120",
+      "class_id": "C000254173",
+      "legal_name": "Morgan Stanley Pathway Small-Mid Cap Equity ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-13-170688",
+      "candidate_form": "497K",
+      "candidate_document": "d524761d497k.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "NOVP",
+      "cik": "1992104",
+      "series_id": "S000083273",
+      "class_id": "C000246800",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - November",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "OCTP",
+      "cik": "1992104",
+      "series_id": "S000083274",
+      "class_id": "C000246801",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - October",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBAP",
+      "cik": "1992104",
+      "series_id": "S000083291",
+      "class_id": "C000246818",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - April",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001992104-26-000047",
+      "candidate_form": "497K",
+      "candidate_document": "f44578d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBAU",
+      "cik": "1992104",
+      "series_id": "S000083287",
+      "class_id": "C000246814",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - August",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBDE",
+      "cik": "1992104",
+      "series_id": "S000083268",
+      "class_id": "C000246795",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - December",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBFB",
+      "cik": "1992104",
+      "series_id": "S000083270",
+      "class_id": "C000246797",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - February",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBFR",
+      "cik": "1992104",
+      "series_id": "S000085402",
+      "class_id": "C000250441",
+      "legal_name": "PGIM Laddered S&P 500 Buffer 20 ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBJA",
+      "cik": "1992104",
+      "series_id": "S000083271",
+      "class_id": "C000246798",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - January",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBJL",
+      "cik": "1992104",
+      "series_id": "S000083288",
+      "class_id": "C000246815",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - July",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBJN",
+      "cik": "1992104",
+      "series_id": "S000083289",
+      "class_id": "C000246816",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - June",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBMR",
+      "cik": "1992104",
+      "series_id": "S000083269",
+      "class_id": "C000246796",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - March",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-083043",
+      "candidate_form": "497K",
+      "candidate_document": "f44268d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBMY",
+      "cik": "1992104",
+      "series_id": "S000083290",
+      "class_id": "C000246817",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - May",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001992104-26-000068",
+      "candidate_form": "497K",
+      "candidate_document": "f45029d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBNV",
+      "cik": "1992104",
+      "series_id": "S000083279",
+      "class_id": "C000246806",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - November",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBOC",
+      "cik": "1992104",
+      "series_id": "S000083285",
+      "class_id": "C000246812",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - October",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "PBSE",
+      "cik": "1992104",
+      "series_id": "S000083286",
+      "class_id": "C000246813",
+      "legal_name": "PGIM S&P 500 Buffer 20 ETF - September",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "SEPP",
+      "cik": "1992104",
+      "series_id": "S000083275",
+      "class_id": "C000246802",
+      "legal_name": "PGIM S&P 500 Buffer 12 ETF - September",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001193125-26-060871",
+      "candidate_form": "497K",
+      "candidate_document": "f44136d1.htm",
+      "failure_class": "FALSE_POSITIVE_BUFFER_MATCHING"
+    },
+    {
+      "symbol": "TOAK",
+      "cik": "1359057",
+      "series_id": "S000086569",
+      "class_id": "C000252157",
+      "legal_name": "Manager Directed Portfolios Twin Oak Short Horizon Absolute Return ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0000894189-26-022658",
+      "candidate_form": "497",
+      "candidate_document": "twinoaksupplement-reograni.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "VBK",
+      "cik": "36405",
+      "series_id": "S000002846",
+      "class_id": "C000007801",
+      "legal_name": "Vanguard Morningstar Small-Cap Growth ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001683863-22-003956",
+      "candidate_form": "497K",
+      "candidate_document": "f12170d1.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "VBR",
+      "cik": "36405",
+      "series_id": "S000002847",
+      "class_id": "C000007804",
+      "legal_name": "Vanguard Morningstar Small-Cap Value ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001683863-22-003956",
+      "candidate_form": "497K",
+      "candidate_document": "f12170d1.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "VOE",
+      "cik": "36405",
+      "series_id": "S000012757",
+      "class_id": "C000034430",
+      "legal_name": "Vanguard Morningstar Mid-Cap Value ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001683863-21-002833",
+      "candidate_form": "497K",
+      "candidate_document": "f8724d1.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "VOT",
+      "cik": "36405",
+      "series_id": "S000012756",
+      "class_id": "C000034428",
+      "legal_name": "Vanguard Morningstar Mid-Cap Growth ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001683863-21-002833",
+      "candidate_form": "497K",
+      "candidate_document": "f8724d1.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    },
+    {
+      "symbol": "VV",
+      "cik": "36405",
+      "series_id": "S000002843",
+      "class_id": "C000007790",
+      "legal_name": "Vanguard Morningstar Large-Cap ETF",
+      "v1_1_0_outcome": "SOURCE_CACHE_MISS",
+      "candidate_accession": "0001683863-21-002800",
+      "candidate_form": "497K",
+      "candidate_document": "f8817d1.htm",
+      "failure_class": "SHARE_CLASS_OR_SUBMISSION_MISS"
+    }
+  ],
+  "confirmed_7_false_negatives": [
+    {
+      "symbol": "ADIV",
+      "cik": "919160",
+      "legal_name": "Guinness Atkinson Asia Pacific Dividend Builder ETF",
+      "series_id": "S000069134",
+      "class_id": "C000220961",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "fp0004804_497k.htm",
+      "expected_qualifying_accession": "0001398344-12-001591",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "ADPV",
+      "cik": "1650149",
+      "legal_name": "Adaptiv Select ETF",
+      "series_id": "S000077998",
+      "class_id": "C000238720",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "adaptivselectetf-497k2026.htm",
+      "expected_qualifying_accession": "0000894189-26-007022",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "AFOS",
+      "cik": "1592900",
+      "legal_name": "ARS Focused Opportunity Strategy ETF",
+      "series_id": "S000092983",
+      "class_id": "C000261037",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "0001592900-26-004298_ck0001592900-20260924.htm",
+      "expected_qualifying_accession": "NONE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "AIQ",
+      "cik": "1432353",
+      "legal_name": "Global X Artificial Intelligence & Technology ETF",
+      "series_id": "S000061326",
+      "class_id": "C000198548",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "globalxpurecapsmmsciinform.htm",
+      "expected_qualifying_accession": "0001432353-26-000487",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "ARMH",
+      "cik": "1499655",
+      "legal_name": "Arm Holdings PLC ADRhedged",
+      "series_id": "S000089658",
+      "class_id": "C000256275",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "0001499655-26-000023_precidian-armhasmhandsthhs.htm",
+      "expected_qualifying_accession": "NONE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "ASMH",
+      "cik": "1499655",
+      "legal_name": "ASML Holding NV ADRhedged",
+      "series_id": "S000089657",
+      "class_id": "C000256274",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "0001499655-26-000023_precidian-armhasmhandsthhs.htm",
+      "expected_qualifying_accession": "NONE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "ATTR",
+      "cik": "1592900",
+      "legal_name": "Arin Tactical Tail Risk ETF",
+      "series_id": "S000094861",
+      "class_id": "C000263407",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "expected_qualifying_document": "alphaarchitecttailrisketf.htm",
+      "expected_qualifying_accession": "0001592900-26-000388",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    }
+  ],
+  "sampled_40_absence_targets": [
+    {
+      "symbol": "AAA",
+      "cik": "1587982",
+      "legal_name": "Alternative Access First Priority CLO Bond ETF",
+      "series_id": "S000076539",
+      "class_id": "C000236514",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AAXJ",
+      "cik": "1100663",
+      "legal_name": "iShares MSCI All Country Asia ex Japan ETF",
+      "series_id": "S000022496",
+      "class_id": "C000065072",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACES",
+      "cik": "1414040",
+      "legal_name": "ALPS Clean Energy ETF",
+      "series_id": "S000062205",
+      "class_id": "C000201215",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACGR",
+      "cik": "1710607",
+      "legal_name": "American Century Large Cap Growth ETF",
+      "series_id": "S000072412",
+      "class_id": "C000228612",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACLC",
+      "cik": "1710607",
+      "legal_name": "American Century Large Cap Equity ETF",
+      "series_id": "S000068307",
+      "class_id": "C000218646",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACSI",
+      "cik": "1742912",
+      "legal_name": "American Customer Satisfaction ETF",
+      "series_id": "S000071844",
+      "class_id": "C000227368",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACTS",
+      "cik": "2069687",
+      "legal_name": "FIS Tactical Equity ETF",
+      "series_id": "S000101712",
+      "class_id": "C000271962",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACVF",
+      "cik": "1771146",
+      "legal_name": "American Conservative Values ETF",
+      "series_id": "S000066215",
+      "class_id": "C000213968",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACWI",
+      "cik": "1100663",
+      "legal_name": "iShares MSCI ACWI ETF",
+      "series_id": "S000021461",
+      "class_id": "C000061364",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACWV",
+      "cik": "930667",
+      "legal_name": "iShares MSCI Global Min Vol Factor ETF",
+      "series_id": "S000032498",
+      "class_id": "C000100213",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ACYN",
+      "cik": "1329377",
+      "legal_name": "FT Vest Laddered Autocallable Barrier & Income ETF",
+      "series_id": "S000093293",
+      "class_id": "C000261458",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ADIV",
+      "cik": "919160",
+      "legal_name": "Guinness Atkinson Asia Pacific Dividend Builder ETF",
+      "series_id": "S000069134",
+      "class_id": "C000220961",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "ADPV",
+      "cik": "1650149",
+      "legal_name": "Adaptiv Select ETF",
+      "series_id": "S000077998",
+      "class_id": "C000238720",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "ADVE",
+      "cik": "923184",
+      "legal_name": "Matthews Asia Dividend Active ETF",
+      "series_id": "S000081866",
+      "class_id": "C000245023",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AFDM",
+      "cik": "1424212",
+      "legal_name": "First Trust Active Factor International ETF",
+      "series_id": "S000052736",
+      "class_id": "C000165608",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AFEM",
+      "cik": "1424212",
+      "legal_name": "First Trust Active Factor Emerging Markets ETF",
+      "series_id": "S000052737",
+      "class_id": "C000165609",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AFGR",
+      "cik": "1667919",
+      "legal_name": "First Trust Multi-Manager Large Growth ETF",
+      "series_id": "S000067359",
+      "class_id": "C000216581",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AFLG",
+      "cik": "1667919",
+      "legal_name": "First Trust Active Factor Large Cap ETF",
+      "series_id": "S000066788",
+      "class_id": "C000215122",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AFOS",
+      "cik": "1592900",
+      "legal_name": "ARS Focused Opportunity Strategy ETF",
+      "series_id": "S000092983",
+      "class_id": "C000261037",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "AGIQ",
+      "cik": "1742912",
+      "legal_name": "SoFi Agentic AI ETF",
+      "series_id": "S000094822",
+      "class_id": "C000263366",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIFD",
+      "cik": "1831313",
+      "legal_name": "TCW Artificial Intelligence ETF",
+      "series_id": "S000084288",
+      "class_id": "C000248589",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIPI",
+      "cik": "1771146",
+      "legal_name": "REX AI Equity Premium Income ETF",
+      "series_id": "S000085093",
+      "class_id": "C000249958",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIPO",
+      "cik": "1924868",
+      "legal_name": "Defiance AI & Power Infrastructure ETF",
+      "series_id": "S000090210",
+      "class_id": "C000257147",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIQ",
+      "cik": "1432353",
+      "legal_name": "Global X Artificial Intelligence & Technology ETF",
+      "series_id": "S000061326",
+      "class_id": "C000198548",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "AIRR",
+      "cik": "1552740",
+      "legal_name": "First Trust RBA American Industrial Renaissance ETF",
+      "series_id": "S000044209",
+      "class_id": "C000137472",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIVC",
+      "cik": "1633061",
+      "legal_name": "Amplify Bloomberg AI Equal Weight ETF",
+      "series_id": "S000082270",
+      "class_id": "C000245556",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AIYY",
+      "cik": "1924868",
+      "legal_name": "YieldMax AI Option Income Strategy ETF",
+      "series_id": "S000082235",
+      "class_id": "C000245519",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "AMOM",
+      "cik": "1547950",
+      "legal_name": "QRAFT AI-Enhanced U.S. Large Cap Momentum ETF",
+      "series_id": "S000065358",
+      "class_id": "C000211433",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ARB",
+      "cik": "1779306",
+      "legal_name": "AltShares Merger Arbitrage ETF",
+      "series_id": "S000067196",
+      "class_id": "C000216184",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ARKD",
+      "cik": "1579982",
+      "legal_name": "ARK DIET Q1 Buffer ETF",
+      "series_id": "S000095343",
+      "class_id": "C000264062",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ARKF",
+      "cik": "1579982",
+      "legal_name": "ARK Blockchain & Fintech Innovation ETF",
+      "series_id": "S000064752",
+      "class_id": "C000209702",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ARMH",
+      "cik": "1499655",
+      "legal_name": "Arm Holdings PLC ADRhedged",
+      "series_id": "S000089658",
+      "class_id": "C000256275",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "ARMY",
+      "cik": "1944285",
+      "legal_name": "Tema International Defense ETF",
+      "series_id": "S000093386",
+      "class_id": "C000261603",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ARP",
+      "cik": "890540",
+      "legal_name": "PMV Adaptive Risk Parity ETF",
+      "series_id": "S000079261",
+      "class_id": "C000240238",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ASIA",
+      "cik": "923184",
+      "legal_name": "Matthews Pacific Tiger Active ETF",
+      "series_id": "S000081863",
+      "class_id": "C000245020",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ASMH",
+      "cik": "1499655",
+      "legal_name": "ASML Holding NV ADRhedged",
+      "series_id": "S000089657",
+      "class_id": "C000256274",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "symbol": "ATCL",
+      "cik": "2043954",
+      "legal_name": "REX Autocallable Income ETF",
+      "series_id": "S000097982",
+      "class_id": "C000267534",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "ATTR",
+      "cik": "1592900",
+      "legal_name": "Arin Tactical Tail Risk ETF",
+      "series_id": "S000094861",
+      "class_id": "C000263407",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "FALSE_NEGATIVE",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "symbol": "BABW",
+      "cik": "1976517",
+      "legal_name": "Roundhill BABA WeeklyPay ETF",
+      "series_id": "S000092335",
+      "class_id": "C000260273",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "symbol": "BAFE",
+      "cik": "1593547",
+      "legal_name": "Brown Advisory Flexible Equity ETF",
+      "series_id": "S000088454",
+      "class_id": "C000254727",
+      "v1_1_0_outcome": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
+      "audited_verdict": "CORRECT_ABSENCE",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    }
+  ],
+  "original_10_certified_targets": [
+    {
+      "symbol": "GQQQ",
+      "cik": "1592900",
+      "series_id": "S000088111",
+      "class_id": "C000254131",
+      "legal_name": "Astoria US Quality Growth Kings ETF",
+      "trust_name": "EA Series TRUST",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "ROE",
+      "cik": "1592900",
+      "series_id": "S000081203",
+      "class_id": "C000244015",
+      "legal_name": "Astoria US Equal Weight Quality Kings ETF",
+      "trust_name": "EA Series TRUST",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "AGGA",
+      "cik": "1592900",
+      "series_id": "S000091819",
+      "class_id": "C000259601",
+      "legal_name": "EA Astoria Beacon Dynamic Core US Fixed Income ETF",
+      "trust_name": "EA Series TRUST",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGCP",
+      "cik": "1870117",
+      "series_id": "S000074251",
+      "class_id": "C000231860",
+      "legal_name": "Capital Group Core Plus Income ETF",
+      "trust_name": "Capital Group Fixed Income ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGMS",
+      "cik": "1870117",
+      "series_id": "S000077688",
+      "class_id": "C000238176",
+      "legal_name": "Capital Group Short Duration Municipal Income ETF",
+      "trust_name": "Capital Group Fixed Income ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGSD",
+      "cik": "1870117",
+      "series_id": "S000074252",
+      "class_id": "C000231861",
+      "legal_name": "Capital Group Short Duration Income ETF",
+      "trust_name": "Capital Group Fixed Income ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGHY",
+      "cik": "1870117",
+      "series_id": "S000080123",
+      "class_id": "C000241982",
+      "legal_name": "Capital Group High Yield Bond ETF",
+      "trust_name": "Capital Group Fixed Income ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGGG",
+      "cik": "2034928",
+      "series_id": "S000092695",
+      "class_id": "C000260959",
+      "legal_name": "Capital Group U.S. Large Growth ETF",
+      "trust_name": "Capital Group Active ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGMM",
+      "cik": "2034928",
+      "series_id": "S000088874",
+      "class_id": "C000255476",
+      "legal_name": "Capital Group U.S. Small and Mid Cap ETF",
+      "trust_name": "Capital Group Active ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    },
+    {
+      "symbol": "CGVV",
+      "cik": "2034928",
+      "series_id": "S000092696",
+      "class_id": "C000260960",
+      "legal_name": "Capital Group U.S. Large Value ETF",
+      "trust_name": "Capital Group Active ETF Trust",
+      "expected_outcome": "SELECTED_TARGET_STATUTORY_PROSPECTUS"
+    }
+  ],
+  "residual_16_historical_crawl_targets": [
+    {
+      "symbol": "GEM",
+      "cik": "1479026",
+      "series_id": "S000048292",
+      "class_id": "C000152548",
+      "legal_name": "Goldman Sachs ActiveBeta Emerging Markets Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GGUS",
+      "cik": "1479026",
+      "series_id": "S000083005",
+      "class_id": "C000246478",
+      "legal_name": "Goldman Sachs MarketBeta Russell 1000 Growth Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GIND",
+      "cik": "1479026",
+      "series_id": "S000089154",
+      "class_id": "C000255663",
+      "legal_name": "Goldman Sachs India Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GPIX",
+      "cik": "1479026",
+      "series_id": "S000081511",
+      "class_id": "C000244421",
+      "legal_name": "Goldman Sachs S&P 500 Premium Income ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSEE",
+      "cik": "1479026",
+      "series_id": "S000066533",
+      "class_id": "C000214554",
+      "legal_name": "Goldman Sachs MarketBeta Emerging Markets Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSEU",
+      "cik": "1479026",
+      "series_id": "S000048293",
+      "class_id": "C000152549",
+      "legal_name": "Goldman Sachs ActiveBeta Europe Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSID",
+      "cik": "1479026",
+      "series_id": "S000066532",
+      "class_id": "C000214553",
+      "legal_name": "Goldman Sachs MarketBeta International Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSIE",
+      "cik": "1479026",
+      "series_id": "S000048289",
+      "class_id": "C000152545",
+      "legal_name": "Goldman Sachs ActiveBeta International Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSJY",
+      "cik": "1479026",
+      "series_id": "S000048294",
+      "class_id": "C000152550",
+      "legal_name": "Goldman Sachs ActiveBeta Japan Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSLC",
+      "cik": "1479026",
+      "series_id": "S000048295",
+      "class_id": "C000152551",
+      "legal_name": "Goldman Sachs ActiveBeta U.S. Large Cap Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GSUS",
+      "cik": "1479026",
+      "series_id": "S000066535",
+      "class_id": "C000214556",
+      "legal_name": "Goldman Sachs MarketBeta U.S. Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "GVUS",
+      "cik": "1479026",
+      "series_id": "S000083006",
+      "class_id": "C000246479",
+      "legal_name": "Goldman Sachs MarketBeta Russell 1000 Value Equity ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "VT",
+      "cik": "857489",
+      "series_id": "S000022482",
+      "class_id": "C000065038",
+      "legal_name": "Vanguard Total World Stock Index ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "XLC",
+      "cik": "1064641",
+      "series_id": "S000062095",
+      "class_id": "C000201048",
+      "legal_name": "State Street Communication Services Select Sector SPDR ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "XLFI",
+      "cik": "1064641",
+      "series_id": "S000093837",
+      "class_id": "C000262285",
+      "legal_name": "State Street Financial Select Sector SPDR Premium Income ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    },
+    {
+      "symbol": "XOEX",
+      "cik": "1503123",
+      "series_id": "S000077074",
+      "class_id": "C000237218",
+      "legal_name": "Xtrackers S&P 100 Ex Top 20 ETF",
+      "expected_outcome": "SELECTED_STATUTORY_DOCUMENT"
+    }
+  ]
+}
