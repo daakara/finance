@@ -44,7 +44,7 @@ from scripts.research.document_index_engine import (
     NORMALIZATION_VERSION,
 )
 
-SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_0_0"
+SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_1_0"
 SNAPSHOT_BOUNDARY = "2026-09-24"
 SNAPSHOT_BOUNDARY_ISO = "2026-09-24T23:59:59Z"
 MAX_STRATEGY_LENGTH_CEILING = 50000
@@ -351,19 +351,19 @@ class SeriesProspectusMapper:
             rule_id = "MAPPING_RULE_EXACT_SERIES_ID"
             identity_evidence = f"Exact series ID {sid} matched {len(sid_occs)} substantive occurrence(s)"
             # Pick occurrence closest to a substantive strategy section
-            chosen_anchor = cls._select_anchor_closest_to_strategy(sid_occs, doc_index.strategy_anchors)
+            chosen_anchor = cls._select_anchor_closest_to_strategy(sid_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors)
 
         elif cid_occs:
             mapping_outcome = cls.OUTCOME_EXACT_CLASS_ID
             rule_id = "MAPPING_RULE_EXACT_CLASS_ID"
             identity_evidence = f"Exact class ID {cid} matched {len(cid_occs)} substantive occurrence(s) (class-series verified)"
-            chosen_anchor = cls._select_anchor_closest_to_strategy(cid_occs, doc_index.strategy_anchors)
+            chosen_anchor = cls._select_anchor_closest_to_strategy(cid_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors)
 
         elif name_occs:
             mapping_outcome = cls.OUTCOME_EXACT_LEGAL_NAME
             rule_id = "MAPPING_RULE_EXACT_LEGAL_NAME"
             identity_evidence = f"Exact legal fund name '{raw_name}' matched {len(name_occs)} occurrence(s)"
-            chosen_anchor = cls._select_anchor_closest_to_strategy(name_occs, doc_index.strategy_anchors)
+            chosen_anchor = cls._select_anchor_closest_to_strategy(name_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors)
 
         else:
             if not sid_occs and not cid_occs and not name_occs:
@@ -461,18 +461,25 @@ class SeriesProspectusMapper:
             sec_name = best_strat.heading_name
             # Strategy section runs from its anchor until next delimiter or end of series block
             strat_rel_start = best_strat.start_offset - start_boundary
-            strat_text = series_block[strat_rel_start:]
-            source_section_len = len(strat_text)
-            if source_section_len > MAX_STRATEGY_LENGTH_CEILING:
-                return cls._fail_result(
-                    target, doc_index, cls.OUTCOME_EXPLICIT_TRUNCATION_FAILURE,
-                    "RULE_STRATEGY_LENGTH_EXCEEDED_CEILING",
-                    f"Source strategy section length ({source_section_len}) exceeds ceiling ({MAX_STRATEGY_LENGTH_CEILING})"
-                )
+            candidate_block = series_block[strat_rel_start:]
+
+            # Terminate at next standard item heading
+            term_m = re.search(
+                r"\b(Principal\s+Risks?|Principal\s+Risk\s+Factors|Principal\s+Investment\s+Risks|Annual\s+Fund\s+Operating\s+Expenses|Portfolio\s+Management|Fund\s+Management|Purchase\s+and\s+Sale|Tax\s+Information|Payments\s+to\s+Broker-Dealers|Financial\s+Intermediary\s+Compensation)\b",
+                candidate_block[50:],
+                re.IGNORECASE,
+            )
+            if term_m:
+                raw_strat = candidate_block[: 50 + term_m.start()]
+            else:
+                raw_strat = candidate_block
+
             # Clean HTML tags from strategy section
-            if "<" in strat_text and ">" in strat_text:
-                soup = BeautifulSoup(strat_text, "html.parser")
+            if "<" in raw_strat and ">" in raw_strat:
+                soup = BeautifulSoup(raw_strat, "html.parser")
                 strat_text = soup.get_text(separator=" ", strip=True)
+            else:
+                strat_text = raw_strat.strip()
 
         source_section_len = len(strat_text)
         is_truncated = False
@@ -553,25 +560,86 @@ class SeriesProspectusMapper:
         cls,
         occurrences: List[Occurrence],
         strategy_anchors: List[StrategyAnchor],
+        text: str = "",
+        neighbors: Optional[List[SeriesMetadata]] = None,
     ) -> int:
         if not occurrences:
             return 0
         if not strategy_anchors:
             return occurrences[0].start_offset
 
-        best_anchor = occurrences[0].start_offset
-        min_dist = float("inf")
+        if not text:
+            best_anchor = occurrences[0].start_offset
+            min_dist = float("inf")
+            for occ in occurrences:
+                for sa in strategy_anchors:
+                    if sa.start_offset >= occ.start_offset:
+                        dist = sa.start_offset - occ.start_offset
+                        if dist < min_dist:
+                            min_dist = dist
+                            best_anchor = occ.start_offset
+                        break
+            return best_anchor
 
+        # Check for start of Statement of Additional Information (Part B)
+        sai_start = float("inf")
+        if text:
+            m_sai = re.search(
+                r"<h[1-4][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|<b>[^<]*Statement\s+of\s+Additional\s+Information|\bStatement\s+of\s+Additional\s+Information\b",
+                text[25000:],
+                re.IGNORECASE,
+            )
+            if m_sai:
+                sai_start = 25000 + m_sai.start()
+
+        neighbor_names = [n.legal_name.lower().strip() for n in (neighbors or []) if n.legal_name]
+
+        scored_candidates = []
         for occ in occurrences:
-            for sa in strategy_anchors:
-                if sa.start_offset >= occ.start_offset:
-                    dist = sa.start_offset - occ.start_offset
-                    if dist < min_dist:
-                        min_dist = dist
-                        best_anchor = occ.start_offset
+            o_start = occ.start_offset
+            ahead = text[o_start: o_start + 35000]
+
+            is_clustered_cover = False
+            first_1k = ahead[:1500].lower()
+            for nname in neighbor_names:
+                if nname and nname in first_1k:
+                    is_clustered_cover = True
                     break
 
-        return best_anchor
+            closest_sa_dist = float("inf")
+            for sa in strategy_anchors:
+                if sa.start_offset >= o_start:
+                    dist = sa.start_offset - o_start
+                    if dist < closest_sa_dist:
+                        closest_sa_dist = dist
+                    break
+
+            has_obj = bool(re.search(r"Investment\s+Objective", ahead, re.IGNORECASE))
+            has_fees = bool(re.search(r"Fees?\s+and\s+Expenses|Annual\s+Fund\s+Operating\s+Expenses|Expense\s+Example", ahead, re.IGNORECASE))
+            has_strat = bool(re.search(r"Principal\s+Investment\s+Strateg", ahead, re.IGNORECASE))
+
+            score = 0
+            if not is_clustered_cover:
+                score += 100
+            if has_obj:
+                score += 50
+            if has_fees:
+                score += 100
+            if has_strat:
+                score += 50
+            if has_obj and has_fees and has_strat:
+                score += 150
+            if closest_sa_dist < 30000:
+                score += max(0, 50 - int(closest_sa_dist / 600))
+            if o_start >= sai_start:
+                score -= 300
+
+            scored_candidates.append((score, closest_sa_dist, o_start))
+
+        scored_candidates.sort(key=lambda x: (-x[0], x[1]))
+        if scored_candidates and scored_candidates[0][0] >= 150:
+            return scored_candidates[0][2]
+        return None
 
     @classmethod
     def _extract_strategy_from_block(cls, block: str) -> Tuple[str, str]:
@@ -585,10 +653,17 @@ class SeriesProspectusMapper:
                 found_start = m.start()
                 sec_name = m.group(0)
                 extracted = block[found_start:]
+                term_m = re.search(
+                    r"\b(Principal\s+Risks?|Principal\s+Risk\s+Factors|Principal\s+Investment\s+Risks|Annual\s+Fund\s+Operating\s+Expenses|Portfolio\s+Management|Fund\s+Management|Purchase\s+and\s+Sale|Tax\s+Information|Payments\s+to\s+Broker-Dealers|Financial\s+Intermediary\s+Compensation)\b",
+                    extracted[50:],
+                    re.IGNORECASE,
+                )
+                if term_m:
+                    extracted = extracted[: 50 + term_m.start()]
                 if "<" in extracted and ">" in extracted:
                     soup = BeautifulSoup(extracted[:MAX_STRATEGY_LENGTH_CEILING], "html.parser")
                     extracted = soup.get_text(separator=" ", strip=True)
-                return extracted, sec_name
+                return extracted.strip(), sec_name
         return "", "SECTION_NOT_FOUND"
 
     @classmethod

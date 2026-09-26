@@ -288,31 +288,28 @@ class DocumentIndex:
             )
             self.class_occurrences.setdefault(cid, []).append(occ)
 
-        # 3. Known legal names scan (linear string find, avoids catastrophic backtracking)
-        text_lower = text.lower()
+        # 3. Known legal names scan (whitespace-flexible regex to accommodate statutory linebreaks/spacing)
         for meta in known_metadata:
             raw_name = meta.get("legal_name", "")
             if raw_name and len(raw_name.strip()) > 5:
                 name_clean = DocumentNormalizer.normalize_name(raw_name)
-                # Search occurrences using case-insensitive find
-                pos = 0
-                norm_lower = raw_name.lower().strip()
-                while True:
-                    idx = text_lower.find(norm_lower, pos)
-                    if idx == -1:
-                        break
-                    occ = Occurrence(
-                        matched_term=raw_name,
-                        term_type="LEGAL_NAME",
-                        start_offset=idx,
-                        end_offset=idx + len(raw_name),
-                        is_toc_or_cross_ref=self._is_in_toc(idx),
-                        context_snippet=text[max(0, idx - 50): min(len(text), idx + len(raw_name) + 50)],
-                    )
-                    self.legal_name_occurrences.setdefault(raw_name, []).append(occ)
-                    if name_clean:
-                        self.normalized_name_occurrences.setdefault(name_clean, []).append(occ)
-                    pos = idx + len(norm_lower)
+                words = raw_name.strip().split()
+                name_pat = r"\s+".join(re.escape(w) for w in words)
+                try:
+                    for m in re.finditer(name_pat, text, re.IGNORECASE):
+                        occ = Occurrence(
+                            matched_term=raw_name,
+                            term_type="LEGAL_NAME",
+                            start_offset=m.start(),
+                            end_offset=m.end(),
+                            is_toc_or_cross_ref=self._is_in_toc(m.start()),
+                            context_snippet=text[max(0, m.start() - 50): min(len(text), m.end() + 50)],
+                        )
+                        self.legal_name_occurrences.setdefault(raw_name, []).append(occ)
+                        if name_clean:
+                            self.normalized_name_occurrences.setdefault(name_clean, []).append(occ)
+                except re.error:
+                    pass
 
     def _to_deterministic_dict(self) -> Dict[str, Any]:
         """Converts index into a serializable deterministic dictionary."""
