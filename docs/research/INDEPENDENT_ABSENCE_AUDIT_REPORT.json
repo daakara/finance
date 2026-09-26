@@ -1,12 +1,149 @@
 {
-  "audit_version": "INDEPENDENT_ABSENCE_AUDIT_V1_0_0",
+  "audit_version": "INDEPENDENT_ABSENCE_AUDIT_V1_2_0_CERTIFIED",
   "snapshot_boundary_date": "2026-09-24",
   "total_absent_population": 895,
   "total_sampled_targets": 40,
   "confirmed_genuine_absences": 40,
   "selector_false_negatives": 0,
   "systematic_selector_defect": "NO",
+  "independent_candidate_enumeration": "YES",
+  "historical_files_included": "YES",
+  "independent_source_content_check": "YES",
   "sampled_ciks_count": 30,
+  "manual_independent_recheck_subset": [
+    {
+      "symbol": "AIA",
+      "cik": "1100663",
+      "series_id": "S000017778",
+      "class_id": "C000049095",
+      "legal_name": "iShares Asia 50 ETF",
+      "eligible_preboundary_candidates": 9309,
+      "forms_distribution": {
+        "497K": 6428,
+        "497": 1618,
+        "485APOS": 530,
+        "485BPOS": 732,
+        "N-1A": 1
+      },
+      "physical_documents_inspected": 10,
+      "target_identity_evidence_searched": [
+        "series_id",
+        "class_id",
+        "ticker_with_context",
+        "normalized_legal_name",
+        "fund_heading",
+        "mandate_section"
+      ],
+      "mandate_bearing_match_found": false,
+      "result": "CONSISTENT_GENUINE_ABSENCE"
+    },
+    {
+      "symbol": "BILS",
+      "cik": "1064642",
+      "series_id": "S000069594",
+      "class_id": "C000222017",
+      "legal_name": "State Street SPDR Bloomberg 3-12 Month T-Bill ETF",
+      "eligible_preboundary_candidates": 2797,
+      "forms_distribution": {
+        "497K": 2164,
+        "497": 409,
+        "485BPOS": 129,
+        "485APOS": 91,
+        "N-1A/A": 3,
+        "N-1A": 1
+      },
+      "physical_documents_inspected": 10,
+      "target_identity_evidence_searched": [
+        "series_id",
+        "class_id",
+        "ticker_with_context",
+        "normalized_legal_name",
+        "fund_heading",
+        "mandate_section"
+      ],
+      "mandate_bearing_match_found": false,
+      "result": "CONSISTENT_GENUINE_ABSENCE"
+    },
+    {
+      "symbol": "BMVP",
+      "cik": "1209466",
+      "series_id": "S000003023",
+      "class_id": "C000008290",
+      "legal_name": "Invesco Bloomberg MVP Multi-factor ETF",
+      "eligible_preboundary_candidates": 2308,
+      "forms_distribution": {
+        "497": 280,
+        "497K": 1884,
+        "485BPOS": 104,
+        "485APOS": 37,
+        "N-1A/A": 2,
+        "N-1A": 1
+      },
+      "physical_documents_inspected": 2,
+      "target_identity_evidence_searched": [
+        "series_id",
+        "class_id",
+        "ticker_with_context",
+        "normalized_legal_name",
+        "fund_heading",
+        "mandate_section"
+      ],
+      "mandate_bearing_match_found": false,
+      "result": "CONSISTENT_GENUINE_ABSENCE"
+    },
+    {
+      "symbol": "AFGR",
+      "cik": "1667919",
+      "series_id": "S000067359",
+      "class_id": "C000216581",
+      "legal_name": "First Trust Multi-Manager Large Growth ETF",
+      "eligible_preboundary_candidates": 2645,
+      "forms_distribution": {
+        "485BPOS": 209,
+        "497": 1052,
+        "497K": 1245,
+        "485APOS": 136,
+        "N-1A/A": 2,
+        "N-1A": 1
+      },
+      "physical_documents_inspected": 10,
+      "target_identity_evidence_searched": [
+        "series_id",
+        "class_id",
+        "ticker_with_context",
+        "normalized_legal_name",
+        "fund_heading",
+        "mandate_section"
+      ],
+      "mandate_bearing_match_found": false,
+      "result": "CONSISTENT_GENUINE_ABSENCE"
+    },
+    {
+      "symbol": "GINX",
+      "cik": "831114",
+      "series_id": "S000084011",
+      "class_id": "C000248137",
+      "legal_name": "SGI Enhanced Global Income ETF",
+      "eligible_preboundary_candidates": 1066,
+      "forms_distribution": {
+        "485BPOS": 176,
+        "497": 550,
+        "497K": 220,
+        "485APOS": 120
+      },
+      "physical_documents_inspected": 10,
+      "target_identity_evidence_searched": [
+        "series_id",
+        "class_id",
+        "ticker_with_context",
+        "normalized_legal_name",
+        "fund_heading",
+        "mandate_section"
+      ],
+      "mandate_bearing_match_found": false,
+      "result": "CONSISTENT_GENUINE_ABSENCE"
+    }
+  ],
   "entries": [
     {
       "symbol": "AIA",
@@ -14,18 +151,21 @@
       "series_id": "S000017778",
       "class_id": "C000049095",
       "legal_name": "iShares Asia 50 ETF",
-      "total_preboundary_candidates_inspected": 9308,
+      "total_preboundary_candidates_inspected": 9309,
+      "historical_submission_files_inspected": 12,
       "candidate_forms_distribution": {
         "497K": 6428,
         "497": 1618,
         "485APOS": 530,
-        "485BPOS": 732
+        "485BPOS": 732,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 9309 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -34,18 +174,21 @@
       "series_id": "S000063520",
       "class_id": "C000205801",
       "legal_name": "iShares Self-Driving EV and Tech ETF",
-      "total_preboundary_candidates_inspected": 9308,
+      "total_preboundary_candidates_inspected": 9309,
+      "historical_submission_files_inspected": 12,
       "candidate_forms_distribution": {
         "497K": 6428,
         "497": 1618,
         "485APOS": 530,
-        "485BPOS": 732
+        "485BPOS": 732,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 9309 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -54,18 +197,22 @@
       "series_id": "S000067359",
       "class_id": "C000216581",
       "legal_name": "First Trust Multi-Manager Large Growth ETF",
-      "total_preboundary_candidates_inspected": 2642,
+      "total_preboundary_candidates_inspected": 2645,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 209,
         "497": 1052,
         "497K": 1245,
-        "485APOS": 136
+        "485APOS": 136,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2645 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -74,18 +221,22 @@
       "series_id": "S000084429",
       "class_id": "C000248806",
       "legal_name": "FT Vest Nasdaq-100 Conservative Buffer ETF - April",
-      "total_preboundary_candidates_inspected": 2642,
+      "total_preboundary_candidates_inspected": 2645,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 209,
         "497": 1052,
         "497K": 1245,
-        "485APOS": 136
+        "485APOS": 136,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2645 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -94,18 +245,22 @@
       "series_id": "S000003023",
       "class_id": "C000008290",
       "legal_name": "Invesco Bloomberg MVP Multi-factor ETF",
-      "total_preboundary_candidates_inspected": 2305,
+      "total_preboundary_candidates_inspected": 2308,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "497": 280,
         "497K": 1884,
         "485BPOS": 104,
-        "485APOS": 37
+        "485APOS": 37,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 2,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2308 pre-boundary filings; physical inspection of 2 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -114,18 +269,22 @@
       "series_id": "S000003055",
       "class_id": "C000008322",
       "legal_name": "Invesco Large Cap Value ETF",
-      "total_preboundary_candidates_inspected": 2305,
+      "total_preboundary_candidates_inspected": 2308,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "497": 280,
         "497K": 1884,
         "485BPOS": 104,
-        "485APOS": 37
+        "485APOS": 37,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 2,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2308 pre-boundary filings; physical inspection of 2 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -134,18 +293,22 @@
       "series_id": "S000069594",
       "class_id": "C000222017",
       "legal_name": "State Street SPDR Bloomberg 3-12 Month T-Bill ETF",
-      "total_preboundary_candidates_inspected": 2793,
+      "total_preboundary_candidates_inspected": 2797,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "497K": 2164,
         "497": 409,
         "485BPOS": 129,
-        "485APOS": 91
+        "485APOS": 91,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2797 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -154,18 +317,22 @@
       "series_id": "S000081587",
       "class_id": "C000244514",
       "legal_name": "State Street SPDR Portfolio S&P Sector Neutral Dividend ETF",
-      "total_preboundary_candidates_inspected": 2793,
+      "total_preboundary_candidates_inspected": 2797,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "497K": 2164,
         "497": 409,
         "485BPOS": 129,
-        "485APOS": 91
+        "485APOS": 91,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2797 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -175,17 +342,19 @@
       "class_id": "C000100213",
       "legal_name": "iShares MSCI Global Min Vol Factor ETF",
       "total_preboundary_candidates_inspected": 2131,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 166,
         "497": 596,
         "497K": 1278,
         "485APOS": 91
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 4,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2131 pre-boundary filings; physical inspection of 4 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -195,17 +364,19 @@
       "class_id": "C000011952",
       "legal_name": "iShares MSCI Italy ETF",
       "total_preboundary_candidates_inspected": 2131,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 166,
         "497": 596,
         "497K": 1278,
         "485APOS": 91
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 4,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2131 pre-boundary filings; physical inspection of 4 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -214,18 +385,22 @@
       "series_id": "S000061993",
       "class_id": "C000200804",
       "legal_name": "JPMorgan BetaBuilders Developed Asia Pacific-ex Japan ETF",
-      "total_preboundary_candidates_inspected": 1619,
+      "total_preboundary_candidates_inspected": 1622,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "497": 387,
         "497K": 1005,
         "485APOS": 74,
-        "485BPOS": 153
+        "485BPOS": 153,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1622 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -234,18 +409,22 @@
       "series_id": "S000081237",
       "class_id": "C000243909",
       "legal_name": "JPMorgan Global Select Equity ETF",
-      "total_preboundary_candidates_inspected": 1619,
+      "total_preboundary_candidates_inspected": 1622,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "497": 387,
         "497K": 1005,
         "485APOS": 74,
-        "485BPOS": 153
+        "485BPOS": 153,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1622 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -254,18 +433,22 @@
       "series_id": "S000031053",
       "class_id": "C000096299",
       "legal_name": "Invesco Senior Loan ETF",
-      "total_preboundary_candidates_inspected": 2703,
+      "total_preboundary_candidates_inspected": 2705,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 187,
         "497K": 1959,
         "497": 426,
-        "485APOS": 131
+        "485APOS": 131,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 4,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2705 pre-boundary filings; physical inspection of 4 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -274,18 +457,22 @@
       "series_id": "S000020451",
       "class_id": "C000057375",
       "legal_name": "Invesco Dorsey Wright Emerging Markets Momentum ETF",
-      "total_preboundary_candidates_inspected": 2703,
+      "total_preboundary_candidates_inspected": 2705,
+      "historical_submission_files_inspected": 3,
       "candidate_forms_distribution": {
         "485BPOS": 187,
         "497K": 1959,
         "497": 426,
-        "485APOS": 131
+        "485APOS": 131,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 4,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 2705 pre-boundary filings; physical inspection of 4 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -295,17 +482,19 @@
       "class_id": "C000248137",
       "legal_name": "SGI Enhanced Global Income ETF",
       "total_preboundary_candidates_inspected": 1066,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "485BPOS": 176,
         "497": 550,
         "497K": 220,
         "485APOS": 120
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1066 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -315,17 +504,19 @@
       "class_id": "C000233243",
       "legal_name": "Motley Fool Next Index ETF",
       "total_preboundary_candidates_inspected": 1066,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "485BPOS": 176,
         "497": 550,
         "497K": 220,
         "485APOS": 120
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1066 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -334,18 +525,22 @@
       "series_id": "S000092502",
       "class_id": "C000260533",
       "legal_name": "Bluemonte Core Bond ETF",
-      "total_preboundary_candidates_inspected": 602,
+      "total_preboundary_candidates_inspected": 606,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485APOS": 60,
         "497": 186,
         "497K": 214,
-        "485BPOS": 142
+        "485BPOS": 142,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 606 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -354,18 +549,22 @@
       "series_id": "S000073704",
       "class_id": "C000230780",
       "legal_name": "FMQQ The Next Frontier Internet ETF",
-      "total_preboundary_candidates_inspected": 602,
+      "total_preboundary_candidates_inspected": 606,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485APOS": 60,
         "497": 186,
         "497K": 214,
-        "485BPOS": 142
+        "485BPOS": 142,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 606 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -374,18 +573,22 @@
       "series_id": "S000092335",
       "class_id": "C000260273",
       "legal_name": "Roundhill BABA WeeklyPay ETF",
-      "total_preboundary_candidates_inspected": 289,
+      "total_preboundary_candidates_inspected": 292,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "485APOS": 73,
         "497": 45,
         "485BPOS": 45,
-        "497K": 126
+        "497K": 126,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 292 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -394,18 +597,22 @@
       "series_id": "S000083811",
       "class_id": "C000247828",
       "legal_name": "Roundhill Nasdaq-100 0DTE Covered Call ETF Strategy ETF",
-      "total_preboundary_candidates_inspected": 289,
+      "total_preboundary_candidates_inspected": 292,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "485APOS": 73,
         "497": 45,
         "485BPOS": 45,
-        "497K": 126
+        "497K": 126,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 292 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -414,18 +621,21 @@
       "series_id": "S000008519",
       "class_id": "C000275829",
       "legal_name": "Nuveen Dividend Growth Fund: ETF Class Shares",
-      "total_preboundary_candidates_inspected": 1166,
+      "total_preboundary_candidates_inspected": 1167,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485BPOS": 143,
         "497": 325,
         "497K": 654,
-        "485APOS": 44
+        "485APOS": 44,
+        "N-1A/A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 2,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1167 pre-boundary filings; physical inspection of 2 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -434,18 +644,21 @@
       "series_id": "S000070088",
       "class_id": "C000222997",
       "legal_name": "FT Vest Gold Strategy Quarterly Buffer ETF",
-      "total_preboundary_candidates_inspected": 999,
+      "total_preboundary_candidates_inspected": 1000,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485APOS": 65,
         "497K": 579,
         "497": 276,
-        "485BPOS": 79
+        "485BPOS": 79,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1000 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -454,18 +667,22 @@
       "series_id": "S000077118",
       "class_id": "C000237287",
       "legal_name": "Innovator Nasdaq-100 Managed Floor ETF",
-      "total_preboundary_candidates_inspected": 3671,
+      "total_preboundary_candidates_inspected": 3673,
+      "historical_submission_files_inspected": 4,
       "candidate_forms_distribution": {
         "497": 1322,
         "485BPOS": 430,
         "497K": 1624,
-        "485APOS": 295
+        "485APOS": 295,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 3673 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -474,18 +691,22 @@
       "series_id": "S000040878",
       "class_id": "C000126716",
       "legal_name": "Schwab Fundamental U.S. Small Company ETF",
-      "total_preboundary_candidates_inspected": 1280,
+      "total_preboundary_candidates_inspected": 1283,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497K": 985,
         "497": 162,
         "485BPOS": 107,
-        "485APOS": 26
+        "485APOS": 26,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 3,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1283 pre-boundary filings; physical inspection of 3 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -494,18 +715,22 @@
       "series_id": "S000083373",
       "class_id": "C000246976",
       "legal_name": "Leuthold Core ETF",
-      "total_preboundary_candidates_inspected": 1558,
+      "total_preboundary_candidates_inspected": 1560,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "497": 454,
         "497K": 549,
         "485BPOS": 467,
-        "485APOS": 88
+        "485APOS": 88,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 6,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1560 pre-boundary filings; physical inspection of 6 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -514,18 +739,22 @@
       "series_id": "S000058208",
       "class_id": "C000190833",
       "legal_name": "Cambria Global Real Estate ETF",
-      "total_preboundary_candidates_inspected": 353,
+      "total_preboundary_candidates_inspected": 356,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485BPOS": 61,
         "497": 67,
         "497K": 199,
-        "485APOS": 26
+        "485APOS": 26,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 356 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -534,18 +763,22 @@
       "series_id": "S000065358",
       "class_id": "C000211433",
       "legal_name": "QRAFT AI-Enhanced U.S. Large Cap Momentum ETF",
-      "total_preboundary_candidates_inspected": 435,
+      "total_preboundary_candidates_inspected": 438,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485APOS": 62,
         "497K": 141,
         "485BPOS": 106,
-        "497": 126
+        "497": 126,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 438 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -554,18 +787,22 @@
       "series_id": "S000099377",
       "class_id": "C000269153",
       "legal_name": "Fidelity AAA CLO ETF",
-      "total_preboundary_candidates_inspected": 211,
+      "total_preboundary_candidates_inspected": 217,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "497": 48,
         "497K": 124,
         "485BPOS": 30,
-        "485APOS": 9
+        "485APOS": 9,
+        "N-1A/A": 5,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 217 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -574,18 +811,22 @@
       "series_id": "S000083302",
       "class_id": "C000246834",
       "legal_name": "The Nightview Fund NITE",
-      "total_preboundary_candidates_inspected": 358,
+      "total_preboundary_candidates_inspected": 360,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485BPOS": 138,
         "497K": 85,
         "497": 103,
-        "485APOS": 32
+        "485APOS": 32,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 360 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -594,18 +835,22 @@
       "series_id": "S000088454",
       "class_id": "C000254727",
       "legal_name": "Brown Advisory Flexible Equity ETF",
-      "total_preboundary_candidates_inspected": 1258,
+      "total_preboundary_candidates_inspected": 1263,
+      "historical_submission_files_inspected": 2,
       "candidate_forms_distribution": {
         "497": 349,
         "497K": 633,
         "485BPOS": 186,
-        "485APOS": 90
+        "485APOS": 90,
+        "N-1A/A": 4,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 1263 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -614,18 +859,22 @@
       "series_id": "S000082270",
       "class_id": "C000245556",
       "legal_name": "Amplify Bloomberg AI Equal Weight ETF",
-      "total_preboundary_candidates_inspected": 512,
+      "total_preboundary_candidates_inspected": 518,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497K": 220,
         "485BPOS": 106,
         "485APOS": 89,
-        "497": 97
+        "497": 97,
+        "N-1A/A": 5,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 518 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -634,18 +883,22 @@
       "series_id": "S000095377",
       "class_id": "C000264098",
       "legal_name": "Myriad Dynamic Asset Allocation ETF",
-      "total_preboundary_candidates_inspected": 464,
+      "total_preboundary_candidates_inspected": 468,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497K": 139,
         "485BPOS": 137,
         "497": 141,
-        "485APOS": 47
+        "485APOS": 47,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 468 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -654,18 +907,22 @@
       "series_id": "S000094940",
       "class_id": "C000263519",
       "legal_name": "GraniteShares YieldBOOST HOOD ETF",
-      "total_preboundary_candidates_inspected": 899,
+      "total_preboundary_candidates_inspected": 903,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "485APOS": 101,
         "497K": 662,
         "497": 80,
-        "485BPOS": 56
+        "485BPOS": 56,
+        "N-1A/A": 3,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 903 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -674,18 +931,22 @@
       "series_id": "S000088364",
       "class_id": "C000254623",
       "legal_name": "Subversive Congressional Republicans Trading ETF",
-      "total_preboundary_candidates_inspected": 700,
+      "total_preboundary_candidates_inspected": 702,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497K": 275,
         "497": 175,
         "485BPOS": 174,
-        "485APOS": 76
+        "485APOS": 76,
+        "N-1A/A": 1,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 8,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 702 pre-boundary filings; physical inspection of 8 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -694,18 +955,22 @@
       "series_id": "S000081780",
       "class_id": "C000244774",
       "legal_name": "Dimensional US Core Equity 1 ETF",
-      "total_preboundary_candidates_inspected": 275,
+      "total_preboundary_candidates_inspected": 280,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497K": 218,
         "485BPOS": 20,
         "497": 26,
-        "485APOS": 11
+        "485APOS": 11,
+        "N-1A/A": 4,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 7,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "GENERIC_NAME_TOKEN_OVERLAP_ONLY (7 incidental hits inspected, zero series-specific filings)",
+      "audit_evidence_summary": "Incidental metadata matches inspected; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -714,18 +979,22 @@
       "series_id": "S000074771",
       "class_id": "C000232948",
       "legal_name": "DoubleLine Shiller CAPE U.S. Equities ETF",
-      "total_preboundary_candidates_inspected": 70,
+      "total_preboundary_candidates_inspected": 75,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "497": 12,
         "497K": 40,
         "485BPOS": 12,
-        "485APOS": 6
+        "485APOS": 6,
+        "N-1A/A": 4,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 75 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -734,18 +1003,22 @@
       "series_id": "S000094780",
       "class_id": "C000263320",
       "legal_name": "GMO Domestic Resilience ETF",
-      "total_preboundary_candidates_inspected": 49,
+      "total_preboundary_candidates_inspected": 52,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "497K": 34,
         "497": 5,
         "485BPOS": 5,
-        "485APOS": 5
+        "485APOS": 5,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 52 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -754,18 +1027,22 @@
       "series_id": "S000092074",
       "class_id": "C000259989",
       "legal_name": "Tortoise Global Water ETF",
-      "total_preboundary_candidates_inspected": 49,
+      "total_preboundary_candidates_inspected": 52,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "485APOS": 7,
         "497": 17,
         "497K": 16,
-        "485BPOS": 9
+        "485BPOS": 9,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 52 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -774,18 +1051,22 @@
       "series_id": "S000096484",
       "class_id": "C000265319",
       "legal_name": "Baron Financials ETF",
-      "total_preboundary_candidates_inspected": 33,
+      "total_preboundary_candidates_inspected": 36,
+      "historical_submission_files_inspected": 0,
       "candidate_forms_distribution": {
         "497K": 19,
         "497": 7,
         "485APOS": 4,
-        "485BPOS": 3
+        "485BPOS": 3,
+        "N-1A/A": 2,
+        "N-1A": 1
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 1,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 36 pre-boundary filings; physical inspection of 1 cached filings confirmed target absence",
       "is_selector_false_negative": false
     },
     {
@@ -795,17 +1076,19 @@
       "class_id": "C000254172",
       "legal_name": "Morgan Stanley Pathway Large Cap Equity ETF",
       "total_preboundary_candidates_inspected": 609,
+      "historical_submission_files_inspected": 1,
       "candidate_forms_distribution": {
         "497": 243,
         "485BPOS": 54,
         "485APOS": 30,
         "497K": 282
       },
-      "exact_matches_found": 0,
-      "exact_match_sample": [],
+      "exact_metadata_matches_found": 0,
       "metadata_hits_found": 0,
+      "physical_documents_content_inspected": 10,
+      "mandate_bearing_documents_found": 0,
       "independent_audit_verdict": "GENUINE_ABSENCE_CONFIRMED",
-      "audit_evidence_summary": "NO_TARGET_METADATA_IN_PREBOUNDARY_SEC_HISTORY",
+      "audit_evidence_summary": "Zero series-specific metadata hits across 609 pre-boundary filings; physical inspection of 10 cached filings confirmed target absence",
       "is_selector_false_negative": false
     }
   ]
