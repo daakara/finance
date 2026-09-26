@@ -1,0 +1,517 @@
+{
+  "total_targets": 2884,
+  "total_absence_population": 1678,
+  "absence_percentage": 58.18307905686546,
+  "sample_size": 40,
+  "correct_absence_count": 33,
+  "false_negative_count": 7,
+  "ambiguous_count": 0,
+  "failure_classes": {
+    "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA": 4,
+    "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE": 3
+  },
+  "top_ciks": [
+    [
+      "1100663",
+      267
+    ],
+    [
+      "1667919",
+      130
+    ],
+    [
+      "1485894",
+      55
+    ],
+    [
+      "945908",
+      54
+    ],
+    [
+      "1209466",
+      51
+    ],
+    [
+      "1064642",
+      49
+    ],
+    [
+      "930667",
+      48
+    ],
+    [
+      "1924868",
+      48
+    ],
+    [
+      "1710607",
+      40
+    ],
+    [
+      "1378872",
+      39
+    ],
+    [
+      "1432353",
+      35
+    ],
+    [
+      "831114",
+      30
+    ],
+    [
+      "1452937",
+      25
+    ],
+    [
+      "1168164",
+      25
+    ],
+    [
+      "1795351",
+      25
+    ]
+  ],
+  "adjudication_records": [
+    {
+      "target": "AAA",
+      "cik": "1587982",
+      "legal_name": "Alternative Access First Priority CLO Bond ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AAXJ",
+      "cik": "1100663",
+      "legal_name": "iShares MSCI All Country Asia ex Japan ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACES",
+      "cik": "1414040",
+      "legal_name": "ALPS Clean Energy ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACGR",
+      "cik": "1710607",
+      "legal_name": "American Century Large Cap Growth ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACLC",
+      "cik": "1710607",
+      "legal_name": "American Century Large Cap Equity ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACSI",
+      "cik": "1742912",
+      "legal_name": "American Customer Satisfaction ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACTS",
+      "cik": "2069687",
+      "legal_name": "FIS Tactical Equity ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACVF",
+      "cik": "1771146",
+      "legal_name": "American Conservative Values ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACWI",
+      "cik": "1100663",
+      "legal_name": "iShares MSCI ACWI ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACWV",
+      "cik": "930667",
+      "legal_name": "iShares MSCI Global Min Vol Factor ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ACYN",
+      "cik": "1329377",
+      "legal_name": "FT Vest Laddered Autocallable Barrier & Income ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ADIV",
+      "cik": "919160",
+      "legal_name": "Guinness Atkinson Asia Pacific Dividend Builder ETF",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "NAME_TOKENS_IN_METADATA",
+      "matching_accession": "0001398344-12-001591",
+      "matching_document": "fp0004804_497k.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "target": "ADPV",
+      "cik": "1650149",
+      "legal_name": "Adaptiv Select ETF",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "NAME_TOKENS_IN_METADATA",
+      "matching_accession": "0000894189-26-007022",
+      "matching_document": "adaptivselectetf-497k2026.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "target": "ADVE",
+      "cik": "923184",
+      "legal_name": "Matthews Asia Dividend Active ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AFDM",
+      "cik": "1424212",
+      "legal_name": "First Trust Active Factor International ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AFEM",
+      "cik": "1424212",
+      "legal_name": "First Trust Active Factor Emerging Markets ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AFGR",
+      "cik": "1667919",
+      "legal_name": "First Trust Multi-Manager Large Growth ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AFLG",
+      "cik": "1667919",
+      "legal_name": "First Trust Active Factor Large Cap ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AFOS",
+      "cik": "1592900",
+      "legal_name": "ARS Focused Opportunity Strategy ETF",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "TICKER_IN_CACHED_FILE",
+      "matching_accession": "NONE",
+      "matching_document": "0001592900-26-004298_ck0001592900-20260924.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "target": "AGIQ",
+      "cik": "1742912",
+      "legal_name": "SoFi Agentic AI ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIFD",
+      "cik": "1831313",
+      "legal_name": "TCW Artificial Intelligence ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIPI",
+      "cik": "1771146",
+      "legal_name": "REX AI Equity Premium Income ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIPO",
+      "cik": "1924868",
+      "legal_name": "Defiance AI & Power Infrastructure ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIQ",
+      "cik": "1432353",
+      "legal_name": "Global X Artificial Intelligence & Technology ETF",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "NAME_TOKENS_IN_METADATA",
+      "matching_accession": "0001432353-26-000487",
+      "matching_document": "globalxpurecapsmmsciinform.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "target": "AIRR",
+      "cik": "1552740",
+      "legal_name": "First Trust RBA American Industrial Renaissance ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIVC",
+      "cik": "1633061",
+      "legal_name": "Amplify Bloomberg AI Equal Weight ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AIYY",
+      "cik": "1924868",
+      "legal_name": "YieldMax AI Option Income Strategy ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "AMOM",
+      "cik": "1547950",
+      "legal_name": "QRAFT AI-Enhanced U.S. Large Cap Momentum ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ARB",
+      "cik": "1779306",
+      "legal_name": "AltShares Merger Arbitrage ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ARKD",
+      "cik": "1579982",
+      "legal_name": "ARK DIET Q1 Buffer ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ARKF",
+      "cik": "1579982",
+      "legal_name": "ARK Blockchain & Fintech Innovation ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ARMH",
+      "cik": "1499655",
+      "legal_name": "Arm Holdings PLC ADRhedged",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "TICKER_IN_CACHED_FILE",
+      "matching_accession": "NONE",
+      "matching_document": "0001499655-26-000023_precidian-armhasmhandsthhs.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "target": "ARMY",
+      "cik": "1944285",
+      "legal_name": "Tema International Defense ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ARP",
+      "cik": "890540",
+      "legal_name": "PMV Adaptive Risk Parity ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ASIA",
+      "cik": "923184",
+      "legal_name": "Matthews Pacific Tiger Active ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ASMH",
+      "cik": "1499655",
+      "legal_name": "ASML Holding NV ADRhedged",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "TICKER_IN_CACHED_FILE",
+      "matching_accession": "NONE",
+      "matching_document": "0001499655-26-000023_precidian-armhasmhandsthhs.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_TICKER_IN_CACHED_FILE"
+    },
+    {
+      "target": "ATCL",
+      "cik": "2043954",
+      "legal_name": "REX Autocallable Income ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "ATTR",
+      "cik": "1592900",
+      "legal_name": "Arin Tactical Tail Risk ETF",
+      "has_qualifying_preboundary_doc": "YES",
+      "match_evidence": "NAME_TOKENS_IN_METADATA",
+      "matching_accession": "0001592900-26-000388",
+      "matching_document": "alphaarchitecttailrisketf.htm",
+      "selector_absence_correct": "NO",
+      "failure_class": "MISSED_QUALIFYING_DOC_NAME_TOKENS_IN_METADATA"
+    },
+    {
+      "target": "BABW",
+      "cik": "1976517",
+      "legal_name": "Roundhill BABA WeeklyPay ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    },
+    {
+      "target": "BAFE",
+      "cik": "1593547",
+      "legal_name": "Brown Advisory Flexible Equity ETF",
+      "has_qualifying_preboundary_doc": "NO",
+      "match_evidence": "NONE_FOUND",
+      "matching_accession": "NONE",
+      "matching_document": "NONE",
+      "selector_absence_correct": "YES",
+      "failure_class": "GENUINE_ABSENCE_CONFIRMED"
+    }
+  ]
+}
