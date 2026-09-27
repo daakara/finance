@@ -94,9 +94,9 @@ def verify_authorities_and_baseline() -> Tuple[dict, list, dict]:
 
     selected = [r for r in results_list if "SELECTED" in r.get("selection_outcome", "")]
     absent = [r for r in results_list if r.get("selection_outcome") in {"TARGET_ABSENT_FROM_ALL_CANDIDATES", "SOURCE_CACHE_MISS"}]
-    assert len(selected) == 2042, f"Expected 2,042 selected targets, got {len(selected)}"
-    assert len(absent) == 842, f"Expected 842 absent targets, got {len(absent)}"
-    print(f"[OK] Certified Source Population: 2,042 SELECTED, 842 ABSENT/MISS, 0 UNACCOUNTED")
+    assert len(selected) == 2043, f"Expected 2,043 selected targets, got {len(selected)}"
+    assert len(absent) == 841, f"Expected 841 absent targets, got {len(absent)}"
+    print(f"[OK] Certified Source Population: 2,043 SELECTED, 841 ABSENT/MISS, 0 UNACCOUNTED")
 
     return manifest_data, results_list, {r["symbol"]: r for r in records}
 
@@ -124,7 +124,7 @@ def verify_source_integrity(selected_records: List[dict]) -> Tuple[int, int, Dic
             acc_to_file[acc] = p.name
 
     unique_files = {acc_to_file[r["selected_accession"]] for r in selected_records}
-    assert len(unique_files) == 1908, f"Expected 1,908 unique files, got {len(unique_files)}"
+    assert len(unique_files) == 1909, f"Expected 1,909 unique files, got {len(unique_files)}"
     print(f"Verified UNIQUE_SELECTED_DOCUMENTS = {len(unique_files)}")
 
     missing_count = 0
@@ -280,6 +280,7 @@ def execute_population():
     target_section_not_found_count = 0
     ambiguous_resolution_count = 0
     parser_failure_count = 0
+    explicit_truncation_failure_count = 0
     mandate_classified_count = 0
     cross_series_contamination_count = 0
 
@@ -445,6 +446,9 @@ def execute_population():
                 elif res.mapping_outcome == "PARSE_FAILURE":
                     parser_failure_count += 1
                     classification = "MANDATE_TEXT_INSUFFICIENT"
+                elif res.mapping_outcome == "EXPLICIT_TRUNCATION_FAILURE":
+                    explicit_truncation_failure_count += 1
+                    classification = "EXPLICIT_TRUNCATION_FAILURE"
                 else:
                     classification = res.mapping_outcome
 
@@ -678,6 +682,7 @@ def execute_population():
             "target_section_not_found": target_section_not_found_count,
             "ambiguous_resolution": ambiguous_resolution_count,
             "parser_failure": parser_failure_count,
+            "explicit_truncation_failure": explicit_truncation_failure_count,
             "mandate_classified": mandate_classified_count,
             "cross_series_contamination": cross_series_contamination_count,
         },
@@ -739,6 +744,7 @@ def execute_population():
     print(f"TARGET_SECTION_NOT_FOUND = {target_section_not_found_count}")
     print(f"AMBIGUOUS_RESOLUTION = {ambiguous_resolution_count}")
     print(f"PARSER_FAILURE = {parser_failure_count}")
+    print(f"EXPLICIT_TRUNCATION_FAILURE = {explicit_truncation_failure_count}")
     print(f"CROSS_SERIES_CONTAMINATION = {cross_series_contamination_count}")
     print(f"CONFIRMATORY_POPULATION = {total_confirmatory}")
     for st, syms in confirmatory_by_subtype.items():

@@ -1,8 +1,8 @@
 {
   "ledger_version": "SOURCE_PROVENANCE_V1_0_0",
-  "last_updated": "2026-09-27T02:07:52Z",
-  "total_files": 4255,
-  "total_bytes": 926368534,
+  "last_updated": "2026-09-27T04:40:20.736433+00:00",
+  "total_files": 4257,
+  "total_bytes": 926446801,
   "files": {
     "0001193125-26-302527_d156250d497k.htm": {
       "cik": "1551950",
@@ -55318,6 +55318,32 @@
       "sha256": "68d1e7c13cb2420f8d76d0898b679f9d81aa1b9e53da93d41ee762754711eb82",
       "snapshot_eligibility": "ELIGIBLE_PRE_BOUNDARY",
       "local_path": "data\\research\\cache\\sec_prospectus\\0001999371-25-019651_vus-497k_110425.htm"
+    },
+    "0001193125-17-009627_d287805d497k.htm": {
+      "cik": "945908",
+      "accession": "0001193125-17-009627",
+      "form": "497K",
+      "filing_date": "2017-01-13",
+      "document_filename": "d287805d497k.htm",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/945908/000119312517009627/d287805d497k.htm",
+      "download_timestamp": "2026-09-27T04:40:20.736433+00:00",
+      "byte_length": 25929,
+      "sha256": "6717382e1f6de595992735ea20e083db4b0e4f44ad89d45f5f1fdf2d2b9fbc1d",
+      "snapshot_eligibility": "ELIGIBLE_PRE_BOUNDARY",
+      "local_path": "data\\research\\cache\\sec_prospectus\\0001193125-17-009627_d287805d497k.htm"
+    },
+    "0000894189-23-005235_stftacticalgrowthtugsummar.htm": {
+      "cik": "1683471",
+      "accession": "0000894189-23-005235",
+      "form": "497K",
+      "filing_date": "2023-07-31",
+      "document_filename": "stftacticalgrowthtugsummar.htm",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1683471/000089418923005235/stftacticalgrowthtugsummar.htm",
+      "download_timestamp": "2026-09-27T04:40:20.736433+00:00",
+      "byte_length": 52338,
+      "sha256": "d5e4da4ea177a3e3f2ef2efe8d1cdabf93e8d90256c5fc905b17bc1227a177f4",
+      "snapshot_eligibility": "ELIGIBLE_PRE_BOUNDARY",
+      "local_path": "data\\research\\cache\\sec_prospectus\\0000894189-23-005235_stftacticalgrowthtugsummar.htm"
     }
   }
 }

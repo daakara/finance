@@ -8408,7 +8408,7 @@
     "cik": "945908",
     "series_id": "S000054751",
     "class_id": "C000171932",
-    "selection_outcome": "SOURCE_CACHE_MISS",
+    "selection_outcome": "SELECTED_TARGET_SUMMARY_PROSPECTUS",
     "selected_accession": "0001193125-17-009627",
     "selected_form": "497K",
     "candidate_count": 898,
@@ -24667,7 +24667,7 @@
     "series_id": "S000076366",
     "class_id": "C000236165",
     "selection_outcome": "SOURCE_CACHE_MISS",
-    "selected_accession": "0000894189-23-005235",
+    "selected_accession": "0000894189-22-003849",
     "selected_form": "497K",
     "candidate_count": 888,
     "cache_key": "4643460f8785a92870dcd232b6fecb549c47a93366abf55fe388d3d8aaf1a693"

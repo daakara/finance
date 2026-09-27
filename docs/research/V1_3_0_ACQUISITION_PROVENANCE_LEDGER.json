@@ -4,7 +4,7 @@
   "snapshot_boundary": "2026-09-24T23:59:59Z",
   "total_series_attempted": 751,
   "authoritative_series_mapped": 751,
-  "newly_acquired_documents": 565,
+  "newly_acquired_documents": 567,
   "entries": [
     {
       "symbol": "BKIE",
@@ -6219,6 +6219,28 @@
       "form": "497K",
       "filing_date": "2025-12-05",
       "source_sha256": "68d1e7c13cb2420f8d76d0898b679f9d81aa1b9e53da93d41ee762754711eb82",
+      "status": "ACQUIRED_SUCCESS"
+    },
+    {
+      "symbol": "FDLO",
+      "series_id": "S000054751",
+      "cik": "0000945908",
+      "accession": "0001193125-17-009627",
+      "document_filename": "d287805d497k.htm",
+      "form": "497K",
+      "filing_date": "2017-01-13",
+      "source_sha256": "6717382e1f6de595992735ea20e083db4b0e4f44ad89d45f5f1fdf2d2b9fbc1d",
+      "status": "ACQUIRED_SUCCESS"
+    },
+    {
+      "symbol": "SEPQ",
+      "series_id": "S000076366",
+      "cik": "0001683471",
+      "accession": "0000894189-23-005235",
+      "document_filename": "stftacticalgrowthtugsummar.htm",
+      "form": "497K",
+      "filing_date": "2023-07-31",
+      "source_sha256": "d5e4da4ea177a3e3f2ef2efe8d1cdabf93e8d90256c5fc905b17bc1227a177f4",
       "status": "ACQUIRED_SUCCESS"
     }
   ]
