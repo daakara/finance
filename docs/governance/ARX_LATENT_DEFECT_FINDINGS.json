@@ -1,0 +1,461 @@
+[
+  {
+    "finding_id": "ARX-LATENT-001",
+    "title": "SEPQ Tactical Multi-Asset Options ETF Falsely Classified as Confirmatory Treasury Government Bond",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "RESEARCH_ONLY",
+    "affected_files": [
+      "scripts/research/mandate_parser.py",
+      "docs/research/ETF_MANDATE_POPULATION_LEDGER_V1.json"
+    ],
+    "affected_functions": [
+      "DeterministicMandateParser.parse_mandate"
+    ],
+    "violated_invariant": "ARX_INV_005, ARX_INV_006",
+    "observed_evidence": "SEPQ (STF Tactical Growth & Income ETF, Series S000076366) in ETF_MANDATE_POPULATION_LEDGER_V1.json is classified as CONFIRMATORY_FIXED_INCOME_GOVERNMENT under RULE_TREASURY_GOVERNMENT. However, statutory text in 0000894189-26-021755_tugnsummary.htm states: 'The Fund is an actively-managed exchange-traded fund... allocating its investments among a combination of (i) U.S. equity securities of large-cap companies... (ii) long-duration U.S. Treasury securities... (iii) short-term U.S. Treasury bills... The Fund also may opportunistically employ an options spread strategy... utilizing a proprietary, tactical unconstrained growth model (the TUG Model)'.",
+    "domain_reasoning": "The mandate parser failed to disqualify SEPQ as actively managed or non-confirmatory because ACTIVE_MANAGEMENT_PATTERN looked for space-delimited 'is actively managed' (failing on hyphenated 'actively-managed'), and PRODUCT_EXCLUSION_PATTERNS checked singular 'option (?:writing|overlay|strategy)' (failing on 'options spread strategy'). The parser then matched 'u.s. treasury' in the fixed income sleeve and, having no index match for the equity sleeve, declared the fund a pure 100% US Treasury Government Bond ETF.",
+    "why_existing_tests_missed_it": "Existing tests verified that the statutory selector acquired SEPQ without cross-series contamination and that the series resolver mapped the exact legal name, but did not independently audit semantic classification against active/multi-asset rules.",
+    "failure_scenario": "In historical and empirical ETF backtesting, a tactical equity and options fund is included in the risk-free or sovereign debt benchmark denominator.",
+    "potential_impact": "Distorts fixed income confirmatory population baseline and risk-free asset metrics.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "scripts/research/mandate_parser.py (expand ACTIVE_MANAGEMENT_PATTERN to support hyphens, expand PRODUCT_EXCLUSION_PATTERNS to support plural options spreads, and introduce tactical multi-asset exclusion).",
+    "recommended_verification_method": "Unit and adversarial tests asserting that SEPQ and sibling TUG are classified as NON_CONFIRMATORY.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "RESEARCH_ONLY",
+    "etf_historical_build_blocker": true,
+    "certification_notes": "CONFIRMED. SEPQ is an actively managed tactical multi-asset fund with options spreads. MANDATE_PARSER_V1_2_0_FROZEN missed hyphenated 'actively-managed' and plural options spreads, firing RULE_TREASURY_GOVERNMENT at Step 10. Audit verified 11 systematic SEPQ-shaped false positives (PTIN, PSFF, SEPQ, TUG, MRGR, CDC, CFO, ONOF, FTIF, ROPE, MNA) among the 65 Treasury funds in the ledger. Directly blocks ETF historical build."
+  },
+  {
+    "finding_id": "ARX-LATENT-002",
+    "title": "Systematic Exclusion of Vanguard Benchmark Equity ETF Universe Due to Unnormalized Legal Name Abbreviations",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "RESEARCH_ONLY",
+    "affected_files": [
+      "scripts/research/series_prospectus_mapper.py",
+      "scripts/research/document_index_engine.py",
+      "docs/research/ETF_MANDATE_POPULATION_LEDGER_V1.json"
+    ],
+    "affected_functions": [
+      "SeriesProspectusMapper.map_series",
+      "DocumentNormalizer.normalize_name"
+    ],
+    "violated_invariant": "ARX_INV_010",
+    "observed_evidence": "142 targets dropped into TARGET_SECTION_NOT_FOUND (SERIES_NOT_IN_SOURCE). In-depth inspection reveals that Vanguard funds (e.g. VGT, VV, VCR, VOE, VOT, VBK, VBR, MGV, MGC) have exact dedicated 497K Summary Prospectuses in cache, but Vanguard spells out fund names ('Vanguard Information Technology ETF') while EDGAR XML uses abbreviations ('Vanguard Information Tech ETF'). Because Vanguard omits Series IDs from text, SERIES_RESOLVER_V1_2_0 requires exact string equality and drops all of them.",
+    "domain_reasoning": "Vanguard is the largest provider of index ETFs globally. Dropping its core equity products from research because of 'Tech' vs 'Technology' or 'Discretion' vs 'Discretionary' creates a catastrophic coverage blind spot in the ETF research population.",
+    "why_existing_tests_missed_it": "Tests tested resolver mechanics on synthetic fixtures and a small golden corpus that happened to have exact name alignment or Series IDs in text.",
+    "failure_scenario": "Empirical ETF market coverage claims represent 142 benchmark funds as non-existent or unresolvable in statutory filings.",
+    "potential_impact": "High: 142 high-AUM core ETFs missing from confirmatory analysis.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "scripts/research/series_prospectus_mapper.py & document_index_engine.py (financial abbreviation dictionary normalization for single-fund 497K filings).",
+    "recommended_verification_method": "Regression test verifying VGT, VV, VOE, VOT successfully resolve to MAPPED_NORMALIZED_LEGAL_NAME.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "RESEARCH_ONLY",
+    "etf_historical_build_blocker": true,
+    "certification_notes": "CONFIRMED with aggregation correction. Exactly 142 total targets across the entire repository were dropped into TARGET_SECTION_NOT_FOUND (SERIES_NOT_IN_SOURCE). Of these, 19 are core Vanguard funds (e.g. VGT, VCR, VIG, VV, VOE, VOT, VBK, VBR, MGV, MGC) dropped due to legal name abbreviations in EDGAR XML vs 497K text ('Tech' vs 'Technology', 'Discretion' vs 'Discretionary'). The remaining 123 targets belong to iShares (21), First Trust (32), WisdomTree (5), etc., suffering from analogous abbreviation mismatches. Directly blocks ETF historical build."
+  },
+  {
+    "finding_id": "ARX-LATENT-003",
+    "title": "Hardcoded Market Snapshot and Fallback Values in Global Command Ribbon",
+    "severity": "P0",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "frontend/components/nav/MarketCommandRibbon.tsx"
+    ],
+    "affected_functions": [
+      "MarketCommandRibbon",
+      "fetchMacroRibbon"
+    ],
+    "violated_invariant": "ARX_INV_001, ARX_INV_002, ARX_INV_008",
+    "observed_evidence": "Lines 22-36 and 110-150 define DEFAULT_MACRO_SNAPSHOT: SPY = 542.10 (+0.72%), QQQ = 468.50 (+1.04%), VIX = 15.20 (-4.22%), 10Y Yield = 4.21%, Regime = 'RISK_ON'. When API request times out or backend returns 503, setData sets DEFAULT_MACRO_SNAPSHOT and lines 143-150 fall back to these hardcoded values.",
+    "domain_reasoning": "A financial terminal must never fabricate live market prices or market regimes when the backend is unreachable. Presenting static historical prices as current market conditions during an outage can induce users to trade under false market context.",
+    "why_existing_tests_missed_it": "Tests verified that MarketCommandRibbon renders without crashing and displays numbers, but did not assert that backend failure results in an explicit offline indicator.",
+    "failure_scenario": "During a backend outage or high-volatility flash crash where API lags, the terminal displays SPY 542.10 and 'RISK_ON' to active traders.",
+    "potential_impact": "Critical capital and execution risk for end users.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "frontend/components/nav/MarketCommandRibbon.tsx (remove fabricated financial constants; show explicit UNAVAILABLE / OFFLINE banner).",
+    "recommended_verification_method": "Simulate 503 network response in Playwright and verify ribbon renders UNAVAILABLE without numbers.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED, DOWNGRADED TO P1. MarketCommandRibbon falls back to DEFAULT_MACRO_SNAPSHOT (SPY 542.10, QQQ 468.50, VIX 15.20, RISK_ON dated 2026-09-07) on HTTP 503 or network failure. Fallback badge is hidden on mobile screens. However, thorough codebase audit confirmed ZERO backend trading engines, screeners, or execution modules consume ribbon values. UI-only misleading financial display; capital harm P0 is disproven."
+  },
+  {
+    "finding_id": "ARX-LATENT-004",
+    "title": "Silent Zero-Drawdown Fallback in Advanced Risk Analyzer",
+    "severity": "P0",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "analyst_dashboard/analyzers/advanced_risk_analyzer.py"
+    ],
+    "affected_functions": [
+      "AdvancedRiskAnalyzer._calculate_max_drawdown"
+    ],
+    "violated_invariant": "ARX_INV_001, ARX_INV_003",
+    "observed_evidence": "Line 302-303: 'except Exception as e: return 0' in _calculate_max_drawdown.",
+    "domain_reasoning": "In quantitative finance and portfolio management, maximum drawdown represents peak-to-trough loss. A value of 0.0 means the asset has never suffered a loss. Returning 0 on exception converts a computational failure into the most favorable possible risk rating.",
+    "why_existing_tests_missed_it": "Tests provided well-formed price series and verified valid floats were returned, never passing corrupt series to test exception branches.",
+    "failure_scenario": "Corrupt or malformed price data causes drawdown computation to throw, resulting in max_drawdown=0.0 and misleading the trader into believing the asset has zero tail risk.",
+    "potential_impact": "Severely distorted risk scoring and position sizing.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "analyst_dashboard/analyzers/advanced_risk_analyzer.py (return None or raise domain exception).",
+    "recommended_verification_method": "Unit test asserting _calculate_max_drawdown with invalid data returns None and propagates UNAVAILABLE.",
+    "certified_severity": "P2",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "POSSIBLE",
+    "certified_exposure": "PRODUCTION_REACHABLE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED, DOWNGRADED TO P2. AdvancedRiskAnalyzer._calculate_max_drawdown has a bare 'except Exception: return 0' block. However, it is an internal helper used solely for Calmar_Ratio within AdvancedRiskAnalyzer. It is not called by engines/risk_engine.py (which uses its own risk metrics) or by any trade sizing or BUY/SELL execution path. Historical impact is POSSIBLE but unproven."
+  },
+  {
+    "finding_id": "ARX-LATENT-005",
+    "title": "Manufactured Neutral RSI and Zero Burn-in Indicator Calculations",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "api/routes/analytics.py"
+    ],
+    "affected_functions": [
+      "compute_intraday_technicals"
+    ],
+    "violated_invariant": "ARX_INV_001, ARX_INV_011",
+    "observed_evidence": "In compute_intraday_technicals (lines 110, 126, 130, 142): if df.empty or len(df) < 2, returns rsi_14 = 50.0. For non-empty data, rsi_14 and atr_14 are calculated with rolling(window=14, min_periods=1), and rsi_series falls back to 50.0 if empty or NaN.",
+    "domain_reasoning": "RSI-14 mathematically requires 14 periods of price changes (15 closed bars) to calculate a meaningful relative strength index. Calculating RSI with min_periods=1 allows a 2-bar change to masquerade as 14-period RSI. Furthermore, manufacturing 50.0 when data is absent fabricates neutral conviction.",
+    "why_existing_tests_missed_it": "Tests tested golden fixtures with > 100 candles.",
+    "failure_scenario": "Newly listed IPOs or illiquid assets with < 14 bars display an artificial RSI of 50.0 or hyper-volatile 1-bar RSI labeled as 'RSI 14'.",
+    "potential_impact": "False signals in screener and optimal execution engines.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "api/routes/analytics.py (enforce min_periods=14; return None when observations < 15).",
+    "recommended_verification_method": "Test compute_intraday_technicals with 5 bars and assert rsi_14 is None.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. api/routes/analytics.py compute_intraday_technicals computes 14-period RSI and ATR using rolling(window=14, min_periods=1) and returns 50.0 for RSI on single bars. Empirically verified: Bar 1 yields rsi_14=50.0; Bar 2 yields atr_14=2.25; Bar 5 yields rsi_14=43.8. Emitted as valid JSON keys without burn-in warnings to frontend users."
+  },
+  {
+    "finding_id": "ARX-LATENT-006",
+    "title": "Systemic Fallback to Zero for Missing Corporate Fundamental Metrics",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "analyst_dashboard/data/gem_fetchers.py"
+    ],
+    "affected_functions": [
+      "MultiAssetDataPipeline._fetch_yfinance_data"
+    ],
+    "violated_invariant": "ARX_INV_001, ARX_INV_003",
+    "observed_evidence": "Lines 408-443 fall back to 0 for 22 fundamental fields: market_cap, enterprise_value, pe_ratio, debt_to_equity, roe, roa, current_ratio, price_to_book, fifty_two_week_high, etc.",
+    "domain_reasoning": "In fundamental analysis, debt_to_equity=0 indicates no debt, whereas missing data means debt is unknown. Similarly, pe_ratio=0 indicates zero valuation multiple. Collapsing missing metrics to zero causes highly distressed or un-reporting firms to appear pristine and debt-free.",
+    "why_existing_tests_missed_it": "Tests checked that dict keys exist, not whether values reflect epistemic absence vs authentic zeroes.",
+    "failure_scenario": "Screener filters for 'Low Debt' or 'Low P/E' select un-reporting or OTC companies whose data is missing.",
+    "potential_impact": "Distorted screener outputs and value traps.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "analyst_dashboard/data/gem_fetchers.py (use None for missing numeric metrics).",
+    "recommended_verification_method": "Assert _fetch_yfinance_data on empty info dict produces None for pe_ratio and debt_to_equity.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_REACHABLE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. gem_fetchers.py defaults 22 fundamental metrics to 0 (e.g. debt_to_equity: 0, pe_ratio: 0). In analysis/fundamental.py, debt_to_equity < 0.3 awards the maximum score of +20 points. Missing debt data is thus scored as perfect solvency, fabricating top-tier fundamental health for unreporting entities."
+  },
+  {
+    "finding_id": "ARX-LATENT-007",
+    "title": "False 95% Statistical Confidence Assertion on Uncalibrated Heuristic Score",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "analyst_dashboard/analyzers/self_healing_engine.py"
+    ],
+    "affected_functions": [
+      "SelfHealingEngine.audit_prediction_accuracy"
+    ],
+    "violated_invariant": "ARX_INV_013",
+    "observed_evidence": "Line 93: 'confidenceInterval': '95% Statistical Confidence' if accuracy_score is not None else 'Insufficient Sample Size'. accuracy_score is computed as round(max(0.0, min(100.0, 100.0 - (rmse * 3.5) + (hit_rate * 0.15))), 1).",
+    "domain_reasoning": "A 95% confidence interval is a formal inferential statistic requiring variance, sample size, and distribution assumptions. Asserting 95% statistical confidence whenever an arbitrary arithmetic formula executes with N>=1 is misleading.",
+    "why_existing_tests_missed_it": "Tests asserted that the string key 'confidenceInterval' was populated.",
+    "failure_scenario": "Model governance reporting presents uncalibrated walk-forward scores as statistically certified.",
+    "potential_impact": "Regulatory and governance credibility risk.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "analyst_dashboard/analyzers/self_healing_engine.py (remove unbacked 95% claim; replace with descriptive sample size statement).",
+    "recommended_verification_method": "Assert confidenceInterval does not claim 95% confidence without formal statistical calculation.",
+    "certified_severity": "P2",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. self_healing_engine.py emits literal string '95% Statistical Confidence' based on a heuristic score with as few as 1 walk-forward window (sample_windows = min(20, n_closes - 31)). No standard error, t-stat, p-value, or mathematically constructed confidence interval exists. Rendered in client-facing analytics telemetry."
+  },
+  {
+    "finding_id": "ARX-LATENT-008",
+    "title": "Static Mock Dataset Rendered in Public Divergence Radar Component",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "frontend/components/SmartMoneyDivergenceRadar.tsx"
+    ],
+    "affected_functions": [
+      "SmartMoneyDivergenceRadar"
+    ],
+    "violated_invariant": "ARX_INV_002",
+    "observed_evidence": "Lines 15-92 define DIVERGENCE_DATASET containing hardcoded entries for LMT ($462.80), CPRX ($23.40), NVDA ($128.50), TSLA ($218.40), NVO ($136.20), SMCI ($48.20). The component does not fetch from any API and renders these static numbers while badge-labeling the interface 'STOCK ACT + 13F MATRIX' and 'Curated Research Archive'.",
+    "domain_reasoning": "Displaying static mockup numbers as live divergence signals misleads users regarding actual institutional and political holdings.",
+    "why_existing_tests_missed_it": "Frontend component tests verified that the component rendered without crashing.",
+    "failure_scenario": "User looks at divergence radar believing it reflects current SEC Form 4 filings.",
+    "potential_impact": "Loss of user trust and inaccurate trade positioning.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "frontend/components/SmartMoneyDivergenceRadar.tsx (connect to /api/v1/smart_money endpoint or label as static demo archive).",
+    "recommended_verification_method": "Verify component fetches dynamic API data.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. SmartMoneyDivergenceRadar.tsx renders hardcoded static DIVERGENCE_DATASET (PLTR, CPRX, NVDA, TSLA, NVO, SMCI) with fake prices and insider names on public route /smart-money. While a small 'Curated Research Archive' badge is present, UI text asserts 'Detects order-flow asymmetry between Congressional/Institutional Form 4 filings and retail sentiment'."
+  },
+  {
+    "finding_id": "ARX-LATENT-009",
+    "title": "Broken Legacy Engine Architecture Referencing Deleted Module",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "DEAD_CODE",
+    "affected_files": [
+      "engines/technical_engine.py",
+      "engines/risk_engine.py"
+    ],
+    "affected_functions": [
+      "Top-level imports"
+    ],
+    "violated_invariant": "Architectural Single-Source-of-Truth",
+    "observed_evidence": "engines/technical_engine.py line 11 imports 'from analysis_components import TechnicalIndicators, DataProcessors'. analysis_components.py was deleted in commit 4ee04f1 in August 2026. Running 'python -c \"import engines.technical_engine\"' crashes with ModuleNotFoundError.",
+    "domain_reasoning": "Maintaining broken dead-code engine directories parallel to analyst_dashboard creates confusion about authoritative calculation pathways.",
+    "why_existing_tests_missed_it": "Tests only imported from analyst_dashboard, never exercising the root engines/ package.",
+    "failure_scenario": "A developer or script imports engines.technical_engine and crashes.",
+    "potential_impact": "Developer confusion and runtime crash risk.",
+    "historical_impact": "NONE",
+    "recommended_remediation_boundary": "Remove or archive dead engines/ directory.",
+    "recommended_verification_method": "Clean directory tree audit.",
+    "certified_severity": "P3",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "NONE",
+    "certified_exposure": "DEAD_CODE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED, DOWNGRADED TO P3. engines/technical_engine.py fails to import deleted module analysis_components. However, engines/__init__.py wraps the import in a try/except block setting technical_engine=None. No active API route, CLI, or test imports this module. Dead code with zero production execution reachability."
+  },
+  {
+    "finding_id": "ARX-LATENT-010",
+    "title": "Missing Runtime Dependency beautifulsoup4 in Requirements and Pyproject",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_REACHABLE",
+    "affected_files": [
+      "requirements.txt",
+      "pyproject.toml"
+    ],
+    "affected_functions": [
+      "Global dependencies"
+    ],
+    "violated_invariant": "Dependency & Deployment Drift Invariant",
+    "observed_evidence": "beautifulsoup4 is imported in 5 production modules (document_index_engine.py, series_prospectus_mapper.py, mandate_parser.py, statutory_filing_selector.py, sec_edgar_fetcher.py) but is omitted from requirements.txt and pyproject.toml.",
+    "domain_reasoning": "A fresh virtual environment or Docker container built from requirements.txt will fail on runtime execution.",
+    "why_existing_tests_missed_it": "Local development environment already had bs4 installed in site-packages.",
+    "failure_scenario": "Fresh deployment to Railway, Render, or Docker fails with ModuleNotFoundError: No module named 'bs4'.",
+    "potential_impact": "Deployment blocker.",
+    "historical_impact": "NONE",
+    "recommended_remediation_boundary": "requirements.txt and pyproject.toml (add beautifulsoup4>=4.12.0).",
+    "recommended_verification_method": "Install requirements in clean venv and run pytest.",
+    "certified_severity": "P3",
+    "certified_confidence": "DISPROVEN",
+    "certified_historical_impact": "NONE",
+    "certified_exposure": "NOT_APPLICABLE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "DISPROVEN. While beautifulsoup4 is not explicitly declared as a top-level requirement in requirements.txt or pyproject.toml, it is a strict mandatory dependency of yfinance>=0.2.38 (which requires beautifulsoup4>=4.11.1). Clean deployment environments installing requirements.txt automatically install bs4 4.12.3 transitively. Clean deploy failure is disproven."
+  },
+  {
+    "finding_id": "ARX-LATENT-011",
+    "title": "Absence of .gitattributes Exposes SEC Cryptographic Hashes to CRLF Mutation",
+    "severity": "P1",
+    "confidence": "CONFIRMED",
+    "production_exposure": "RESEARCH_ONLY",
+    "affected_files": [
+      ".gitattributes (missing)"
+    ],
+    "affected_functions": [
+      "Cryptographic provenance verification"
+    ],
+    "violated_invariant": "ARX_INV_009, Cross-Platform Invariant",
+    "observed_evidence": "No .gitattributes file exists in the repository. On Windows with default git configuration, checkout converts LF to CRLF in text files. If prospectuses or json ledgers are modified on Windows, raw SHA256 hashes differ from Linux runs.",
+    "domain_reasoning": "Cryptographic reproducibility across heterogeneous developer workstations and CI runners requires deterministic line endings.",
+    "why_existing_tests_missed_it": "Tests ran on local Windows environment where files were already cached.",
+    "failure_scenario": "Git checkout on Linux creates different file hashes than Windows, failing provenance gate.",
+    "potential_impact": "Gate failure and false hash mismatch alerts.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "Add .gitattributes enforcing LF across *.py, *.json, *.htm, *.md.",
+    "recommended_verification_method": "Verify git status and git diff --check across LF/CRLF environments.",
+    "certified_severity": "P3",
+    "certified_confidence": "DISPROVEN",
+    "certified_historical_impact": "NONE",
+    "certified_exposure": "NOT_APPLICABLE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "DISPROVEN. All raw downloaded SEC prospectus filings (.htm, .html, .xml) reside in data/research/cache/, which is explicitly declared in .gitignore. Git never tracks, checks out, normalizes, or converts line endings for raw cache files. Cryptographic SHA256 hashes of SEC source documents are immune to Git CRLF mutation."
+  },
+  {
+    "finding_id": "ARX-LATENT-012",
+    "title": "Unversioned Checkpoint Completion Invariant in CheckpointStore",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "RESEARCH_ONLY",
+    "affected_files": [
+      "scripts/research/checkpoint_store.py"
+    ],
+    "affected_functions": [
+      "CheckpointStore.is_completed"
+    ],
+    "violated_invariant": "ARX_INV_012",
+    "observed_evidence": "is_completed(symbol) returns symbol in self._completed_records. It does not check if the record's resolver version, parser version, or source hash match the current running engine.",
+    "domain_reasoning": "When a bug fix is deployed to mandate_parser or series_resolver, an incremental run using is_completed(symbol) could bypass re-evaluation of previously checkpointed targets.",
+    "why_existing_tests_missed_it": "Full population runs initialized with fresh or monolithic stores.",
+    "failure_scenario": "Remediated parser rules are not applied to already-checkpointed targets during incremental runs.",
+    "potential_impact": "Stale classification persistence.",
+    "historical_impact": "NONE",
+    "recommended_remediation_boundary": "scripts/research/checkpoint_store.py (require composite key or version matching in is_completed).",
+    "recommended_verification_method": "Test that updating parser version invalidates is_completed.",
+    "certified_severity": "P2",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "RESEARCH_ONLY",
+    "etf_historical_build_blocker": true,
+    "certification_notes": "CONFIRMED. CheckpointStore.is_completed(symbol) keys completion strictly on symbol string, ignoring source_sha256, selector_version, index_version, resolver_version, parser_version, and policy_version. Incremental re-execution silently reuses stale results after upstream logic changes. Directly blocks ETF historical build."
+  },
+  {
+    "finding_id": "ARX-LATENT-013",
+    "title": "Split-Brain Storage for User Portfolio Holdings",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "frontend/lib/portfolio.ts",
+      "frontend/app/portfolio/page.tsx",
+      "api/routes/portfolio.py"
+    ],
+    "affected_functions": [
+      "loadPortfolioPositions",
+      "savePortfolioPositions"
+    ],
+    "violated_invariant": "Storage Invariant",
+    "observed_evidence": "loadPortfolioPositions and savePortfolioPositions only read and write to browser localStorage. The backend SQLite API GET /api/v1/portfolio is never invoked on initial page load.",
+    "domain_reasoning": "Portfolio holdings are isolated to a single browser. Opening the application on a mobile device or clearing cookies results in an apparent total loss of portfolio holdings.",
+    "why_existing_tests_missed_it": "Tests tested the API in isolation and mocked localStorage in frontend tests.",
+    "failure_scenario": "User switches browsers or devices and sees 0 holdings.",
+    "potential_impact": "User data loss experience.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "frontend/lib/portfolio.ts & frontend/app/portfolio/page.tsx (fetch from GET /portfolio on mount and hydrate localStorage).",
+    "recommended_verification_method": "Verify empty localStorage hydrates holdings from backend SQLite API.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. frontend/app/portfolio/page.tsx reads and writes holdings exclusively to browser localStorage ('FINANCE_PORTFOLIO_HOLDINGS_V1'), completely bypassing backend api/routes/portfolio.py and SQLite database. Cross-device access or cache clear causes total portfolio data loss, and backend risk analytics cannot see user holdings."
+  },
+  {
+    "finding_id": "ARX-LATENT-014",
+    "title": "Silent Default Entity Assignment to NVDA in Congressional Trades Card",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "frontend/components/CongressionalTradesCard.tsx"
+    ],
+    "affected_functions": [
+      "CongressionalTradesCard"
+    ],
+    "violated_invariant": "Default Entity Invariant",
+    "observed_evidence": "Line 16: 'symbol = \"NVDA\"'. If a parent view does not pass a symbol, the component silently renders Congressional trades for NVIDIA.",
+    "domain_reasoning": "An unselected entity should show an explicit prompt to select an asset, not assume the user is researching NVIDIA.",
+    "why_existing_tests_missed_it": "Tests tested the component with explicit symbol props.",
+    "failure_scenario": "A user on an asset comparison page with an unselected slot sees Pelosi trades for NVDA attributed to the unselected slot.",
+    "potential_impact": "Misattributed trading signals.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "frontend/components/CongressionalTradesCard.tsx (require explicit symbol or render empty state).",
+    "recommended_verification_method": "Render component without props and verify 'Select an asset' is displayed.",
+    "certified_severity": "P3",
+    "certified_confidence": "HIGH_CONFIDENCE",
+    "certified_historical_impact": "NONE",
+    "certified_exposure": "DEAD_CODE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED AS DEAD DEFAULT PROP, DOWNGRADED TO P3. CongressionalTradesCard has a default prop symbol='NVDA'. However, the only parent component rendering it (frontend/app/page.tsx) unconditionally passes symbol={selectedSymbol}, which initializes to 'AAPL' or URL parameter. The 'NVDA' default is unreachable in production navigation."
+  },
+  {
+    "finding_id": "ARX-LATENT-015",
+    "title": "Unbounded Stale Cache in Main Terminal Page",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "PRODUCTION_ACTIVE",
+    "affected_files": [
+      "frontend/app/page.tsx"
+    ],
+    "affected_functions": [
+      "loadData"
+    ],
+    "violated_invariant": "ARX_INV_008",
+    "observed_evidence": "cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map()). loadData stores API responses by key `${selectedSymbol}_${interval}_${userRole}` and reuses them indefinitely without timestamp or TTL verification.",
+    "domain_reasoning": "In an active trading session, an in-memory cache with zero TTL will continue serving morning intraday technicals in the afternoon if the user re-clicks a symbol.",
+    "why_existing_tests_missed_it": "Tests ran fast single-render assertions.",
+    "failure_scenario": "Trader switches from AAPL to MSFT and back to AAPL, viewing 2-hour-old prices and RSI.",
+    "potential_impact": "Stale technicals displayed during live market hours.",
+    "historical_impact": "POSSIBLE",
+    "recommended_remediation_boundary": "frontend/app/page.tsx (add TTL or invalidate on background interval).",
+    "recommended_verification_method": "Verify cacheRef rejects entries older than 60 seconds.",
+    "certified_severity": "P1",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "PRODUCTION_ACTIVE",
+    "etf_historical_build_blocker": false,
+    "certification_notes": "CONFIRMED. frontend/app/page.tsx maintains an in-memory cacheRef Map without TTL, timestamp expiration, or stale-while-revalidate background refresh. Intraday 1m/5m price candles cached at market open will be served indefinitely for the lifetime of the browser tab on symbol re-selection."
+  },
+  {
+    "finding_id": "ARX-LATENT-016",
+    "title": "Recent 497K Strategy Supplements Selected Over Complete Annual Statutory Prospectuses",
+    "severity": "P2",
+    "confidence": "CONFIRMED",
+    "production_exposure": "RESEARCH_ONLY",
+    "affected_files": [
+      "scripts/research/statutory_filing_selector.py",
+      "docs/research/ETF_MANDATE_POPULATION_LEDGER_V1.json"
+    ],
+    "affected_functions": [
+      "StatutoryFilingSelector.select_statutory_filing"
+    ],
+    "violated_invariant": "ARX_INV_005, ARX_INV_006",
+    "observed_evidence": "For targets XUDV and UDIV, the selector chose 497K supplement filings d54616d497k.htm (14.5KB) instead of complete base prospectuses because the supplements were filed in 2026 and contained the phrase 'Principal Investment Strategies'. Only a single amendment paragraph was extracted, truncating the primary investment objective.",
+    "domain_reasoning": "A 1-page sticker supplement amending a single sentence of a strategy should not displace a 100-page comprehensive annual summary prospectus.",
+    "why_existing_tests_missed_it": "Tests checked that a valid 497K document was selected and that strategy text was extracted.",
+    "failure_scenario": "Incomplete mandate extractions lead to ambiguous or distorted classifications.",
+    "potential_impact": "Truncated mandate evidence.",
+    "historical_impact": "CONFIRMED",
+    "recommended_remediation_boundary": "scripts/research/statutory_filing_selector.py (penalize short supplement filings when comprehensive base prospectuses exist).",
+    "recommended_verification_method": "Verify XUDV and UDIV select full annual prospectuses.",
+    "certified_severity": "P2",
+    "certified_confidence": "CONFIRMED",
+    "certified_historical_impact": "CONFIRMED",
+    "certified_exposure": "RESEARCH_ONLY",
+    "etf_historical_build_blocker": true,
+    "certification_notes": "CONFIRMED. Selector selects recent 497K strategy supplements (e.g. XUDV, UDIV accession 0001193125-26-191894/96) over comprehensive annual statutory prospectuses (Form 485BPOS). Because supplements contain brief fee/index updates lacking full principal strategy text, extracted sections trigger INSUFFICIENT_MANDATE_EVIDENCE and fail closed to AMBIGUOUS_MANDATE. Directly blocks ETF historical build."
+  }
+]
