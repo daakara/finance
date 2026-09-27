@@ -816,3 +816,24 @@ class TestProspectiveDecisionCapture:
         # Verify capture latency is performant (e.g. p50 < 25ms in SQLite WAL mode)
         assert p50 < 50.0, f"p50 latency {p50:.2f}ms exceeds threshold"
         assert max_lat < 500.0, f"max latency {max_lat:.2f}ms exceeds threshold"
+
+    def test_17_decision_id_tuple_boundary_immunity(self):
+        """Scenario 17: Adversarial test proving tuple-boundary shifting cannot alter identity.
+        With delimiter-free string concatenation:
+        ('AB', 'CD') and ('A', 'BCD') produced identical preimages ('ABCD...').
+        With canonical deterministic JSON serialization, preimages are strictly distinct.
+        """
+        id1 = compute_decision_id(
+            instrument_id="AB",
+            evaluation_cycle_id="CD",
+            engine_sha="7ad44595826c147cc77f93cd676af520764c7442",
+            decision_schema_version="1.0.2",
+        )
+        id2 = compute_decision_id(
+            instrument_id="A",
+            evaluation_cycle_id="BCD",
+            engine_sha="7ad44595826c147cc77f93cd676af520764c7442",
+            decision_schema_version="1.0.2",
+        )
+        assert id1 != id2, f"Tuple-boundary collision detected: {id1} == {id2}"
+

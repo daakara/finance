@@ -48,12 +48,22 @@ Historical frozen files inspected and verified completely unchanged:
 
 ## 3. CORE ARCHITECTURAL INVARIANTS IMPLEMENTED
 
-### 3.1 Deterministic Decision Identity
+### 3.1 Deterministic Decision Identity (Canonical JSON Serialization)
 ```python
-decision_id = f"DEC_{hashlib.sha256((instrument_id + evaluation_cycle_id + engine_sha + decision_schema_version).encode()).hexdigest()[:16]}"
+canonical_preimage = json.dumps(
+    {
+        "decision_schema_version": decision_schema_version,
+        "engine_sha": engine_sha,
+        "evaluation_cycle_id": evaluation_cycle_id,
+        "instrument_id": instrument_id,
+    },
+    sort_keys=True,
+    separators=(",", ":"),
+)
+decision_id = f"DEC_{hashlib.sha256(canonical_preimage.encode()).hexdigest()[:16]}"
 ```
 Matches pattern: `^DEC_[a-f0-9]{16}$`.  
-Guarantees that retries of the same asset under the same cycle generate the exact same `decision_id`.
+Guarantees that retries of the same asset under the same cycle generate the exact same `decision_id`, while canonical JSON key-value serialization eliminates any tuple-boundary ambiguity.
 
 ### 3.2 Evaluation Attempts & Denominator Non-Inflation
 Retries record distinct execution attempts:
@@ -73,10 +83,10 @@ The engine executes reconciliation and updates cycle metadata atomically.
 - `SCHEDULED_UNIVERSE_SCAN`: `POPULATION_SAMPLING_MODE = SYSTEMATIC`, `eligible_for_opportunity_capture = True`.
 Only `SCHEDULED_UNIVERSE_SCAN` qualifies for empirical opportunity capture.
 
-### 3.5 Dual-Write and Recovery Stream
-Every decision event is written to:
-1. Canonical SQLite store (`governance.db`) with WAL mode, foreign keys, and immutability triggers.
-2. Append-Only JSONL recovery stream (`prospective_capture_stream.jsonl`).
+### 3.5 Dual-Write and Recovery Stream (Sequential Authority Audit)
+- `SQLITE_IS_CANONICAL_AUTHORITY = YES`: All transactional state commits to SQLite first (`governance.db` with WAL mode, foreign keys, and immutability triggers).
+- `JSONL_IS_RECOVERY_STREAM = YES`: Append-only JSONL (`prospective_capture_stream.jsonl`) receives sequential event appends after SQLite commit.
+- `CROSS_STORE_TRANSACTION_ATOMICITY = NO`: Writes are sequential rather than mediated by distributed 2PC; SQLite serves as the definitive single source of truth.
 
 ### 3.6 Immutability Enforcement
 SQLite triggers `trg_prevent_update_prospective_decision_events` and `trg_prevent_delete_prospective_decision_events` strictly raise `FAIL` on any attempted mutation or deletion.
@@ -89,7 +99,7 @@ Audit adjustments are appended to `prospective_decision_corrections` (`COR_{fiel
 ## 4. VERIFICATION & ACCEPTANCE RESULTS
 
 ### 4.1 Prospective Decision Capture Test Suite
-The 16 deterministic tests in [`tests/test_prospective_decision_capture.py`](file:///c:/Users/akara/Documents/Projects/finance/tests/test_prospective_decision_capture.py) were executed:
+The 17 deterministic tests in [`tests/test_prospective_decision_capture.py`](file:///c:/Users/akara/Documents/Projects/finance/tests/test_prospective_decision_capture.py) were executed:
 ```text
 tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_01_normal_systematic_completed_evaluation PASSED
 tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_02_normal_non_recommendation PASSED
@@ -107,8 +117,9 @@ tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test
 tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_14_data_availability_states PASSED
 tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_15_decision_parity_capture_on_off PASSED
 tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_16_capture_latency_benchmark PASSED
+tests/test_prospective_decision_capture.py::TestProspectiveDecisionCapture::test_17_decision_id_tuple_boundary_immunity PASSED
 
-============================= 16 passed in 3.89s ==============================
+============================= 17 passed in 4.58s ==============================
 ```
 
 ### 4.2 Decision Parity

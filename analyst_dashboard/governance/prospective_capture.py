@@ -98,12 +98,23 @@ def compute_decision_id(
     engine_sha: str = ENGINE_SHA,
     decision_schema_version: str = DECISION_SCHEMA_VERSION,
 ) -> str:
-    """Deterministic decision ID: DEC_{sha256(instrument_id + evaluation_cycle_id + engine_sha + decision_schema_version)[:16]}.
+    """Deterministic decision ID: DEC_{sha256(canonical_json)[:16]}.
+    Uses canonical deterministic JSON serialization to guarantee tuple-boundary immunity.
     Conforms to pattern: ^DEC_[a-f0-9]{16}$
     """
-    raw = f"{instrument_id}{evaluation_cycle_id}{engine_sha}{decision_schema_version}"
-    h16 = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    canonical_preimage = json.dumps(
+        {
+            "decision_schema_version": decision_schema_version,
+            "engine_sha": engine_sha,
+            "evaluation_cycle_id": evaluation_cycle_id,
+            "instrument_id": instrument_id,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    h16 = hashlib.sha256(canonical_preimage.encode("utf-8")).hexdigest()[:16]
     return f"DEC_{h16}"
+
 
 
 def compute_attempt_id(decision_id: str, attempt_number: int, hash_input: str = "") -> str:
