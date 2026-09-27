@@ -228,3 +228,60 @@ def test_gap_through_stop_after_entry(base_signal):
     assert res.exit_price == 90.0  # Slippage honored: fills at 90.0, not 95.0
     assert res.gross_return_pct == -10.0  # (90 - 100) / 100
     assert res.r_multiple == -2.0  # (90 - 100) / (100 - 95) = -10 / 5
+
+
+def test_frozen_evidence_audit_reproducibility():
+    """Certifies that frozen evidence exactly reproduces the 10-signal historical audit."""
+    import json
+    from pathlib import Path
+
+    evidence_path = Path("docs/governance/ARX_HISTORICAL_OUTCOME_FROZEN_EVIDENCE_V1.json")
+    ledger_path = Path("analyst_dashboard/data/paper_trading_ledger.json")
+    audit_path = Path("docs/governance/ARX_HISTORICAL_RECOMMENDATION_OUTCOME_AUDIT_V1.json")
+
+    assert evidence_path.exists(), "Frozen evidence manifest must exist"
+    assert ledger_path.exists(), "Paper trading ledger must exist"
+    assert audit_path.exists(), "Audit artifact must exist"
+
+    with open(evidence_path, "r", encoding="utf-8") as f:
+        evidence_doc = json.load(f)
+    with open(ledger_path, "r", encoding="utf-8") as f:
+        ledger = json.load(f)
+    with open(audit_path, "r", encoding="utf-8") as f:
+        audit_doc = json.load(f)
+
+    signal_map = {s["symbol"]: s for s in ledger["signals"]}
+    audit_map = {r["symbol"]: r for r in audit_doc["perSignalResults"]}
+
+    for ev in evidence_doc["evidence"]:
+        sym = ev["symbol"]
+        sig = signal_map[sym]
+        aud = audit_map[sym]
+
+        df_daily = pd.DataFrame(ev["dailyBars"])
+        df_daily["Date"] = pd.to_datetime(df_daily["date"])
+        df_daily.set_index("Date", inplace=True)
+        df_daily.rename(columns={"open": "Open", "high": "High", "low": "Low", "close": "Close", "volume": "Volume"}, inplace=True)
+
+        df_intraday = None
+        if ev.get("intradaySlice"):
+            df_intraday = pd.DataFrame(ev["intradaySlice"])
+            df_intraday["Datetime"] = pd.to_datetime(df_intraday["timestamp"])
+            df_intraday.set_index("Datetime", inplace=True)
+            df_intraday.rename(columns={"open": "Open", "high": "High", "low": "Low", "close": "Close", "volume": "Volume"}, inplace=True)
+
+        res = PaperTradingOutcomeEvaluator.evaluate_signal(
+            signal=sig,
+            daily_bars=df_daily,
+            intraday_bars=df_intraday,
+            provider=ev["provider"]
+        )
+
+        assert res.entry_state == aud["entryState"], f"Entry state mismatch for {sym}"
+        assert res.outcome == aud["outcome"], f"Outcome mismatch for {sym}"
+        assert res.exit_price == aud["exitPrice"], f"Exit price mismatch for {sym}"
+        assert res.gross_return_pct == aud["grossReturnPct"], f"Gross return mismatch for {sym}"
+        assert res.net_simulated_return_pct == aud["netSimulatedReturnPct"], f"Net return mismatch for {sym}"
+        assert res.r_multiple == aud["rMultiple"], f"R multiple mismatch for {sym}"
+        assert res.mfe == aud["mfe"], f"MFE mismatch for {sym}"
+        assert res.mae == aud["mae"], f"MAE mismatch for {sym}"
