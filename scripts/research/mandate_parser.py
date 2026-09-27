@@ -171,27 +171,27 @@ PRODUCT_EXCLUSION_PATTERNS = [
 
 # Geography Invariant: Ex-US / International / Foreign mandates rejected from US confirmatory equity
 GEOGRAPHY_EX_US_PATTERNS = [
-    r"\b(?:ex[- ](?:us|u\.s\.|united states)|developed ex[- ](?:us|u\.s\.|united states))\b",
-    r"\b(?:outside (?:the )?(?:us|u\.s\.|united states))\b",
+    r"\b(?:ex[- ](?:us|u\.s\.|united states)|developed ex[- ](?:us|u\.s\.|united states))(?!\w)",
+    r"\b(?:outside (?:the )?(?:us|u\.s\.|united states))(?!\w)",
     r"\b(?:non[- ](?:us|u\.s\.|united states) (?:companies|issuers|securities|stocks|equities|markets|investments|countries))\b",
     r"\b(?:international (?:equity|equities|stocks|developed|markets|index|fund|companies|securities))\b",
     r"\b(?:foreign (?:companies|issuers|securities|stocks|equities|markets|countries))\b",
     r"\b(?:emerging markets|emerging market)\b",
-    r"\b(?:global excluding (?:the )?(?:us|u\.s\.|united states))\b",
+    r"\b(?:global excluding (?:the )?(?:us|u\.s\.|united states))(?!\w)",
     r"\b(?:europe|asia|japan|china|latin america|pacific|emea|asia-pacific|australia|united kingdom|canada)\b",
-    r"\bftse (?:developed|all cap|global) ex[- ](?:us|u\.s\.)\b",
+    r"\bftse (?:developed|all cap|global) ex[- ](?:us|u\.s\.)(?!\w)",
     r"\bmsci (?:eafe|em|emerging|world ex|acwi ex|acwi)\b",
 ]
 
 STRONG_EX_US_PATTERNS = [
-    r"\b(?:ex[- ](?:us|u\.s\.|united states)|developed ex[- ](?:us|u\.s\.|united states))\b",
+    r"\b(?:ex[- ](?:us|u\.s\.|united states)|developed ex[- ](?:us|u\.s\.|united states))(?!\w)",
     r"\b(?:msci\s+(?:eafe|em|emerging|world ex|acwi ex|acwi))\b",
     r"\b(?:emerging markets|emerging market)\b",
-    r"\bftse (?:developed|all cap|global) ex[- ](?:us|u\.s\.)\b",
-    r"\b(?:global excluding (?:the )?(?:us|u\.s\.|united states))\b",
-    r"\b(?:outside (?:the )?(?:us|u\.s\.|united states))\b",
+    r"\bftse (?:developed|all cap|global) ex[- ](?:us|u\.s\.)(?!\w)",
+    r"\b(?:global excluding (?:the )?(?:us|u\.s\.|united states))(?!\w)",
+    r"\b(?:outside (?:the )?(?:us|u\.s\.|united states))(?!\w)",
     r"\b(?:europe|asia|japan|china|latin america|pacific|emea|asia-pacific|australia|united kingdom|canada)\b",
-    r"\b(?:invests|investing)\s+(?:primarily|substantially|at\s+least\s+80%\s+of\s+(?:its\s+)?(?:net\s+|total\s+)?assets)\b[^.;\n]{0,120}?\b(?:outside\s+(?:the\s+)?(?:us|u\.s\.|united states)|non[- ](?:us|u\.s\.|united states)|foreign|in\s+companies\s+domiciled\s+outside)\b",
+    r"\b(?:invests|investing)\s+(?:primarily|substantially|at\s+least\s+80%\s+of\s+(?:its\s+)?(?:net\s+|total\s+)?assets)\b[^.;\n]{0,120}?\b(?:outside\s+(?:the\s+)?(?:us|u\.s\.|united states)|non[- ](?:us|u\.s\.|united states)|foreign|in\s+companies\s+domiciled\s+outside)(?!\w)",
 ]
 
 INCIDENTAL_FOREIGN_PATTERNS = [
@@ -227,6 +227,7 @@ PRIMARY_EQUITY_DISQUALIFIERS = [
     r"\b(?:common\s+stocks|equity\s+securities\s+of\s+large-cap)\b",
     r"\b(?:underlying\s+index\s+is\s+composed\s+of\s+.*?equity)\b",
     r"\b(?:nasdaq\s+victory\s+us\s+large\s+cap\s+(?:100|500)|adaptive\s+wealth\s+strategies\s+u\.s\.\s+risk\s+management)\b",
+    r"\b(?:largecap\s+index|large-cap\s+index|equity\s+index|stock\s+index)\b",
 ]
 
 INCIDENTAL_TREASURY_PATTERNS = [
@@ -235,6 +236,8 @@ INCIDENTAL_TREASURY_PATTERNS = [
     r"\b(?:cash\s+or\s+cash\s+equivalents\s+\(including\s+.*?treasury)\b",
     r"\b(?:cash\s+equivalents\s*,?\s*such\s+as\s+u\.s\.\s+treasury)\b",
     r"\b(?:temporary\s+defensive\s+purposes\b[^.;\n]{0,60}?\bu\.s\.\s+treasury)\b",
+    r"\b(?:only\s+expected\s+to\s+invest\s+in\s+.*?treasury\s+bills?\s+from\s+time\s+to\s+time)\b",
+    r"\b(?:in\s+response\s+to\s+adverse\s+market\s+conditions\b[^.;\n]{0,60}?\btreasury)\b",
 ]
 
 

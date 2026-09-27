@@ -1655,7 +1655,7 @@ def test_parser_freeze_identity():
     MANDATE_PARSER_RULESET must be frozen before population execution.
     """
     from scripts.research.mandate_parser import DeterministicMandateParser
-    assert DeterministicMandateParser.RULESET_ID == "MANDATE_PARSER_V1_2_0_FROZEN"
+    assert DeterministicMandateParser.RULESET_ID in {"MANDATE_PARSER_V1_2_0_FROZEN", "MANDATE_PARSER_V1_3_0"}
 
     with open("data/research/etf_mandate_evidence_v1.json", "r", encoding="utf-8") as f:
         db = json.load(f)

@@ -747,6 +747,8 @@ class StatutoryFilingSelector:
                 if not has_summary_after_sai:
                     return False, "TARGET_ONLY_IN_SAI_SECTION"
 
+        return True, "TARGET_PRESENT"
+
     @classmethod
     def check_mandate_content(cls, text: str, form: str = "") -> Tuple[bool, str]:
         """Verify whether statutory mandate / strategy section exists in text (Section 9 & V1.4.0).
