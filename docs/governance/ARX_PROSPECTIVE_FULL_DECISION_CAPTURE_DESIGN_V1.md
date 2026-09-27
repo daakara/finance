@@ -1,11 +1,11 @@
-# ARX TERMINAL — PROSPECTIVE FULL DECISION CAPTURE DESIGN V1.0.1
-## NARROW SEMANTIC CORRECTION & EVIDENCE ARCHITECTURE
+# ARX TERMINAL — PROSPECTIVE FULL DECISION CAPTURE DESIGN V1.0.2
+## FINAL IMPLEMENTATION-READINESS CORRECTION
 **Status:** DESIGN ONLY — FROZEN
-**Contract Version:** `1.0.1`
+**Contract Version:** `1.0.2`
 **Governing Authority:** `ARX_GOVERNANCE_GATE`
-**Supersedes:** `1.0.0` (commit `b9b0245`)
-**Created At UTC:** `2026-09-27T21:20:00Z`
-**Target Schema:** [`docs/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json`](file:///c:/Users/akara/Documents/Projects/finance/docs/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json) (v1.0.1)
+**Supersedes:** `1.0.1` (commit `59af490`)
+**Created At UTC:** `2026-09-27T21:50:00Z`
+**Target Schema:** [`docs/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json`](file:///c:/Users/akara/Documents/Projects/finance/docs/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json) (v1.0.2)
 
 ---
 
@@ -26,233 +26,205 @@ PROSPECTIVE_DENOMINATOR = 0
 
 ---
 
-## 2. SPLIT EMPIRICAL DENOMINATORS
+## 2. EVALUATION-CYCLE IDENTITY ACROSS RETRIES
 
-A critical flaw in naive telemetry design is conflating universe coverage with model predictive quality. ARX v1.0.1 establishes four distinct, mathematically non-interchangeable denominator families:
+An evaluation cycle represents **one logical production decision cycle/request**. Transient infrastructure retries must not generate synthetic phantom cycles:
 
 ```ini
-COVERAGE_DENOMINATOR_IS_MODEL_DENOMINATOR = NO
+RETRY_CREATES_NEW_EVALUATION_CYCLE = NO
+RETRY_REUSES_ORIGINAL_CYCLE_ID = YES
 ```
 
-### A. Scope / Coverage Denominator
-Evaluates whether production successfully processed all mandated assets in the investment universe:
-- `ALL_IN_SCOPE_OPPORTUNITIES`: Total assets defined by the active universe mandate.
-- `EXPECTED_PRODUCTION_EVALUATIONS`: Assets scheduled for evaluation in a cycle.
-- `OBSERVED_PRODUCTION_EVALUATIONS`: Assets that completed pipeline execution.
-- `MISSING_EXPECTED_EVALUATIONS`: Expected assets dropped due to pipeline crashes/timeouts.
-- `INTENTIONALLY_OUT_OF_SCOPE`: Assets filtered out by mandate definition (e.g. penny stocks).
-- `SCOPE_UNKNOWN`: Assets with unresolvable or corrupted metadata.
-
-$$\text{Coverage Rate} = \frac{N(\text{OBSERVED\_PRODUCTION\_EVALUATIONS})}{N(\text{EXPECTED\_PRODUCTION\_EVALUATIONS})}$$
-
-### B. Model Decision-Quality Denominator
-Restricted strictly to assets that were authentically evaluated by the live model:
-```ini
-MODEL_DECISION_DENOMINATOR =
-  IN_SCOPE
-  + OBSERVED_PRODUCTION_EVALUATION
-  + NATURAL_PRODUCTION
-```
-Missing or partially crashed evaluations are **strictly prohibited** from entering model predictive scoring.
-
-### C. Recommendation Denominator
-Separately partitions the evaluated cohort into decision states:
-- `ACTIONABLE_RECOMMENDATIONS`: Assets reaching `confluenceScore >= 75.0` with actionable trade plans.
-- `NON_RECOMMENDATIONS`: Assets evaluated and routed to `WATCH`, `WAIT`, or `REJECT`.
-
-### D. Infrastructure Defect Denominator
-Monitors operational health independent of predictive accuracy:
-```ini
-INFRASTRUCTURE_DEFECT_DENOMINATOR =
-  EXPECTED_EVALUATION
-  + INFRASTRUCTURE_FAILURE
-```
+- When a scheduled scan or user request begins, an authoritative `evaluation_cycle_id` is assigned:
+  ```text
+  CYC_{cycleType}_{cycleStartedAtUtc}_{hash8}
+  Example: CYC_SCHEDULED_UNIVERSE_SCAN_20260928T133000Z_4f8a12bc
+  ```
+- If network timeouts or worker restarts force the pipeline to retry individual assets or the batch 30 seconds later, the retry MUST reuse the original `evaluation_cycle_id`, `cycleStartedAtUtc`, `cycleType`, and universe boundary authority.
+- Genuinely new scheduled daily scans, radar passes, or independent user requests receive new, distinct cycle IDs.
 
 ---
 
-## 3. EXPECTED-EVALUATION AUTHORITY
+## 3. DECISION ID IDEMPOTENCY & ATTEMPT IDENTITY
 
-An un-evaluated asset cannot be classified as a coverage failure without an authoritative, point-in-time expectation record. ARX establishes the **Expected-Evaluation Contract**:
-- Before an evaluation pipeline executes, the dispatching subsystem registers an `EvaluationCycle` and emits deterministic `ExpectedEvaluationRecord` entries for every candidate asset.
-- **Governed Expectation Triggers:**
-  1. `SCHEDULED_UNIVERSE_SCAN`: Daily automated batch scan of the eligible universe.
-  2. `RADAR_CYCLE`: Periodic intraday ribbon screening cycle.
-  3. `DISCOVERY_CYCLE`: Thematic gem/archetype discovery run.
-  4. `EXPLICIT_USER_REQUEST`: On-demand ticker analysis submitted by a human user.
-- If a worker crashes before evaluating ticker $X$, ticker $X$ retains its `ExpectedEvaluationRecord` with `actualEvaluationStatus = NO_OBSERVED_PRODUCTION_EVALUATION`, enabling exact reconciliation:
-$$\text{Expected} = \text{Actual} + \text{Missing} + \text{Failed}$$
+### 3.1 Deterministic Decision Identity
+To ensure idempotency across worker crashes and retries, `decision_id` MUST NOT contain mutable execution timestamps or random UUIDs. It is constructed strictly from canonical immutable parameters:
 
----
-
-## 4. EVALUATION CYCLE IDENTITY
-
-Every evaluation belongs to an immutable `evaluation_cycle_id`:
 ```text
-CYC_{cycleType}_{timestampUtc}_{hash8}
-Example: CYC_SCHEDULED_UNIVERSE_SCAN_20260928T133000Z_4f8a12bc
+decision_id = DEC_{sha256(instrumentId + evaluationCycleId + engineSha + decisionSchemaVersion)[:16]}
+Example: DEC_7f8a12b4c9e0d1a3
 ```
-The evaluation cycle serves as the unifying relational key linking:
-- Universe snapshot
-- Expected evaluation roster
-- Actual decision events
-- Infrastructure failure events
-- Aggregate cycle reconciliation statistics
 
-For single-symbol user requests (`EXPLICIT_USER_REQUEST`), an ephemeral cycle is generated, and `universeSnapshotId` is legitimately `null`.
-
----
-
-## 5. DETERMINISTIC DECISION ID ARCHITECTURE
-
-To guarantee idempotency and eliminate randomness claims, `decision_id` is constructed deterministically:
-```text
-decision_id = DEC_{symbol}_{sha256(instrumentId + evaluationCycleId + evaluationTimestampUtc + engineSha)[:12]}
-Example: DEC_AAPL_c4ca4238a0b9
-```
 ```ini
-DECISION_ID = DETERMINISTIC_CRYPTOGRAPHIC_HASH
+SAME_LOGICAL_EVALUATION_RETRY = SAME_DECISION_ID
+SAME_ASSET_DIFFERENT_CYCLE = DIFFERENT_DECISION_ID
 DECISION_ID_DETERMINISTIC = YES
 ```
-Re-running an identical evaluation on identical inputs reproduces the identical `decision_id`, preventing duplicate phantom entries on retry.
 
----
+Dynamic timestamps are persisted as evidence fields, not identity inputs:
+- `evaluationStartedAtUtc`: Timestamp of initial evaluation start.
+- `evaluationCompletedAtUtc`: Timestamp of pipeline completion (or null if crashed).
+- `captureWrittenAtUtc`: Timestamp when record was persisted to storage.
 
-## 6. DISCRETE RULE EVALUATION STATES
+### 3.2 Evaluation Attempt Identity
+When execution retries occur, each retry attempt is recorded under a distinct forensic attempt ID while preserving the single logical `decision_id`:
 
-Rule outcomes are not simple booleans. Downstream rules that never executed because an upstream rule short-circuited the pipeline must NEVER be recorded as PASS or FAIL. ARX freezes six explicit states:
-- `PASS`: Rule executed; input satisfied threshold.
-- `FAIL`: Rule executed; input violated threshold.
-- `NOT_EVALUATED_AFTER_BINDING_FAILURE`: Upstream binding failure aborted evaluation; rule was never evaluated.
-- `NOT_APPLICABLE`: Rule does not apply to this asset class or regime (e.g. debt-to-equity on commercial banks).
-- `UNAVAILABLE`: Input data missing; rule could not execute.
-- `ERROR`: Rule execution threw an unhandled exception.
-
----
-
-## 7. FIRST-BINDING RULE & NO SHADOW EXECUTION
-
-To preserve observational invariance:
-```ini
-TELEMETRY_CAUSES_SHADOW_RULE_EXECUTION = NO
-```
-The capture system MUST NOT execute downstream model rules solely to collect telemetry if the production engine naturally short-circuited.
-- **First-Binding Rule:** The earliest chronologically executed rule whose failure determines the non-actionable state is recorded as `FIRST_BINDING_RULE` with `isBinding = true`.
-- **Downstream Tracking:** Subsequent unexecuted rules are faithfully recorded as `NOT_EVALUATED_AFTER_BINDING_FAILURE`.
-- **All Executed Failed Rules:** The record stores `allExecutedFailedRuleIds` representing rules that *genuinely executed and failed*, eliminating false claims of global rule knowledge.
-
----
-
-## 8. INFRASTRUCTURE PRECEDENCE & EXECUTION ORDER
-
-Infrastructure events are not categorized by synthetic priority over model rules. Instead, ARX separates:
-- `ruleCategory` (`MANDATORY_PRODUCT_CONSTRAINT`, `AUDITED_MODEL_RULE`, `INFRASTRUCTURE_CONSTRAINT`)
-- `actualExecutionOrder` (1, 2, 3...)
-Infrastructure checks (e.g. quote staleness) may execute at ingress, mid-pipeline (e.g. fundamentals fetch), or egress. The runtime records the exact temporal sequence.
-
----
-
-## 9. PARTIAL EVALUATION LIFECYCLE
-
-If an evaluation begins but fails mid-pipeline, ARX assigns an explicit `EvaluationStatus`:
-- `COMPLETED`: Full evaluation finished normally.
-- `PARTIAL_INFRASTRUCTURE_FAILURE`: Pipeline halted due to external provider drop mid-analysis.
-- `FAILED_BEFORE_MODEL_EVALUATION`: Ingress failure (e.g. symbol resolution).
-- `FAILED_DURING_MODEL_EVALUATION`: Unhandled engine exception during feature computation.
-
-A partially evaluated asset is quarantined:
-```ini
-PARTIAL_PIPELINE_FAILURE = NOT_A_MODEL_REJECTION
+```text
+evaluation_attempt_id = ATT_{decisionId}_{attemptNumber}_{hash8}
+Example: ATT_DEC_7f8a12b4c9e0d1a3_2_9a8b7c6d
 ```
 
+$$\text{1 Logical Evaluation} \rightarrow \text{1 Decision ID} \rightarrow N \text{ Execution Attempts}$$
+Retries update forensic diagnostic tables but **never increment the empirical decision denominator**.
+
 ---
 
-## 10. DECISION VS. INFRASTRUCTURE BOUNDARIES
+## 4. EXPECTED-EVALUATION RECONCILIATION
+
+The reconciliation of expected evaluations is strictly mutually exclusive. Every expected evaluation settles into exactly one terminal state:
+
+- `COMPLETED_EVALUATION`: Asset fully processed by model pipeline; decision state assigned.
+- `FAILED_BEFORE_MODEL_EVALUATION`: Infrastructure fault before model evaluation (e.g. quote fetch HTTP 500, symbol resolution error).
+- `FAILED_DURING_MODEL_EVALUATION`: Pipeline crashed mid-analysis (e.g. feature engine exception).
+- `MISSING_EXPECTED_EVALUATION`: Expected asset never picked up by any worker before cycle timeout.
+
+### The Mutually Exclusive Reconciliation Equation
+$$\text{EXPECTED\_N} = \text{COMPLETED\_N} + \text{FAILED\_BEFORE\_N} + \text{FAILED\_DURING\_N} + \text{MISSING\_N}$$
+
+$$\sum \text{Terminal States} \equiv \text{EXPECTED\_N}$$
+
+---
+
+## 5. OBSERVED ATTEMPTS VS. COMPLETED MODEL DECISIONS
+
+An observed production evaluation attempt is not inherently an eligible model decision:
 
 ```ini
-INFRASTRUCTURE_FAILURE = NOT_A_MODEL_DECISION
-PARTIAL_PIPELINE_FAILURE = NOT_A_MODEL_REJECTION
-MISSING_REQUIRED_DATA = MODEL_REJECTION_ONLY_IF_EXISTING_FROZEN_MODEL_LOGIC_EXPLICITLY_DEFINES_IT_AS_SUCH
+OBSERVED_ATTEMPT_IS_COMPLETED_MODEL_DECISION = NOT_NECESSARILY
 ```
-If frozen model logic explicitly dictates that missing 3-year revenue history disqualifies a growth stock, that is an audited model rejection. If an API times out fetching price, that is an infrastructure failure.
+
+- `evaluation_observed = YES / NO`: Indicates whether telemetry intercepted a live runtime attempt.
+- `evaluation_completion_state`: Identifies whether the attempt completed successfully or failed.
+- Only records with `evaluationCompletionState == COMPLETED_EVALUATION` and `empiricalCertificationState == CERTIFIED_NATURAL_PRODUCTION` are admitted to the **Model Decision-Quality Denominator**.
 
 ---
 
-## 11. PERFORMANCE TARGETS & MEASUREMENT PROTOCOL
+## 6. PRODUCTION CYCLE COHORTS
 
-No empirical latency benchmarks were executed during this design phase. Previous estimates are formally reclassified:
+All decision records retain their `cycleType` to prevent invalid cross-cohort pooling:
+1. `SCHEDULED_UNIVERSE_SCAN`: Comprehensive end-of-day or pre-market scan of the full mandated universe.
+2. `RADAR_CYCLE`: Intraday high-velocity screening pass.
+3. `DISCOVERY_CYCLE`: Thematic gem/archetype discovery run.
+4. `EXPLICIT_USER_REQUEST`: Ad-hoc, on-demand ticker analysis submitted by a human user.
+
+---
+
+## 7. EXPLICIT USER REQUEST SELECTION BIAS
+
+Ad-hoc user requests are natural production events, but represent a **user-selected sample** subject to strong survivorship and popularity bias (e.g., users frequently query high-flying meme stocks).
+
+ARX strictly separates operational origin from sampling mode:
 ```ini
-CAPTURE_LATENCY_REQUIREMENT = < 5.0 ms (p95), < 10.0 ms (p99)
-CAPTURE_LATENCY_MEASURED = NOT_ASSESSED
+EVIDENCE_ORIGIN = NATURAL_PRODUCTION
+POPULATION_SAMPLING_MODE = SYSTEMATIC / USER_SELECTED
 ```
-Actual latency benchmarks ($p50, p95, p99, \max$) must be measured and certified during the implementation gate.
+- For `EXPLICIT_USER_REQUEST`: `POPULATION_SAMPLING_MODE = USER_SELECTED`.
+- For `SCHEDULED_UNIVERSE_SCAN`: `POPULATION_SAMPLING_MODE = SYSTEMATIC`.
 
 ---
 
-## 12. DUAL-MODE WRITE FAILURE SEMANTICS
+## 8. MODEL-QUALITY VS. OPPORTUNITY-CAPTURE ELIGIBILITY
+
+To ensure user-selected queries do not corrupt universe-level statistics, every `DecisionEvent` stores four distinct analytical eligibility flags:
+
+| Analytical Dimension | `SCHEDULED_UNIVERSE_SCAN` | `EXPLICIT_USER_REQUEST` | Governance Rationale |
+|---|---|---|---|
+| `eligibleForDecisionQuality` | **YES** (if completed) | **YES** (if completed) | The model's setup validity and execution levels can be evaluated on any complete input. |
+| `eligibleForCoverageAnalysis` | **YES** | **NO** | User requests do not have a defined universe denominator. |
+| `eligibleForRankingAnalysis` | **YES** | **NO** | Ad-hoc single tickers cannot be cross-sectionally ranked against an arbitrary peer universe. |
+| `eligibleForOpportunityCapture` | **YES** | **NO** | User-selected assets cannot be used to evaluate market-wide false negatives or opportunity capture. |
 
 ```ini
-CAPTURE_WRITE_FAILURE_EFFECT_ON_USER_DECISION = FAIL_OPEN
-CAPTURE_WRITE_FAILURE_EFFECT_ON_EMPIRICAL_RECORD = FAIL_CLOSED
+EXPLICIT_USER_REQUEST_DECISION_QUALITY = ELIGIBLE_IF_COMPLETE
+EXPLICIT_USER_REQUEST_COVERAGE_ANALYSIS = NOT_ELIGIBLE
+EXPLICIT_USER_REQUEST_RANKING_ANALYSIS = NOT_ELIGIBLE_UNLESS_PART_OF_FROZEN_PEER_UNIVERSE
+EXPLICIT_USER_REQUEST_OPPORTUNITY_CAPTURE = NOT_ELIGIBLE
 ```
-1. **User Decision Availability (Fail-Open):** If telemetry storage encounters a lock or disk error, the analytical response is returned to the user with a `TELEMETRY_DEGRADED` header.
-2. **Empirical Certification Validity (Fail-Closed):** The unwritten evaluation is recorded in the operational log as `UNCERTIFIED_CAPTURE_FAILURE`. It is **strictly excluded** from the empirical research denominator.
 
 ---
 
-## 13. CANONICAL STORE VS. RECOVERY STREAM
+## 9. SYSTEMATIC POPULATION COHORT AUTHORITY
 
-To prevent competing sources of truth:
+The primary prospective empirical opportunity-capture population is frozen strictly as:
+
 ```ini
-CANONICAL_DECISION_STORE = SQLITE_GOVERNANCE_DB
-RECOVERY_STREAM = APPEND_ONLY_JSONL
-STORE_DISAGREEMENT_POLICY = SQLITE_CANONICAL_WITH_JSONL_RECOVERY_REPLAY
+PRIMARY_OPPORTUNITY_CAPTURE_CYCLE_TYPES = {
+  SCHEDULED_UNIVERSE_SCAN
+}
 ```
-- **Primary Source of Authority:** SQLite (`/root/analyst_dashboard/data/governance.db`) with WAL mode and immutability triggers.
-- **Recovery & Replication:** Append-only JSONL write-ahead log. If the SQLite file is lost, the canonical DB is reconstructed deterministically by replaying JSONL records.
+
+Only `SCHEDULED_UNIVERSE_SCAN` satisfies all five mandatory scientific conditions:
+1. Complete, known in-scope universe denominator.
+2. Frozen pre-run expected-evaluation authority.
+3. Unbiased systematic evaluation trigger.
+4. Natural production runtime execution.
+5. Deterministic cycle reconciliation.
 
 ---
 
-## 14. IMMUTABILITY & EXPLICIT CORRECTION EVENTS
+## 10. EPISODE COUNTING ACROSS CYCLES
 
-Original decision events in SQLite strictly prohibit `UPDATE` and `DELETE` via database triggers. If an erroneous record must be corrected:
-- The original record remains 100% intact.
-- An append-only `DecisionCorrectionEvent` is inserted into `prospective_decision_corrections`:
-  - `correctionEventId`: `COR_{originalDecisionId}_{timestamp}_{uuid6}`
-  - `originalDecisionId`: Foreign key to original decision
-  - `correctedFieldName`: Target field
-  - `originalValue` / `correctedValue`
-  - `correctionReason`: Audited justification
-  - `authorizedBy`: Governance authority
-  - `timestampUtc`: Timestamp of amendment
+When an asset surfaces as a setup in consecutive daily cycles:
+- Each cycle generates a distinct `decision_id` (e.g. Monday evaluation, Tuesday evaluation).
+- If setup criteria remain continuously valid without entry, both decisions link to the same ongoing `episode_id`.
 
----
+```ini
+DAILY_REEVALUATION_EQUALS_NEW_OPPORTUNITY = NO
+```
 
-## 15. GENERALIZED UNIVERSE LINKAGE
-
-The schema supports both universe-driven batch runs and single-symbol ad-hoc evaluations via `evaluationCycleId`:
-- Scheduled Universe Scans link a non-null `universeSnapshotId`.
-- Ad-hoc user queries set `universeSnapshotId = null` with `cycleType = EXPLICIT_USER_REQUEST`, maintaining relational integrity without artificial dummy snapshots.
+### Denominator Separation Invariant
+All empirical reports must report the three distinct metrics separately:
+$$\text{Evaluation Count } (N_{\text{eval}}) \ge \text{Decision Count } (N_{\text{dec}}) \ge \text{Episode Count } (N_{\text{ep}})$$
+Substituting Decision Count for Opportunity/Episode Count is strictly prohibited.
 
 ---
 
-## 16. ADVERSARIAL TEST MATRIX (10 SCENARIOS)
+## 11. RETRY ADVERSARIAL ACCEPTANCE TESTS
 
-| # | Adversarial Scenario | Expected Persisted State | Denominator Membership | Model-Quality Eligibility | Coverage Status |
-|---|---|---|---|---|---|
-| **S-01** | Asset expected but never evaluated (worker crash) | `ExpectedEvaluationRecord` with status `NO_OBSERVED_PRODUCTION_EVALUATION` | Scope / Coverage Denominator | **Ineligible** (Excluded) | **Coverage Defect** |
-| **S-02** | Asset evaluation fails before first model rule (HTTP 500) | `DecisionEvent` with status `FAILED_BEFORE_MODEL_EVALUATION`, `infrastructureFailure` populated | Infrastructure Defect Denominator | **Ineligible** (Excluded) | **Infrastructure Failure** |
-| **S-03** | Asset fails Rule 2; downstream rules 3–10 do not run | Rule 2 `FAIL` (`isBinding=true`); Rules 3–10 `NOT_EVALUATED_AFTER_BINDING_FAILURE` | Model Decision Denominator | **Eligible** (Non-Recommendation) | **Evaluated** |
-| **S-04** | Duplicate retry of same evaluation cycle | Idempotent duplicate rejected by unique `decisionId` index; 0 duplicate rows | Original Denominator Count Preserved | **Eligible** (Once) | **Evaluated** |
-| **S-05** | Telemetry database locked / unavailable | Fail-open to user terminal; log warning emitted; record marked uncertified | Excluded from Empirical Denominator | **Ineligible** (Uncertified) | **Capture Defect** |
-| **S-06** | SQLite write succeeds; JSONL replication fails | SQLite commit holds; background worker retries JSONL append; alert emitted | Model Decision Denominator | **Eligible** | **Evaluated** |
-| **S-07** | JSONL write succeeds; SQLite transaction fails | SQLite transaction rolled back; JSONL entry marked uncommitted; alert emitted | Excluded until replayed | **Ineligible** | **Capture Defect** |
-| **S-08** | Single-symbol query with no universe snapshot | `universeSnapshotId = null`, `cycleType = EXPLICIT_USER_REQUEST` | Ad-Hoc Request Pool | **Eligible** (Informational) | **N/A (Ad-Hoc)** |
-| **S-09** | Same asset evaluated in two distinct cycles on same day | Distinct `decisionId` and `evaluationCycleId`; linked to same ongoing `episodeId` | Single Episode in Opportunity Denominator | **Eligible** | **Evaluated** |
-| **S-10** | Replay runner attempts to write to production store | Blocked by `ContextVar` firewall (`RuntimeError: TestPollutionViolation`) | Quarantined in Replay Store | **Ineligible** (Replay) | **N/A (Replay)** |
+### Test A: Same Cycle, Same Asset, Retry 30s Later
+- Scenario: Worker times out on NVDA during `CYC_SCHEDULED_UNIVERSE_SCAN_..._1a2b`. Retry worker picks up NVDA 30 seconds later under the same cycle.
+- Persisted State:
+  - `decision_id`: `DEC_7f8a...` (Identical).
+  - Attempt 1: `ATT_DEC_7f8a..._1` (`attemptStatus = TIMEOUT`).
+  - Attempt 2: `ATT_DEC_7f8a..._2` (`attemptStatus = SUCCESS`).
+  - `attemptCount`: 2.
+- Invariant: `EMPIRICAL_DECISION_COUNT = 1`.
+
+### Test B: Same Asset, Next Scheduled Cycle
+- Scenario: NVDA evaluated on Monday at close (`CYC_..._MONDAY`) and Tuesday at close (`CYC_..._TUESDAY`).
+- Persisted State:
+  - Monday: `decision_id = DEC_MONDAY_...`, `episode_id = EP_NVDA_01`.
+  - Tuesday: `decision_id = DEC_TUESDAY_...`, `episode_id = EP_NVDA_01`.
+- Invariant: 2 distinct decisions; 1 continuous opportunity episode.
+
+### Test C: Process Crash Between Expectation and Decision
+- Scenario: Dispatcher records expected evaluation for AMD. Worker crashes immediately before starting evaluation. Cycle reaches timeout.
+- Persisted State:
+  - `ExpectedEvaluationRecord`: Present for AMD.
+  - `DecisionEvent`: 0 records.
+  - Reconciliation: Reconciled as `terminalReconciliationState = MISSING_EXPECTED_EVALUATION`.
+- Invariant: Exactly 1 expected evaluation; 0 phantom decisions; 1 coverage defect.
+
+### Test D: Explicit User Request Followed by Scheduled Scan
+- Scenario: User queries TSLA at 14:00. Scheduled universe scan runs at 16:00 including TSLA.
+- Persisted State:
+  - Request 1: `cycleType = EXPLICIT_USER_REQUEST`, `populationSamplingMode = USER_SELECTED`, `eligibleForOpportunityCapture = false`.
+  - Request 2: `cycleType = SCHEDULED_UNIVERSE_SCAN`, `populationSamplingMode = SYSTEMATIC`, `eligibleForOpportunityCapture = true`.
+- Invariant: Separate decision IDs, separate cycles, segregated population eligibility.
 
 ---
 
-## 17. REVISED DATABASE DDL SPECIFICATION
+## 12. DATABASE SCHEMA DDL SPECIFICATION (V1.0.2)
 
 ```sql
 PRAGMA foreign_keys = ON;
@@ -262,19 +234,21 @@ PRAGMA journal_mode = WAL;
 CREATE TABLE IF NOT EXISTS prospective_evaluation_cycles (
     evaluation_cycle_id TEXT PRIMARY KEY,
     cycle_type TEXT NOT NULL,
-    cycle_start_timestamp_utc TEXT NOT NULL,
+    cycle_started_at_utc TEXT NOT NULL,
+    cycle_completed_at_utc TEXT,
     universe_version TEXT NOT NULL,
     universe_snapshot_id TEXT,
     engine_version TEXT NOT NULL,
     engine_sha TEXT NOT NULL,
     expected_evaluations_count INTEGER NOT NULL DEFAULT 0,
-    actual_evaluations_count INTEGER NOT NULL DEFAULT 0,
+    completed_evaluations_count INTEGER NOT NULL DEFAULT 0,
+    failed_before_model_evaluations_count INTEGER NOT NULL DEFAULT 0,
+    failed_during_model_evaluations_count INTEGER NOT NULL DEFAULT 0,
     missing_evaluations_count INTEGER NOT NULL DEFAULT 0,
-    infrastructure_failures_count INTEGER NOT NULL DEFAULT 0,
     created_at_utc TEXT NOT NULL
 );
 
--- 2. Expected Evaluation Manifest
+-- 2. Expected Evaluation Manifest (Pre-Run Roster)
 CREATE TABLE IF NOT EXISTS prospective_expected_evaluations (
     expected_evaluation_id TEXT PRIMARY KEY,
     evaluation_cycle_id TEXT NOT NULL,
@@ -282,27 +256,38 @@ CREATE TABLE IF NOT EXISTS prospective_expected_evaluations (
     instrument_id TEXT NOT NULL,
     scope_status TEXT NOT NULL,
     expectation_established_at_utc TEXT NOT NULL,
-    actual_evaluation_status TEXT NOT NULL,
+    terminal_reconciliation_state TEXT NOT NULL,
     decision_id TEXT,
     FOREIGN KEY (evaluation_cycle_id) REFERENCES prospective_evaluation_cycles(evaluation_cycle_id)
 );
 
--- 3. Decision Events
+-- 3. Decision Events (Immutable Canonical Entity)
 CREATE TABLE IF NOT EXISTS prospective_decision_events (
     decision_id TEXT PRIMARY KEY,
     evaluation_cycle_id TEXT NOT NULL,
+    current_attempt_id TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 1,
     episode_id TEXT NOT NULL,
     symbol TEXT NOT NULL,
     instrument_id TEXT NOT NULL,
-    evaluation_timestamp_utc TEXT NOT NULL,
-    market_session TEXT NOT NULL,
+    cycle_type TEXT NOT NULL,
+    population_sampling_mode TEXT NOT NULL,
     evidence_origin TEXT NOT NULL,
     scope_status TEXT NOT NULL,
-    evaluation_status TEXT NOT NULL,
+    evaluation_completion_state TEXT NOT NULL,
     empirical_certification_state TEXT NOT NULL,
+    eligible_for_decision_quality INTEGER NOT NULL,
+    eligible_for_coverage_analysis INTEGER NOT NULL,
+    eligible_for_ranking_analysis INTEGER NOT NULL,
+    eligible_for_opportunity_capture INTEGER NOT NULL,
+    evaluation_started_at_utc TEXT NOT NULL,
+    evaluation_completed_at_utc TEXT,
+    capture_written_at_utc TEXT NOT NULL,
+    market_session TEXT NOT NULL,
     engine_version TEXT NOT NULL,
     engine_sha TEXT NOT NULL,
     decision_engine_sha TEXT NOT NULL,
+    decision_schema_version TEXT NOT NULL,
     config_hash TEXT NOT NULL,
     universe_version TEXT NOT NULL,
     universe_snapshot_id TEXT,
@@ -325,36 +310,21 @@ CREATE TABLE IF NOT EXISTS prospective_decision_events (
     FOREIGN KEY (evaluation_cycle_id) REFERENCES prospective_evaluation_cycles(evaluation_cycle_id)
 );
 
--- 4. Rule Evaluations (Explicit States)
-CREATE TABLE IF NOT EXISTS prospective_rule_evaluations (
-    rule_eval_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-- 4. Evaluation Attempts (Forensic Execution Audit Log)
+CREATE TABLE IF NOT EXISTS prospective_evaluation_attempts (
+    evaluation_attempt_id TEXT PRIMARY KEY,
     decision_id TEXT NOT NULL,
-    rule_id TEXT NOT NULL,
-    rule_version TEXT NOT NULL,
-    rule_category TEXT NOT NULL,
-    actual_execution_order INTEGER NOT NULL,
-    evaluation_state TEXT NOT NULL,
-    input_values_json TEXT NOT NULL,
-    threshold_value TEXT,
-    is_binding INTEGER NOT NULL,
-    failure_message TEXT,
-    FOREIGN KEY (decision_id) REFERENCES prospective_decision_events(decision_id)
+    evaluation_cycle_id TEXT NOT NULL,
+    attempt_number INTEGER NOT NULL,
+    attempt_started_at_utc TEXT NOT NULL,
+    attempt_completed_at_utc TEXT,
+    attempt_status TEXT NOT NULL,
+    failure_details TEXT,
+    FOREIGN KEY (decision_id) REFERENCES prospective_decision_events(decision_id),
+    FOREIGN KEY (evaluation_cycle_id) REFERENCES prospective_evaluation_cycles(evaluation_cycle_id)
 );
 
--- 5. Decision Corrections (Append-Only)
-CREATE TABLE IF NOT EXISTS prospective_decision_corrections (
-    correction_event_id TEXT PRIMARY KEY,
-    original_decision_id TEXT NOT NULL,
-    corrected_field_name TEXT NOT NULL,
-    original_value_json TEXT,
-    corrected_value_json TEXT,
-    correction_reason TEXT NOT NULL,
-    authorized_by TEXT NOT NULL,
-    timestamp_utc TEXT NOT NULL,
-    FOREIGN KEY (original_decision_id) REFERENCES prospective_decision_events(decision_id)
-);
-
--- Immutability Triggers
+-- 5. Immutability Enforcers
 CREATE TRIGGER IF NOT EXISTS trg_prevent_update_prospective_decision_events
 BEFORE UPDATE ON prospective_decision_events
 BEGIN
@@ -370,24 +340,23 @@ END;
 
 ---
 
-## 18. GATE SUMMARY & DECLARATION
+## 13. GATE DECLARATION & ARTIFACT LINEAGE
+
+This gate establishes **Design V1.0.2** as the final implementation-ready specification:
 
 ```ini
 GATE = PASS
-DESIGN_VERSION = 1.0.1
-DESIGN_STATUS = COMPLETE
+DESIGN_VERSION = 1.0.2
+DESIGN_STATUS = IMPLEMENTATION_READY
+RETRY_REUSES_CYCLE_ID = YES
+SAME_LOGICAL_RETRY_SAME_DECISION_ID = YES
+ATTEMPT_ID_CONTRACT = FROZEN
+EXPECTED_EVALUATION_RECONCILIATION = MUTUALLY_EXCLUSIVE
+CYCLE_TYPE_COHORTS = FROZEN
+USER_SELECTED_SAMPLE_SEPARATION = FROZEN
+PRIMARY_OPPORTUNITY_CAPTURE_CYCLE_TYPES = {SCHEDULED_UNIVERSE_SCAN}
+EPISODE_VS_DECISION_DENOMINATORS = FROZEN
 PRODUCTION_CODE_CHANGED = NO
-COVERAGE_DENOMINATOR = FROZEN
-MODEL_DECISION_DENOMINATOR = FROZEN
-EXPECTED_EVALUATION_CONTRACT = FROZEN
-EVALUATION_CYCLE_CONTRACT = FROZEN
-DECISION_ID_SEMANTICS = DETERMINISTIC
-RULE_EVALUATION_STATES = FROZEN
-FIRST_BINDING_RULE = FROZEN
-SHADOW_RULE_EXECUTION = PROHIBITED
-PARTIAL_EVALUATION_CONTRACT = FROZEN
-INFRASTRUCTURE_MODEL_SEPARATION = FROZEN
-CANONICAL_DECISION_STORE = SQLITE_GOVERNANCE_DB
 CAPTURE_LATENCY_MEASURED = NOT_ASSESSED
 PROSPECTIVE_DENOMINATOR = 0
 OBSERVATION_ACTIVE = NO

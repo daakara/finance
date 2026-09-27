@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://arx.terminal/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json",
-  "title": "ARX Prospective Full Decision Capture Schema V1.0.1",
-  "description": "Canonical schema definitions for prospective, non-interfering passive evidence capture, split denominators, evaluation cycles, and deterministic decision identities.",
-  "version": "1.0.1",
-  "createdAtUtc": "2026-09-27T21:15:00Z",
+  "title": "ARX Prospective Full Decision Capture Schema V1.0.2",
+  "description": "Canonical schema definitions for prospective, non-interfering passive evidence capture, deterministic decision identities, evaluation attempts, mutually exclusive reconciliation states, and sampling mode segregation.",
+  "version": "1.0.2",
+  "createdAtUtc": "2026-09-27T21:45:00Z",
   "definitions": {
     "EvidenceOrigin": {
       "type": "string",
@@ -14,7 +14,15 @@
         "SIMULATION",
         "TEST"
       ],
-      "description": "Operational provenance tier. Only NATURAL_PRODUCTION is permitted to enter the empirical research denominator."
+      "description": "Operational provenance tier. Only NATURAL_PRODUCTION is permitted to enter empirical research denominators."
+    },
+    "PopulationSamplingMode": {
+      "type": "string",
+      "enum": [
+        "SYSTEMATIC",
+        "USER_SELECTED"
+      ],
+      "description": "Distinguishes unbiased systematic scans from ad-hoc user-selected asset queries."
     },
     "ScopeStatus": {
       "type": "string",
@@ -25,17 +33,15 @@
       ],
       "description": "Universe boundary classification established by governing investment mandates."
     },
-    "EvaluationStatus": {
+    "EvaluationCompletionState": {
       "type": "string",
       "enum": [
-        "COMPLETED",
-        "PARTIAL_INFRASTRUCTURE_FAILURE",
+        "COMPLETED_EVALUATION",
         "FAILED_BEFORE_MODEL_EVALUATION",
         "FAILED_DURING_MODEL_EVALUATION",
-        "NO_OBSERVED_PRODUCTION_EVALUATION",
-        "EVALUATION_STATUS_UNKNOWN"
+        "MISSING_EXPECTED_EVALUATION"
       ],
-      "description": "Operational completion status of an individual asset evaluation."
+      "description": "Mutually exclusive terminal state for an individual expected evaluation."
     },
     "EvaluationCycleType": {
       "type": "string",
@@ -112,26 +118,31 @@
       "required": [
         "evaluationCycleId",
         "cycleType",
-        "cycleStartTimestampUtc",
+        "cycleStartedAtUtc",
         "universeVersion",
         "engineVersion",
         "engineSha",
         "expectedEvaluationsCount",
-        "actualEvaluationsCount",
-        "missingEvaluationsCount",
-        "infrastructureFailuresCount"
+        "completedEvaluationsCount",
+        "failedBeforeModelEvaluationsCount",
+        "failedDuringModelEvaluationsCount",
+        "missingEvaluationsCount"
       ],
       "properties": {
         "evaluationCycleId": {
           "type": "string",
           "pattern": "^CYC_[A-Z_]+_[0-9]{8}T[0-9]{6}Z_[a-f0-9]{8}$",
-          "description": "Immutable cycle identifier: CYC_{cycleType}_{timestampUtc}_{hash8}."
+          "description": "Immutable cycle identifier preserved across retries: CYC_{cycleType}_{cycleStartedAtUtc}_{hash8}."
         },
         "cycleType": {
           "$ref": "#/definitions/EvaluationCycleType"
         },
-        "cycleStartTimestampUtc": {
+        "cycleStartedAtUtc": {
           "type": "string",
+          "format": "date-time"
+        },
+        "cycleCompletedAtUtc": {
+          "type": ["string", "null"],
           "format": "date-time"
         },
         "universeVersion": {
@@ -152,15 +163,19 @@
           "type": "integer",
           "minimum": 0
         },
-        "actualEvaluationsCount": {
+        "completedEvaluationsCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedBeforeModelEvaluationsCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedDuringModelEvaluationsCount": {
           "type": "integer",
           "minimum": 0
         },
         "missingEvaluationsCount": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "infrastructureFailuresCount": {
           "type": "integer",
           "minimum": 0
         }
@@ -176,7 +191,7 @@
         "instrumentId",
         "scopeStatus",
         "expectationEstablishedAtUtc",
-        "actualEvaluationStatus"
+        "terminalReconciliationState"
       ],
       "properties": {
         "expectedEvaluationId": {
@@ -199,12 +214,62 @@
           "type": "string",
           "format": "date-time"
         },
-        "actualEvaluationStatus": {
-          "$ref": "#/definitions/EvaluationStatus"
+        "terminalReconciliationState": {
+          "$ref": "#/definitions/EvaluationCompletionState"
         },
         "decisionId": {
           "type": ["string", "null"],
-          "description": "Foreign key to DecisionEvent if evaluation completed or partially executed."
+          "description": "Foreign key to DecisionEvent if completed or failed during evaluation."
+        }
+      },
+      "additionalProperties": false
+    },
+    "EvaluationAttempt": {
+      "type": "object",
+      "required": [
+        "evaluationAttemptId",
+        "decisionId",
+        "evaluationCycleId",
+        "attemptNumber",
+        "attemptStartedAtUtc",
+        "attemptStatus"
+      ],
+      "properties": {
+        "evaluationAttemptId": {
+          "type": "string",
+          "pattern": "^ATT_DEC_[a-f0-9]{16}_[0-9]+_[a-f0-9]{8}$",
+          "description": "Unique forensic identifier for an execution attempt: ATT_{decisionId}_{attemptNumber}_{hash8}."
+        },
+        "decisionId": {
+          "type": "string"
+        },
+        "evaluationCycleId": {
+          "type": "string"
+        },
+        "attemptNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attemptStartedAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "attemptCompletedAtUtc": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "attemptStatus": {
+          "type": "string",
+          "enum": [
+            "SUCCESS",
+            "TIMEOUT",
+            "PROVIDER_ERROR",
+            "ENGINE_CRASH",
+            "INCOMPLETE"
+          ]
+        },
+        "failureDetails": {
+          "type": ["string", "null"]
         }
       },
       "additionalProperties": false
@@ -214,18 +279,28 @@
       "required": [
         "decisionId",
         "evaluationCycleId",
+        "currentAttemptId",
+        "attemptCount",
         "episodeId",
         "symbol",
         "instrumentId",
-        "evaluationTimestampUtc",
-        "marketSession",
+        "cycleType",
+        "populationSamplingMode",
         "evidenceOrigin",
         "scopeStatus",
-        "evaluationStatus",
+        "evaluationCompletionState",
         "empiricalCertificationState",
+        "eligibleForDecisionQuality",
+        "eligibleForCoverageAnalysis",
+        "eligibleForRankingAnalysis",
+        "eligibleForOpportunityCapture",
+        "evaluationStartedAtUtc",
+        "captureWrittenAtUtc",
+        "marketSession",
         "engineVersion",
         "engineSha",
         "decisionEngineSha",
+        "decisionSchemaVersion",
         "configHash",
         "universeVersion",
         "dataProvider",
@@ -242,11 +317,18 @@
       "properties": {
         "decisionId": {
           "type": "string",
-          "pattern": "^DEC_[A-Z0-9._-]+_[a-f0-9]{12}$",
-          "description": "Deterministic cryptographic decision identifier: DEC_{symbol}_{sha256(instrumentId+evaluationCycleId+timestamp+engineSha)[:12]}."
+          "pattern": "^DEC_[a-f0-9]{16}$",
+          "description": "Deterministic cryptographic identity: DEC_{sha256(instrumentId+evaluationCycleId+engineSha+decisionSchemaVersion)[:16]}."
         },
         "evaluationCycleId": {
           "type": "string"
+        },
+        "currentAttemptId": {
+          "type": "string"
+        },
+        "attemptCount": {
+          "type": "integer",
+          "minimum": 1
         },
         "episodeId": {
           "type": "string",
@@ -259,13 +341,11 @@
         "instrumentId": {
           "type": "string"
         },
-        "evaluationTimestampUtc": {
-          "type": "string",
-          "format": "date-time"
+        "cycleType": {
+          "$ref": "#/definitions/EvaluationCycleType"
         },
-        "marketSession": {
-          "type": "string",
-          "enum": ["PRE_MARKET", "REGULAR_SESSION", "POST_MARKET", "WEEKEND_CLOSED"]
+        "populationSamplingMode": {
+          "$ref": "#/definitions/PopulationSamplingMode"
         },
         "evidenceOrigin": {
           "$ref": "#/definitions/EvidenceOrigin"
@@ -273,11 +353,39 @@
         "scopeStatus": {
           "$ref": "#/definitions/ScopeStatus"
         },
-        "evaluationStatus": {
-          "$ref": "#/definitions/EvaluationStatus"
+        "evaluationCompletionState": {
+          "$ref": "#/definitions/EvaluationCompletionState"
         },
         "empiricalCertificationState": {
           "$ref": "#/definitions/EmpiricalCertificationState"
+        },
+        "eligibleForDecisionQuality": {
+          "type": "boolean"
+        },
+        "eligibleForCoverageAnalysis": {
+          "type": "boolean"
+        },
+        "eligibleForRankingAnalysis": {
+          "type": "boolean"
+        },
+        "eligibleForOpportunityCapture": {
+          "type": "boolean"
+        },
+        "evaluationStartedAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evaluationCompletedAtUtc": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "captureWrittenAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "marketSession": {
+          "type": "string",
+          "enum": ["PRE_MARKET", "REGULAR_SESSION", "POST_MARKET", "WEEKEND_CLOSED"]
         },
         "engineVersion": {
           "type": "string"
@@ -289,6 +397,9 @@
         "decisionEngineSha": {
           "type": "string",
           "minLength": 7
+        },
+        "decisionSchemaVersion": {
+          "type": "string"
         },
         "configHash": {
           "type": "string",
