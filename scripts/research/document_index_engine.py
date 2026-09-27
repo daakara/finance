@@ -30,9 +30,9 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Set, Tuple, Any
 
 
-INDEX_ENGINE_VERSION = "DOC_INDEX_V1_1_0"
-NORMALIZATION_VERSION = "NORMALIZATION_V1_1_0"
-INDEX_SCHEMA_VERSION = "SCHEMA_V1_1_0"
+INDEX_ENGINE_VERSION = "DOC_INDEX_V1_2_0"
+NORMALIZATION_VERSION = "NORMALIZATION_V1_2_0"
+INDEX_SCHEMA_VERSION = "SCHEMA_V1_2_0"
 
 
 @dataclass
@@ -78,9 +78,79 @@ class StrategyAnchor:
 
 
 class DocumentNormalizer:
-    """Versioned, deterministic document normalizer (NORMALIZATION_V1_0_0)."""
+    """Versioned, deterministic document normalizer (NORMALIZATION_V1_2_0)."""
 
     VERSION = NORMALIZATION_VERSION
+
+    # Bounded financial abbreviations derived from audited SEC statutory corpus
+    FINANCIAL_ABBREVIATIONS = {
+        "tech": "technology",
+        "technology": "technology",
+        "discretion": "discretionary",
+        "discretionary": "discretionary",
+        "div": "dividend",
+        "dividend": "dividend",
+        "divs": "dividends",
+        "dividends": "dividends",
+        "smcp": "small cap",
+        "smcap": "small cap",
+        "idx": "index",
+        "index": "index",
+        "wld": "world",
+        "world": "world",
+        "eq": "equity",
+        "equity": "equity",
+        "intl": "international",
+        "international": "international",
+        "corp": "corporate",
+        "corporat": "corporate",
+        "corporate": "corporate",
+        "govt": "government",
+        "government": "government",
+        "ftseeuropean": "ftse european",
+        "adrhedged": "adr hedged",
+        "market": "markets",
+        "markets": "markets",
+    }
+
+    @classmethod
+    def get_word_equivalence_pattern(cls, word: str) -> str:
+        """Returns bounded regex pattern for financial equivalence variants."""
+        w_low = word.lower()
+        if w_low in ("tech", "technology"):
+            return r"(?:technolog(?:y|ies)|tech)"
+        if w_low in ("discretion", "discretionary"):
+            return r"(?:discretionar(?:y|ies)|discretion)"
+        if w_low in ("div", "dividend"):
+            return r"(?:dividend|div)"
+        if w_low in ("divs", "dividends"):
+            return r"(?:dividends|divs)"
+        if w_low in ("smcp", "smcap", "small-cap", "smallcap"):
+            return r"(?:small[- ]?cap|sm[- ]?cap|smcap|smcp)"
+        if w_low in ("idx", "index"):
+            return r"(?:index|idx)"
+        if w_low in ("wld", "world"):
+            return r"(?:world|wld)"
+        if w_low in ("eq", "equity"):
+            return r"(?:equit(?:y|ies)|eq)"
+        if w_low in ("intl", "international"):
+            return r"(?:international|intl)"
+        if w_low in ("corp", "corporat", "corporate"):
+            return r"(?:corporat(?:e|ion)?|corp)"
+        if w_low in ("govt", "government"):
+            return r"(?:government|govt)"
+        if w_low == "ftseeuropean":
+            return r"(?:ftse\s+european|ftseeuropean)"
+        if w_low == "adrhedged":
+            return r"(?:adr\s+hedged|adrhedged)"
+        if w_low in ("market", "markets"):
+            return r"(?:markets?)"
+        if w_low in ("&", "and", "&amp;"):
+            return r"(?:&|&amp;|and)"
+        if "-" in word:
+            parts = [re.escape(p) for p in word.split("-")]
+            return r"[- ]?".join(parts)
+        return re.escape(word)
 
     @classmethod
     def normalize_html_to_text(cls, raw_html: str) -> Tuple[str, str]:
@@ -115,13 +185,21 @@ class DocumentNormalizer:
 
     @classmethod
     def normalize_name(cls, name: str) -> str:
-        """Standardized legal fund name normalization."""
+        """Standardized legal fund name normalization with bounded financial equivalences."""
         if not name:
             return ""
         norm = unicodedata.normalize("NFKC", name)
         norm = html.unescape(norm)
         norm = norm.lower()
-        norm = re.sub(r"[^\w\s]", "", norm)
+        norm = re.sub(r"[^\w\s]", " ", norm)
+        tokens = norm.split()
+        normalized_tokens = []
+        for t in tokens:
+            if t in cls.FINANCIAL_ABBREVIATIONS:
+                normalized_tokens.append(cls.FINANCIAL_ABBREVIATIONS[t])
+            else:
+                normalized_tokens.append(t)
+        norm = " ".join(normalized_tokens)
         norm = re.sub(r"\s+", " ", norm).strip()
         return norm
 
@@ -336,10 +414,7 @@ class DocumentIndex:
                 sep = r"(?:<[^>]+>|\s|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
                 word_patterns = []
                 for w in words:
-                    if w.lower() in ("&", "and", "&amp;"):
-                        word_patterns.append(r"(?:&|&amp;|and)")
-                    else:
-                        word_patterns.append(re.escape(w))
+                    word_patterns.append(DocumentNormalizer.get_word_equivalence_pattern(w))
                 name_pat = sep.join(word_patterns)
                 try:
                     for m in re.finditer(name_pat, text, re.IGNORECASE):

@@ -44,7 +44,7 @@ from scripts.research.document_index_engine import (
     NORMALIZATION_VERSION,
 )
 
-SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_2_0"
+SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_3_0"
 SNAPSHOT_BOUNDARY = "2026-09-24"
 SNAPSHOT_BOUNDARY_ISO = "2026-09-24T23:59:59Z"
 MAX_STRATEGY_LENGTH_CEILING = 50000
@@ -328,6 +328,29 @@ class SeriesProspectusMapper:
         name_occs = [o for o in doc_index.legal_name_occurrences.get(raw_name, []) if not o.is_toc_or_cross_ref]
         if not name_occs and norm_name:
             name_occs = [o for o in doc_index.normalized_name_occurrences.get(norm_name, []) if not o.is_toc_or_cross_ref]
+
+        # Negative Sibling Controls (Section 12: CROSS_SERIES_CONTAMINATION = 0)
+        filtered_name_occs = []
+        for occ in name_occs:
+            is_sibling_contaminated = False
+            for nb in neighbors:
+                nb_sid = (nb.series_id or "").upper().strip()
+                nb_cid = (nb.class_id or "").upper().strip()
+                if nb_sid and nb_sid != sid:
+                    for s_occ in doc_index.series_occurrences.get(nb_sid, []):
+                        if abs(s_occ.start_offset - occ.start_offset) < 200:
+                            is_sibling_contaminated = True
+                            break
+                if nb_cid and nb_cid != cid and not is_sibling_contaminated:
+                    for c_occ in doc_index.class_occurrences.get(nb_cid, []):
+                        if abs(c_occ.start_offset - occ.start_offset) < 200:
+                            is_sibling_contaminated = True
+                            break
+                if is_sibling_contaminated:
+                    break
+            if not is_sibling_contaminated:
+                filtered_name_occs.append(occ)
+        name_occs = filtered_name_occs
 
         # Consistency Checking (Section 9 & 10)
         # Verify Class-Series Relation

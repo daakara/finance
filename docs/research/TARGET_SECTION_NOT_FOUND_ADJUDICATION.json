@@ -1,0 +1,1290 @@
+{
+  "total_targets": 142,
+  "breakdown": {
+    "LEGAL_NAME_ABBREVIATION_VARIANT": 36,
+    "LEGAL_NAME_SUFFIX_VARIANT": 36,
+    "LEGAL_NAME_PUNCTUATION_VARIANT": 15,
+    "OTHER_STRUCTURAL_VARIANT": 34,
+    "TAG_OR_ENTITY_SPLIT": 21
+  },
+  "targets": [
+    {
+      "symbol": "VV",
+      "legal_name": "Vanguard Morningstar Large-Cap ETF",
+      "accession": "0000036405-26-000195",
+      "document": "f44852d1.htm",
+      "series_id": "S000002843",
+      "class_id": "C000007790",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VOE",
+      "legal_name": "Vanguard Morningstar Mid-Cap Value ETF",
+      "accession": "0000036405-26-000196",
+      "document": "f44856d1.htm",
+      "series_id": "S000012757",
+      "class_id": "C000034430",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VOT",
+      "legal_name": "Vanguard Morningstar Mid-Cap Growth ETF",
+      "accession": "0000036405-26-000200",
+      "document": "f44859d1.htm",
+      "series_id": "S000012756",
+      "class_id": "C000034428",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VBK",
+      "legal_name": "Vanguard Morningstar Small-Cap Growth ETF",
+      "accession": "0000036405-26-000201",
+      "document": "f44860d1.htm",
+      "series_id": "S000002846",
+      "class_id": "C000007801",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VBR",
+      "legal_name": "Vanguard Morningstar Small-Cap Value ETF",
+      "accession": "0000036405-26-000204",
+      "document": "f44857d1.htm",
+      "series_id": "S000002847",
+      "class_id": "C000007804",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "MGV",
+      "legal_name": "Vanguard Morningstar Mega Cap Value ETF",
+      "accession": "0000052848-26-000637",
+      "document": "f45587d1.htm",
+      "series_id": "S000019699",
+      "class_id": "C000055213",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "MGC",
+      "legal_name": "Vanguard Morningstar Mega Cap ETF",
+      "accession": "0000052848-26-000638",
+      "document": "f45586d1.htm",
+      "series_id": "S000019698",
+      "class_id": "C000055210",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VCR",
+      "legal_name": "Vanguard Consumer Discretion ETF",
+      "accession": "0000052848-26-000645",
+      "document": "f45463d1.htm",
+      "series_id": "S000004446",
+      "class_id": "C000012215",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VGT",
+      "legal_name": "Vanguard Information Tech ETF",
+      "accession": "0000052848-26-000651",
+      "document": "f45474d1.htm",
+      "series_id": "S000004452",
+      "class_id": "C000012227",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "QARP",
+      "legal_name": "Xtrackers Russell 1000 US Quality at a Reasonable Price ETF ETF",
+      "accession": "0000088053-25-001113",
+      "document": "k121925qarp.htm",
+      "series_id": "S000060057",
+      "class_id": "C000196640",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "SNPE",
+      "legal_name": "Xtrackers S&P 500 Scored & Screened ETF",
+      "accession": "0000088053-25-001119",
+      "document": "k121925snpg.htm",
+      "series_id": "S000065220",
+      "class_id": "C000211086",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "VIG",
+      "legal_name": "Vanguard Div Appreciation ETF",
+      "accession": "0000734383-26-000130",
+      "document": "f45292d1.htm",
+      "series_id": "S000011322",
+      "class_id": "C000031350",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "NODE",
+      "legal_name": "VanEck Onchain Economy ETF",
+      "accession": "0000768847-26-000082",
+      "document": "vefonchaineconomyetfsummar.htm",
+      "series_id": "S000091510",
+      "class_id": "C000259178",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "VNQI",
+      "legal_name": "Vanguard Global ex-U.S. Real Estate ETF",
+      "accession": "0000857489-26-000105",
+      "document": "f44739d1.htm",
+      "series_id": "S000030007",
+      "class_id": "C000092025",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "QAI",
+      "legal_name": "NYLIM Hedge Multi-Strategy Tracker ETF",
+      "accession": "0000891092-18-006124",
+      "document": "e1895-qai.htm",
+      "series_id": "S000023661",
+      "class_id": "C000069675",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "WAGN",
+      "legal_name": "Pabrai Wagons ETF",
+      "accession": "0000894189-24-006470",
+      "document": "pabraiwagonsfundsummarypro.htm",
+      "series_id": "S000098509",
+      "class_id": "C000268187",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TOAK",
+      "legal_name": "Manager Directed Portfolios Twin Oak Short Horizon Absolute Return ETF",
+      "accession": "0000894189-25-007916",
+      "document": "twinoaksummaryprospectus-s.htm",
+      "series_id": "S000086569",
+      "class_id": "C000252157",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "MAGA",
+      "legal_name": "Truth Social America First ETF",
+      "accession": "0000894189-25-013146",
+      "document": "summary.htm",
+      "series_id": "S000058757",
+      "class_id": "C000192803",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "SAWG",
+      "legal_name": "AAM Sawgrass US Large Cap Quality Growth ETF",
+      "accession": "0000894189-26-007269",
+      "document": "sawgsummary.htm",
+      "series_id": "S000085983",
+      "class_id": "C000251383",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "SAWS",
+      "legal_name": "AAM Sawgrass US Small Cap Quality Growth ETF",
+      "accession": "0000894189-26-007270",
+      "document": "sawssummary.htm",
+      "series_id": "S000085982",
+      "class_id": "C000251382",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "GOAU",
+      "legal_name": "US Global GO Gold and Precious Metal Miners ETF",
+      "accession": "0000894189-26-013954",
+      "document": "goausummary.htm",
+      "series_id": "S000054641",
+      "class_id": "C000171622",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TOGA",
+      "legal_name": "Managed Portfolio Series Tremblant Global ETF",
+      "accession": "0000894189-26-014630",
+      "document": "a497ktremblant2026.htm",
+      "series_id": "S000084649",
+      "class_id": "C000249083",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TBFG",
+      "legal_name": "The Brinsmere Fund Growth ETF",
+      "accession": "0000894189-26-017980",
+      "document": "growthfundsummary.htm",
+      "series_id": "S000082648",
+      "class_id": "C000245967",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TBFC",
+      "legal_name": "The Brinsmere Fund  Conservative ETF",
+      "accession": "0000894189-26-017982",
+      "document": "conservativefundsummary.htm",
+      "series_id": "S000082649",
+      "class_id": "C000245968",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "PTEU",
+      "legal_name": "Pacer TrendpilotTM European Index ETF",
+      "accession": "0000894189-26-024251",
+      "document": "summary-pacertrendpiloteur.htm",
+      "series_id": "S000051998",
+      "class_id": "C000163549",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "VCLT",
+      "legal_name": "Vanguard Long-Term Corporate Bond ETF",
+      "accession": "0001021882-26-000448",
+      "document": "f45491d1.htm",
+      "series_id": "S000026864",
+      "class_id": "C000080858",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "MGNR",
+      "legal_name": "American Beacon Select Funds American Beacon GLG Natural Resources ETF",
+      "accession": "0001133228-24-000622",
+      "document": "absf-html7145_485bpos.htm",
+      "series_id": "S000083896",
+      "class_id": "C000247981",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "IGHG",
+      "legal_name": "ProShares Investment Grade-Interest Rate Hedged",
+      "accession": "0001174610-26-000071",
+      "document": "f44677d1.htm",
+      "series_id": "S000042798",
+      "class_id": "C000132381",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "HYHG",
+      "legal_name": "ProShares High Yield Interest Rate Hedged",
+      "accession": "0001174610-26-000075",
+      "document": "f44675d1.htm",
+      "series_id": "S000039732",
+      "class_id": "C000123089",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "DUHP",
+      "legal_name": "Dimensional US High Profitability ETF",
+      "accession": "0001193125-22-057375",
+      "document": "d263941d497k.htm",
+      "series_id": "S000075148",
+      "class_id": "C000233984",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "DGS",
+      "legal_name": "WisdomTree Emerging Market SmallCap Fund",
+      "accession": "0001193125-22-208877",
+      "document": "d381375d497k.htm",
+      "series_id": "S000019332",
+      "class_id": "C000053725",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "HYS",
+      "legal_name": "PIMCO 0-5 Year High Yield Corporat Bond Index Exchange-Traded Fund",
+      "accession": "0001193125-25-249111",
+      "document": "d31137d497k.htm",
+      "series_id": "S000028996",
+      "class_id": "C000089019",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "ZROZ",
+      "legal_name": "PIMCO 25  Year Zero Coupon U.S. Treasury Index Exchange-Traded Fund",
+      "accession": "0001193125-25-249112",
+      "document": "d34027d497k.htm",
+      "series_id": "S000026750",
+      "class_id": "C000080240",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "LTPZ",
+      "legal_name": "Pimco 15  Year U.S. TIPS Index Exchange-Traded Fund",
+      "accession": "0001193125-25-249126",
+      "document": "d25858d497k.htm",
+      "series_id": "S000026343",
+      "class_id": "C000079104",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "ROSC",
+      "legal_name": "Hartford Multifactor Small Cap ETF",
+      "accession": "0001193125-25-298590",
+      "document": "d169153d497k.htm",
+      "series_id": "S000047587",
+      "class_id": "C000149410",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "ROUS",
+      "legal_name": "Hartford Multifactor U.S. Equity ETF",
+      "accession": "0001193125-25-298590",
+      "document": "d169153d497k.htm",
+      "series_id": "S000047586",
+      "class_id": "C000149409",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "EWM",
+      "legal_name": "iShares MSCI Malaysia Index Fund",
+      "accession": "0001193125-25-336625",
+      "document": "d13207d497k.htm",
+      "series_id": "S000004250",
+      "class_id": "C000011954",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "EEMS",
+      "legal_name": "iShares MSCI Emerging Markets Small Cap ETF",
+      "accession": "0001193125-25-336651",
+      "document": "d69153d497k.htm",
+      "series_id": "S000019125",
+      "class_id": "C000052897",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "EWQ",
+      "legal_name": "iShares MSCI France Index Fund",
+      "accession": "0001193125-25-336657",
+      "document": "d94843d497k.htm",
+      "series_id": "S000004267",
+      "class_id": "C000011971",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "EEM",
+      "legal_name": "iShares MSCI Emerging Index Fund",
+      "accession": "0001193125-25-336668",
+      "document": "d946518d497k.htm",
+      "series_id": "S000004266",
+      "class_id": "C000011970",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "EWUS",
+      "legal_name": "iShares MSCI United Kingdom Small Cap ETF",
+      "accession": "0001193125-25-336760",
+      "document": "d948554d497k.htm",
+      "series_id": "S000035393",
+      "class_id": "C000108744",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "MGK",
+      "legal_name": "Vanguard Morningstar Mega Cap Growth ETF",
+      "accession": "0001193125-26-024996",
+      "document": "f43885d1.htm",
+      "series_id": "S000019700",
+      "class_id": "C000055216",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "PQOC",
+      "legal_name": "PGIM Nasdaq-100 Buffer 12 ETF - October",
+      "accession": "0001193125-26-060818",
+      "document": "f44166d1.htm",
+      "series_id": "S000089300",
+      "class_id": "C000255817",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "VGK",
+      "legal_name": "Vanguard FTSEEuropean ETF",
+      "accession": "0001193125-26-077485",
+      "document": "f44231d1.htm",
+      "series_id": "S000005787",
+      "class_id": "C000015906",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "VXUS",
+      "legal_name": "Vanguard Total International Stock ETF",
+      "accession": "0001193125-26-077509",
+      "document": "f44035d1.htm",
+      "series_id": "S000002932",
+      "class_id": "C000094038",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VSS",
+      "legal_name": "Vanguard FTSE All-Wld ex-US SmCp Idx ETF",
+      "accession": "0001193125-26-077533",
+      "document": "f44067d1.htm",
+      "series_id": "S000025074",
+      "class_id": "C000074581",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VEU",
+      "legal_name": "Vanguard FTSE All World Ex US ETF",
+      "accession": "0001193125-26-077535",
+      "document": "f44065d1.htm",
+      "series_id": "S000015871",
+      "class_id": "C000043572",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VT",
+      "legal_name": "Vanguard Total World Stock Index ETF",
+      "accession": "0001193125-26-077560",
+      "document": "f44199d1.htm",
+      "series_id": "S000022482",
+      "class_id": "C000065038",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "VWO",
+      "legal_name": "Vanguard FTSE Emerging Markets ETF",
+      "accession": "0001193125-26-077565",
+      "document": "f44204d1.htm",
+      "series_id": "S000005786",
+      "class_id": "C000015902",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IHE",
+      "legal_name": "iShares U.S. Pharmaceutical ETF",
+      "accession": "0001193125-26-318131",
+      "document": "d132601d485bpos.htm",
+      "series_id": "S000009417",
+      "class_id": "C000025771",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IHF",
+      "legal_name": "iShares U.S. Health Care Providers ETF",
+      "accession": "0001193125-26-318131",
+      "document": "d132601d485bpos.htm",
+      "series_id": "S000009418",
+      "class_id": "C000025772",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IPAC",
+      "legal_name": "iShares Core MSCI Pacific ETF",
+      "accession": "0001193125-26-318131",
+      "document": "d132601d485bpos.htm",
+      "series_id": "S000045103",
+      "class_id": "C000140338",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "SOXX",
+      "legal_name": "iShares PHLX SOX Semiconductor Sector Index Fund",
+      "accession": "0001193125-26-318131",
+      "document": "d132601d485bpos.htm",
+      "series_id": "S000004354",
+      "class_id": "C000012084",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "OEF",
+      "legal_name": "iShares S&P 100 Fund",
+      "accession": "0001193125-26-327898",
+      "document": "d13976d497k.htm",
+      "series_id": "S000004306",
+      "class_id": "C000012036",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "IWF",
+      "legal_name": "iShares Russell 1000 Growth Fund",
+      "accession": "0001193125-26-327908",
+      "document": "d49639d497k.htm",
+      "series_id": "S000004346",
+      "class_id": "C000012076",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "IWV",
+      "legal_name": "iShares Russell 3000 Fund",
+      "accession": "0001193125-26-327912",
+      "document": "d72090d497k.htm",
+      "series_id": "S000004341",
+      "class_id": "C000012071",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "IWP",
+      "legal_name": "iShares Russell Midcap Growth ETF",
+      "accession": "0001193125-26-327916",
+      "document": "d81657d497k.htm",
+      "series_id": "S000004336",
+      "class_id": "C000012066",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "TENJ",
+      "legal_name": "iShares Large Cap 10% Target Buffer Jun ETF",
+      "accession": "0001193125-26-327916",
+      "document": "d81657d497k.htm",
+      "series_id": "S000095365",
+      "class_id": "C000264084",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IWO",
+      "legal_name": "iShares Russell 2000 Growth Fund",
+      "accession": "0001193125-26-327931",
+      "document": "d114558d497k.htm",
+      "series_id": "S000004343",
+      "class_id": "C000012073",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TENM",
+      "legal_name": "iShares Large Cap 10% Target Buffer Mar ETF",
+      "accession": "0001193125-26-327948",
+      "document": "d124516d497k.htm",
+      "series_id": "S000095364",
+      "class_id": "C000264083",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IJT",
+      "legal_name": "iShares S&P SmallCap 600 Growth ETF",
+      "accession": "0001193125-26-327949",
+      "document": "d124621d497k.htm",
+      "series_id": "S000004314",
+      "class_id": "C000012044",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IJS",
+      "legal_name": "iShares S&P SmallCap 600 Value ETF",
+      "accession": "0001193125-26-327950",
+      "document": "d125490d497k.htm",
+      "series_id": "S000004316",
+      "class_id": "C000012046",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IXG",
+      "legal_name": "iShares Global Financial ETF",
+      "accession": "0001193125-26-327980",
+      "document": "d147417d497k.htm",
+      "series_id": "S000004370",
+      "class_id": "C000012100",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "IYF",
+      "legal_name": "iShares U.S. Financial ETF",
+      "accession": "0001193125-26-375940",
+      "document": "d127677d497k.htm",
+      "series_id": "S000004323",
+      "class_id": "C000012053",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "ILCG",
+      "legal_name": "iShares Morningstar Large-Cap Growth ETF",
+      "accession": "0001193125-26-375943",
+      "document": "d130629d497k.htm",
+      "series_id": "S000004368",
+      "class_id": "C000012098",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "PRNT",
+      "legal_name": "3D Printing (The) ETF",
+      "accession": "0001213900-26-102670",
+      "document": "ea0305927-02_497k.htm",
+      "series_id": "S000052298",
+      "class_id": "C000164426",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "QSIG",
+      "legal_name": "WisdomTree U.S. Short Term Corporate Bond Fund",
+      "accession": "0001214659-26-001615",
+      "document": "qig21226497k.htm",
+      "series_id": "S000053482",
+      "class_id": "C000168144",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "WAMA",
+      "legal_name": "WisdomTree US Adaptive Moving Average Fund",
+      "accession": "0001214659-26-005941",
+      "document": "wama511264497k.htm",
+      "series_id": "S000101804",
+      "class_id": "C000272098",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "DFJ",
+      "legal_name": "WisdomTree Japan SmallCap Fund",
+      "accession": "0001214659-26-009344",
+      "document": "dfj497k0726.htm",
+      "series_id": "S000012382",
+      "class_id": "C000033620",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "DLS",
+      "legal_name": "WisdomTree International SmallCap Fund",
+      "accession": "0001214659-26-009352",
+      "document": "dls497k0726.htm",
+      "series_id": "S000012386",
+      "class_id": "C000033624",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "MFIG",
+      "legal_name": "Motley Fool Innovative Growth ETF",
+      "accession": "0001398344-25-023131",
+      "document": "fp0096606-1_485bposixbrl.htm",
+      "series_id": "S000097675",
+      "class_id": "C000267135",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "USSE",
+      "legal_name": "Segall Bryant & Hamill Trust Segall Bryant & Hamill Select Equity ETF",
+      "accession": "0001398344-26-008572",
+      "document": "fp0098088-6_497k.htm",
+      "series_id": "S000080591",
+      "class_id": "C000243104",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "DIV",
+      "legal_name": "Global X Super Dividend ETF",
+      "accession": "0001432353-26-000219",
+      "document": "a497ksuperdividendus.htm",
+      "series_id": "S000039638",
+      "class_id": "C000122244",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "EDGX",
+      "legal_name": "Global X U.S. 500 Income Edge ETF",
+      "accession": "0001432353-26-000256",
+      "document": "a497k-us500incomeedgeetf.htm",
+      "series_id": "S000099732",
+      "class_id": "C000269515",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "GXPS",
+      "legal_name": "Global X PureCap MSCI Consumer Staples ETF",
+      "accession": "0001432353-26-000492",
+      "document": "a497k-globalxpurecapsmmsci.htm",
+      "series_id": "S000093600",
+      "class_id": "C000261991",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "FXD",
+      "legal_name": "First Trust Cons. Discret. AlphaDEX",
+      "accession": "0001445546-25-007889",
+      "document": "fxd_497k.htm",
+      "series_id": "S000017696",
+      "class_id": "C000048896",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FXG",
+      "legal_name": "First Trust Cons. Staples AlphaDEX",
+      "accession": "0001445546-25-007890",
+      "document": "fxg_497k.htm",
+      "series_id": "S000017697",
+      "class_id": "C000048897",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FXR",
+      "legal_name": "First Trust Industrials AlphaDEX",
+      "accession": "0001445546-25-007895",
+      "document": "fxr_497k.htm",
+      "series_id": "S000017701",
+      "class_id": "C000048901",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "QDEC",
+      "legal_name": "FT Vest Nasdaq-100 Buffer ETF - December",
+      "accession": "0001445546-25-008681",
+      "document": "etf8_497k.htm",
+      "series_id": "S000070225",
+      "class_id": "C000223312",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "QJUN",
+      "legal_name": "FT Vest Nasdaq-100 Buffer ETF - June",
+      "accession": "0001445546-25-008681",
+      "document": "etf8_497k.htm",
+      "series_id": "S000072098",
+      "class_id": "C000227832",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "QMAR",
+      "legal_name": "FT Vest Nasdaq-100 Buffer ETF - March",
+      "accession": "0001445546-25-008681",
+      "document": "etf8_497k.htm",
+      "series_id": "S000071222",
+      "class_id": "C000226054",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "QSPT",
+      "legal_name": "FT Vest Nasdaq-100 Buffer ETF - September",
+      "accession": "0001445546-25-008681",
+      "document": "etf8_497k.htm",
+      "series_id": "S000073408",
+      "class_id": "C000230294",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "XDEC",
+      "legal_name": "FT Vest U.S. Equity Enhance & Moderate Buffer ETF - December",
+      "accession": "0001445546-25-008753",
+      "document": "etf8_497k.htm",
+      "series_id": "S000073414",
+      "class_id": "C000230301",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GJAN",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - January",
+      "accession": "0001445546-26-000404",
+      "document": "etf8_497k.htm",
+      "series_id": "S000079228",
+      "class_id": "C000240186",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FGD",
+      "legal_name": "First Trust DJ Global Select Dividend",
+      "accession": "0001445546-26-000850",
+      "document": "etf2_497k.htm",
+      "series_id": "S000019507",
+      "class_id": "C000054156",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "RBLD",
+      "legal_name": "First Trust Alerian US NextGen Infrastructure ETF",
+      "accession": "0001445546-26-000858",
+      "document": "etf2_497k.htm",
+      "series_id": "S000024215",
+      "class_id": "C000071160",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "GFEB",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - February",
+      "accession": "0001445546-26-001506",
+      "document": "etf8_497k.htm",
+      "series_id": "S000079668",
+      "class_id": "C000240892",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GMAR",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - March",
+      "accession": "0001445546-26-002306",
+      "document": "etf8_497k.htm",
+      "series_id": "S000079853",
+      "class_id": "C000241257",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "DAPR",
+      "legal_name": "FT Vest U.S. Equity Deep Buffer ETF - April",
+      "accession": "0001445546-26-002850",
+      "document": "etf8_497k.htm",
+      "series_id": "S000071434",
+      "class_id": "C000226539",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FAPR",
+      "legal_name": "FT Vest U.S. Equity Buffer ETF - April",
+      "accession": "0001445546-26-002852",
+      "document": "etf8_497k.htm",
+      "series_id": "S000071432",
+      "class_id": "C000226537",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GAPR",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - April",
+      "accession": "0001445546-26-002853",
+      "document": "etf8_497k.htm",
+      "series_id": "S000079967",
+      "class_id": "C000241464",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FBT",
+      "legal_name": "First Trust Amex Biotech Index Fund",
+      "accession": "0001445546-26-003273",
+      "document": "etf1_fbt497k.htm",
+      "series_id": "S000012478",
+      "class_id": "C000033929",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "FDL",
+      "legal_name": "First Trust Morningstar ETF",
+      "accession": "0001445546-26-003277",
+      "document": "etf1_fdl497k.htm",
+      "series_id": "S000010976",
+      "class_id": "C000030350",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FDM",
+      "legal_name": "First Trust DJ Select MicroCap ETF",
+      "accession": "0001445546-26-003278",
+      "document": "etf1_fdm497k.htm",
+      "series_id": "S000010772",
+      "class_id": "C000029773",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FDN",
+      "legal_name": "First Trust DJ Internet Index Fund",
+      "accession": "0001445546-26-003279",
+      "document": "etf1_fdn497k.htm",
+      "series_id": "S000012479",
+      "class_id": "C000033930",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FTGS",
+      "legal_name": "First Trust Growth Strength ETF",
+      "accession": "0001445546-26-003285",
+      "document": "etf1_ftgs497k.htm",
+      "series_id": "S000077796",
+      "class_id": "C000238354",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "FVD",
+      "legal_name": "First Trust VL Dividend",
+      "accession": "0001445546-26-003287",
+      "document": "etf1_fvd497k.htm",
+      "series_id": "S000013817",
+      "class_id": "C000037913",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "DMAY",
+      "legal_name": "FT Vest U.S. Equity Deep Buffer ETF - May",
+      "accession": "0001445546-26-003705",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068219",
+      "class_id": "C000218409",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FMAY",
+      "legal_name": "FT Vest U.S. Equity Buffer ETF - May",
+      "accession": "0001445546-26-003707",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068217",
+      "class_id": "C000218407",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GMAY",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - May",
+      "accession": "0001445546-26-003708",
+      "document": "etf8_497k.htm",
+      "series_id": "S000080201",
+      "class_id": "C000241937",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "DJUN",
+      "legal_name": "FT Vest U.S. Equity Deep Buffer ETF - June",
+      "accession": "0001445546-26-004536",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068694",
+      "class_id": "C000219664",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FJUN",
+      "legal_name": "FT Vest U.S. Equity Buffer ETF - June",
+      "accession": "0001445546-26-004537",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068692",
+      "class_id": "C000219662",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GJUN",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - June",
+      "accession": "0001445546-26-004538",
+      "document": "etf8_497k.htm",
+      "series_id": "S000080499",
+      "class_id": "C000242929",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "DJUL",
+      "legal_name": "FT Vest U.S. Equity Deep Buffer ETF - July",
+      "accession": "0001445546-26-005258",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068853",
+      "class_id": "C000220038",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "FJUL",
+      "legal_name": "FT Vest U.S. Equity Buffer ETF - July",
+      "accession": "0001445546-26-005259",
+      "document": "etf8_497k.htm",
+      "series_id": "S000068855",
+      "class_id": "C000220040",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GJUL",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - July",
+      "accession": "0001445546-26-005260",
+      "document": "etf8_497k.htm",
+      "series_id": "S000080498",
+      "class_id": "C000242928",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "GAUG",
+      "legal_name": "FT Vest U.S. Equity Moderate Buffer ETF - August",
+      "accession": "0001445546-26-006365",
+      "document": "etf8_497k.htm",
+      "series_id": "S000080497",
+      "class_id": "C000242927",
+      "assigned_cause": "TAG_OR_ENTITY_SPLIT"
+    },
+    {
+      "symbol": "BPH",
+      "legal_name": "BP plc ADRhedged",
+      "accession": "0001499655-26-000012",
+      "document": "ck0001499655-20260429.htm",
+      "series_id": "S000058698",
+      "class_id": "C000192680",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "NVOH",
+      "legal_name": "Novo Nordisk A/S B Shares ADRhedged",
+      "accession": "0001499655-26-000012",
+      "document": "ck0001499655-20260429.htm",
+      "series_id": "S000058687",
+      "class_id": "C000192669",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "ELCV",
+      "legal_name": "Strategy Shares Eventide High Dividend ETF",
+      "accession": "0001580642-26-006123",
+      "document": "highdividendetf497k.htm",
+      "series_id": "S000086526",
+      "class_id": "C000252108",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "AFOS",
+      "legal_name": "ARS Focused Opportunity Strategy ETF",
+      "accession": "0001592900-25-001694",
+      "document": "arsfocusedopportunitiesstr.htm",
+      "series_id": "S000092983",
+      "class_id": "C000261037",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "AVSC",
+      "legal_name": "Avantis U.S Small Cap Equity ETF",
+      "accession": "0001710607-25-000415",
+      "document": "acetftavsc497k.htm",
+      "series_id": "S000074835",
+      "class_id": "C000233056",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "JNEU",
+      "legal_name": "AllianzIM U.S. Equity Buffer15 Uncapped June ETF",
+      "accession": "0001797318-26-000083",
+      "document": "usequitybuffer15uncapped-jun.htm",
+      "series_id": "S000084413",
+      "class_id": "C000248790",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "QBSV",
+      "legal_name": "AllianzIM U.S Equity Buffer5 ETF",
+      "accession": "0001797318-26-000101",
+      "document": "usequitybuffer5.htm",
+      "series_id": "S000095218",
+      "class_id": "C000263917",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "HYSA",
+      "legal_name": "BondBloxx High Yield Income ETF",
+      "accession": "0001829126-26-001754",
+      "document": "bondbloxxetf_485bpos.htm",
+      "series_id": "S000080692",
+      "class_id": "C000243215",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "XB",
+      "legal_name": "BondBloxx B-Rated USD High Yield Corporate Bond ETF",
+      "accession": "0001829126-26-001754",
+      "document": "bondbloxxetf_485bpos.htm",
+      "series_id": "S000075708",
+      "class_id": "C000234988",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "XBB",
+      "legal_name": "BondBloxx BB-Rated USD High Yield Corporate Bond ETF",
+      "accession": "0001829126-26-001754",
+      "document": "bondbloxxetf_485bpos.htm",
+      "series_id": "S000075709",
+      "class_id": "C000234989",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "XCCC",
+      "legal_name": "BondBloxx CCC-Rated USD High Yield Corporate Bond ETF",
+      "accession": "0001829126-26-001754",
+      "document": "bondbloxxetf_485bpos.htm",
+      "series_id": "S000075710",
+      "class_id": "C000234990",
+      "assigned_cause": "LEGAL_NAME_ABBREVIATION_VARIANT"
+    },
+    {
+      "symbol": "GABF",
+      "legal_name": "Gabelli ETFs Trust Gabelli Financial Services Opportunities ETF",
+      "accession": "0001829126-26-004576",
+      "document": "gabf_497k.htm",
+      "series_id": "S000069039",
+      "class_id": "C000220752",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "IQSI",
+      "legal_name": "NYLIM Candriam International Equity ETF",
+      "accession": "0001999371-25-012191",
+      "document": "iqsi-497k_082825.htm",
+      "series_id": "S000054231",
+      "class_id": "C000170331",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "IQSU",
+      "legal_name": "NYLIM Candriam U.S. Large Cap Equity ETF",
+      "accession": "0001999371-25-012193",
+      "document": "iqsu-497k_082825.htm",
+      "series_id": "S000054232",
+      "class_id": "C000170332",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "WOMN",
+      "legal_name": "Impact Shares Women's Empowerment ETF",
+      "accession": "0001999371-25-016239",
+      "document": "womn_479k-102825.htm",
+      "series_id": "S000061285",
+      "class_id": "C000198447",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "RDTY",
+      "legal_name": "YieldMax R2000 0DTE Covered Strategy ETF",
+      "accession": "0001999371-25-018560",
+      "document": "rdty-497k_112525.htm",
+      "series_id": "S000090039",
+      "class_id": "C000256916",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "SOVF",
+      "legal_name": "Sovereign's Capital Flourish Fund",
+      "accession": "0001999371-25-019194",
+      "document": "sovf-497k_1128225.htm",
+      "series_id": "S000081759",
+      "class_id": "C000244753",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TACU",
+      "legal_name": "T. Rowe Price Active Core U.S. Equity ETF",
+      "accession": "0001999371-25-019268",
+      "document": "tacu-497_120325.htm",
+      "series_id": "S000095884",
+      "class_id": "C000264666",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TGLR",
+      "legal_name": "Wedbush LAFFER TENGLER New Era Value ETF",
+      "accession": "0001999371-25-019602",
+      "document": "lt-497k_1130205.htm",
+      "series_id": "S000081285",
+      "class_id": "C000243972",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "VUS",
+      "legal_name": "Virtus US Dividend ETF",
+      "accession": "0001999371-25-019651",
+      "document": "vus-497k_110425.htm",
+      "series_id": "S000096364",
+      "class_id": "C000265197",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "SPYT",
+      "legal_name": "Defiance S&P 500 Target Income ETF",
+      "accession": "0001999371-25-021141",
+      "document": "spyt-497k_122325.htm",
+      "series_id": "S000084178",
+      "class_id": "C000248451",
+      "assigned_cause": "LEGAL_NAME_PUNCTUATION_VARIANT"
+    },
+    {
+      "symbol": "YALL",
+      "legal_name": "Truth Social God Bless America ETF",
+      "accession": "0001999371-25-021145",
+      "document": "yall-497k_122325.htm",
+      "series_id": "S000077618",
+      "class_id": "C000238106",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TXUG",
+      "legal_name": "Thornburg International Growth Fund ETF",
+      "accession": "0001999371-25-021311",
+      "document": "txug-497k_123025.htm",
+      "series_id": "S000089222",
+      "class_id": "C000255737",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "BWTG",
+      "legal_name": "Brendan Wood TopGun Index ETF",
+      "accession": "0001999371-25-021451",
+      "document": "bwtd-497k_123125.htm",
+      "series_id": "S000082334",
+      "class_id": "C000245636",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "NDAA",
+      "legal_name": "Ned Davis Research 360 Dynamic Allocation ETF",
+      "accession": "0001999371-26-001832",
+      "document": "ndaa-497k_012826.htm",
+      "series_id": "S000088329",
+      "class_id": "C000254581",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "NANC",
+      "legal_name": "Subversive Congressional Democrats Trading ETF",
+      "accession": "0001999371-26-001899",
+      "document": "nanc-497k_012826.htm",
+      "series_id": "S000088363",
+      "class_id": "C000254622",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "TMSL",
+      "legal_name": "T. Rowe Price Small-Mid Cap ETF",
+      "accession": "0001999371-26-004375",
+      "document": "smx-497k_030126.htm",
+      "series_id": "S000079837",
+      "class_id": "C000241225",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "IDVZ",
+      "legal_name": "Polen International Dividend Income Fund",
+      "accession": "0001999371-26-005013",
+      "document": "idvz-497k_030226.htm",
+      "series_id": "S000089318",
+      "class_id": "C000255835",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TGLB",
+      "legal_name": "T. Rowe Price Global Equity ETF",
+      "accession": "0001999371-26-005633",
+      "document": "temr_497-031126.htm",
+      "series_id": "S000092022",
+      "class_id": "C000259932",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "THEQ",
+      "legal_name": "T. Rowe Price Hedged Equity ETF",
+      "accession": "0001999371-26-005633",
+      "document": "temr_497-031126.htm",
+      "series_id": "S000089786",
+      "class_id": "C000256566",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TAOZ",
+      "legal_name": "Thornburg American Opportunities Fund",
+      "accession": "0001999371-26-007319",
+      "document": "taoz-497k_032726.htm",
+      "series_id": "S000011846",
+      "class_id": "C000272858",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "TFGZ",
+      "legal_name": "Thornburg Focus Growth Fund",
+      "accession": "0001999371-26-007478",
+      "document": "tfgz-497k_040126.htm",
+      "series_id": "S000011850",
+      "class_id": "C000272859",
+      "assigned_cause": "LEGAL_NAME_SUFFIX_VARIANT"
+    },
+    {
+      "symbol": "MSTI",
+      "legal_name": "Madison Short Term Strategic Income ETF",
+      "accession": "0001999371-26-008167",
+      "document": "msti-497k_103125.htm",
+      "series_id": "S000081095",
+      "class_id": "C000243766",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "GEME",
+      "legal_name": "Pacific North of South EM Equity Active ETF",
+      "accession": "0001999371-26-009524",
+      "document": "geme-497k_043026.htm",
+      "series_id": "S000088737",
+      "class_id": "C000255106",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    },
+    {
+      "symbol": "BOAT",
+      "legal_name": "SonicShares Global Shipping ETF",
+      "accession": "0001999371-26-016401",
+      "document": "boat-497k_073026.htm",
+      "series_id": "S000072647",
+      "class_id": "C000229056",
+      "assigned_cause": "OTHER_STRUCTURAL_VARIANT"
+    }
+  ]
+}
