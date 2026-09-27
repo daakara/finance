@@ -282,6 +282,23 @@ def execute_population():
         fname = acc_to_file[acc]
         doc_to_targets[fname].append(r)
 
+    # V1.3.1: Load ETF Historical Identity Alias Authority V1_1 (Section 4 + VGK addition)
+    # V1_1 extends V1.0's 13 aliases with VGK (MANIFEST_IDENTITY_DEFECT: manifest has
+    # 'Vanguard FTSEEuropean ETF', source document uses 'Vanguard FTSE Europe ETF').
+    # The manifest itself is NOT mutated; aliases are a supplementary lookup path only.
+    ALIAS_AUTHORITY_PATH = Path("docs/research/ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1_1.json")
+    alias_authority: Dict[str, List[str]] = {}
+    if ALIAS_AUTHORITY_PATH.exists():
+        _aa = json.load(open(ALIAS_AUTHORITY_PATH, encoding="utf-8"))
+        for entry in _aa.get("aliases", []):
+            sym = entry.get("symbol", "")
+            alias_name = entry.get("historical_source_legal_name", "")
+            if sym and alias_name:
+                alias_authority.setdefault(sym, []).append(alias_name)
+        print(f"[OK] Loaded alias authority: {len(alias_authority)} entries from {ALIAS_AUTHORITY_PATH}")
+    else:
+        print(f"[WARN] Alias authority not found at {ALIAS_AUTHORITY_PATH} — alias fallback disabled")
+
     print(f"\nGrouped {len(selected_records)} selected targets across {len(doc_to_targets)} unique physical documents.")
 
     # Tracking metrics
@@ -330,6 +347,8 @@ def execute_population():
         # Build known series metadata for all targets sharing this document
         known_meta = []
         target_series_objs = []
+        # V1.3.0: Collect alias names for any targets in this document that have alias entries
+        doc_alias_names: List[str] = []
         for t in targets_in_doc:
             sym = t["symbol"]
             m_info = manifest_map[sym]
@@ -342,6 +361,8 @@ def execute_population():
             )
             target_series_objs.append(s_obj)
             known_meta.append({"legal_name": s_obj.legal_name})
+            if sym in alias_authority:
+                doc_alias_names.extend(alias_authority[sym])
 
         # Build DocumentIndex ONCE (Section 9)
         ident = DocumentIdentity(
@@ -354,7 +375,10 @@ def execute_population():
         )
 
         try:
-            doc_index = DocumentIndex(ident, raw_bytes, known_meta)
+            doc_index = DocumentIndex(
+                ident, raw_bytes, known_meta,
+                alias_legal_names=doc_alias_names if doc_alias_names else None,
+            )
             documents_indexed_count += 1
             # Cache hits for sibling targets sharing this physical document
             if len(targets_in_doc) > 1:
@@ -617,7 +641,12 @@ def execute_population():
             class_id=sample_e["class_id"],
             legal_name=sample_e["legal_name"],
         )
-        idx_re = DocumentIndex(ident, raw_b, [{"legal_name": t_obj.legal_name}])
+        # V1.3.0: pass alias names consistent with main execution pass
+        idempotence_alias_names = alias_authority.get(sym, [])
+        idx_re = DocumentIndex(
+            ident, raw_b, [{"legal_name": t_obj.legal_name}],
+            alias_legal_names=idempotence_alias_names if idempotence_alias_names else None,
+        )
         res_re = SeriesProspectusMapper.map_series(t_obj, idx_re)
         if res_re.mapping_outcome != sample_e["resolution_status"]:
             idempotence_pass = False

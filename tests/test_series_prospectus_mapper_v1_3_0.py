@@ -1,4 +1,4 @@
-"""Adversarial verification of SERIES_RESOLVER_V1_3_0 and DOC_INDEX_V1_2_0.
+"""Adversarial verification of SERIES_RESOLVER_V1_4_0 and DOC_INDEX_V1_3_0.
 
 Tests:
 1. Version assertions.
@@ -25,9 +25,14 @@ from scripts.research.series_prospectus_mapper import (
 
 
 def test_versions():
-    assert INDEX_ENGINE_VERSION == "DOC_INDEX_V1_2_0"
-    assert NORMALIZATION_VERSION == "NORMALIZATION_V1_2_0"
-    assert SERIES_RESOLVER_VERSION == "SERIES_RESOLVER_V1_3_0"
+    """Pinned to the current authorized engine versions (V1.3.0 / V1.4.0 remediation gate).
+
+    DOC_INDEX_V1_3_1: adds Windows-1252 apostrophe variant (\u0094/\u0093) to The-Fund-Investment-Goal pattern.
+    SERIES_RESOLVER_V1_4_1: syncs _extract_strategy_from_block pattern with DOC_INDEX_V1_3_1 encoding fix.
+    """
+    assert INDEX_ENGINE_VERSION == "DOC_INDEX_V1_3_1"
+    assert NORMALIZATION_VERSION == "NORMALIZATION_V1_3_1"
+    assert SERIES_RESOLVER_VERSION == "SERIES_RESOLVER_V1_4_1"
 
 
 def test_bounded_name_normalization():

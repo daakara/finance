@@ -1,0 +1,786 @@
+{
+  "engine_versions": {
+    "doc_index": "DOC_INDEX_V1_3_1",
+    "series_resolver": "SERIES_RESOLVER_V1_4_1"
+  },
+  "total": 110,
+  "fixed": 97,
+  "unchanged": 13,
+  "outcome_counts": {
+    "MAPPED_EXACT_LEGAL_NAME": 92,
+    "PARSE_FAILURE": 9,
+    "BOUNDARY_NOT_ESTABLISHED": 9
+  },
+  "results": [
+    {
+      "symbol": "ABFL",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "ABLS",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "ABOT",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "ARTY",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "BBMC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "BBSC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "BBUS",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "CWI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "DVND",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "DWX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "EDIV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "EFIV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "EQIN",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "EQL",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "EWX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FCSH",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FDV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FEZ",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FFOG",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "FLCC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FLCG",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FLCV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "FLTB",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "FSCC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GII",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GINX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GMF",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GNR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GWX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "GXC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "HYBL",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "HYDW",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "ICOP",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "IGIB",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "ILIT",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "INDY",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "INEQ",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "IWF",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "IWO",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "IWV",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "IYC",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "IYK",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "movement": "NO_CHANGE"
+    },
+    {
+      "symbol": "JCHI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "KOMP",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "LCF",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "LFSC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "LGLV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MBBB",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MDYG",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MGC",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MGK",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MGV",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "MIG",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "PARSE_FAILURE",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "PAYR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "PQAP",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "PQJA",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "PQJL",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "QARP",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "QSIX",
+      "causal_owner": "SERIES_RESOLVER_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RAAA",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RAAR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RCLR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RWO",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RWR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "RWX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SDY",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SLYG",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SLYV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPBO",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPDW",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPEM",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPHY",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPLB",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPMD",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPSB",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPSM",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPTI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPTM",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPYM",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "SPYV",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TBIL",
+      "causal_owner": "DOCUMENT_INDEX_DEFECT",
+      "pre_remediation_status": "BOUNDARY_NOT_ESTABLISHED",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TDI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TEKX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TEMX",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TLCI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TLG",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "TSEL",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VBK",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VBR",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VCLT",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VGK",
+      "causal_owner": "SOURCE_SELECTION_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VNQI",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VOE",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VOT",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VT",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VV",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "VXUS",
+      "causal_owner": "MANIFEST_IDENTITY_DEFECT",
+      "pre_remediation_status": "SERIES_NOT_FOUND_IN_SOURCE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XAR",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLBI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLC",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLEI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLFI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLII",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLKI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLRE",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLRI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLSI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLVI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XLYI",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    },
+    {
+      "symbol": "XNTK",
+      "causal_owner": "MANDATE_SECTION_EXTRACTION_DEFECT",
+      "pre_remediation_status": "PARSE_FAILURE",
+      "post_remediation_status": "MAPPED_EXACT_LEGAL_NAME",
+      "movement": "FIXED"
+    }
+  ]
+}

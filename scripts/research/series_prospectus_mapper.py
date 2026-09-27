@@ -44,7 +44,7 @@ from scripts.research.document_index_engine import (
     NORMALIZATION_VERSION,
 )
 
-SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_3_0"
+SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_4_1"
 SNAPSHOT_BOUNDARY = "2026-09-24"
 SNAPSHOT_BOUNDARY_ISO = "2026-09-24T23:59:59Z"
 MAX_STRATEGY_LENGTH_CEILING = 50000
@@ -373,8 +373,13 @@ class SeriesProspectusMapper:
             mapping_outcome = cls.OUTCOME_EXACT_SERIES_ID
             rule_id = "MAPPING_RULE_EXACT_SERIES_ID"
             identity_evidence = f"Exact series ID {sid} matched {len(sid_occs)} substantive occurrence(s)"
-            # Pick occurrence closest to a substantive strategy section
-            chosen_anchor = cls._select_anchor_closest_to_strategy(sid_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors)
+            # Pick occurrence closest to a substantive strategy section.
+            # V1.4.0: allow_lower_threshold=True enables the 50-point fallback gate for
+            # EXACT_SERIES_ID evidence (primary-key certainty justifies lower boundary confidence).
+            chosen_anchor = cls._select_anchor_closest_to_strategy(
+                sid_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors,
+                allow_lower_threshold=True,
+            )
 
         elif cid_occs:
             mapping_outcome = cls.OUTCOME_EXACT_CLASS_ID
@@ -389,7 +394,53 @@ class SeriesProspectusMapper:
             chosen_anchor = cls._select_anchor_closest_to_strategy(name_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors)
 
         else:
-            if not sid_occs and not cid_occs and not name_occs:
+            # V1.4.0: Alias name fallback — consult alias_name_occurrences from DOC_INDEX_V1_3_0.
+            # When the manifest legal name returns 0 occurrences AND Series/Class ID also failed,
+            # try historical alias names from ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1.
+            # Series isolation is preserved: alias occurrences were indexed per-document with the
+            # same sibling contamination guards applied below.
+            alias_occs_all = []
+            if hasattr(doc_index, "alias_name_occurrences"):
+                for alias_name, alias_list in doc_index.alias_name_occurrences.items():
+                    non_toc = [o for o in alias_list if not o.is_toc_or_cross_ref]
+                    if non_toc:
+                        alias_occs_all.extend(non_toc)
+
+            # Apply same sibling contamination filter as for manifest name_occs
+            filtered_alias_occs = []
+            for occ in alias_occs_all:
+                is_sibling_contaminated = False
+                for nb in neighbors:
+                    nb_sid = (nb.series_id or "").upper().strip()
+                    nb_cid = (nb.class_id or "").upper().strip()
+                    if nb_sid and nb_sid != sid:
+                        for s_occ in doc_index.series_occurrences.get(nb_sid, []):
+                            if abs(s_occ.start_offset - occ.start_offset) < 200:
+                                is_sibling_contaminated = True
+                                break
+                    if nb_cid and nb_cid != cid and not is_sibling_contaminated:
+                        for c_occ in doc_index.class_occurrences.get(nb_cid, []):
+                            if abs(c_occ.start_offset - occ.start_offset) < 200:
+                                is_sibling_contaminated = True
+                                break
+                    if is_sibling_contaminated:
+                        break
+                if not is_sibling_contaminated:
+                    filtered_alias_occs.append(occ)
+
+            if filtered_alias_occs:
+                mapping_outcome = cls.OUTCOME_EXACT_LEGAL_NAME
+                rule_id = "MAPPING_RULE_ALIAS_AUTHORITY_LEGAL_NAME"
+                alias_names_hit = sorted({o.matched_term for o in filtered_alias_occs})
+                identity_evidence = (
+                    f"Alias authority name(s) {alias_names_hit} matched {len(filtered_alias_occs)} "
+                    f"occurrence(s) (manifest name '{raw_name}' not found in source — "
+                    f"MANIFEST_IDENTITY_DEFECT resolved via alias authority)"
+                )
+                chosen_anchor = cls._select_anchor_closest_to_strategy(
+                    filtered_alias_occs, doc_index.strategy_anchors, doc_index.normalized_text, neighbors
+                )
+            elif not sid_occs and not cid_occs and not name_occs:
                 return cls._fail_result(
                     target, doc_index, cls.OUTCOME_SERIES_NOT_FOUND,
                     "SERIES_NOT_IN_SOURCE",
@@ -598,7 +649,21 @@ class SeriesProspectusMapper:
         strategy_anchors: List[StrategyAnchor],
         text: str = "",
         neighbors: Optional[List[SeriesMetadata]] = None,
+        allow_lower_threshold: bool = False,
     ) -> int:
+        """Selects the identity occurrence best positioned to open a fund strategy section.
+
+        V1.4.0 changes:
+        - has_strat scoring expanded to include Investment Objective/Goal patterns (matches
+          the DOC_INDEX_V1_3_0 expanded STRATEGY_PATTERNS so SPDR/Tidal/Schwab funds score
+          correctly instead of getting 0 for has_strat).
+        - allow_lower_threshold: when True (EXACT_SERIES_ID evidence only), falls back to
+          any candidate with score >= 50 when no candidate meets the primary 150 threshold.
+          This resolves 13 SERIES_RESOLVER_OWNED MTI targets where a legitimate single-fund
+          section anchor exists but scores below 150 due to cover-page neighbor clustering.
+          Guard: allow_lower_threshold MUST NOT be set for name/class-ID branches (fail-closed
+          discipline requires exact primary key evidence before relaxing the score gate).
+        """
         if not occurrences:
             return 0
         if not strategy_anchors:
@@ -650,9 +715,16 @@ class SeriesProspectusMapper:
                         closest_sa_dist = dist
                     break
 
-            has_obj = bool(re.search(r"Investment\s+Objective", ahead, re.IGNORECASE))
+            # V1.4.0: expanded has_strat to cover DOC_INDEX_V1_3_0 patterns.
+            # Previously only "Principal Investment Strateg" was checked; SPDR "Investment Objective"
+            # and Tidal "Investment Goal" funds scored 0 for has_strat and often failed the 150 gate.
+            has_obj = bool(re.search(r"Investment\s+Objective|Investment\s+Goal", ahead, re.IGNORECASE))
             has_fees = bool(re.search(r"Fees?\s+and\s+Expenses|Annual\s+Fund\s+Operating\s+Expenses|Expense\s+Example", ahead, re.IGNORECASE))
-            has_strat = bool(re.search(r"Principal\s+Investment\s+Strateg", ahead, re.IGNORECASE))
+            has_strat = bool(re.search(
+                r"Principal\s+Investment\s+Strateg|Investment\s+Strategy|Investment\s+Objective|Investment\s+Goal|Principal\s+Strategies",
+                ahead,
+                re.IGNORECASE,
+            ))
 
             score = 0
             if not is_clustered_cover:
@@ -673,16 +745,40 @@ class SeriesProspectusMapper:
             scored_candidates.append((score, closest_sa_dist, o_start))
 
         scored_candidates.sort(key=lambda x: (-x[0], x[1]))
+
+        # Primary gate: same as V1.3.0
         if scored_candidates and scored_candidates[0][0] >= 150:
             return scored_candidates[0][2]
+
+        # V1.4.0: Lower-threshold fallback — guarded by allow_lower_threshold flag.
+        # Only activated when identity evidence is EXACT_SERIES_ID (primary key, not name match).
+        # Threshold lowered to 50 to handle the case where a single-fund sub-filing has
+        # its target occurrence on the cover clustered with neighbor names, preventing the
+        # +100 is_clustered_cover bonus from being awarded.
+        if allow_lower_threshold and scored_candidates and scored_candidates[0][0] >= 50:
+            return scored_candidates[0][2]
+
         return None
+
 
     @classmethod
     def _extract_strategy_from_block(cls, block: str) -> Tuple[str, str]:
+        """Extracts strategy text from an isolated series block using structural headings.
+
+        V1.4.0: Pattern list expanded to match DOC_INDEX_V1_3_0 STRATEGY_PATTERNS.
+        The prefix_text check is relaxed to also accept <td/<th tag boundaries, matching
+        the _is_structural_heading() change in document_index_engine.py V1.3.0.
+        """
         for pat in [
             r"Principal\s+Investment\s+Strateg(?:y|ies)",
-            r"Investment\s+Objective\s+and\s+Principal\s+Strategies",
+            r"Investment\s+Objective\s+and\s+Principal\s+(?:Investment\s+)?Strateg(?:y|ies)",
             r"Principal\s+Strategies",
+            r"Investment\s+Objective",
+            # V1.4.1: Synced with DOC_INDEX_V1_3_1 — extended quote char class covers Windows-1252
+            # byte 0x94 (right double quotation mark used as apostrophe in Touchstone 497K filings).
+            r"The\s+Fund[\u2019\u2018\u201c\u201d\u0094\u0093']?s?\s+Investment\s+Goal",
+            r"Investment\s+Goal",
+            r"Investment\s+Strategy(?:\s+and\s+Policy)?",
         ]:
             for m in re.finditer(pat, block, re.IGNORECASE):
                 found_start = m.start()
@@ -690,6 +786,9 @@ class SeriesProspectusMapper:
                 pre = block[max(0, found_start - 120): found_start]
                 last_boundary = max(pre.rfind('>'), pre.rfind('\n'))
                 prefix_text = pre[last_boundary + 1:].strip() if last_boundary != -1 else pre.strip()
+                # V1.4.0: also accept table-cell boundary (<td/<th in pre-context)
+                if re.search(r"<t[dh][\s>]", pre, re.IGNORECASE):
+                    prefix_text = ""  # treat as blank -> structural heading
                 if prefix_text and not re.match(r'^(?:item\s+\d+\.?|\d+\.?|[A-Z]\.?|\*|\u2022)\s*$', prefix_text, re.IGNORECASE):
                     continue
 
@@ -707,6 +806,7 @@ class SeriesProspectusMapper:
                     extracted = soup.get_text(separator=" ", strip=True)
                 return extracted.strip(), sec_name
         return "", "SECTION_NOT_FOUND"
+
 
     @classmethod
     def _fail_result(

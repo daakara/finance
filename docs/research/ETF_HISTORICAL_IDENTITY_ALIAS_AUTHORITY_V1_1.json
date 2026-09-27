@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.1.0",
+  "generated_at": "2026-09-27T17:10:00Z",
+  "authority_name": "ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1_1",
+  "description": "Versioned historical legal-name alias table for 14 ETF targets where the manifest legal_name differs from the legal name used in the source statutory filing at the snapshot boundary date (2026-09-24). V1.1 adds VGK (MANIFEST_IDENTITY_DEFECT: manifest has 'Vanguard FTSEEuropean ETF' with no space and incorrect suffix; source 485BPOS uses 'Vanguard FTSE Europe ETF'). This authority is consumed by DOC_INDEX_V1_3_1 and SERIES_RESOLVER_V1_4_1 (via the alias-resolution path) to normalize resolution identity without mutating MANIFEST_V1.",
+  "resolution_rule": "When resolving a target series, if the manifest legal_name is not found in the source document, the resolver MUST also check all historical_source_legal_names for this series_id before failing with SERIES_NOT_FOUND_IN_SOURCE. The alias lookup is keyed by series_id (primary) or class_id (fallback). No symbol-specific or CIK-specific overrides.",
+  "snapshot_boundary": "2026-09-24T23:59:59Z",
+  "mandate_v1_frozen": true,
+  "aliases": [
+    {
+      "series_id": "S000002843",
+      "class_id": "C000007790",
+      "symbol": "VV",
+      "cik": "0000036405",
+      "manifest_legal_name": "Vanguard Morningstar Large-Cap ETF",
+      "historical_source_legal_name": "Vanguard Large-Cap ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 961",
+      "source_accession_evidence": "0000036405-26-000195",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000012757",
+      "class_id": "C000034430",
+      "symbol": "VOE",
+      "cik": "0000036405",
+      "manifest_legal_name": "Vanguard Morningstar Mid-Cap Value ETF",
+      "historical_source_legal_name": "Vanguard Mid-Cap Value ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 935",
+      "source_accession_evidence": "0000036405-26-000196",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000012756",
+      "class_id": "C000034428",
+      "symbol": "VOT",
+      "cik": "0000036405",
+      "manifest_legal_name": "Vanguard Morningstar Mid-Cap Growth ETF",
+      "historical_source_legal_name": "Vanguard Mid-Cap Growth ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 932",
+      "source_accession_evidence": "0000036405-26-000200",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000002846",
+      "class_id": "C000007801",
+      "symbol": "VBK",
+      "cik": "0000036405",
+      "manifest_legal_name": "Vanguard Morningstar Small-Cap Growth ETF",
+      "historical_source_legal_name": "Vanguard Small-Cap Growth ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 938",
+      "source_accession_evidence": "0000036405-26-000201",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000002847",
+      "class_id": "C000007804",
+      "symbol": "VBR",
+      "cik": "0000036405",
+      "manifest_legal_name": "Vanguard Morningstar Small-Cap Value ETF",
+      "historical_source_legal_name": "Vanguard Small-Cap Value ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 937",
+      "source_accession_evidence": "0000036405-26-000204",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000019699",
+      "class_id": "C000055213",
+      "symbol": "MGV",
+      "cik": "0000052848",
+      "manifest_legal_name": "Vanguard Morningstar Mega Cap Value ETF",
+      "historical_source_legal_name": "Vanguard Mega Cap Value ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 3139",
+      "source_accession_evidence": "0000052848-26-000637",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000019698",
+      "class_id": "C000055210",
+      "symbol": "MGC",
+      "cik": "0000052848",
+      "manifest_legal_name": "Vanguard Morningstar Mega Cap ETF",
+      "historical_source_legal_name": "Vanguard Mega Cap ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 3137",
+      "source_accession_evidence": "0000052848-26-000638",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000019700",
+      "class_id": "C000055216",
+      "symbol": "MGK",
+      "cik": "0000052848",
+      "manifest_legal_name": "Vanguard Morningstar Mega Cap Growth ETF",
+      "historical_source_legal_name": "Vanguard Mega Cap Growth ETF",
+      "effective_date_relationship": "Manifest carries post-2023 Morningstar-branding name; source 497K at snapshot boundary uses pre-branding name per EDGAR series description SP 3138",
+      "source_accession_evidence": "0001193125-26-024996",
+      "reason_code": "MORNINGSTAR_BRANDING_INSERTION"
+    },
+    {
+      "series_id": "S000030007",
+      "class_id": "C000092025",
+      "symbol": "VNQI",
+      "cik": "0000857489",
+      "manifest_legal_name": "Vanguard Global ex-U.S. Real Estate ETF",
+      "historical_source_legal_name": "Vanguard Global ex-U.S. Real Estate Index Fund",
+      "effective_date_relationship": "Manifest uses 'ETF' suffix; source 497K at snapshot boundary uses 'Index Fund' suffix — pre-ETF-branding conversion name",
+      "source_accession_evidence": "0000857489-26-000105",
+      "reason_code": "ETF_INDEX_FUND_SUFFIX"
+    },
+    {
+      "series_id": "S000026864",
+      "class_id": "C000080858",
+      "symbol": "VCLT",
+      "cik": "0001021882",
+      "manifest_legal_name": "Vanguard Long-Term Corporate Bond ETF",
+      "historical_source_legal_name": "Vanguard Long-Term Corporate Bond Index Fund",
+      "effective_date_relationship": "Manifest uses 'ETF' suffix; source 497K at snapshot boundary uses 'Index Fund' suffix — pre-ETF-branding conversion name",
+      "source_accession_evidence": "0001021882-26-000448",
+      "reason_code": "ETF_INDEX_FUND_SUFFIX"
+    },
+    {
+      "series_id": "S000002932",
+      "class_id": "C000094038",
+      "symbol": "VXUS",
+      "cik": "0000736054",
+      "manifest_legal_name": "Vanguard Total International Stock ETF",
+      "historical_source_legal_name": "Vanguard Total International Stock Index Fund",
+      "effective_date_relationship": "Manifest uses 'ETF' suffix; source 497K at snapshot boundary uses 'Index Fund' suffix — pre-ETF-branding conversion name",
+      "source_accession_evidence": "0001193125-26-077509",
+      "reason_code": "ETF_INDEX_FUND_SUFFIX"
+    },
+    {
+      "series_id": "S000022482",
+      "class_id": "C000065038",
+      "symbol": "VT",
+      "cik": "0000857489",
+      "manifest_legal_name": "Vanguard Total World Stock Index ETF",
+      "historical_source_legal_name": "Vanguard Total World Stock Index Fund",
+      "effective_date_relationship": "Manifest uses 'ETF' suffix (and retains 'Index' in name); source 497K at snapshot boundary uses 'Index Fund' suffix",
+      "source_accession_evidence": "0001193125-26-077560",
+      "reason_code": "ETF_INDEX_FUND_SUFFIX"
+    },
+    {
+      "series_id": "S000060057",
+      "class_id": "C000196640",
+      "symbol": "QARP",
+      "cik": "0001503123",
+      "manifest_legal_name": "Xtrackers Russell 1000 US Quality at a Reasonable Price ETF ETF",
+      "historical_source_legal_name": "Xtrackers Russell 1000 US Quality at a Reasonable Price ETF",
+      "effective_date_relationship": "Manifest has duplicated 'ETF ETF' suffix (data-entry error in manifest construction); source filing uses 'ETF' suffix once",
+      "source_accession_evidence": "0000088053-25-001113",
+      "reason_code": "DUPLICATED_ETF_SUFFIX"
+    },
+    {
+      "series_id": "S000005787",
+      "class_id": "C000015906",
+      "symbol": "VGK",
+      "cik": "0000857489",
+      "manifest_legal_name": "Vanguard FTSEEuropean ETF",
+      "historical_source_legal_name": "Vanguard FTSE Europe ETF",
+      "effective_date_relationship": "Manifest has 'FTSEEuropean' (no space, incorrect regional suffix 'European' vs 'Europe'); source 485BPOS at snapshot boundary uses 'Vanguard FTSE Europe ETF'. Manifest identity defect in MANIFEST_V1 construction.",
+      "source_accession_evidence": "0001193125-26-077485",
+      "reason_code": "MANIFEST_IDENTITY_DEFECT"
+    }
+  ]
+}

@@ -28,11 +28,21 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_4_0"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_5_0"
 STATUTORY_FILING_SELECTOR_V1_2_0 = "STATUTORY_FILING_SELECTOR_V1_2_0"
 STATUTORY_FILING_SELECTOR_V1_3_0 = "STATUTORY_FILING_SELECTOR_V1_3_0"
 STATUTORY_FILING_SELECTOR_V1_3_1 = "STATUTORY_FILING_SELECTOR_V1_3_1"
 STATUTORY_FILING_SELECTOR_V1_4_0 = "STATUTORY_FILING_SELECTOR_V1_4_0"
+STATUTORY_FILING_SELECTOR_V1_5_0 = "STATUTORY_FILING_SELECTOR_V1_5_0"
+
+# V1.5.0: Multi-fund document penalty.
+# When a candidate document contains > MULTI_FUND_SERIES_THRESHOLD distinct Series IDs,
+# it is a combined trust prospectus (e.g. 485BPOS containing 449 funds for VGK) and NOT
+# a per-fund document. Apply a -2000 point penalty so per-fund 497K summaries win.
+# Threshold is semantically grounded: > 50 distinct series IDs cannot be a per-fund document.
+MULTI_FUND_SERIES_THRESHOLD = 50
+MULTI_FUND_DOCUMENT_PENALTY = -2000
+
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
@@ -966,6 +976,27 @@ class StatutoryFilingSelector:
                         score -= 1000
                 except ValueError:
                     pass
+
+            # V1.5.0: MULTI_FUND_DOCUMENT_PENALTY (-2000 points)
+            # A document containing > MULTI_FUND_SERIES_THRESHOLD distinct Series IDs is a
+            # combined trust prospectus, not a per-fund document. Semantically: no individual
+            # fund's mandate lives in a document containing 449 other funds' mandates as its
+            # primary statutory source. Apply penalty so per-fund 497K/497 summaries rank above
+            # the combined 485BPOS when both are cached and candidate.
+            # Guard: only applied to cached documents (content available for peek) and only for
+            # BASE_STATUTORY_PROSPECTUS role (combined trust filings are always 485BPOS class).
+            if is_cached and role == ROLE_BASE_STATUTORY_PROSPECTUS:
+                _cached_fn = f"{rec.accession}_{rec.primary_document}"
+                _cached_p = prospectus_dir / _cached_fn
+                try:
+                    with open(_cached_p, "r", encoding="utf-8", errors="ignore") as _cf:
+                        # Read first 200KB only — Series ID density scan (avoid reading 16MB)
+                        _sample = _cf.read(200000)
+                    _distinct_series = set(re.findall(r"\bS\d{9}\b", _sample, re.IGNORECASE))
+                    if len(_distinct_series) > MULTI_FUND_SERIES_THRESHOLD:
+                        score += MULTI_FUND_DOCUMENT_PENALTY
+                except Exception:
+                    pass  # Cannot penalize if file unreadable at this stage
 
             candidates.append(FilingCandidate(
                 accession=rec.accession,

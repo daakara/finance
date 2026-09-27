@@ -1,4 +1,4 @@
-"""Adversarial verification of STATUTORY_FILING_SELECTOR_V1_4_0 (Phase C).
+"""Adversarial verification of STATUTORY_FILING_SELECTOR_V1_5_0 (Phase C).
 
 Tests:
 1. Version assertions.
@@ -6,6 +6,7 @@ Tests:
 3. Abbreviated strategy amendments (XUDV, UDIV) rejected for full mandate extraction.
 4. Complete 497K and complete 485BPOS accepted.
 5. Fee waiver supplements disqualified.
+6. V1.5.0: Multi-fund document penalty applied to combined 485BPOS trust filings.
 """
 
 import pytest
@@ -22,7 +23,8 @@ from scripts.research.statutory_filing_selector import (
 
 
 def test_version():
-    assert STATUTORY_FILING_SELECTOR_VERSION == "STATUTORY_FILING_SELECTOR_V1_4_0"
+    """Pinned to V1.5.0 which adds MULTI_FUND_DOCUMENT_PENALTY for combined 485BPOS trust filings."""
+    assert STATUTORY_FILING_SELECTOR_VERSION == "STATUTORY_FILING_SELECTOR_V1_5_0"
 
 
 def test_classify_document_role_hierarchy():

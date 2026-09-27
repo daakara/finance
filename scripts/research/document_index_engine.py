@@ -30,9 +30,9 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Set, Tuple, Any
 
 
-INDEX_ENGINE_VERSION = "DOC_INDEX_V1_2_0"
-NORMALIZATION_VERSION = "NORMALIZATION_V1_2_0"
-INDEX_SCHEMA_VERSION = "SCHEMA_V1_2_0"
+INDEX_ENGINE_VERSION = "DOC_INDEX_V1_3_1"
+NORMALIZATION_VERSION = "NORMALIZATION_V1_3_1"
+INDEX_SCHEMA_VERSION = "SCHEMA_V1_3_1"
 
 
 @dataclass
@@ -145,6 +145,11 @@ class DocumentNormalizer:
             return r"(?:adr\s+hedged|adrhedged)"
         if w_low in ("market", "markets"):
             return r"(?:markets?)"
+        if w_low in ("etf", "fund"):
+            # ETF <-> Fund equivalence: resolves DOCUMENT_INDEX_DEFECT where manifest
+            # legal_name carries 'Growth Fund' but source filing says 'Growth ETF'
+            # or vice versa (IWF, IWV, IWO; ETF_INDEX_FUND_SUFFIX alias authority cases).
+            return r"(?:ETF|Fund)"
         if w_low in ("&", "and", "&amp;"):
             return r"(?:&|&amp;|and)"
         if "-" in word:
@@ -207,12 +212,31 @@ class DocumentNormalizer:
 class DocumentIndex:
     """Deterministic structural index for a single SEC statutory filing."""
 
+    # V1.3.0: expanded to capture SPDR "Investment Objective", Tidal "Investment Goal",
+    # and Schwab/Fidelity "Principal Investment Strategy" (singular) variants.
+    # Ordered by specificity — more specific multi-word patterns first to avoid
+    # "Investment Objective and Principal Strategies" being consumed by the shorter
+    # "Investment Objective" pattern in the wrong order.
     STRATEGY_PATTERNS = [
+        # --- V1.2.0 patterns (preserved, reordered for specificity) ---
         r"Principal\s+Investment\s+Strateg(?:y|ies)",
-        r"Investment\s+Objective\s+and\s+Principal\s+Strategies",
-        r"Principal\s+Strategies",
         r"Principal\s+Investment\s+Policies\s+and\s+Strategies",
         r"Principal\s+Risks\s+and\s+Strategies",
+        # --- V1.3.0 additions ---
+        # "Investment Objective and Principal Strategies" (SPDR combo heading)
+        r"Investment\s+Objective\s+and\s+Principal\s+(?:Investment\s+)?Strateg(?:y|ies)",
+        # "Investment Objective" standalone — SPDR/Schwab table-embedded heading (52 targets)
+        r"Investment\s+Objective",
+        # "The Fund's Investment Goal" / "Investment Goal" — Tidal/Touchstone (7 targets)
+        # V1.3.1: Extended quote char class to [\u2019\u2018\u201c\u201d\u0094\u0093] to cover
+        # Windows-1252 byte 0x94 (right double quotation mark, used as apostrophe in Touchstone
+        # 497K filings after NFKC normalization leaves C1 control as-is).
+        r"The\s+Fund[\u2019\u2018\u201c\u201d\u0094\u0093']?s?\s+Investment\s+Goal",
+        r"Investment\s+Goal",
+        # "Principal Strategies" standalone (some SPDR combined forms)
+        r"Principal\s+Strategies",
+        # "Investment Strategy" (singular, Fidelity Schwab variants)
+        r"Investment\s+Strategy(?:\s+and\s+Policy)?",
     ]
 
     DELIMITER_PATTERNS = [
@@ -222,6 +246,12 @@ class DocumentIndex:
         (r"\bFund\s+Summary\b", "TEXT_FUND_SUMMARY"),
         (r"\bSummary\s+Prospectus\b", "TEXT_SUMMARY_PROSPECTUS"),
         (r"\bSUMMARY\s+SECTION\b", "TEXT_SUMMARY_SECTION"),
+        # V1.3.0: iShares combined prospectus format (9 BOUNDARY_NOT_ESTABLISHED targets:
+        # FLTB/MBBB/MIG/EQL/IGIB/IYC/IYK/EQIN/TBIL). These documents use zero <hr> delimiters
+        # and instead demarcate fund groups with a "Fund Group:" header in a bold table cell.
+        # Matching directly on "Fund Group:" is safe — this token is only used as a
+        # section header in combined trust 485BPOS documents, never in TOC rows.
+        (r"\bFund\s+Group\s*:", "FUND_GROUP_TABLE"),
     ]
 
     TOC_PATTERNS = [
@@ -239,7 +269,20 @@ class DocumentIndex:
         raw_bytes: bytes,
         known_series_metadata: Optional[List[Dict[str, str]]] = None,
         config: Optional[Dict[str, Any]] = None,
+        alias_legal_names: Optional[List[str]] = None,
     ):
+        """Build a deterministic DocumentIndex.
+
+        Args:
+            identity: Document provenance.
+            raw_bytes: Original acquired document bytes (never mutated).
+            known_series_metadata: List of dicts, each with at least 'legal_name' key.
+            config: Optional configuration overrides (reserved, currently unused).
+            alias_legal_names: V1.3.0 — Optional list of historical legal-name strings from
+                ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1.  These are indexed as ALIAS_NAME
+                occurrences to supplement LEGAL_NAME matching for 13 MANIFEST_IDENTITY_DEFECT
+                targets.  The manifest is NOT mutated; aliases are a supplementary lookup path.
+        """
         self.identity = identity
         self.engine_version = INDEX_ENGINE_VERSION
         self.normalization_version = NORMALIZATION_VERSION
@@ -258,6 +301,7 @@ class DocumentIndex:
         self.class_occurrences: Dict[str, List[Occurrence]] = {}
         self.legal_name_occurrences: Dict[str, List[Occurrence]] = {}
         self.normalized_name_occurrences: Dict[str, List[Occurrence]] = {}
+        self.alias_name_occurrences: Dict[str, List[Occurrence]] = {}  # V1.3.0
         self.strategy_anchors: List[StrategyAnchor] = []
         self.boundary_candidates: List[SectionBoundaryCandidate] = []
         self.toc_ranges: List[Tuple[int, int]] = []
@@ -265,7 +309,7 @@ class DocumentIndex:
         self._build_toc_ranges(self.normalized_text)
         self._build_strategy_anchors(self.normalized_text)
         self._build_boundary_candidates(self.normalized_text)
-        self._index_known_metadata(self.normalized_text, known_series_metadata or [])
+        self._index_known_metadata(self.normalized_text, known_series_metadata or [], alias_legal_names or [])
 
         # Step 4: Serialize deterministic index representation and hash
         self.index_dict = self._to_deterministic_dict()
@@ -309,7 +353,12 @@ class DocumentIndex:
         return False
 
     def _is_structural_heading(self, text: str, m_start: int, m_end: int, m_text: str) -> bool:
-        """Determines whether a strategy heading match is a genuine structural heading rather than prose."""
+        """Determines whether a strategy heading match is a genuine structural heading rather than prose.
+
+        V1.3.0: Added table-cell boundary detection. When the 120-char pre-context contains
+        an opening <td or <th tag, the match is inside a table cell and qualifies as a
+        structural heading. This resolves 52 SPDR/Schwab/iShares table-embedded targets.
+        """
         # 1. Reject all-lowercase prose matches that continue into lowercase narrative sentences (Defect E / INVN)
         post = text[m_end: m_end + 30]
         if m_text.islower() and re.match(r"^\s+[a-z]", post):
@@ -321,6 +370,27 @@ class DocumentIndex:
             prefix_text = pre[last_boundary + 1:].strip()
         else:
             prefix_text = pre.strip()
+
+        # V1.3.0: Table-cell heading detection.
+        # If the pre-context contains an opening <td or <th tag, this heading sits inside
+        # a table cell. SPDR/Schwab/Schwab prospectuses format fund sections as table rows
+        # where each cell starts with the strategy heading. Treat as structural.
+        if re.search(r"<t[dh][\s>]", pre, re.IGNORECASE):
+            # Still reject if there is substantive prose between the last <td/<th and the heading
+            td_start = max(
+                (m.start() for m in re.finditer(r"<t[dh][\s>]", pre, re.IGNORECASE)),
+                default=-1,
+            )
+            if td_start != -1:
+                cell_pre = pre[td_start:].lstrip()[3:]  # skip tag opener itself
+                # Skip any HTML attributes / close angle bracket of the opening tag
+                attr_end = cell_pre.find('>')
+                if attr_end != -1:
+                    cell_pre = cell_pre[attr_end + 1:].strip()
+                # If what remains is only whitespace, nested tags, or empty -> heading is first content
+                stripped_cell_pre = re.sub(r"<[^>]+>", "", cell_pre).strip()
+                if not stripped_cell_pre or len(stripped_cell_pre) <= 10:
+                    return True
 
         # If prefix_text is empty, it started immediately after a tag or newline -> Structural Heading!
         if not prefix_text:
@@ -376,8 +446,24 @@ class DocumentIndex:
                     )
         self.boundary_candidates.sort(key=lambda b: b.start_offset)
 
-    def _index_known_metadata(self, text: str, known_metadata: List[Dict[str, str]]):
-        """Indexes series IDs, class IDs, and legal fund names across the document."""
+    def _index_known_metadata(
+        self,
+        text: str,
+        known_metadata: List[Dict[str, str]],
+        alias_legal_names: List[str] = None,
+    ):
+        """Indexes series IDs, class IDs, and legal fund names across the document.
+
+        V1.3.0: Added alias_legal_names parameter.  When provided, alias names are scanned
+        with the same resilience pattern as manifest legal names and stored in
+        alias_name_occurrences.  This allows the series resolver to fall back to historical
+        source names from ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1 when the manifest name
+        fails to match.  Series isolation invariant is preserved: each alias is consumed only
+        within the series block identified by its Series ID or Class ID primary key.
+        """
+        if alias_legal_names is None:
+            alias_legal_names = []
+
         # 1. Fast regex scan for all Series IDs in text
         for m in re.finditer(r"\b(S\d{9})\b", text, re.IGNORECASE):
             sid = m.group(1).upper()
@@ -404,33 +490,47 @@ class DocumentIndex:
             )
             self.class_occurrences.setdefault(cid, []).append(occ)
 
-        # 3. Known legal names scan (resilient to whitespace, HTML tags, font tags, and trademark glyphs)
-        for meta in known_metadata:
-            raw_name = meta.get("legal_name", "")
-            if raw_name and len(raw_name.strip()) > 5:
-                name_clean = DocumentNormalizer.normalize_name(raw_name)
-                words = raw_name.strip().split()
-                # Flexible separator: whitespace, HTML tags, font tags, entity references, trademark glyphs
-                sep = r"(?:<[^>]+>|\s|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
-                word_patterns = []
-                for w in words:
-                    word_patterns.append(DocumentNormalizer.get_word_equivalence_pattern(w))
-                name_pat = sep.join(word_patterns)
-                try:
-                    for m in re.finditer(name_pat, text, re.IGNORECASE):
-                        occ = Occurrence(
-                            matched_term=raw_name,
-                            term_type="LEGAL_NAME",
-                            start_offset=m.start(),
-                            end_offset=m.end(),
-                            is_toc_or_cross_ref=self._is_in_toc(m.start()),
-                            context_snippet=text[max(0, m.start() - 50): min(len(text), m.end() + 50)],
-                        )
-                        self.legal_name_occurrences.setdefault(raw_name, []).append(occ)
+        # Helper: build flexible legal-name regex and scan for occurrences.
+        # V1.3.0: Added hyphen (\-) and Unicode dashes (–, —, &#8211;, &#8212;, &ndash;, &mdash;)
+        # to the separator so that 'Nasdaq-100' in source matches 'Nasdaq 100' in the manifest
+        # (QSIX SERIES_RESOLVER_DEFECT: cover page uses 'Nasdaq-100' vs manifest 'Nasdaq 100').
+        sep = r"(?:<[^>]+>|\s|-|–|—|&#8211;|&#8212;|&ndash;|&mdash;|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
+
+        def _scan_name(raw_name: str, term_type: str, target_dict: Dict[str, List[Occurrence]]):
+            if not raw_name or len(raw_name.strip()) <= 5:
+                return
+            words = raw_name.strip().split()
+            word_patterns = [DocumentNormalizer.get_word_equivalence_pattern(w) for w in words]
+            name_pat = sep.join(word_patterns)
+            try:
+                for m in re.finditer(name_pat, text, re.IGNORECASE):
+                    occ = Occurrence(
+                        matched_term=raw_name,
+                        term_type=term_type,
+                        start_offset=m.start(),
+                        end_offset=m.end(),
+                        is_toc_or_cross_ref=self._is_in_toc(m.start()),
+                        context_snippet=text[max(0, m.start() - 50): min(len(text), m.end() + 50)],
+                    )
+                    target_dict.setdefault(raw_name, []).append(occ)
+                    if term_type == "LEGAL_NAME":
+                        name_clean = DocumentNormalizer.normalize_name(raw_name)
                         if name_clean:
                             self.normalized_name_occurrences.setdefault(name_clean, []).append(occ)
-                except re.error:
-                    pass
+            except re.error:
+                pass
+
+        # 3. Known legal names scan (resilient to whitespace, HTML tags, font tags, and trademark glyphs)
+        for meta in known_metadata:
+            _scan_name(meta.get("legal_name", ""), "LEGAL_NAME", self.legal_name_occurrences)
+
+        # 4. V1.3.0: Alias legal names scan (from ETF_HISTORICAL_IDENTITY_ALIAS_AUTHORITY_V1).
+        # Stored in alias_name_occurrences.  The series resolver consults this dict as a
+        # supplementary identity signal when LEGAL_NAME occurrences return zero hits.
+        # Alias lookup is keyed by series_id at the resolver layer — no target-specific logic here.
+        for alias_name in alias_legal_names:
+            _scan_name(alias_name, "ALIAS_NAME", self.alias_name_occurrences)
+
 
     def _to_deterministic_dict(self) -> Dict[str, Any]:
         """Converts index into a serializable deterministic dictionary."""
