@@ -1,6 +1,8 @@
 """ARX Terminal — Deterministic Statutory Mandate Parser (Policy v1.1.0).
 
-FROZEN PRE-POPULATION EXECUTION RULESET: MANDATE_PARSER_V1_2_0_FROZEN.
+FROZEN BASELINE: MANDATE_PARSER_V1_2_0_FROZEN.
+SUCCESSOR RULESET: MANDATE_PARSER_V1_3_0.
+
 Extracts only frozen Policy-v1.1 fields:
 - broad_or_multi_sector_mandate: bool
 - sector_specific_mandate: bool
@@ -9,12 +11,15 @@ Extracts only frozen Policy-v1.1 fields:
 - corporate_credit_mandate: bool
 - non_confirmatory_mandate: bool
 
-PROHIBITIONS:
+PROHIBITIONS & DOMAIN INVARIANTS:
 - No classification from ticker, security name, marketing title, or fund name.
 - No model interpretation as final authority.
 - Ambiguous, multi-asset fund-of-funds, or contradictory evidence FAILS CLOSED as UNRESOLVED.
 - Incidental sector vocabulary (financial condition, energy costs, technology platforms) REJECTED.
-- Foreign, international, ex-US funds REJECTED from US confirmatory equity hypotheses.
+- Incidental foreign permissions (e.g. up to 20% in foreign securities, domestic and foreign)
+  do NOT disqualify domestic funds from active/domestic mandates.
+- Primary Foreign, international, ex-US funds REJECTED from US confirmatory equity hypotheses.
+- Incidental or tactical cash Treasury holdings do NOT classify as pure government debt.
 """
 
 import re
@@ -23,6 +28,9 @@ from dataclasses import dataclass, asdict
 from typing import Optional, Dict, Any, List
 from bs4 import BeautifulSoup
 
+
+MANDATE_PARSER_V1_2_0_FROZEN = "MANDATE_PARSER_V1_2_0_FROZEN"
+MANDATE_PARSER_VERSION = "MANDATE_PARSER_V1_3_0"
 
 APPROVED_SECTORS = {
     "TECHNOLOGY",
@@ -132,6 +140,11 @@ CORPORATE_CREDIT_PATTERNS = [
     r"\bliquid high yield\b",
     r"\bmarkit iboxx (?:usd )?liquid (?:high yield|investment grade)\b",
     r"\bbloomberg (?:u\.s\.|us) (?:corporate|high yield)\b",
+    r"\bdebt securities issued by corporations\b",
+    r"\bfloating rate notes?\b",
+    r"\bcommercial paper\b",
+    r"\basset-backed securities\b",
+    r"\bshort-term fixed,\s*variable and floating rate debt\b",
 ]
 
 # Non-confirmatory product structure / strategy exclusions
@@ -152,6 +165,8 @@ PRODUCT_EXCLUSION_PATTERNS = [
     r"\b-1x\b",
     r"\b-2x\b",
     r"\bdaily target\b",
+    r"\bmerger arbitrage\b",
+    r"\brisk arbitrage\b",
 ]
 
 # Geography Invariant: Ex-US / International / Foreign mandates rejected from US confirmatory equity
@@ -168,10 +183,31 @@ GEOGRAPHY_EX_US_PATTERNS = [
     r"\bmsci (?:eafe|em|emerging|world ex|acwi ex|acwi)\b",
 ]
 
+STRONG_EX_US_PATTERNS = [
+    r"\b(?:ex[- ](?:us|u\.s\.|united states)|developed ex[- ](?:us|u\.s\.|united states))\b",
+    r"\b(?:msci\s+(?:eafe|em|emerging|world ex|acwi ex|acwi))\b",
+    r"\b(?:emerging markets|emerging market)\b",
+    r"\bftse (?:developed|all cap|global) ex[- ](?:us|u\.s\.)\b",
+    r"\b(?:global excluding (?:the )?(?:us|u\.s\.|united states))\b",
+    r"\b(?:outside (?:the )?(?:us|u\.s\.|united states))\b",
+    r"\b(?:europe|asia|japan|china|latin america|pacific|emea|asia-pacific|australia|united kingdom|canada)\b",
+    r"\b(?:invests|investing)\s+(?:primarily|substantially|at\s+least\s+80%\s+of\s+(?:its\s+)?(?:net\s+|total\s+)?assets)\b[^.;\n]{0,120}?\b(?:outside\s+(?:the\s+)?(?:us|u\.s\.|united states)|non[- ](?:us|u\.s\.|united states)|foreign|in\s+companies\s+domiciled\s+outside)\b",
+]
+
+INCIDENTAL_FOREIGN_PATTERNS = [
+    r"foreign markets can be more volatile[^\.\;\n]*[\.\;\n]?",
+    r"domestic and foreign",
+    r"in addition to[^\.\;\n]{0,80}?domestic",
+    r"limited to a maximum of \d{1,2}%[^\.\;\n]{0,80}?foreign",
+    r"may invest up to \d{1,2}%[^\.\;\n]{0,80}?foreign",
+    r"up to \d{1,2}% of its assets in foreign",
+    r"may also invest in foreign",
+]
+
 # Affirmative active management pattern (excludes negative qualifiers like "differs from an actively managed fund")
 ACTIVE_MANAGEMENT_PATTERN = re.compile(
     r"(?<!differs from an )(?<!unlike an )(?<!not an )(?<!rather than an )"
-    r"\b(?:(?:the fund|it)\s+is\s+(?:an?\s+)?actively managed|is\s+(?:an?\s+)?actively managed|actively manages?|employs\s+(?:an?\s+)?active management)\b",
+    r"\b(?:(?:the fund|it)\s+is\s+(?:an?\s+)?actively[- ]managed|is\s+(?:an?\s+)?actively[- ]managed|actively\s+manages?|employs\s+(?:an?\s+)?active\s+management)\b",
     re.IGNORECASE
 )
 
@@ -182,6 +218,23 @@ BALANCED_OR_FOF_PATTERNS = [
     r"\b(?:allocation to debt securities through .*? (?:underlying )?funds)\b",
     r"\b(?:invests in (?:one or more|proprietary|underlying) (?:underlying )?funds)\b",
     r"\b(?:fund of funds)\b",
+]
+
+# Disqualifiers for Treasury Government (Pure): equity presence or incidental cash
+PRIMARY_EQUITY_DISQUALIFIERS = [
+    r"\b(?:invests|investing)\s+(?:under\s+normal\s+market\s+conditions\s*,?\s*)?(?:at\s+least\s+80%\s+of\s+(?:its\s+)?(?:net\s+|total\s+)?assets\b[^.;\n]{0,120}?\b(?:in|into)\b[^.;\n]{0,80}?(?:equity|equities|common\s+stocks?))\b",
+    r"\b(?:dividend-yielding\s+.*?equity|equity\s+allocation|inflation\s+sensitive\s+equity)\b",
+    r"\b(?:common\s+stocks|equity\s+securities\s+of\s+large-cap)\b",
+    r"\b(?:underlying\s+index\s+is\s+composed\s+of\s+.*?equity)\b",
+    r"\b(?:nasdaq\s+victory\s+us\s+large\s+cap\s+(?:100|500)|adaptive\s+wealth\s+strategies\s+u\.s\.\s+risk\s+management)\b",
+]
+
+INCIDENTAL_TREASURY_PATTERNS = [
+    r"\b(?:reallocate\s+(?:a\s+portion|up\s+to\s+\d+%)?[^.;\n]{0,60}?\bto\s+cash\s*\([^)]*?treasury)\b",
+    r"\b(?:cash\s+\(substantially\s+represented\s+by\s+.*?treasury)\b",
+    r"\b(?:cash\s+or\s+cash\s+equivalents\s+\(including\s+.*?treasury)\b",
+    r"\b(?:cash\s+equivalents\s*,?\s*such\s+as\s+u\.s\.\s+treasury)\b",
+    r"\b(?:temporary\s+defensive\s+purposes\b[^.;\n]{0,60}?\bu\.s\.\s+treasury)\b",
 ]
 
 
@@ -202,9 +255,9 @@ class MandateParseResult:
 
 
 class DeterministicMandateParser:
-    """Frozen pre-population deterministic mandate parser under Policy v1.1.0."""
+    """Deterministic statutory mandate parser under Policy v1.1.0."""
 
-    RULESET_ID = "MANDATE_PARSER_V1_2_0_FROZEN"
+    RULESET_ID = MANDATE_PARSER_VERSION
 
     @classmethod
     def extract_strategy_text(cls, html_or_text: str, fund_identifier: Optional[str] = None) -> tuple[str, str]:
@@ -273,8 +326,21 @@ class DeterministicMandateParser:
                 return result
 
         # Step 2: Check Geography Invariant (Ex-US / International / Foreign Scope)
+        # Screen for strong ex-US patterns first; mask incidental permission clauses for generic foreign mentions
+        has_strong_ex_us = any(re.search(p, text_lower) for p in STRONG_EX_US_PATTERNS)
+        if has_strong_ex_us:
+            result.non_confirmatory_mandate = True
+            result.parser_rule_id = "RULE_EX_US_OR_INTERNATIONAL"
+            result.confidence_state = "CONFIDENT_NON_CONFIRMATORY"
+            return result
+
+        # Mask incidental foreign phrases to avoid false exclusions on US funds
+        cleaned_geo_text = text_lower
+        for p in INCIDENTAL_FOREIGN_PATTERNS:
+            cleaned_geo_text = re.sub(p, " ", cleaned_geo_text)
+
         for pat in GEOGRAPHY_EX_US_PATTERNS:
-            if re.search(pat, text_lower):
+            if re.search(pat, cleaned_geo_text):
                 result.non_confirmatory_mandate = True
                 result.parser_rule_id = "RULE_EX_US_OR_INTERNATIONAL"
                 result.confidence_state = "CONFIDENT_NON_CONFIRMATORY"
@@ -320,10 +386,15 @@ class DeterministicMandateParser:
 
         # Step 10: Treasury Government (Pure)
         if len(govt_matches) > 0 and len(credit_matches) == 0 and len(detected_sectors) == 0 and len(broad_matches) == 0:
-            result.government_debt_mandate = True
-            result.parser_rule_id = "RULE_TREASURY_GOVERNMENT"
-            result.confidence_state = "CONFIDENT_CONFIRMATORY"
-            return result
+            has_primary_equity = any(re.search(p, text_lower) for p in PRIMARY_EQUITY_DISQUALIFIERS)
+            is_only_incidental_cash = any(re.search(p, text_lower) for p in INCIDENTAL_TREASURY_PATTERNS)
+
+            if not has_primary_equity and not is_only_incidental_cash:
+                result.government_debt_mandate = True
+                result.parser_rule_id = "RULE_TREASURY_GOVERNMENT"
+                result.confidence_state = "CONFIDENT_CONFIRMATORY"
+                return result
+            # Disqualified funds with incidental/tactical cash Treasuries fail closed to ambiguous below
 
         # Step 11: Corporate Credit (Pure)
         if len(credit_matches) > 0 and len(govt_matches) == 0 and len(detected_sectors) == 0 and len(broad_matches) == 0:
