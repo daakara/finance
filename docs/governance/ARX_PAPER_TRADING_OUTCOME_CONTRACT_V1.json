@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contractId": "ARX_PAPER_TRADING_OUTCOME_CONTRACT_V1",
+  "contractVersion": "1.0.0",
+  "specType": "OUTCOME_EVALUATION_CONTRACT",
+  "title": "ARX Paper-Trading Outcome Evaluation Contract V1",
+  "createdAtUtc": "2026-09-27T19:28:00Z",
+  "governance": {
+    "status": "FROZEN",
+    "authority": "ARX_GOVERNANCE_GATE",
+    "governingEngineVersions": [
+      "2.4.0",
+      "2.5.0"
+    ],
+    "targetSignalPopulation": 10,
+    "targetLedgerPath": "analyst_dashboard/data/paper_trading_ledger.json",
+    "outcomeInformedContractDesign": false,
+    "targetSpecificOutcomeRulesCount": 0,
+    "tuningAuthorized": false,
+    "modelLearningClaimAuthorized": false
+  },
+  "analyses": {
+    "analysisA": {
+      "name": "MODEL_RECOMMENDATION_OUTCOME",
+      "description": "Evaluates hypothetical trade execution strictly according to the contemporaneously frozen trade plan and execution corridor.",
+      "targetPopulation": 10,
+      "eligibilityCriteria": "Contemporaneously recorded signal with decisionState == 'ACTIONABLE_SETUP' in paper_trading_ledger.json"
+    },
+    "analysisB": {
+      "name": "ACTUAL_EXECUTION_OUTCOME",
+      "description": "Evaluates trade outcomes solely where contemporaneous execution observations prove simulated or actual fill occurred.",
+      "targetPopulation": 10,
+      "executionObservationsRequired": true,
+      "defaultStateWhenNoObservation": "ENTRY_NOT_APPLICABLE"
+    }
+  },
+  "entryAuthority": {
+    "referencePriceField": "entryPrice",
+    "corridorMinField": "corridorMin",
+    "corridorMaxField": "corridorMax",
+    "entryWindowSessions": 5,
+    "marketSessionRequired": "REGULAR_SESSION",
+    "regularTradingHours": "09:30-16:00 ET",
+    "entryTriggerRules": {
+      "sessionTPlus1OpenInCorridor": {
+        "condition": "corridorMin <= T+1_Open <= corridorMax",
+        "executionPrice": "T+1_Open",
+        "description": "If market opens inside the execution corridor on T+1, entry triggers at the opening print."
+      },
+      "sessionTPlus1OpenBelowCorridor": {
+        "condition": "T+1_Open < corridorMin and T+1_High >= corridorMin and T+1_Low > stopLoss",
+        "executionPrice": "corridorMin",
+        "description": "If market opens below corridor (pullback) but rallies into corridor, entry triggers at lower corridor limit."
+      },
+      "sessionTPlus1OpenAboveCorridor": {
+        "condition": "T+1_Open > corridorMax and T+1_Low <= corridorMax",
+        "executionPrice": "corridorMax",
+        "description": "If market opens above corridor (gap up) but pulls back into corridor, entry triggers at upper corridor limit."
+      },
+      "subsequentSessionsT2ToT5": {
+        "condition": "Within sessions T+2 to T+5, session trades into [corridorMin, corridorMax] prior to Stop Loss or TP1 breach",
+        "executionPrice": "corridor boundary first touched (corridorMin on rally from below, corridorMax on pullback from above)",
+        "description": "Setup remains eligible for entry for up to 5 trading sessions while within buy corridor."
+      },
+      "openingGapBelowStopFloor": {
+        "condition": "Session Open <= stopLoss before entry is triggered",
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "description": "An opening gap below the stop floor invalidates the setup prior to execution."
+      },
+      "entryWindowExpiration": {
+        "condition": "5 trading sessions elapse without entry trigger condition satisfied",
+        "outcome": "ENTRY_NOT_TRIGGERED",
+        "description": "Entry window closes after 5 complete trading sessions."
+      }
+    }
+  },
+  "entryStates": [
+    "ENTRY_TRIGGERED",
+    "ENTRY_NOT_TRIGGERED",
+    "ENTRY_WINDOW_STILL_OPEN",
+    "ENTRY_DATA_UNRESOLVED",
+    "ENTRY_NOT_APPLICABLE"
+  ],
+  "transactionFrictionModel": {
+    "primaryMetric": "GROSS_MODEL_OUTCOME",
+    "secondaryMetric": "NET_SIMULATED_OUTCOME",
+    "standardFrictionBps": 25.0,
+    "frictionComponents": {
+      "exchangeSecFeesBps": 5.0,
+      "bidAskSpreadBps": 10.0,
+      "marketImpactSlippageBps": 10.0
+    },
+    "netReturnCalculation": "realizedNetReturnPct = realizedGrossReturnPct - 0.25"
+  },
+  "stopLossAuthority": {
+    "sourceField": "stopLoss",
+    "triggerCondition": "In any session t >= entry_session, session Low <= stopLoss during regular trading hours",
+    "executionPriceRules": {
+      "normalTouch": {
+        "condition": "Session Open > stopLoss and Session Low <= stopLoss",
+        "exitPrice": "stopLoss"
+      },
+      "gapBelowStop": {
+        "condition": "Session Open <= stopLoss",
+        "exitPrice": "Session Open",
+        "description": "Gap-through-stop fills at Open, preventing unrealistically favorable limit fills on gaps."
+      }
+    },
+    "intradayTouchSemantics": "Any touch of stopLoss during regular trading hours triggers complete position exit."
+  },
+  "targetAuthority": {
+    "primaryTargetField": "takeProfit1",
+    "secondaryTargetField": "takeProfit2",
+    "primaryBenchmarkCriterion": "takeProfit1 reached before stopLoss within evaluation horizon",
+    "executionPriceRules": {
+      "normalTouch": {
+        "condition": "Session High >= takeProfit1 and Session Open < takeProfit1",
+        "exitPrice": "takeProfit1"
+      },
+      "gapAboveTarget": {
+        "condition": "Session Open >= takeProfit1",
+        "exitPrice": "Session Open"
+      }
+    },
+    "multiStageAllocationModel": {
+      "stage1AllocationPct": 50.0,
+      "stage1Target": "takeProfit1",
+      "stage2AllocationPct": 50.0,
+      "stage2Target": "takeProfit2",
+      "trailingStopRule": "Upon Stage 1 fill, stop loss on remaining 50% is raised to Breakeven (entryPrice)."
+    }
+  },
+  "intrabarAmbiguityHandling": {
+    "rule": "UNRESOLVED_INTRABAR_SEQUENCE",
+    "condition": "In any single daily session during trade holding period, session High >= takeProfit1 and session Low <= stopLoss",
+    "arbitrationPolicy": "Strict fail-closed ambiguity isolation. Neither favorable nor unfavorable ordering is assumed unless verifiable sub-minute tick data is available."
+  },
+  "evaluationHorizon": {
+    "maxHoldingSessions": 20,
+    "calendarType": "EXCHANGE_TRADING_SESSIONS",
+    "checkpoints": [
+      "T+1",
+      "T+5",
+      "T+10",
+      "T+20"
+    ],
+    "terminalHorizonRule": "If neither takeProfit1 nor stopLoss triggers by the close of trading session 20, position is liquidated at session 20 Close (HORIZON_EXIT)."
+  },
+  "signalMaturity": {
+    "matureCondition": "20 trading sessions have elapsed post-entry OR terminal exit (TP1 or Stop Loss) occurred prior to session 20",
+    "unmaturedCondition": "Fewer than 20 trading sessions have elapsed post-entry AND no terminal exit has occurred"
+  },
+  "outcomeStatesAndPrecedence": {
+    "precedenceOrder": [
+      "OUTCOME_CONTRACT_NOT_APPLICABLE",
+      "OUTCOME_DATA_MISSING",
+      "UNRESOLVED_INTRABAR_SEQUENCE",
+      "UNMATURED",
+      "ENTRY_WINDOW_STILL_OPEN",
+      "ENTRY_NOT_TRIGGERED",
+      "SUCCESS",
+      "FAILURE",
+      "NEUTRAL"
+    ],
+    "stateDefinitions": {
+      "OUTCOME_CONTRACT_NOT_APPLICABLE": "Signal or instrument falls outside governed contract authority.",
+      "OUTCOME_DATA_MISSING": "Daily market data bars are absent or corrupted during the required holding period.",
+      "UNRESOLVED_INTRABAR_SEQUENCE": "Both Stop Loss and TP1 were breached on the same day without sub-daily chronological ordering.",
+      "UNMATURED": "Trade triggered but 20 trading sessions have not elapsed and no terminal exit occurred.",
+      "ENTRY_WINDOW_STILL_OPEN": "Fewer than 5 trading sessions elapsed and entry condition has not yet been satisfied.",
+      "ENTRY_NOT_TRIGGERED": "5 trading sessions elapsed without satisfying entry corridor criteria or opening gap breached stop floor.",
+      "SUCCESS": "takeProfit1 reached before stopLoss within 20 trading sessions post-entry.",
+      "FAILURE": "stopLoss reached before takeProfit1 within 20 trading sessions post-entry.",
+      "NEUTRAL": "Neither takeProfit1 nor stopLoss reached within 20 trading sessions; position closed at session 20 Close."
+    }
+  },
+  "denominators": {
+    "D1_TOTAL_RECOMMENDATIONS": "All 10 recorded recommendations in paper_trading_ledger.json",
+    "D2_ENTRY_ELIGIBLE": "Recommendations possessing complete, valid execution corridors and active regular-session pricing",
+    "D3_TRIGGERED_ENTRIES": "Recommendations where entry trigger condition was satisfied within 5 sessions",
+    "D4_MATURE_TRIGGERED_ENTRIES": "Triggered entries that have reached maturity (terminal exit or 20 sessions elapsed)",
+    "D5_RESOLVED_MATURE_OUTCOMES": "D4 mature triggered entries excluding UNRESOLVED_INTRABAR_SEQUENCE",
+    "winRateFormula": "WinRate = N(SUCCESS) / D5_RESOLVED_MATURE_OUTCOMES"
+  },
+  "secondaryMetrics": {
+    "mfe": {
+      "type": "DESCRIPTIVE_PATH_METRIC",
+      "formula": "((max(High) - entryPrice) / entryPrice) * 100",
+      "achievableReturnClaim": false
+    },
+    "mae": {
+      "type": "DESCRIPTIVE_PATH_METRIC",
+      "formula": "((min(Low) - entryPrice) / entryPrice) * 100",
+      "achievableReturnClaim": false
+    },
+    "realizedGrossReturnPct": "((exitPrice - entryPrice) / entryPrice) * 100",
+    "realizedNetReturnPct": "realizedGrossReturnPct - 0.25",
+    "rMultipleRealized": "(exitPrice - entryPrice) / (entryPrice - stopLoss)",
+    "timeToResolutionSessions": "Number of trading sessions elapsed from entry session to exit session"
+  },
+  "marketDataAuthority": {
+    "primaryProvider": "YAHOO_AUTHENTIC_EODHD",
+    "priceType": "SPLIT_ADJUSTED_OHLCV",
+    "timezone": "America/New_York",
+    "session": "REGULAR_SESSION (09:30-16:00 ET)",
+    "corporateActionAdjustment": "Split-adjusted mandatory; dividends not subtracted from spot prices",
+    "providerMixingPolicy": "Strictly prohibited within any individual asset evaluation"
+  },
+  "versionStratification": {
+    "cohorts": [
+      {
+        "cohortId": "V2_4_0_BASELINE",
+        "engineVersion": "2.4.0",
+        "provenanceCommit": "4e36862",
+        "signalDate": "2026-09-04",
+        "symbols": [
+          "ANET",
+          "CELH",
+          "CRSP",
+          "GOOGL",
+          "LULU",
+          "MDB",
+          "NET",
+          "SNPS",
+          "TMDX"
+        ],
+        "count": 9
+      },
+      {
+        "cohortId": "EPOCH_1_CERTIFICATION",
+        "engineVersion": "2.5.0",
+        "provenanceCommit": "7ad4459",
+        "signalDate": "2026-09-19",
+        "symbols": [
+          "AAPL"
+        ],
+        "count": 1
+      }
+    ],
+    "reportingPolicy": "All outcome metrics must be reported separately per cohort, then pooled as descriptive summary."
+  },
+  "confluenceScoreInterpretation": {
+    "scoreType": "ORDINAL_CONVICTION_RANKING",
+    "range": "0.0 - 100.0",
+    "actionableThreshold": 75.0,
+    "probabilisticClaim": "PROHIBITED",
+    "probabilityCalibration": "NOT_APPLICABLE"
+  }
+}
