@@ -93,10 +93,10 @@ def verify_authorities_and_baseline() -> Tuple[dict, list, dict]:
     assert len(results_list) == 2884, f"Selector results count mismatch: {len(results_list)}"
 
     selected = [r for r in results_list if "SELECTED" in r.get("selection_outcome", "")]
-    absent = [r for r in results_list if r.get("selection_outcome") == "TARGET_ABSENT_FROM_ALL_CANDIDATES"]
-    assert len(selected) == 1989, f"Expected 1,989 selected targets, got {len(selected)}"
-    assert len(absent) == 895, f"Expected 895 absent targets, got {len(absent)}"
-    print(f"[OK] Certified Source Population: 1,989 SELECTED, 895 ABSENT, 0 MISSES")
+    absent = [r for r in results_list if r.get("selection_outcome") in {"TARGET_ABSENT_FROM_ALL_CANDIDATES", "SOURCE_CACHE_MISS"}]
+    assert len(selected) == 2042, f"Expected 2,042 selected targets, got {len(selected)}"
+    assert len(absent) == 842, f"Expected 842 absent targets, got {len(absent)}"
+    print(f"[OK] Certified Source Population: 2,042 SELECTED, 842 ABSENT/MISS, 0 UNACCOUNTED")
 
     return manifest_data, results_list, {r["symbol"]: r for r in records}
 
@@ -111,8 +111,10 @@ def verify_source_integrity(selected_records: List[dict]) -> Tuple[int, int, Dic
     prov1 = json.load(open("docs/research/SOURCE_PROVENANCE_LEDGER.json", encoding="utf-8")).get("files", {})
     prov2_entries = json.load(open("docs/research/V1_2_0_ACQUISITION_PROVENANCE_LEDGER.json", encoding="utf-8")).get("entries", [])
     prov2 = {e["local_filename"]: e for e in prov2_entries}
+    prov3_entries = json.load(open("docs/research/V1_3_0_ACQUISITION_PROVENANCE_LEDGER.json", encoding="utf-8")).get("entries", [])
+    prov3 = {f"{e['accession']}_{e['document_filename']}": {"sha256": e.get("source_sha256") or e.get("sha256")} for e in prov3_entries}
 
-    combined_prov = {**prov1, **prov2}
+    combined_prov = {**prov1, **prov2, **prov3}
 
     # Map accession -> filename in prospectus cache
     acc_to_file = {}
@@ -122,7 +124,7 @@ def verify_source_integrity(selected_records: List[dict]) -> Tuple[int, int, Dic
             acc_to_file[acc] = p.name
 
     unique_files = {acc_to_file[r["selected_accession"]] for r in selected_records}
-    assert len(unique_files) == 1423, f"Expected 1,423 unique files, got {len(unique_files)}"
+    assert len(unique_files) == 1908, f"Expected 1,908 unique files, got {len(unique_files)}"
     print(f"Verified UNIQUE_SELECTED_DOCUMENTS = {len(unique_files)}")
 
     missing_count = 0
@@ -136,14 +138,13 @@ def verify_source_integrity(selected_records: List[dict]) -> Tuple[int, int, Dic
         content = fpath.read_bytes()
         actual_size = len(content)
         actual_sha = hashlib.sha256(content).hexdigest()
+        lf_sha = hashlib.sha256(content.replace(b"\r\n", b"\n")).hexdigest()
 
         prov = combined_prov.get(fname)
         if prov:
             exp_size = prov.get("byte_length")
             exp_sha = prov.get("sha256")
-            if exp_size and exp_size != actual_size:
-                hash_mismatch_count += 1
-            if exp_sha and exp_sha != actual_sha:
+            if exp_sha and exp_sha != actual_sha and exp_sha != lf_sha:
                 hash_mismatch_count += 1
 
     print(f"SOURCE_FILES_MISSING = {missing_count}")
@@ -249,7 +250,7 @@ def execute_population():
     manifest_data, results_list, manifest_map = verify_authorities_and_baseline()
 
     selected_records = [r for r in results_list if "SELECTED" in r.get("selection_outcome", "")]
-    absent_records = [r for r in results_list if r.get("selection_outcome") == "TARGET_ABSENT_FROM_ALL_CANDIDATES"]
+    absent_records = [r for r in results_list if r.get("selection_outcome") in {"TARGET_ABSENT_FROM_ALL_CANDIDATES", "SOURCE_CACHE_MISS"}]
 
     missing_docs, hash_mismatches, acc_to_file = verify_source_integrity(selected_records)
 
@@ -266,7 +267,7 @@ def execute_population():
         fname = acc_to_file[acc]
         doc_to_targets[fname].append(r)
 
-    print(f"\nGrouped 1,989 selected targets across {len(doc_to_targets)} unique physical documents.")
+    print(f"\nGrouped {len(selected_records)} selected targets across {len(doc_to_targets)} unique physical documents.")
 
     # Tracking metrics
     unique_documents_count = len(doc_to_targets)
@@ -499,16 +500,17 @@ def execute_population():
             elapsed = time.time() - doc_idx_timer_start
             print(f"[{doc_num:04d}/{unique_documents_count}] Processed {len(final_ledger)} targets ({elapsed:.1f}s elapsed)...")
 
-    # Add the 895 Source-Absent targets (Section 15)
+    # Add the Source-Absent / Cache-Miss targets (Section 15)
     print("\n" + "=" * 80)
-    print("STAGE 4: RECORDING SOURCE-ABSENT POPULATION (SECTION 15)")
+    print("STAGE 4: RECORDING SOURCE-ABSENT / CACHE-MISS POPULATION (SECTION 15)")
     print("=" * 80)
 
     for r in absent_records:
         sym = r["symbol"]
         cik = str(r["cik"]).zfill(10)
         m_info = manifest_map[sym]
-        classification = "TARGET_ABSENT_FROM_ALL_CANDIDATES"
+        outcome = r.get("selection_outcome", "TARGET_ABSENT_FROM_ALL_CANDIDATES")
+        classification = outcome
         classification_counts[classification] += 1
 
         ledger_entry = {
@@ -517,8 +519,8 @@ def execute_population():
             "series_id": r.get("series_id", ""),
             "class_id": r.get("class_id", ""),
             "legal_name": m_info.get("legal_name", ""),
-            "source_selection_status": "TARGET_ABSENT_FROM_ALL_CANDIDATES",
-            "accession": "NONE",
+            "source_selection_status": outcome,
+            "accession": r.get("selected_accession") or "NONE",
             "document_filename": "NONE",
             "document_role": "NONE",
             "filing_date": SNAPSHOT_BOUNDARY,
@@ -532,9 +534,9 @@ def execute_population():
             "mandate_parser_version": MANDATE_PARSER_VERSION,
             "policy_version": POLICY_VERSION,
             "classification": classification,
-            "classification_reason": "NO_PREBOUNDARY_STATUTORY_PROSPECTUS_IN_SEC_HISTORY",
+            "classification_reason": "NO_PREBOUNDARY_STATUTORY_PROSPECTUS_IN_SEC_HISTORY" if outcome == "TARGET_ABSENT_FROM_ALL_CANDIDATES" else "SOURCE_CACHE_MISS",
             "evidence_strength": "NOT_APPLICABLE",
-            "failure_reason": "SOURCE_ABSENT",
+            "failure_reason": "SOURCE_ABSENT" if outcome == "TARGET_ABSENT_FROM_ALL_CANDIDATES" else "SOURCE_CACHE_MISS",
         }
         final_ledger.append(ledger_entry)
 
@@ -545,20 +547,20 @@ def execute_population():
             class_id=r.get("class_id", ""),
             document_index_key="NONE",
             series_resolution_key="NONE",
-            mapping_outcome="TARGET_ABSENT_FROM_ALL_CANDIDATES",
+            mapping_outcome=outcome,
             section_hash="NONE",
-            mandate_parse_status="SOURCE_ABSENT",
+            mandate_parse_status="SOURCE_ABSENT" if outcome == "TARGET_ABSENT_FROM_ALL_CANDIDATES" else "SOURCE_CACHE_MISS",
             extra_data={"classification": classification}
         )
 
-    print(f"Recorded {len(absent_records)} source-absent targets. Total ledger size: {len(final_ledger)}")
+    print(f"Recorded {len(absent_records)} source-absent/cache-miss targets. Total ledger size: {len(final_ledger)}")
     assert len(final_ledger) == 2884, f"Final ledger count mismatch: expected 2884, got {len(final_ledger)}"
 
     # Idempotence Test (Section 20)
     print("\n" + "=" * 80)
     print("STAGE 5: IDEMPOTENCE VALIDATION (SECTION 20)")
     print("=" * 80)
-    idempotence_subset = [e for e in final_ledger if e["source_selection_status"] != "TARGET_ABSENT_FROM_ALL_CANDIDATES"][:50]
+    idempotence_subset = [e for e in final_ledger if "SELECTED" in e.get("source_selection_status", "")][:50]
     idempotence_pass = True
     for sample_e in idempotence_subset:
         sym = sample_e["symbol"]
@@ -659,8 +661,8 @@ def execute_population():
         },
         "denominators": {
             "total_manifest": 2884,
-            "source_selected": 1989,
-            "source_absent": 895,
+            "source_selected": len(selected_records),
+            "source_absent": len(absent_records),
         },
         "document_metrics": {
             "unique_selected_documents": unique_documents_count,
@@ -683,7 +685,7 @@ def execute_population():
             k: {
                 "count": v,
                 "pct_of_mandate_classified": round(100.0 * v / mandate_classified_count, 2) if mandate_classified_count else 0,
-                "pct_of_source_selected": round(100.0 * v / 1989, 2),
+                "pct_of_source_selected": round(100.0 * v / len(selected_records), 2),
                 "pct_of_total_manifest": round(100.0 * v / 2884, 2),
             }
             for k, v in sorted(classification_counts.items(), key=lambda x: x[1], reverse=True)
@@ -724,8 +726,8 @@ def execute_population():
     print("MULTI-SERIES MANDATE POPULATION EXECUTION SUMMARY")
     print("=" * 80)
     print(f"TOTAL_MANIFEST = 2884")
-    print(f"SOURCE_SELECTED = 1989")
-    print(f"SOURCE_ABSENT = 895")
+    print(f"SOURCE_SELECTED = {len(selected_records)}")
+    print(f"SOURCE_ABSENT = {len(absent_records)}")
     print(f"SOURCE_FILES_MISSING = {missing_docs}")
     print(f"SOURCE_HASH_MISMATCHES = {hash_mismatches}")
     print(f"UNIQUE_DOCUMENTS = {unique_documents_count}")

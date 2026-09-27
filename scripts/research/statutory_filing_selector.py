@@ -28,7 +28,9 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_2_0"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_3_0"
+STATUTORY_FILING_SELECTOR_V1_2_0 = "STATUTORY_FILING_SELECTOR_V1_2_0"
+STATUTORY_FILING_SELECTOR_V1_3_0 = "STATUTORY_FILING_SELECTOR_V1_3_0"
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
@@ -93,7 +95,7 @@ NON_TICKER_FOUR_LETTER_WORDS = {
     "body", "font", "span", "desc", "docs", "doc1", "doc2", "type", "size"
 }
 
-# Document Roles (Section 7)
+# Document Roles (Section 7 & 17)
 ROLE_BASE_STATUTORY_PROSPECTUS = "BASE_STATUTORY_PROSPECTUS"
 ROLE_SUMMARY_PROSPECTUS = "SUMMARY_PROSPECTUS"
 ROLE_PROSPECTUS_SUPPLEMENT = "PROSPECTUS_SUPPLEMENT"
@@ -101,6 +103,16 @@ ROLE_FEE_WAIVER_SUPPLEMENT = "FEE_WAIVER_SUPPLEMENT"
 ROLE_SAI_PART_B = "SAI_PART_B"
 ROLE_NON_MANDATE_DOCUMENT = "NON_MANDATE_DOCUMENT"
 ROLE_UNKNOWN = "UNKNOWN"
+
+# Specialized Candidate Roles (Section 17)
+ROLE_TARGET_SUMMARY_PROSPECTUS = "TARGET_SUMMARY_PROSPECTUS"
+ROLE_TARGET_BASE_STATUTORY_PROSPECTUS = "TARGET_BASE_STATUTORY_PROSPECTUS"
+ROLE_TARGET_PROSPECTUS_SUPPLEMENT = "TARGET_PROSPECTUS_SUPPLEMENT"
+ROLE_NON_TARGET_PROSPECTUS = "NON_TARGET_PROSPECTUS"
+ROLE_PART_C_ONLY = "PART_C_ONLY"
+ROLE_SAI = "SAI"
+ROLE_FEE_WAIVER_ONLY = "FEE_WAIVER_ONLY"
+ROLE_ANCILLARY = "ANCILLARY"
 
 # Selection Outcomes (Section 16)
 OUTCOME_SELECTED_STATUTORY_PROSPECTUS = "SELECTED_TARGET_STATUTORY_PROSPECTUS"
@@ -163,6 +175,7 @@ class FilingSelectionResult:
     selection_evidence: str
     candidate_count: int
     rejected_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    candidate_selection_trace: List[Dict[str, Any]] = field(default_factory=list)
     snapshot_boundary: str = SNAPSHOT_BOUNDARY
     selector_version: str = STATUTORY_FILING_SELECTOR_VERSION
     source_bytes_sha256: str = ""
@@ -182,6 +195,7 @@ class StatutoryFilingSelector:
     # In-memory candidate history cache per CIK (Section 23: builds per CIK = 1)
     _normalized_history_cache: Dict[str, Tuple[List[NormalizedFilingRecord], str]] = {}
     _history_build_counts: Dict[str, int] = {}
+    _series_directory: Optional[Dict[str, Dict[str, Any]]] = None
 
     SUPPLEMENT_DISQUALIFY_PATTERNS = [
         r"\bfee\s*waiver\b",
@@ -209,10 +223,32 @@ class StatutoryFilingSelector:
     ]
 
     @classmethod
+    def get_series_directory(cls, directory_path: Optional[Path] = None) -> Dict[str, Dict[str, Any]]:
+        """Load or return the authoritative SEC series accession directory (V1.3.0)."""
+        if cls._series_directory is not None:
+            return cls._series_directory
+        path = directory_path or Path("data/research/sec_series_accession_directory_v1.json")
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    cls._series_directory = json.load(f)
+            except Exception:
+                cls._series_directory = {}
+        else:
+            cls._series_directory = {}
+        return cls._series_directory
+
+    @classmethod
+    def set_series_directory(cls, series_dir: Optional[Dict[str, Dict[str, Any]]]):
+        """Set or override the authoritative SEC series accession directory."""
+        cls._series_directory = series_dir
+
+    @classmethod
     def reset_history_cache(cls):
         """Reset the in-memory normalized submission history cache."""
         cls._normalized_history_cache.clear()
         cls._history_build_counts.clear()
+        cls._series_directory = None
 
     @classmethod
     def extract_months_from_text(cls, text: str) -> Set[str]:
@@ -518,17 +554,30 @@ class StatutoryFilingSelector:
         text: str,
         form: str = ""
     ) -> Tuple[bool, str]:
-        """Verify whether target series is genuinely present in candidate text (Sections 8, 10, 14).
+        """Verify whether target series is genuinely present in candidate text (Sections 8, 10, 14, 17).
 
         Checks:
         - series_id, class_id
         - context-aware ticker / symbol
         - full normalized legal name & distinctive token sets
         Rejects candidates where target appears only in:
+        - Part C / Item 28 / exhibit lists / signatures
         - SAI back-of-book tables without Fund Summary/Item 4
+        - Short Form 497 supplements lacking substantive strategy sections
         """
         if not text or len(text.strip()) < 10:
             return False, "EMPTY_TEXT"
+
+        # Short Form 497 Supplement check (Section 17):
+        # 1-2 page fee waivers or stickers lack substantive strategy
+        if form == "497" and len(text) < 30000:
+            has_strat = bool(re.search(
+                r"oef:StrategyNarrativeTextBlock|oef:RiskReturnHeading|Principal\s+Investment\s+Strateg|Investment\s+Objective\s+and\s+Principal\s+Strategies|Fund\s+Summary\b",
+                text,
+                re.IGNORECASE
+            ))
+            if not has_strat:
+                return False, "SUPPLEMENT_LACKS_SUBSTANTIVE_STRATEGY"
 
         # Unescape HTML entities (converts &#38; -> &, &#58; -> :, &#8482; -> ™, etc.)
         clean_text = html.unescape(text)
@@ -612,11 +661,65 @@ class StatutoryFilingSelector:
         has_cid: bool,
         form: str = ""
     ) -> Tuple[bool, str]:
-        """Check if target presence occurs only after an SAI boundary without a fund summary."""
-        # Summary prospectuses (Form 497K) never contain an SAI
+        """Check if target presence occurs only after an SAI boundary or Part C boundary."""
+        # Summary prospectuses (Form 497K) never contain an SAI or Part C
         if form == "497K":
             return True, "TARGET_PRESENT"
 
+        first_occ = len(text)
+        if has_sid:
+            idx = text.find(sid)
+            if idx >= 0:
+                first_occ = min(first_occ, idx)
+        if has_cid:
+            idx = text.find(cid)
+            if idx >= 0:
+                first_occ = min(first_occ, idx)
+        if sym and len(sym) >= 2:
+            m_tick = re.search(
+                rf"\({re.escape(sym)}\)|\b(?:Ticker\s+Symbol|Trading\s+Symbol|Ticker|Symbol)\s*[:\-–—]?\s*{re.escape(sym)}\b",
+                text,
+                re.IGNORECASE if len(sym) >= 4 else 0,
+            )
+            if m_tick:
+                first_occ = min(first_occ, m_tick.start())
+            elif len(sym) >= 4 and sym not in NON_TICKER_FOUR_LETTER_WORDS and text.find(sym) >= 0:
+                first_occ = min(first_occ, text.find(sym))
+        if raw_name:
+            idx_name = text.lower().find(raw_name.lower())
+            if idx_name >= 0:
+                first_occ = min(first_occ, idx_name)
+            else:
+                words = [w for w in re.split(r"[\s&–—\-,]+", raw_name) if len(w) > 2]
+                distinctive_words = [
+                    w for w in words
+                    if w.lower() not in ISSUER_TOKENS
+                    and w.lower() not in GENERIC_PRODUCT_TOKENS
+                    and w.lower() not in STRATEGY_FAMILY_TOKENS
+                ]
+                if len(distinctive_words) >= 2:
+                    pat_disc = r"\s+(?:&|and|[–—\-])?\s*".join(re.escape(w) for w in distinctive_words)
+                    m_disc = re.search(pat_disc, text, re.IGNORECASE)
+                    if m_disc:
+                        first_occ = min(first_occ, m_disc.start())
+                if len(words) >= 2 and first_occ == len(text):
+                    pat_w = r"\s+(?:&|and|[–—\-])?\s*".join(re.escape(w) for w in words[:3])
+                    m_w = re.search(pat_w, text, re.IGNORECASE)
+                    if m_w:
+                        first_occ = min(first_occ, m_w.start())
+
+        # 1. Part C Boundary Check (Item 28 Exhibits / Signatures / Other Information)
+        m_part_c = re.search(
+            r"<h[1-4][^>]*>[^<]*Part\s+C\b|<(?:b|strong|p|div)[^>]*align=['\"]center['\"][^>]*>[^<]*Part\s+C\b|<(?:b|strong|p|div)[^>]*>[^<]*PART\s+C\b|\bPART\s+C\b\s*[-–—]?\s*(?:OTHER\s+INFORMATION|OTHER|REGISTRATION)|\bItem\s+28\.\s*Exhibits|\bItem\s+28\b",
+            text,
+            re.IGNORECASE,
+        )
+        if m_part_c:
+            part_c_start = m_part_c.start()
+            if first_occ > part_c_start:
+                return False, "TARGET_ONLY_IN_PART_C_OR_ANCILLARY"
+
+        # 2. SAI Boundary Check
         m_sai = re.search(
             r"<h[1-4][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|<(?:b|strong|p|div)[^>]*align=['\"]center['\"][^>]*>[^<]*Statement\s+of\s+Additional\s+Information|\bPart\s+B\b",
             text,
@@ -624,32 +727,6 @@ class StatutoryFilingSelector:
         )
         if m_sai and m_sai.start() > 5000:
             sai_start = m_sai.start()
-            first_occ = len(text)
-            if has_sid:
-                idx = text.find(sid)
-                if idx >= 0:
-                    first_occ = min(first_occ, idx)
-            if has_cid:
-                idx = text.find(cid)
-                if idx >= 0:
-                    first_occ = min(first_occ, idx)
-            if sym and len(sym) >= 2:
-                m_tick = re.search(
-                    rf"\({re.escape(sym)}\)|\b(?:Ticker\s+Symbol|Trading\s+Symbol|Ticker|Symbol)\s*[:\-–—]?\s*{re.escape(sym)}\b",
-                    text,
-                    re.IGNORECASE if len(sym) >= 4 else 0,
-                )
-                if m_tick:
-                    first_occ = min(first_occ, m_tick.start())
-                elif len(sym) >= 4 and sym not in NON_TICKER_FOUR_LETTER_WORDS and text.find(sym) >= 0:
-                    first_occ = min(first_occ, text.find(sym))
-            if raw_name:
-                words = [w for w in re.split(r"[\s&–—\-,]+", raw_name) if len(w) > 2]
-                if words:
-                    m = re.search(re.escape(words[0]), text, re.IGNORECASE)
-                    if m:
-                        first_occ = min(first_occ, m.start())
-
             if first_occ > sai_start:
                 has_summary_after_sai = bool(
                     re.search(r"\bFund\s+Summary\b|oef:RiskReturnHeading|oef:StrategyNarrativeTextBlock",
@@ -771,6 +848,20 @@ class StatutoryFilingSelector:
             )
 
         # Step 2: Enumerate pre-boundary candidate filings
+        series_dir = cls.get_series_directory()
+        target_sid = (target_series.series_id or "").strip()
+        target_dir_entry = series_dir.get(target_sid)
+
+        max_preboundary_year = 0
+        for r in records:
+            if r.snapshot_eligible and r.filing_date and len(r.filing_date) >= 4:
+                try:
+                    yr = int(r.filing_date[:4])
+                    if yr > max_preboundary_year:
+                        max_preboundary_year = yr
+                except ValueError:
+                    pass
+
         candidates: List[FilingCandidate] = []
         rejected_candidates: List[Dict[str, Any]] = []
 
@@ -808,8 +899,14 @@ class StatutoryFilingSelector:
             cached_filename = f"{rec.accession}_{rec.primary_document}"
             is_cached = cached_filename in cached_filenames
 
-            # Priority scoring (Section 21)
+            # Priority scoring (Section 21 & V1.3.0 remediation)
             score = 0
+            is_dir_accession_match = bool(target_dir_entry and rec.accession == target_dir_entry.get("accession"))
+            if is_dir_accession_match:
+                score += 2000
+                if target_dir_entry.get("primary_document") == rec.primary_document:
+                    score += 500
+
             if meta_match:
                 score += 500
             if role == ROLE_SUMMARY_PROSPECTUS:
@@ -818,6 +915,16 @@ class StatutoryFilingSelector:
                 score += 250
             elif role == ROLE_PROSPECTUS_SUPPLEMENT:
                 score += 20 if meta_match else 5
+
+            # V1.3.0 Ancient Filing Penalty (-1000 points)
+            # If registrant has modern pre-boundary filings (>= 2015), penalize ancient filings (< 2010)
+            if max_preboundary_year >= 2015 and rec.filing_date and len(rec.filing_date) >= 4:
+                try:
+                    rec_year = int(rec.filing_date[:4])
+                    if rec_year < 2010:
+                        score -= 1000
+                except ValueError:
+                    pass
 
             candidates.append(FilingCandidate(
                 accession=rec.accession,
@@ -863,6 +970,7 @@ class StatutoryFilingSelector:
         # Step 3: Multi-Accession Search & Content Qualification (Sections 8, 11, 16)
         inspected_count = 0
         cache_miss_candidate: Optional[FilingCandidate] = None
+        candidate_selection_trace: List[Dict[str, Any]] = []
 
         for cand in candidates:
             inspected_count += 1
@@ -872,7 +980,8 @@ class StatutoryFilingSelector:
             if not cand.is_cached:
                 # Document is not cached locally
                 # Only affirmative target relevance triggers SOURCE_CACHE_MISS (Section 16)
-                if cand.target_metadata_match and cache_miss_candidate is None:
+                is_dir_match = bool(target_dir_entry and cand.accession == target_dir_entry.get("accession"))
+                if (cand.target_metadata_match or is_dir_match) and cache_miss_candidate is None:
                     cache_miss_candidate = cand
 
                 rejected_candidates.append({
@@ -881,6 +990,17 @@ class StatutoryFilingSelector:
                     "filing_date": cand.filing_date,
                     "primary_doc": cand.primary_document,
                     "rejection_reason": "SOURCE_NOT_CACHED_LOCALLY"
+                })
+                candidate_selection_trace.append({
+                    "accession": cand.accession,
+                    "form": cand.form,
+                    "filing_date": cand.filing_date,
+                    "primary_document": cand.primary_document,
+                    "priority_score": cand.priority_score,
+                    "target_present": "NO",
+                    "mandate_present": "UNKNOWN",
+                    "rejection_reason": "SOURCE_NOT_CACHED_LOCALLY",
+                    "selected": False,
                 })
                 continue
 
@@ -898,6 +1018,17 @@ class StatutoryFilingSelector:
                         "accession": cand.accession,
                         "rejection_reason": f"CACHE_READ_ERROR: {str(e)}"
                     })
+                    candidate_selection_trace.append({
+                        "accession": cand.accession,
+                        "form": cand.form,
+                        "filing_date": cand.filing_date,
+                        "primary_document": cand.primary_document,
+                        "priority_score": cand.priority_score,
+                        "target_present": "NO",
+                        "mandate_present": "UNKNOWN",
+                        "rejection_reason": f"CACHE_READ_ERROR: {str(e)}",
+                        "selected": False,
+                    })
                     continue
 
             # Check target presence
@@ -911,6 +1042,17 @@ class StatutoryFilingSelector:
                     "filing_date": cand.filing_date,
                     "primary_doc": cand.primary_document,
                     "rejection_reason": f"TARGET_NOT_PRESENT ({t_reason})"
+                })
+                candidate_selection_trace.append({
+                    "accession": cand.accession,
+                    "form": cand.form,
+                    "filing_date": cand.filing_date,
+                    "primary_document": cand.primary_document,
+                    "priority_score": cand.priority_score,
+                    "target_present": "NO",
+                    "mandate_present": "UNKNOWN",
+                    "rejection_reason": f"TARGET_NOT_PRESENT ({t_reason})",
+                    "selected": False,
                 })
                 continue
 
@@ -928,9 +1070,31 @@ class StatutoryFilingSelector:
                     "primary_doc": cand.primary_document,
                     "rejection_reason": f"MANDATE_NOT_PRESENT ({m_reason})"
                 })
+                candidate_selection_trace.append({
+                    "accession": cand.accession,
+                    "form": cand.form,
+                    "filing_date": cand.filing_date,
+                    "primary_document": cand.primary_document,
+                    "priority_score": cand.priority_score,
+                    "target_present": "YES",
+                    "mandate_present": "NO",
+                    "rejection_reason": f"MANDATE_NOT_PRESENT ({m_reason})",
+                    "selected": False,
+                })
                 continue
 
             cand.mandate_present = "YES"
+            candidate_selection_trace.append({
+                "accession": cand.accession,
+                "form": cand.form,
+                "filing_date": cand.filing_date,
+                "primary_document": cand.primary_document,
+                "priority_score": cand.priority_score,
+                "target_present": "YES",
+                "mandate_present": "YES",
+                "rejection_reason": "",
+                "selected": True,
+            })
 
             # SUCCESS: Selected qualifying statutory document!
             doc_sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -965,6 +1129,7 @@ class StatutoryFilingSelector:
                 selection_evidence=evidence,
                 candidate_count=len(candidates),
                 rejected_candidates=rejected_candidates,
+                candidate_selection_trace=candidate_selection_trace,
                 snapshot_boundary=snapshot_boundary,
                 cache_key=cache_key,
                 source_bytes_sha256=doc_sha,
@@ -992,6 +1157,7 @@ class StatutoryFilingSelector:
                 ),
                 candidate_count=len(candidates),
                 rejected_candidates=rejected_candidates,
+                candidate_selection_trace=candidate_selection_trace,
                 snapshot_boundary=snapshot_boundary,
                 cache_key=cache_key,
             )
@@ -1013,6 +1179,7 @@ class StatutoryFilingSelector:
             selection_evidence=f"Target series {target_series.series_id} absent from all {len(candidates)} pre-boundary statutory candidates",
             candidate_count=len(candidates),
             rejected_candidates=rejected_candidates,
+            candidate_selection_trace=candidate_selection_trace,
             snapshot_boundary=snapshot_boundary,
             cache_key=cache_key,
         )

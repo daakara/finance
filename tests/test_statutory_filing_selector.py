@@ -718,3 +718,178 @@ class TestStatutoryFilingSelectorV120Adversarial:
         assert res.selection_outcome == OUTCOME_SELECTED_SUMMARY_PROSPECTUS
         assert res.selected_accession == "0000999999-23-000001"
         assert res.document_filename == "hist_growth.htm"
+
+
+class TestStatutoryFilingSelectorRemediationV1_3_0:
+    """Targeted regression and invariant tests for STATUTORY_FILING_SELECTOR_V1_3_0 remediation.
+
+    Covers:
+    1. Part C / Ancillary Boundary Rejection (TARGET_ONLY_IN_PART_C_OR_ANCILLARY).
+    2. Short Form 497 Fee Waiver / Sticker Rejection (SUPPLEMENT_LACKS_SUBSTANTIVE_STRATEGY).
+    3. Authoritative Series Directory Priority Scoring (+2000 points).
+    4. Ancient Filing Penalty (< 2010 filings penalized -1000 when modern filings exist).
+    5. Candidate Selection Trace Logging in FilingSelectionResult.
+    """
+
+    def test_part_c_only_occurrence_rejected(self, tmp_path):
+        """When target series only appears in Part C / Item 28 exhibits, candidate must be rejected."""
+        target = SeriesMetadata(
+            symbol="ECOW",
+            cik="0001616668",
+            series_id="S000064827",
+            class_id="C000210214",
+            legal_name="Pacer Emerging Markets Cash Cows 100 ETF"
+        )
+
+        doc_with_part_c = """
+        <html><body>
+          <h1>Pacer Trendpilot US Large Cap ETF</h1>
+          <p>Series S000012345 Class C000012345</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Invests in large cap equity indices with trend following rules.</p>
+          <div style="height: 6000px;">... large body ...</div>
+          <h2>PART C - OTHER INFORMATION</h2>
+          <h3>Item 28. Exhibits</h3>
+          <p>Opinion and Consent of Counsel for Pacer Emerging Markets Cash Cows 100 ETF (S000064827) is incorporated herein by reference.</p>
+        </body></html>
+        """
+        is_pres, reason = StatutoryFilingSelector.check_target_presence(target, doc_with_part_c, form="485BPOS")
+        assert is_pres is False
+        assert reason == "TARGET_ONLY_IN_PART_C_OR_ANCILLARY"
+
+    def test_short_497_supplement_without_strategy_rejected(self):
+        """Form 497 supplement under 30k chars lacking substantive strategy sections must be rejected."""
+        target = SeriesMetadata(
+            symbol="TEST",
+            cik="0001234567",
+            series_id="S000011111",
+            class_id="C000022222",
+            legal_name="Test Alpha Growth ETF"
+        )
+        fee_waiver_text = """
+        <html><body>
+          <h2>Test Alpha Growth ETF (TEST)</h2>
+          <p>Series S000011111 Class C000022222</p>
+          <h3>Notice of Fee Waiver Extension</h3>
+          <p>Effective October 1, 2025, the adviser has agreed to waive 2 bps of management fees through September 30, 2026.</p>
+        </body></html>
+        """
+        is_pres, reason = StatutoryFilingSelector.check_target_presence(target, fee_waiver_text, form="497")
+        assert is_pres is False
+        assert reason == "SUPPLEMENT_LACKS_SUBSTANTIVE_STRATEGY"
+
+    def test_authoritative_series_directory_priority(self, tmp_path):
+        """Authoritative series directory match receives +2000 points and is selected first."""
+        target = SeriesMetadata(
+            symbol="FAV",
+            cik="0001234567",
+            series_id="S000077777",
+            class_id="C000088888",
+            legal_name="Favorite Authoritative ETF"
+        )
+        prospectus_dir = tmp_path / "sec_prospectus"
+        prospectus_dir.mkdir(parents=True)
+
+        # Candidate 1: Generic base prospectus
+        cand1_doc = """
+        <html><body>
+          <h1>Favorite Authoritative ETF (FAV)</h1>
+          <p>Series S000077777 Class C000088888</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Strategy in base prospectus.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001234567-25-000001_base.htm").write_text(cand1_doc, encoding="utf-8")
+
+        # Candidate 2: Authoritative 497K
+        cand2_doc = """
+        <html><body>
+          <h1>Favorite Authoritative ETF (FAV)</h1>
+          <p>Series S000077777 Class C000088888</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Strategy in authoritative summary prospectus.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001234567-26-000099_fav_summary.htm").write_text(cand2_doc, encoding="utf-8")
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["485BPOS", "497K"],
+                    "filingDate": ["2025-12-30", "2026-02-15"],
+                    "accessionNumber": ["0001234567-25-000001", "0001234567-26-000099"],
+                    "primaryDocument": ["base.htm", "fav_summary.htm"],
+                    "primaryDocDescription": ["Base Prospectus", "497K"]
+                }
+            }
+        }
+
+        # Override directory to point to candidate 2
+        mock_dir = {
+            "S000077777": {
+                "accession": "0001234567-26-000099",
+                "primary_document": "fav_summary.htm",
+                "form": "497K",
+                "filing_date": "2026-02-15"
+            }
+        }
+        StatutoryFilingSelector.set_series_directory(mock_dir)
+        try:
+            res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, tmp_path)
+            assert res.selection_outcome == OUTCOME_SELECTED_SUMMARY_PROSPECTUS
+            assert res.selected_accession == "0001234567-26-000099"
+            assert res.document_filename == "fav_summary.htm"
+            assert len(res.candidate_selection_trace) >= 1
+            assert res.candidate_selection_trace[0]["accession"] == "0001234567-26-000099"
+            assert res.candidate_selection_trace[0]["selected"] is True
+        finally:
+            StatutoryFilingSelector.reset_history_cache()
+
+    def test_ancient_filing_penalty_when_modern_filings_exist(self, tmp_path):
+        """Candidate filings prior to 2010 receive -1000 penalty when modern filings (>=2015) exist."""
+        target = SeriesMetadata(
+            symbol="OLDIE",
+            cik="0001234567",
+            series_id="S000055555",
+            class_id="C000066666",
+            legal_name="Oldie But Goodie ETF"
+        )
+        prospectus_dir = tmp_path / "sec_prospectus"
+        prospectus_dir.mkdir(parents=True)
+
+        ancient_doc = """
+        <html><body>
+          <h1>Oldie But Goodie ETF</h1>
+          <p>Series S000055555 Class C000066666</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Ancient 2002 investment strategy.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001234567-02-000001_ancient.htm").write_text(ancient_doc, encoding="utf-8")
+
+        modern_doc = """
+        <html><body>
+          <h1>Oldie But Goodie ETF</h1>
+          <p>Series S000055555 Class C000066666</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Modern 2025 investment strategy.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0001234567-25-000002_modern.htm").write_text(modern_doc, encoding="utf-8")
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["485BPOS", "485BPOS"],
+                    "filingDate": ["2002-05-01", "2025-10-15"],
+                    "accessionNumber": ["0001234567-02-000001", "0001234567-25-000002"],
+                    "primaryDocument": ["ancient.htm", "modern.htm"],
+                    "primaryDocDescription": ["485BPOS FOR OLDIE BUT GOODIE ETF", "485BPOS BASE"]
+                }
+            }
+        }
+        res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, tmp_path)
+        assert res.selection_outcome == OUTCOME_SELECTED_STATUTORY_PROSPECTUS
+        assert res.selected_accession == "0001234567-25-000002"
+        assert res.document_filename == "modern.htm"
+

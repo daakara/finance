@@ -1,24 +1,24 @@
 {
-  "selector_version": "STATUTORY_FILING_SELECTOR_V1_2_0",
+  "selector_version": "STATUTORY_FILING_SELECTOR_V1_3_0",
   "input_manifest_sha256": "764363abedf51dd40365cf26d17d429fe4596619bd7e8e648cca17502286635a",
   "total_targets": 2884,
-  "selected_statutory_documents_count": 1989,
-  "unique_documents_selected": 1423,
+  "selected_statutory_documents_count": 2042,
+  "unique_documents_selected": 1908,
   "outcomes": {
-    "TARGET_ABSENT_FROM_ALL_CANDIDATES": 895,
-    "SELECTED_TARGET_SUMMARY_PROSPECTUS": 1387,
-    "SELECTED_TARGET_STATUTORY_PROSPECTUS": 602
+    "TARGET_ABSENT_FROM_ALL_CANDIDATES": 840,
+    "SELECTED_TARGET_SUMMARY_PROSPECTUS": 1865,
+    "SELECTED_TARGET_STATUTORY_PROSPECTUS": 177,
+    "SOURCE_CACHE_MISS": 2
   },
   "selected_forms": {
-    "497K": 1388,
-    "485APOS": 185,
-    "485BPOS": 313,
-    "497": 102,
-    "N-1A/A": 1
+    "497K": 1866,
+    "485BPOS": 152,
+    "485APOS": 12,
+    "497": 12
   },
   "no_candidate_count": 0,
-  "target_absent_count": 895,
-  "source_cache_miss_count": 0,
+  "target_absent_count": 840,
+  "source_cache_miss_count": 2,
   "ambiguous_count": 0,
   "wrong_role_rejection_count": 72300,
   "post_boundary_rejection_count": 935,
