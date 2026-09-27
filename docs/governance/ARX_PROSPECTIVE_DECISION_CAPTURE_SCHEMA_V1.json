@@ -1,0 +1,600 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/governance/ARX_PROSPECTIVE_DECISION_CAPTURE_SCHEMA_V1.json",
+  "title": "ARX Prospective Full Decision Capture Schema V1",
+  "description": "Canonical schema definitions for prospective, non-interfering passive evidence capture across all evaluated assets.",
+  "version": "1.0.0",
+  "createdAtUtc": "2026-09-27T20:45:00Z",
+  "definitions": {
+    "EvidenceOrigin": {
+      "type": "string",
+      "enum": [
+        "NATURAL_PRODUCTION",
+        "REPLAY",
+        "SIMULATION",
+        "TEST"
+      ],
+      "description": "Strict provenance origin. Only NATURAL_PRODUCTION is permitted to enter the empirical research denominator."
+    },
+    "ScopeStatus": {
+      "type": "string",
+      "enum": [
+        "IN_SCOPE",
+        "INTENTIONALLY_OUT_OF_SCOPE",
+        "SCOPE_UNKNOWN"
+      ],
+      "description": "Defines eligibility within the defined investment universe boundary."
+    },
+    "EvaluationStatus": {
+      "type": "string",
+      "enum": [
+        "OBSERVED_PRODUCTION_EVALUATION",
+        "NO_OBSERVED_PRODUCTION_EVALUATION",
+        "EVALUATION_STATUS_UNKNOWN"
+      ],
+      "description": "Authoritative record of whether production actually evaluated the asset."
+    },
+    "DecisionState": {
+      "type": "string",
+      "enum": [
+        "DISCOVERY_CANDIDATE",
+        "RADAR_SURFACED",
+        "ANALYSIS_EVALUATED",
+        "SETUP_ELIGIBLE",
+        "WAIT",
+        "WATCH",
+        "REJECT",
+        "ACTIONABLE_RECOMMENDATION",
+        "TRADE_PLAN_AVAILABLE",
+        "EXECUTED_POSITION"
+      ],
+      "description": "ARX product-state vocabulary representing actual discrete decision states."
+    },
+    "RuleCategory": {
+      "type": "string",
+      "enum": [
+        "MANDATORY_PRODUCT_CONSTRAINT",
+        "AUDITED_MODEL_RULE",
+        "INFRASTRUCTURE_CONSTRAINT"
+      ],
+      "description": "Governance categorization of decision gates."
+    },
+    "DataAvailabilityState": {
+      "type": "string",
+      "enum": [
+        "LIVE_AUTHORITATIVE",
+        "PROVISIONAL",
+        "FALLBACK_AUTHORITY",
+        "AUTHENTIC_ZERO",
+        "STALE",
+        "UNAVAILABLE",
+        "ERROR_EMPTY",
+        "UNKNOWN"
+      ],
+      "description": "Explicit data availability semantics preventing coercion of missing values to zero or live defaults."
+    },
+    "DecisionEvent": {
+      "type": "object",
+      "required": [
+        "decisionId",
+        "episodeId",
+        "symbol",
+        "instrumentId",
+        "evaluationTimestampUtc",
+        "marketSession",
+        "evidenceOrigin",
+        "scopeStatus",
+        "evaluationStatus",
+        "engineVersion",
+        "engineSha",
+        "decisionEngineSha",
+        "configHash",
+        "universeVersion",
+        "dataProvider",
+        "providerSourceTimestampUtc",
+        "ingestionTimestampUtc",
+        "freshnessStatus",
+        "marketRegime",
+        "decisionState",
+        "actionabilityState",
+        "confluenceScore",
+        "rejectionReason",
+        "tradePlanState"
+      ],
+      "properties": {
+        "decisionId": {
+          "type": "string",
+          "pattern": "^DEC_[A-Z0-9._-]+_[0-9]{8}T[0-9]{6}Z_[a-f0-9]{8}_[a-f0-9]{6}$",
+          "description": "Deterministic, collision-safe unique decision identifier: DEC_{symbol}_{timestamp}_{engineSha8}_{uuid6}."
+        },
+        "episodeId": {
+          "type": "string",
+          "pattern": "^EP_[A-Z0-9._-]+_[0-9]{8}T[0-9]{6}Z_[a-f0-9]{6}$",
+          "description": "Identifier grouping continuous evaluations of the same ongoing market setup."
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "instrumentId": {
+          "type": "string"
+        },
+        "evaluationTimestampUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "marketSession": {
+          "type": "string",
+          "enum": ["PRE_MARKET", "REGULAR_SESSION", "POST_MARKET", "WEEKEND_CLOSED"]
+        },
+        "evidenceOrigin": {
+          "$ref": "#/definitions/EvidenceOrigin"
+        },
+        "scopeStatus": {
+          "$ref": "#/definitions/ScopeStatus"
+        },
+        "evaluationStatus": {
+          "$ref": "#/definitions/EvaluationStatus"
+        },
+        "engineVersion": {
+          "type": "string"
+        },
+        "engineSha": {
+          "type": "string",
+          "minLength": 7
+        },
+        "decisionEngineSha": {
+          "type": "string",
+          "minLength": 7
+        },
+        "configHash": {
+          "type": "string",
+          "minLength": 64
+        },
+        "universeVersion": {
+          "type": "string"
+        },
+        "universeSnapshotId": {
+          "type": ["string", "null"]
+        },
+        "dataProvider": {
+          "type": "string"
+        },
+        "providerSourceTimestampUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ingestionTimestampUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshnessStatus": {
+          "$ref": "#/definitions/DataAvailabilityState"
+        },
+        "marketRegime": {
+          "type": "string",
+          "enum": ["BULL", "BEAR", "SIDEWAYS", "HIGH_VOLATILITY", "UNKNOWN"]
+        },
+        "decisionState": {
+          "$ref": "#/definitions/DecisionState"
+        },
+        "actionabilityState": {
+          "type": "string",
+          "enum": ["ACTIONABLE", "NON_ACTIONABLE", "SUPPRESSED", "DEGRADED"]
+        },
+        "confluenceScore": {
+          "type": ["number", "null"],
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "Ordinal conviction score. Strictly non-probabilistic."
+        },
+        "crossSectionalRank": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "crossSectionalPopulationSize": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "rejectionReason": {
+          "$ref": "#/definitions/StructuredRejectionReason"
+        },
+        "tradePlanState": {
+          "$ref": "#/definitions/TradePlanState"
+        },
+        "infrastructureFailure": {
+          "$ref": "#/definitions/InfrastructureFailure"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StructuredRejectionReason": {
+      "type": "object",
+      "required": [
+        "isRejected",
+        "firstBindingRuleId",
+        "firstBindingRuleCategory",
+        "primaryReasonText",
+        "failedRuleIds"
+      ],
+      "properties": {
+        "isRejected": {
+          "type": "boolean"
+        },
+        "firstBindingRuleId": {
+          "type": ["string", "null"],
+          "description": "The precise rule that first broke the decision pipeline."
+        },
+        "firstBindingRuleCategory": {
+          "type": ["string", "null"],
+          "enum": [
+            "MANDATORY_PRODUCT_CONSTRAINT",
+            "AUDITED_MODEL_RULE",
+            "INFRASTRUCTURE_CONSTRAINT",
+            null
+          ]
+        },
+        "primaryReasonText": {
+          "type": "string"
+        },
+        "failedRuleIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "infrastructureFailure": {
+          "$ref": "#/definitions/InfrastructureFailure"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TradePlanState": {
+      "type": ["object", "null"],
+      "properties": {
+        "isPlanGenerated": {
+          "type": "boolean"
+        },
+        "entryReferencePrice": {
+          "type": ["number", "null"]
+        },
+        "corridorMin": {
+          "type": ["number", "null"]
+        },
+        "corridorMax": {
+          "type": ["number", "null"]
+        },
+        "stopLoss": {
+          "type": ["number", "null"]
+        },
+        "takeProfit1": {
+          "type": ["number", "null"]
+        },
+        "takeProfit2": {
+          "type": ["number", "null"]
+        },
+        "riskRewardRatio": {
+          "type": ["number", "null"]
+        },
+        "counterfactualEvaluationEligible": {
+          "type": "boolean",
+          "description": "True if corridor, stop, and target levels were generated contempraneously on this evaluated asset."
+        }
+      },
+      "additionalProperties": false
+    },
+    "FeatureSnapshot": {
+      "type": "object",
+      "required": [
+        "decisionId",
+        "featureSnapshotHash",
+        "timestampUtc",
+        "features"
+      ],
+      "properties": {
+        "decisionId": {
+          "type": "string"
+        },
+        "featureSnapshotHash": {
+          "type": "string",
+          "minLength": 64
+        },
+        "timestampUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "featureName",
+              "featureValue",
+              "source",
+              "sourceTimestampUtc",
+              "observedAtUtc",
+              "availabilityStatus",
+              "version"
+            ],
+            "properties": {
+              "featureName": {
+                "type": "string"
+              },
+              "featureValue": {
+                "type": ["number", "string", "boolean", "null"]
+              },
+              "source": {
+                "type": "string"
+              },
+              "sourceTimestampUtc": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "observedAtUtc": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "availabilityStatus": {
+                "$ref": "#/definitions/DataAvailabilityState"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleEvaluation": {
+      "type": "object",
+      "required": [
+        "decisionId",
+        "ruleId",
+        "ruleVersion",
+        "ruleCategory",
+        "evaluationOrder",
+        "inputValues",
+        "thresholdValue",
+        "passed",
+        "isBinding"
+      ],
+      "properties": {
+        "decisionId": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": "string"
+        },
+        "ruleVersion": {
+          "type": "string"
+        },
+        "ruleCategory": {
+          "$ref": "#/definitions/RuleCategory"
+        },
+        "evaluationOrder": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "inputValues": {
+          "type": "object"
+        },
+        "thresholdValue": {
+          "type": ["number", "string", "boolean", "null"]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "isBinding": {
+          "type": "boolean",
+          "description": "True if this rule failure directly caused rejection/suppression of the asset."
+        },
+        "failureMessage": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "UniverseSnapshot": {
+      "type": "object",
+      "required": [
+        "universeSnapshotId",
+        "snapshotTimestampUtc",
+        "universeVersion",
+        "membershipSource",
+        "membershipSha256",
+        "totalInScopeCount",
+        "totalEvaluatedCount",
+        "exclusionCountsByCategory"
+      ],
+      "properties": {
+        "universeSnapshotId": {
+          "type": "string"
+        },
+        "snapshotTimestampUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "universeVersion": {
+          "type": "string"
+        },
+        "membershipSource": {
+          "type": "string"
+        },
+        "membershipSha256": {
+          "type": "string",
+          "minLength": 64
+        },
+        "totalInScopeCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalEvaluatedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exclusionCountsByCategory": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "includedSymbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "InfrastructureFailure": {
+      "type": ["object", "null"],
+      "properties": {
+        "isInfrastructureFailure": {
+          "type": "boolean"
+        },
+        "failureType": {
+          "type": "string",
+          "enum": [
+            "PROVIDER_UNAVAILABLE",
+            "STALE_QUOTE",
+            "MISSING_FUNDAMENTALS",
+            "UNIVERSE_INGESTION_FAILURE",
+            "PIPELINE_TIMEOUT",
+            "SERIALIZATION_FAILURE",
+            "UNHANDLED_EXCEPTION",
+            "NETWORK_TIMEOUT"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "occurredAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Episode": {
+      "type": "object",
+      "required": [
+        "episodeId",
+        "symbol",
+        "episodeStartUtc",
+        "episodeStatus",
+        "sessionsObservedCount",
+        "decisionIds"
+      ],
+      "properties": {
+        "episodeId": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "episodeStartUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "episodeLastEvaluatedUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "episodeStatus": {
+          "type": "string",
+          "enum": [
+            "ACTIVE_CONTINUATION",
+            "RESET_PRICE_LEVEL_ALTERED",
+            "TERMINATED_ENTRY_EXPIRED",
+            "TERMINATED_STOP_INVALIDATED",
+            "TERMINATED_TRADE_RESOLVED"
+          ]
+        },
+        "sessionsObservedCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "initialTradePlanHash": {
+          "type": "string"
+        },
+        "decisionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutcomeLink": {
+      "type": "object",
+      "required": [
+        "outcomeLinkId",
+        "decisionId",
+        "episodeId",
+        "governingContractId",
+        "governingContractVersion",
+        "governingContractSha256",
+        "outcomeStatus",
+        "recordedAtUtc"
+      ],
+      "properties": {
+        "outcomeLinkId": {
+          "type": "string"
+        },
+        "decisionId": {
+          "type": "string"
+        },
+        "episodeId": {
+          "type": "string"
+        },
+        "tradePlanId": {
+          "type": ["string", "null"]
+        },
+        "governingContractId": {
+          "type": "string"
+        },
+        "governingContractVersion": {
+          "type": "string"
+        },
+        "governingContractSha256": {
+          "type": "string",
+          "minLength": 64
+        },
+        "outcomeStatus": {
+          "type": "string",
+          "enum": [
+            "PENDING_UNMATURED",
+            "SUCCESS",
+            "FAILURE",
+            "NEUTRAL",
+            "ENTRY_NOT_TRIGGERED",
+            "UNRESOLVED_INTRABAR_SEQUENCE",
+            "UNRESOLVED_DATA_CONFLICT",
+            "OUTCOME_DATA_MISSING"
+          ]
+        },
+        "realizedGrossReturnPct": {
+          "type": ["number", "null"]
+        },
+        "realizedNetSimulatedReturnPct": {
+          "type": ["number", "null"]
+        },
+        "realizedRMultiple": {
+          "type": ["number", "null"]
+        },
+        "recordedAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
