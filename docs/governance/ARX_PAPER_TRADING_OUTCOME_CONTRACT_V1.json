@@ -4,7 +4,7 @@
   "contractVersion": "1.0.1",
   "specType": "OUTCOME_EVALUATION_CONTRACT",
   "title": "ARX Paper-Trading Outcome Evaluation Contract V1.0.1",
-  "createdAtUtc": "2026-09-27T19:33:00Z",
+  "createdAtUtc": "2026-09-27T19:48:00Z",
   "governance": {
     "status": "FROZEN",
     "authority": "ARX_GOVERNANCE_GATE",
@@ -18,6 +18,10 @@
     "targetLedgerPath": "analyst_dashboard/data/paper_trading_ledger.json",
     "outcomeInformedContractDesign": false,
     "targetSpecificOutcomeRulesCount": 0,
+    "outcomesOpened": false,
+    "outcomeInformedRuleChanges": 0,
+    "tickerSpecificRules": 0,
+    "parametersSelectedFromRealizedPaths": 0,
     "tuningAuthorized": false,
     "modelLearningClaimAuthorized": false
   },
@@ -27,13 +31,15 @@
       "description": "Evaluates hypothetical trade execution strictly according to the contemporaneously frozen trade plan and execution corridor.",
       "targetPopulation": 10,
       "eligibilityCriteria": "Contemporaneously recorded signal with decisionState == 'ACTIONABLE_SETUP' in paper_trading_ledger.json",
-      "primaryOutcomeDefinition": "TP1_BEFORE_STOP_CONTRACT_ONLY"
+      "primaryOutcomeDefinition": "TP1_BEFORE_STOP_PRIMARY_CONTRACT"
     },
     "analysisB": {
       "name": "ACTUAL_EXECUTION_OUTCOME",
       "description": "Evaluates trade outcomes solely where contemporaneous execution observations prove simulated or actual fill occurred.",
       "targetPopulation": 10,
       "executionObservationsRequired": true,
+      "contemporaneousExecutionObservationsCount": 0,
+      "actualExecutionOutcome": "NOT_ASSESSED_NO_CONTEMPORANEOUS_FILL_EVIDENCE",
       "defaultStateWhenNoObservation": "NOT_ASSESSED_NO_CONTEMPORANEOUS_FILL_EVIDENCE",
       "status": "NOT_ASSESSED_NO_CONTEMPORANEOUS_FILL_EVIDENCE"
     }
@@ -79,25 +85,58 @@
     }
   },
   "intrabarExecutionSequencing": {
-    "entryStopCollisionRule": {
-      "condition": "Daily OHLC proves both entry corridor touched and stop touched on the same session, and sub-daily chronological ordering cannot be established",
+    "entryStopSequenceRule": {
+      "name": "ENTRY_STOP_SEQUENCE_RULE",
+      "status": "FROZEN",
+      "condition": "Daily OHLC establishes that the same session contains both entry corridor touch and stop touch, and sub-daily chronological ordering cannot be established",
       "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
-      "rationale": "Do not assume entry occurred before stop floor was breached."
+      "entryStopOrder": "UNRESOLVED_INTRABAR_SEQUENCE",
+      "preEntryInvalidation": "If evidence establishes stop/invalidation condition occurred before entry, ENTRY_STATE = ENTRY_NOT_TRIGGERED. If both occur in same daily bar and order is unknown, ENTRY_STOP_ORDER = UNRESOLVED_INTRABAR_SEQUENCE. Do not classify as a stopped trade unless entry is proven to occur first.",
+      "rationale": "Do not infer entry-before-stop without verified temporal sequence."
     },
-    "entryTargetCollisionRule": {
-      "condition": "Daily OHLC proves both entry corridor touched and target touched on the same session, and sub-daily chronological ordering cannot be established",
+    "entryTargetSequenceRule": {
+      "name": "ENTRY_TARGET_SEQUENCE_RULE",
+      "status": "FROZEN",
+      "condition": "Daily OHLC establishes that the same session contains both entry trigger and target touch, and sub-daily chronological ordering cannot be established",
       "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
-      "rationale": "Do not credit a target that may have occurred prior to entry."
+      "entryTargetOrder": "UNRESOLVED_INTRABAR_SEQUENCE",
+      "rationale": "A target that may have occurred prior to entry cannot be credited as successful. Do not infer entry-before-target without verified temporal sequence."
     },
-    "entryStopTargetThreeWayCollisionRule": {
+    "entryStopTargetThreeWaySequenceRule": {
+      "name": "ENTRY_STOP_TARGET_THREE_WAY_SEQUENCE_RULE",
+      "status": "FROZEN",
       "condition": "Daily OHLC proves entry corridor, stop, and target were all touched on the same session without verifiable tick ordering",
       "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
-      "rationale": "All three levels on same daily bar constitute an irreconcilable sequence collision."
+      "rationale": "All three critical price levels on the same daily bar constitute an irreconcilable sequence collision."
     },
-    "stopTargetHoldingCollisionRule": {
+    "holdingStopTargetSequenceRule": {
+      "name": "HOLDING_STOP_TARGET_SEQUENCE_RULE",
+      "status": "FROZEN",
       "condition": "In any session post-entry, session High >= takeProfit1 and session Low <= stopLoss without sub-daily tick sequence",
       "outcome": "UNRESOLVED_INTRABAR_SEQUENCE",
       "rationale": "Neither favorable nor unfavorable ordering is assumed on same-bar target/stop touch."
+    }
+  },
+  "dataGranularityAuthority": {
+    "status": "FROZEN",
+    "intrabarOrderResolution": "AUTHORIZED_ONLY_FROM_SUFFICIENTLY_GRANULAR_TIME_ORDERED_DATA",
+    "dailyOhlcEventSequenceRule": "Daily OHLC cannot establish event sequence.",
+    "granularities": {
+      "DAILY_OHLC": {
+        "description": "Daily open, high, low, close summary bars.",
+        "canResolveIntrabarOrder": false,
+        "limitation": "Daily OHLC cannot establish event sequence. Any same-bar collision must result in UNRESOLVED_INTRABAR_SEQUENCE."
+      },
+      "INTRADAY_BAR": {
+        "description": "1-minute or 5-minute time-ordered intraday OHLC bars.",
+        "canResolveIntrabarOrder": true,
+        "condition": "Allowed only where distinct bar timestamps unambiguously separate entry, stop, or target events."
+      },
+      "TICK": {
+        "description": "Chronologically ordered tick trades with microsecond/millisecond timestamps.",
+        "canResolveIntrabarOrder": true,
+        "condition": "Authoritative trade prints conclusively establishing exact temporal event sequence."
+      }
     }
   },
   "entryStates": [
@@ -108,18 +147,24 @@
     "NOT_ASSESSED_NO_CONTEMPORANEOUS_FILL_EVIDENCE"
   ],
   "multiStageExitAllocationProvenance": {
-    "multiStageExitPreexistingAuthority": false,
-    "preexistingAuthorityDetermination": "NO. Review of historical engines (experiment_ledger.py:2120-2138) confirms that historical tracking resolved 100% of the position on TP1 hit as TP1_WIN. The 50/50 weighting was solely a static reward-weighting formula in optimal_execution.py for ex-ante R:R calculation, not an active execution ledger model.",
-    "multiStageExitModel": "PROSPECTIVE_ONLY",
-    "historicalPrimaryOutcome": "TP1_BEFORE_STOP_CONTRACT_ONLY"
+    "multiStageExitPreexistingAuthority": "NO",
+    "preexistingAuthorityDetermination": "NO. Comprehensive review of historical execution engines (analyst_dashboard/governance/experiment_ledger.py:2117-2138) proves that historical tracking resolved 100% of position on TP1 hit as TP1_WIN or stop hit as STOP_LOSS. The 50/50 weighting was solely a static reward-weighting formula in optimal_execution.py for ex-ante R:R calculation, not an active execution ledger model.",
+    "multiStageExitModel": "PROSPECTIVE_OR_SECONDARY_ONLY",
+    "historicalCanonicalOutcome": "TP1_BEFORE_STOP_PRIMARY_CONTRACT",
+    "historicalPrimaryOutcome": "TP1_BEFORE_STOP_PRIMARY_CONTRACT"
   },
   "marketDataProviderPrecedence": {
+    "status": "FROZEN",
     "primaryProvider": "YAHOO_FINANCE",
     "fallbackProvider": "EODHD",
     "fallbackAllowed": "PRIMARY_FEED_UNAVAILABLE_OR_CORRUPT",
     "fallbackAllowedConditions": "Fallback provider may be consulted only when primary provider returns empty, incomplete, or corrupted daily bars for the complete evaluation horizon.",
     "providerMixingWithinSignal": "PROHIBITED",
+    "providerSelectionByOutcome": "PROHIBITED",
+    "providerConflictRule": "FROZEN",
+    "providerValueConflict": "UNRESOLVED_DATA_CONFLICT",
     "providerValueConflictRule": "UNRESOLVED_DATA_CONFLICT",
+    "providerValueConflictDescription": "If primary and fallback providers both contain the required bar but materially disagree on prices affecting state transitions, the outcome must resolve to UNRESOLVED_DATA_CONFLICT rather than selecting the favorable provider.",
     "priceType": "SPLIT_ADJUSTED_OHLCV",
     "timezone": "America/New_York",
     "session": "REGULAR_SESSION (09:30-16:00 ET)",
@@ -202,7 +247,7 @@
       "UNRESOLVED_INTRABAR_SEQUENCE": "Same-bar collision between entry/stop, entry/target, or stop/target without verifiable tick resolution.",
       "UNMATURED": "Trade triggered but 20 trading sessions have not elapsed and no terminal exit occurred.",
       "ENTRY_WINDOW_STILL_OPEN": "Fewer than 5 trading sessions elapsed and entry condition has not yet been satisfied.",
-      "ENTRY_NOT_TRIGGERED": "5 trading sessions elapsed without satisfying entry corridor criteria or opening gap breached stop floor.",
+      "ENTRY_NOT_TRIGGERED": "5 trading sessions elapsed without satisfying entry corridor criteria or pre-entry price breached stop/invalidation floor.",
       "SUCCESS": "takeProfit1 reached before stopLoss within 20 trading sessions post-entry.",
       "FAILURE": "stopLoss reached before takeProfit1 within 20 trading sessions post-entry.",
       "NEUTRAL": "Neither takeProfit1 nor stopLoss reached within 20 trading sessions; position closed at session 20 Close."
