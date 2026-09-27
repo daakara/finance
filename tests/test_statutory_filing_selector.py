@@ -893,3 +893,102 @@ class TestStatutoryFilingSelectorRemediationV1_3_0:
         assert res.selected_accession == "0001234567-25-000002"
         assert res.document_filename == "modern.htm"
 
+
+class TestStatutoryFilingSelectorSiblingSeriesIsolationV1_3_1:
+    """Real-source multi-series adversarial test fixture for SEPQ/TUG sibling series (Section 15).
+
+    Tests:
+    - Same registrant (CIK 0001683471)
+    - Similar strategy names sharing prefix tokens ('STF Tactical Growth')
+    - Separate Series IDs (S000076366 vs S000076367)
+    - Separate Class IDs (C000236165 vs C000236166)
+    - Different statutory documents (tugnsummary.htm vs tugsummary.htm)
+    - Rejection of conflicting cross-series candidate filings with CONFLICTING_EXACT_SERIES_ID
+    - Zero cross-series bleed
+    """
+
+    def test_sepq_tug_sibling_series_real_source_adversarial_isolation(self):
+        cache_dir = Path("data/research/cache")
+        sub_path = cache_dir / "sec_submissions" / "CIK0001683471.json"
+        assert sub_path.exists(), f"Missing submissions file: {sub_path}"
+
+        with open(sub_path, "r", encoding="utf-8") as f:
+            sub_json = json.load(f)
+
+        sepq = SeriesMetadata(
+            symbol="SEPQ",
+            cik="1683471",
+            series_id="S000076366",
+            class_id="C000236165",
+            legal_name="STF Tactical Growth & Income ETF",
+            trust_name=sub_json.get("name", "")
+        )
+        tug = SeriesMetadata(
+            symbol="TUG",
+            cik="1683471",
+            series_id="S000076367",
+            class_id="C000236166",
+            legal_name="STF Tactical Growth ETF",
+            trust_name=sub_json.get("name", "")
+        )
+
+        StatutoryFilingSelector.reset_history_cache()
+        res_sepq = StatutoryFilingSelector.select_statutory_filing(sepq, sub_json, cache_dir)
+        res_tug = StatutoryFilingSelector.select_statutory_filing(tug, sub_json, cache_dir)
+
+        # 1. SEPQ selection assertions
+        assert res_sepq.selection_outcome == OUTCOME_SELECTED_SUMMARY_PROSPECTUS
+        assert res_sepq.selected_accession == "0000894189-26-021755"
+        assert res_sepq.document_filename == "tugnsummary.htm"
+        assert res_sepq.selected_form == "497K"
+
+        # 2. TUG selection assertions
+        assert res_tug.selection_outcome == OUTCOME_SELECTED_SUMMARY_PROSPECTUS
+        assert res_tug.selected_accession == "0000894189-26-021913"
+        assert res_tug.document_filename == "tugsummary.htm"
+        assert res_tug.selected_form == "497K"
+
+        # 3. Isolation & Negative Control assertions (Section 14 & 15)
+        assert res_sepq.selected_accession != res_tug.selected_accession
+        assert res_sepq.document_filename != res_tug.document_filename
+        assert "tugn" in res_sepq.document_filename
+        assert "tugsummary" in res_tug.document_filename
+
+    def test_cross_series_contradiction_rejection(self, tmp_path):
+        """Form 497K candidate declaring conflicting Series ID is rejected with CONFLICTING_EXACT_SERIES_ID."""
+        target = SeriesMetadata(
+            symbol="ALPHA",
+            cik="0001683471",
+            series_id="S000076366",
+            class_id="C000236165",
+            legal_name="STF Tactical Growth & Income ETF"
+        )
+        prospectus_dir = tmp_path / "sec_prospectus"
+        prospectus_dir.mkdir(parents=True)
+
+        sibling_doc = """
+        <html><body>
+          <h1>STF Tactical Growth ETF (TUG)</h1>
+          <p>Series S000076367 Class C000236166</p>
+          <h3>Principal Investment Strategies</h3>
+          <p>Tactical growth strategy.</p>
+        </body></html>
+        """
+        (prospectus_dir / "0000894189-26-000001_sibling.htm").write_text(sibling_doc, encoding="utf-8")
+
+        sub_json = {
+            "filings": {
+                "recent": {
+                    "form": ["497K"],
+                    "filingDate": ["2026-07-30"],
+                    "accessionNumber": ["0000894189-26-000001"],
+                    "primaryDocument": ["sibling.htm"],
+                    "primaryDocDescription": ["497K"]
+                }
+            }
+        }
+        res = StatutoryFilingSelector.select_statutory_filing(target, sub_json, tmp_path)
+        assert res.selection_outcome == OUTCOME_TARGET_ABSENT_FROM_ALL
+        # Verify CONFLICTING_EXACT_SERIES_ID is in rejection reasons
+        reasons = [r.get("rejection_reason", "") for r in res.rejected_candidates]
+        assert any("CONFLICTING_EXACT_SERIES_ID" in r for r in reasons)

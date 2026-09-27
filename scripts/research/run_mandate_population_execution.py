@@ -94,9 +94,9 @@ def verify_authorities_and_baseline() -> Tuple[dict, list, dict]:
 
     selected = [r for r in results_list if "SELECTED" in r.get("selection_outcome", "")]
     absent = [r for r in results_list if r.get("selection_outcome") in {"TARGET_ABSENT_FROM_ALL_CANDIDATES", "SOURCE_CACHE_MISS"}]
-    assert len(selected) == 2043, f"Expected 2,043 selected targets, got {len(selected)}"
-    assert len(absent) == 841, f"Expected 841 absent targets, got {len(absent)}"
-    print(f"[OK] Certified Source Population: 2,043 SELECTED, 841 ABSENT/MISS, 0 UNACCOUNTED")
+    assert len(selected) == 2044, f"Expected 2,044 selected targets, got {len(selected)}"
+    assert len(absent) == 840, f"Expected 840 absent targets, got {len(absent)}"
+    print(f"[OK] Certified Source Population: 2,044 SELECTED, 840 ABSENT, 0 MISS, 0 UNACCOUNTED")
 
     return manifest_data, results_list, {r["symbol"]: r for r in records}
 
@@ -124,7 +124,7 @@ def verify_source_integrity(selected_records: List[dict]) -> Tuple[int, int, Dic
             acc_to_file[acc] = p.name
 
     unique_files = {acc_to_file[r["selected_accession"]] for r in selected_records}
-    assert len(unique_files) == 1909, f"Expected 1,909 unique files, got {len(unique_files)}"
+    assert len(unique_files) == 1910, f"Expected 1,910 unique files, got {len(unique_files)}"
     print(f"Verified UNIQUE_SELECTED_DOCUMENTS = {len(unique_files)}")
 
     missing_count = 0

@@ -1,7 +1,7 @@
 {
-  "execution_run_id": "POPULATION_EXECUTION_1790485609",
-  "execution_timestamp": "2026-09-27T05:09:59Z",
-  "total_elapsed_seconds": 194.23,
+  "execution_run_id": "POPULATION_EXECUTION_1790492324",
+  "execution_timestamp": "2026-09-27T07:02:22Z",
+  "total_elapsed_seconds": 222.47,
   "authorities": {
     "input_manifest_sha256": "764363abedf51dd40365cf26d17d429fe4596619bd7e8e648cca17502286635a",
     "policy_version": "ETF_SUBTYPE_CLASSIFICATION_POLICY_V1_1",
@@ -13,55 +13,55 @@
   },
   "denominators": {
     "total_manifest": 2884,
-    "source_selected": 2043,
-    "source_absent": 841
+    "source_selected": 2044,
+    "source_absent": 840
   },
   "document_metrics": {
-    "unique_selected_documents": 1909,
-    "documents_indexed": 1909,
+    "unique_selected_documents": 1910,
+    "documents_indexed": 1910,
     "document_index_cache_hits": 134,
     "document_index_failures": 0,
     "source_files_missing": 0,
     "source_hash_mismatches": 0
   },
   "resolution_counts": {
-    "series_resolved": 1805,
+    "series_resolved": 1806,
     "boundary_not_established": 11,
     "target_section_not_found": 142,
     "ambiguous_resolution": 0,
     "parser_failure": 84,
     "explicit_truncation_failure": 1,
-    "mandate_classified": 1805,
+    "mandate_classified": 1806,
     "cross_series_contamination": 0
   },
   "classification_distribution": {
     "NON_CONFIRMATORY": {
       "count": 1085,
-      "pct_of_mandate_classified": 60.11,
-      "pct_of_source_selected": 53.11,
+      "pct_of_mandate_classified": 60.08,
+      "pct_of_source_selected": 53.08,
       "pct_of_total_manifest": 37.62
     },
     "TARGET_ABSENT_FROM_ALL_CANDIDATES": {
       "count": 840,
-      "pct_of_mandate_classified": 46.54,
-      "pct_of_source_selected": 41.12,
+      "pct_of_mandate_classified": 46.51,
+      "pct_of_source_selected": 41.1,
       "pct_of_total_manifest": 29.13
     },
     "AMBIGUOUS_MANDATE": {
       "count": 338,
-      "pct_of_mandate_classified": 18.73,
+      "pct_of_mandate_classified": 18.72,
       "pct_of_source_selected": 16.54,
       "pct_of_total_manifest": 11.72
     },
     "CONFIRMATORY_EQUITY_INDEX": {
       "count": 262,
-      "pct_of_mandate_classified": 14.52,
+      "pct_of_mandate_classified": 14.51,
       "pct_of_source_selected": 12.82,
       "pct_of_total_manifest": 9.08
     },
     "TARGET_SECTION_NOT_FOUND": {
       "count": 142,
-      "pct_of_mandate_classified": 7.87,
+      "pct_of_mandate_classified": 7.86,
       "pct_of_source_selected": 6.95,
       "pct_of_total_manifest": 4.92
     },
@@ -72,10 +72,10 @@
       "pct_of_total_manifest": 2.91
     },
     "CONFIRMATORY_FIXED_INCOME_GOVERNMENT": {
-      "count": 64,
-      "pct_of_mandate_classified": 3.55,
-      "pct_of_source_selected": 3.13,
-      "pct_of_total_manifest": 2.22
+      "count": 65,
+      "pct_of_mandate_classified": 3.6,
+      "pct_of_source_selected": 3.18,
+      "pct_of_total_manifest": 2.25
     },
     "CONFIRMATORY_FIXED_INCOME_CREDIT": {
       "count": 28,
@@ -100,16 +100,10 @@
       "pct_of_mandate_classified": 0.06,
       "pct_of_source_selected": 0.05,
       "pct_of_total_manifest": 0.03
-    },
-    "SOURCE_CACHE_MISS": {
-      "count": 1,
-      "pct_of_mandate_classified": 0.06,
-      "pct_of_source_selected": 0.05,
-      "pct_of_total_manifest": 0.03
     }
   },
   "confirmatory_population": {
-    "total_confirmatory": 382,
+    "total_confirmatory": 383,
     "by_subtype": {
       "EQUITY_INDEX": {
         "count": 262,
@@ -129,7 +123,7 @@
         "parser_complete_count": 262
       },
       "FIXED_INCOME_GOVERNMENT": {
-        "count": 64,
+        "count": 65,
         "symbols_sample": [
           "EDV",
           "TRSY",
@@ -137,13 +131,13 @@
           "VBIL",
           "PTIN",
           "PSFF",
+          "SEPQ",
           "TUG",
           "MRGR",
-          "PULS",
-          "CDC"
+          "PULS"
         ],
-        "source_complete_count": 64,
-        "parser_complete_count": 64
+        "source_complete_count": 65,
+        "parser_complete_count": 65
       },
       "FIXED_INCOME_CREDIT": {
         "count": 28,

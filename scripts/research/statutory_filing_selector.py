@@ -28,9 +28,10 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_3_0"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_3_1"
 STATUTORY_FILING_SELECTOR_V1_2_0 = "STATUTORY_FILING_SELECTOR_V1_2_0"
 STATUTORY_FILING_SELECTOR_V1_3_0 = "STATUTORY_FILING_SELECTOR_V1_3_0"
+STATUTORY_FILING_SELECTOR_V1_3_1 = "STATUTORY_FILING_SELECTOR_V1_3_1"
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
@@ -591,6 +592,16 @@ class StatutoryFilingSelector:
         raw_name = (target_series.legal_name or "").strip()
         sym = (target_series.symbol or "").upper().strip()
 
+        # Cross-Series Contradiction Rule (Section 9)
+        # If candidate is a single-fund statutory document (497K summary prospectus or short filing)
+        # and explicitly declares exact Series IDs, but target series ID is not among them:
+        if sid and (form == "497K" or len(clean_text) < 120000):
+            found_sids = set(re.findall(r"\bS0000\d{5}\b", clean_text, re.IGNORECASE))
+            if found_sids:
+                upper_sids = {s.upper() for s in found_sids}
+                if sid not in upper_sids:
+                    return False, f"CONFLICTING_EXACT_SERIES_ID (Document series {sorted(upper_sids)} != target {sid})"
+
         # 1. Series ID & Class ID
         has_sid = bool(sid and sid in clean_text)
         has_cid = bool(cid and cid in clean_text)
@@ -960,10 +971,15 @@ class StatutoryFilingSelector:
                 cache_key=cache_key,
             )
 
-        # Sort candidates deterministically: Priority Score desc, Filing Date desc, Form Priority desc
+        # Sort candidates deterministically: Directory Match desc, Priority Score desc, Filing Date desc, Form Priority desc (Section 10)
         form_weight = {"485BPOS": 10, "497K": 9, "485APOS": 8, "497": 5, "N-1A": 4}
         candidates.sort(
-            key=lambda c: (c.priority_score, c.filing_date, form_weight.get(c.form, 0)),
+            key=lambda c: (
+                1 if (target_dir_entry and c.accession == target_dir_entry.get("accession")) else 0,
+                c.priority_score,
+                c.filing_date,
+                form_weight.get(c.form, 0)
+            ),
             reverse=True
         )
 
@@ -1036,12 +1052,13 @@ class StatutoryFilingSelector:
             if not target_present:
                 cand.target_present = "NO"
                 cand.rejection_reason = t_reason
+                rej_desc = t_reason if t_reason.startswith("CONFLICTING_EXACT_SERIES_ID") else f"TARGET_NOT_PRESENT ({t_reason})"
                 rejected_candidates.append({
                     "accession": cand.accession,
                     "form": cand.form,
                     "filing_date": cand.filing_date,
                     "primary_doc": cand.primary_document,
-                    "rejection_reason": f"TARGET_NOT_PRESENT ({t_reason})"
+                    "rejection_reason": rej_desc
                 })
                 candidate_selection_trace.append({
                     "accession": cand.accession,
@@ -1051,7 +1068,7 @@ class StatutoryFilingSelector:
                     "priority_score": cand.priority_score,
                     "target_present": "NO",
                     "mandate_present": "UNKNOWN",
-                    "rejection_reason": f"TARGET_NOT_PRESENT ({t_reason})",
+                    "rejection_reason": rej_desc,
                     "selected": False,
                 })
                 continue

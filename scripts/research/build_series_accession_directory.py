@@ -70,12 +70,17 @@ def build_submission_accession_map():
     return acc_map
 
 
-def query_edgar_series(series_id: str, form_type: str = "497K") -> Optional[Dict[str, str]]:
-    """Query EDGAR atom feed for a specific series ID pre-boundary."""
+def query_edgar_series(
+    series_id: str,
+    form_type: str = "497K",
+    acc_map: Optional[Dict[Any, Any]] = None,
+    cik_10: str = ""
+) -> Optional[Dict[str, str]]:
+    """Query EDGAR atom feed for a specific series ID pre-boundary, skipping non-substantive ticker/sticker supplements."""
     url = (
         f"https://www.sec.gov/cgi-bin/browse-edgar"
         f"?action=getcompany&CIK={series_id}&type={form_type}"
-        f"&dateb=20260924&owner=exclude&count=5&output=atom"
+        f"&dateb=20260924&owner=exclude&count=10&output=atom"
     )
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
@@ -92,6 +97,13 @@ def query_edgar_series(series_id: str, form_type: str = "497K") -> Optional[Dict
                 form = title_m.group(1).split()[0].strip() if title_m else form_type
                 # Enforce strict pre-boundary check
                 if fdate <= SNAPSHOT_BOUNDARY_DATE:
+                    # Skip non-substantive sticker / ticker change supplements
+                    if acc_map and cik_10:
+                        lookup = acc_map.get((cik_10, acc))
+                        if lookup:
+                            doc_name = lookup[0].lower()
+                            if any(k in doc_name for k in ["ticker", "sticker", "feewaiver"]):
+                                continue
                     return {"accession": acc, "filing_date": fdate, "form": form}
     except Exception as exc:
         print(f"Error querying EDGAR for {series_id} {form_type}: {exc}")
@@ -137,11 +149,11 @@ def main():
             rec = directory[sid]
         else:
             # Step 1: Query 497K
-            rec = query_edgar_series(sid, "497K")
+            rec = query_edgar_series(sid, "497K", acc_map=acc_map, cik_10=cik_10)
             time.sleep(0.12)
             if not rec:
                 # Step 2: Query 485BPOS if 497K not found
-                rec = query_edgar_series(sid, "485BPOS")
+                rec = query_edgar_series(sid, "485BPOS", acc_map=acc_map, cik_10=cik_10)
                 time.sleep(0.12)
 
             if rec:

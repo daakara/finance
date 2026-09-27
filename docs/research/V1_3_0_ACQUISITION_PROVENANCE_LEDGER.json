@@ -4,7 +4,7 @@
   "snapshot_boundary": "2026-09-24T23:59:59Z",
   "total_series_attempted": 751,
   "authoritative_series_mapped": 751,
-  "newly_acquired_documents": 567,
+  "newly_acquired_documents": 568,
   "entries": [
     {
       "symbol": "BKIE",
@@ -6241,6 +6241,17 @@
       "form": "497K",
       "filing_date": "2023-07-31",
       "source_sha256": "d5e4da4ea177a3e3f2ef2efe8d1cdabf93e8d90256c5fc905b17bc1227a177f4",
+      "status": "ACQUIRED_SUCCESS"
+    },
+    {
+      "symbol": "SEPQ",
+      "series_id": "S000076366",
+      "cik": "0001683471",
+      "accession": "0000894189-26-021755",
+      "document_filename": "tugnsummary.htm",
+      "form": "497K",
+      "filing_date": "2026-07-30",
+      "source_sha256": "c1e22837100e251c5d255298b90377ae715706d7441ffc5f48fb5d2307754bff",
       "status": "ACQUIRED_SUCCESS"
     }
   ]
