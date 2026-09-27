@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "ETF_SOURCE_PROVENANCE_CONTRACT",
+  "contract_version": "1.0.0",
+  "created_at": "2026-09-27T19:55:00Z",
+  "governance_status": "FROZEN_PRE_EXECUTION",
+  "timestamp_ontology": {
+    "SEC_FILING_DATE": {
+      "definition": "Official SEC filing date assigned by EDGAR upon receipt and filing processing (format: YYYY-MM-DD).",
+      "authority": "SEC_EDGAR_SUBMISSIONS_HEADER",
+      "use": "Determines statutory point-in-time snapshot eligibility against MANIFEST_SNAPSHOT_BOUNDARY."
+    },
+    "SEC_ACCEPTANCE_TIMESTAMP": {
+      "definition": "Exact UTC timestamp when EDGAR accepted the electronic transmission (format: YYYY-MM-DDTHH:MM:SS.000Z or YYYYMMDDhhmmss).",
+      "authority": "SEC_EDGAR_TRANSMISSION_RECORD",
+      "use": "Provides intra-day precision and temporal ordering for same-day filings."
+    },
+    "SOURCE_DOWNLOAD_TIMESTAMP": {
+      "definition": "UTC timestamp when the raw filing bytes were fetched via HTTP from sec.gov into local cache.",
+      "authority": "LOCAL_INGESTION_AGENT",
+      "use": "Network retrieval auditing and cache provenance; never used for regulatory eligibility."
+    },
+    "CACHE_WRITE_TIMESTAMP": {
+      "definition": "Local file system creation/modification timestamp on disk.",
+      "authority": "LOCAL_OS_FILESYSTEM",
+      "use": "Diagnostic cache freshness check; never used for regulatory eligibility."
+    },
+    "MANIFEST_SNAPSHOT_BOUNDARY": {
+      "definition": "Frozen point-in-time research cutoff boundary: 2026-09-24T23:59:59Z.",
+      "authority": "ETF_RESEARCH_SPEC_V1_0_3",
+      "use": "Strict inequality threshold: SEC_FILING_DATE <= 2026-09-24."
+    }
+  },
+  "hash_and_representation_contract": {
+    "raw_source_bytes_authority": {
+      "name": "RAW_SOURCE_SHA256",
+      "definition": "Cryptographic SHA256 computed directly over the exact raw byte sequence retrieved from SEC EDGAR.",
+      "role": "PRIMARY_SOURCE_INTEGRITY_AUTHORITY",
+      "invariants": [
+        "Raw source bytes must remain permanently immutable.",
+        "A normalized hash mismatch must never imply raw-source corruption."
+      ]
+    },
+    "normalized_text_representation": {
+      "name": "NORMALIZED_TEXT_SHA256",
+      "definition": "Cryptographic SHA256 computed over the canonically decoded, entity-decoded, and whitespace-normalized text.",
+      "version": "NORMALIZATION_V1_0_0",
+      "normalization_pipeline": [
+        "1. Decode raw bytes to Unicode string (UTF-8, with Windows-1252 / ISO-8859-1 fallback).",
+        "2. Normalize line breaks: replace CRLF (\\r\\n) and CR (\\r) with Unix LF (\\n).",
+        "3. Decode HTML entities: &nbsp; and &#160; -> space; &amp; -> &; &lt; -> <; &gt; -> >; &quot; -> \"; &mdash; -> em-dash; &ndash; -> en-dash.",
+        "4. Structural text extraction: extract text preserving single newlines between block elements (p, div, tr, br, h1-h6).",
+        "5. Whitespace normalization: collapse contiguous inline whitespace ([ \\t]+) to single space; strip line-trailing whitespace."
+      ]
+    }
+  },
+  "pffd_timestamp_reconciliation": {
+    "target_symbol": "PFFD",
+    "target_cik": "0001432353",
+    "target_series_id": "S000058429",
+    "accession": "0001432353-26-000441",
+    "primary_document": "a497kuspreferred.htm",
+    "pffd_sec_filing_date": "2026-03-31",
+    "pffd_sec_acceptance_timestamp": "2026-03-31T21:11:46.000Z",
+    "pffd_local_acquisition_timestamp": "2026-09-27T16:29:00Z",
+    "prospectus_face_date": "2026-03-01",
+    "timestamp_contradiction": false,
+    "root_cause_explanation": "Differing reported dates correspond to distinct ontological concepts: 2026-03-31 is the authoritative SEC filing date; 2026-03-01 is the internal prospectus effective date printed on the document face; 2026-09-27 is the local HTTP download timestamp. All dates are strictly pre-boundary (<= 2026-09-24T23:59:59Z)."
+  },
+  "golden_record_schema": {
+    "type": "object",
+    "required": [
+      "symbol",
+      "cik",
+      "series_id",
+      "class_id",
+      "legal_name",
+      "accession",
+      "sec_filing_date",
+      "sec_acceptance_timestamp",
+      "form",
+      "primary_document",
+      "document_role",
+      "raw_source_sha256",
+      "normalization_version",
+      "normalized_text_sha256",
+      "series_section_start_offset",
+      "series_section_end_offset",
+      "mandate_section_heading_role",
+      "mandate_section_start_offset",
+      "mandate_section_end_offset",
+      "mandate_text_sha256",
+      "policy_version",
+      "classification_rule_id",
+      "classification_outcome"
+    ],
+    "properties": {
+      "symbol": { "type": "string" },
+      "cik": { "type": "string" },
+      "series_id": { "type": "string" },
+      "class_id": { "type": "string" },
+      "legal_name": { "type": "string" },
+      "accession": { "type": "string" },
+      "sec_filing_date": { "type": "string" },
+      "sec_acceptance_timestamp": { "type": "string" },
+      "form": { "type": "string" },
+      "primary_document": { "type": "string" },
+      "document_role": { "type": "string" },
+      "raw_source_sha256": { "type": "string" },
+      "normalization_version": { "type": "string" },
+      "normalized_text_sha256": { "type": "string" },
+      "series_section_start_offset": { "type": "integer" },
+      "series_section_end_offset": { "type": "integer" },
+      "mandate_section_heading_role": { "type": "string" },
+      "mandate_section_start_offset": { "type": "integer" },
+      "mandate_section_end_offset": { "type": "integer" },
+      "mandate_text_sha256": { "type": "string" },
+      "policy_version": { "type": "string" },
+      "classification_rule_id": { "type": "string" },
+      "classification_outcome": { "type": "string" }
+    }
+  }
+}
