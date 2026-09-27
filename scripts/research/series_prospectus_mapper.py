@@ -44,7 +44,7 @@ from scripts.research.document_index_engine import (
     NORMALIZATION_VERSION,
 )
 
-SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_1_0"
+SERIES_RESOLVER_VERSION = "SERIES_RESOLVER_V1_2_0"
 SNAPSHOT_BOUNDARY = "2026-09-24"
 SNAPSHOT_BOUNDARY_ISO = "2026-09-24T23:59:59Z"
 MAX_STRATEGY_LENGTH_CEILING = 50000
@@ -433,11 +433,24 @@ class SeriesProspectusMapper:
                 boundary_evidence_parts.append(f"End boundary delimited by adjacent fund anchor at offset {end_boundary}")
         else:
             # Check for general trust disclosure delimiters
-            slice_text = text[start_boundary: min(len(text), start_boundary + 60000)]
+            # Strategy-First Boundary Invariant (Defect A, Sections 6, 7, 8, 9):
+            # A general disclosure phrase (like SAI in cover-page legend) must not close the target section before the strategy section.
+            candidate_strats = [a for a in doc_index.strategy_anchors if a.start_offset >= start_boundary]
+            first_sa_offset = candidate_strats[0].start_offset if candidate_strats else None
+
+            # Only search for delimiters occurring AFTER the target strategy anchor has begun
+            delim_search_offset = (first_sa_offset + 200) if first_sa_offset is not None else (start_boundary + 5000)
+
+            slice_text = text[delim_search_offset: min(len(text), delim_search_offset + 60000)]
             for pat in cls.GENERAL_DISCLOSURE_DELIMITERS:
                 m = re.search(pat, slice_text, re.IGNORECASE)
-                if m and m.start() > 100:
-                    end_boundary = start_boundary + m.start()
+                if m:
+                    matched_offset = delim_search_offset + m.start()
+                    # Context check: ignore incorporation-by-reference sentences
+                    context = text[max(0, matched_offset - 100): min(len(text), matched_offset + 100)]
+                    if re.search(r"\b(?:incorporated\s+by\s+reference|both\s+dated|summary\s+prospectus\s+and)\b", context, re.IGNORECASE):
+                        continue
+                    end_boundary = matched_offset
                     boundary_evidence_parts.append(f"End boundary delimited by general disclosure at offset {end_boundary}")
                     break
 
@@ -648,9 +661,15 @@ class SeriesProspectusMapper:
             r"Investment\s+Objective\s+and\s+Principal\s+Strategies",
             r"Principal\s+Strategies",
         ]:
-            m = re.search(pat, block, re.IGNORECASE)
-            if m:
+            for m in re.finditer(pat, block, re.IGNORECASE):
                 found_start = m.start()
+                # Verify structural heading (reject mid-sentence prose matches)
+                pre = block[max(0, found_start - 120): found_start]
+                last_boundary = max(pre.rfind('>'), pre.rfind('\n'))
+                prefix_text = pre[last_boundary + 1:].strip() if last_boundary != -1 else pre.strip()
+                if prefix_text and not re.match(r'^(?:item\s+\d+\.?|\d+\.?|[A-Z]\.?|\*|\u2022)\s*$', prefix_text, re.IGNORECASE):
+                    continue
+
                 sec_name = m.group(0)
                 extracted = block[found_start:]
                 term_m = re.search(

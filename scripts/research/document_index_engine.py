@@ -30,9 +30,9 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Set, Tuple, Any
 
 
-INDEX_ENGINE_VERSION = "DOC_INDEX_V1_0_0"
-NORMALIZATION_VERSION = "NORMALIZATION_V1_0_0"
-INDEX_SCHEMA_VERSION = "SCHEMA_V1_0_0"
+INDEX_ENGINE_VERSION = "DOC_INDEX_V1_1_0"
+NORMALIZATION_VERSION = "NORMALIZATION_V1_1_0"
+INDEX_SCHEMA_VERSION = "SCHEMA_V1_1_0"
 
 
 @dataclass
@@ -230,12 +230,50 @@ class DocumentIndex:
                 return True
         return False
 
+    def _is_structural_heading(self, text: str, m_start: int, m_end: int, m_text: str) -> bool:
+        """Determines whether a strategy heading match is a genuine structural heading rather than prose."""
+        # 1. Reject all-lowercase prose matches that continue into lowercase narrative sentences (Defect E / INVN)
+        post = text[m_end: m_end + 30]
+        if m_text.islower() and re.match(r"^\s+[a-z]", post):
+            return False
+
+        pre = text[max(0, m_start - 120): m_start]
+        last_boundary = max(pre.rfind('>'), pre.rfind('\n'))
+        if last_boundary != -1:
+            prefix_text = pre[last_boundary + 1:].strip()
+        else:
+            prefix_text = pre.strip()
+
+        # If prefix_text is empty, it started immediately after a tag or newline -> Structural Heading!
+        if not prefix_text:
+            return True
+
+        # If prefix_text is a section or item number (e.g. 'Item 4.', '4.', 'Section 2.', 'A.') -> Heading!
+        if re.match(r'^(?:item\s+\d+\.?|\d+\.?|[A-Z]\.?|\*|\u2022)\s*$', prefix_text, re.IGNORECASE):
+            return True
+
+        # Supplement / amendment headings (e.g. 'under the heading "', 'entitled "')
+        if re.search(r'\b(?:heading|caption|section|entitled)\b', prefix_text, re.IGNORECASE):
+            return True
+
+        # Punctuation / quote boundary
+        if prefix_text and prefix_text[-1] in ('"', "'", ":", ".", ";", "-", "—"):
+            return True
+
+        # If prefix_text contains narrative words like 'with the fund\'s', reject as mid-sentence
+        if re.search(r'\b(?:the|its|our|their|with|to|of|inconsistent\s+with)\b', prefix_text, re.IGNORECASE):
+            return False
+
+        return True
+
     def _build_strategy_anchors(self, text: str):
         """Locates all strategy section headers in the document."""
         for pat in self.STRATEGY_PATTERNS:
             for m in re.finditer(pat, text, re.IGNORECASE):
                 # Verify not in TOC
                 if not self._is_in_toc(m.start()):
+                    if not self._is_structural_heading(text, m.start(), m.end(), m.group(0)):
+                        continue
                     self.strategy_anchors.append(
                         StrategyAnchor(
                             start_offset=m.start(),
@@ -288,13 +326,21 @@ class DocumentIndex:
             )
             self.class_occurrences.setdefault(cid, []).append(occ)
 
-        # 3. Known legal names scan (whitespace-flexible regex to accommodate statutory linebreaks/spacing)
+        # 3. Known legal names scan (resilient to whitespace, HTML tags, font tags, and trademark glyphs)
         for meta in known_metadata:
             raw_name = meta.get("legal_name", "")
             if raw_name and len(raw_name.strip()) > 5:
                 name_clean = DocumentNormalizer.normalize_name(raw_name)
                 words = raw_name.strip().split()
-                name_pat = r"\s+".join(re.escape(w) for w in words)
+                # Flexible separator: whitespace, HTML tags, font tags, entity references, trademark glyphs
+                sep = r"(?:<[^>]+>|\s|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
+                word_patterns = []
+                for w in words:
+                    if w.lower() in ("&", "and", "&amp;"):
+                        word_patterns.append(r"(?:&|&amp;|and)")
+                    else:
+                        word_patterns.append(re.escape(w))
+                name_pat = sep.join(word_patterns)
                 try:
                     for m in re.finditer(name_pat, text, re.IGNORECASE):
                         occ = Occurrence(
