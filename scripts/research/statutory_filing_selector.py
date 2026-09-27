@@ -28,10 +28,11 @@ from typing import Optional, List, Dict, Set, Tuple, Any
 
 from scripts.research.series_prospectus_mapper import SeriesMetadata, DocumentNormalizer
 
-STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_3_1"
+STATUTORY_FILING_SELECTOR_VERSION = "STATUTORY_FILING_SELECTOR_V1_4_0"
 STATUTORY_FILING_SELECTOR_V1_2_0 = "STATUTORY_FILING_SELECTOR_V1_2_0"
 STATUTORY_FILING_SELECTOR_V1_3_0 = "STATUTORY_FILING_SELECTOR_V1_3_0"
 STATUTORY_FILING_SELECTOR_V1_3_1 = "STATUTORY_FILING_SELECTOR_V1_3_1"
+STATUTORY_FILING_SELECTOR_V1_4_0 = "STATUTORY_FILING_SELECTOR_V1_4_0"
 SNAPSHOT_BOUNDARY = "2026-09-24T23:59:59Z"
 SNAPSHOT_BOUNDARY_DATE = "2026-09-24"
 
@@ -395,7 +396,7 @@ class StatutoryFilingSelector:
             for pat in cls.SUPPLEMENT_DISQUALIFY_PATTERNS:
                 if re.search(pat, combined_meta, re.IGNORECASE):
                     return ROLE_FEE_WAIVER_SUPPLEMENT
-            if re.search(r"\bsupplement\b|\bcap\s*summary\b|\bcap\s*range\b", combined_meta, re.IGNORECASE):
+            if re.search(r"\bsupplement\b|\bcap\s*summary\b|\bcap\s*range\b|\bsticker\b|\bsupp\b", combined_meta, re.IGNORECASE):
                 return ROLE_PROSPECTUS_SUPPLEMENT
             return ROLE_SUMMARY_PROSPECTUS
 
@@ -746,19 +747,46 @@ class StatutoryFilingSelector:
                 if not has_summary_after_sai:
                     return False, "TARGET_ONLY_IN_SAI_SECTION"
 
-        return True, "TARGET_PRESENT"
-
     @classmethod
-    def check_mandate_content(cls, text: str) -> Tuple[bool, str]:
-        """Verify whether statutory mandate / strategy section exists in text (Section 9)."""
+    def check_mandate_content(cls, text: str, form: str = "") -> Tuple[bool, str]:
+        """Verify whether statutory mandate / strategy section exists in text (Section 9 & V1.4.0).
+
+        Rejects partial supplement amendments (e.g. 'replaces the disclosure in the section titled...')
+        that lack complete statutory Principal Investment Strategies sections.
+        """
         if not text:
             return False, "NO_TEXT"
 
-        for pat in cls.MANDATE_SECTION_PATTERNS:
-            if re.search(pat, text, re.IGNORECASE):
-                return True, f"MANDATE_PRESENT_{pat}"
+        is_supp = bool(re.search(
+            r"\bsupplement\s+dated\b|\bsupplement\s+to\s+(?:the\s+)?(?:summary\s+)?prospectus\b|\bplease\s+retain\s+this\s+supplement\b",
+            text, re.IGNORECASE
+        ))
 
-        return False, "MANDATE_SECTION_NOT_FOUND"
+        # Check for XBRL narrative text blocks which are always authoritative
+        if re.search(r"oef:StrategyNarrativeTextBlock", text, re.IGNORECASE):
+            return True, "MANDATE_PRESENT_oef:StrategyNarrativeTextBlock"
+
+        matched_pat = None
+        for pat in cls.MANDATE_SECTION_PATTERNS:
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                # Context check: ignore references that are merely amendment instructions
+                pre = text[max(0, m.start() - 100): m.start()].lower()
+                if re.search(r"\b(?:replaces|amends|amended|section\s+titled|heading\s+titled|under\s+the\s+heading)\b", pre):
+                    continue
+                matched_pat = pat
+                break
+            if matched_pat:
+                break
+
+        if not matched_pat:
+            return False, "MANDATE_SECTION_NOT_FOUND"
+
+        # If document is an abbreviated supplement (< 35KB) that merely amends part of the strategy
+        if is_supp and len(text) < 35000:
+            if re.search(r"\b(?:replaces\s+the\s+disclosure|following\s+is\s+added|amended\s+as\s+follows|the\s+following\s+replaces)\b", text, re.IGNORECASE):
+                return False, "SUPPLEMENT_PARTIAL_AMENDMENT_NOT_FULL_MANDATE"
+
+        return True, f"MANDATE_PRESENT_{matched_pat}"
 
     @classmethod
     def compute_cache_key(
