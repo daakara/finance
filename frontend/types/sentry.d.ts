@@ -44,8 +44,14 @@ declare module "@sentry/browser" {
     [key: string]: unknown;
   }
 
+  export interface Client {
+    getOptions(): BrowserOptions;
+    [key: string]: unknown;
+  }
+
   export function init(options?: BrowserOptions): void;
   export function captureException(error: unknown, captureContext?: unknown): string;
   export function captureMessage(message: string, captureContext?: unknown): string;
   export function withScope(callback: (scope: Scope) => void): void;
+  export function getClient(): Client | undefined;
 }
