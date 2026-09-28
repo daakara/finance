@@ -23,21 +23,30 @@ export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
   : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
 
-import { getObservabilityHeaders } from "./observability/correlation";
+import {
+  getObservabilityHeaders,
+  type CorrelationOperation,
+  createCorrelationOperation,
+} from "./observability/correlation";
+
+export type { CorrelationOperation };
+export { createCorrelationOperation };
 
 // Shared secure request headers — X-API-Key is injected at build time from env var.
 // Observability correlation headers (X-Request-ID, X-Correlation-ID, X-Client-Version)
 // are injected dynamically per request.
 const ARX_API_KEY = process.env.NEXT_PUBLIC_ARX_API_KEY || "";
 
-export function getArxApiHeaders(correlationId?: string): Record<string, string> {
+export function getArxApiHeaders(
+  operationOrId?: CorrelationOperation | string
+): Record<string, string> {
   const base: Record<string, string> = { "Content-Type": "application/json" };
   if (ARX_API_KEY) {
     base["X-API-Key"] = ARX_API_KEY;
   }
   return {
     ...base,
-    ...getObservabilityHeaders(correlationId),
+    ...getObservabilityHeaders(operationOrId),
   };
 }
 

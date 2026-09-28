@@ -51,52 +51,78 @@ export function generateSecureUUIDv4(): string {
 }
 
 /**
- * Retrieves or initializes the active in-memory correlation ID.
- * Does not write to localStorage or cookies.
+ * Immutable correlation operation token interface.
+ * Enforces explicit operation scoping across asynchronous boundaries.
  */
-export function getCurrentCorrelationId(): string {
-  if (!activeCorrelationId) {
-    activeCorrelationId = generateSecureUUIDv4();
-  }
-  return activeCorrelationId;
+export interface CorrelationOperation {
+  readonly correlationId: string;
+  readonly createdAt: number;
+  getHeaders(): Record<string, string>;
 }
 
 /**
- * Sets an explicit correlation ID for a scoped transaction.
- * Replaces invalid/adversarial input with a safe generated UUIDv4.
+ * Creates an immutable, isolated CorrelationOperation token.
+ * Multiple requests using this token share the same correlationId.
+ * Independent operations receive distinct, non-overlapping correlationIds.
  */
-export function setExplicitCorrelationId(correlationId: string): string {
-  if (isValidUUIDv4(correlationId)) {
-    activeCorrelationId = correlationId.trim().toLowerCase();
+export function createCorrelationOperation(explicitCorrelationId?: string): CorrelationOperation {
+  let cid: string;
+  if (typeof explicitCorrelationId === "string" && isValidUUIDv4(explicitCorrelationId)) {
+    cid = explicitCorrelationId.trim().toLowerCase();
   } else {
-    activeCorrelationId = generateSecureUUIDv4();
+    cid = generateSecureUUIDv4();
   }
-  return activeCorrelationId;
+
+  const createdAt = Date.now();
+  return Object.freeze({
+    correlationId: cid,
+    createdAt,
+    getHeaders(): Record<string, string> {
+      return getObservabilityHeaders(cid);
+    },
+  });
 }
 
 /**
- * Resets the active in-memory correlation context.
+ * Scoped execution helper for running asynchronous operations within a correlation context.
  */
-export function resetCorrelationContext(): void {
-  activeCorrelationId = null;
+export async function withCorrelationOperation<T>(
+  operationOrId: CorrelationOperation | string | undefined,
+  fn: (operation: CorrelationOperation) => Promise<T>
+): Promise<T> {
+  const operation =
+    typeof operationOrId === "object" && operationOrId !== null && "correlationId" in operationOrId
+      ? operationOrId
+      : createCorrelationOperation(operationOrId);
+  return await fn(operation);
 }
 
 /**
  * Constructs the canonical observability headers object for an outbound API request.
- * - X-Request-ID: unique UUIDv4 per individual request.
- * - X-Correlation-ID: preserved operation UUIDv4.
+ * - X-Request-ID: unique UUIDv4 generated per individual HTTP request.
+ * - X-Correlation-ID: bound from the provided CorrelationOperation or explicit UUIDv4 string.
+ *   If no operation or explicit ID is provided (standalone request), a fresh, isolated
+ *   correlation ID is generated for this single request. Never reuses a sticky global singleton.
  * - X-Client-Version: build commit SHA from NEXT_PUBLIC_ARX_RELEASE.
  */
-export function getObservabilityHeaders(explicitCorrelationId?: string): Record<string, string> {
+export function getObservabilityHeaders(
+  operationOrId?: CorrelationOperation | string
+): Record<string, string> {
   const requestId = generateSecureUUIDv4();
 
   let correlationId: string;
-  if (explicitCorrelationId && isValidUUIDv4(explicitCorrelationId)) {
-    correlationId = explicitCorrelationId.trim().toLowerCase();
-  } else if (explicitCorrelationId) {
-    correlationId = generateSecureUUIDv4();
+  if (typeof operationOrId === "object" && operationOrId !== null && "correlationId" in operationOrId) {
+    correlationId = operationOrId.correlationId;
+  } else if (typeof operationOrId === "string") {
+    if (isValidUUIDv4(operationOrId)) {
+      correlationId = operationOrId.trim().toLowerCase();
+    } else {
+      correlationId = generateSecureUUIDv4();
+    }
   } else {
-    correlationId = getCurrentCorrelationId();
+    // Standalone request: generate an isolated correlation ID.
+    // Preserves 1:1 request-correlation identity and prevents cross-request context leakage.
+    correlationId = generateSecureUUIDv4();
   }
 
   const clientRelease = process.env.NEXT_PUBLIC_ARX_RELEASE || "";
@@ -106,4 +132,29 @@ export function getObservabilityHeaders(explicitCorrelationId?: string): Record<
     "X-Correlation-ID": correlationId,
     "X-Client-Version": clientRelease,
   };
+}
+
+/**
+ * @deprecated Legacy mutable singleton accessor retired in remediation.
+ * Returns an isolated standalone UUIDv4 without persisting global state.
+ * For multi-request logical operations, use `createCorrelationOperation()`.
+ */
+export function getCurrentCorrelationId(): string {
+  return generateSecureUUIDv4();
+}
+
+/**
+ * @deprecated Legacy mutable singleton setter retired in remediation.
+ * For multi-request logical operations, use `createCorrelationOperation(correlationId)`.
+ */
+export function setExplicitCorrelationId(correlationId: string): string {
+  return isValidUUIDv4(correlationId) ? correlationId.trim().toLowerCase() : generateSecureUUIDv4();
+}
+
+/**
+ * @deprecated Legacy mutable singleton resetter retired in remediation.
+ * No-op: global mutable singleton has been eliminated.
+ */
+export function resetCorrelationContext(): void {
+  // No-op: immutable operation tokens manage their own lifecycle.
 }

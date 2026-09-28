@@ -245,6 +245,15 @@ The MVP is strictly frozen to the ten foundational capabilities required to answ
   - Generated on the client or passed in `X-Correlation-ID`. Preserved throughout the request context.
   - Distinct from domain identifiers (`signal_id`, `decision_id`, `recommendation_id`).
 
+#### 7.4.1 Frontend Correlation Operation Ownership Model (Remediated)
+- **Old Implementation**: Module-global mutable variable (`activeCorrelationId`).
+- **Confirmed Defect**: Leaked across separate operations, cross-contaminated concurrent/overlapping requests, and left stuck context on unhandled errors.
+- **Canonical Semantics**: Explicit, immutable operation token (`CorrelationOperation`) created via `createCorrelationOperation()`.
+- **Frontend Ownership Model**:
+  - Multi-request operations pass `CorrelationOperation` (or use `withCorrelationOperation`); all requests within that operation share its `correlationId` while receiving distinct `request_id`s.
+  - Standalone requests (and background polling) without an explicit operation receive fresh, isolated correlation IDs (1:1 request-correlation), preventing cross-request context leakage.
+- **Provider-Independent Boundary**: Correlation state is strictly decoupled from external monitoring vendors (Sentry, Better Stack). It is transported via canonical HTTP headers (`X-Correlation-ID`).
+
 ### 7.5 Release Identity Disambiguation
 Separate identities must be bound to prevent mono-tag ambiguity:
 - `frontend_release_sha`: Cloudflare Pages commit hash (`NEXT_PUBLIC_ARX_RELEASE`).
