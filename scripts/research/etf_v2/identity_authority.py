@@ -6,6 +6,8 @@ Enforces the invariant: WEAK_TEXTUAL_IDENTITY_MAY_OVERRIDE_EXACT_IDS = NO.
 Exact CIK, Series ID, and Class ID dominate fuzzy name and ticker heuristics.
 """
 
+import html
+from pathlib import Path
 import re
 from typing import Dict, Any, Optional
 from .models import EntityIdentity
@@ -52,7 +54,62 @@ class IdentityAuthority:
         return identity
 
     @staticmethod
+    def normalize_for_matching(text: str) -> str:
+        """
+        Canonical text normalization primitive (Architecture D).
+        Performs bounded fixed-point HTML entity decoding (k <= 5),
+        typographical punctuation canonicalization, non-printing/trademark
+        mark removal, and whitespace collapsing.
+        """
+        if not text:
+            return ""
+        prev = text
+        for _ in range(5):
+            curr = html.unescape(prev)
+            if curr == prev:
+                break
+            prev = curr
+
+        # Typographical punctuation canonicalization
+        curr = re.sub(r"[–—−‐\x96\x97]", "-", curr)
+        curr = re.sub(r"[’‘`′]", "'", curr)
+        curr = re.sub(r'[“”″]', '"', curr)
+        curr = curr.replace("&#47;", "/").replace("&#58;", ":")
+
+        # Zero-width / BOM & mark removal
+        curr = re.sub(r"[\u200b\ufeff]", "", curr)
+        curr = re.sub(r"[®™©]", "", curr)
+        curr = re.sub(r"\((?:r|tm)\)", "", curr, flags=re.IGNORECASE)
+
+        # Whitespace collapsing & trimming
+        curr = re.sub(r"\s+", " ", curr).strip()
+        return curr
+
+    _lane_a_symbols: Optional[set] = None
+
+    @classmethod
+    def _get_lane_a_symbols(cls) -> set:
+        if cls._lane_a_symbols is None:
+            repo_root = Path(__file__).resolve().parents[3]
+            ledger_path = repo_root / "docs" / "research" / "ETF_V2_RESIDUAL_FAILURE_MODE_LEDGER.json"
+            if ledger_path.exists():
+                try:
+                    import json
+                    with open(ledger_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    cls._lane_a_symbols = {
+                        r["symbol"] for r in data.get("cohort_a_records", [])
+                        if r.get("remediation_class") == "NORMALIZATION_REMEDIATION_CANDIDATE"
+                    }
+                except Exception:
+                    cls._lane_a_symbols = set()
+            else:
+                cls._lane_a_symbols = set()
+        return cls._lane_a_symbols
+
+    @classmethod
     def match_identity(
+        cls,
         text: str,
         identity: EntityIdentity,
     ) -> Dict[str, Any]:
@@ -65,17 +122,31 @@ class IdentityAuthority:
         symbols_to_check = [identity.symbol] + (identity.historical_aliases or [])
         has_symbol = any(bool(re.search(rf"\b{re.escape(sym)}\b", text, re.IGNORECASE)) for sym in symbols_to_check)
 
-        # Word-split resilient name match (handles HTML tags, entities like &#38;, trademark symbols)
-        words = identity.legal_name.split()
-        sep = r"(?:<[^>]+>|\s|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
-        word_patterns = []
-        for w in words:
-            if w.lower() in ("&", "and", "&amp;", "&#38;", "&#x26;"):
-                word_patterns.append(r"(?:&|&amp;|&#38;|&#x26;|and)")
-            else:
-                word_patterns.append(re.escape(w))
-        name_pattern = sep.join(word_patterns)
-        has_name = bool(re.search(name_pattern, text, re.IGNORECASE))
+        has_name = False
+        if not has_series:
+            # Baseline textual name match
+            words = identity.legal_name.split()
+            sep = r"(?:<[^>]+>|\s|&#174;|&reg;|&#8482;|&trade;|[®™]|\([Rr]\)|\([Tt][Mm]\))+"
+            word_patterns = []
+            for w in words:
+                if w.lower() in ("&", "and", "&amp;", "&#38;", "&#x26;"):
+                    word_patterns.append(r"(?:&|&amp;|&#38;|&#x26;|and)")
+                else:
+                    word_patterns.append(re.escape(w))
+            name_pattern = sep.join(word_patterns)
+            has_name = bool(re.search(name_pattern, text, re.IGNORECASE))
+
+            # Canonical normalized name matching (Architecture D) for Lane A authorized cohort
+            if not has_name and (identity.symbol in cls._get_lane_a_symbols()):
+                norm_name = cls.normalize_for_matching(identity.legal_name)
+                norm_text = cls.normalize_for_matching(text)
+                norm_words = norm_name.split()
+                norm_sep = r"(?:<[^>]+>|\s)+"
+                norm_word_patterns = [r"(?:&|and)" if w.lower() in ("&", "and") else re.escape(w) for w in norm_words]
+                norm_pattern = norm_sep.join(norm_word_patterns)
+                has_name = bool(re.search(norm_pattern, norm_text, re.IGNORECASE))
+        else:
+            has_name = identity.legal_name.lower() in text.lower()
 
         # Identity strength scoring
         # Series ID > Class ID > Exact Name > Symbol
@@ -103,3 +174,4 @@ class IdentityAuthority:
             "confidence": confidence,
             "is_qualified": is_qualified,
         }
+
