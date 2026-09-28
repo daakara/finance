@@ -37,8 +37,8 @@ export default function PositionSizerModal({
   riskRewardRatio = 2.5,
   isStage4 = false,
   adv20d,
-  canSizeTrade = true,
-  isActionable = true,
+  canSizeTrade = false,
+  isActionable = false,
   decisionStateLabel,
 }: PositionSizerProps) {
   const [accountSize, setAccountSize] = useState<number>(() => {

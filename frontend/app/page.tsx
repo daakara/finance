@@ -295,7 +295,7 @@ function TerminalContent() {
                     cacheRef.current.clear();
                     setError(null);
                     setLoading(true);
-                    fetchAssetAnalytics(selectedSymbol, "1y", "1d")
+                    fetchAssetAnalytics(selectedSymbol, "1y", "1d", userRole)
                       .then((res) => {
                         setData(res);
                         setError(null);

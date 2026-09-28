@@ -27,7 +27,7 @@ interface RadarAsset {
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
-  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'PULLBACK_SUPPORT' | 'AWAITING_TRIGGER' | 'APPROACHING_TARGET' | 'UNKNOWN';
+  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'WAITING_PULLBACK' | 'AWAITING_TRIGGER' | 'APPROACHING_TARGET' | 'UNKNOWN';
   screeningStatus?: string;
   screeningGeometry?: string;
   decisionState?: string;
@@ -101,12 +101,12 @@ function RadarContent() {
           else if (rawStatus.includes("NEAR_PIVOT")) executionStatus = 'NEAR_PIVOT';
           else if (rawStatus.includes("APPROACHING")) executionStatus = 'APPROACHING_TARGET';
           else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
-          else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
+          else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'WAITING_PULLBACK';
 
           const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : (typeof gem.volumeDryUpPct === 'number' ? gem.volumeDryUpPct : null);
           const rvolVal = typeof gem.rvol === 'string' && gem.rvol !== 'N/A' ? gem.rvol : null;
           const rrVal = typeof gem.riskRewardRatio === 'number' ? gem.riskRewardRatio : null;
-          const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Consolidation Base'));
+          const stageStr = gem.setup_pattern || (gem.stage_phase ? `Stage ${gem.stage_phase} Base` : (executionStatus === 'IN_BUY_ZONE' ? 'Pivot Breakout' : 'Base Under Evaluation'));
 
           const cleanTicker = (gem.ticker || '').toUpperCase();
           const catalogEntry = MASTER_ASSET_CATALOG[cleanTicker];
@@ -127,7 +127,7 @@ function RadarContent() {
             categories: cat,
             sector: catalogEntry?.sector || "Broad Market",
             executionStatus,
-            screeningStatus: gem.screeningStatus || (executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus || 'PULLBACK_PENDING')),
+            screeningStatus: gem.screeningStatus || (executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN')),
             screeningGeometry: gem.screeningGeometry || (executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE'),
             decisionState: gem.decisionState || 'VALID_SETUP',
             decisionStateLabel: gem.decisionStateLabel || 'Discovery Candidate — Analyze for Trigger',
@@ -223,7 +223,7 @@ function RadarContent() {
     setIsOnDemandLoading(true);
     setOnDemandError(null);
     try {
-      const data = await fetchAssetAnalytics(clean, "1y", "1d");
+      const data = await fetchAssetAnalytics(clean, "1y", "1d", "SWING_TRADER");
       if (!data || !data.currentPrice || data.currentPrice <= 0) {
         setOnDemandError(`Asset "${clean}" is not recognized on the exchange tape or has zero trading history.`);
         return;
@@ -236,7 +236,7 @@ function RadarContent() {
       else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
       else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
       else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
-      else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'PULLBACK_SUPPORT';
+      else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'WAITING_PULLBACK';
 
       const cat: CanonicalRadarCategory[] = [];
       // On-demand asset is evaluated across single-asset execution and confluence engines.
@@ -254,7 +254,7 @@ function RadarContent() {
       }
 
       const rrVal = typeof opt?.risk_reward_ratio === 'number' ? opt.risk_reward_ratio : null;
-      const stageStr = opt?.setup_pattern || (opt?.stage_phase ? `Stage ${opt.stage_phase} Base` : 'Unclassified Base');
+      const stageStr = opt?.setup_pattern || (opt?.stage_phase ? `Stage ${opt.stage_phase} Base` : 'Base Under Evaluation');
 
       const dec = data.decisionTrace;
 
@@ -271,7 +271,7 @@ function RadarContent() {
         categories: cat,
         sector: "On-Demand Discovery",
         executionStatus,
-        screeningStatus: executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus || 'PULLBACK_PENDING'),
+        screeningStatus: executionStatus === 'IN_BUY_ZONE' ? 'SCREENING_ZONE' : (executionStatus !== 'UNKNOWN' ? executionStatus : 'UNKNOWN'),
         screeningGeometry: executionStatus === 'IN_BUY_ZONE' ? 'WITHIN_TOLERANCE' : 'OUTSIDE_TOLERANCE',
         decisionState: dec?.decisionState || (data.degradedMode ? "UNVERIFIED" : "VALID_SETUP"),
         decisionStateLabel: dec?.stateLabel || "Discovery Candidate — Analyze for Trigger",
@@ -469,7 +469,13 @@ function RadarContent() {
                       ? 'NEAR PIVOT BREAKOUT'
                       : heroAsset.executionStatus === 'APPROACHING_TARGET'
                       ? 'NEAR TARGET CORRIDOR'
-                      : 'PULLBACK PENDING'}
+                      : heroAsset.executionStatus === 'WAITING_PULLBACK'
+                      ? 'PULLBACK PENDING'
+                      : heroAsset.executionStatus === 'VOLUME_DRYUP'
+                      ? 'VOLUME DRY-UP'
+                      : heroAsset.executionStatus === 'AWAITING_TRIGGER'
+                      ? 'AWAITING TRIGGER'
+                      : 'UNKNOWN'}
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-slate-400">
                     Posture: Analyze for Trigger
@@ -848,7 +854,13 @@ function RadarContent() {
                       ? 'NEAR PIVOT BREAKOUT'
                       : isTarget
                       ? 'APPROACHING TARGET'
-                      : 'PULLBACK PENDING';
+                      : asset.executionStatus === 'WAITING_PULLBACK'
+                      ? 'PULLBACK PENDING'
+                      : asset.executionStatus === 'VOLUME_DRYUP'
+                      ? 'VOLUME DRY-UP'
+                      : asset.executionStatus === 'AWAITING_TRIGGER'
+                      ? 'AWAITING TRIGGER'
+                      : 'UNKNOWN';
 
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">

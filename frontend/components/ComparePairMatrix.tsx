@@ -9,9 +9,10 @@ interface ComparePairMatrixProps {
   symB: string;
   nameA: string;
   nameB: string;
+  userRole?: string;
 }
 
-export default function ComparePairMatrix({ symA, symB, nameA, nameB }: ComparePairMatrixProps) {
+export default function ComparePairMatrix({ symA, symB, nameA, nameB, userRole = "LONG_TERM" }: ComparePairMatrixProps) {
   const [dataA, setDataA] = useState<AnalyticsResponse | null>(null);
   const [dataB, setDataB] = useState<AnalyticsResponse | null>(null);
   const [priceA, setPriceA] = useState<number | null>(() => {
@@ -28,8 +29,8 @@ export default function ComparePairMatrix({ symA, symB, nameA, nameB }: CompareP
   useEffect(() => {
     let isMounted = true;
     Promise.all([
-      fetchAssetAnalytics(symA, "1mo", "1d").catch(() => null),
-      fetchAssetAnalytics(symB, "1mo", "1d").catch(() => null),
+      fetchAssetAnalytics(symA, "1mo", "1d", userRole).catch(() => null),
+      fetchAssetAnalytics(symB, "1mo", "1d", userRole).catch(() => null),
     ]).then(([resA, resB]) => {
       if (!isMounted) return;
       if (resA) {
@@ -44,7 +45,7 @@ export default function ComparePairMatrix({ symA, symB, nameA, nameB }: CompareP
     return () => {
       isMounted = false;
     };
-  }, [symA, symB]);
+  }, [symA, symB, userRole]);
 
   const scoresA = dataA?.factorScores || dataA?.dnaScores;
   const scoresB = dataB?.factorScores || dataB?.dnaScores;

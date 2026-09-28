@@ -447,7 +447,9 @@ export function generateQuantitativeInsight(
       ],
       reclaimMilestone: smaLevelRelation.reclaimMilestone,
       watchLevels: {
-        watchZone: (isPriceValid && !isExecutionSuppressed) ? `$${(safePrice * 0.975).toFixed(2)} – $${(safePrice * 1.052).toFixed(2)}` : "N/A (< 50 sessions)",
+        watchZone: (optimalExecution?.optimal_entry_min != null && optimalExecution?.optimal_entry_max != null && !isExecutionSuppressed)
+          ? `$${optimalExecution.optimal_entry_min.toFixed(2)} – $${optimalExecution.optimal_entry_max.toFixed(2)}`
+          : "Unavailable",
         keyLevel: sma50 !== undefined ? `$${(sma50 as number).toFixed(2)} (50D SMA)` : "N/A (< 50 sessions)",
         riskStop: (isPriceValid && !isExecutionSuppressed && stopLoss > 0) ? `$${stopLoss.toFixed(2)} (${(((stopLoss - safePrice) / safePrice) * 100).toFixed(1)}%)` : "N/A (< 50 sessions)",
       },
@@ -486,22 +488,17 @@ export function generateQuantitativeInsight(
             dimension: p.plainLabel || p.label,
             score: Math.round(p.score),
           }))
-        : isDegradedDecision
-        ? [
+        : [
             { dimension: "Chart Structure", score: 0 },
             { dimension: "Company Health", score: 0 },
             { dimension: "Smart Money Flow", score: 0 },
             { dimension: "Market Tailwinds", score: 0 },
-          ]
-        : [
-            { dimension: "Chart Structure", score: !isTrendAvailable ? 0 : (isStage4 ? 40 : 88) },
-            { dimension: "Company Health", score: !isHealthAvailable ? 0 : 80 },
-            { dimension: "Smart Money Flow", score: 0 },
-            { dimension: "Market Tailwinds", score: 60 },
           ],
       keyLevels: {
         currentPrice: safePrice,
-        watchZone: (isPriceValid && !isExecutionSuppressed) ? `$${(safePrice * 0.975).toFixed(0)} – $${(safePrice * 1.052).toFixed(0)}` : "N/A",
+        watchZone: (optimalExecution?.optimal_entry_min != null && optimalExecution?.optimal_entry_max != null && !isExecutionSuppressed)
+          ? `$${optimalExecution.optimal_entry_min.toFixed(2)} – $${optimalExecution.optimal_entry_max.toFixed(2)}`
+          : "Unavailable",
         sma50,
         stopLoss: !isExecutionSuppressed ? stopLoss : 0,
         stopLossPct: (isPriceValid && !isExecutionSuppressed && stopLoss > 0)
@@ -551,7 +548,7 @@ export function generateQuantitativeInsight(
     },
 
     primaryRiskSummary: (isTrendAvailable && stopLoss > 0)
-      ? `A close below $${stopLoss.toFixed(2)} (-7.0%) invalidates the technical setup.`
+      ? `A close below $${stopLoss.toFixed(2)}${isPriceValid ? ` (${(((stopLoss - safePrice) / safePrice) * 100).toFixed(1)}%)` : ""} invalidates the technical setup.`
       : "Risk levels suppressed: awaiting 50-session historical base.",
     whatWouldChangeAssessment: terminalState.whatWouldChangeAssessment,
     availableActions: terminalState.availableActions,

@@ -41,8 +41,8 @@ export default function PreFlightChecklistModal({
   breakoutPivot,
   isDistributionTrap,
   hasImminentEarnings = false,
-  vix = 15.4,
-  isActionable = true,
+  vix,
+  isActionable = false,
   decisionState,
 }: PreFlightChecklistModalProps) {
   const [copied, setCopied] = useState<boolean>(false);
@@ -155,7 +155,7 @@ export default function PreFlightChecklistModal({
 
   const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
-  const isActionableGranted = isActionable !== false;
+  const isActionableGranted = isActionable === true;
   const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isSmartMoneyPassed && isTrendPassed;
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
