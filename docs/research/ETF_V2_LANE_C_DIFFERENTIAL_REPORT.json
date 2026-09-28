@@ -1,0 +1,424 @@
+{
+  "gate": "ETF_V2_FORM_497K_IDENTITY_QUALIFICATION_POLICY_IMPLEMENTATION_GATE",
+  "policy_authority_layer": "ETF_V2_FORM_497K_STATUTORY_IDENTITY_QUALIFICATION_SUPPLEMENT",
+  "timestamp": "2026-09-28T16:06:00Z",
+  "total_population": 2884,
+  "lane_c_target_count": 76,
+  "lane_c_transitions": 71,
+  "lane_c_fail_closed_count": 5,
+  "lane_c_fail_closed_symbols": [
+    "BFOR",
+    "OEFA",
+    "OGIG",
+    "OUSA",
+    "OUSM"
+  ],
+  "lane_c_terminal_states": {
+    "NON_CONFIRMATORY": 47,
+    "CONFIRMATORY_EQUITY_INDEX": 13,
+    "SOURCE_AUTHORITY_UNRESOLVED": 5,
+    "AMBIGUOUS_MANDATE": 3,
+    "CONFIRMATORY_FIXED_INCOME_GOVERNMENT": 2,
+    "CONFIRMATORY_FIXED_INCOME_CREDIT": 2,
+    "CONFIRMATORY_EQUITY_SECTOR": 4
+  },
+  "lane_a_regressions": 0,
+  "lane_b_regressions": 0,
+  "lane_d_transitions": 0,
+  "pass_1_vs_pass_2_record_differences": 0,
+  "unexplained_out_of_cohort_changes": 0,
+  "regressions_in_previously_resolved": 0,
+  "source_authority_unresolved_pre": 77,
+  "source_authority_unresolved_post": 6,
+  "expected_final_unresolved_set": [
+    "BFOR",
+    "OEFA",
+    "OGIG",
+    "OUSA",
+    "OUSM",
+    "STXF"
+  ],
+  "actual_final_unresolved_set": [
+    "BFOR",
+    "OEFA",
+    "OGIG",
+    "OUSA",
+    "OUSM",
+    "STXF"
+  ],
+  "population_counts_internal": {
+    "NON_CONFIRMATORY": 1659,
+    "AMBIGUOUS_MANDATE": 98,
+    "CONFIRMATORY_EQUITY_INDEX": 784,
+    "CONFIRMATORY_EQUITY_SECTOR": 148,
+    "CONFIRMATORY_FIXED_INCOME_GOVERNMENT": 88,
+    "CONFIRMATORY_FIXED_INCOME_CREDIT": 101,
+    "SOURCE_AUTHORITY_UNRESOLVED": 6
+  },
+  "population_counts_canonical": {
+    "NON_CONFIRM": 1659,
+    "AMBIG": 98,
+    "EQ_INDEX": 784,
+    "EQ_SECTOR": 148,
+    "FI_GOV": 88,
+    "FI_CREDIT": 101,
+    "SOURCE_AUTH_UNRESOLVED": 6
+  },
+  "transitions": [
+    {
+      "symbol": "AIVC",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "BBAX",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "BBRE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "CPNJ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPNQ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPNS",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPSA",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPSJ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPSM",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "CPST",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "DVYA",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "DVYE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "EPP",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "EWA",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "EWC",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "EWG",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "EWH",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "AMBIGUOUS_MANDATE"
+    },
+    {
+      "symbol": "EWJ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "EWN",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "AMBIGUOUS_MANDATE"
+    },
+    {
+      "symbol": "EZA",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "AMBIGUOUS_MANDATE"
+    },
+    {
+      "symbol": "GMOV",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "GOP",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "GOVZ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_FIXED_INCOME_GOVERNMENT"
+    },
+    {
+      "symbol": "IGLB",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_FIXED_INCOME_CREDIT"
+    },
+    {
+      "symbol": "ILCB",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "ILCV",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "LYLD",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "MFIG",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "MSTW",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "NGIF",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "NITE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "NUDG",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "PFM",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "PICK",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "PKW",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_SECTOR"
+    },
+    {
+      "symbol": "PSR",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "QDTE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "QLTA",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_FIXED_INCOME_CREDIT"
+    },
+    {
+      "symbol": "QVOY",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "RSPF",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_SECTOR"
+    },
+    {
+      "symbol": "RSPN",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_SECTOR"
+    },
+    {
+      "symbol": "RSSE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SCHM",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SCJ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "SEIM",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SEIQ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SEIV",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SELV",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SIXH",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SIXL",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "SMIN",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_INDEX"
+    },
+    {
+      "symbol": "TACN",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TBUX",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TCAF",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TCAL",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TCHP",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TEQI",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TFLR",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TGRT",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TGRW",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TIPX",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_FIXED_INCOME_GOVERNMENT"
+    },
+    {
+      "symbol": "TNXT",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TOPW",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TOUS",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TPAY",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TSEP",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TTEQ",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "TVAL",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "XDIV",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    },
+    {
+      "symbol": "XSOE",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "CONFIRMATORY_EQUITY_SECTOR"
+    },
+    {
+      "symbol": "YSEP",
+      "from": "SOURCE_AUTHORITY_UNRESOLVED",
+      "to": "NON_CONFIRMATORY"
+    }
+  ]
+}

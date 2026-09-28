@@ -130,7 +130,7 @@ class ProspectusAuthorityResolver:
                     continue
 
                 raw_text = raw_bytes.decode("utf-8", errors="ignore")
-                match_res = IdentityAuthority.match_identity(raw_text, identity)
+                match_res = IdentityAuthority.match_identity(raw_text, identity, filing=f)
                 if not match_res["is_qualified"]:
                     continue
 
