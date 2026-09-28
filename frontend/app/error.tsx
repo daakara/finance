@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { captureException } from "../lib/observability/monitoring";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -11,6 +12,10 @@ interface ErrorProps {
 export default function ErrorBoundary({ error, reset }: ErrorProps) {
   useEffect(() => {
     console.error("[ARX Error Boundary Captured]:", error);
+    captureException(error, {
+      route: typeof window !== "undefined" ? window.location.pathname : undefined,
+      digest: error?.digest,
+    });
   }, [error]);
 
   const handleClearCache = () => {

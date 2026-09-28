@@ -13,6 +13,15 @@ from .context import (
 from .release import get_backend_release_sha, get_environment
 from .middleware import CorrelationMiddleware
 from .logging import configure_structured_logging, get_structured_logger
+from .monitoring import (
+    init_backend_monitoring,
+    capture_exception,
+    capture_message,
+    is_monitoring_enabled,
+    get_monitoring_adapter,
+    set_monitoring_adapter,
+    reset_monitoring_adapter,
+)
 
 __all__ = [
     "validate_or_generate_uuidv4",
@@ -25,4 +34,11 @@ __all__ = [
     "CorrelationMiddleware",
     "configure_structured_logging",
     "get_structured_logger",
+    "init_backend_monitoring",
+    "capture_exception",
+    "capture_message",
+    "is_monitoring_enabled",
+    "get_monitoring_adapter",
+    "set_monitoring_adapter",
+    "reset_monitoring_adapter",
 ]

@@ -24,6 +24,7 @@ from .context import (
     set_correlation_id,
     reset_correlation_id,
 )
+from .monitoring import capture_exception
 
 logger = logging.getLogger("arx.observability.http")
 
@@ -82,6 +83,18 @@ class CorrelationMiddleware(BaseHTTPMiddleware):
 
         except Exception as exc:
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            try:
+                capture_exception(
+                    exc,
+                    context={
+                        "route": request.url.path,
+                        "method": request.method,
+                        "request_id": req_id,
+                        "correlation_id": corr_id,
+                    },
+                )
+            except Exception:
+                pass
             try:
                 logger.error(
                     f"Unhandled exception during {request.method} {request.url.path}: {exc}",

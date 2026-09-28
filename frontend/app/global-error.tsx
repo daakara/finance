@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
+import { captureException } from "../lib/observability/monitoring";
 
 export default function GlobalError({
   error,
@@ -11,6 +12,11 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[ARX Global Root Error Captured]:", error);
+    captureException(error, {
+      route: typeof window !== "undefined" ? window.location.pathname : undefined,
+      digest: error?.digest,
+      boundary: "global-error",
+    });
   }, [error]);
 
   return (

@@ -16,10 +16,13 @@ from api.observability import (
     configure_structured_logging,
     get_request_id,
     get_correlation_id,
+    init_backend_monitoring,
+    capture_exception,
 )
 
-# Initialize canonical structured logging before other logger references
+# Initialize canonical structured logging and monitoring before other logger references
 configure_structured_logging(service_name="arx-api")
+init_backend_monitoring()
 logger = logging.getLogger("api.main")
 
 # Detect production vs. local development
@@ -178,6 +181,7 @@ app.add_middleware(RedisRateLimitMiddleware, default_limit=120, window_seconds=6
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled server error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    capture_exception(exc, context={"route": request.url.path, "method": request.method})
     headers = {}
     req_id = get_request_id()
     corr_id = get_correlation_id()
