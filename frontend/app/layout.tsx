@@ -5,6 +5,7 @@ import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
 import OfflineStatusBanner from "../components/OfflineStatusBanner";
 import MatomoTracker from "../components/MatomoTracker";
 import FinancialDisclaimer from "../components/FinancialDisclaimer";
+import ObservabilityProvider from "../components/ObservabilityProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.arxterminal.com"),
@@ -184,6 +185,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] antialiased transition-colors duration-200">
+        <ObservabilityProvider />
         <ExperienceModeProvider>
           <DataSourceProvider>
             <OfflineStatusBanner />

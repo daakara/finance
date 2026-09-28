@@ -23,13 +23,57 @@ export const API_BASE_URL = RAW_API_URL.endsWith("/api/v1")
   ? RAW_API_URL
   : `${RAW_API_URL.replace(/\/+$/, "")}/api/v1`;
 
+import {
+  getObservabilityHeaders,
+  type CorrelationOperation,
+  createCorrelationOperation,
+} from "./observability/correlation";
+
+export type { CorrelationOperation };
+export { createCorrelationOperation };
+
 // Shared secure request headers — X-API-Key is injected at build time from env var.
-// NEXT_PUBLIC_ARX_API_KEY is safe to be in the bundle; it's a read-only client key,
-// not a secret admin credential. The backend validates it but it does not grant write access.
+// Observability correlation headers (X-Request-ID, X-Correlation-ID, X-Client-Version)
+// are injected dynamically per request.
 const ARX_API_KEY = process.env.NEXT_PUBLIC_ARX_API_KEY || "";
-export const ARX_API_HEADERS: HeadersInit = ARX_API_KEY
-  ? { "Content-Type": "application/json", "X-API-Key": ARX_API_KEY }
-  : { "Content-Type": "application/json" };
+
+export function getArxApiHeaders(
+  operationOrId?: CorrelationOperation | string
+): Record<string, string> {
+  const base: Record<string, string> = { "Content-Type": "application/json" };
+  if (ARX_API_KEY) {
+    base["X-API-Key"] = ARX_API_KEY;
+  }
+  return {
+    ...base,
+    ...getObservabilityHeaders(operationOrId),
+  };
+}
+
+export const ARX_API_HEADERS: Record<string, string> = new Proxy({} as Record<string, string>, {
+  get: (_target, prop: string | symbol) => {
+    if (typeof prop === "string") {
+      return getArxApiHeaders()[prop];
+    }
+    return undefined;
+  },
+  ownKeys: () => Object.keys(getArxApiHeaders()),
+  getOwnPropertyDescriptor: (_target, prop: string | symbol) => {
+    if (typeof prop === "string") {
+      const headers = getArxApiHeaders();
+      if (prop in headers) {
+        return { value: headers[prop], writable: false, enumerable: true, configurable: true };
+      }
+    }
+    return undefined;
+  },
+  has: (_target, prop: string | symbol) => {
+    if (typeof prop === "string") {
+      return prop in getArxApiHeaders();
+    }
+    return false;
+  },
+});
 
 
 export interface CandleData {

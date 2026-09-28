@@ -11,7 +11,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit, journal
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 from api.middleware.api_key_auth import ApiKeyAuthMiddleware
+from api.observability import (
+    CorrelationMiddleware,
+    configure_structured_logging,
+    get_request_id,
+    get_correlation_id,
+    init_backend_monitoring,
+    capture_exception,
+)
 
+# Initialize canonical structured logging and monitoring before other logger references
+configure_structured_logging(service_name="arx-api")
+init_backend_monitoring()
 logger = logging.getLogger("api.main")
 
 # Detect production vs. local development
@@ -135,10 +146,21 @@ app.add_middleware(
         "X-Profile-Id",
         "Cache-Control",
         "Pragma",
+        "X-Request-ID",
+        "X-Correlation-ID",
+        "X-Client-Version",
+    ],
+    expose_headers=[
+        "X-Request-ID",
+        "X-Correlation-ID",
+        "X-Client-Version",
     ],
 )
 
-# 2. Backend Security Headers Middleware (HSTS, nosniff, frame protection)
+# 2. Correlation and Request Tracing Middleware
+app.add_middleware(CorrelationMiddleware)
+
+# 3. Backend Security Headers Middleware (HSTS, nosniff, frame protection)
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response: Response = await call_next(request)
@@ -149,16 +171,25 @@ async def add_security_headers(request: Request, call_next):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     return response
 
-# 3. API Key Authentication (enforced in production when ARX_API_KEY env var is set)
+# 4. API Key Authentication (enforced in production when ARX_API_KEY env var is set)
 app.add_middleware(ApiKeyAuthMiddleware)
 
-# 4. Distributed Redis & Memory-Fallback Rate Limiter Middleware
+# 5. Distributed Redis & Memory-Fallback Rate Limiter Middleware
 app.add_middleware(RedisRateLimitMiddleware, default_limit=120, window_seconds=60)
 
-# 5. Global Production Error Masking Exception Handler
+# 6. Global Production Error Masking Exception Handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled server error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    capture_exception(exc, context={"route": request.url.path, "method": request.method})
+    headers = {}
+    req_id = get_request_id()
+    corr_id = get_correlation_id()
+    if req_id:
+        headers["X-Request-ID"] = req_id
+    if corr_id:
+        headers["X-Correlation-ID"] = corr_id
+
     if IS_PRODUCTION:
         return JSONResponse(
             status_code=500,
@@ -166,6 +197,7 @@ async def global_exception_handler(request: Request, exc: Exception):
                 "error": "Internal Server Error",
                 "message": "An unexpected error occurred. Internal details have been masked for security.",
             },
+            headers=headers,
         )
     return JSONResponse(
         status_code=500,
@@ -174,6 +206,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "message": str(exc),
             "type": type(exc).__name__,
         },
+        headers=headers,
     )
 
 # 6. API Routers

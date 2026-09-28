@@ -8,7 +8,8 @@ export const onRequest = async (context: any): Promise<Response> => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization, Accept, Origin, User-Agent",
+        "Access-Control-Allow-Headers": "Content-Type, X-API-Key, Authorization, Accept, Origin, User-Agent, X-Request-ID, X-Correlation-ID, X-Client-Version",
+        "Access-Control-Expose-Headers": "X-Request-ID, X-Correlation-ID, X-Client-Version",
         "Access-Control-Max-Age": "86400",
       },
     });
@@ -32,7 +33,8 @@ export const onRequest = async (context: any): Promise<Response> => {
     const responseHeaders = new Headers(apiResponse.headers);
     responseHeaders.set("Access-Control-Allow-Origin", "*");
     responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, Accept, Origin, User-Agent");
+    responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, Accept, Origin, User-Agent, X-Request-ID, X-Correlation-ID, X-Client-Version");
+    responseHeaders.set("Access-Control-Expose-Headers", "X-Request-ID, X-Correlation-ID, X-Client-Version");
 
     // Strict Governance Security Invariant: Never allow Cloudflare edge to cache private evaluation endpoints
     if (path.startsWith("governance") || path.includes("/governance")) {
