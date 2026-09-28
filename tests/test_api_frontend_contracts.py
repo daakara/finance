@@ -26,8 +26,11 @@ client = TestClient(app)
 db = MarketDatabaseEngine(db_path=DB_PATH)
 
 
+from api.routes.analytics import get_exchange_calendar
+
+
 def _seed_contract_candles(symbol: str, count: int, base_price: float = 30.0):
-    """Seed candles in SQLite for contract validation."""
+    """Seed candles in SQLite for contract validation using valid exchange sessions."""
     db._init_schema()
     conn = db._get_connection()
     try:
@@ -35,10 +38,19 @@ def _seed_contract_candles(symbol: str, count: int, base_price: float = 30.0):
         conn.commit()
     finally:
         conn.close()
-    start_date = datetime.utcnow() - timedelta(days=count + 1)
+
+    cal = get_exchange_calendar("XNYS")
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    if cal is not None:
+        prev_sess = cal.previous_session(today_str) if cal.is_session(today_str) else cal.date_to_session(today_str, direction="previous")
+        loc = cal.sessions.get_loc(prev_sess)
+        session_dates = [s.strftime("%Y-%m-%d") for s in cal.sessions[loc - count + 1 : loc + 1]]
+    else:
+        end_d = datetime.utcnow().date() - timedelta(days=1)
+        session_dates = [d.strftime("%Y-%m-%d") for d in pd.bdate_range(end=end_d, periods=count)]
+
     records = []
-    for i in range(count):
-        d_str = (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
+    for i, d_str in enumerate(session_dates):
         records.append({
             "trade_date": d_str,
             "open": round(base_price + i * 0.1, 2),

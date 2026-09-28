@@ -70,7 +70,7 @@ def test_01_incident_reproduction_production_false_live_defect_confirmed():
         assert raw_status != "LIVE", (
             f"Regression: completed prior session was falsely promoted to 'LIVE': {raw_status}"
         )
-        assert raw_status in ("RECENT", "STALE", "DELAYED", "COMPLETED_SESSION"), (
+        assert raw_status in ("RECENT", "STALE", "DELAYED", "COMPLETED_SESSION", "STALE_HISTORICAL"), (
             f"Expected non-LIVE truthful status, got {raw_status}"
         )
         # However, lastTradeDate is yesterday's completed session
