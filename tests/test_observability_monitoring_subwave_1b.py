@@ -454,3 +454,252 @@ class TestFailOpenAndWrapperContract:
         reset_monitoring_adapter()
         # In default state without SENTRY_DSN, monitoring is disabled
         assert is_monitoring_enabled() is False
+
+
+# ============================================================================
+# 6. Global Service Attribution & Scope Remediation Tests (S01 - S12)
+# ============================================================================
+
+class TestGlobalServiceAttributionRemediation:
+    """
+    Verifies full compliance with ARX_OBSERVABILITY_GLOBAL_SERVICE_ATTRIBUTION_REMEDIATION_GATE.
+    S01 - S12 test matrix enforcing canonical backend service attribution (arx-api)
+    without globalizing request-scoped context, without cross-contamination, and
+    strictly without transmitting to any live provider.
+    """
+
+    def setup_method(self):
+        reset_monitoring_adapter()
+        import sentry_sdk
+        sentry_sdk.init()
+
+    def teardown_method(self):
+        reset_monitoring_adapter()
+        import sentry_sdk
+        sentry_sdk.init()
+
+    def test_s01_explicit_exception_contains_service_tag(self):
+        """S01: capture_exception() carries service=arx-api."""
+        import sentry_sdk
+        captured_events = []
+        adapter = SentryBackendAdapter()
+
+        def intercept_and_drop(event, hint):
+            sanitized = adapter._sanitize_event(event, hint)
+            if sanitized:
+                captured_events.append(sanitized)
+            return None
+
+        adapter.init({
+            "dsn": "https://fakekey@fakehost.invalid/12345",
+        })
+        sentry_sdk.get_client().options["before_send"] = intercept_and_drop
+
+        adapter.capture_exception(ValueError("Explicit exception test"))
+        assert len(captured_events) == 1
+        tags = captured_events[0].get("tags", {})
+        assert tags.get("service") == "arx-api"
+
+    def test_s02_automatic_logging_capture_contains_service_tag(self):
+        """S02: LoggingIntegration error log capture carries service=arx-api."""
+        import logging
+        import sentry_sdk
+
+        captured_events = []
+        adapter = SentryBackendAdapter()
+
+        def intercept_and_drop(event, hint):
+            sanitized = adapter._sanitize_event(event, hint)
+            if sanitized:
+                captured_events.append(sanitized)
+            return None
+
+        adapter.init({
+            "dsn": "https://fakekey@fakehost.invalid/12345",
+        })
+        sentry_sdk.get_client().options["before_send"] = intercept_and_drop
+
+        test_logger = logging.getLogger("yfinance.test")
+        test_logger.error("$CPRX: Delisted symbol test")
+
+        assert len(captured_events) == 1
+        tags = captured_events[0].get("tags", {})
+        assert tags.get("service") == "arx-api"
+
+    def test_s03_unhandled_framework_event_contains_service_tag(self):
+        """S03: Unhandled framework exception captured carries service=arx-api."""
+        import sentry_sdk
+
+        captured_events = []
+        adapter = SentryBackendAdapter()
+
+        def intercept_and_drop(event, hint):
+            sanitized = adapter._sanitize_event(event, hint)
+            if sanitized:
+                captured_events.append(sanitized)
+            return None
+
+        adapter.init({
+            "dsn": "https://fakekey@fakehost.invalid/12345",
+        })
+        sentry_sdk.get_client().options["before_send"] = intercept_and_drop
+
+        try:
+            raise RuntimeError("Unhandled synthetic framework runtime error")
+        except RuntimeError as e:
+            sentry_sdk.capture_exception(e)
+
+        assert len(captured_events) == 1
+        tags = captured_events[0].get("tags", {})
+        assert tags.get("service") == "arx-api"
+
+    def test_s04_sanitizer_preserves_service_and_scrubs_sensitive(self):
+        """S04: _sanitize_event retains service=arx-api while scrubbing sensitive data."""
+        adapter = SentryBackendAdapter()
+        raw_event = {
+            "tags": {
+                "service": "arx-api",
+                "custom_token": "secret_token_12345",
+                "portfolio_balance": "100000",
+            },
+            "user": {"ip_address": "192.168.1.100"},
+            "extra": {"api_key": "raw_secret"},
+        }
+        sanitized = adapter._sanitize_event(raw_event, {})
+        assert sanitized is not None
+        assert sanitized["tags"]["service"] == "arx-api"
+        assert sanitized["tags"]["custom_token"] == "[REDACTED]"
+        assert sanitized["tags"]["portfolio_balance"] == "[REDACTED]"
+        assert sanitized["user"]["ip_address"] == "[REDACTED]"
+        assert sanitized["extra"]["api_key"] == "[REDACTED]"
+
+    def test_s05_release_parity_unaffected_by_service_tagging(self):
+        """S05: Backend release SHA authority matches canonical release source."""
+        adapter = SentryBackendAdapter()
+        with patch("sentry_sdk.init") as mock_init:
+            adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+            _, kwargs = mock_init.call_args
+            assert kwargs["release"] == get_backend_release_sha()
+
+    def test_s06_environment_parity_unaffected_by_service_tagging(self):
+        """S06: Backend environment authority matches canonical environment."""
+        adapter = SentryBackendAdapter()
+        with patch("sentry_sdk.init") as mock_init:
+            adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+            _, kwargs = mock_init.call_args
+            assert kwargs["environment"] == get_environment()
+
+    def test_s07_request_id_locality_not_on_global_scope(self):
+        """S07: request_id is not on global scope and exists only in active request context."""
+        import sentry_sdk
+        adapter = SentryBackendAdapter()
+        adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+
+        global_scope = sentry_sdk.get_global_scope()
+        assert "request_id" not in global_scope._tags
+        assert global_scope._tags.get("service") == "arx-api"
+
+    def test_s08_correlation_id_locality_not_on_global_scope(self):
+        """S08: correlation_id is not on global scope and exists only in active request context."""
+        import sentry_sdk
+        adapter = SentryBackendAdapter()
+        adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+
+        global_scope = sentry_sdk.get_global_scope()
+        assert "correlation_id" not in global_scope._tags
+        assert global_scope._tags.get("service") == "arx-api"
+
+    def test_s09_concurrent_request_isolation_no_id_cross_contamination(self):
+        """S09: Interleaved requests do not cross-contaminate IDs while carrying service=arx-api."""
+        import sentry_sdk
+        adapter = SentryBackendAdapter()
+        captured_events = []
+
+        def intercept_and_drop(event, hint):
+            sanitized = adapter._sanitize_event(event, hint)
+            if sanitized:
+                captured_events.append(sanitized)
+            return None
+
+        adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+        sentry_sdk.get_client().options["before_send"] = intercept_and_drop
+
+        req_a, corr_a = str(uuid.uuid4()), str(uuid.uuid4())
+        req_b, corr_b = str(uuid.uuid4()), str(uuid.uuid4())
+
+        # Request A context
+        t_req_a = set_request_id(req_a)
+        t_corr_a = set_correlation_id(corr_a)
+        adapter.capture_exception(ValueError("Request A error"), context={"request_id": req_a, "correlation_id": corr_a})
+        reset_request_id(t_req_a)
+        reset_correlation_id(t_corr_a)
+
+        # Request B context
+        t_req_b = set_request_id(req_b)
+        t_corr_b = set_correlation_id(corr_b)
+        adapter.capture_exception(ValueError("Request B error"), context={"request_id": req_b, "correlation_id": corr_b})
+        reset_request_id(t_req_b)
+        reset_correlation_id(t_corr_b)
+
+        assert len(captured_events) == 2
+        ev_a, ev_b = captured_events[0], captured_events[1]
+
+        assert ev_a["tags"]["service"] == "arx-api"
+        assert ev_a["tags"]["request_id"] == req_a
+        assert ev_a["tags"]["correlation_id"] == corr_a
+
+        assert ev_b["tags"]["service"] == "arx-api"
+        assert ev_b["tags"]["request_id"] == req_b
+        assert ev_b["tags"]["correlation_id"] == corr_b
+
+        # Ensure no cross contamination
+        assert ev_a["tags"]["request_id"] != ev_b["tags"]["request_id"]
+        assert ev_a["tags"]["correlation_id"] != ev_b["tags"]["correlation_id"]
+
+    def test_s10_ambient_background_event_has_service_and_no_request_ids(self):
+        """S10: Background event without active request carries service=arx-api and no request IDs."""
+        import sentry_sdk
+        adapter = SentryBackendAdapter()
+        captured_events = []
+
+        def intercept_and_drop(event, hint):
+            sanitized = adapter._sanitize_event(event, hint)
+            if sanitized:
+                captured_events.append(sanitized)
+            return None
+
+        adapter.init({"dsn": "https://fakekey@fakehost.invalid/12345"})
+        sentry_sdk.get_client().options["before_send"] = intercept_and_drop
+
+        # Ensure no ambient context
+        assert get_request_id() is None
+        assert get_correlation_id() is None
+
+        adapter.capture_message("Background worker heartbeat", level="info")
+
+        assert len(captured_events) == 1
+        tags = captured_events[0].get("tags", {})
+        assert tags.get("service") == "arx-api"
+        assert "request_id" not in tags
+        assert "correlation_id" not in tags
+
+    def test_s11_frontend_isolation_preserved(self):
+        """S11: Backend service remediation has zero capability to mutate frontend service identity."""
+        frontend_adapter_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "frontend", "lib", "observability", "sentryAdapter.ts"
+        )
+        if os.path.exists(frontend_adapter_path):
+            with open(frontend_adapter_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            assert 'scope.setTag("service", "arx-frontend");' in content
+        assert SentryBackendAdapter().provider_name == "sentry"
+
+    def test_s12_no_provider_failsafe_preserved(self):
+        """S12: When Sentry is unconfigured or fails, application logic runs unaffected."""
+        adapter = SentryBackendAdapter()
+        assert adapter.init({"dsn": ""}) is False
+        assert adapter.is_enabled() is False
+
+        assert adapter.capture_exception(RuntimeError("Sample uncaptured error")) is None
+        assert adapter.capture_message("Sample uncaptured message") is None

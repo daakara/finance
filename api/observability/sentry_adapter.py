@@ -187,6 +187,9 @@ class SentryBackendAdapter(BackendMonitoringAdapter):
             if "tags" in event and isinstance(event["tags"], dict):
                 event["tags"] = recursive_sanitize(event["tags"])
 
+            # Invariant defense-in-depth: enforce backend logical service attribution
+            event.setdefault("tags", {})["service"] = "arx-api"
+
             # 4. Sanitize breadcrumbs
             if "breadcrumbs" in event and isinstance(event["breadcrumbs"], dict):
                 values = event["breadcrumbs"].get("values", [])
@@ -246,6 +249,9 @@ class SentryBackendAdapter(BackendMonitoringAdapter):
                 before_breadcrumb=self._sanitize_breadcrumb,
                 max_breadcrumbs=50,
             )
+
+            # Establish canonical global backend service attribution
+            sentry_sdk.get_global_scope().set_tag("service", "arx-api")
 
             self._sentry_sdk = sentry_sdk
             self._enabled = True
