@@ -189,15 +189,19 @@ def test_mandatory_negative_hollow_supplement():
     assert not res["is_qualified"], "Hollow supplement lacking mandate evidence must not qualify"
 
 
-def test_five_fail_closed_regression_cases(pipeline):
-    """Explicitly audits that BFOR, OEFA, OGIG, OUSA, OUSM remain fail-closed."""
-    fail_closed_symbols = ["BFOR", "OEFA", "OGIG", "OUSA", "OUSM"]
+def test_five_alps_targets_resolve_post_acquisition(pipeline):
+    """Post-acquisition regression contract for BFOR, OEFA, OGIG, OUSA, OUSM.
+
+    Verifies that the five ALPS targets resolve to the authoritative 485BPOS filing
+    (accession 0001398344-26-005876) with exact series binding and without sibling collision.
+    """
+    alps_symbols = ["BFOR", "OEFA", "OGIG", "OUSA", "OUSM"]
     ledger_path = REPO_ROOT / "docs" / "research" / "ETF_V2_FORM_497K_QUALIFICATION_LEDGER.json"
     with open(ledger_path, "r", encoding="utf-8") as f:
         ledger = json.load(f)
     census = {r["symbol"]: r for r in ledger["census_records"]}
-    
-    for sym in fail_closed_symbols:
+
+    for sym in alps_symbols:
         r = census[sym]
         ident = EntityIdentity(
             symbol=sym,
@@ -209,7 +213,27 @@ def test_five_fail_closed_regression_cases(pipeline):
         )
         candidates = pipeline.filing_universe.get_candidate_prospectuses(ident)
         auth = ProspectusAuthorityResolver.resolve_authority(candidates, ident)
-        assert auth is None, f"{sym} must remain fail-closed (got authority: {auth})"
+        assert auth is not None, f"{sym} must resolve to authoritative filing"
+        assert auth.filing.accession == "0001398344-26-005876", f"{sym} accession mismatch: {auth.filing.accession}"
+        assert auth.filing.form == "485BPOS", f"{sym} form mismatch: {auth.filing.form}"
+        assert auth.document_role == "BASE_STATUTORY_PROSPECTUS"
+        assert auth.raw_source_sha256 == "ef2b53fd99efa268a29d5cc924b915eebfac22cc29b0a35fcf5402270a53898d"
+        assert "has_series_id': True" in str(auth.qualification_evidence) or "has_series_id: True" in str(auth.qualification_evidence)
+
+
+def test_no_qualifying_authority_fails_closed(pipeline):
+    """Proves the fail-closed invariant: absence of qualifying target authority fails closed."""
+    ident_unmatched = EntityIdentity(
+        symbol="FAIL",
+        cik="0001414040",
+        series_id="S000099999",
+        class_id="C000099999",
+        legal_name="Non-Existent Series ETF",
+        historical_aliases=[]
+    )
+    candidates = pipeline.filing_universe.get_candidate_prospectuses(ident_unmatched)
+    auth = ProspectusAuthorityResolver.resolve_authority(candidates, ident_unmatched)
+    assert auth is None, "Entity without qualifying series/class authority must strictly fail closed"
 
 
 def test_stxf_hard_isolation(pipeline):
