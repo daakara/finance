@@ -4,10 +4,10 @@
   "source_manifest_path": "docs/research/ETF_V2_ACQUISITION_MANIFEST_V2.json",
   "source_manifest_sha256": "2fd9f04d9ca21601a373d465e3253d124596947413e51e699a84f45c7ed017c0",
   "snapshot_boundary": "2026-09-24T23:59:59Z",
-  "expected_unique_documents": 858,
-  "successful_unique_documents": 858,
+  "expected_unique_documents": 859,
+  "successful_unique_documents": 859,
   "failed_unique_documents": 0,
-  "acquired_new": 802,
+  "acquired_new": 803,
   "reused_existing_verified": 55,
   "generated_at": "2026-09-28T05:51:26Z",
   "provenance_records": [
@@ -25782,6 +25782,39 @@
       "source_acquisition_gate": "ETF_V2_ALPS_FIVE_TARGET_SOURCE_ACQUISITION_EXECUTION_GATE",
       "validation_status": "VALID",
       "error_message": ""
+    },
+    {
+      "accession": "0001592900-26-002347",
+      "primary_document": "strivestrv-stxf497etickerc.htm",
+      "form": "497",
+      "cik": "0001592900",
+      "series_ids": [
+        "S000077125"
+      ],
+      "class_ids": [
+        "C000237295"
+      ],
+      "target_symbols": [
+        "STXF"
+      ],
+      "authority_chain_roles": [
+        "TICKER_SUCCESSION_PROSPECTUS_SUPPLEMENT"
+      ],
+      "snapshot_boundary": "2026-09-24T23:59:59Z",
+      "acceptance_timestamp": "2026-05-28T13:00:57.000Z",
+      "sec_source_url": "https://www.sec.gov/Archives/edgar/data/1592900/000159290026002347/strivestrv-stxf497etickerc.htm",
+      "http_status": 200,
+      "acquisition_timestamp": "2026-09-29T20:33:21Z",
+      "byte_length": 4161,
+      "raw_sha256": "0f7688fb44a0f413555ea379d2d34904533f39c64bafab53ce29654f92d15cc9",
+      "local_path": "data/research/cache/sec_prospectus/0001592900-26-002347_strivestrv-stxf497etickerc.htm",
+      "acquisition_method": "ACQUIRED_NEW",
+      "retry_count": 0,
+      "validation_status": "VALID",
+      "error_message": "",
+      "predecessor_symbol": "STRV",
+      "effective_date": "2026-06-08",
+      "legal_name": "Strive 500 ETF"
     }
   ],
   "initial_full_acquisition_document_count": 857,

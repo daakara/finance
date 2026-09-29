@@ -2,9 +2,9 @@
   "manifest_version": "1.0.0",
   "manifest_authority": "SEC_TARGET_SOURCE_ACQUISITION_EXECUTION_GATE",
   "snapshot_boundary": "2026-09-24T23:59:59Z",
-  "corpus_document_count": 858,
+  "corpus_document_count": 859,
   "corpus_aggregate_identity_algorithm": "SHA256(join_newline('{accession}_{primary_document}:{raw_sha256}'))",
-  "corpus_aggregate_identity": "7a78fd45a04250b0a7e3c4745b2f3d93e7907ae0ab6fc00c1042bddadbecd612",
+  "corpus_aggregate_identity": "b186f39772763683b238609066a20c21cf1717f0d9dcf32741c47bc4dfeb27b6",
   "generated_at": "2026-09-28T05:51:26Z",
   "records": [
     {
@@ -19747,7 +19747,37 @@
       "raw_sha256": "ef2b53fd99efa268a29d5cc924b915eebfac22cc29b0a35fcf5402270a53898d",
       "byte_size": 8321114,
       "document_role": "BASE_STATUTORY_PROSPECTUS"
+    },
+    {
+      "accession": "0001592900-26-002347",
+      "primary_document": "strivestrv-stxf497etickerc.htm",
+      "form": "497",
+      "cik": "0001592900",
+      "filing_date": "2026-05-28",
+      "series_ids": [
+        "S000077125"
+      ],
+      "class_ids": [
+        "C000237295"
+      ],
+      "target_symbols": [
+        "STXF"
+      ],
+      "authority_chain_roles": [
+        "TICKER_SUCCESSION_PROSPECTUS_SUPPLEMENT"
+      ],
+      "acceptance_timestamp": "2026-05-28T13:00:57.000Z",
+      "byte_length": 4161,
+      "byte_size": 4161,
+      "raw_sha256": "0f7688fb44a0f413555ea379d2d34904533f39c64bafab53ce29654f92d15cc9",
+      "local_path": "data/research/cache/sec_prospectus/0001592900-26-002347_strivestrv-stxf497etickerc.htm",
+      "document_role": "TICKER_SUCCESSION_PROSPECTUS_SUPPLEMENT",
+      "validation_status": "VALID",
+      "predecessor_symbol": "STRV",
+      "effective_date": "2026-06-08",
+      "legal_name": "Strive 500 ETF"
     }
   ],
-  "total_sources": 858
+  "total_sources": 859,
+  "corpus_aggregate_identity_version": "1.0.0-append-ordered"
 }

@@ -59,6 +59,32 @@ from scripts.research.acquire_sec_source_corpus import (
     SNAPSHOT_BOUNDARY_ISO,
 )
 
+CANONICAL_859_AGGREGATE_SHA256 = "b186f39772763683b238609066a20c21cf1717f0d9dcf32741c47bc4dfeb27b6"
+OTHER_857_HASH = "88bead3bf7cb93489816029d9e2fb725666f4b66d4828117ea589d6bdf5846fd"
+
+DEFAULT_AUTHORIZED_EXCLUSION_IDENTITIES = {
+    ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+}
+DEFAULT_AUTHORIZED_EXCLUSION_COUNT = 1
+
+_CANONICAL_858_BASELINE_KEYS = [
+    (r["accession"], r["primary_document"])
+    for r in json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))["records"]
+    if (r["accession"], r["primary_document"]) != ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+]
+_CANONICAL_858_BASELINE_SET = set(_CANONICAL_858_BASELINE_KEYS)
+assert len(_CANONICAL_858_BASELINE_SET) == 858
+
+
+class UnknownExtensionIdentityError(ValueError):
+    """Raised when historical baseline reconstruction encounters uncertified/unauthorized extension records."""
+
+    def __init__(self, message: str, unknown_identities: list, accounting: dict):
+        super().__init__(message)
+        self.unknown_identities = unknown_identities
+        self.unknown_extension_identity = unknown_identities[0] if unknown_identities else None
+        self.accounting = accounting
+
 
 class TestSECSourceAcquisition(unittest.TestCase):
     """Test suite for SEC source acquisition engine."""
@@ -339,21 +365,116 @@ class TestSECSourceAcquisition(unittest.TestCase):
             "authority_chain_roles": ["TICKER_SUCCESSION_PROSPECTUS_SUPPLEMENT"],
         }
 
+    def _reconstruct_canonical_858_baseline(
+        self,
+        corpus_doc=None,
+        provenance_doc=None,
+        authorized_exclusions=None,
+    ):
+        """
+        Reconstructs the frozen canonical 858 baseline from canonical artifacts or
+        synthetic inputs by removing explicitly authorized extension identities,
+        enforcing hard fail-closed drift assertions, exact removal accounting,
+        and failing closed if any unauthorized/unknown extension records are present.
+        """
+        if corpus_doc is None:
+            corpus_doc = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+        if provenance_doc is None:
+            provenance_doc = json.loads(OUTPUT_PROVENANCE_LEDGER_PATH.read_text(encoding="utf-8"))
+
+        c_records = list(corpus_doc.get("records", []))
+        p_records = list(provenance_doc.get("provenance_records", []))
+
+        input_corpus_count = len(c_records)
+        input_provenance_count = len(p_records)
+
+        stxf_key = ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+
+        if authorized_exclusions is None:
+            authorized_set = set(DEFAULT_AUTHORIZED_EXCLUSION_IDENTITIES)
+        else:
+            authorized_set = set(authorized_exclusions)
+
+        c_keys = [(r["accession"], r["primary_document"]) for r in c_records]
+        p_keys = [(r["accession"], r["primary_document"]) for r in p_records]
+
+        removed_c = [k for k in c_keys if k in authorized_set]
+        removed_p = [k for k in p_keys if k in authorized_set]
+
+        rec_c = [r for r in c_records if (r["accession"], r["primary_document"]) not in authorized_set]
+        rec_p = [r for r in p_records if (r["accession"], r["primary_document"]) not in authorized_set]
+
+        rec_c_keys = [(r["accession"], r["primary_document"]) for r in rec_c]
+        rec_p_keys = [(r["accession"], r["primary_document"]) for r in rec_p]
+
+        unknown_extra_identities = [k for k in rec_c_keys if k not in _CANONICAL_858_BASELINE_SET]
+
+        actual_agg = compute_corpus_aggregate_identity(rec_c) if rec_c else ""
+        accounting = {
+            "input_record_count": input_corpus_count,
+            "authorized_exclusion_identities": sorted(list(authorized_set)),
+            "removed_identities": removed_c,
+            "unknown_extra_identities": unknown_extra_identities,
+            "output_record_count": len(rec_c),
+            "output_aggregate": actual_agg,
+            "removed_identities_subset_of_authorized_exclusions": set(removed_c).issubset(authorized_set),
+            "unknown_extra_identities_empty": len(unknown_extra_identities) == 0,
+            "implicit_tail_truncation_allowed": False,
+        }
+
+        # Fail closed on unknown future extension records
+        if unknown_extra_identities:
+            raise UnknownExtensionIdentityError(
+                f"FAIL_CLOSED: unknown extension identities detected: {unknown_extra_identities}",
+                unknown_identities=unknown_extra_identities,
+                accounting=accounting,
+            )
+
+        # Fail-closed drift protection assertions
+        if len(rec_c) != 858:
+            raise AssertionError(f"EXPECTED_858_CORPUS_COUNT failed: expected 858, got {len(rec_c)}")
+        if len(rec_p) != 858:
+            raise AssertionError(f"EXPECTED_858_PROVENANCE_COUNT failed: expected 858, got {len(rec_p)}")
+
+        if actual_agg != CANONICAL_858_AGGREGATE_SHA256:
+            raise AssertionError(
+                f"EXPECTED_858_AGGREGATE_SHA256 failed: expected {CANONICAL_858_AGGREGATE_SHA256}, got {actual_agg}"
+            )
+
+        # Key-set parity check between corpus and provenance
+        if set(rec_c_keys) != set(rec_p_keys):
+            raise AssertionError("Corpus and provenance key sets do not match")
+
+        # STXF must not be in reconstructed baseline
+        if stxf_key in set(rec_c_keys):
+            raise AssertionError("STXF record found in reconstructed corpus baseline")
+        if stxf_key in set(rec_p_keys):
+            raise AssertionError("STXF record found in reconstructed provenance baseline")
+
+        c_858 = dict(corpus_doc)
+        c_858["records"] = rec_c
+        c_858["corpus_document_count"] = 858
+        c_858["total_sources"] = 858
+        c_858["corpus_aggregate_identity"] = actual_agg
+
+        p_858 = dict(provenance_doc)
+        p_858["provenance_records"] = rec_p
+        p_858["expected_unique_documents"] = 858
+        p_858["successful_unique_documents"] = 858
+        p_858["current_canonical_provenance_membership_count"] = 858
+
+        return c_858, p_858, accounting
+
     def _build_consistent_858_fixture(self, tmpdir: Path):
         corpus_path = tmpdir / "corpus_manifest.json"
         ledger_path = tmpdir / "provenance_ledger.json"
         cache_dir = tmpdir / "cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
 
-        corpus_path.write_bytes(OUTPUT_CORPUS_MANIFEST_PATH.read_bytes())
-        self._write_857_deficit_ledger_fixture(ledger_path)
+        c_858, p_858, _ = self._reconstruct_canonical_858_baseline()
+        corpus_path.write_text(json.dumps(c_858, indent=2) + "\n", encoding="utf-8")
+        ledger_path.write_text(json.dumps(p_858, indent=2) + "\n", encoding="utf-8")
 
-        reconcile_missing_provenance(
-            corpus_manifest_path=corpus_path,
-            provenance_ledger_path=ledger_path,
-            authorized_reconciliation_records=[self._get_authoritative_alps_provenance_record()],
-            cache_dir=cache_dir,
-        )
         return corpus_path, ledger_path, cache_dir
 
     def test_a01_857_historical_full_acquisition_reproducible(self):
@@ -621,11 +742,11 @@ class TestSECSourceAcquisition(unittest.TestCase):
             "primary_document": "strivestrv-stxf497etickerc.htm",
             "raw_sha256": "0f7688fb44a0f413555ea379d2d34904533f39c64bafab53ce29654f92d15cc9",
         }
-        agg_859 = compute_corpus_aggregate_identity(c_doc["records"] + [stxf_rec])
-        self.assertEqual(
-            agg_859,
-            "b186f39772763683b238609066a20c21cf1717f0d9dcf32741c47bc4dfeb27b6",
-        )
+        c_858, _, _ = self._reconstruct_canonical_858_baseline()
+        agg_859_synthetic = compute_corpus_aggregate_identity(c_858["records"] + [stxf_rec])
+        agg_859_live = compute_corpus_aggregate_identity(c_doc["records"][:859])
+        self.assertEqual(agg_859_synthetic, CANONICAL_859_AGGREGATE_SHA256)
+        self.assertEqual(agg_859_live, CANONICAL_859_AGGREGATE_SHA256)
 
     def test_a14_mid_operation_failure_leaves_no_partial_canonical_state(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -688,7 +809,7 @@ class TestSECSourceAcquisition(unittest.TestCase):
             tmp = Path(tmpdir)
             ledger_path = tmp / "ledger_857.json"
             self._write_857_deficit_ledger_fixture(ledger_path)
-            c_doc = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+            c_doc, _, _ = self._reconstruct_canonical_858_baseline()
             p_doc_857 = json.loads(ledger_path.read_text(encoding="utf-8"))
             deficit = detect_legacy_provenance_deficit(c_doc, p_doc_857)
             self.assertTrue(deficit["deficit_detected"])
@@ -704,7 +825,8 @@ class TestSECSourceAcquisition(unittest.TestCase):
             tmp = Path(tmpdir)
             corpus_path = tmp / "corpus.json"
             ledger_path = tmp / "ledger.json"
-            corpus_path.write_bytes(OUTPUT_CORPUS_MANIFEST_PATH.read_bytes())
+            c_858, _, _ = self._reconstruct_canonical_858_baseline()
+            corpus_path.write_text(json.dumps(c_858, indent=2) + "\n", encoding="utf-8")
             self._write_857_deficit_ledger_fixture(ledger_path)
 
             orig_corpus_bytes = corpus_path.read_bytes()
@@ -726,7 +848,8 @@ class TestSECSourceAcquisition(unittest.TestCase):
             tmp = Path(tmpdir)
             corpus_path = tmp / "corpus.json"
             ledger_path = tmp / "ledger.json"
-            corpus_path.write_bytes(OUTPUT_CORPUS_MANIFEST_PATH.read_bytes())
+            c_858, _, _ = self._reconstruct_canonical_858_baseline()
+            corpus_path.write_text(json.dumps(c_858, indent=2) + "\n", encoding="utf-8")
             self._write_857_deficit_ledger_fixture(ledger_path)
             orig_corpus_bytes = corpus_path.read_bytes()
 
@@ -758,7 +881,8 @@ class TestSECSourceAcquisition(unittest.TestCase):
             tmp = Path(tmpdir)
             corpus_path = tmp / "corpus.json"
             ledger_path = tmp / "ledger.json"
-            corpus_path.write_bytes(OUTPUT_CORPUS_MANIFEST_PATH.read_bytes())
+            c_858, _, _ = self._reconstruct_canonical_858_baseline()
+            corpus_path.write_text(json.dumps(c_858, indent=2) + "\n", encoding="utf-8")
             self._write_857_deficit_ledger_fixture(ledger_path)
             orig_corpus_bytes = corpus_path.read_bytes()
             orig_ledger_bytes = ledger_path.read_bytes()
@@ -953,6 +1077,259 @@ class TestSECSourceAcquisition(unittest.TestCase):
             self.assertEqual(corpus_path.read_bytes(), orig_corpus_bytes)
             self.assertEqual(ledger_path.read_bytes(), orig_ledger_bytes)
             self.assertEqual(list(cache_dir.iterdir()), [])
+
+    def test_post_stxf_fixture_isolation_regression(self):
+        """
+        Exact Failure Regression Test:
+        1. starts from current canonical 859 / 859 state;
+        2. invokes historical 858 fixture builder;
+        3. verifies fixture contains 858 / 858;
+        4. verifies aggregate 7a78fd45...becd612;
+        5. verifies STXF is absent;
+        6. executes one representative incremental-acquisition test against that fixture;
+        7. verifies no LegacyProvenanceReconciliationRequiredError occurs solely because live production is now 859.
+        """
+        # 1. Starts from the current canonical 859 / 859 state
+        c_live = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+        p_live = json.loads(OUTPUT_PROVENANCE_LEDGER_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(len(c_live["records"]), 859)
+        self.assertEqual(len(p_live["provenance_records"]), 859)
+
+        # 2. Invokes historical 858 fixture builder
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            corpus_path, ledger_path, cache_dir = self._build_consistent_858_fixture(tmp)
+
+            # 3. Verifies fixture contains 858 / 858
+            c_fix = json.loads(corpus_path.read_text(encoding="utf-8"))
+            p_fix = json.loads(ledger_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(c_fix["records"]), 858)
+            self.assertEqual(len(p_fix["provenance_records"]), 858)
+
+            # 4. Verifies aggregate 7a78fd45...becd612
+            self.assertEqual(c_fix["corpus_aggregate_identity"], CANONICAL_858_AGGREGATE_SHA256)
+            self.assertEqual(
+                compute_corpus_aggregate_identity(c_fix["records"]),
+                CANONICAL_858_AGGREGATE_SHA256,
+            )
+
+            # 5. Verifies STXF is absent
+            stxf_key = ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+            self.assertNotIn(stxf_key, [(r["accession"], r["primary_document"]) for r in c_fix["records"]])
+            self.assertNotIn(
+                stxf_key,
+                [(r["accession"], r["primary_document"]) for r in p_fix["provenance_records"]],
+            )
+
+            # 6. Executes one representative incremental-acquisition test against that fixture
+            stxf_spec = self._get_stxf_fixture_spec()
+            forensic_src = Path(
+                "C:/Users/akara/.gemini/antigravity/brain/76b5f1e2-3d0d-4453-b0de-300603740e42/scratch/strivestrv-stxf497etickerc.htm"
+            )
+            raw_payload = forensic_src.read_bytes()
+            session = MagicMock()
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.content = raw_payload
+            session.get.return_value = mock_resp
+
+            with patch("time.sleep"):
+                res = acquire_authorized_documents(
+                    authorized_documents=[stxf_spec],
+                    corpus_manifest_path=corpus_path,
+                    provenance_ledger_path=ledger_path,
+                    cache_dir=cache_dir,
+                    session=session,
+                )
+
+            # 7. Verifies no LegacyProvenanceReconciliationRequiredError occurs solely because live production is now 859
+            self.assertEqual(res["status"], "EXTENDED")
+            self.assertEqual(res["corpus_document_count_before"], 858)
+            self.assertEqual(res["corpus_document_count_after"], 859)
+            self.assertEqual(res["provenance_record_count_before"], 858)
+            self.assertEqual(res["provenance_record_count_after"], 859)
+            self.assertEqual(
+                res["new_corpus_aggregate_sha256"],
+                CANONICAL_859_AGGREGATE_SHA256,
+            )
+
+    def test_unknown_860_extension_fails_closed(self):
+        """
+        H13: Synthetic 860 input with an unknown record returns failure (FAIL_CLOSED)
+        and reports that identity. Unknown record is never silently removed.
+        """
+        c_doc_860 = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+        p_doc_860 = json.loads(OUTPUT_PROVENANCE_LEDGER_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(len(c_doc_860["records"]), 859)
+        self.assertEqual(len(p_doc_860["provenance_records"]), 859)
+
+        syn_key = ("0009999999-26-000001", "unknown_synthetic.htm")
+        syn_corpus_rec = {
+            "accession": syn_key[0],
+            "primary_document": syn_key[1],
+            "form": "497",
+            "cik": "0009999999",
+            "applicable_target": "UNKNOWN_FUTURE",
+            "series_id": "S000099999",
+            "class_id": "C000099999",
+            "authority_chain_role": "MANDATE_RELEVANT_SUPPLEMENT",
+            "raw_sha256": hashlib.sha256(b"unknown-synthetic-etf-document").hexdigest(),
+        }
+        syn_prov_rec = dict(
+            syn_corpus_rec,
+            sec_source_url="https://www.sec.gov/Archives/edgar/data/9999999/000999999926000001/unknown_synthetic.htm",
+            http_status=200,
+            acquisition_timestamp="2026-10-01T00:00:00.000Z",
+            byte_length=100,
+            local_path=f"data/research/cache/sec_prospectus/{syn_key[0]}_{syn_key[1]}",
+            acquisition_method="INCREMENTAL_AUTHORIZED_SOURCE_ACQUISITION",
+            source_acquisition_gate="FUTURE_GATE",
+            validation_status="VALID",
+            error_message="",
+        )
+
+        c_doc_860["records"].append(syn_corpus_rec)
+        c_doc_860["corpus_document_count"] = 860
+        p_doc_860["provenance_records"].append(syn_prov_rec)
+        p_doc_860["expected_unique_documents"] = 860
+
+        with self.assertRaises(UnknownExtensionIdentityError) as ctx:
+            self._reconstruct_canonical_858_baseline(
+                corpus_doc=c_doc_860,
+                provenance_doc=p_doc_860,
+            )
+
+        exc = ctx.exception
+        self.assertEqual(exc.unknown_extension_identity, syn_key)
+        self.assertEqual(exc.accounting["unknown_extra_identities"], [syn_key])
+        self.assertEqual(
+            exc.accounting["removed_identities"],
+            [("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")],
+        )
+        self.assertFalse(exc.accounting["implicit_tail_truncation_allowed"])
+
+    def test_authorized_860_extension_reproduces_exact_858_baseline(self):
+        """
+        H14: When STXF and synthetic future identity are both supplied explicitly
+        as exclusions, explicit multi-extension reconstruction reproduces exact 858 baseline.
+        """
+        c_doc_860 = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+        p_doc_860 = json.loads(OUTPUT_PROVENANCE_LEDGER_PATH.read_text(encoding="utf-8"))
+
+        syn_key = ("0009999999-26-000001", "authorized_synthetic.htm")
+        syn_corpus_rec = {
+            "accession": syn_key[0],
+            "primary_document": syn_key[1],
+            "form": "497",
+            "cik": "0009999999",
+            "applicable_target": "SYNTHETIC",
+            "series_id": "S000099999",
+            "class_id": "C000099999",
+            "authority_chain_role": "MANDATE_RELEVANT_SUPPLEMENT",
+            "raw_sha256": hashlib.sha256(b"authorized-synthetic-etf-document").hexdigest(),
+        }
+        syn_prov_rec = dict(
+            syn_corpus_rec,
+            sec_source_url="https://www.sec.gov/Archives/edgar/data/9999999/000999999926000001/authorized_synthetic.htm",
+            http_status=200,
+            acquisition_timestamp="2026-10-01T00:00:00.000Z",
+            byte_length=100,
+            local_path=f"data/research/cache/sec_prospectus/{syn_key[0]}_{syn_key[1]}",
+            acquisition_method="INCREMENTAL_AUTHORIZED_SOURCE_ACQUISITION",
+            source_acquisition_gate="FUTURE_GATE",
+            validation_status="VALID",
+            error_message="",
+        )
+
+        c_doc_860["records"].append(syn_corpus_rec)
+        c_doc_860["corpus_document_count"] = 860
+        p_doc_860["provenance_records"].append(syn_prov_rec)
+        p_doc_860["expected_unique_documents"] = 860
+
+        stxf_key = ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+        explicit_exclusions = {stxf_key, syn_key}
+
+        c_858, p_858, accounting = self._reconstruct_canonical_858_baseline(
+            corpus_doc=c_doc_860,
+            provenance_doc=p_doc_860,
+            authorized_exclusions=explicit_exclusions,
+        )
+
+        self.assertEqual(len(c_858["records"]), 858)
+        self.assertEqual(len(p_858["provenance_records"]), 858)
+        self.assertEqual(c_858["corpus_aggregate_identity"], CANONICAL_858_AGGREGATE_SHA256)
+        self.assertEqual(
+            compute_corpus_aggregate_identity(c_858["records"]),
+            CANONICAL_858_AGGREGATE_SHA256,
+        )
+        self.assertTrue(accounting["removed_identities_subset_of_authorized_exclusions"])
+        self.assertEqual(accounting["unknown_extra_identities"], [])
+        self.assertFalse(accounting["implicit_tail_truncation_allowed"])
+        self.assertEqual(set(accounting["removed_identities"]), explicit_exclusions)
+        self.assertEqual(accounting["output_record_count"], 858)
+        self.assertEqual(accounting["output_aggregate"], CANONICAL_858_AGGREGATE_SHA256)
+
+        c_keys = {(r["accession"], r["primary_document"]) for r in c_858["records"]}
+        p_keys = {(r["accession"], r["primary_document"]) for r in p_858["provenance_records"]}
+        self.assertEqual(c_keys, p_keys)
+        self.assertNotIn(stxf_key, c_keys)
+        self.assertNotIn(syn_key, c_keys)
+
+    def test_reconstruct_canonical_858_accounting_and_invariants(self):
+        """
+        H03, H07, H08, H09, H10, H11, H12:
+        Verifies default reconstruction from current canonical state (859) produces
+        exact accounting, historical count = 858, exact aggregate, key set parity,
+        and excludes STXF.
+        """
+        stxf_key = ("0001592900-26-002347", "strivestrv-stxf497etickerc.htm")
+        c_858, p_858, accounting = self._reconstruct_canonical_858_baseline()
+
+        self.assertEqual(DEFAULT_AUTHORIZED_EXCLUSION_COUNT, 1)
+        self.assertEqual(accounting["input_record_count"], 859)
+        self.assertEqual(accounting["authorized_exclusion_identities"], [stxf_key])
+        self.assertEqual(accounting["removed_identities"], [stxf_key])
+        self.assertEqual(accounting["unknown_extra_identities"], [])
+        self.assertEqual(accounting["output_record_count"], 858)
+        self.assertEqual(accounting["output_aggregate"], CANONICAL_858_AGGREGATE_SHA256)
+        self.assertTrue(accounting["removed_identities_subset_of_authorized_exclusions"])
+        self.assertTrue(accounting["unknown_extra_identities_empty"])
+        self.assertFalse(accounting["implicit_tail_truncation_allowed"])
+
+        self.assertEqual(len(c_858["records"]), 858)
+        self.assertEqual(len(p_858["provenance_records"]), 858)
+        self.assertEqual(c_858["corpus_aggregate_identity"], CANONICAL_858_AGGREGATE_SHA256)
+
+        c_keys = {(r["accession"], r["primary_document"]) for r in c_858["records"]}
+        p_keys = {(r["accession"], r["primary_document"]) for r in p_858["provenance_records"]}
+        self.assertEqual(c_keys, p_keys)
+        self.assertNotIn(stxf_key, c_keys)
+        self.assertNotIn(stxf_key, p_keys)
+
+    def test_reconcile_857_aggregate_discrepancy(self):
+        """
+        H15, H16:
+        Resolves the 857 aggregate discrepancy:
+        - CANONICAL_857_AGGREGATE_SHA256 ('525155e195eb285624433bdd472d7a97c4a68ae724e7325dc88f5bc31519531c')
+          is the true canonical aggregate of the 857 full acquisition corpus records[:857].
+        - OTHER_857_HASH ('88bead3bf7cb93489816029d9e2fb725666f4b66d4828117ea589d6bdf5846fd')
+          is a spurious documentation defect from a previous gate report table and does not match any valid corpus state.
+        """
+        c_doc = json.loads(OUTPUT_CORPUS_MANIFEST_PATH.read_text(encoding="utf-8"))
+        records_857 = c_doc["records"][:857]
+        self.assertEqual(len(records_857), 857)
+
+        actual_857_agg = compute_corpus_aggregate_identity(records_857)
+        self.assertEqual(actual_857_agg, CANONICAL_857_AGGREGATE_SHA256)
+        self.assertEqual(
+            CANONICAL_857_AGGREGATE_SHA256,
+            "525155e195eb285624433bdd472d7a97c4a68ae724e7325dc88f5bc31519531c",
+        )
+        self.assertNotEqual(actual_857_agg, OTHER_857_HASH)
+        self.assertEqual(
+            OTHER_857_HASH,
+            "88bead3bf7cb93489816029d9e2fb725666f4b66d4828117ea589d6bdf5846fd",
+        )
 
 
 if __name__ == "__main__":
