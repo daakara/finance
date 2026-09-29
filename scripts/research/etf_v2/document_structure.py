@@ -93,6 +93,29 @@ class DocumentStructureEngine:
 
         return True
 
+    @staticmethod
+    def _find_matching_div_end(text: str, start_pos: int) -> int:
+        open_tag_end = text.find(">", start_pos)
+        if open_tag_end == -1:
+            return -1
+        pos = open_tag_end + 1
+        depth = 1
+        text_len = len(text)
+        while depth > 0 and pos < text_len:
+            next_open = text.find("<div", pos)
+            next_close = text.find("</div>", pos)
+            if next_close == -1:
+                break
+            if next_open != -1 and next_open < next_close:
+                depth += 1
+                pos = text.find(">", next_open) + 1
+                if pos == 0:
+                    break
+            else:
+                depth -= 1
+                pos = next_close + 6
+        return pos
+
     @classmethod
     def parse_structure(cls, raw_bytes: bytes, filename: str) -> DocumentStructure:
         """Parses raw document bytes into a DocumentStructure."""
@@ -128,15 +151,35 @@ class DocumentStructureEngine:
                         )
                     )
 
-        # Find Series ID occurrences
-        series_occurrences = {}
-        for m in re.finditer(r"\b(S\d{9})\b", raw_text):
+        # Tag-range detection for iXBRL header, XML context, and hidden metadata blocks
+        excluded_spans: List[Tuple[int, int]] = []
+        for m in re.finditer(r"<ix:header\b.*?</ix:header>", raw_text, re.DOTALL | re.IGNORECASE):
+            excluded_spans.append((m.start(), m.end()))
+        for m in re.finditer(r"<xbrli:context\b.*?</xbrli:context>", raw_text, re.DOTALL | re.IGNORECASE):
+            excluded_spans.append((m.start(), m.end()))
+        for m in re.finditer(r"<ix:hidden\b.*?</ix:hidden>", raw_text, re.DOTALL | re.IGNORECASE):
+            excluded_spans.append((m.start(), m.end()))
+        for m in re.finditer(r"<div\b[^>]*display:\s*none[^>]*>", raw_text, re.IGNORECASE):
+            end_pos = cls._find_matching_div_end(raw_text, m.start())
+            if end_pos != -1:
+                excluded_spans.append((m.start(), end_pos))
+
+        # Find Series ID occurrences (bounded regex matching plain and iXBRL Member forms)
+        series_occurrences: Dict[str, List[int]] = {}
+        SERIES_ID_PATTERN = r"(?<![A-Za-z0-9])(S\d{9})(?:Member)?(?![A-Za-z0-9])"
+        for m in re.finditer(SERIES_ID_PATTERN, raw_text):
             sid = m.group(1)
-            series_occurrences.setdefault(sid, []).append(m.start())
+            pos = m.start()
+            if not any(s <= pos < e for s, e in excluded_spans):
+                series_occurrences.setdefault(sid, []).append(pos)
 
         sections.sort(key=lambda s: s.start_offset)
 
-        return DocumentStructure(
+        # Extract authoritative EDGAR form from parsed <TYPE> metadata header
+        type_match = re.search(r"<TYPE>\s*([A-Za-z0-9\-\/]+)", raw_text[:2500], re.IGNORECASE)
+        edgar_form = type_match.group(1).upper() if type_match else ""
+
+        doc_struct = DocumentStructure(
             document_filename=filename,
             raw_text=raw_text,
             normalized_text=norm_text,
@@ -144,3 +187,5 @@ class DocumentStructureEngine:
             sections=sections,
             series_occurrences=series_occurrences,
         )
+        doc_struct.form = edgar_form
+        return doc_struct

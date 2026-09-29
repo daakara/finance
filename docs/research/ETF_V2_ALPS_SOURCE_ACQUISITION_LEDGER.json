@@ -1,0 +1,93 @@
+{
+  "gate": "ETF_V2_ALPS_FIVE_TARGET_SOURCE_ACQUISITION_EXECUTION_GATE",
+  "execution_mode": "TIER_3_TARGETED_SOURCE_ACQUISITION",
+  "timestamp": "2026-09-28T21:25:30Z",
+  "source_filing": {
+    "cik": "0001414040",
+    "registrant": "ALPS ETF Trust",
+    "accession": "0001398344-26-005876",
+    "form": "485BPOS",
+    "filing_date": "2026-03-30",
+    "acceptance_timestamp": "2026-03-30T21:34:03.000Z",
+    "primary_document": "fp0097939-1_485bposixbrl.htm",
+    "canonical_sec_url": "https://www.sec.gov/Archives/edgar/data/1414040/000139834426005876/fp0097939-1_485bposixbrl.htm",
+    "http_status": 200,
+    "raw_byte_count": 8321114,
+    "raw_sha256": "ef2b53fd99efa268a29d5cc924b915eebfac22cc29b0a35fcf5402270a53898d",
+    "local_path": "data/research/cache/sec_prospectus/0001398344-26-005876_fp0097939-1_485bposixbrl.htm",
+    "temporal_status": "PRE_BOUNDARY",
+    "source_identity_verdict": "PASS",
+    "source_integrity_verdict": "PASS"
+  },
+  "corpus_transition": {
+    "pre_record_count": 857,
+    "post_record_count": 858,
+    "pre_corpus_sha256": "525155e195eb285624433bdd472d7a97c4a68ae724e7325dc88f5bc31519531c",
+    "post_corpus_sha256": "7a78fd45a04250b0a7e3c4745b2f3d93e7907ae0ab6fc00c1042bddadbecd612"
+  },
+  "target_validation_results": {
+    "BFOR": {
+      "series_id": "S000040588",
+      "class_id": "C000125863",
+      "identity_bound": true,
+      "target_section_found": false,
+      "extracted_mandate_role": "PRINCIPAL_STRATEGY",
+      "extracted_mandate_length": 1748,
+      "extracted_mandate_completeness": "COMPLETE",
+      "target_authority_sufficient": false,
+      "sufficiency_verdict": "FAIL",
+      "diagnostic_note": "Frozen SeriesBoundaryResolver defaulted to SINGLE_FUND_WHOLE_DOCUMENT due to iXBRL contextRef naming; extracted ALPS Sector Dividend Dogs ETF mandate."
+    },
+    "OEFA": {
+      "series_id": "S000075795",
+      "class_id": "C000235087",
+      "identity_bound": true,
+      "target_section_found": false,
+      "extracted_mandate_role": "PRINCIPAL_STRATEGY",
+      "extracted_mandate_length": 1748,
+      "extracted_mandate_completeness": "COMPLETE",
+      "target_authority_sufficient": false,
+      "sufficiency_verdict": "FAIL",
+      "diagnostic_note": "Frozen SeriesBoundaryResolver defaulted to SINGLE_FUND_WHOLE_DOCUMENT due to iXBRL contextRef naming; extracted ALPS Sector Dividend Dogs ETF mandate."
+    },
+    "OGIG": {
+      "series_id": "S000075796",
+      "class_id": "C000235088",
+      "identity_bound": true,
+      "target_section_found": false,
+      "extracted_mandate_role": "PRINCIPAL_STRATEGY",
+      "extracted_mandate_length": 1748,
+      "extracted_mandate_completeness": "COMPLETE",
+      "target_authority_sufficient": false,
+      "sufficiency_verdict": "FAIL",
+      "diagnostic_note": "Frozen SeriesBoundaryResolver defaulted to SINGLE_FUND_WHOLE_DOCUMENT due to iXBRL contextRef naming; extracted ALPS Sector Dividend Dogs ETF mandate."
+    },
+    "OUSA": {
+      "series_id": "S000075797",
+      "class_id": "C000235089",
+      "identity_bound": true,
+      "target_section_found": false,
+      "extracted_mandate_role": "PRINCIPAL_STRATEGY",
+      "extracted_mandate_length": 1748,
+      "extracted_mandate_completeness": "COMPLETE",
+      "target_authority_sufficient": false,
+      "sufficiency_verdict": "FAIL",
+      "diagnostic_note": "Frozen SeriesBoundaryResolver defaulted to SINGLE_FUND_WHOLE_DOCUMENT due to iXBRL contextRef naming; extracted ALPS Sector Dividend Dogs ETF mandate."
+    },
+    "OUSM": {
+      "series_id": "S000075798",
+      "class_id": "C000235090",
+      "identity_bound": true,
+      "target_section_found": false,
+      "extracted_mandate_role": "PRINCIPAL_STRATEGY",
+      "extracted_mandate_length": 1748,
+      "extracted_mandate_completeness": "COMPLETE",
+      "target_authority_sufficient": false,
+      "sufficiency_verdict": "FAIL",
+      "diagnostic_note": "Frozen SeriesBoundaryResolver defaulted to SINGLE_FUND_WHOLE_DOCUMENT due to iXBRL contextRef naming; extracted ALPS Sector Dividend Dogs ETF mandate."
+    }
+  },
+  "one_document_sufficient_for_all_five": false,
+  "alps_five_shared_authority_certified": false,
+  "next_authorized_action": "ETF_V2_ALPS_FIVE_ACQUISITION_SET_RECONCILIATION_GATE"
+}

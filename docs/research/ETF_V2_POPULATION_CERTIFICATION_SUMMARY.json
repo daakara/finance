@@ -1,0 +1,36 @@
+{
+  "terminal_counts": {
+    "NON_CONFIRMATORY": 1658,
+    "AMBIGUOUS_MANDATE": 95,
+    "CONFIRMATORY_EQUITY_SECTOR": 161,
+    "CONFIRMATORY_EQUITY_INDEX": 780,
+    "CONFIRMATORY_FIXED_INCOME_GOVERNMENT": 88,
+    "CONFIRMATORY_FIXED_INCOME_CREDIT": 101,
+    "SOURCE_AUTHORITY_UNRESOLVED": 1
+  },
+  "causal_counts": {
+    "POLICY_NON_CONFIRMATORY": 1658,
+    "MANDATE_EXTRACTION": 85,
+    "CONFIRMATORY_PASS": 1130,
+    "POLICY_AMBIGUOUS": 10,
+    "SOURCE_AUTHORITY": 1
+  },
+  "prospectus_roles": {
+    "SUMMARY_PROSPECTUS": 2582,
+    "BASE_STATUTORY_PROSPECTUS": 250,
+    "PROSPECTUS_SUPPLEMENT": 51
+  },
+  "prospectus_forms": {
+    "497K": 2582,
+    "485BPOS": 247,
+    "485APOS": 3,
+    "497": 51
+  },
+  "nport_resolved": 2883,
+  "nport_unavailable": 0,
+  "ncen_resolved": 2883,
+  "ncen_unavailable": 0,
+  "post_boundary_count": 5302,
+  "golden_matches": 36,
+  "record_differences": 0
+}
