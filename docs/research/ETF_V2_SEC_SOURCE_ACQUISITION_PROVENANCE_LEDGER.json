@@ -4,8 +4,8 @@
   "source_manifest_path": "docs/research/ETF_V2_ACQUISITION_MANIFEST_V2.json",
   "source_manifest_sha256": "2fd9f04d9ca21601a373d465e3253d124596947413e51e699a84f45c7ed017c0",
   "snapshot_boundary": "2026-09-24T23:59:59Z",
-  "expected_unique_documents": 857,
-  "successful_unique_documents": 857,
+  "expected_unique_documents": 858,
+  "successful_unique_documents": 858,
   "failed_unique_documents": 0,
   "acquired_new": 802,
   "reused_existing_verified": 55,
@@ -25738,6 +25738,53 @@
       "retry_count": 0,
       "validation_status": "VALID",
       "error_message": ""
+    },
+    {
+      "accession": "0001398344-26-005876",
+      "primary_document": "fp0097939-1_485bposixbrl.htm",
+      "form": "485BPOS",
+      "cik": "0001414040",
+      "filing_date": "2026-03-30",
+      "series_ids": [
+        "S000040588",
+        "S000075795",
+        "S000075796",
+        "S000075797",
+        "S000075798"
+      ],
+      "class_ids": [
+        "C000125863",
+        "C000235087",
+        "C000235088",
+        "C000235089",
+        "C000235090"
+      ],
+      "target_symbols": [
+        "BFOR",
+        "OEFA",
+        "OGIG",
+        "OUSA",
+        "OUSM"
+      ],
+      "authority_chain_roles": [
+        "BASE_STATUTORY_PROSPECTUS"
+      ],
+      "snapshot_boundary": "2026-09-24T23:59:59Z",
+      "acceptance_timestamp": "2026-03-30T21:34:03.000Z",
+      "sec_source_url": "https://www.sec.gov/Archives/edgar/data/1414040/000139834426005876/fp0097939-1_485bposixbrl.htm",
+      "http_status": 200,
+      "acquisition_timestamp": "2026-09-28T21:25:30Z",
+      "byte_length": 8321114,
+      "raw_sha256": "ef2b53fd99efa268a29d5cc924b915eebfac22cc29b0a35fcf5402270a53898d",
+      "local_path": "data/research/cache/sec_prospectus/0001398344-26-005876_fp0097939-1_485bposixbrl.htm",
+      "acquisition_method": "HISTORICAL_PROVENANCE_RECONCILIATION",
+      "reconciliation_type": "HISTORICAL_PROVENANCE_RECONCILIATION",
+      "source_acquisition_gate": "ETF_V2_ALPS_FIVE_TARGET_SOURCE_ACQUISITION_EXECUTION_GATE",
+      "validation_status": "VALID",
+      "error_message": ""
     }
-  ]
+  ],
+  "initial_full_acquisition_document_count": 857,
+  "historical_provenance_reconciled_count": 1,
+  "current_canonical_provenance_membership_count": 858
 }
