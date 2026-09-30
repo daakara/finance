@@ -1,0 +1,369 @@
+{
+  "fixture_version": "wave3_v1",
+  "description": "Deterministic air-gapped authority fixtures for Wave 3 GlobalETFIdentityResolver verification",
+  "us_sec_entries": [
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:US_SEC:US:S000004310",
+        "legal_fund_name": "Vanguard Index Funds - Vanguard Total Stock Market ETF",
+        "domicile_iso2": "US",
+        "regulatory_jurisdiction": "US_SEC",
+        "ucits_compliant": false,
+        "issuer_name": "Vanguard Index Funds",
+        "umbrella_name": "Vanguard Index Funds",
+        "cik": "0000036405",
+        "sec_series_id": "S000004310"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:SEC_CLASS_ID:C000011906",
+        "instrument_id": "etfi:v1:US_SEC:US:S000004310",
+        "isin": "US9229087690",
+        "share_class_name": "Vanguard Total Stock Market ETF Shares",
+        "distribution_policy": "DISTRIBUTING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED",
+        "sec_class_id": "C000011906"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:ARCX:VTI:USD",
+          "share_class_id": "etfs:v1:SEC_CLASS_ID:C000011906",
+          "venue_mic": "ARCX",
+          "venue_name": "NYSE Arca",
+          "ticker": "VTI",
+          "trading_currency": "USD",
+          "primary_listing": true
+        }
+      ],
+      "wkn_codes": [],
+      "provenance": {
+        "adapter_id": "us_sec_statutory_adapter",
+        "authority_jurisdiction": "US_SEC",
+        "authority_source": "US_SEC_EDGAR_STATUTORY",
+        "source_record_id": "SEC:0000036405:S000004310:C000011906",
+        "source_document_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:US_SEC:US:S000072011",
+        "legal_fund_name": "Global X Funds - Global X Blockchain ETF",
+        "domicile_iso2": "US",
+        "regulatory_jurisdiction": "US_SEC",
+        "ucits_compliant": false,
+        "issuer_name": "Global X Funds",
+        "umbrella_name": "Global X Funds",
+        "cik": "0001432353",
+        "sec_series_id": "S000072011"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:SEC_CLASS_ID:C000227599",
+        "instrument_id": "etfi:v1:US_SEC:US:S000072011",
+        "isin": "US37954Y3430",
+        "share_class_name": "Global X Blockchain ETF US Shares",
+        "distribution_policy": "DISTRIBUTING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED",
+        "sec_class_id": "C000227599"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:XNAS:BKCH:USD",
+          "share_class_id": "etfs:v1:SEC_CLASS_ID:C000227599",
+          "venue_mic": "XNAS",
+          "venue_name": "NASDAQ",
+          "ticker": "BKCH",
+          "trading_currency": "USD",
+          "primary_listing": true
+        },
+        {
+          "listing_id": "etfl:v1:ARCX:SHRT:USD",
+          "share_class_id": "etfs:v1:SEC_CLASS_ID:C000227599",
+          "venue_mic": "ARCX",
+          "venue_name": "NYSE Arca",
+          "ticker": "SHRT",
+          "trading_currency": "USD",
+          "primary_listing": false
+        }
+      ],
+      "wkn_codes": [],
+      "provenance": {
+        "adapter_id": "us_sec_statutory_adapter",
+        "authority_jurisdiction": "US_SEC",
+        "authority_source": "US_SEC_EDGAR_STATUTORY",
+        "source_record_id": "SEC:0001432353:S000072011:C000227599",
+        "source_document_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+      }
+    }
+  ],
+  "eu_ucits_entries": [
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:EU_UCITS:IE:C468159",
+        "legal_fund_name": "Global X ETFs ICAV - Global X Blockchain UCITS ETF",
+        "domicile_iso2": "IE",
+        "regulatory_jurisdiction": "EU_UCITS",
+        "ucits_compliant": true,
+        "issuer_name": "Global X Management Company (Europe) Limited",
+        "umbrella_name": "Global X ETFs ICAV",
+        "lei": "635400L4J5K6M7N8P9Q0",
+        "national_register_id": "C468159"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:ISIN:IE000XAGSCY5",
+        "instrument_id": "etfi:v1:EU_UCITS:IE:C468159",
+        "isin": "IE000XAGSCY5",
+        "share_class_name": "USD Accumulating Share Class",
+        "distribution_policy": "ACCUMULATING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:XETR:BLCH:EUR",
+          "share_class_id": "etfs:v1:ISIN:IE000XAGSCY5",
+          "venue_mic": "XETR",
+          "venue_name": "Xetra",
+          "ticker": "BLCH",
+          "trading_currency": "EUR",
+          "primary_listing": true,
+          "local_code": "A3E40R"
+        },
+        {
+          "listing_id": "etfl:v1:TGAT:BLCH:EUR",
+          "share_class_id": "etfs:v1:ISIN:IE000XAGSCY5",
+          "venue_mic": "TGAT",
+          "venue_name": "Tradegate",
+          "ticker": "BLCH",
+          "trading_currency": "EUR",
+          "primary_listing": false,
+          "local_code": "A3E40R"
+        },
+        {
+          "listing_id": "etfl:v1:XLON:BLCH:USD",
+          "share_class_id": "etfs:v1:ISIN:IE000XAGSCY5",
+          "venue_mic": "XLON",
+          "venue_name": "London Stock Exchange",
+          "ticker": "BLCH",
+          "trading_currency": "USD",
+          "primary_listing": false,
+          "local_code": "A3E40R"
+        }
+      ],
+      "wkn_codes": ["A3E40R"],
+      "provenance": {
+        "adapter_id": "eu_ucits_statutory_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "CBI_UCITS_REGISTER_AND_ISSUER_PROSPECTUS",
+        "source_record_id": "CBI:C468159:IE000XAGSCY5",
+        "source_document_hash": "d1a002495057d6e6241d46e8d44f66d114d20f9e532b51cf0cf4b823df44920f"
+      }
+    },
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:EU_UCITS:IE:C398100",
+        "legal_fund_name": "iShares III plc - iShares Core MSCI World UCITS ETF",
+        "domicile_iso2": "IE",
+        "regulatory_jurisdiction": "EU_UCITS",
+        "ucits_compliant": true,
+        "issuer_name": "BlackRock Asset Management Ireland Limited",
+        "umbrella_name": "iShares III plc",
+        "national_register_id": "C398100"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:ISIN:IE00B4L5Y983",
+        "instrument_id": "etfi:v1:EU_UCITS:IE:C398100",
+        "isin": "IE00B4L5Y983",
+        "share_class_name": "iShares Core MSCI World UCITS ETF USD (Acc)",
+        "distribution_policy": "ACCUMULATING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:XETR:EUNL:EUR",
+          "share_class_id": "etfs:v1:ISIN:IE00B4L5Y983",
+          "venue_mic": "XETR",
+          "venue_name": "Xetra",
+          "ticker": "EUNL",
+          "trading_currency": "EUR",
+          "primary_listing": true,
+          "local_code": "A0RPWH"
+        },
+        {
+          "listing_id": "etfl:v1:XLON:SWDA:USD",
+          "share_class_id": "etfs:v1:ISIN:IE00B4L5Y983",
+          "venue_mic": "XLON",
+          "venue_name": "London Stock Exchange",
+          "ticker": "SWDA",
+          "trading_currency": "USD",
+          "primary_listing": false,
+          "local_code": "A0RPWH"
+        },
+        {
+          "listing_id": "etfl:v1:XPAR:SHRT:EUR",
+          "share_class_id": "etfs:v1:ISIN:IE00B4L5Y983",
+          "venue_mic": "XPAR",
+          "venue_name": "Euronext Paris",
+          "ticker": "SHRT",
+          "trading_currency": "EUR",
+          "primary_listing": false,
+          "local_code": "A0RPWH"
+        }
+      ],
+      "wkn_codes": ["A0RPWH"],
+      "provenance": {
+        "adapter_id": "eu_ucits_statutory_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "CBI_UCITS_REGISTER",
+        "source_record_id": "CBI:C398100:IE00B4L5Y983",
+        "source_document_hash": "3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    },
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:EU_UCITS:IE:C398100",
+        "legal_fund_name": "iShares III plc - iShares Core MSCI World UCITS ETF",
+        "domicile_iso2": "IE",
+        "regulatory_jurisdiction": "EU_UCITS",
+        "ucits_compliant": true,
+        "issuer_name": "BlackRock Asset Management Ireland Limited",
+        "umbrella_name": "iShares III plc",
+        "national_register_id": "C398100"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:ISIN:IE00B0M62Q58",
+        "instrument_id": "etfi:v1:EU_UCITS:IE:C398100",
+        "isin": "IE00B0M62Q58",
+        "share_class_name": "iShares Core MSCI World UCITS ETF USD (Dist)",
+        "distribution_policy": "DISTRIBUTING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:XETR:IQQW:EUR",
+          "share_class_id": "etfs:v1:ISIN:IE00B0M62Q58",
+          "venue_mic": "XETR",
+          "venue_name": "Xetra",
+          "ticker": "IQQW",
+          "trading_currency": "EUR",
+          "primary_listing": true,
+          "local_code": "A0HGV0"
+        },
+        {
+          "listing_id": "etfl:v1:XLON:IWRD:GBP",
+          "share_class_id": "etfs:v1:ISIN:IE00B0M62Q58",
+          "venue_mic": "XLON",
+          "venue_name": "London Stock Exchange",
+          "ticker": "IWRD",
+          "trading_currency": "GBP",
+          "primary_listing": false,
+          "local_code": "A0HGV0"
+        }
+      ],
+      "wkn_codes": ["A0HGV0"],
+      "provenance": {
+        "adapter_id": "eu_ucits_statutory_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "CBI_UCITS_REGISTER",
+        "source_record_id": "CBI:C398100:IE00B0M62Q58",
+        "source_document_hash": "4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    },
+    {
+      "instrument": {
+        "canonical_instrument_id": "etfi:v1:EU_UCITS:LU:O00009876",
+        "legal_fund_name": "Xtrackers MSCI World Swap UCITS ETF",
+        "domicile_iso2": "LU",
+        "regulatory_jurisdiction": "EU_UCITS",
+        "ucits_compliant": true,
+        "issuer_name": "DWS Investment S.A.",
+        "umbrella_name": "Xtrackers",
+        "national_register_id": "O00009876"
+      },
+      "share_class": {
+        "share_class_id": "etfs:v1:ISIN:LU0274208692",
+        "instrument_id": "etfi:v1:EU_UCITS:LU:O00009876",
+        "isin": "LU0274208692",
+        "share_class_name": "Xtrackers® MSCI World Swap UCITS ETF 1C",
+        "distribution_policy": "ACCUMULATING",
+        "base_currency": "USD",
+        "hedging_policy": "UNHEDGED"
+      },
+      "listings": [
+        {
+          "listing_id": "etfl:v1:XETR:DBXW:EUR",
+          "share_class_id": "etfs:v1:ISIN:LU0274208692",
+          "venue_mic": "XETR",
+          "venue_name": "Xetra",
+          "ticker": "DBXW",
+          "trading_currency": "EUR",
+          "primary_listing": true,
+          "local_code": "DBX1MW"
+        }
+      ],
+      "wkn_codes": ["DBX1MW"],
+      "provenance": {
+        "adapter_id": "eu_ucits_statutory_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "CSSF_LUX_UCITS_LIST",
+        "source_record_id": "CSSF:O00009876:LU0274208692",
+        "source_document_hash": "5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    }
+  ],
+  "broker_alias_records": [
+    {
+      "broker_source_namespace": "DE_BROKER_XETR_FEED",
+      "raw_broker_alias": "GLXETFS-BLOCKCH DLA",
+      "normalized_broker_alias": "GLXETFS-BLOCKCH DLA",
+      "target_share_class_id": "etfs:v1:ISIN:IE000XAGSCY5",
+      "target_listing_id": "etfl:v1:XETR:BLCH:EUR",
+      "effective_from": "2022-01-21",
+      "effective_to": null,
+      "active": true,
+      "provenance": {
+        "adapter_id": "generic_broker_alias_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "BROKER_ALIAS_MAP:DE_BROKER_XETR_FEED",
+        "source_record_id": "ALIAS:DE_BROKER_XETR_FEED:GLXETFS-BLOCKCH_DLA",
+        "source_document_hash": "6666666666666666666666666666666666666666666666666666666666666666"
+      }
+    },
+    {
+      "broker_source_namespace": "DE_BROKER_XETR_FEED",
+      "raw_broker_alias": "ISHARES-MSCI-WORLD-USD",
+      "normalized_broker_alias": "ISHARES-MSCI-WORLD-USD",
+      "target_share_class_id": "etfs:v1:ISIN:IE00B4L5Y983",
+      "target_listing_id": null,
+      "effective_from": "2020-01-01",
+      "effective_to": null,
+      "active": true,
+      "provenance": {
+        "adapter_id": "generic_broker_alias_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "BROKER_ALIAS_MAP:DE_BROKER_XETR_FEED",
+        "source_record_id": "ALIAS:DE_BROKER_XETR_FEED:ISHARES_WORLD_ACC",
+        "source_document_hash": "7777777777777777777777777777777777777777777777777777777777777777"
+      }
+    },
+    {
+      "broker_source_namespace": "DE_BROKER_XETR_FEED",
+      "raw_broker_alias": "ISHARES-MSCI-WORLD-USD",
+      "normalized_broker_alias": "ISHARES-MSCI-WORLD-USD",
+      "target_share_class_id": "etfs:v1:ISIN:IE00B0M62Q58",
+      "target_listing_id": null,
+      "effective_from": "2020-01-01",
+      "effective_to": null,
+      "active": true,
+      "provenance": {
+        "adapter_id": "generic_broker_alias_adapter",
+        "authority_jurisdiction": "EU_UCITS",
+        "authority_source": "BROKER_ALIAS_MAP:DE_BROKER_XETR_FEED",
+        "source_record_id": "ALIAS:DE_BROKER_XETR_FEED:ISHARES_WORLD_DIST",
+        "source_document_hash": "8888888888888888888888888888888888888888888888888888888888888888"
+      }
+    }
+  ]
+}
