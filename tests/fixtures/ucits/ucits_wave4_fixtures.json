@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Deterministic test fixtures for ETF V2 Wave 4 UCITS Authority Acquisition",
+  "fixtures": {
+    "successful_acquisition": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/prospectus.pdf",
+      "effective_date": "2026-01-01",
+      "simulated_http_status": 200,
+      "simulated_body_type": "PDF",
+      "simulated_body_text": "%PDF-1.4\n1 0 obj\n<< /Title (Core MSCI World UCITS ETF) /Author (iShares III plc) >>\nendobj\nstream\nSub-Fund: iShares Core MSCI World UCITS ETF\nShare Class: iShares Core MSCI World UCITS ETF USD (Acc)\nISIN: IE00B4L5Y983\nCurrency: USD\nAccumulating\nendstream\n%%EOF\n"
+    },
+    "no_match_404": {
+      "share_class_isin": "IE00B9999999",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B9999999/prospectus.pdf",
+      "simulated_http_status": 404,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "404 Not Found"
+    },
+    "unsupported_jurisdiction": {
+      "share_class_isin": "FR0010315770",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "FR",
+      "primary_regulator": "AMF France",
+      "source_url": "https://amf-france.org/funds/FR0010315770.pdf"
+    },
+    "invalid_isin_checksum": {
+      "share_class_isin": "IE00B4L5Y989",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y989/prospectus.pdf"
+    },
+    "authority_unavailable_503": {
+      "share_class_isin": "LU0274208692",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "LU",
+      "primary_regulator": "CSSF",
+      "source_url": "https://edesk.apps.cssf.lu/statutory/LU0274208692/prospectus.pdf",
+      "simulated_http_status": 503,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "503 Service Unavailable"
+    },
+    "access_denied_403": {
+      "share_class_isin": "IE00B5BMR087",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B5BMR087/prospectus.pdf",
+      "simulated_http_status": 403,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "403 Forbidden"
+    },
+    "rate_limited_429": {
+      "share_class_isin": "IE00BK5BQT80",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00BK5BQT80/prospectus.pdf",
+      "simulated_http_status": 429,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "429 Too Many Requests"
+    },
+    "timeout_error": {
+      "share_class_isin": "IE00B3RBWM25",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B3RBWM25/prospectus.pdf",
+      "simulated_exception": "TIMEOUT"
+    },
+    "retrieval_failure": {
+      "share_class_isin": "LU1681045370",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "LU",
+      "primary_regulator": "CSSF",
+      "source_url": "https://edesk.apps.cssf.lu/statutory/LU1681045370/prospectus.pdf",
+      "simulated_exception": "SOCKET_ERROR"
+    },
+    "oversized_payload": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/huge.pdf",
+      "simulated_size_bytes": 55000000
+    },
+    "invalid_pdf_header": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/bad_header.pdf",
+      "simulated_http_status": 200,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "HTML NOT PDF %%EOF"
+    },
+    "missing_pdf_eof": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/missing_eof.pdf",
+      "simulated_http_status": 200,
+      "simulated_body_type": "TEXT",
+      "simulated_body_text": "%PDF-1.4\nTruncated content without end marker"
+    },
+    "parser_failure": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/empty_fields.pdf",
+      "simulated_http_status": 200,
+      "simulated_body_type": "PDF",
+      "simulated_body_text": "%PDF-1.4\nBlank document with no text or identifiers\n%%EOF\n"
+    },
+    "provenance_conflict": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/v2.pdf",
+      "effective_date": "2026-01-01",
+      "simulated_body_text": "%PDF-1.4\nMutated document content\n%%EOF\n"
+    },
+    "duplicate_artifact": {
+      "share_class_isin": "IE00B4L5Y983",
+      "document_type": "STATUTORY_PROSPECTUS",
+      "legal_domicile": "IE",
+      "primary_regulator": "Central Bank of Ireland",
+      "source_url": "https://registers.centralbank.ie/statutory/IE00B4L5Y983/identical_copy.pdf"
+    },
+    "multi_authority_corroboration": {
+      "share_class_isin": "LU0274208692",
+      "doc1": {
+        "document_type": "REGULATOR_REGISTRY",
+        "legal_domicile": "LU",
+        "primary_regulator": "CSSF",
+        "source_url": "https://edesk.apps.cssf.lu/registry/LU0274208692",
+        "effective_date": "2026-01-01",
+        "simulated_body_text": "%PDF-1.4\nSub-Fund: Xtrackers Euro Stoxx 50 UCITS ETF\nShare Class: Xtrackers Euro Stoxx 50 UCITS ETF 1C\nISIN: LU0274208692\nCurrency: EUR\nAccumulating\n%%EOF\n"
+      },
+      "doc2": {
+        "document_type": "STATUTORY_PROSPECTUS",
+        "legal_domicile": "LU",
+        "primary_regulator": "CSSF",
+        "source_url": "https://edesk.apps.cssf.lu/statutory/LU0274208692/prospectus.pdf",
+        "effective_date": "2026-01-01",
+        "simulated_body_text": "%PDF-1.4\nSub-Fund: Xtrackers Euro Stoxx 50 UCITS ETF\nShare Class: Xtrackers Euro Stoxx 50 UCITS ETF 1C\nISIN: LU0274208692\nCurrency: EUR\nAccumulating\n%%EOF\n"
+      }
+    },
+    "multi_authority_contradiction": {
+      "share_class_isin": "LU0274208692",
+      "doc1": {
+        "document_type": "REGULATOR_REGISTRY",
+        "legal_domicile": "LU",
+        "primary_regulator": "CSSF",
+        "source_url": "https://edesk.apps.cssf.lu/registry/LU0274208692",
+        "effective_date": "2026-01-01",
+        "currency": "EUR"
+      },
+      "doc2": {
+        "document_type": "STATUTORY_PROSPECTUS",
+        "legal_domicile": "LU",
+        "primary_regulator": "CSSF",
+        "source_url": "https://edesk.apps.cssf.lu/statutory/LU0274208692/prospectus.pdf",
+        "effective_date": "2026-01-01",
+        "currency": "USD"
+      }
+    },
+    "multiple_listings": {
+      "share_class_isin": "IE00B4L5Y983",
+      "listings": [
+        {
+          "ticker": "EUNL",
+          "mic": "XETR",
+          "trading_currency": "EUR"
+        },
+        {
+          "ticker": "SWDA",
+          "mic": "XLON",
+          "trading_currency": "USD"
+        },
+        {
+          "ticker": "IWDA",
+          "mic": "XAMS",
+          "trading_currency": "EUR"
+        }
+      ]
+    },
+    "ticker_collision": {
+      "ticker": "BLCH",
+      "share_class_isin_1": "IE000XAGSCY5",
+      "share_class_isin_2": "IE00BMFK7V98"
+    },
+    "wkn_boundary": {
+      "wkn": "A3E40R",
+      "isin": "IE000XAGSCY5",
+      "is_global_canonical": false
+    },
+    "broker_alias_boundary": {
+      "broker_alias": "GLXETFS-BLOCKCH DLA",
+      "is_statutory_authority": false
+    },
+    "temporal_supersession": {
+      "share_class_isin": "IE00B4L5Y983",
+      "v1_effective_date": "2025-01-01",
+      "v2_effective_date": "2026-01-01"
+    },
+    "partial_batch_failure": {
+      "batch_size": 3,
+      "success_count": 2,
+      "retryable_failure_count": 1
+    },
+    "idempotent_rerun": {
+      "share_class_isin": "IE00B4L5Y983",
+      "expected_outcome": "ACQUIRED"
+    },
+    "generic_global_x_acceptance": {
+      "candidate_isin": "IE000XAGSCY5",
+      "legal_umbrella_name": "Global X UCITS ICAV",
+      "sub_fund_legal_name": "Global X Blockchain UCITS ETF",
+      "share_class_legal_name": "Global X Blockchain UCITS ETF USD Accumulating",
+      "legal_domicile": "IE",
+      "regulatory_regime": "EU_UCITS",
+      "management_company": "Global X Management Company (Europe) Limited",
+      "wkn": "A3E40R",
+      "distribution_policy": "ACCUMULATING",
+      "share_class_currency": "USD",
+      "effective_date": "2026-01-15",
+      "listings": [
+        {
+          "ticker": "BLCH",
+          "mic": "XETR",
+          "trading_currency": "EUR",
+          "venue_name": "Xetra",
+          "local_code": "A3E40R"
+        },
+        {
+          "ticker": "BLCH",
+          "mic": "TGAT",
+          "trading_currency": "EUR",
+          "venue_name": "Tradegate",
+          "local_code": "A3E40R"
+        },
+        {
+          "ticker": "BLCH",
+          "mic": "XLON",
+          "trading_currency": "USD",
+          "venue_name": "London Stock Exchange"
+        }
+      ],
+      "broker_aliases": [
+        "GLXETFS-BLOCKCH DLA",
+        "Global X Blockchain ETF"
+      ]
+    }
+  }
+}
