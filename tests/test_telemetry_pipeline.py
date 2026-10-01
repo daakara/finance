@@ -952,3 +952,23 @@ def test_read_only_epochs_endpoint(temp_db):
     data = res.json()
     assert "epochs" in data
     assert isinstance(data["epochs"], list)
+
+
+def test_canonical_telemetry_ingress_must_be_included_in_cloudflare_pages_deployment():
+    """Regression Guard: Ensure canonical etf-intent edge function is located under frontend/functions/
+    so Cloudflare Pages (project root: frontend) discovers and deploys the /api/telemetry/etf-intent route.
+    """
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    cf_func_path = os.path.join(repo_root, "frontend", "functions", "api", "telemetry", "etf-intent.ts")
+    assert os.path.isfile(cf_func_path), f"Missing Cloudflare Pages ingress function: {cf_func_path}"
+
+    # Verify stale handler at repo root is removed
+    root_func_path = os.path.join(repo_root, "functions", "api", "telemetry", "etf-intent.ts")
+    assert not os.path.exists(root_func_path), f"Stale ingress handler still exists at root: {root_func_path}"
+
+    with open(cf_func_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert 'from "../../../lib/telemetry/etfDenominatorEngine"' in content
+    assert "export const onRequest" in content
+    assert "/api/telemetry/etf-intent" in content

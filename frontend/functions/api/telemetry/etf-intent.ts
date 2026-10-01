@@ -6,7 +6,7 @@ import {
   RawCandidateRecord,
   ClassifiedObservationAuditRecord,
   EpochContract,
-} from "../../frontend/lib/telemetry/etfDenominatorEngine";
+} from "../../../lib/telemetry/etfDenominatorEngine";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.arxterminal.com",
@@ -112,31 +112,42 @@ export const onRequest = async (context: any): Promise<Response> => {
 
   const botScore = context.request.cf?.botManagement?.score;
   const isBot = typeof botScore === "number" && botScore < 30;
+  const userAgent = context.request.headers.get("User-Agent") || parsed.user_agent_raw || "";
 
   // 4. Construct Server-Ratified Candidate Record
   const rawCandidate: RawCandidateRecord = {
-    schema_version: parsed.schema_version || "1.0.0",
     event_id: String(parsed.event_id || ""),
     session_id: String(parsed.session_id || ""),
     observation_unit_id: String(parsed.observation_unit_id || ""),
-    deduplication_key: String(parsed.deduplication_key || ""),
     timestamp: String(parsed.timestamp || ""),
+    symbol: String(parsed.normalized_symbol || "").toUpperCase(),
     normalized_symbol: String(parsed.normalized_symbol || "").toUpperCase(),
-    intent_type: parsed.intent_type || "ETF_SYMBOL_SELECT",
-    route: String(parsed.route || "/"),
+    intent_boundary: "ETF_COCKPIT_INTENT",
     source_component: String(parsed.source_component || "handleSelectSymbol"),
     environment,
     deployment_identity: deploymentIdentity,
     release_sha: serverReleaseSha,
     synthetic_marker: isSynthetic,
-    ci_run_marker: Boolean(parsed.ci_run_marker),
-    manual_qa_marker: Boolean(parsed.manual_qa_marker),
-    user_agent_raw: context.request.headers.get("User-Agent") || parsed.user_agent_raw || "",
+    ci_marker: Boolean(parsed.ci_run_marker),
+    qa_marker: Boolean(parsed.manual_qa_marker),
+    bot_signal: isBot,
   };
 
   // 5. Execute Canonical Classifier
-  // Note: EPOCH_START_TIMESTAMP is currently NOT_ESTABLISHED
-  const activeEpoch: EpochContract | undefined = undefined;
+  // Note: Before explicit prospective epoch activation, active epoch is NONE.
+  // Any event timestamp pre-epoch deterministically evaluates to OUTSIDE_EPOCH -> EXCLUDED.
+  const activeEpoch: EpochContract = {
+    epoch_id: "NONE",
+    epoch_start_utc: "9999-12-31T23:59:59Z",
+    epoch_end_utc: "9999-12-31T23:59:59Z",
+    authorized_releases: [],
+    permitted_deployments: [
+      "https://www.arxterminal.com",
+      "https://finance-xp8.pages.dev",
+      "production-cloudflare-pages",
+      "preview-main-cloudflare-pages",
+    ],
+  };
   const classified: ClassifiedObservationAuditRecord = classifyCandidateRecord(
     rawCandidate,
     activeEpoch
@@ -152,7 +163,25 @@ export const onRequest = async (context: any): Promise<Response> => {
         "X-Internal-Secret": context.env?.TELEMETRY_INTERNAL_SECRET || "",
       },
       body: JSON.stringify({
-        raw_event: rawCandidate,
+        raw_event: {
+          schema_version: parsed.schema_version || "1.0.0",
+          event_id: rawCandidate.event_id,
+          session_id: rawCandidate.session_id,
+          observation_unit_id: rawCandidate.observation_unit_id,
+          deduplication_key: classified.deduplication_key,
+          timestamp: rawCandidate.timestamp,
+          normalized_symbol: rawCandidate.normalized_symbol,
+          intent_type: "ETF_SYMBOL_SELECT",
+          route: String(parsed.route || "/"),
+          source_component: rawCandidate.source_component,
+          environment: rawCandidate.environment,
+          deployment_identity: rawCandidate.deployment_identity,
+          release_sha: rawCandidate.release_sha,
+          synthetic_marker: rawCandidate.synthetic_marker,
+          ci_run_marker: rawCandidate.ci_marker,
+          manual_qa_marker: rawCandidate.qa_marker,
+          user_agent_raw: userAgent,
+        },
         audit_record: classified,
       }),
     }).catch(() => {
