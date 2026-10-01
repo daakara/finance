@@ -16,9 +16,11 @@ Strictly verifies:
 """
 
 import hashlib
+import io
 import json
 import os
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from unittest.mock import MagicMock, patch
@@ -41,6 +43,7 @@ from scripts.research.etf_v2.ucits_discovery_authority import (
     UCITSDiscoveryAuthority,
 )
 from scripts.research.etf_v2.ucits_discovery_models import (
+    AuthorityFunction,
     CandidateSpec,
     CandidateStatus,
     ConservationViolationError,
@@ -56,15 +59,21 @@ from scripts.research.etf_v2.ucits_discovery_models import (
     FixtureContaminationError,
     InvalidDiscoveryConfigurationError,
     ObservationProvenance,
+    ParentJoinStatus,
     QuarantineReason,
     RawDiscoveryObservation,
     RawRegisterPayload,
     ResumeIdentityMismatchError,
     SchemaDriftError,
+    ShareClassExpansionCompleteness,
     SourceAdapterError,
     SourceAuthorityId,
     SourceAuthorityTier,
     SourceEnumerationState,
+    Tier1ParentAccounting,
+    Tier1ParentObservation,
+    Tier2ShareClassExpansion,
+    normalize_fund_name,
 )
 
 
@@ -78,7 +87,7 @@ ISIN_IE_2 = "IE00BK5BQT80"  # Vanguard FTSE All-World
 ISIN_LU_1 = "LU0274208692"  # Xtrackers Euro Stoxx 50
 ISIN_LU_2 = "LU0838780707"  # Lyxor Core MSCI World
 ISIN_DE_1 = "DE0005933956"  # iShares Core DAX UCITS ETF (DE)
-ISIN_FR_1 = "FR0010251152"  # Amundi CAC 40 UCITS ETF (FR)
+ISIN_FR_1 = "FR0010251157"  # Amundi CAC 40 UCITS ETF (FR)
 
 # Invalid check digit ISIN
 ISIN_INVALID_CHECKSUM = "IE00B4L5Y980"
@@ -954,10 +963,11 @@ class TestDeterminismAndHandoff:
 
         authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
         cfg = DiscoveryConfiguration(jurisdictions=("IE",))
-        manifest = authority.execute_discovery(cfg, run_id="orig_run")
-        run_dir = tmp_path / "orig_run"
+        with patch("time.strftime", return_value="20261001T080000Z"):
+            manifest = authority.execute_discovery(cfg, run_id="orig_run")
+            run_dir = tmp_path / "orig_run"
+            replayed = authority.replay_discovery(run_dir, cfg)
 
-        replayed = authority.replay_discovery(run_dir, cfg)
         assert replayed["aggregate_evidence_sha256"] == manifest["aggregate_evidence_sha256"]
         assert replayed["candidate_count"] == manifest["candidate_count"]
         assert replayed["accounting"] == manifest["accounting"]
@@ -979,3 +989,639 @@ class TestDeterminismAndHandoff:
         assert snapshot["candidate_count"] == 1
         assert snapshot["candidates"][0]["share_class_isin"] == ISIN_IE_1
         assert snapshot_path.exists()
+
+
+# =============================================================================
+# Live-Source Remediation Regression Tests
+# =============================================================================
+
+class TestRemediationRepairedAdapters:
+    """
+    Targeted regression tests for ETF_V2_GLOBAL_IDENTITY_RESOLVER_WAVE_4_CANONICAL_UCITS_DISCOVERY_AUTHORITY_LIVE_SOURCE_REMEDIATION_GATE.
+    Verifies fail-closed behavior on historical disproved interfaces, schema drift detection on HTML,
+    official bulk format parsing (CSSF ZIP/TSV, BaFin CSV, AMF JSON), and deterministic offline replay.
+    """
+
+    def test_remediation_cbi_html_schema_drift_fails_closed(self) -> None:
+        """CBI adapter must raise SchemaDriftError when receiving HTML landing page."""
+        adapter = CentralBankOfIrelandAdapter()
+        raw_b = b"<!DOCTYPE html><html><head><title>Central Bank of Ireland</title></head><body>Registers Portal</body></html>"
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://registers.centralbank.ie/cis/ucits_etfs.json",
+            response_status=200,
+            content_type="text/html; charset=utf-8",
+            raw_bytes=raw_b,
+            raw_sha256=hashlib.sha256(raw_b).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        with pytest.raises(SchemaDriftError, match="HTML"):
+            adapter.parse_observations([payload])
+
+    def test_remediation_cssf_dns_or_http_failure_fails_closed(self) -> None:
+        """CSSF adapter must raise SourceAdapterError on HTTP failure or unreachable host."""
+        transport = MockDiscoveryTransport()
+        adapter = CSSFLuxembourgAdapter()
+        run_context = type("RunContext", (), {"current_timestamp": "2026-10-01T08:00:00Z"})()
+        with pytest.raises(SourceAdapterError, match="CSSF register fetch failed with HTTP 404"):
+            adapter.fetch_raw_register(run_context, transport)
+
+    def test_remediation_cssf_html_schema_drift_fails_closed(self) -> None:
+        """CSSF adapter must raise SchemaDriftError when receiving HTML instead of ZIP or JSON."""
+        adapter = CSSFLuxembourgAdapter()
+        raw_b = b"<!DOCTYPE html><html><head><title>CSSF Portal</title></head></html>"
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://registers.cssf.lu/api/v1/ucits_etfs.json",
+            response_status=200,
+            content_type="text/html; charset=utf-8",
+            raw_bytes=raw_b,
+            raw_sha256=hashlib.sha256(raw_b).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        with pytest.raises(SchemaDriftError, match="HTML"):
+            adapter.parse_observations([payload])
+
+    def test_remediation_cssf_bulk_zip_extraction_and_parsing(self) -> None:
+        """CSSF adapter must extract and parse official UTF-16 tab-delimited bulk ZIP archive."""
+        header = "E\tNNNNNNNN\tISIN\tNOMOPC\tCCCCCCCC\tNOMCOMPARTIMENT\tAGREEMENTCOMP\tDEVISECOMP\tPPPP\tNOMTYPEPART\n"
+        sep = "-\t--------\t---------------\t------------------------------\t--------\t------------------------------\t------------------------------\t----------\t----\t------------------------------\n"
+        row1 = f"O\t00000001\t{ISIN_LU_1}\tXTRACKERS UCITS ETF\t00000001\tXtrackers Euro Stoxx 50 UCITS ETF\t01/01/2007\tEUR\t0001\t1C USD\n"
+        row2 = f"O\t00000002\t{ISIN_LU_2}\tLYXOR INDEX FUND\t00000001\tLyxor Core MSCI World (DR) UCITS ETF\t15/03/2014\tEUR\t0001\tAcc\n"
+        row3 = "O\t00000003\tLU9999999999\tSTANDARD MUTUAL FUND\t00000001\tStandard European Equity Mutual Fund\t10/10/2010\tEUR\t0001\tRetail\n"
+        csv_text = header + sep + row1 + row2 + row3
+        csv_bytes = csv_text.encode("utf-16")
+
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("OPC_COMP_TP_TOUS_OUVERTS.csv", csv_bytes)
+        zip_bytes = zip_buf.getvalue()
+
+        adapter = CSSFLuxembourgAdapter()
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://www.cssf.lu/wp-content/uploads/OPC_COMP_TP_TOUS_OUVERTS.zip",
+            response_status=200,
+            content_type="application/zip",
+            raw_bytes=zip_bytes,
+            raw_sha256=hashlib.sha256(zip_bytes).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        obs = adapter.parse_observations([payload])
+        assert len(obs) == 3
+        assert obs[0].normalized_isin == ISIN_LU_1
+        assert obs[0].is_ucits_raw is True
+        assert obs[0].is_etf_raw is True
+        assert obs[1].normalized_isin == ISIN_LU_2
+        assert obs[1].is_ucits_raw is True
+        assert obs[1].is_etf_raw is True
+        assert obs[2].normalized_isin == "LU9999999999"
+        assert obs[2].is_ucits_raw is True
+        assert obs[2].is_etf_raw is False
+
+    def test_remediation_bafin_404_not_found_fails_closed(self) -> None:
+        """BaFin adapter must raise SourceAdapterError when historical endpoint returns HTTP 404."""
+        transport = MockDiscoveryTransport()
+        adapter = BaFinGermanyAdapter()
+        run_context = type("RunContext", (), {"current_timestamp": "2026-10-01T08:00:00Z"})()
+        with pytest.raises(SourceAdapterError, match="BaFin register fetch failed with HTTP 404"):
+            adapter.fetch_raw_register(run_context, transport)
+
+    def test_remediation_bafin_html_schema_drift_fails_closed(self) -> None:
+        """BaFin adapter must raise SchemaDriftError when receiving HTML landing page instead of CSV."""
+        adapter = BaFinGermanyAdapter()
+        raw_b = b"<!DOCTYPE html><html><head><title>BaFin FondsInfo</title></head><body>Portal Form</body></html>"
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://portal.mvp.bafin.de/database/FondsInfo/",
+            response_status=200,
+            content_type="text/html; charset=utf-8",
+            raw_bytes=raw_b,
+            raw_sha256=hashlib.sha256(raw_b).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        with pytest.raises(SchemaDriftError, match="HTML"):
+            adapter.parse_observations([payload])
+
+    def test_remediation_bafin_bulk_csv_parsing(self) -> None:
+        """BaFin adapter must parse official German FondsInfo CSV export with OGAW legal form."""
+        csv_content = (
+            "BaFin-Id;Fonds;Land;Struktur;Umbrella;Auflegungsdatum;Fondsart;Verwalt. Ges.;Repräsentant;ISIN\n"
+            f"70123456;iShares Core DAX UCITS ETF (DE);Deutschland;Einzelfonds;;01.01.2001;OGAW;BlackRock;;{ISIN_DE_1}\n"
+            "70123457;Deka Renten Spezial;Deutschland;Einzelfonds;;01.01.2010;OGAW;Deka;;DE0008474750\n"
+        ).encode("utf-8-sig")
+
+        adapter = BaFinGermanyAdapter()
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://portal.mvp.bafin.de/database/FondsInfo/sucheFonds.do",
+            response_status=200,
+            content_type="text/csv",
+            raw_bytes=csv_content,
+            raw_sha256=hashlib.sha256(csv_content).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        obs = adapter.parse_observations([payload])
+        assert len(obs) == 2
+        assert obs[0].normalized_isin == ISIN_DE_1
+        assert obs[0].domicile_raw == "DE"
+        assert obs[0].is_ucits_raw is True
+        assert obs[0].is_etf_raw is True
+        assert obs[1].is_ucits_raw is True
+        assert obs[1].is_etf_raw is False
+
+    def test_remediation_amf_html_schema_drift_fails_closed(self) -> None:
+        """AMF adapter must raise SchemaDriftError when receiving HTML portal page."""
+        adapter = AMFFranceAdapter()
+        raw_b = b"<!DOCTYPE html><html><head><title>AMF GECO</title></head><body>GECO Portal SPA</body></html>"
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://geco.amf-france.org/api/funds/ucits_etfs.json",
+            response_status=200,
+            content_type="text/html",
+            raw_bytes=raw_b,
+            raw_sha256=hashlib.sha256(raw_b).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        with pytest.raises(SchemaDriftError, match="HTML"):
+            adapter.parse_observations([payload])
+
+    def test_remediation_amf_geco_compartments_payload_parsing(self) -> None:
+        """AMF adapter must parse official GECO REST payload containing compartmentDtos and sharesIsins."""
+        payload_dict = {
+            "total": 2,
+            "compartmentDtos": [
+                {
+                    "cmpNom": "Amundi CAC 40 UCITS ETF",
+                    "prdFaml": "OPCVM",
+                    "cmpStatutCode": "VIV",
+                    "sharesIsins": [ISIN_FR_1],
+                    "fundDTO": {"prdNom": "AMUNDI ETF", "prdDomcltnCode": "FR"},
+                },
+                {
+                    "cmpNom": "SCPI IMMOBILIER DE FRANCE",
+                    "prdFaml": "OFIA",
+                    "cmpStatutCode": "VIV",
+                    "cmpCodeParPrincp": "FR0000000000",
+                    "sharesIsins": [],
+                    "fundDTO": {"prdNom": "SCPI FUND", "prdDomcltnCode": "FR"},
+                },
+            ]
+        }
+        json_bytes = json.dumps(payload_dict).encode("utf-8")
+
+        adapter = AMFFranceAdapter()
+        payload = RawRegisterPayload(
+            source_authority=adapter.source_authority.value,
+            jurisdiction=adapter.jurisdiction.value,
+            request_uri="https://geco.amf-france.org/back-office/funds/compartments",
+            response_status=200,
+            content_type="application/json",
+            raw_bytes=json_bytes,
+            raw_sha256=hashlib.sha256(json_bytes).hexdigest(),
+            retrieved_at="2026-10-01T08:00:00Z",
+        )
+        obs = adapter.parse_observations([payload])
+        assert len(obs) == 1
+        assert obs[0].normalized_isin == ISIN_FR_1
+        assert obs[0].domicile_raw == "FR"
+        assert obs[0].is_ucits_raw is True
+        assert obs[0].is_etf_raw is True
+
+    def test_remediation_deterministic_offline_replay_repaired_sources(self, tmp_path: Path) -> None:
+        """Verifies full discovery execution and deterministic replay using repaired official formats."""
+        transport = MockDiscoveryTransport()
+
+        # 1. CBI (mock JSON payload)
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_bytes = create_mock_cbi_payload([{"isin": ISIN_IE_1, "fund_name": "iShares Core MSCI World ETF", "cis_type": "UCITS", "is_etf": True}])
+        transport.register_response(cbi_url, 200, cbi_bytes)
+
+        # 2. CSSF (ZIP containing UTF-16 TSV)
+        cssf_url = "https://www.cssf.lu/wp-content/uploads/OPC_COMP_TP_TOUS_OUVERTS.zip"
+        cssf_tsv = (
+            "E\tNNNNNNNN\tISIN\tNOMOPC\tCCCCCCCC\tNOMCOMPARTIMENT\tAGREEMENTCOMP\tDEVISECOMP\tPPPP\tNOMTYPEPART\n"
+            "-\t--------\t---------------\t------------------------------\t--------\t------------------------------\t------------------------------\t----------\t----\t------------------------------\n"
+            f"O\t00000001\t{ISIN_LU_1}\tXtrackers\t00000001\tXtrackers Euro Stoxx 50 UCITS ETF\t01/01/2007\tEUR\t0001\t1C\n"
+        ).encode("utf-16")
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            zf.writestr("OPC_COMP_TP_TOUS_OUVERTS.csv", cssf_tsv)
+        transport.register_response(cssf_url, 200, zip_buf.getvalue(), {"content-type": "application/zip"})
+
+        # 3. BaFin (official semicolon CSV)
+        bafin_url = "https://portal.mvp.bafin.de/database/FondsInfo/sucheFonds.do?nameFondsISIN=&nameFonds=&d-16544-e=1&nameFondsButton=Suche&nameFondsId=&6578706f7274=1&filterParagraph=%27OGAW%27%2C%27OOAGA%27%2C%27OGAWA%27"
+        bafin_csv = (
+            "BaFin-Id;Fonds;Land;Struktur;Umbrella;Auflegungsdatum;Fondsart;Verwalt. Ges.;Repräsentant;ISIN\n"
+            f"70123456;iShares Core DAX UCITS ETF (DE);Deutschland;Einzelfonds;;01.01.2001;OGAW;BlackRock;;{ISIN_DE_1}\n"
+        ).encode("utf-8-sig")
+        transport.register_response(bafin_url, 200, bafin_csv, {"content-type": "text/csv"})
+
+        # 4. AMF (official GECO JSON)
+        amf_url = "https://geco.amf-france.org/back-office/funds/compartments"
+        amf_json = json.dumps({
+            "total": 1,
+            "compartmentDtos": [
+                {
+                    "cmpNom": "Amundi CAC 40 UCITS ETF",
+                    "prdFaml": "OPCVM",
+                    "cmpStatutCode": "VIV",
+                    "sharesIsins": [ISIN_FR_1],
+                    "fundDTO": {"prdNom": "AMUNDI ETF", "prdDomcltnCode": "FR"},
+                }
+            ]
+        }).encode("utf-8")
+        transport.register_response(amf_url, 200, amf_json, {"content-type": "application/json"})
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE", "LU", "DE", "FR"))
+
+        with patch("time.strftime", return_value="20261001T080000Z"):
+            manifest = authority.execute_discovery(cfg, run_id="remed_test_run")
+            run_dir = tmp_path / "remed_test_run"
+            replayed = authority.replay_discovery(run_dir, cfg)
+
+        assert manifest["candidate_count"] == 4
+        assert replayed["candidate_count"] == 4
+        assert replayed["aggregate_evidence_sha256"] == manifest["aggregate_evidence_sha256"]
+        assert replayed["accounting"] == manifest["accounting"]
+        assert [c["share_class_isin"] for c in replayed["candidates"]] == [ISIN_DE_1, ISIN_FR_1, ISIN_IE_1, ISIN_LU_1]
+
+
+# =============================================================================
+# Bounded Authority Decomposition Tests (BI01–BI80 Validation)
+# =============================================================================
+
+class TestBoundedAuthorityDecomposition:
+    """
+    Direct verification of the ratified Bounded Authority Decomposition contract:
+    - Tier 1 NCA is exclusive population-membership and sub-fund parent authority.
+    - Tier 2 Statutory Issuer is bounded share-class expansion authority.
+    - Zero share-class ISIN fabrication at Tier 1.
+    - Governed deterministic parent-child join (1:0, 1:1, 1:N, M:1, ambiguous, conflicted).
+    - Tier 1 parent accounting conservation.
+    - Dual provenance preservation.
+    """
+
+    def test_b01_tier1_parent_enters_parent_accounting(self, tmp_path: Path) -> None:
+        """BI20, BI21, BI47, BI48, BI49: CBI Tier 1 parent enters accounting without fabricating ISIN."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        payload = json.dumps({
+            "total_records": 1,
+            "records": [
+                {
+                    "umbrella_name": "iShares plc",
+                    "sub_fund_name": "iShares Core S&P 500 UCITS ETF",
+                    "cis_type": "UCITS",
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                    "authorization_date": "2002-03-15",
+                }
+            ],
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, payload)
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE",))
+        manifest = authority.execute_discovery(cfg)
+
+        assert manifest["candidate_count"] == 0
+        parent_acct = manifest["tier_1_parent_accounting"]
+        assert parent_acct["total_parents"] == 1
+        assert parent_acct["unresolved_tier_2_count"] == 1
+        assert parent_acct["resolved_to_tier_2_count"] == 0
+        assert parent_acct["is_conserved"] is True
+        assert any(q["reason"] == QuarantineReason.UNRESOLVED_TIER_2_PARENT.value for q in manifest["quarantined_observations"])
+
+    def test_b02_tier2_expands_existing_tier1_parent_one_to_one(self, tmp_path: Path) -> None:
+        """BI22, BI24, BI25, BI29, BI34, BI35, BI36: Tier 2 expands existing Tier 1 parent 1:1 with dual provenance."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {
+                    "umbrella_name": "iShares plc",
+                    "sub_fund_name": "iShares Core S&P 500 UCITS ETF",
+                    "cis_type": "UCITS",
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                }
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="iShares", jurisdiction=DiscoveryJurisdiction.IE)
+        issuer_url = "https://www.ishares.com/products.json"
+        issuer_payload = json.dumps({
+            "products": [
+                {
+                    "umbrella_name": "iShares plc",
+                    "sub_fund_name": "iShares Core S&P 500 UCITS ETF",
+                    "share_class_name": "USD Acc",
+                    "isin": ISIN_IE_1,
+                    "is_ucits": True,
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                    "completeness": "COMPLETE",
+                }
+            ]
+        }).encode("utf-8")
+        transport.register_response(issuer_url, 200, issuer_payload)
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE",))
+        manifest = authority.execute_discovery(cfg, custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 1
+        cand = manifest["candidates"][0]
+        assert cand["share_class_isin"] == ISIN_IE_1
+        assert cand["parent_subfund_name"] == "iShares Core S&P 500 UCITS ETF"
+        assert cand["parent_umbrella_name"] == "iShares plc"
+
+        # Verify dual provenance chain: Tier 1 NCA + Tier 2 Statutory Issuer
+        assert len(cand["provenance_chain"]) == 2
+        p1 = cand["provenance_chain"][0]
+        assert p1["source_authority"] == SourceAuthorityId.CENTRAL_BANK_OF_IRELAND.value
+        assert p1["source_tier"] == SourceAuthorityTier.TIER_1_NCA.value
+        assert p1["authority_function"] == AuthorityFunction.POPULATION_MEMBERSHIP.value
+
+        p2 = cand["provenance_chain"][1]
+        assert p2["source_tier"] == SourceAuthorityTier.TIER_2_STATUTORY_ISSUER.value
+        assert p2["authority_function"] == AuthorityFunction.SHARE_CLASS_EXPANSION.value
+
+        parent_acct = manifest["tier_1_parent_accounting"]
+        assert parent_acct["total_parents"] == 1
+        assert parent_acct["resolved_to_tier_2_count"] == 1
+        assert parent_acct["is_conserved"] is True
+
+    def test_b03_tier2_expands_existing_tier1_parent_one_to_many(self, tmp_path: Path) -> None:
+        """BI30: Tier 1 parent resolves 1:N to multiple distinct share-class ISINs."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {
+                    "umbrella_name": "Vanguard Funds plc",
+                    "sub_fund_name": "Vanguard FTSE All-World UCITS ETF",
+                    "cis_type": "UCITS",
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                }
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="Vanguard", jurisdiction=DiscoveryJurisdiction.IE)
+        issuer_url = "https://www.vanguard.com/products.json"
+        issuer_payload = json.dumps({
+            "products": [
+                {
+                    "umbrella_name": "Vanguard Funds plc",
+                    "sub_fund_name": "Vanguard FTSE All-World UCITS ETF",
+                    "share_class_name": "USD Distributing",
+                    "isin": ISIN_IE_1,
+                    "is_ucits": True,
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                    "completeness": "COMPLETE",
+                },
+                {
+                    "umbrella_name": "Vanguard Funds plc",
+                    "sub_fund_name": "Vanguard FTSE All-World UCITS ETF",
+                    "share_class_name": "USD Accumulating",
+                    "isin": ISIN_IE_2,
+                    "is_ucits": True,
+                    "is_etf": True,
+                    "status": "ACTIVE",
+                    "completeness": "COMPLETE",
+                },
+            ]
+        }).encode("utf-8")
+        transport.register_response(issuer_url, 200, issuer_payload)
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE",))
+        manifest = authority.execute_discovery(cfg, custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 2
+        isins = {c["share_class_isin"] for c in manifest["candidates"]}
+        assert isins == {ISIN_IE_1, ISIN_IE_2}
+        assert manifest["tier_1_parent_accounting"]["total_parents"] == 1
+        assert manifest["tier_1_parent_accounting"]["resolved_to_tier_2_count"] == 1
+
+    def test_b04_extra_tier2_without_tier1_parent_quarantined(self, tmp_path: Path) -> None:
+        """BI12, BI22, BI23: Tier 2 expansion without Tier 1 parent quarantined; cannot enter population."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        transport.register_response(cbi_url, 200, json.dumps({"records": []}).encode("utf-8"))
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="RogueIssuer", jurisdiction=DiscoveryJurisdiction.IE)
+        issuer_url = "https://www.rogueissuer.com/products.json"
+        issuer_payload = json.dumps({
+            "products": [
+                {
+                    "umbrella_name": "Unapproved Umbrella",
+                    "sub_fund_name": "Unapproved Subfund ETF",
+                    "share_class_name": "Class A",
+                    "isin": ISIN_IE_1,
+                    "completeness": "COMPLETE",
+                }
+            ]
+        }).encode("utf-8")
+        transport.register_response(issuer_url, 200, issuer_payload)
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE",))
+        manifest = authority.execute_discovery(cfg, custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 0
+        assert any(q["reason"] == QuarantineReason.EXTRA_TIER_2_WITHOUT_TIER_1_PARENT.value for q in manifest["quarantined_observations"])
+
+    def test_b05_one_to_zero_join_remains_visible_in_accounting(self, tmp_path: Path) -> None:
+        """BI28, BI33, BI49, BI65: Unresolved Tier 1 parent remains visible in accounting; not silently excluded."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {"umbrella_name": "U1", "sub_fund_name": "Resolved Fund", "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"},
+                {"umbrella_name": "U2", "sub_fund_name": "Unresolved Fund", "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"},
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="Iss", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.iss.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "U1", "sub_fund_name": "Resolved Fund", "isin": ISIN_IE_1, "completeness": "COMPLETE"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)), custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 1
+        acct = manifest["tier_1_parent_accounting"]
+        assert acct["total_parents"] == 2
+        assert acct["resolved_to_tier_2_count"] == 1
+        assert acct["unresolved_tier_2_count"] == 1
+        assert acct["is_conserved"] is True
+
+    def test_b06_colliding_parent_subfunds_quarantined(self, tmp_path: Path) -> None:
+        """BI31: Ambiguous / colliding parent names in Tier 1 quarantined fail-closed."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {"umbrella_name": "Same Umbrella", "sub_fund_name": "Duplicate Subfund", "cis_type": "UCITS", "is_etf": True},
+                {"umbrella_name": "Same Umbrella", "sub_fund_name": "Duplicate Subfund", "cis_type": "UCITS", "is_etf": True},
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)))
+
+        assert manifest["tier_1_parent_accounting"]["ambiguous_tier_2_count"] == 2
+        assert any(q["reason"] == QuarantineReason.COLLIDING_PARENT_SUBFUND.value for q in manifest["quarantined_observations"])
+
+    def test_b07_conflicted_parent_tier2_status_quarantined(self, tmp_path: Path) -> None:
+        """BI32: Status contradiction between Tier 1 parent and Tier 2 expansion triggers quarantine."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {"umbrella_name": "Umbrella", "sub_fund_name": "Liquidated Fund", "cis_type": "UCITS", "is_etf": True, "status": "TERMINATED"}
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="Iss", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.iss.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "Umbrella", "sub_fund_name": "Liquidated Fund", "isin": ISIN_IE_1, "status": "ACTIVE", "completeness": "COMPLETE"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)), custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 0
+        assert manifest["tier_1_parent_accounting"]["conflicted_tier_2_count"] == 1
+        assert any(q["reason"] == QuarantineReason.CONFLICTED_TIER_2_RECORD.value for q in manifest["quarantined_observations"])
+
+    def test_b08_partial_expansion_cannot_masquerade_as_complete(self, tmp_path: Path) -> None:
+        """BI40, BI41: Partial expansion schedule cannot enter population as complete."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {"umbrella_name": "Umbrella", "sub_fund_name": "Incomplete Fund", "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"}
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="Iss", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.iss.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "Umbrella", "sub_fund_name": "Incomplete Fund", "isin": ISIN_IE_1, "completeness": "PARTIAL"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)), custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 0
+        assert manifest["tier_1_parent_accounting"]["unresolved_tier_2_count"] == 1
+        assert any(q["reason"] == QuarantineReason.PARTIAL_SHARE_CLASS_EXPANSION.value for q in manifest["quarantined_observations"])
+
+    def test_b09_invalid_isin_in_expansion_rejected(self, tmp_path: Path) -> None:
+        """BI14, BI51: Invalid ISIN check-digit in Tier 2 expansion is rejected via canonical validate_isin."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({
+            "records": [
+                {"umbrella_name": "Umbrella", "sub_fund_name": "Fund Bad ISIN", "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"}
+            ]
+        }).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="Iss", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.iss.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "Umbrella", "sub_fund_name": "Fund Bad ISIN", "isin": ISIN_INVALID_CHECKSUM, "completeness": "COMPLETE"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)), custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 0
+        assert any(q["reason"] == QuarantineReason.INVALID_CHECKSUM.value for q in manifest["quarantined_observations"])
+
+    def test_b10_deterministic_normalization_ignores_casing_and_punctuation(self, tmp_path: Path) -> None:
+        """BI26, BI27: Normalization is non-fuzzy, non-probabilistic Unicode NFKC strip and lower."""
+        s1 = "iShares Core S&P 500 UCITS ETF (Acc)"
+        s2 = "ISHARES CORE S&P 500 UCITS ETF  ACC "
+        assert normalize_fund_name(s1) == normalize_fund_name(s2)
+
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({"records": [{"umbrella_name": "iShares plc", "sub_fund_name": s1, "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"}]}).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="iShares", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.ishares.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "ISHARES PLC", "sub_fund_name": s2, "isin": ISIN_IE_1, "completeness": "COMPLETE"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        manifest = authority.execute_discovery(DiscoveryConfiguration(jurisdictions=("IE",)), custom_adapters=[CentralBankOfIrelandAdapter(), issuer_adapter])
+
+        assert manifest["candidate_count"] == 1
+        assert manifest["tier_1_parent_accounting"]["resolved_to_tier_2_count"] == 1
+
+    def test_b11_parent_accounting_conservation_violation_raises(self) -> None:
+        """BI48: Tier 1 parent accounting detects conservation imbalance."""
+        acct = Tier1ParentAccounting.calculate(total=5, resolved=2, unresolved=2, ambiguous=0, conflicted=0)
+        assert acct.is_conserved is False
+
+        acct_valid = Tier1ParentAccounting.calculate(total=5, resolved=2, unresolved=2, ambiguous=1, conflicted=0)
+        assert acct_valid.is_conserved is True
+
+    def test_b12_offline_replay_deterministic_exact_manifest(self, tmp_path: Path) -> None:
+        """BI71, BI72: Offline replay of Bounded Authority Decomposition produces bit-for-bit identical results."""
+        transport = MockDiscoveryTransport()
+        cbi_url = "https://registers.centralbank.ie/cis/ucits_etfs.json"
+        cbi_payload = json.dumps({"records": [{"umbrella_name": "iShares plc", "sub_fund_name": "iShares Core S&P 500 UCITS ETF", "cis_type": "UCITS", "is_etf": True, "status": "ACTIVE"}]}).encode("utf-8")
+        transport.register_response(cbi_url, 200, cbi_payload)
+
+        issuer_adapter = StatutoryIssuerAdapter(issuer_name="iShares", jurisdiction=DiscoveryJurisdiction.IE)
+        transport.register_response(
+            "https://www.ishares.com/products.json",
+            200,
+            json.dumps({"products": [{"umbrella_name": "iShares plc", "sub_fund_name": "iShares Core S&P 500 UCITS ETF", "isin": ISIN_IE_1, "completeness": "COMPLETE"}]}).encode("utf-8"),
+        )
+
+        authority = UCITSDiscoveryAuthority(cache_dir=tmp_path, transport=transport)
+        cfg = DiscoveryConfiguration(jurisdictions=("IE",))
+        adapters = [CentralBankOfIrelandAdapter(), issuer_adapter]
+
+        with patch("time.strftime", return_value="20261001T090000Z"):
+            manifest1 = authority.execute_discovery(cfg, run_id="bounded_replay_run", custom_adapters=adapters)
+            run_dir = tmp_path / "bounded_replay_run"
+            replayed1 = authority.replay_discovery(run_dir, cfg, custom_adapters=adapters)
+            replayed2 = authority.replay_discovery(run_dir, cfg, custom_adapters=adapters)
+
+        assert manifest1["candidate_count"] == 1
+        assert replayed1["candidate_count"] == 1
+        assert replayed2["candidate_count"] == 1
+        assert json.dumps(replayed1, sort_keys=True) == json.dumps(replayed2, sort_keys=True)

@@ -31,6 +31,7 @@ from .ucits_discovery_adapters import (
     StatutoryIssuerAdapter,
 )
 from .ucits_discovery_models import (
+    AuthorityFunction,
     CandidateSpec,
     CandidateStatus,
     ConservationViolationError,
@@ -46,15 +47,21 @@ from .ucits_discovery_models import (
     FixtureContaminationError,
     InvalidDiscoveryConfigurationError,
     ObservationProvenance,
+    ParentJoinStatus,
     QuarantineReason,
     RawDiscoveryObservation,
     RawRegisterPayload,
     ResumeIdentityMismatchError,
     SchemaDriftError,
+    ShareClassExpansionCompleteness,
     SourceAdapterError,
     SourceAuthorityId,
     SourceAuthorityTier,
     SourceEnumerationState,
+    Tier1ParentAccounting,
+    Tier1ParentObservation,
+    Tier2ShareClassExpansion,
+    normalize_fund_name,
 )
 
 
@@ -172,6 +179,8 @@ class UCITSDiscoveryAuthority:
         # 4. Harvest raw registers and verify completeness per adapter
         all_raw_payloads: List[RawRegisterPayload] = []
         all_observations: List[RawDiscoveryObservation] = []
+        all_tier1_parents: List[Tier1ParentObservation] = []
+        all_tier2_expansions: List[Tier2ShareClassExpansion] = []
         source_completeness_map: Dict[str, str] = {}
         all_sources_complete = True
         completeness_failure_reason: Optional[str] = None
@@ -258,6 +267,22 @@ class UCITSDiscoveryAuthority:
 
             all_observations.extend(obs_list)
 
+            # If adapter provides Tier-1 parent observations (Ireland / CBI)
+            if hasattr(adapter, "parse_parent_observations") and adapter.jurisdiction.value == "IE":
+                try:
+                    parents = adapter.parse_parent_observations(payloads)
+                    all_tier1_parents.extend(parents)
+                except Exception:
+                    pass
+
+            # If adapter provides Tier-2 share-class expansions (Statutory Issuer)
+            if hasattr(adapter, "parse_expansions") and adapter.source_tier == SourceAuthorityTier.TIER_2_STATUTORY_ISSUER:
+                try:
+                    expansions = adapter.parse_expansions(payloads)
+                    all_tier2_expansions.extend(expansions)
+                except Exception:
+                    pass
+
             if interruption_stage == "C08" and adapter_idx == 0:
                 raise DiscoveryInterruptionError("Interrupted at C08 (After parsed, before checkpoint)")
 
@@ -277,7 +302,141 @@ class UCITSDiscoveryAuthority:
         if interruption_stage == "C12":
             raise DiscoveryInterruptionError("Interrupted at C12 (After all jurisdictions complete)")
 
-        # 5. Adjudicate, Filter, and Normalize Observations
+        # 5. Ireland Bounded Authority Decomposition Parent Join & Adjudication
+        observations_by_isin: Dict[str, List[RawDiscoveryObservation]] = {}
+        quarantined_observations: List[Dict[str, Any]] = []
+
+        total_parents = len(all_tier1_parents)
+        resolved_to_tier_2_count = 0
+        unresolved_tier_2_count = 0
+        ambiguous_tier_2_count = 0
+        conflicted_tier_2_count = 0
+        matched_exp_ids: Set[str] = set()
+
+        if total_parents > 0 or len(all_tier2_expansions) > 0:
+            expansions_by_full_key: Dict[Tuple[str, str], List[Tier2ShareClassExpansion]] = {}
+            expansions_by_subfund: Dict[str, List[Tier2ShareClassExpansion]] = {}
+            for exp in all_tier2_expansions:
+                expansions_by_full_key.setdefault(exp.normalized_join_key, []).append(exp)
+                expansions_by_subfund.setdefault(exp.normalized_subfund_key, []).append(exp)
+
+            for parent in all_tier1_parents:
+                parents_with_same_subfund = [p for p in all_tier1_parents if p.normalized_subfund_key == parent.normalized_subfund_key]
+                if len(parents_with_same_subfund) > 1:
+                    parents_with_same_full_key = [p for p in all_tier1_parents if p.normalized_join_key == parent.normalized_join_key]
+                    if len(parents_with_same_full_key) > 1:
+                        ambiguous_tier_2_count += 1
+                        quarantined_observations.append({
+                            "parent_id": parent.parent_id,
+                            "subfund_name": parent.subfund_name,
+                            "reason": QuarantineReason.COLLIDING_PARENT_SUBFUND.value,
+                            "details": f"Multiple CBI Tier 1 parents have colliding normalized key: '{parent.subfund_name}'",
+                        })
+                        continue
+
+                matching_exps = expansions_by_full_key.get(parent.normalized_join_key)
+                if not matching_exps:
+                    matching_exps = expansions_by_subfund.get(parent.normalized_subfund_key, [])
+
+                if not matching_exps:
+                    # ONE_TO_ZERO: Parent has no Tier 2 expansion
+                    unresolved_tier_2_count += 1
+                    quarantined_observations.append({
+                        "parent_id": parent.parent_id,
+                        "subfund_name": parent.subfund_name,
+                        "reason": QuarantineReason.UNRESOLVED_TIER_2_PARENT.value,
+                        "details": f"Tier 1 parent '{parent.subfund_name}' has no authoritative Tier 2 share-class expansion",
+                    })
+                    continue
+
+                has_conflict = False
+                for exp in matching_exps:
+                    if parent.status == "TERMINATED" and exp.status == "ACTIVE":
+                        has_conflict = True
+                        break
+                    if not exp.is_ucits and parent.is_ucits:
+                        has_conflict = True
+                        break
+
+                if has_conflict:
+                    conflicted_tier_2_count += 1
+                    quarantined_observations.append({
+                        "parent_id": parent.parent_id,
+                        "subfund_name": parent.subfund_name,
+                        "reason": QuarantineReason.CONFLICTED_TIER_2_RECORD.value,
+                        "details": "Contradiction between Tier 1 parent and Tier 2 expansion",
+                    })
+                    continue
+
+                incomplete_exps = [e for e in matching_exps if e.completeness != ShareClassExpansionCompleteness.COMPLETE.value]
+                if incomplete_exps:
+                    unresolved_tier_2_count += 1
+                    quarantined_observations.append({
+                        "parent_id": parent.parent_id,
+                        "subfund_name": parent.subfund_name,
+                        "reason": QuarantineReason.PARTIAL_SHARE_CLASS_EXPANSION.value,
+                        "details": "Tier 2 share-class schedule is PARTIAL or NOT_ESTABLISHED; population member requires COMPLETE",
+                    })
+                    continue
+
+                # Clean match
+                resolved_to_tier_2_count += 1
+                for exp in matching_exps:
+                    matched_exp_ids.add(exp.expansion_id)
+                    joined_obs = RawDiscoveryObservation(
+                        observation_id=f"joined_{parent.parent_id}_{exp.expansion_id}",
+                        source_authority=SourceAuthorityId.CENTRAL_BANK_OF_IRELAND.value,
+                        source_authority_tier=SourceAuthorityTier.TIER_1_NCA.value,
+                        retrieved_at=exp.retrieved_at,
+                        source_as_of=exp.source_as_of,
+                        raw_identifier=exp.share_class_isin,
+                        normalized_isin=exp.share_class_isin.upper(),
+                        fund_name_raw=parent.subfund_name,
+                        share_class_name_raw=exp.share_class_name,
+                        domicile_raw="IE",
+                        is_ucits_raw=parent.is_ucits and exp.is_ucits,
+                        is_etf_raw=parent.is_etf or exp.is_etf,
+                        listing_status_raw=parent.status if parent.status == "TERMINATED" else exp.status,
+                        source_record_uri=exp.source_record_uri,
+                        source_payload_sha256=exp.source_payload_sha256,
+                        raw_attributes={
+                            "parent_id": parent.parent_id,
+                            "umbrella_name": parent.umbrella_name,
+                            "subfund_name": parent.subfund_name,
+                            "parent_source_authority": parent.source_authority,
+                            "parent_source_payload_sha256": parent.source_payload_sha256,
+                            "parent_source_record_uri": parent.source_record_uri,
+                            "expansion_source_authority": exp.source_authority,
+                            "expansion_source_payload_sha256": exp.source_payload_sha256,
+                            "authorization_date": parent.authorization_date,
+                            "termination_date": parent.termination_date,
+                        },
+                    )
+                    all_observations.append(joined_obs)
+
+            extra_exps = [e for e in all_tier2_expansions if e.expansion_id not in matched_exp_ids]
+            for exp in extra_exps:
+                quarantined_observations.append({
+                    "expansion_id": exp.expansion_id,
+                    "share_class_isin": exp.share_class_isin,
+                    "subfund_name": exp.subfund_name,
+                    "reason": QuarantineReason.EXTRA_TIER_2_WITHOUT_TIER_1_PARENT.value,
+                    "details": f"Tier 2 expansion '{exp.subfund_name}' lacks authoritative Tier 1 parent in CBI register",
+                })
+
+        tier_1_parent_accounting = Tier1ParentAccounting.calculate(
+            total=total_parents,
+            resolved=resolved_to_tier_2_count,
+            unresolved=unresolved_tier_2_count,
+            ambiguous=ambiguous_tier_2_count,
+            conflicted=conflicted_tier_2_count,
+        )
+        if not tier_1_parent_accounting.is_conserved:
+            raise ConservationViolationError(
+                f"Tier 1 parent accounting conservation violation: {tier_1_parent_accounting.to_dict()}"
+            )
+
+        # 6. Adjudicate, Filter, and Normalize Observations
         raw_discovered_count = len(all_observations)
         parsed_count = 0
         unparseable_count = 0
@@ -285,9 +444,6 @@ class UCITSDiscoveryAuthority:
         out_of_scope_count = 0
         invalid_identifier_count = 0
         quarantined_count = 0
-
-        observations_by_isin: Dict[str, List[RawDiscoveryObservation]] = {}
-        quarantined_observations: List[Dict[str, Any]] = []
 
         for obs in all_observations:
             # Check for unparseable raw identifier
@@ -399,21 +555,82 @@ class UCITSDiscoveryAuthority:
             # Build provenance chain
             prov_chain: List[ObservationProvenance] = []
             listing_venues: Set[str] = set()
-            for o in obs_group:
+
+            parent_subfund = primary_obs.raw_attributes.get("subfund_name")
+            parent_umbrella = primary_obs.raw_attributes.get("umbrella_name")
+            if primary_obs.raw_attributes.get("parent_source_authority"):
+                # Bounded Authority Decomposition dual provenance
                 prov_chain.append(
                     ObservationProvenance(
-                        source_authority=o.source_authority,
-                        source_tier=o.source_authority_tier,
-                        source_record_id=o.observation_id,
-                        source_record_uri=o.source_record_uri,
-                        source_payload_sha256=o.source_payload_sha256,
-                        retrieved_at=o.retrieved_at,
-                        raw_metadata={"listing_status": o.listing_status_raw},
+                        source_authority=primary_obs.raw_attributes["parent_source_authority"],
+                        source_tier=SourceAuthorityTier.TIER_1_NCA.value,
+                        source_record_id=primary_obs.raw_attributes["parent_id"],
+                        source_record_uri=primary_obs.raw_attributes["parent_source_record_uri"],
+                        source_payload_sha256=primary_obs.raw_attributes["parent_source_payload_sha256"],
+                        retrieved_at=primary_obs.retrieved_at,
+                        authority_function=AuthorityFunction.POPULATION_MEMBERSHIP.value,
+                        parent_subfund_id=primary_obs.raw_attributes["parent_id"],
+                        raw_metadata={"umbrella_name": parent_umbrella, "subfund_name": parent_subfund},
                     )
                 )
-                venue = o.raw_attributes.get("venue", o.raw_attributes.get("mic"))
-                if venue:
-                    listing_venues.add(str(venue))
+                prov_chain.append(
+                    ObservationProvenance(
+                        source_authority=primary_obs.raw_attributes.get("expansion_source_authority", primary_obs.source_authority),
+                        source_tier=SourceAuthorityTier.TIER_2_STATUTORY_ISSUER.value,
+                        source_record_id=primary_obs.observation_id,
+                        source_record_uri=primary_obs.source_record_uri,
+                        source_payload_sha256=primary_obs.source_payload_sha256,
+                        retrieved_at=primary_obs.retrieved_at,
+                        authority_function=AuthorityFunction.SHARE_CLASS_EXPANSION.value,
+                        parent_subfund_id=primary_obs.raw_attributes["parent_id"],
+                        raw_metadata={"listing_status": primary_obs.listing_status_raw},
+                    )
+                )
+                for o in obs_group:
+                    if o.observation_id == primary_obs.observation_id:
+                        continue
+                    auth_func = (
+                        AuthorityFunction.SHARE_CLASS_EXPANSION.value
+                        if o.source_authority_tier == SourceAuthorityTier.TIER_2_STATUTORY_ISSUER.value
+                        else AuthorityFunction.POPULATION_MEMBERSHIP.value
+                    )
+                    prov_chain.append(
+                        ObservationProvenance(
+                            source_authority=o.source_authority,
+                            source_tier=o.source_authority_tier,
+                            source_record_id=o.observation_id,
+                            source_record_uri=o.source_record_uri,
+                            source_payload_sha256=o.source_payload_sha256,
+                            retrieved_at=o.retrieved_at,
+                            authority_function=auth_func,
+                            raw_metadata={"listing_status": o.listing_status_raw},
+                        )
+                    )
+                    venue = o.raw_attributes.get("venue", o.raw_attributes.get("mic"))
+                    if venue:
+                        listing_venues.add(str(venue))
+            else:
+                for o in obs_group:
+                    auth_func = (
+                        AuthorityFunction.SHARE_CLASS_EXPANSION.value
+                        if o.source_authority_tier == SourceAuthorityTier.TIER_2_STATUTORY_ISSUER.value
+                        else AuthorityFunction.POPULATION_MEMBERSHIP.value
+                    )
+                    prov_chain.append(
+                        ObservationProvenance(
+                            source_authority=o.source_authority,
+                            source_tier=o.source_authority_tier,
+                            source_record_id=o.observation_id,
+                            source_record_uri=o.source_record_uri,
+                            source_payload_sha256=o.source_payload_sha256,
+                            retrieved_at=o.retrieved_at,
+                            authority_function=auth_func,
+                            raw_metadata={"listing_status": o.listing_status_raw},
+                        )
+                    )
+                    venue = o.raw_attributes.get("venue", o.raw_attributes.get("mic"))
+                    if venue:
+                        listing_venues.add(str(venue))
 
             candidate = CandidateSpec(
                 share_class_isin=isin,
@@ -427,6 +644,8 @@ class UCITSDiscoveryAuthority:
                 listing_venues=tuple(sorted(list(listing_venues))),
                 authorization_date=primary_obs.raw_attributes.get("authorization_date"),
                 termination_date=primary_obs.raw_attributes.get("termination_date"),
+                parent_subfund_name=parent_subfund,
+                parent_umbrella_name=parent_umbrella,
             )
             unique_candidates.append(candidate)
 
@@ -475,6 +694,7 @@ class UCITSDiscoveryAuthority:
             "completeness_failure_reason": completeness_failure_reason,
             "source_completeness_map": source_completeness_map,
             "accounting": accounting.to_dict(),
+            "tier_1_parent_accounting": tier_1_parent_accounting.to_dict(),
             "aggregate_evidence_sha256": aggregate_evidence_sha256,
             "quarantined_observations": quarantined_observations,
             "candidate_count": len(unique_candidates),
@@ -503,7 +723,12 @@ class UCITSDiscoveryAuthority:
 
         return manifest_data
 
-    def replay_discovery(self, run_dir: Path, config: DiscoveryConfiguration) -> Dict[str, Any]:
+    def replay_discovery(
+        self,
+        run_dir: Path,
+        config: DiscoveryConfiguration,
+        custom_adapters: Optional[List[BaseSourceAdapter]] = None,
+    ) -> Dict[str, Any]:
         """
         Replays discovery from preserved raw response files without network access.
         Verifies bit-for-bit determinism of candidates, counts, and aggregate evidence hash.
@@ -562,13 +787,18 @@ class UCITSDiscoveryAuthority:
                 software_sha=self.software_sha,
                 transport=replay_transport,
             )
-            replayed_manifest = replay_authority.execute_discovery(config, run_id="replay_run")
+            replayed_manifest = replay_authority.execute_discovery(
+                config,
+                run_id="replay_run",
+                custom_adapters=custom_adapters,
+            )
 
         # Verify bit-for-bit identity of accounting and candidates
         assert replayed_manifest["candidate_count"] == original_manifest["candidate_count"], "Replay count mismatch"
         assert replayed_manifest["aggregate_evidence_sha256"] == original_manifest["aggregate_evidence_sha256"], "Replay aggregate evidence hash mismatch"
         assert replayed_manifest["accounting"] == original_manifest["accounting"], "Replay accounting mismatch"
         assert replayed_manifest["candidates"] == original_manifest["candidates"], "Replay candidates mismatch"
+        assert replayed_manifest.get("tier_1_parent_accounting") == original_manifest.get("tier_1_parent_accounting"), "Replay parent accounting mismatch"
 
         return replayed_manifest
 

@@ -13,11 +13,30 @@ from __future__ import annotations
 import enum
 import hashlib
 import json
+import re
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, FrozenSet, List, Optional, Tuple
 
 from .global_identifier_authority import normalize_isin, validate_isin
+
+
+def normalize_fund_name(name: str) -> str:
+    """
+    Deterministic, auditable, non-fuzzy normalization for fund and sub-fund names.
+    Performs Unicode NFKC normalization, lowercases, strips punctuation, collapses whitespace.
+    Strictly non-probabilistic: zero edit-distance, embeddings, or fuzzy heuristics.
+    """
+    if not name:
+        return ""
+    n = unicodedata.normalize("NFKC", str(name))
+    n = n.lower()
+    # Strip non-alphanumeric punctuation to prevent formatting mismatches
+    n = re.sub(r"[^\w\s]", " ", n)
+    # Collapse multiple whitespace characters into single space
+    n = re.sub(r"\s+", " ", n).strip()
+    return n
 
 
 # =============================================================================
@@ -75,6 +94,37 @@ class CandidateStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 
+class AuthorityFunction(str, enum.Enum):
+    """Specific decomposed functions of regulatory and statutory authority."""
+    POPULATION_MEMBERSHIP = "POPULATION_MEMBERSHIP"
+    UCITS_REGULATORY_STATUS = "UCITS_REGULATORY_STATUS"
+    FUND_IDENTITY = "FUND_IDENTITY"
+    SUBFUND_IDENTITY = "SUBFUND_IDENTITY"
+    SHARE_CLASS_EXPANSION = "SHARE_CLASS_EXPANSION"
+    SHARE_CLASS_IDENTITY = "SHARE_CLASS_IDENTITY"
+    SHARE_CLASS_ISIN = "SHARE_CLASS_ISIN"
+    ETF_CLASSIFICATION = "ETF_CLASSIFICATION"
+    LISTING = "LISTING"
+    DOCUMENT = "DOCUMENT"
+
+
+class ShareClassExpansionCompleteness(str, enum.Enum):
+    """Completeness state for share-class expansion from statutory prospectus/schedule."""
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    NOT_ESTABLISHED = "NOT_ESTABLISHED"
+
+
+class ParentJoinStatus(str, enum.Enum):
+    """Deterministic status of joining a Tier 1 parent to Tier 2 share-class expansions."""
+    RESOLVED_ONE_TO_ONE = "RESOLVED_ONE_TO_ONE"
+    RESOLVED_ONE_TO_MANY = "RESOLVED_ONE_TO_MANY"
+    UNRESOLVED_ONE_TO_ZERO = "UNRESOLVED_ONE_TO_ZERO"
+    MANY_TO_ONE_COLLISION = "MANY_TO_ONE_COLLISION"
+    AMBIGUOUS_MATCH = "AMBIGUOUS_MATCH"
+    CONFLICTED = "CONFLICTED"
+
+
 class QuarantineReason(str, enum.Enum):
     """Deterministic reasons for quarantining discovery observations."""
     STATUS_CONTRADICTION = "STATUS_CONTRADICTION"
@@ -89,6 +139,14 @@ class QuarantineReason(str, enum.Enum):
     TAMPERED_EVIDENCE = "TAMPERED_EVIDENCE"
     FIXTURE_CONTAMINATION = "FIXTURE_CONTAMINATION"
     TEMPORAL_INCONSISTENCY = "TEMPORAL_INCONSISTENCY"
+    UNRESOLVED_TIER_2_PARENT = "UNRESOLVED_TIER_2_PARENT"
+    AMBIGUOUS_PARENT_JOIN = "AMBIGUOUS_PARENT_JOIN"
+    COLLIDING_PARENT_SUBFUND = "COLLIDING_PARENT_SUBFUND"
+    CONFLICTED_TIER_2_RECORD = "CONFLICTED_TIER_2_RECORD"
+    EXTRA_TIER_2_WITHOUT_TIER_1_PARENT = "EXTRA_TIER_2_WITHOUT_TIER_1_PARENT"
+    PARTIAL_SHARE_CLASS_EXPANSION = "PARTIAL_SHARE_CLASS_EXPANSION"
+    SHARE_CLASS_COMPLETENESS_NOT_ESTABLISHED = "SHARE_CLASS_COMPLETENESS_NOT_ESTABLISHED"
+    ETF_CLASSIFICATION_NOT_ESTABLISHED = "ETF_CLASSIFICATION_NOT_ESTABLISHED"
     OTHER = "OTHER"
 
 
@@ -260,6 +318,8 @@ class ObservationProvenance:
     source_record_uri: str
     source_payload_sha256: str
     retrieved_at: str
+    authority_function: Optional[str] = None
+    parent_subfund_id: Optional[str] = None
     raw_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -291,6 +351,79 @@ class RawDiscoveryObservation:
 
 
 @dataclass(frozen=True)
+class Tier1ParentObservation:
+    """
+    Authoritative Tier-1 NCA observation at the Umbrella / Sub-Fund parent grain.
+    Represents population membership, UCITS regulatory status, and legal fund identity.
+    Strictly zero share-class ISIN fabrication.
+    """
+    parent_id: str
+    source_authority: str
+    source_authority_tier: str
+    jurisdiction: str
+    umbrella_name: str
+    subfund_name: str
+    is_ucits: bool
+    is_etf: bool
+    status: str
+    retrieved_at: str
+    source_as_of: str
+    source_record_uri: str
+    source_payload_sha256: str
+    authorization_date: Optional[str] = None
+    termination_date: Optional[str] = None
+    raw_attributes: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def normalized_join_key(self) -> Tuple[str, str]:
+        return (normalize_fund_name(self.umbrella_name), normalize_fund_name(self.subfund_name))
+
+    @property
+    def normalized_subfund_key(self) -> str:
+        return normalize_fund_name(self.subfund_name)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class Tier2ShareClassExpansion:
+    """
+    Authoritative Tier-2 statutory issuer / official fund manager share-class expansion.
+    Supplies share-class identity, ISO 6166 ISIN, and completeness for an authorized sub-fund.
+    Can NEVER self-authorize as an independent population parent.
+    """
+    expansion_id: str
+    source_authority: str
+    source_authority_tier: str
+    jurisdiction: str
+    umbrella_name: str
+    subfund_name: str
+    share_class_name: str
+    share_class_isin: str
+    is_ucits: bool
+    is_etf: bool
+    status: str
+    completeness: str  # ShareClassExpansionCompleteness value
+    retrieved_at: str
+    source_as_of: str
+    source_record_uri: str
+    source_payload_sha256: str
+    raw_attributes: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def normalized_join_key(self) -> Tuple[str, str]:
+        return (normalize_fund_name(self.umbrella_name), normalize_fund_name(self.subfund_name))
+
+    @property
+    def normalized_subfund_key(self) -> str:
+        return normalize_fund_name(self.subfund_name)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class CandidateSpec:
     """Validated, normalized candidate share class ready for denominator derivation."""
     share_class_isin: str
@@ -304,6 +437,8 @@ class CandidateSpec:
     listing_venues: Tuple[str, ...] = ()
     authorization_date: Optional[str] = None
     termination_date: Optional[str] = None
+    parent_subfund_name: Optional[str] = None
+    parent_umbrella_name: Optional[str] = None
 
     def __post_init__(self) -> None:
         # Delegate validation strictly to global_identifier_authority
@@ -324,12 +459,51 @@ class CandidateSpec:
             "listing_venues": list(self.listing_venues),
             "authorization_date": self.authorization_date,
             "termination_date": self.termination_date,
+            "parent_subfund_name": self.parent_subfund_name,
+            "parent_umbrella_name": self.parent_umbrella_name,
         }
 
 
 # =============================================================================
 # Accounting & Conservation Model
 # =============================================================================
+
+@dataclass(frozen=True)
+class Tier1ParentAccounting:
+    """
+    Strict conservation accounting for Tier-1 parent sub-funds.
+    Enforces:
+    total_parents == resolved_to_tier_2_count + unresolved_tier_2_count + ambiguous_tier_2_count + conflicted_tier_2_count
+    """
+    total_parents: int
+    resolved_to_tier_2_count: int
+    unresolved_tier_2_count: int
+    ambiguous_tier_2_count: int
+    conflicted_tier_2_count: int
+    is_conserved: bool
+
+    @classmethod
+    def calculate(
+        cls,
+        total: int,
+        resolved: int,
+        unresolved: int,
+        ambiguous: int,
+        conflicted: int,
+    ) -> Tier1ParentAccounting:
+        balanced = (total == resolved + unresolved + ambiguous + conflicted)
+        return cls(
+            total_parents=total,
+            resolved_to_tier_2_count=resolved,
+            unresolved_tier_2_count=unresolved,
+            ambiguous_tier_2_count=ambiguous,
+            conflicted_tier_2_count=conflicted,
+            is_conserved=balanced,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
 
 @dataclass(frozen=True)
 class DiscoveryAccounting:
