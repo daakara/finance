@@ -145,4 +145,5 @@ export interface TickerCommandStripProps {
   amihudScore?: number;
   mode?: ExperienceMode;
   className?: string;
+  expenseRatio?: string | number;
 }

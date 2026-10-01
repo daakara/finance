@@ -61,6 +61,7 @@ export default function TickerCommandStrip({
   amihudScore,
   mode: propMode,
   className = "",
+  expenseRatio,
 }: TickerCommandStripProps) {
   // Read store mode if prop not provided
   const storeMode = useExperienceStore((state) => state.mode);
@@ -127,6 +128,14 @@ export default function TickerCommandStrip({
               {sector && (
                 <span data-testid="ticker-sector" className="truncate text-slate-400">
                   {sector}
+                </span>
+              )}
+              {expenseRatio !== undefined && expenseRatio !== null && (
+                <span
+                  data-testid="ticker-expense-ratio"
+                  className="px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 text-[10px]"
+                >
+                  TER: {typeof expenseRatio === "number" ? `${expenseRatio.toFixed(2)}%` : expenseRatio}
                 </span>
               )}
             </div>

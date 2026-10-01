@@ -26,9 +26,11 @@ import WeeklyConfluenceSpotlight from "../components/WeeklyConfluenceSpotlight";
 import IntentHero from "../components/IntentHero";
 import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
+import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
+import { isETF, isStock, isUnknownAsset } from "../lib/assetTypeUtils";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -553,20 +555,36 @@ function TerminalContent() {
           {/* TAB 1: EXECUTION & LEVELS */}
           {activeTab === "EXECUTION" && (
             <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              {userRole === "DAY_TRADER" && data && (
-                <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
+              {isETF(selectedSymbol) ? (
+                <EtfCostOfOwnershipCard symbol={selectedSymbol} />
+              ) : isStock(selectedSymbol) ? (
+                <>
+                  {userRole === "DAY_TRADER" && data && (
+                    <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
+                  )}
+                  <OptimalEntryExitCard
+                    symbol={selectedSymbol}
+                    executionPlan={data?.optimalExecution}
+                    userRole={userRole}
+                    smartMoney={data?.smartMoney}
+                    macroRegime={macroData}
+                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                    canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
+                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                    decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
+                  />
+                </>
+              ) : (
+                <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">
+                  <div className="flex items-center space-x-2 text-slate-400">
+                    <span className="w-2 h-2 rounded-full bg-slate-500" />
+                    <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                    Asset classification for &quot;{selectedSymbol}&quot; is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.
+                  </p>
+                </div>
               )}
-              <OptimalEntryExitCard
-                symbol={selectedSymbol}
-                executionPlan={data?.optimalExecution}
-                userRole={userRole}
-                smartMoney={data?.smartMoney}
-                macroRegime={macroData}
-                isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
-                canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
-                decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
-                decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
-              />
             </div>
           )}
 
@@ -580,22 +598,26 @@ function TerminalContent() {
                 userRole={userRole}
                 onSelectSymbol={setSelectedSymbol}
               />
-              <TraderArchetypesCard
-                symbol={selectedSymbol}
-                traderArchetypes={data?.traderArchetypes}
-              />
+              {!isETF(selectedSymbol) && (
+                <TraderArchetypesCard
+                  symbol={selectedSymbol}
+                  traderArchetypes={data?.traderArchetypes}
+                />
+              )}
             </div>
           )}
 
           {/* TAB 3: FUNDAMENTALS & MACRO REGIME */}
           {activeTab === "FUNDAMENTALS" && (
             <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              <AssetFactorRadar
-                symbol={selectedSymbol}
-                factorScores={data?.factorScores}
-                macroDifficulty={data?.macroDifficulty}
-                expectedReturn={data?.expectedReturn}
-              />
+              {isStock(selectedSymbol) && (
+                <AssetFactorRadar
+                  symbol={selectedSymbol}
+                  factorScores={data?.factorScores}
+                  macroDifficulty={data?.macroDifficulty}
+                  expectedReturn={data?.expectedReturn}
+                />
+              )}
               <InstitutionalFeeds activeSymbol={selectedSymbol} />
               <CatalystForecastCard data={data?.catalystForecast} />
             </div>
