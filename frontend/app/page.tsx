@@ -31,6 +31,7 @@ import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../li
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, isStock, isUnknownAsset } from "../lib/assetTypeUtils";
+import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
@@ -110,6 +111,9 @@ function TerminalContent() {
     setHasExplicitSymbol(true);
     setSelectedSymbol(clean);
     trackSymbolSearch(clean, "OmniSearch");
+    if (isETF(clean)) {
+      emitEtfIntentAttempt(clean, "handleSelectSymbol");
+    }
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("symbol", clean);
