@@ -12,6 +12,7 @@ export default defineConfig({
       "components/**/__tests__/**/*.test.{ts,tsx}",
       "hooks/**/__tests__/**/*.test.{ts,tsx}",
       "state/**/__tests__/**/*.test.{ts,tsx}",
+      "lib/**/__tests__/**/*.test.{ts,tsx}",
     ],
   },
 });
