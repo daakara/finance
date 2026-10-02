@@ -45,20 +45,16 @@ export default function GuidedTerminalView({
 
   return (
     <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
-      {/* Guided Badge Banner */}
-      <div className="flex items-center justify-between bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded-xl text-xs font-mono">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-300 font-bold">🟢 GUIDED EXPERIENCE</span>
-          <span className="text-slate-400 hidden sm:inline">• Plain English, step-by-step contextual intelligence</span>
-        </div>
+      {/* Score Explanation Trigger */}
+      <div className="flex items-center justify-end">
         <button
           onClick={onOpenWhy}
-          className="text-[11px] text-emerald-400 hover:text-emerald-300 underline font-bold cursor-pointer"
+          className="text-xs text-emerald-400 hover:text-emerald-300 underline font-bold cursor-pointer py-2 px-2 min-h-[36px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none rounded"
         >
           Explain Score →
         </button>
       </div>
+
 
       {/* ARX Assessment Card */}
       <div className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
@@ -107,7 +103,7 @@ export default function GuidedTerminalView({
             Why ARX thinks this
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-            {insight.human.whyPills.map((pill, idx) => (
+            {(insight.human.whyPills || []).map((pill, idx) => (
               <div
                 key={idx}
                 className="bg-[#070b13] p-2.5 rounded-xl border border-[#1b2639] space-y-1"

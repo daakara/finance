@@ -20,20 +20,16 @@ export default function StandardTerminalView({
 
   return (
     <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
-      {/* Standard Badge Banner */}
-      <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-800/50 p-2.5 rounded-xl text-xs font-mono">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400" />
-          <span className="text-cyan-300 font-bold">🔵 STANDARD EXPERIENCE</span>
-          <span className="text-slate-400 hidden sm:inline">• Confluence signals, key levels & decision triggers</span>
-        </div>
+      {/* Why Score Inspection Trigger */}
+      <div className="flex items-center justify-end">
         <button
           onClick={onOpenWhy}
-          className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer py-2 px-2 sm:py-0 sm:px-0 min-h-[36px] sm:min-h-0 inline-flex items-center"
+          className="text-xs text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer py-2 px-2 min-h-[36px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
         >
           Why Score {insight.setupScore}? →
         </button>
       </div>
+
 
       {/* Main Standard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -41,7 +37,7 @@ export default function StandardTerminalView({
         <div className="lg:col-span-2 bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
             <div>
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
                 ARX Bottom Line
               </span>
               <h2 className="text-base sm:text-xl font-black text-white tracking-tight mt-0.5">
@@ -60,7 +56,7 @@ export default function StandardTerminalView({
                   : "border-[#24334b] hover:border-cyan-500"
               }`}
             >
-              <span className="text-[10px] text-slate-400 font-mono">Setup Score</span>
+              <span className="text-xs text-slate-400 font-mono">Setup Score</span>
               <span className={`text-xl font-black font-mono ${
                 insight.terminalState.overallEligibility !== "ELIGIBLE"
                   ? "text-slate-500"
@@ -69,9 +65,9 @@ export default function StandardTerminalView({
                 {insight.setupScore}{insight.terminalState.overallEligibility !== "ELIGIBLE" ? "*" : ""}/100
               </span>
               {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
-                <span className="text-[8px] text-amber-500/80 font-mono">Partial</span>
+                <span className="text-[10px] text-amber-500/80 font-mono">Partial</span>
               )}
-              <span className="text-[9px] text-slate-500 font-mono">{insight.standard.signalsRatio}</span>
+              <span className="text-[11px] text-slate-500 font-mono">{insight.standard.signalsRatio}</span>
             </div>
           </div>
 
@@ -79,11 +75,11 @@ export default function StandardTerminalView({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-slate-300 font-bold">Confluence Breakdown</span>
-              <span className="text-slate-500 text-[10px]">Independent Quant Models</span>
+              <span className="text-slate-500 text-[11px]">Independent Quant Models</span>
             </div>
 
             <div className="space-y-2">
-              {insight.standard.confluenceBreakdown.map((bar, idx) => (
+              {(insight.standard.confluenceBreakdown || []).map((bar, idx) => (
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-slate-400">{bar.dimension}</span>

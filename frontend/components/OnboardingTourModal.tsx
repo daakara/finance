@@ -122,7 +122,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
           <div className="flex items-center space-x-2">
             <span className="text-xl">{slide.icon}</span>
             <div>
-              <span className="text-[10px] text-cyan-400 font-bold tracking-wider uppercase block">
+              <span className="text-xs text-cyan-400 font-bold tracking-wider uppercase block">
                 {slide.badge} ({slide.step}/4)
               </span>
               <h2 id="tour-modal-title" className="text-sm sm:text-base font-bold text-white tracking-tight">
@@ -161,15 +161,18 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
           </div>
 
           {/* Dots Indicator */}
-          <div className="flex items-center justify-center space-x-2 pt-2">
-            {TOUR_SLIDES.map((_, idx) => (
+          <div className="flex items-center justify-center space-x-1 pt-2">
+            {TOUR_SLIDES.map((s, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
-                className={`h-2 rounded-full transition-all ${
-                  currentSlide === idx ? "w-6 bg-cyan-400" : "w-2 bg-[#223147] hover:bg-slate-500"
-                }`}
-              />
+                aria-label={`Go to step ${idx + 1}: ${s.badge}`}
+                className="min-w-[36px] min-h-[36px] flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
+              >
+                <span className={`block h-2 rounded-full transition-all ${
+                  currentSlide === idx ? "w-6 bg-cyan-400" : "w-2 bg-[#223147]"
+                }`} />
+              </button>
             ))}
           </div>
         </div>

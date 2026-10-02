@@ -16,6 +16,7 @@ import MarketCommandRibbon from "./nav/MarketCommandRibbon";
 import ExperienceModeToggle from "./experience/ExperienceModeToggle";
 import WatchlistDrawerTrigger from "./drawers/WatchlistDrawerTrigger";
 import { CANONICAL_HUBS, buildHubHref, isHubActive, extractActiveSymbol } from "../lib/canonicalNav";
+import { HelpCircle, Compass, Shield, RefreshCw, Zap, Landmark, Radar, Microscope, Briefcase } from "lucide-react";
 
 interface NavbarProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
@@ -50,10 +51,31 @@ export default function Navbar({
   const [isPurging, setIsPurging] = useState<boolean>(false);
   const [purgeToast, setPurgeToast] = useState<boolean>(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState<boolean>(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isUtilitiesMenuOpen, setIsUtilitiesMenuOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
   const shortcutsCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+  const utilitiesMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isUtilitiesMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (utilitiesMenuRef.current && !utilitiesMenuRef.current.contains(e.target as Node)) {
+        setIsUtilitiesMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsUtilitiesMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isUtilitiesMenuOpen]);
 
   useEffect(() => {
     if (isShortcutsOpen) {
@@ -79,6 +101,10 @@ export default function Navbar({
   }, []);
 
   const handlePurgeCache = () => {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm("Purge local market snapshots and re-sync live quotes? This will clear locally cached data.");
+      if (!confirmed) return;
+    }
     setIsPurging(true);
     try {
       localStorage.removeItem("FINANCE_MARKET_SNAPSHOTS_V1");
@@ -193,12 +219,24 @@ export default function Navbar({
     window.addEventListener("open-onboarding", handleOnboardingEvent);
     window.addEventListener("open-shortcuts", handleShortcutsEvent);
     window.addEventListener("open-privacy", handlePrivacyEvent);
+
+    // B4: Auto-show onboarding tour on first visit
+    let firstVisitTimer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED")) {
+        firstVisitTimer = setTimeout(() => {
+          setIsOnboardingOpen(true);
+        }, 1000);
+      }
+    } catch {}
+
     return () => {
       window.removeEventListener("finance:role-change", handleRoleEvent);
       window.removeEventListener("finance:vernacular-change", handleVernacularEvent);
       window.removeEventListener("open-onboarding", handleOnboardingEvent);
       window.removeEventListener("open-shortcuts", handleShortcutsEvent);
       window.removeEventListener("open-privacy", handlePrivacyEvent);
+      if (firstVisitTimer) clearTimeout(firstVisitTimer);
     };
   }, []);
 
@@ -268,24 +306,6 @@ export default function Navbar({
 
           {/* Right: Theme Toggle & Trading Horizon Mode Switcher */}
           <div className="flex items-center space-x-1 shrink-0">
-            {/* Purge Cache & Refresh Live Feeds Button */}
-            <button
-              type="button"
-              onClick={handlePurgeCache}
-              aria-label="Purge Local Cache & Re-sync Live Feeds"
-              title="Purge Local Cache & Force Live Quote Refresh"
-              className={`hidden xl:flex p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
-                isPurging ? "animate-spin text-cyan-400 border-cyan-500" : ""
-              }`}
-            >
-              <svg aria-hidden="true" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                <path d="M3 21v-5h5" />
-              </svg>
-            </button>
-
             {/* Theme Toggle (Always visible) */}
             <ThemeToggle />
 
@@ -294,108 +314,114 @@ export default function Navbar({
               <ExperienceModeToggle />
             </div>
 
-            {/* Secondary Utilities - Hidden on Mobile (< 640px) to guarantee zero 375px overflow */}
-            <div className="hidden sm:flex items-center space-x-1">
-              {/* Keyboard Shortcuts Help Button */}
+            {/* Unified Utilities Menu (A3: Grouped by HELP, SETTINGS, SYSTEM) */}
+            <div className="relative" ref={utilitiesMenuRef}>
               <button
-                id="shortcuts-help-btn"
+                id="utilities-menu-btn"
                 type="button"
-                onClick={() => setIsShortcutsOpen(true)}
-                aria-label="Pro-Trader Keyboard Shortcuts Guide (?)"
-                title="Keyboard Shortcuts Cheatsheet (?)"
-                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
+                onClick={() => setIsUtilitiesMenuOpen(!isUtilitiesMenuOpen)}
+                aria-expanded={isUtilitiesMenuOpen}
+                aria-haspopup="true"
+                aria-label="Terminal Utilities and System Settings"
+                title="Utilities & Settings"
+                className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
+                  isUtilitiesMenuOpen ? "border-cyan-500 text-cyan-300 bg-[#162030]" : ""
+                }`}
               >
-                <span aria-hidden="true" className="font-mono font-bold text-sm">?</span>
+                <span aria-hidden="true" className="font-mono text-sm leading-none font-bold">⋯</span>
               </button>
 
-              {/* Guided Onboarding Tour Button */}
-              <button
-                id="onboarding-tour-btn"
-                type="button"
-                onClick={handleOpenOnboarding}
-                aria-label="Guided Onboarding Tour"
-                title="Guided Onboarding Tour"
-                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-              >
-                <span aria-hidden="true" className="text-sm">🧭</span>
-              </button>
-
-              {/* Privacy & Telemetry Settings Button */}
-              <button
-                id="privacy-settings-btn"
-                type="button"
-                onClick={() => setIsPrivacyOpen(true)}
-                aria-label="Privacy & Telemetry Settings"
-                title="Privacy & Telemetry Settings"
-                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-              >
-                <span aria-hidden="true" className="text-sm">🛡️</span>
-              </button>
-            </div>
-
-            {/* Mobile Utilities Overflow Menu Button (Visible strictly on mobile < sm) */}
-            <div className="relative sm:hidden">
-              <button
-                id="mobile-utilities-btn"
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-expanded={isMobileMenuOpen}
-                aria-label="More Terminal Options and Utilities"
-                title="More Options"
-                className="p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none"
-              >
-                <span aria-hidden="true" className="font-mono text-sm leading-none">⋯</span>
-              </button>
-
-              {/* Mobile Utilities Dropdown Menu */}
-              {isMobileMenuOpen && (
+              {/* Grouped Utilities Dropdown Menu */}
+              {isUtilitiesMenuOpen && (
                 <div
                   role="menu"
-                  aria-label="Mobile Utilities"
-                  className="absolute right-0 top-12 z-50 w-56 rounded-xl border border-[#243044] bg-[#0c1017] p-2 shadow-2xl space-y-2 text-xs font-mono"
+                  aria-label="Terminal Utilities"
+                  className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-[#243044] bg-[#0c1017] p-2.5 shadow-2xl space-y-2 text-xs font-mono animate-fadeIn"
                 >
-                  <div className="px-2 py-1 text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800">
-                    Terminal Experience
+                  {/* On smaller viewports: Terminal Experience depth switcher */}
+                  <div className="lg:hidden pb-2 border-b border-slate-800 space-y-1">
+                    <div className="px-1 text-xs text-slate-500 uppercase tracking-wider font-bold">
+                      Terminal Experience
+                    </div>
+                    <div className="pt-0.5">
+                      <ExperienceModeToggle />
+                    </div>
                   </div>
-                  <div className="px-1">
-                    <ExperienceModeToggle />
-                  </div>
-                  <div className="border-t border-slate-800 pt-1 space-y-1">
+
+                  {/* Section 1: HELP */}
+                  <div className="space-y-1">
+                    <div className="px-1 text-xs text-slate-500 uppercase tracking-wider font-bold">
+                      Help & Navigation
+                    </div>
                     <button
+                      id="shortcuts-help-btn"
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setIsMobileMenuOpen(false);
+                        setIsUtilitiesMenuOpen(false);
                         setIsShortcutsOpen(true);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
                     >
-                      <span>⌨️</span>
+                      <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>Keyboard Shortcuts</span>
+                      <kbd className="ml-auto font-mono text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">?</kbd>
                     </button>
                     <button
+                      id="onboarding-tour-btn"
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setIsMobileMenuOpen(false);
+                        setIsUtilitiesMenuOpen(false);
                         handleOpenOnboarding();
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
                     >
-                      <span>🧭</span>
+                      <Compass className="w-4 h-4 text-cyan-400 shrink-0" />
                       <span>Guided Onboarding Tour</span>
                     </button>
+                  </div>
+
+                  {/* Section 2: SETTINGS */}
+                  <div className="border-t border-slate-800 pt-2 space-y-1">
+                    <div className="px-1 text-xs text-slate-500 uppercase tracking-wider font-bold">
+                      Privacy & Diagnostics
+                    </div>
                     <button
+                      id="privacy-settings-btn"
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setIsMobileMenuOpen(false);
+                        setIsUtilitiesMenuOpen(false);
                         setIsPrivacyOpen(true);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[44px]"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-[#162030] hover:text-cyan-400 text-left cursor-pointer min-h-[36px] transition-colors"
                     >
-                      <span>🛡️</span>
+                      <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>Privacy & Telemetry</span>
+                    </button>
+                  </div>
+
+                  {/* Section 3: SYSTEM */}
+                  <div className="border-t border-slate-800 pt-2 space-y-1">
+                    <div className="px-1 text-xs text-slate-500 uppercase tracking-wider font-bold">
+                      System & Cache
+                    </div>
+                    <button
+                      id="purge-cache-btn"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsUtilitiesMenuOpen(false);
+                        handlePurgeCache();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-slate-300 hover:bg-rose-950/40 hover:text-rose-300 text-left cursor-pointer min-h-[36px] transition-colors"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-amber-400 shrink-0 ${isPurging ? "animate-spin text-cyan-400" : ""}`} />
+                      <div className="flex flex-col">
+                        <span>Purge Cache & Re-sync</span>
+                        <span className="text-xs text-slate-500">Requires confirmation · Re-syncs feeds</span>
+                      </div>
                     </button>
                   </div>
                 </div>
@@ -410,14 +436,14 @@ export default function Navbar({
                 aria-pressed={activeRole === "DAY_TRADER"}
                 aria-label="Switch to Day Trader mode"
                 title="Day Trader Mode (Intraday Momentum & Quick Scalps)"
-                className={`flex items-center space-x-1 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1.5 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "DAY_TRADER"
                     ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">⚡</span>
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                <Zap className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="font-mono tracking-tight text-xs">
                   <span className="hidden 2xl:inline">Day Trade</span>
                   <span className="hidden xl:inline 2xl:hidden">Day</span>
                 </span>
@@ -429,14 +455,14 @@ export default function Navbar({
                 aria-pressed={activeRole === "LONG_TERM"}
                 aria-label="Switch to Long-Term Investor mode"
                 title="Long-Term Mode (Value Compounding & Secular Growth)"
-                className={`flex items-center space-x-1 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
+                className={`flex items-center space-x-1.5 px-2.5 xl:px-3 2xl:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
                   activeRole === "LONG_TERM"
                     ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-950/50 font-extrabold"
                     : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
                 }`}
               >
-                <span aria-hidden="true" className="text-xs">🏛️</span>
-                <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+                <Landmark className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="font-mono tracking-tight text-xs">
                   <span className="hidden 2xl:inline">Long Term</span>
                   <span className="hidden xl:inline 2xl:hidden">Long</span>
                 </span>
@@ -474,6 +500,12 @@ export default function Navbar({
         {CANONICAL_HUBS.map((hub) => {
           const href = buildHubHref(hub, effectiveSymbol);
           const active = isHubActive(hub.href, pathname);
+          const HubIcon =
+            hub.id === "radar" ? Radar :
+            hub.id === "analysis" ? Microscope :
+            hub.id === "setups" ? Zap :
+            Briefcase;
+
           return (
             <Link
               key={hub.id}
@@ -485,8 +517,8 @@ export default function Navbar({
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <span aria-hidden="true" className="text-sm mb-0.5 leading-none">{hub.icon}</span>
-              <span className="text-[8.5px] sm:text-[9px] tracking-tight">{hub.label}</span>
+              <HubIcon className="w-4 h-4 mb-0.5 leading-none shrink-0" aria-hidden="true" />
+              <span className="text-[10px] sm:text-xs tracking-tight">{hub.label}</span>
             </Link>
           );
         })}
@@ -502,10 +534,12 @@ export default function Navbar({
               : "bg-cyan-950/40 border-cyan-500/50 text-cyan-400 font-bold"
           }`}
         >
-          <span aria-hidden="true" className="text-sm mb-0.5 leading-none">
-            {activeRole === "DAY_TRADER" ? "⚡" : "🏛️"}
-          </span>
-          <span className="text-[8px] sm:text-[8.5px] tracking-tight">
+          {activeRole === "DAY_TRADER" ? (
+            <Zap className="w-4 h-4 mb-0.5 text-amber-400 shrink-0" aria-hidden="true" />
+          ) : (
+            <Landmark className="w-4 h-4 mb-0.5 text-cyan-400 shrink-0" aria-hidden="true" />
+          )}
+          <span className="text-[10px] sm:text-xs tracking-tight">
             {activeRole === "DAY_TRADER" ? "Day" : "Long"}
           </span>
         </button>

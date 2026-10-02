@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { AnalyticsResponse } from "../lib/api";
 import { FredMacroData, SecForm4Trade } from "../lib/institutionalFeeds";
+import { Target } from "lucide-react";
 
 interface CompositeConvictionCardProps {
   symbol: string;
@@ -130,7 +131,7 @@ export default function CompositeConvictionCard({
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className={`w-2.5 h-2.5 rounded-full ${synthesis.score >= 75 ? "bg-emerald-400 animate-ping" : "bg-slate-500"}`}></span>
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 font-mono">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 font-mono">
               {isPlain ? `Multi-Pillar Evidence • ${cleanSym}` : `Quantitative Confluence • ${cleanSym}`}
             </span>
           </div>
@@ -142,7 +143,7 @@ export default function CompositeConvictionCard({
         {/* Big Circular/Pill Score Gauge */}
         <div className="flex items-center space-x-3 bg-[#090d14] px-3.5 py-2 rounded-xl border border-[#243044]">
           <div className="text-right">
-            <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">
+            <span className="text-[11px] uppercase font-bold text-slate-400 block font-mono">
               {isPlain ? "Confluence Evidence" : "Confluence Score"}
             </span>
             <span className="text-xs text-slate-300 font-medium">
@@ -155,11 +156,11 @@ export default function CompositeConvictionCard({
         </div>
       </div>
 
-      {/* 💡 The Bottom Line Callout Box */}
+      {/* The Bottom Line Callout Box */}
       <div className="bg-[#090d14] border border-cyan-500/30 p-3 sm:p-3.5 rounded-xl flex items-start gap-2.5 shadow-sm">
-        <span className="text-base sm:text-lg shrink-0 select-none">🎯</span>
+        <Target className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" aria-hidden="true" />
         <div className="space-y-0.5 min-w-0">
-          <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block font-mono">
+          <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block font-mono">
             The Bottom Line (No Wall Street Fluff)
           </span>
           <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
@@ -192,7 +193,7 @@ export default function CompositeConvictionCard({
                 }`}
               ></span>
             </div>
-            <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+            <p className="text-xs text-slate-300 font-sans leading-relaxed">
               {isPlain ? r.plainDetail : r.detail}
             </p>
           </div>

@@ -34,6 +34,7 @@ import { resolveAssetAlias } from "../lib/assetRegistry";
 import { isETF, isStock, isUnknownAsset } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
+import { Target, Landmark, BarChart3, Shield } from "lucide-react";
 
 type WorkspaceTab = "EXECUTION" | "SMART_MONEY" | "FUNDAMENTALS" | "RISK_CONTAGION";
 
@@ -258,30 +259,7 @@ function TerminalContent() {
       <main id="main-content" role="main" className="flex-1 max-w-[1750px] w-full mx-auto p-2.5 sm:p-5 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-5 pb-28 sm:pb-5">
         {/* Main Terminal Workspace (Hero on mobile, Right column on desktop) */}
         <section aria-label="Market Workspace and Quantitative Analytics" className="lg:col-span-3 space-y-4 sm:space-y-5 order-1 lg:order-2 min-w-0">
-          {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC4, A3-AC14) */}
-          <PageIntro
-            hubId="analysis"
-            title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
-            purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-            badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
-            symbol={hasExplicitSymbol ? selectedSymbol : null}
-            isDemo={!hasExplicitSymbol}
-            demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
-            primaryAction={{
-              label: `Prepare Trade Setup (${selectedSymbol}) →`,
-              href: `/setups?symbol=${selectedSymbol}`,
-              onClick: () => trackAnalysisToSetup(selectedSymbol),
-            }}
-            secondaryAction={{
-              label: "Scan Radar Candidates →",
-              href: "/radar",
-            }}
-          />
 
-          {/* Intent-First Home Hero: only when no explicit asset is being analyzed */}
-          {!hasExplicitSymbol && (
-            <IntentHero onSelectSymbol={handleSelectSymbol} />
-          )}
 
           {/* Ingestion Failure / Explicit Retry State OR Adaptive Multi-Tier Terminal Engine */}
           {error && !data ? (
@@ -384,57 +362,7 @@ function TerminalContent() {
               </div>
             )}
 
-            {/* 🎯 Weekly High-Confluence Alpha Spotlight (Auto-folded on dedicated ticker search) */}
-            <WeeklyConfluenceSpotlight
-              defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
-              onSelectSymbol={handleSelectSymbol}
-              selectedSymbol={selectedSymbol}
-            />
 
-            {/* 💡 Intelligent Did You Mean Ticker Recommendation Banner */}
-            {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
-              <div className="mb-3 p-3 rounded-xl bg-[#141b29] border-2 border-cyan-500/80 text-xs font-mono text-cyan-200 shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">💡</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white uppercase tracking-wide">Unlisted Search Query: &quot;{selectedSymbol}&quot;</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/80">Company / Brand Match</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 mt-0.5">
-                      &quot;{selectedSymbol}&quot; is a company brand, not an official exchange ticker. Did you mean to analyze:
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectSymbol(aliasRecommendation.canonicalTicker)}
-                    className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-md cursor-pointer"
-                  >
-                    <span>🚀 Switch to {aliasRecommendation.canonicalTicker}</span>
-                    <span className="hidden sm:inline font-semibold text-slate-900">({aliasRecommendation.companyName})</span>
-                    <span>→</span>
-                  </button>
-                  {aliasRecommendation.peerSuggestion && (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectSymbol(aliasRecommendation.peerSuggestion!)}
-                      className="px-2.5 py-1.5 rounded-lg bg-[#1a2538] hover:bg-[#23324d] text-slate-200 border border-[#2e405e] text-xs font-semibold transition-colors cursor-pointer"
-                    >
-                      Compare {aliasRecommendation.peerSuggestion}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {data?._dataSource === 'fallback' && (!aliasRecommendation || aliasRecommendation.canonicalTicker.toUpperCase() === selectedSymbol.toUpperCase()) && (
-              <div className="mb-2 p-2 rounded-lg bg-amber-950/30 border border-amber-800/40 text-[11px] font-mono text-amber-300 flex items-center justify-between">
-                <span>⚠️ Note: Operating in offline fallback simulation mode — live institutional feeds will auto-resume upon backend handshake.</span>
-              </div>
-            )}
 
             <PriceChart
               symbol={selectedSymbol}
@@ -489,6 +417,83 @@ function TerminalContent() {
             />
           </div>
 
+          {/* Hub Guidance & Orientation — positioned below chart to prioritize verdict+chart viewport */}
+          <PageIntro
+            hubId="analysis"
+            title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
+            purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+            badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
+            symbol={hasExplicitSymbol ? selectedSymbol : null}
+            isDemo={!hasExplicitSymbol}
+            demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+            primaryAction={{
+              label: `Prepare Trade Setup (${selectedSymbol}) →`,
+              href: `/setups?symbol=${selectedSymbol}`,
+              onClick: () => trackAnalysisToSetup(selectedSymbol),
+            }}
+            secondaryAction={{
+              label: "Scan Radar Candidates →",
+              href: "/radar",
+            }}
+          />
+
+          {/* Intent-First Home Hero: only when no explicit asset is being analyzed */}
+          {!hasExplicitSymbol && (
+            <IntentHero onSelectSymbol={handleSelectSymbol} />
+          )}
+
+          {/* Weekly High-Confluence Alpha Spotlight (Auto-folded on dedicated ticker search) */}
+          <WeeklyConfluenceSpotlight
+            defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
+            onSelectSymbol={handleSelectSymbol}
+            selectedSymbol={selectedSymbol}
+          />
+
+          {/* Intelligent Did You Mean Ticker Recommendation Banner */}
+          {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
+            <div className="mb-3 p-3 rounded-xl bg-[#141b29] border-2 border-cyan-500/80 text-xs font-mono text-cyan-200 shadow-xl flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">💡</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white uppercase tracking-wide">Unlisted Search Query: &quot;{selectedSymbol}&quot;</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/80">Company / Brand Match</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    &quot;{selectedSymbol}&quot; is a company brand, not an official exchange ticker. Did you mean to analyze:
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSymbol(aliasRecommendation.canonicalTicker)}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-transform active:scale-95 shadow-md cursor-pointer"
+                >
+                  <span>🚀 Switch to {aliasRecommendation.canonicalTicker}</span>
+                  <span className="hidden sm:inline font-semibold text-slate-900">({aliasRecommendation.companyName})</span>
+                  <span>→</span>
+                </button>
+                {aliasRecommendation.peerSuggestion && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSymbol(aliasRecommendation.peerSuggestion!)}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#1a2538] hover:bg-[#23324d] text-slate-200 border border-[#2e405e] text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Compare {aliasRecommendation.peerSuggestion}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {data?._dataSource === 'fallback' && (!aliasRecommendation || aliasRecommendation.canonicalTicker.toUpperCase() === selectedSymbol.toUpperCase()) && (
+            <div className="mb-2 p-2 rounded-lg bg-amber-950/30 border border-amber-800/40 text-[11px] font-mono text-amber-300 flex items-center justify-between">
+              <span>⚠️ Note: Operating in offline fallback simulation mode — live institutional feeds will auto-resume upon backend handshake.</span>
+            </div>
+          )}
+
           {/* 💎 DECISION-SYNTHESIS COMPOSITE CONVICTION SCORECARD */}
           <CompositeConvictionCard
             symbol={selectedSymbol}
@@ -498,19 +503,19 @@ function TerminalContent() {
             userRole={userRole}
           />
 
-          {/* 🗂️ MODULAR WORKSPACE TABS (Eliminates Cognitive Overload & Infinite Scroll) */}
+          {/* Modular Domain Workspace Tabs */}
           <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
             <button
               role="tab"
               aria-selected={activeTab === "EXECUTION"}
               onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
                 activeTab === "EXECUTION"
                   ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
-              <span>🎯</span>
+              <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
             </button>
 
@@ -518,13 +523,13 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "SMART_MONEY"}
               onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
                 activeTab === "SMART_MONEY"
                   ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
-              <span>🏛️</span>
+              <Landmark className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="whitespace-nowrap">Smart Money</span>
             </button>
 
@@ -532,13 +537,13 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "FUNDAMENTALS"}
               onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
                 activeTab === "FUNDAMENTALS"
                   ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
-              <span>📊</span>
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="whitespace-nowrap"><span className="sm:hidden">Factors</span><span className="hidden sm:inline">Factors & Macro</span></span>
             </button>
 
@@ -546,13 +551,13 @@ function TerminalContent() {
               role="tab"
               aria-selected={activeTab === "RISK_CONTAGION"}
               onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-[11px] sm:text-xs cursor-pointer ${
+              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
                 activeTab === "RISK_CONTAGION"
                   ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
                   : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
               }`}
             >
-              <span>🛡️</span>
+              <Shield className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="whitespace-nowrap"><span className="sm:hidden">Risk</span><span className="hidden sm:inline">Risk & Contagion</span></span>
             </button>
           </div>

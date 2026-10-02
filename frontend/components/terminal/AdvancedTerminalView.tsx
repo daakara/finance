@@ -21,20 +21,16 @@ export default function AdvancedTerminalView({
 
   return (
     <div className="space-y-4 font-mono text-xs text-slate-100 animate-fade-in">
-      {/* Advanced Badge Banner */}
-      <div className="flex items-center justify-between bg-purple-950/40 border border-purple-800/50 p-2.5 rounded-xl text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-purple-400" />
-          <span className="text-purple-300 font-bold">🟣 ADVANCED WORKSTATION</span>
-          <span className="text-slate-400 hidden sm:inline">• Maximum quantitative density, raw models & execution ladder</span>
-        </div>
+      {/* Score Decomposition Trigger */}
+      <div className="flex items-center justify-end">
         <button
           onClick={onOpenWhy}
-          className="text-[11px] text-purple-400 hover:text-purple-300 underline font-bold cursor-pointer"
+          className="text-xs text-purple-400 hover:text-purple-300 underline font-bold cursor-pointer py-2 px-2 min-h-[36px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none rounded"
         >
           Decompose Score →
         </button>
       </div>
+
 
       {/* Dense Quant Metrics Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-[#070b13] p-3 rounded-xl border border-[#1b2639]">

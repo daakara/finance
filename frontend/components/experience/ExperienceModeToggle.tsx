@@ -104,14 +104,14 @@ export function ExperienceModeToggle() {
             aria-label={`Switch to ${m.label} Mode`}
             onClick={() => changeMode(m.id)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`flex items-center space-x-1 px-2 py-1 min-h-[28px] sm:min-h-[30px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
+            className={`flex items-center space-x-1 px-2 py-1 min-h-[36px] sm:min-h-[36px] rounded-lg text-xs font-mono font-bold transition-all active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer ${
               isSelected
                 ? m.activeClass
                 : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${m.dotClass}`} aria-hidden="true" />
-            <span className="font-mono tracking-tight text-[10px] sm:text-xs">
+            <span className="font-mono tracking-tight text-xs">
               <span className="hidden xl:inline">{m.label}</span>
               <span className="xl:hidden">{m.shortLabel}</span>
             </span>
