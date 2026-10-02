@@ -6,6 +6,7 @@ import EtfCostOfOwnershipCard from "../EtfCostOfOwnershipCard";
 import OptimalEntryExitCard from "../OptimalEntryExitCard";
 import AssetFactorRadar from "../AssetFactorRadar";
 import TraderArchetypesCard from "../TraderArchetypesCard";
+import EtfRiskProfileCard from "../EtfRiskProfileCard";
 
 const mockExecutionPlan: any = {
   optimal_entry_min: 120,
@@ -81,6 +82,9 @@ function CockpitTabRoutingHarness({ initialSymbol = "NVDA" }: { initialSymbol?: 
           {isStock(selectedSymbol) && (
             <AssetFactorRadar symbol={selectedSymbol} factorScores={mockFactorScores} />
           )}
+          {isETF(selectedSymbol) && (
+            <EtfRiskProfileCard symbol={selectedSymbol} />
+          )}
           <div data-testid="institutional-feeds">Feeds for {selectedSymbol}</div>
         </div>
       )}
@@ -132,22 +136,24 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     expect(screen.getByText(/Warren Buffett/i)).toBeDefined();
   });
 
-  it("suppresses broken AssetFactorRadar for ETFs in Fundamentals tab", () => {
+  it("suppresses broken AssetFactorRadar and renders EtfRiskProfileCard for ETFs in Fundamentals tab", () => {
     render(<CockpitTabRoutingHarness initialSymbol="SPY" />);
 
     fireEvent.click(screen.getByText("Tab Fundamentals"));
 
     expect(screen.getByTestId("institutional-feeds")).toBeDefined();
     expect(screen.queryByText(/Business DNA & BS Detector/i)).toBeNull();
+    expect(screen.getByLabelText(/ETF Risk Profile/i)).toBeDefined();
   });
 
-  it("renders AssetFactorRadar for Stocks in Fundamentals tab", () => {
+  it("renders AssetFactorRadar and suppresses EtfRiskProfileCard for Stocks in Fundamentals tab", () => {
     render(<CockpitTabRoutingHarness initialSymbol="NVDA" />);
 
     fireEvent.click(screen.getByText("Tab Fundamentals"));
 
     expect(screen.getByTestId("institutional-feeds")).toBeDefined();
     expect(screen.getByText(/Business DNA & BS Detector/i)).toBeDefined();
+    expect(screen.queryByText(/ETF Risk Profile/i)).toBeNull();
   });
 
   it("dynamically updates all tabs when switching STOCK -> ETF", () => {

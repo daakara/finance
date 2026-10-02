@@ -245,3 +245,98 @@ export async function emitEtfIntentAttempt(
     payload,
   };
 }
+
+/**
+ * Emit an authorized Phase P2 ETF interaction event (e.g. view, vernacular toggle, sector expand).
+ * Preserves P1 denominator invariance (downstream failure / interaction invariance).
+ */
+export async function emitEtfInteractionEvent(
+  eventType: "ETF_RISK_PROFILE_VIEW" | "ETF_VERNACULAR_TOGGLE" | "ETF_SECTOR_ALLOCATION_EXPAND",
+  symbol: string,
+  extraMetadata?: Record<string, any>
+): Promise<EmitResult | null> {
+  const cleanSym = (symbol || "").trim().toUpperCase().replace(/.*:/, "");
+  if (!cleanSym || !isETF(cleanSym)) {
+    return null;
+  }
+  const sessionId = getSessionId();
+  const attemptId = generateUuidV4();
+  const dedupKey = computeDeduplicationKey(sessionId, cleanSym, `${eventType}:${attemptId}`);
+
+  const isBrowser = typeof window !== "undefined";
+  const searchParams = isBrowser && window.location ? window.location.search : "";
+  const path = isBrowser && window.location ? window.location.pathname : "/";
+  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+
+  const syntheticMarker = Boolean(
+    isBrowser &&
+      ((window as any).__ARX_SYNTHETIC__ === true ||
+        searchParams.includes("synthetic=true") ||
+        searchParams.includes("arx_test=true"))
+  );
+  const ciRunMarker = Boolean(isBrowser && searchParams.includes("ci_run=true"));
+  const manualQaMarker = Boolean(isBrowser && searchParams.includes("qa_run=true"));
+
+  const payload: ClientIntentPayload = {
+    schema_version: "1.0.0",
+    event_id: generateUuidV4(),
+    session_id: sessionId,
+    observation_unit_id: attemptId,
+    deduplication_key: dedupKey,
+    timestamp: new Date().toISOString(),
+    symbol: cleanSym,
+    normalized_symbol: cleanSym,
+    intent_boundary: "ETF_COCKPIT_INTERACTION",
+    intent_type: eventType,
+    route: path,
+    source_component: "EtfRiskProfileCard",
+    synthetic_marker: syntheticMarker,
+    ci_marker: ciRunMarker,
+    qa_marker: manualQaMarker,
+    ci_run_marker: ciRunMarker,
+    manual_qa_marker: manualQaMarker,
+    user_agent_raw: userAgent,
+    ...(extraMetadata || {}),
+  };
+
+  if (!isBrowser) {
+    return { emitted: false, attemptId, deduplicationKey: dedupKey, payload };
+  }
+
+  const payloadString = JSON.stringify(payload);
+  let transmitted = false;
+
+  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+    try {
+      const blob = new Blob([payloadString], { type: "application/json" });
+      transmitted = navigator.sendBeacon(TELEMETRY_INGESTION_ENDPOINT, blob);
+    } catch {
+      transmitted = false;
+    }
+  }
+
+  if (!transmitted && typeof fetch === "function") {
+    try {
+      fetch(TELEMETRY_INGESTION_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Attempt-Id": attemptId,
+          "X-Deduplication-Key": dedupKey,
+        },
+        body: payloadString,
+        keepalive: true,
+      }).catch(() => {});
+      transmitted = true;
+    } catch {
+      transmitted = false;
+    }
+  }
+
+  return {
+    emitted: transmitted,
+    attemptId,
+    deduplicationKey: dedupKey,
+    payload,
+  };
+}

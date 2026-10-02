@@ -3986,4 +3986,147 @@ export async function recordTradeClose(
   }
 }
 
+// =====================================================================
+// Phase P2: ETF Institutional Risk Profile & Dynamic Sector Contracts
+// =====================================================================
 
+export interface EtfVarDetail {
+  confidence: number;
+  method: string;
+  daily_var: number;
+  daily_var_pct: number;
+  unit: string;
+  sign_convention: string;
+  z_gaussian: number;
+  z_cornish_fisher: number;
+  skewness: number;
+  excess_kurtosis: number;
+  observations: number;
+}
+
+export interface EtfSectorAllocation {
+  sector: string;
+  weightPct: number;
+  raw_sector_key?: string;
+}
+
+export interface EtfRiskProfileData {
+  symbol: string;
+  as_of: string;
+  history_start?: string | null;
+  history_end?: string | null;
+  period: string;
+  observation_count: number;
+  quality: {
+    state: "ESTABLISHED" | "PARTIAL" | "INSUFFICIENT_HISTORY" | "NOT_AVAILABLE";
+    warnings: string[];
+  };
+  drawdown: {
+    maximum: number | null;
+    maximum_pct: number | null;
+    current: number | null;
+    current_pct: number | null;
+    peak_date: string | null;
+    trough_date: string | null;
+    recovery_date: string | null;
+    recovery_days: number | null;
+    recovery_state: "RECOVERED" | "UNRECOVERED" | "INSUFFICIENT_DATA";
+  };
+  risk_adjusted_returns: {
+    sharpe: number | null;
+    sortino: number | null;
+    calmar: number | null;
+  };
+  value_at_risk: {
+    var_95: EtfVarDetail | null;
+    var_99: EtfVarDetail | null;
+    horizon: string;
+    method: string;
+    unit: string;
+  };
+  volatility: {
+    realized_annualized_pct: number | null;
+    regime: "LOW" | "MODERATE" | "HIGH" | "UNKNOWN";
+    history_200d: number[];
+  };
+  max_drawdown_pct: number | null;
+  max_drawdown_date: string | null;
+  recovery_days: number | null;
+  current_drawdown_pct: number | null;
+  sharpe_ratio: number | null;
+  sortino_ratio: number | null;
+  calmar_ratio: number | null;
+  var_95_daily_pct: number | null;
+  var_99_daily_pct: number | null;
+  annualized_volatility_pct: number | null;
+  volatility_regime: "LOW" | "MODERATE" | "HIGH" | "UNKNOWN";
+  vol_history_200d: number[];
+  sectors: EtfSectorAllocation[];
+  source_provenance: string;
+}
+
+export interface EtfSectorDecompositionData {
+  symbol: string;
+  as_of: string;
+  source: string;
+  conservation_policy: string;
+  total_weight_pct: number;
+  sectors: EtfSectorAllocation[];
+  is_dynamic: boolean;
+}
+
+/**
+ * Fetch institutional risk profile and fund-native metrics for an ETF.
+ * Returns null if the symbol is not an ETF or if network error occurs.
+ */
+export async function fetchEtfProfile(
+  symbol: string,
+  period: string = "1y"
+): Promise<EtfRiskProfileData | null> {
+  if (!symbol) return null;
+  try {
+    const cleanSym = encodeURIComponent(symbol.trim().toUpperCase().replace("-USD", ""));
+    const url = `${getApiBaseUrl()}/etf/profile/${cleanSym}?period=${period}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { ...(ARX_API_HEADERS as Record<string, string>) },
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      if (res.status === 400) {
+        return null;
+      }
+      console.warn(`Failed to fetch ETF profile for ${symbol}: HTTP ${res.status}`);
+      return null;
+    }
+    return (await res.json()) as EtfRiskProfileData;
+  } catch (err) {
+    console.warn(`Network error fetching ETF profile for ${symbol}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Fetch dynamic sector weight allocations for an ETF.
+ */
+export async function fetchEtfSectors(
+  symbol: string
+): Promise<EtfSectorDecompositionData | null> {
+  if (!symbol) return null;
+  try {
+    const cleanSym = encodeURIComponent(symbol.trim().toUpperCase().replace("-USD", ""));
+    const url = `${getApiBaseUrl()}/etf/sectors/${cleanSym}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { ...(ARX_API_HEADERS as Record<string, string>) },
+      credentials: "omit",
+    });
+    if (!res.ok) {
+      return null;
+    }
+    return (await res.json()) as EtfSectorDecompositionData;
+  } catch (err) {
+    console.warn(`Network error fetching ETF sectors for ${symbol}:`, err);
+    return null;
+  }
+}

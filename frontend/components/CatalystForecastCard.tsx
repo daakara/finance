@@ -1,18 +1,36 @@
 "use client";
 
-import { CatalystForecastData } from "../lib/api";
-import { getCanonicalEtfSectorWeights } from "../lib/assetRegistry";
+import { useState, useEffect } from "react";
+import { CatalystForecastData, fetchEtfSectors, EtfSectorAllocation } from "../lib/api";
+import { isETF } from "../lib/assetTypeUtils";
 
 interface CatalystForecastCardProps {
   data?: CatalystForecastData;
+  etfSectors?: EtfSectorAllocation[];
 }
 
-export default function CatalystForecastCard({ data }: CatalystForecastCardProps) {
+export default function CatalystForecastCard({ data, etfSectors }: CatalystForecastCardProps) {
   if (!data) return null;
 
-  const etfSectors = getCanonicalEtfSectorWeights(data.symbol);
+  const [sectors, setSectors] = useState<EtfSectorAllocation[] | null>(etfSectors || null);
 
-  if (etfSectors) {
+  useEffect(() => {
+    if (etfSectors && etfSectors.length > 0) {
+      setSectors(etfSectors);
+      return;
+    }
+    if (data?.symbol && isETF(data.symbol)) {
+      fetchEtfSectors(data.symbol).then((res) => {
+        if (res && res.sectors && res.sectors.length > 0) {
+          setSectors(res.sectors);
+        }
+      });
+    }
+  }, [data?.symbol, etfSectors]);
+
+  const isFund = isETF(data.symbol) || Boolean(sectors && sectors.length > 0);
+
+  if (isFund) {
     return (
       <section aria-labelledby="catalyst-header" className="bg-[#111722] border border-[#243044] rounded-xl p-4 sm:p-5 shadow-xl font-mono space-y-4">
         {/* ETF Header */}
@@ -59,23 +77,29 @@ export default function CatalystForecastCard({ data }: CatalystForecastCardProps
           <div className="bg-[#0b1019] border border-[#1b2434] rounded-xl p-3.5 space-y-2.5">
             <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
               <span>📊</span>
-              <span>Top Sector Weight Allocations</span>
+              <span>Top Sector Weight Allocations (Dynamic)</span>
             </h3>
             <div className="space-y-2.5 pt-1">
-              {etfSectors.map((s, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-200 font-semibold">{s.sector}</span>
-                    <span className="text-cyan-400 font-bold font-mono">{s.weightPct.toFixed(1)}%</span>
+              {sectors && sectors.length > 0 ? (
+                sectors.map((s, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-200 font-semibold">{s.sector}</span>
+                      <span className="text-cyan-400 font-bold font-mono">{s.weightPct.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-[#141d2c] rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(0, s.weightPct))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-[#141d2c] rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, s.weightPct)}%` }}
-                    />
-                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-slate-400 py-2">
+                  Dynamic sector breakdown is loading or not disclosed for this ETF.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 

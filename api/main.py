@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit, journal, telemetry
+from api.routes import analytics, volatility, screener, regimes, cache, smart_money, governance, portfolio, macro, cockpit, journal, telemetry, etf
 from api.middleware.rate_limiter import RedisRateLimitMiddleware
 from api.middleware.api_key_auth import ApiKeyAuthMiddleware
 from api.observability import (
@@ -222,6 +222,7 @@ app.include_router(macro.router, prefix="/api/v1/macro", tags=["Macro Telemetry"
 app.include_router(cockpit.router, prefix="/api/v1/cockpit", tags=["Unified Cockpit"])
 app.include_router(journal.router, prefix="/api/v1/journal", tags=["Journal & Behavioral Risk"])
 app.include_router(telemetry.router, prefix="/api/v1/telemetry", tags=["Telemetry & Invariant Audit"])
+app.include_router(etf.router, prefix="/api/v1/etf", tags=["ETF Analytics & Risk Profile"])
 
 
 @app.get("/health", tags=["Health"])
@@ -230,4 +231,3 @@ def health_check(response: Response = None):
     if response is not None and hasattr(response, "headers"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return {"status": "online"}
-

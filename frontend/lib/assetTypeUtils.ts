@@ -10,7 +10,6 @@
 
 import { getMasterAsset } from './masterCatalog';
 import { SHARED_WATCHLIST_ITEMS } from './constants';
-import { getCanonicalEtfSectorWeights } from './assetRegistry';
 
 export type CanonicalAssetType = 'Stock' | 'ETF' | 'Crypto' | 'UNKNOWN';
 
@@ -70,9 +69,8 @@ export function isUnknownAsset(symbol: string | null | undefined): boolean {
   return resolveAssetType(symbol) === 'UNKNOWN';
 }
 
-/** Returns true if the symbol has canonical sector allocation data */
+/** Returns true if the symbol is an ETF capable of having sector allocation data */
 export function hasEtfSectorData(symbol: string | null | undefined): boolean {
   if (!symbol) return false;
-  const weights = getCanonicalEtfSectorWeights(symbol);
-  return weights !== null && weights.length > 0;
+  return isETF(symbol);
 }

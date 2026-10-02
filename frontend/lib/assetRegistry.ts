@@ -554,6 +554,12 @@ export interface EtfSectorWeight {
   weightPct: number;
 }
 
+/**
+ * @deprecated Legacy static 8-ETF sector weight dictionary (Phase P1).
+ * Quarantined in Phase P2. Runtime UI paths consume dynamic backend sector allocations
+ * via /api/v1/etf/sectors/{symbol} or /api/v1/etf/profile/{symbol}.
+ * Preserved strictly for non-runtime backward compatibility verification.
+ */
 export const CANONICAL_ETF_SECTOR_WEIGHTS: Record<string, EtfSectorWeight[]> = {
   SPY: [
     { sector: "Information Technology", weightPct: 31.4 },
@@ -600,10 +606,11 @@ export const CANONICAL_ETF_SECTOR_WEIGHTS: Record<string, EtfSectorWeight[]> = {
   ],
 };
 
+/**
+ * @deprecated Quarantined legacy helper. Runtime UI paths must use fetchEtfSectors() or fetchEtfProfile().
+ */
 export function getCanonicalEtfSectorWeights(symbol: string): EtfSectorWeight[] | null {
   if (!symbol) return null;
   const sym = symbol.toUpperCase().replace("-USD", "");
   return CANONICAL_ETF_SECTOR_WEIGHTS[sym] || null;
 }
-
-

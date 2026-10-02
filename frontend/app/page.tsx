@@ -27,6 +27,7 @@ import IntentHero from "../components/IntentHero";
 import PageIntro from "../components/PageIntro";
 import AdaptiveTerminal from "../components/AdaptiveTerminal";
 import EtfCostOfOwnershipCard from "../components/EtfCostOfOwnershipCard";
+import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
@@ -620,6 +621,11 @@ function TerminalContent() {
                   factorScores={data?.factorScores}
                   macroDifficulty={data?.macroDifficulty}
                   expectedReturn={data?.expectedReturn}
+                />
+              )}
+              {isETF(selectedSymbol) && (
+                <EtfRiskProfileCard
+                  symbol={selectedSymbol}
                 />
               )}
               <InstitutionalFeeds activeSymbol={selectedSymbol} />
