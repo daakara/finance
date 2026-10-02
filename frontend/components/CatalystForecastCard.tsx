@@ -10,8 +10,6 @@ interface CatalystForecastCardProps {
 }
 
 export default function CatalystForecastCard({ data, etfSectors }: CatalystForecastCardProps) {
-  if (!data) return null;
-
   const [sectors, setSectors] = useState<EtfSectorAllocation[] | null>(etfSectors || null);
 
   useEffect(() => {
@@ -27,6 +25,8 @@ export default function CatalystForecastCard({ data, etfSectors }: CatalystForec
       });
     }
   }, [data?.symbol, etfSectors]);
+
+  if (!data) return null;
 
   const isFund = isETF(data.symbol) || Boolean(sectors && sectors.length > 0);
 

@@ -7,6 +7,7 @@ import OptimalEntryExitCard from "../OptimalEntryExitCard";
 import AssetFactorRadar from "../AssetFactorRadar";
 import TraderArchetypesCard from "../TraderArchetypesCard";
 import EtfRiskProfileCard from "../EtfRiskProfileCard";
+import CatalystForecastCard from "../CatalystForecastCard";
 
 const mockExecutionPlan: any = {
   optimal_entry_min: 120,
@@ -198,5 +199,32 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     // Switch to Smart Money: restores corporate archetypes
     fireEvent.click(screen.getByText("Tab Smart Money"));
     expect(screen.getByText(/Warren Buffett/i)).toBeDefined();
+  });
+
+  it("renders CatalystForecastCard unconditionally without React hook-order errors", () => {
+    // 1. Data absent (empty return null)
+    const { rerender } = render(<CatalystForecastCard data={undefined} />);
+    expect(screen.queryByText(/Sector Allocations/i)).toBeNull();
+
+    // 2. Data present for ETF
+    rerender(
+      <CatalystForecastCard
+        data={{
+          symbol: "SPY",
+          company_name: "SPDR S&P 500 ETF Trust",
+          sector: "Index ETF",
+          efficacy_summary: "N/A",
+          competitive_edge: "Market baseline",
+          upcoming_milestones: [],
+          multi_year_forecast: [],
+          catalysts: [],
+        }}
+      />
+    );
+    expect(screen.getByText(/Sector Allocations/i)).toBeDefined();
+
+    // 3. Re-render with data absent: no hook order disparity
+    rerender(<CatalystForecastCard data={undefined} />);
+    expect(screen.queryByText(/Sector Allocations/i)).toBeNull();
   });
 });
