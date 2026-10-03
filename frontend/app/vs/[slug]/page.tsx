@@ -25,8 +25,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const pageTitle = comp.metaTitle || `${comp.competitorName} Comparison: Features, Pricing & Capabilities`;
+
   return {
-    title: `${comp.competitorName} Comparison: Features, Pricing & Capabilities`,
+    title: pageTitle,
     description: `Comprehensive comparison of ARX Terminal vs ${comp.competitorName}. Compare pricing, STOCK Act tracking, algorithmic execution corridors, and risk modeling.`,
     alternates: {
       canonical: `https://www.arxterminal.com/vs/${comp.slug}/`,

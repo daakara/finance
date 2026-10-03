@@ -2,6 +2,7 @@ export interface GlossaryTerm {
   slug: string;
   name: string;
   shortDefinition: string;
+  metaTitle?: string;
   category: "Econometric & Mathematical Modeling" | "Algorithmic Setups & Execution" | "Statutory & Smart Money Forensics";
   latexFormula?: string;
   detailedExplanation: string[];
@@ -16,6 +17,7 @@ export const GLOSSARY_CATALOG: GlossaryTerm[] = [
   {
     slug: "arx-model",
     name: "Autoregressive with Exogenous Inputs (ARX Model)",
+    metaTitle: "Autoregressive with Exogenous Inputs (ARX Model)",
     shortDefinition: "A foundational econometric time-series model that predicts a target financial variable using both its own historical lagged values and external (exogenous) market drivers.",
     category: "Econometric & Mathematical Modeling",
     latexFormula: "y_t = c + \\sum_{i=1}^p \\phi_i y_{t-i} + \\sum_{j=1}^m \\beta_j x_{t-j} + \\epsilon_t",
