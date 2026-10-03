@@ -1,0 +1,104 @@
+{
+  "gate_name": "ETF_V2_CANONICAL_POPULATION_IMPLEMENTATION_GATE",
+  "gate_mode": "IMPLEMENT_DESIGNED_OFFLINE_SQLITE_CANONICAL_UCITS_POPULATION_AUTHORITY_WITH_SCHEMA_MIGRATIONS_DOMAIN_REPOSITORIES_PROVENANCE_HOLDS_AUDIT_SNAPSHOTS_AND_TESTS_ZERO_141_ROW_MIGRATION_ZERO_CANONICAL_ADMISSION_ZERO_DENOMINATOR_PROMOTION",
+  "implementation_version": "1.0.0",
+  "design_report_sha256": "7360c0a5edecd37c6f9f63745b0487913cf6cbed54f4c155f4e3309605f77c75",
+  "readiness_report_sha256": "28f419a9f86ea15ac96cad0102a8c76d6de77ff8947f450aa1828f269f95f419",
+  "git_head_before": "113a1b9a43ae3ccf8452ef7c5b5b0f09154b355a",
+  "git_head_after": "113a1b9a43ae3ccf8452ef7c5b5b0f09154b355a",
+  "changed_files": [
+    {
+      "path": "scripts/research/etf_v2/canonical_population_schema.sql",
+      "byte_count": 6134,
+      "sha256": "b08d820cfd9d2cb83ce0beb07e80188da2eca4cb40901b95b961bacca63a2e6c",
+      "status": "NEW"
+    },
+    {
+      "path": "scripts/research/etf_v2/canonical_population_errors.py",
+      "byte_count": 2739,
+      "sha256": "20925519170c1d7919d61da2fb680267cce3ef6a5276ce97b7c656ce4aada9d4",
+      "status": "NEW"
+    },
+    {
+      "path": "scripts/research/etf_v2/canonical_population_models.py",
+      "byte_count": 7528,
+      "sha256": "687ecb1b2e897fd772d42455f98aefb2ccf032977833e396b63eb0e4b7af026b",
+      "status": "NEW"
+    },
+    {
+      "path": "scripts/research/etf_v2/canonical_population_repository.py",
+      "byte_count": 34611,
+      "sha256": "e152b71aa7641b6a9490903e37fb8dda5931363ab3792c07a71ddd5daab75077",
+      "status": "NEW"
+    },
+    {
+      "path": "scripts/research/etf_v2/canonical_population_migrator.py",
+      "byte_count": 9555,
+      "sha256": "bacf2eb5b7ad75949c1a8725d764b718f817fc695847bc111b3a82f34c516acd",
+      "status": "NEW"
+    },
+    {
+      "path": "tests/test_etf_v2_canonical_population.py",
+      "byte_count": 17844,
+      "sha256": "00c9ef86ede5af1cffdb3683ad772681c053e58e967ea138373f71fcfe331478",
+      "status": "NEW"
+    }
+  ],
+  "new_files": [
+    "scripts/research/etf_v2/canonical_population_schema.sql",
+    "scripts/research/etf_v2/canonical_population_errors.py",
+    "scripts/research/etf_v2/canonical_population_models.py",
+    "scripts/research/etf_v2/canonical_population_repository.py",
+    "scripts/research/etf_v2/canonical_population_migrator.py",
+    "tests/test_etf_v2_canonical_population.py"
+  ],
+  "modified_files": [],
+  "schema_version": 1,
+  "migration_files": [
+    "scripts/research/etf_v2/canonical_population_schema.sql",
+    "scripts/research/etf_v2/canonical_population_migrator.py"
+  ],
+  "domain_files": [
+    "scripts/research/etf_v2/canonical_population_models.py",
+    "scripts/research/etf_v2/canonical_population_errors.py"
+  ],
+  "repository_files": [
+    "scripts/research/etf_v2/canonical_population_repository.py"
+  ],
+  "test_files": [
+    "tests/test_etf_v2_canonical_population.py"
+  ],
+  "canonical_db_initialized": false,
+  "canonical_db_row_counts": {
+    "canonical_parent_entity": 0,
+    "canonical_subfund": 0,
+    "canonical_share_class": 0,
+    "canonical_provenance_records": 0,
+    "canonical_hold_records": 0,
+    "canonical_audit_log": 0
+  },
+  "test_results": {
+    "new_implementation_tests": {
+      "total": 19,
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0
+    },
+    "existing_regression_tests": {
+      "total": 62,
+      "passed": 62,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "real_migration_performed": false,
+  "real_admission_performed": false,
+  "real_holds_migrated": {
+    "official_identity_holds": 0,
+    "identity_exception_holds": 0,
+    "route_holds": 0,
+    "prelaunch_holds": 0
+  },
+  "denominator_logic_added": false,
+  "provisional_artifact_import_authorized": false
+}
