@@ -1,0 +1,24 @@
+[
+  {
+    "data": [
+      {
+        "figi": "BBG000BLNNH6",
+        "name": "SPDR S&P 500 ETF TRUST (NYSE)",
+        "ticker": "SPY",
+        "exchCode": "US",
+        "compositeFIGI": "BBG000BLNNH6",
+        "securityType": "ETP",
+        "marketSector": "Equity"
+      },
+      {
+        "figi": "BBG001S5P8V9",
+        "name": "SPDR S&P 500 ETF TRUST (BATS)",
+        "ticker": "SPY",
+        "exchCode": "BATS",
+        "compositeFIGI": "BBG000BLNNH6",
+        "securityType": "ETP",
+        "marketSector": "Equity"
+      }
+    ]
+  }
+]

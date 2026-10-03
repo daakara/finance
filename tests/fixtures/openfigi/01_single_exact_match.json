@@ -1,0 +1,16 @@
+[
+  {
+    "data": [
+      {
+        "figi": "BBG000BLNNH6",
+        "name": "SPDR S&P 500 ETF TRUST",
+        "ticker": "SPY",
+        "exchCode": "US",
+        "compositeFIGI": "BBG000BLNNH6",
+        "securityType": "ETP",
+        "marketSector": "Equity",
+        "shareClassFIGI": "BBG001S5P8V8"
+      }
+    ]
+  }
+]

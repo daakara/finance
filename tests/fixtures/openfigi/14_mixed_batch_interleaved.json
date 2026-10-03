@@ -1,0 +1,26 @@
+[
+  {
+    "data": [
+      {
+        "figi": "BBG0001",
+        "name": "MATCH_1",
+        "ticker": "T1"
+      }
+    ]
+  },
+  {
+    "warning": "No identifier found."
+  },
+  {
+    "data": [
+      {
+        "figi": "BBG0002A",
+        "name": "AMBIG_A"
+      },
+      {
+        "figi": "BBG0002B",
+        "name": "AMBIG_B"
+      }
+    ]
+  }
+]

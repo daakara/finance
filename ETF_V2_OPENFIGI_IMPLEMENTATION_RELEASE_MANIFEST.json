@@ -1,0 +1,103 @@
+{
+  "manifest_version": "1.0.0",
+  "gate_name": "ETF_V2_OPENFIGI_IMPLEMENTATION_RELEASE_GATE",
+  "gate_verdict": "PASS_WITH_OPENFIGI_IMPLEMENTATION_RELEASE_VERIFIED",
+  "decision_case": "Case F \u2014 Release candidate technically verified",
+  "technical_release_verification": "ESTABLISHED",
+  "release_candidate_verified": true,
+  "rate_limit_scope": "GLOBAL",
+  "global_rate_limit_enforced": true,
+  "max_observed_rolling_60s_reservations": 20,
+  "timestamp_utc": "2026-10-03T22:40:00Z",
+  "live_openfigi_requests_executed": 0,
+  "canonical_mutation": false,
+  "commit_authorized": true,
+  "push_authorized": true,
+  "deployment_authorized": false,
+  "live_mapping_requests_authorized": false,
+  "next_authorized_action": "ETF_V2_OPENFIGI_PRODUCTION_ACTIVATION_READINESS_GATE",
+  "report_artifact": {
+    "file": "ETF_V2_OPENFIGI_IMPLEMENTATION_RELEASE_REPORT.md",
+    "bytes": 18222,
+    "sha256": "02da528eb1930d2e2e30d8b8d7628c5bcf1e60d91626c5bfd6a9e0b6448cec0c"
+  },
+  "release_candidate_files": {
+    "scripts/research/etf_v2/openfigi_models.py": {
+      "bytes": 7029,
+      "sha256": "fd2787fcd3b221c30e7807892104ccaedd448a2faa3d59a133d766662515c92a"
+    },
+    "scripts/research/etf_v2/openfigi_normalizer.py": {
+      "bytes": 3321,
+      "sha256": "36d297deb83ca5cb03d82875218882be0f9ba78e74a28c500872a6d3f2984a53"
+    },
+    "scripts/research/etf_v2/openfigi_operational_schema.sql": {
+      "bytes": 2806,
+      "sha256": "e0e452becc98dc8680361cfcb7a4a3b520e73b806cf24776b6340285297b1451"
+    },
+    "scripts/research/etf_v2/openfigi_persistence.py": {
+      "bytes": 14093,
+      "sha256": "f0afb3bcf10f51337c449bfda7804d8d102c63d9932d1a8547dc1d272407a654"
+    },
+    "scripts/research/etf_v2/openfigi_classifier.py": {
+      "bytes": 13238,
+      "sha256": "65c3b9ee80293efa9545ef24b1ca2ea80bf08163ae046915141aff3785976eda"
+    },
+    "scripts/research/etf_v2/openfigi_client.py": {
+      "bytes": 10842,
+      "sha256": "45550c85ab30ba807f6c9ab8f9c4285650a54bb3bc55ff93d7d8e87375911480"
+    },
+    "scripts/research/etf_v2/openfigi_rate_limiter.py": {
+      "bytes": 11239,
+      "sha256": "a6844f5909dc971a9d3c3a2b01a77817e77befbc26f93dbbf13897747b9f399e"
+    },
+    "scripts/research/etf_v2/openfigi_service.py": {
+      "bytes": 6544,
+      "sha256": "f852fc2dfe7e4299cc116b5dbdec5f6fdfc9e61759c97322a5350c2263652678"
+    },
+    "tests/test_etf_v2_openfigi_contract.py": {
+      "bytes": 21365,
+      "sha256": "ec52786203ff6dc34ca643f92254bb20c3af737740a870ddd8f96632e51eb1d5"
+    },
+    "tests/test_etf_v2_openfigi_global_rate_limiter.py": {
+      "bytes": 15858,
+      "sha256": "cb986b47f23e8777c7f14e361df0588df8ac86d253bb5b54a5bf4ebdd9cba88c"
+    }
+  },
+  "canonical_integrity": {
+    "canonical_db_sha256": "2f7f4e718d1adebfb4bf5ed5dd627b306fc2b44d55e5cc479e3b2fccb9cff643",
+    "canonical_backup_sha256": "7a2777d85c63d3aa1cc46c5134f8bf9a32236e671437df3dbebdc918659a2bec",
+    "canonical_snapshot_sha256": "938e0b00c4e7e5623b266ddddf6ad9eacf4614206b6525cabe1143db60cacaff",
+    "canonical_share_class_count": 141,
+    "integrity_ok": true
+  },
+  "criteria_evaluations": {
+    "OFIGI-REL01": "PASS",
+    "OFIGI-REL02": "PASS",
+    "OFIGI-REL03": "PASS",
+    "OFIGI-REL04": "PASS",
+    "OFIGI-REL05": "PASS",
+    "OFIGI-REL06": "PASS",
+    "OFIGI-REL07": "PASS",
+    "OFIGI-REL08": "PASS",
+    "OFIGI-REL09": "PASS",
+    "OFIGI-REL10": "PASS",
+    "OFIGI-REL11": "PASS",
+    "OFIGI-REL12": "PASS",
+    "OFIGI-REL13": "PASS",
+    "OFIGI-REL14": "PASS",
+    "OFIGI-REL15": "PASS",
+    "OFIGI-REL16": "PASS",
+    "OFIGI-REL17": "PASS",
+    "OFIGI-REL18": "PASS",
+    "OFIGI-REL19": "PASS",
+    "OFIGI-REL20": "PASS",
+    "OFIGI-REL21": "PASS",
+    "OFIGI-REL22": "PASS",
+    "OFIGI-REL23": "PASS",
+    "OFIGI-REL24": "PASS",
+    "OFIGI-REL25": "PASS",
+    "OFIGI-REL26": "PASS",
+    "OFIGI-REL27": "PASS",
+    "OFIGI-REL28": "PASS"
+  }
+}

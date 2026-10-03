@@ -1,0 +1,20 @@
+[
+  {
+    "data": [
+      {
+        "figi": "BBG000BLNNH6",
+        "name": "SPDR S&P 500 ETF (USD)",
+        "ticker": "SPY",
+        "exchCode": "US",
+        "securityDescription": "SPDR S&P 500 ETF USD"
+      },
+      {
+        "figi": "BBG001S5P8V9",
+        "name": "SPDR S&P 500 ETF (EUR)",
+        "ticker": "SPY",
+        "exchCode": "GY",
+        "securityDescription": "SPDR S&P 500 ETF EUR"
+      }
+    ]
+  }
+]
