@@ -899,10 +899,78 @@ def test_real_migration_denominator_and_openfigi_firewalls(tmp_path):
         assert "OPENFIGI" not in prov.get("source_document_id", "").upper()
 
 
-def test_real_migration_production_db_path_untouched():
+def test_real_migration_production_db_path_untouched(tmp_path: Path):
     """
-    Verifies that the canonical production database path is never created or modified by tests.
-    Covers Behavior: 22.
+    Verifies that the canonical production database path and its sidecars are never
+    created, deleted, replaced, or mutated by isolated tests and migrations.
+    Covers Behavior: 22 (lifecycle-independent isolation invariant).
+    Supports both State A (production DB absent) and State B (production DB already exists).
     """
+    import hashlib
+
     prod_path = Path("data/canonical/etf_v2_canonical_population.db")
-    assert not prod_path.exists(), "CRITICAL: Canonical production DB unexpectedly exists!"
+    wal_path = Path("data/canonical/etf_v2_canonical_population.db-wal")
+    shm_path = Path("data/canonical/etf_v2_canonical_population.db-shm")
+
+    # Capture pre-operation production store & sidecar state
+    db_existed_before = prod_path.exists()
+    wal_existed_before = wal_path.exists()
+    shm_existed_before = shm_path.exists()
+
+    if db_existed_before:
+        pre_size = prod_path.stat().st_size
+        pre_data = prod_path.read_bytes()
+        pre_hash = hashlib.sha256(pre_data).hexdigest()
+        wal_pre_size = wal_path.stat().st_size if wal_existed_before else None
+        wal_pre_hash = hashlib.sha256(wal_path.read_bytes()).hexdigest() if wal_existed_before else None
+        shm_pre_size = shm_path.stat().st_size if shm_existed_before else None
+        shm_pre_hash = hashlib.sha256(shm_path.read_bytes()).hexdigest() if shm_existed_before else None
+    else:
+        pre_size = None
+        pre_hash = None
+        wal_pre_size = None
+        wal_pre_hash = None
+        shm_pre_size = None
+        shm_pre_hash = None
+
+    # Perform isolated migration operation in temporary directory
+    if Path(SOURCE_RECONCILED_PKG).exists():
+        isolated_db = str(tmp_path / "isolation_check.db")
+        migrator = CanonicalPopulationMigrator()
+        result = migrator.execute_migration(
+            candidate_package_path=SOURCE_RECONCILED_PKG,
+            governance_gate_id="GATE-ISOLATION-VERIFICATION",
+            target_db_path=isolated_db,
+        )
+        assert result["migration_verdict"] == "SUCCESS_REAL_CANONICAL_MIGRATION_COMPLETE"
+        assert Path(isolated_db).exists()
+        assert Path(isolated_db).stat().st_size > 0
+
+    # Verify post-operation production store & sidecar state
+    if not db_existed_before:
+        # State A: Production DB absent before test -> must remain absent
+        assert not prod_path.exists(), "CRITICAL: Isolated test created production DB path!"
+        assert not wal_path.exists(), "CRITICAL: Isolated test created production DB-WAL path!"
+        assert not shm_path.exists(), "CRITICAL: Isolated test created production DB-SHM path!"
+    else:
+        # State B: Production DB already exists before test -> must remain completely unmutated
+        assert prod_path.exists(), "CRITICAL: Isolated test deleted production DB path!"
+        assert prod_path.stat().st_size == pre_size, "CRITICAL: Production DB size changed!"
+        post_data = prod_path.read_bytes()
+        post_hash = hashlib.sha256(post_data).hexdigest()
+        assert post_hash == pre_hash, "CRITICAL: Production DB SHA256 mutated by isolated test!"
+
+        # Verify sidecars did not mutate or appear unexpectedly
+        if wal_existed_before:
+            assert wal_path.exists(), "CRITICAL: Production DB-WAL was deleted!"
+            assert wal_path.stat().st_size == wal_pre_size, "CRITICAL: Production DB-WAL size changed!"
+            assert hashlib.sha256(wal_path.read_bytes()).hexdigest() == wal_pre_hash, "CRITICAL: Production DB-WAL mutated!"
+        else:
+            assert not wal_path.exists(), "CRITICAL: Production DB-WAL was unexpectedly created!"
+
+        if shm_existed_before:
+            assert shm_path.exists(), "CRITICAL: Production DB-SHM was deleted!"
+            assert shm_path.stat().st_size == shm_pre_size, "CRITICAL: Production DB-SHM size changed!"
+            assert hashlib.sha256(shm_path.read_bytes()).hexdigest() == shm_pre_hash, "CRITICAL: Production DB-SHM mutated!"
+        else:
+            assert not shm_path.exists(), "CRITICAL: Production DB-SHM was unexpectedly created!"
