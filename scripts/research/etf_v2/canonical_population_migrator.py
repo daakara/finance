@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import sqlite3
 import tempfile
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .canonical_population_errors import (
     CanonicalPopulationError,
@@ -110,14 +110,15 @@ class CanonicalPopulationMigrator:
         finally:
             conn.close()
 
-    def execute_migration_dry_run(
+    def _parse_candidate_package(
         self,
         candidate_package_path: str,
-        governance_gate_id: str = "ETF_V2_IRELAND_COHORT_A_SSGA_MIGRATION_DRY_RUN"
-    ) -> Dict[str, Any]:
+    ) -> Tuple[List[CandidateSubmission], Dict[str, Any]]:
         """
-        Simulates admission of candidate package against an isolated in-memory database.
-        Zero physical disk writes to canonical storage.
+        Parses and validates a candidate package from JSON.
+        Performs fail-closed provisional artifact blocking, file existence,
+        and JSON structure validation.
+        Returns a tuple of (submissions, package_metadata).
         """
         cand_path = Path(candidate_package_path)
         if cand_path.name in PROVISIONAL_ARTIFACT_BLOCKLIST:
@@ -128,7 +129,15 @@ class CanonicalPopulationMigrator:
         if not cand_path.exists():
             raise PreflightValidationError(f"Candidate package not found at {candidate_package_path}")
 
-        raw_data = json.loads(cand_path.read_text(encoding="utf-8"))
+        raw_bytes = cand_path.read_bytes()
+        pkg_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+        pkg_size = len(raw_bytes)
+
+        try:
+            raw_data = json.loads(raw_bytes.decode("utf-8"))
+        except Exception as e:
+            raise PreflightValidationError(f"Invalid candidate package JSON at {candidate_package_path}: {e}") from e
+
         candidates_raw = raw_data.get("candidates", []) if isinstance(raw_data, dict) else raw_data
         if not isinstance(candidates_raw, list):
             raise PreflightValidationError("Invalid candidate package format; expected list of candidate records.")
@@ -159,11 +168,31 @@ class CanonicalPopulationMigrator:
                 authority_tier=c.get("authority_tier", "TIER_2_REGULATOR_OFFICIAL"),
                 evidence_references=tuple(prov_refs),
                 readiness_state=c.get("readiness_state", "ADMISSION_READY"),
-                source_artifact_identity={"filename": cand_path.name, "byte_count": cand_path.stat().st_size},
+                source_artifact_identity={"filename": cand_path.name, "byte_count": pkg_size, "sha256": pkg_sha256},
                 subfund_currency=c.get("subfund_currency", "EUR"),
                 regulator=c.get("regulator", "CBI"),
                 legal_entity_structure=c.get("legal_entity_structure", "ICAV"),
             ))
+
+        metadata = {
+            "filename": cand_path.name,
+            "package_path": str(cand_path),
+            "byte_count": pkg_size,
+            "sha256": pkg_sha256,
+            "row_count": len(submissions),
+        }
+        return submissions, metadata
+
+    def execute_migration_dry_run(
+        self,
+        candidate_package_path: str,
+        governance_gate_id: str = "ETF_V2_IRELAND_COHORT_A_SSGA_MIGRATION_DRY_RUN",
+    ) -> Dict[str, Any]:
+        """
+        Simulates admission of candidate package against an isolated in-memory database.
+        Zero physical disk writes to canonical storage.
+        """
+        submissions, pkg_meta = self._parse_candidate_package(candidate_package_path)
 
         # Setup isolated temporary test store
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -186,7 +215,7 @@ class CanonicalPopulationMigrator:
 
             return {
                 "dry_run_gate_id": governance_gate_id,
-                "source_package": cand_path.name,
+                "source_package": pkg_meta["filename"],
                 "source_package_row_count": len(submissions),
                 "simulated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 "preflight_summary": {
@@ -204,5 +233,188 @@ class CanonicalPopulationMigrator:
                     "simulated_population_digest": digest,
                 },
                 "physical_disk_writes_performed": 0,
-                "dry_run_verdict": "SUCCESS_READY_FOR_GOVERNED_MIGRATION" if simulated_res.admitted_count == len(submissions) else "REJECTIONS_DETECTED"
+                "dry_run_verdict": "SUCCESS_READY_FOR_GOVERNED_MIGRATION" if simulated_res.admitted_count == len(submissions) else "REJECTIONS_DETECTED",
             }
+
+    def execute_migration(
+        self,
+        candidate_package_path: str,
+        governance_gate_id: str,
+        expected_package_sha256: Optional[str] = None,
+        expected_row_count: Optional[int] = None,
+        target_db_path: Optional[str] = None,
+        backup_target_path: Optional[str] = None,
+        export_snapshot: bool = True,
+        snapshot_output_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Executes governed real canonical population migration into disk-backed SQLite store.
+        Enforces source identity firewalls, schema versioning, atomic admission,
+        post-write verification, backup creation, and derived snapshot export.
+        """
+        # Step 1: Parse candidate package through shared parser (enforces provisional blocklist & existence)
+        submissions, pkg_meta = self._parse_candidate_package(candidate_package_path)
+
+        # Step 2: Source identity firewall (SHA-256 and row count) BEFORE any DB connection or write
+        if expected_package_sha256 is not None:
+            if pkg_meta["sha256"].lower() != expected_package_sha256.lower():
+                raise PreflightValidationError(
+                    f"SOURCE_PACKAGE_SHA256_MISMATCH: expected {expected_package_sha256}, got {pkg_meta['sha256']}. Zero writes performed."
+                )
+
+        if expected_row_count is not None:
+            if len(submissions) != expected_row_count:
+                raise PreflightValidationError(
+                    f"SOURCE_PACKAGE_ROW_COUNT_MISMATCH: expected {expected_row_count}, got {len(submissions)}. Zero writes performed."
+                )
+
+        # Step 3: Target store resolution and schema lifecycle
+        db = target_db_path or self.db_path
+        is_uri = db.startswith("file:")
+        db_file_exists = False if (is_uri or db == ":memory:") else os.path.exists(db)
+
+        if not db_file_exists and db != ":memory:" and not is_uri:
+            # Target absent: initialize schema
+            self.initialize_empty_store(db)
+        else:
+            # Target exists: verify schema version compatibility
+            current_version = self.get_schema_version(db)
+            if current_version is None or current_version != INITIAL_MIGRATION_VERSION:
+                raise SchemaVersionMismatchError(
+                    f"Target database at {db} has incompatible schema version {current_version}; expected {INITIAL_MIGRATION_VERSION}. Migration failed closed."
+                )
+
+        lock_file = f"{db}.lock" if (db != ":memory:" and not is_uri) else None
+        writer = CanonicalPopulationWriter(db, lock_path=lock_file)
+
+        # Step 4: Preflight admission check
+        preflight_results = writer.preflight_admission(submissions)
+        preflight_rejections = [p for p in preflight_results if not p.is_valid]
+        if preflight_rejections:
+            reasons = "; ".join(f"{p.candidate.isin}: {p.error_message}" for p in preflight_rejections[:5])
+            raise PreflightValidationError(
+                f"PREFLIGHT_REJECTION: {len(preflight_rejections)} of {len(submissions)} candidate(s) failed preflight validation ({reasons}). Zero writes performed."
+            )
+
+        collision_conflicts = [
+            p for p in preflight_results
+            if p.collision_state in (
+                CollisionState.IDENTITY_CONFLICT,
+                CollisionState.PROVENANCE_CONFLICT,
+                CollisionState.HISTORICAL_CONTINUITY_REVIEW_REQUIRED,
+            )
+        ]
+        if collision_conflicts:
+            raise PreflightValidationError(
+                f"PREFLIGHT_COLLISION: {len(collision_conflicts)} collision conflict(s) detected. Zero writes performed."
+            )
+
+        # Step 5: Atomic Cohort Admission
+        admit_result = writer.admit_batch(submissions, governance_gate_id=governance_gate_id)
+
+        # Step 6: Post-Write Verification using Canonical Reader Authority
+        reader = CanonicalPopulationReader(db)
+        version, digest = reader.get_population_version()
+
+        # Query snapshot internally for post-write verification
+        snapshot = reader.export_canonical_snapshot(version_id=version)
+        classes = snapshot["share_classes"]
+        unique_isins = set(sc["isin"] for sc in classes)
+        duplicate_isin_count = len(classes) - len(unique_isins)
+
+        # Referential integrity checks across admitted share classes
+        for sc_id in admit_result.admitted_share_class_ids:
+            prov_records = reader.get_provenance_records(sc_id)
+            if not prov_records:
+                raise CanonicalPopulationError(
+                    f"POST_WRITE_INTEGRITY_VIOLATION: Admitted share class {sc_id} lacks statutory provenance records."
+                )
+            audit_events = reader.get_audit_history(sc_id)
+            if not audit_events:
+                raise CanonicalPopulationError(
+                    f"POST_WRITE_INTEGRITY_VIOLATION: Admitted share class {sc_id} lacks audit log trace."
+                )
+
+        holds_count = len(reader.list_holds())
+
+        # Step 7: Post-Commit Authoritative Backup
+        backup_metadata: Dict[str, Any]
+        if backup_target_path:
+            backup_path_obj = Path(backup_target_path)
+            backup_path_obj.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                writer.create_backup(backup_target_path)
+                is_valid_backup = writer.verify_backup(backup_target_path)
+                if is_valid_backup:
+                    b_bytes = backup_path_obj.read_bytes()
+                    backup_metadata = {
+                        "backup_path": backup_target_path,
+                        "backup_verified": True,
+                        "backup_size_bytes": len(b_bytes),
+                        "backup_sha256": hashlib.sha256(b_bytes).hexdigest(),
+                        "backup_status": "VERIFIED_AUTHORITATIVE",
+                    }
+                else:
+                    backup_metadata = {
+                        "backup_path": backup_target_path,
+                        "backup_verified": False,
+                        "backup_size_bytes": backup_path_obj.stat().st_size if backup_path_obj.exists() else 0,
+                        "backup_sha256": None,
+                        "backup_status": "DEGRADED_INTEGRITY_CHECK_FAILED",
+                    }
+            except Exception as e:
+                logger.error("Post-commit backup creation failed: %s", e)
+                backup_metadata = {
+                    "backup_path": backup_target_path,
+                    "backup_verified": False,
+                    "backup_size_bytes": 0,
+                    "backup_sha256": None,
+                    "backup_status": f"DEGRADED_BACKUP_FAILED: {e}",
+                }
+        else:
+            backup_metadata = {
+                "backup_path": None,
+                "backup_verified": False,
+                "backup_size_bytes": 0,
+                "backup_sha256": None,
+                "backup_status": "NOT_REQUESTED",
+            }
+
+        # Step 8: Derived Snapshot Export
+        snapshot_digest = snapshot["content_digest"]
+        if export_snapshot and snapshot_output_path:
+            snap_path = Path(snapshot_output_path)
+            snap_path.parent.mkdir(parents=True, exist_ok=True)
+            snap_path.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+
+        # Step 9: Return Governed Result Contract
+        return {
+            "governance_gate_id": governance_gate_id,
+            "candidate_package": pkg_meta["filename"],
+            "candidate_package_sha256": pkg_meta["sha256"],
+            "candidate_package_row_count": len(submissions),
+            "target_db_path": db,
+            "batch_id": admit_result.batch_id,
+            "total_submitted": len(submissions),
+            "admitted_count": admit_result.admitted_count,
+            "exact_already_present_count": admit_result.no_op_count,
+            "rejected_count": admit_result.rejected_count,
+            "collision_count": len(collision_conflicts),
+            "schema_version": INITIAL_MIGRATION_VERSION,
+            "population_version": version,
+            "population_digest": digest,
+            "canonical_share_class_count": len(classes),
+            "unique_canonical_isin_count": len(unique_isins),
+            "duplicate_canonical_isin_count": duplicate_isin_count,
+            "canonical_hold_record_count": holds_count,
+            "provenance_completeness": True,
+            "audit_trace_completeness": True,
+            "backup_metadata": backup_metadata,
+            "snapshot_exported": export_snapshot,
+            "snapshot_digest": snapshot_digest,
+            "migration_verdict": (
+                "SUCCESS_REAL_CANONICAL_MIGRATION_COMPLETE"
+                if (admit_result.admitted_count > 0 or admit_result.no_op_count == len(submissions)) and admit_result.rejected_count == 0
+                else "FAILED_REJECTIONS_DETECTED"
+            ),
+        }
