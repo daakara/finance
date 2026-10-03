@@ -11,6 +11,7 @@ export interface CompetitorComparison {
   competitorDomain: string;
   tagline: string;
   summary: string;
+  metaTitle?: string;
   pricingComparison: {
     arx: string;
     competitor: string;
@@ -26,6 +27,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
     slug: "quiver-quantitative",
     competitorName: "Quiver Quantitative",
     competitorDomain: "quiverquant.com",
+    metaTitle: "Quiver Quantitative Alternative",
     tagline: "Alternative Data & Congressional Insider Trading Tracking",
     summary: "While Quiver Quantitative focuses primarily on scraping political disclosures and government contract awards for retail awareness, ARX Terminal combines statutory STOCK Act filings with mathematical execution geometry (Minervini VCP, Cornish-Fisher VaR, and Turtle ATR stops) to deliver actionable institutional trading entries rather than passive news feeds.",
     pricingComparison: {
@@ -82,6 +84,7 @@ export const COMPETITOR_CATALOG: CompetitorComparison[] = [
     slug: "unusual-whales",
     competitorName: "Unusual Whales",
     competitorDomain: "unusualwhales.com",
+    metaTitle: "Unusual Whales Alternative",
     tagline: "Options Flow Forensics & Retail Flow Tracking",
     summary: "Unusual Whales is built around high-frequency options order flow, dark pools, and social retail sentiment. ARX Terminal complements order flow by providing structural swing architecture: filtering out options market noise through Minervini Volatility Contraction, Turtle ATR volatility stops, and macroeconomic yield-curve risk conditioning.",
     pricingComparison: {

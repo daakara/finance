@@ -25,8 +25,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const pageTitle = term.metaTitle || `${term.name} | Quantitative Finance Glossary`;
+
   return {
-    title: `${term.name} | Quantitative Finance Glossary`,
+    title: pageTitle,
     description: `${term.shortDefinition} Learn mathematical formulation, practical trading application, and algorithmic implementation in ARX Terminal.`,
     alternates: {
       canonical: `https://www.arxterminal.com/glossary/${term.slug}/`,
