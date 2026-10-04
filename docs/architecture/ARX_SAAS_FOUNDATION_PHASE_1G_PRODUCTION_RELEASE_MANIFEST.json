@@ -1,9 +1,12 @@
 {
-  "gate": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_RECONCILIATION",
+  "gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_QUALIFIED",
+  "phase_1g_production": "VERIFIED_WITH_HISTORICAL_EVIDENCE_LIMITATIONS",
+  "historical_evidence_limitation_accepted": true,
+  "governance_adjudication_document": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_HISTORICAL_EVIDENCE_GOVERNANCE.md",
   "runtime_production_health": "VERIFIED",
   "current_database_integrity": "VERIFIED",
   "integration_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-  "current_main_sha": "edfa436a03e112a6f88933c3ac51a04bc3f9b6c2",
+  "current_main_sha": "725dcfffa2922bf625e888fc9fa3203245f90996",
   "current_main_relation_to_runtime": "DOCUMENTATION_ONLY_SUCCESSOR",
   "production_release_identity": "EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR",
   "deployment_timestamp": "2026-10-04T19:55:00+02:00",
@@ -153,8 +156,8 @@
     "SAAS-1G-PROD34": "PASS",
     "SAAS-1G-PROD35": "PASS"
   },
-  "verdict": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_RECONCILIATION",
+  "verdict": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_QUALIFIED",
   "confirmed_production_defect": false,
-  "next_action": "GOVERNANCE_ADJUDICATION_OF_MISSING_HISTORICAL_EVIDENCE",
+  "next_authorized_action": "ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION_GATE",
   "automatic_successor_execution": "NOT_AUTHORIZED"
 }

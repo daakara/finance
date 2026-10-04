@@ -372,7 +372,7 @@ Pragma: no-cache
 | **SAAS-1G-PROD31** | No confirmed ETF/OpenFIGI regression | **PASS** | ETF profile and OpenFIGI contracts operating normally |
 | **SAAS-1G-PROD32** | No confirmed migration defect | **PASS** | Additive schema and backfill applied cleanly |
 | **SAAS-1G-PROD33** | No confirmed data-loss defect | **NOT_FULLY_ADJUDICABLE** | Absence of observed corruption is not proof of zero historical data loss |
-| **SAAS-1G-PROD34** | Production manifest generated and hashed | **PASS** | Manifest SHA-256: `983b5624d835c18c1906562a608c0c9cd372920c1498c48ab9ed20b28dd34fdb` |
+| **SAAS-1G-PROD34** | Production manifest generated and hashed | **PASS** | Manifest SHA-256: `768f770c70ce4a438d9c6f51b93261a6dacbe6748e25fbe488ec2a2304407944` |
 | **SAAS-1G-PROD35** | No unsupported production-evidence claims | **PASS** | All claims reconciled without fabricated historical artifacts |
 
 ---
@@ -381,23 +381,32 @@ Pragma: no-cache
 
 - **Manifest Path**: `docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_MANIFEST.json`
 - **Algorithm**: `SHA-256`
-- **Manifest SHA-256**: `983b5624d835c18c1906562a608c0c9cd372920c1498c48ab9ed20b28dd34fdb`
+- **Manifest SHA-256**: `768f770c70ce4a438d9c6f51b93261a6dacbe6748e25fbe488ec2a2304407944`
 
 ---
 
-## 13. Reconciled Gate Verdict
+## 13. Reconciled Gate Verdict & Historical Evidence Governance
 
-Per Section 17 of the governing reconciliation protocol, because runtime safety, storage persistence, and schema integrity are proven live, but historical pre-deployment backup and table counts were never independently recorded, the evidence is honestly classified without retroactive fabrication:
+Per Section 17 of the governing reconciliation protocol and formal governance adjudication in [`ARX_SAAS_FOUNDATION_PHASE_1G_HISTORICAL_EVIDENCE_GOVERNANCE.md`](file:///c:/Users/akara/Documents/Projects/finance/docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_HISTORICAL_EVIDENCE_GOVERNANCE.md):
+- Technical runtime health, storage durability on Railway (`web-volume`), schema integrity, and security invariants (INV-SAAS-01 through INV-SAAS-07) are 100% verified live.
+- Historical evidence gaps (`PRE_DEPLOYMENT_BACKUP = NOT_ESTABLISHED` and `HISTORICAL_ZERO_ROW_LOSS = NOT_FULLY_ADJUDICABLE`) are adjudicated as procedural and qualifiable limitations rather than blocking runtime defects.
+- Qualified operational acceptance is formally ratified under `PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_QUALIFIED`.
 
 ```ini
 GATE =
-  HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_RECONCILIATION
+  PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_QUALIFIED
+
+PHASE_1G_PRODUCTION =
+  VERIFIED_WITH_HISTORICAL_EVIDENCE_LIMITATIONS
 
 RUNTIME_PRODUCTION_HEALTH =
   VERIFIED
 
 CURRENT_DATABASE_INTEGRITY =
   VERIFIED
+
+DATABASE_VOLUME_PERSISTENT =
+  YES
 
 PRE_DEPLOYMENT_BACKUP =
   NOT_ESTABLISHED
@@ -411,9 +420,19 @@ CONFIRMED_DATA_LOSS =
 CONFIRMED_PRODUCTION_DEFECT =
   NO
 
-NEXT_ACTION =
-  GOVERNANCE_ADJUDICATION_OF_MISSING_HISTORICAL_EVIDENCE
+HISTORICAL_EVIDENCE_LIMITATION_ACCEPTED =
+  YES
+
+PRODUCTION_RELEASE_IDENTITY =
+  EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR
+
+GOVERNANCE_ADJUDICATION_DOCUMENT =
+  docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_HISTORICAL_EVIDENCE_GOVERNANCE.md
+
+NEXT_AUTHORIZED_ACTION =
+  ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION_GATE
 
 AUTOMATIC_SUCCESSOR_EXECUTION =
   NOT_AUTHORIZED
 ```
+
