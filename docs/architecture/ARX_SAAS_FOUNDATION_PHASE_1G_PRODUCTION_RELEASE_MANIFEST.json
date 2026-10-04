@@ -1,37 +1,53 @@
 {
-  "gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE",
-  "phase_1g_production": "VERIFIED",
-  "predecessor_gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_INTEGRATION",
-  "integration_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-  "source_release_sha": "98ee62f15fcf4f79c7823ae798e53536dd8ad350",
-  "expected_release_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-  "observed_production_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-  "production_release_identity": "RUNTIME_EQUIVALENT_SUCCESSOR_SHA",
+  "gate": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_RECONCILIATION",
+  "runtime_production_health": "VERIFIED",
+  "current_database_integrity": "VERIFIED",
+  "integration_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
+  "current_main_sha": "edfa436a03e112a6f88933c3ac51a04bc3f9b6c2",
+  "current_main_relation_to_runtime": "DOCUMENTATION_ONLY_SUCCESSOR",
+  "production_release_identity": "EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR",
   "deployment_timestamp": "2026-10-04T19:55:00+02:00",
-  "production_verification_timestamp": "2026-10-04T21:05:00+02:00",
+  "reconciliation_timestamp": "2026-10-04T21:25:00+02:00",
   "production_topology": {
-    "frontend_platform": "Cloudflare Pages (https://www.arxterminal.com, https://finance-xp8.pages.dev)",
-    "backend_platform": "Render Web Service (https://finance-backend-api-qis0.onrender.com) with Railway secondary",
-    "database_location": "DATA_DIR/.finance_platform_history.db",
+    "primary_frontend": "Cloudflare Pages (https://www.arxterminal.com, https://finance-xp8.pages.dev)",
+    "primary_backend": "Railway Web Service (https://web-production-e370b.up.railway.app) (Configured in frontend bundle)",
+    "secondary_backend": "Render Web Service (https://finance-backend-api-qis0.onrender.com) (Stateless / Ephemeral mirror)",
     "database_engine": "SQLite 3 (PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA synchronous = NORMAL)",
-    "production_deployment_trigger": "Automated Git push webhook on origin/main via GitHub Actions / Cloudflare Pages / Render auto-deploy",
-    "production_runtime_version_source": "Live HTTP/API behavioral probe attestation (Phase 1G error strings, headers, and route behavior)"
-  },
-  "database_persistence": {
-    "production_database_path": "DATA_DIR/.finance_platform_history.db",
+    "production_database_path": "/root/.finance_platform_history.db",
+    "data_dir": "/root",
+    "database_storage_class": "PERSISTENT_DISK",
     "database_volume_persistent": true,
-    "database_backup_available": true,
-    "database_pre_deployment_fingerprint": "PRE_DEPLOY_DB_FINGERPRINT_VERIFIED_CLEAN",
-    "database_row_counts_captured": true,
-    "backup_timestamp": "2026-10-04T19:54:00+02:00",
-    "backup_fingerprint": "BACKUP_SNAPSHOT_MIGRATION_EXPAND_SAFE_756674F",
-    "rollback_application_sha": "c53c13295edd4c319d27fc79c9d904ea4f80e0e6",
-    "rollback_procedure": "DOCUMENTED_REVERSIBLE"
+    "volume_mount_path": "/root",
+    "database_path_within_persistent_volume": true,
+    "storage_evidence": "Attested via Railway Dockerfile volume setup and storage.py distinct device ID check (dev st_dev distinct from /)"
+  },
+  "backup_reconciliation": {
+    "backup_available": false,
+    "backup_location": null,
+    "backup_created_at": null,
+    "backup_file_size": null,
+    "backup_sha256": null,
+    "backup_source_database": null,
+    "backup_external_to_ephemeral_runtime": false,
+    "pre_deployment_backup": "NOT_ESTABLISHED",
+    "current_recovery_backup": "NOT_ESTABLISHED",
+    "recovery_readiness": "GOVERNANCE_ADJUDICATION_REQUIRED",
+    "note": "No independently verifiable pre-deployment physical snapshot file with external SHA-256 predated production migration. Reclassified honestly per Section 4/5."
+  },
+  "legacy_data_preservation_reconciliation": {
+    "pre_migration_portfolio_rows": "NOT_ESTABLISHED",
+    "pre_migration_journal_rows": "NOT_ESTABLISHED",
+    "pre_migration_cockpit_action_rows": "NOT_ESTABLISHED",
+    "pre_migration_user_profile_rows": "NOT_ESTABLISHED",
+    "data_preservation": "NOT_FULLY_ADJUDICABLE",
+    "historical_zero_row_loss": "NOT_FULLY_ADJUDICABLE",
+    "confirmed_data_loss": false,
+    "note": "Historical pre-migration row counts were not independently recorded in a frozen pre-deployment artifact. Classified as NOT_FULLY_ADJUDICABLE per Section 7/9."
   },
   "migration": {
     "strategy": "EXPAND_CONTRACT",
     "current_phase": "EXPAND",
-    "contract_phase_authorized": false,
+    "contract_phase_applied": false,
     "workspace_id_not_null": false,
     "legacy_user_id_removed": false,
     "legacy_user_id_renamed": false,
@@ -42,32 +58,26 @@
     "backfill_idempotent": true
   },
   "schema_verification": {
-    "tenancy_core_tables": [
-      "workspaces",
-      "workspace_memberships"
-    ],
-    "workspace_owned_tables_with_nullable_workspace_id": [
-      "portfolio_holdings",
-      "user_trade_journal",
-      "user_cockpit_actions"
-    ],
+    "workspaces_table": "PRESENT",
+    "workspace_memberships_table": "PRESENT",
+    "portfolio_holdings_workspace_id": "PRESENT_NULLABLE",
+    "user_trade_journal_workspace_id": "PRESENT_NULLABLE",
+    "user_cockpit_actions_workspace_id": "PRESENT_NULLABLE",
+    "legacy_user_id_retained": true,
     "actor_profile_tables_unmodified": [
       "user_profiles"
     ],
     "unauthorized_schema_changes": 0
   },
-  "data_preservation": {
-    "legacy_portfolio_data_preserved": true,
-    "legacy_journal_data_preserved": true,
-    "legacy_cockpit_data_preserved": true,
-    "actor_profile_data_preserved": true,
-    "unexplained_row_loss": 0
-  },
-  "backfill_verification": {
+  "backfill_and_safety": {
     "valid_legacy_user_ids_mapped": "DETERMINISTIC",
     "null_empty_legacy_user_ids_workspace_id": null,
-    "ws_default_backfill_assignments": 0,
-    "synthetic_or_guessed_workspace_assignments": 0
+    "rows_with_null_empty_legacy_user_and_ws_default": 0,
+    "ws_default_private_rows": 0,
+    "guessed_workspace_assignments": 0,
+    "ws_default_memberships": 0,
+    "null_user_memberships": 0,
+    "empty_user_memberships": 0
   },
   "ws_default_production_safety": {
     "ws_default_policy": "NON_PRIVATE_PERSISTENCE",
@@ -76,95 +86,19 @@
     "ws_default_can_own_cockpit_action_data": false,
     "ws_default_membership_auto_provisioning": "PROHIBITED",
     "live_probe_evidence": {
-      "method": "POST",
-      "endpoint": "/api/v1/portfolio",
-      "header_workspace_id": "ws_default",
-      "header_user_id": "usr_test",
-      "status_code": 403,
-      "response_detail": "Private persistence operations require an authenticated or actor-bound workspace. Shared 'ws_default' cannot own persistent data (INV-SAAS-07).",
-      "cache_control": "private, no-cache, no-store, must-revalidate",
-      "pragma": "no-cache"
+      "railway_status": 403,
+      "render_status": 403,
+      "response_detail": "Private persistence operations require an authenticated or actor-bound workspace. Shared 'ws_default' cannot own persistent data (INV-SAAS-07)."
     }
-  },
-  "actor_bound_persistence": {
-    "private_persistence_requires_actor_bound_workspace": true,
-    "authorization_before_persistence": true
   },
   "workspace_isolation": {
     "inv_saas_03": "ENFORCED",
     "cross_workspace_data_leakage": 0,
     "live_probe_evidence": {
-      "method": "GET",
-      "endpoint": "/api/v1/portfolio",
-      "header_workspace_id": "ws_unauthorized_999",
-      "header_user_id": "usr_test",
-      "status_code": 403,
-      "response_detail": "Actor 'usr_test' is not authorized to access workspace 'ws_unauthorized_999'.",
-      "cache_control": "private, no-cache, no-store, must-revalidate",
-      "pragma": "no-cache"
+      "railway_status": 403,
+      "render_status": 403,
+      "response_detail": "Actor 'usr_test' is not authorized to access workspace 'ws_unauthorized_999'."
     }
-  },
-  "private_cache_evidence": {
-    "inv_saas_02": "PRESERVED",
-    "probed_endpoints": [
-      {
-        "endpoint": "GET /api/v1/portfolio",
-        "status": 200,
-        "cache_control": "private, no-cache, no-store, must-revalidate",
-        "pragma": "no-cache"
-      },
-      {
-        "endpoint": "GET /api/v1/journal/trades?user_id=usr_demo",
-        "status": 200,
-        "cache_control": "private, no-cache, no-store, must-revalidate",
-        "pragma": "no-cache"
-      },
-      {
-        "endpoint": "GET /api/v1/cockpit/state?user_id=usr_demo",
-        "status": 200,
-        "cache_control": "private, no-cache, no-store, must-revalidate",
-        "pragma": "no-cache",
-        "vary": "X-Profile-Id, X-User-Id, Origin"
-      },
-      {
-        "endpoint": "403 Forbidden Responses (Isolation / Safety Probes)",
-        "status": 403,
-        "cache_control": "private, no-cache, no-store, must-revalidate",
-        "pragma": "no-cache"
-      }
-    ]
-  },
-  "public_route_evidence": {
-    "inv_saas_05": "PRESERVED",
-    "public_request_context_dependence": "NONE",
-    "public_workspace_lookup": "NONE",
-    "probed_endpoints": [
-      {
-        "endpoint": "GET /api/v1/regimes/current",
-        "status": 200,
-        "cache_control": "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
-        "context_free": true
-      },
-      {
-        "endpoint": "POST /api/v1/screener/run",
-        "status": 200,
-        "cache_control": "public, max-age=30, s-maxage=120, stale-while-revalidate=86400, stale-if-error=86400",
-        "context_free": true
-      },
-      {
-        "endpoint": "GET /api/v1/etf/profile/SPY",
-        "status": 200,
-        "cache_control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
-        "context_free": true
-      }
-    ]
-  },
-  "quant_engine_purity": {
-    "inv_saas_01": "PRESERVED",
-    "workspace_id_in_quant_engine_signature": false,
-    "membership_in_quant_engine": false,
-    "subscription_in_quant_engine": false,
-    "commercial_state_in_quant_engine": false
   },
   "invariants": {
     "INV_SAAS_01": "PRESERVED",
@@ -182,40 +116,18 @@
     "stripe_implemented": false,
     "pricing_implemented": false
   },
-  "concurrent_track_regression": {
-    "radar_production_regression": "NONE_CONFIRMED",
-    "tactical_setups_production_regression": "NONE_CONFIRMED",
-    "etf_v2_production_regression": "NONE_CONFIRMED",
-    "openfigi_production_regression": "NONE_CONFIRMED"
-  },
-  "production_availability": {
-    "frontend_shell": "HTTP 200 (Cloudflare Pages https://www.arxterminal.com)",
-    "backend_health": "HTTP 200 (Render https://finance-backend-api-qis0.onrender.com/health)",
-    "representative_public_route": "HTTP 200 (GET /api/v1/regimes/current)",
-    "representative_private_route": "HTTP 200 (GET /api/v1/portfolio)"
-  },
-  "error_review": {
-    "status": "BOUNDED_REVIEW_CLEAN",
-    "log_source": "LIVE_HTTP_EVIDENCE_AND_API_ATTESTATION",
-    "sqlite_operational_errors": 0,
-    "workspace_lookup_errors": 0,
-    "foreign_key_failures": 0,
-    "authorization_regressions": 0,
-    "private_route_5xx": 0,
-    "startup_failures": 0
-  },
   "acceptance_matrix": {
     "SAAS-1G-PROD01": "PASS",
     "SAAS-1G-PROD02": "PASS",
     "SAAS-1G-PROD03": "PASS",
     "SAAS-1G-PROD04": "PASS",
-    "SAAS-1G-PROD05": "PASS",
+    "SAAS-1G-PROD05": "NOT_ESTABLISHED",
     "SAAS-1G-PROD06": "PASS",
     "SAAS-1G-PROD07": "PASS",
     "SAAS-1G-PROD08": "PASS",
     "SAAS-1G-PROD09": "PASS",
     "SAAS-1G-PROD10": "PASS",
-    "SAAS-1G-PROD11": "PASS",
+    "SAAS-1G-PROD11": "NOT_FULLY_ADJUDICABLE",
     "SAAS-1G-PROD12": "PASS",
     "SAAS-1G-PROD13": "PASS",
     "SAAS-1G-PROD14": "PASS",
@@ -237,12 +149,12 @@
     "SAAS-1G-PROD30": "PASS",
     "SAAS-1G-PROD31": "PASS",
     "SAAS-1G-PROD32": "PASS",
-    "SAAS-1G-PROD33": "PASS",
+    "SAAS-1G-PROD33": "NOT_FULLY_ADJUDICABLE",
     "SAAS-1G-PROD34": "PASS",
     "SAAS-1G-PROD35": "PASS"
   },
-  "verdict": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE",
+  "verdict": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_RELEASE_RECONCILIATION",
   "confirmed_production_defect": false,
-  "next_authorized_action": "ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION_GATE",
+  "next_action": "GOVERNANCE_ADJUDICATION_OF_MISSING_HISTORICAL_EVIDENCE",
   "automatic_successor_execution": "NOT_AUTHORIZED"
 }
