@@ -70,6 +70,8 @@
       "NOT_HELD": "Analyze Opportunity",
       "UNKNOWN": "Analyze Opportunity"
     },
+    "ctaDestination": "/?symbol=${ticker}",
+    "ctaNavigationValid": true,
     "backendNonChangeState": {
       "screenerRouteChanged": false,
       "screenerEngineChanged": false,
