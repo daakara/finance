@@ -9,6 +9,9 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
+from api.context.workspace_identity import derive_compatibility_workspace_id
+from database.workspace_migration import apply_workspace_tenancy_migration, backfill_workspace_tenancy
+
 logger = logging.getLogger(__name__)
 
 DATA_DIR = os.getenv("DATA_DIR", os.path.expanduser("~"))
@@ -234,6 +237,10 @@ class HistoryDatabaseEngine:
                           SELECT symbol FROM user_trade_journal WHERE user_trade_journal.user_id = portfolio_holdings.user_id AND status = 'OPEN'
                       )
                 """)
+
+            # Apply Phase 1G Workspace Tenancy Expand-Only Migration & Backfill
+            apply_workspace_tenancy_migration(conn)
+            backfill_workspace_tenancy(conn)
         finally:
             conn.close()
 
@@ -333,21 +340,33 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def get_user_portfolio(self, user_id: str = "default_user") -> List[Dict[str, Any]]:
-        """Retrieve all holdings for a specific user."""
+    def get_workspace_portfolio(self, workspace_id: str, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve all holdings for a specific workspace with deterministic fallback to legacy user_id."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type
+                SELECT symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id
                 FROM portfolio_holdings
-                WHERE user_id = ?
+                WHERE workspace_id = ?
                 ORDER BY updated_at DESC
                 """,
-                (user_id,)
+                (workspace_id,)
             )
             rows = cursor.fetchall()
+            if not rows and user_id:
+                cursor.execute(
+                    """
+                    SELECT symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id
+                    FROM portfolio_holdings
+                    WHERE user_id = ? AND (workspace_id IS NULL OR workspace_id = ?)
+                    ORDER BY updated_at DESC
+                    """,
+                    (user_id, workspace_id)
+                )
+                rows = cursor.fetchall()
+
             return [
                 {
                     "symbol": row["symbol"],
@@ -359,6 +378,7 @@ class HistoryDatabaseEngine:
                     "stopLossPrice": float(row["stop_loss_price"]) if row["stop_loss_price"] is not None else None,
                     "addedAt": row["added_at"],
                     "assetType": row["asset_type"],
+                    "workspaceId": row["workspace_id"] if "workspace_id" in row.keys() else workspace_id,
                 }
                 for row in rows
             ]
@@ -366,8 +386,17 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def save_user_holding(self, user_id: str, holding: Dict[str, Any]) -> bool:
-        """Add or update a single holding for a user, reconciling manual quantity with open journal fills."""
+    def get_user_portfolio(self, user_id: str = "default_user") -> List[Dict[str, Any]]:
+        """Retrieve all holdings for a specific user (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.get_workspace_portfolio(workspace_id=ws_id, user_id=user_id)
+
+    @retry_sqlite()
+    def save_workspace_holding(self, workspace_id: str, user_id: str, holding: Dict[str, Any]) -> bool:
+        """Add or update a single holding for a workspace, reconciling manual quantity with open journal fills."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist private holding under 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
@@ -380,15 +409,16 @@ class HistoryDatabaseEngine:
                 if m_entry < 0:
                     raise ValueError("Entry price cannot be negative.")
 
-                # Reconcile with any active journal fills for this symbol
+                # Reconcile with any active journal fills for this symbol and workspace
                 cursor.execute(
                     """
                     SELECT remaining_shares, entry_price, stop_loss, target1
                     FROM user_trade_journal
-                    WHERE user_id = ? AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+                    WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+                      AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
                     ORDER BY id ASC
                     """,
-                    (user_id, symbol),
+                    (workspace_id, user_id, symbol),
                 )
                 open_trades = cursor.fetchall()
                 journal_shares = sum(float(t["remaining_shares"]) for t in open_trades) if open_trades else 0.0
@@ -408,12 +438,24 @@ class HistoryDatabaseEngine:
                     float(open_trades[-1]["target1"]) if open_trades and open_trades[-1]["target1"] is not None else None
                 )
 
+                # Ensure workspace and membership entities exist (never for ws_default or default_user)
+                if workspace_id != "ws_default" and user_id and user_id != "default_user":
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspaces (workspace_id, name) VALUES (?, ?);",
+                        (workspace_id, f"Workspace {user_id}"),
+                    )
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspace_memberships (workspace_id, user_id, role) VALUES (?, ?, 'owner');",
+                        (workspace_id, user_id),
+                    )
+
                 cursor.execute(
                     """
                     INSERT INTO portfolio_holdings (
-                        user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        workspace_id, user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(user_id, symbol) DO UPDATE SET
+                        workspace_id = excluded.workspace_id,
                         name = excluded.name,
                         shares = excluded.shares,
                         entry_price = excluded.entry_price,
@@ -426,6 +468,7 @@ class HistoryDatabaseEngine:
                         updated_at = CURRENT_TIMESTAMP
                     """,
                     (
+                        workspace_id,
                         user_id,
                         symbol,
                         holding.get("name", symbol),
@@ -445,8 +488,17 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def delete_user_holding(self, user_id: str, symbol: str) -> bool:
-        """Delete manual holding for a user/symbol, reconciling with any remaining open journal fills."""
+    def save_user_holding(self, user_id: str, holding: Dict[str, Any]) -> bool:
+        """Add or update a single holding for a user, dual-writing workspace_id (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.save_workspace_holding(workspace_id=ws_id, user_id=user_id, holding=holding)
+
+    @retry_sqlite()
+    def delete_workspace_holding(self, workspace_id: str, user_id: str, symbol: str) -> bool:
+        """Delete manual holding for a workspace/symbol, reconciling with any remaining open journal fills."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot delete private holding from 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
@@ -456,23 +508,38 @@ class HistoryDatabaseEngine:
                     """
                     UPDATE portfolio_holdings
                     SET manual_shares = 0.0, manual_entry_price = 0.0
-                    WHERE user_id = ? AND symbol = ?
+                    WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND symbol = ?
                     """,
-                    (user_id, sym),
+                    (workspace_id, user_id, sym),
                 )
-                self._sync_portfolio_holding_for_symbol(cursor, user_id, sym)
+                self._sync_portfolio_holding_for_symbol(cursor, user_id, sym, workspace_id=workspace_id)
             return True
         finally:
             conn.close()
 
     @retry_sqlite()
-    def bulk_save_holdings(self, user_id: str, holdings: List[Dict[str, Any]]) -> int:
-        """Bulk save or migrate holdings for a user without wiping existing records."""
+    def delete_user_holding(self, user_id: str, symbol: str) -> bool:
+        """Delete manual holding for a user/symbol (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.delete_workspace_holding(workspace_id=ws_id, user_id=user_id, symbol=symbol)
+
+    @retry_sqlite()
+    def bulk_save_workspace_holdings(self, workspace_id: str, user_id: str, holdings: List[Dict[str, Any]]) -> int:
+        """Bulk save holdings for a workspace/user without wiping existing records."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist private holdings under 'ws_default' (INV-SAAS-07).")
+
         count = 0
         for h in holdings:
-            if self.save_user_holding(user_id, h):
+            if self.save_workspace_holding(workspace_id, user_id, h):
                 count += 1
         return count
+
+    @retry_sqlite()
+    def bulk_save_holdings(self, user_id: str, holdings: List[Dict[str, Any]]) -> int:
+        """Bulk save holdings for a user (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.bulk_save_workspace_holdings(workspace_id=ws_id, user_id=user_id, holdings=holdings)
 
     @retry_sqlite()
     def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -543,24 +610,38 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def get_user_actions(self, user_id: str) -> List[Dict[str, Any]]:
-        """Retrieve active action items for a user."""
+    def get_workspace_actions(self, workspace_id: str, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve active action items for a workspace with deterministic fallback to legacy user_id."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT id, user_id, title, domain, priority_score, identity_contribution, is_primary, duration_minutes, energy_required, rationale, scheduled_window, created_at
+                SELECT id, user_id, workspace_id, title, domain, priority_score, identity_contribution, is_primary, duration_minutes, energy_required, rationale, scheduled_window, created_at
                 FROM user_cockpit_actions
-                WHERE user_id = ?
+                WHERE workspace_id = ?
                 ORDER BY priority_score DESC
                 """,
-                (user_id,)
+                (workspace_id,)
             )
             rows = cursor.fetchall()
+            if not rows and user_id:
+                cursor.execute(
+                    """
+                    SELECT id, user_id, workspace_id, title, domain, priority_score, identity_contribution, is_primary, duration_minutes, energy_required, rationale, scheduled_window, created_at
+                    FROM user_cockpit_actions
+                    WHERE user_id = ? AND (workspace_id IS NULL OR workspace_id = ?)
+                    ORDER BY priority_score DESC
+                    """,
+                    (user_id, workspace_id)
+                )
+                rows = cursor.fetchall()
+
             return [
                 {
                     "id": row["id"],
+                    "userId": row["user_id"],
+                    "workspaceId": row["workspace_id"] if "workspace_id" in row.keys() else workspace_id,
                     "title": row["title"],
                     "domain": row["domain"],
                     "priorityScore": float(row["priority_score"]),
@@ -577,19 +658,38 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def save_user_action(self, user_id: str, action: Dict[str, Any]) -> bool:
-        """Create or update an action item for a user."""
+    def get_user_actions(self, user_id: str) -> List[Dict[str, Any]]:
+        """Retrieve active action items for a user (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.get_workspace_actions(workspace_id=ws_id, user_id=user_id)
+
+    @retry_sqlite()
+    def save_workspace_action(self, workspace_id: str, user_id: str, action: Dict[str, Any]) -> bool:
+        """Create or update an action item for a workspace with dual-write tenancy."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist action under 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                if workspace_id != "ws_default" and user_id and user_id not in ("default_user", "default"):
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspaces (workspace_id, name) VALUES (?, ?);",
+                        (workspace_id, f"Workspace {user_id}"),
+                    )
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspace_memberships (workspace_id, user_id, role) VALUES (?, ?, 'owner');",
+                        (workspace_id, user_id),
+                    )
                 cursor.execute(
                     """
                     INSERT INTO user_cockpit_actions (
-                        id, user_id, title, domain, priority_score, identity_contribution, is_primary, duration_minutes, energy_required, rationale, scheduled_window, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        id, user_id, workspace_id, title, domain, priority_score, identity_contribution, is_primary, duration_minutes, energy_required, rationale, scheduled_window, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     ON CONFLICT(id) DO UPDATE SET
                         user_id = excluded.user_id,
+                        workspace_id = excluded.workspace_id,
                         title = excluded.title,
                         domain = excluded.domain,
                         priority_score = excluded.priority_score,
@@ -603,6 +703,7 @@ class HistoryDatabaseEngine:
                     (
                         action["id"],
                         user_id,
+                        workspace_id,
                         action["title"],
                         action.get("domain", "GENERAL"),
                         float(action.get("priorityScore", 50.0)),
@@ -617,6 +718,12 @@ class HistoryDatabaseEngine:
             return True
         finally:
             conn.close()
+
+    @retry_sqlite()
+    def save_user_action(self, user_id: str, action: Dict[str, Any]) -> bool:
+        """Create or update an action item for a user (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.save_workspace_action(workspace_id=ws_id, user_id=user_id, action=action)
 
     def _format_journal_row(self, row: Any) -> Dict[str, Any]:
         """Format a user_trade_journal row into the canonical Journal trade dictionary."""
@@ -648,9 +755,12 @@ class HistoryDatabaseEngine:
         idempotency_key = row["idempotency_key"] if "idempotency_key" in keys else None
         exit_idempotency_key = row["exit_idempotency_key"] if "exit_idempotency_key" in keys else None
 
+        ws_id = row["workspace_id"] if ("workspace_id" in keys and row["workspace_id"] is not None) else None
+
         return {
             "id": str(row["id"]),
             "userId": row["user_id"],
+            "workspaceId": ws_id,
             "ticker": row["symbol"],
             "symbol": row["symbol"],
             "setup": row["setup_name"],
@@ -679,12 +789,24 @@ class HistoryDatabaseEngine:
         }
 
     @retry_sqlite()
-    def save_journal_trade(self, user_id: str, trade: Dict[str, Any]) -> Dict[str, Any]:
-        """Save a trade execution record to user's journal."""
+    def save_workspace_journal_trade(self, workspace_id: str, user_id: str, trade: Dict[str, Any]) -> Dict[str, Any]:
+        """Save a trade execution record to workspace's journal with dual-write tenancy."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist private trade under 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                if workspace_id != "ws_default" and user_id and user_id != "default_user":
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspaces (workspace_id, name) VALUES (?, ?);",
+                        (workspace_id, f"Workspace {user_id}"),
+                    )
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspace_memberships (workspace_id, user_id, role) VALUES (?, ?, 'owner');",
+                        (workspace_id, user_id),
+                    )
                 entry_date = trade.get("entryDate") or trade.get("date") or datetime.utcnow().strftime("%Y-%m-%d")
                 exit_date = trade.get("exitDate")
 
@@ -720,12 +842,13 @@ class HistoryDatabaseEngine:
                 cursor.execute(
                     """
                     INSERT INTO user_trade_journal (
-                        user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                        workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                         r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                         parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
                     (
+                        workspace_id,
                         user_id,
                         trade["symbol"].upper().strip(),
                         setup_name,
@@ -755,16 +878,29 @@ class HistoryDatabaseEngine:
         finally:
             conn.close()
 
-    def _sync_portfolio_holding_for_symbol(self, cursor: Any, user_id: str, symbol: str) -> None:
-        """Synchronize portfolio_holdings for a user/symbol reconciling manual holdings and open journal fills."""
+    @retry_sqlite()
+    def save_journal_trade(self, user_id: str, trade: Dict[str, Any]) -> Dict[str, Any]:
+        """Save a trade execution record to user's journal (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.save_workspace_journal_trade(workspace_id=ws_id, user_id=user_id, trade=trade)
+
+    def _sync_portfolio_holding_for_symbol(
+        self,
+        cursor: Any,
+        user_id: str,
+        symbol: str,
+        workspace_id: Optional[str] = None,
+    ) -> None:
+        """Synchronize portfolio_holdings for a workspace/user/symbol reconciling manual holdings and open journal fills."""
+        ws_id = workspace_id or derive_compatibility_workspace_id(user_id)
         # 1. Fetch current manual holding baseline from portfolio_holdings if exists
         cursor.execute(
             """
-            SELECT shares, entry_price, manual_shares, manual_entry_price, name, current_price, target_price, stop_loss_price, added_at, asset_type
+            SELECT shares, entry_price, manual_shares, manual_entry_price, name, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id
             FROM portfolio_holdings
-            WHERE user_id = ? AND symbol = ?
+            WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND symbol = ?
             """,
-            (user_id, symbol),
+            (ws_id, user_id, symbol),
         )
         existing = cursor.fetchone()
 
@@ -785,7 +921,6 @@ class HistoryDatabaseEngine:
             a_date = existing["added_at"] or a_date
             a_type = existing["asset_type"] or a_type
 
-            # Check if manual shares are recorded
             if existing["manual_shares"] is not None and float(existing["manual_shares"]) > 1e-6:
                 m_shares = float(existing["manual_shares"])
                 m_entry = float(existing["manual_entry_price"] or existing["entry_price"])
@@ -798,10 +933,11 @@ class HistoryDatabaseEngine:
             """
             SELECT remaining_shares, entry_price, stop_loss, target1
             FROM user_trade_journal
-            WHERE user_id = ? AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+            WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+              AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
             ORDER BY id ASC
             """,
-            (user_id, symbol),
+            (ws_id, user_id, symbol),
         )
         open_trades = cursor.fetchall()
         journal_shares = sum(float(t["remaining_shares"]) for t in open_trades) if open_trades else 0.0
@@ -828,39 +964,52 @@ class HistoryDatabaseEngine:
                     SET shares = ?, entry_price = ?,
                         manual_shares = ?, manual_entry_price = ?,
                         stop_loss_price = ?, target_price = ?,
+                        workspace_id = COALESCE(workspace_id, ?),
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE user_id = ? AND symbol = ?
+                    WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND symbol = ?
                     """,
-                    (total_shares, blended_entry, m_shares, m_entry, s_price, t_price, user_id, symbol),
+                    (total_shares, blended_entry, m_shares, m_entry, s_price, t_price, ws_id, ws_id, user_id, symbol),
                 )
             else:
                 cursor.execute(
                     """
                     INSERT INTO portfolio_holdings (
-                        user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        workspace_id, user_id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
-                    (user_id, symbol, h_name, total_shares, blended_entry, c_price or blended_entry, t_price, s_price, a_date, a_type, m_shares, m_entry),
+                    (ws_id, user_id, symbol, h_name, total_shares, blended_entry, c_price or blended_entry, t_price, s_price, a_date, a_type, m_shares, m_entry),
                 )
         else:
             # Both manual shares and journal shares are 0: remove holding
             cursor.execute(
-                "DELETE FROM portfolio_holdings WHERE user_id = ? AND symbol = ?",
-                (user_id, symbol),
+                "DELETE FROM portfolio_holdings WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND symbol = ?",
+                (ws_id, user_id, symbol),
             )
 
     @retry_sqlite()
-    def record_trade_fill(self, user_id: str, fill_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Record an executed trade plan fill in the persistent journal and update portfolio holdings."""
+    def record_workspace_trade_fill(self, workspace_id: str, user_id: str, fill_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record an executed trade plan fill in persistent journal and update portfolio holdings for workspace."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist trade fill under 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                if workspace_id != "ws_default" and user_id and user_id != "default_user":
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspaces (workspace_id, name) VALUES (?, ?);",
+                        (workspace_id, f"Workspace {user_id}"),
+                    )
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspace_memberships (workspace_id, user_id, role) VALUES (?, ?, 'owner');",
+                        (workspace_id, user_id),
+                    )
                 idempotency_key = fill_data.get("idempotencyKey")
                 if idempotency_key:
                     cursor.execute(
-                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND idempotency_key = ? LIMIT 1",
-                        (user_id, str(idempotency_key)),
+                        "SELECT * FROM user_trade_journal WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND idempotency_key = ? LIMIT 1",
+                        (workspace_id, user_id, str(idempotency_key)),
                     )
                     row = cursor.fetchone()
                     if row:
@@ -887,12 +1036,13 @@ class HistoryDatabaseEngine:
                 cursor.execute(
                     """
                     INSERT INTO user_trade_journal (
-                        user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                        workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                         r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                         parent_trade_id, execution_role, idempotency_key, notes, target1, stop_loss, created_at
-                    ) VALUES (?, ?, ?, ?, NULL, ?, ?, NULL, -1, ?, NULL, 'OPEN', ?, NULL, NULL, 'ENTRY', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, NULL, -1, ?, NULL, 'OPEN', ?, NULL, NULL, 'ENTRY', ?, ?, ?, ?, CURRENT_TIMESTAMP)
                     """,
                     (
+                        workspace_id,
                         user_id,
                         symbol,
                         setup_name,
@@ -910,7 +1060,7 @@ class HistoryDatabaseEngine:
                 trade_id = cursor.lastrowid
 
                 # Synchronize with portfolio_holdings
-                self._sync_portfolio_holding_for_symbol(cursor, user_id, symbol)
+                self._sync_portfolio_holding_for_symbol(cursor, user_id, symbol, workspace_id=workspace_id)
 
                 cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (trade_id,))
                 created_row = cursor.fetchone()
@@ -919,17 +1069,35 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def record_trade_exit(self, user_id: str, exit_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Record a partial or complete exit of an active open trade."""
+    def record_trade_fill(self, user_id: str, fill_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record an executed trade plan fill in the persistent journal (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.record_workspace_trade_fill(workspace_id=ws_id, user_id=user_id, fill_data=fill_data)
+
+    @retry_sqlite()
+    def record_workspace_trade_exit(self, workspace_id: str, user_id: str, exit_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record a partial or complete exit of an active open trade for a workspace."""
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot persist trade exit under 'ws_default' (INV-SAAS-07).")
+
         conn = self._get_connection()
         try:
             with conn:
                 cursor = conn.cursor()
+                if workspace_id != "ws_default" and user_id and user_id != "default_user":
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspaces (workspace_id, name) VALUES (?, ?);",
+                        (workspace_id, f"Workspace {user_id}"),
+                    )
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO workspace_memberships (workspace_id, user_id, role) VALUES (?, ?, 'owner');",
+                        (workspace_id, user_id),
+                    )
                 idempotency_key = exit_data.get("idempotencyKey")
                 if idempotency_key:
                     cursor.execute(
-                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND exit_idempotency_key = ? LIMIT 1",
-                        (user_id, str(idempotency_key)),
+                        "SELECT * FROM user_trade_journal WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND exit_idempotency_key = ? LIMIT 1",
+                        (workspace_id, user_id, str(idempotency_key)),
                     )
                     row = cursor.fetchone()
                     if row:
@@ -944,13 +1112,13 @@ class HistoryDatabaseEngine:
                 # Locate target trade
                 if trade_id is not None:
                     cursor.execute(
-                        "SELECT * FROM user_trade_journal WHERE id = ? AND user_id = ?",
-                        (int(trade_id), user_id),
+                        "SELECT * FROM user_trade_journal WHERE id = ? AND (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))",
+                        (int(trade_id), workspace_id, user_id),
                     )
                 else:
                     cursor.execute(
-                        "SELECT * FROM user_trade_journal WHERE user_id = ? AND symbol = ? AND status = 'OPEN' ORDER BY created_at DESC LIMIT 1",
-                        (user_id, symbol),
+                        "SELECT * FROM user_trade_journal WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL)) AND symbol = ? AND status = 'OPEN' ORDER BY created_at DESC LIMIT 1",
+                        (workspace_id, user_id, symbol),
                     )
                 parent = cursor.fetchone()
                 if not parent:
@@ -994,12 +1162,13 @@ class HistoryDatabaseEngine:
                     cursor.execute(
                         """
                         INSERT INTO user_trade_journal (
-                            user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                            workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                             r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                             parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
                         ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         """,
                         (
+                            workspace_id,
                             user_id,
                             parent["symbol"],
                             parent["setup_name"],
@@ -1022,7 +1191,7 @@ class HistoryDatabaseEngine:
                     leg_id = cursor.lastrowid
 
                     # Synchronize portfolio_holdings across all remaining open positions
-                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"])
+                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"], workspace_id=workspace_id)
 
                     cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (leg_id,))
                     result_row = cursor.fetchone()
@@ -1041,12 +1210,13 @@ class HistoryDatabaseEngine:
                         cursor.execute(
                             """
                             INSERT INTO user_trade_journal (
-                                user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
+                                workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                                 r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                                 parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
                             ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                             """,
                             (
+                                workspace_id,
                                 user_id,
                                 parent["symbol"],
                                 parent["setup_name"],
@@ -1073,7 +1243,8 @@ class HistoryDatabaseEngine:
                             UPDATE user_trade_journal
                             SET exit_price = ?, remaining_shares = 0, status = 'CLOSED', exit_date = ?,
                                 pnl = ?, r_achieved = ?, followed_rules = ?, execution_role = 'FULL_EXIT',
-                                notes = COALESCE(?, notes), exit_idempotency_key = COALESCE(?, exit_idempotency_key)
+                                notes = COALESCE(?, notes), exit_idempotency_key = COALESCE(?, exit_idempotency_key),
+                                workspace_id = COALESCE(workspace_id, ?)
                             WHERE id = ?
                             """,
                             (
@@ -1084,13 +1255,14 @@ class HistoryDatabaseEngine:
                                 followed_rules,
                                 notes,
                                 idempotency_key,
+                                workspace_id,
                                 parent["id"],
                             ),
                         )
                         final_id = parent["id"]
 
                     # Synchronize portfolio_holdings across all remaining open positions
-                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"])
+                    self._sync_portfolio_holding_for_symbol(cursor, user_id, parent["symbol"], workspace_id=workspace_id)
 
                     cursor.execute("SELECT * FROM user_trade_journal WHERE id = ?", (final_id,))
                     result_row = cursor.fetchone()
@@ -1099,8 +1271,14 @@ class HistoryDatabaseEngine:
             conn.close()
 
     @retry_sqlite()
-    def get_journal_trades(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """Retrieve chronological trade log for a user."""
+    def record_trade_exit(self, user_id: str, exit_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Record a partial or complete exit of an active open trade (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.record_workspace_trade_exit(workspace_id=ws_id, user_id=user_id, exit_data=exit_data)
+
+    @retry_sqlite()
+    def get_workspace_journal_trades(self, workspace_id: str, limit: int = 50, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve chronological trade log for a workspace with deterministic fallback to legacy user_id."""
         conn = self._get_connection()
         try:
             cursor = conn.cursor()
@@ -1108,22 +1286,40 @@ class HistoryDatabaseEngine:
                 """
                 SELECT *
                 FROM user_trade_journal
-                WHERE user_id = ?
-                ORDER BY created_at DESC
+                WHERE workspace_id = ?
+                ORDER BY created_at DESC, id DESC
                 LIMIT ?
                 """,
-                (user_id, limit),
+                (workspace_id, limit),
             )
             rows = cursor.fetchall()
+            if not rows and user_id:
+                cursor.execute(
+                    """
+                    SELECT *
+                    FROM user_trade_journal
+                    WHERE user_id = ? AND (workspace_id IS NULL OR workspace_id = ?)
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT ?
+                    """,
+                    (user_id, workspace_id, limit),
+                )
+                rows = cursor.fetchall()
             return [self._format_journal_row(row) for row in rows]
         finally:
             conn.close()
 
     @retry_sqlite()
-    def get_risk_telemetry(self, user_id: str) -> Dict[str, Any]:
-        """Derive authoritative behavioral risk telemetry directly from persistent trade journal and portfolio holdings."""
-        trades = self.get_journal_trades(user_id, limit=200)
-        holdings = self.get_user_portfolio(user_id)
+    def get_journal_trades(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve chronological trade log for a user (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.get_workspace_journal_trades(workspace_id=ws_id, limit=limit, user_id=user_id)
+
+    @retry_sqlite()
+    def get_workspace_risk_telemetry(self, workspace_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """Derive authoritative behavioral risk telemetry directly from persistent trade journal and portfolio holdings for a workspace."""
+        trades = self.get_workspace_journal_trades(workspace_id, limit=200, user_id=user_id)
+        holdings = self.get_workspace_portfolio(workspace_id, user_id=user_id)
 
         account_equity: Optional[float] = None
         if holdings:
@@ -1175,7 +1371,8 @@ class HistoryDatabaseEngine:
 
         return {
             "available": True,
-            "userId": user_id,
+            "workspaceId": workspace_id,
+            "userId": user_id or "default_user",
             "accountEquity": account_equity,
             "consecutiveLossStreak": consecutive_loss_streak,
             "dailyDrawdownPct": daily_drawdown_pct,
@@ -1185,3 +1382,9 @@ class HistoryDatabaseEngine:
             "isCalibrated": brier_score is not None and brier_score <= 0.25,
             "source": "AUTHORITATIVE_API",
         }
+
+    @retry_sqlite()
+    def get_risk_telemetry(self, user_id: str) -> Dict[str, Any]:
+        """Derive authoritative behavioral risk telemetry directly from persistent trade journal and portfolio holdings (compatibility adapter)."""
+        ws_id = derive_compatibility_workspace_id(user_id)
+        return self.get_workspace_risk_telemetry(workspace_id=ws_id, user_id=user_id)

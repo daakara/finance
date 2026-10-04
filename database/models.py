@@ -31,3 +31,25 @@ class DailyScreeningRecordModel(Base):
     raw_payload = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class WorkspaceModel(Base):
+    """Core workspace tenancy entity (Phase 1G Expand)."""
+    __tablename__ = "workspaces"
+
+    workspace_id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class WorkspaceMembershipModel(Base):
+    """Workspace membership entity (Phase 1G Expand)."""
+    __tablename__ = "workspace_memberships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workspace_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), nullable=False, index=True)
+    role = Column(String(50), nullable=False, default="owner")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+

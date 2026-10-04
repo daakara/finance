@@ -1,0 +1,226 @@
+{
+  "gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_RELEASE",
+  "predecessor_gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_IMPLEMENTATION_RECONCILED",
+  "phase_1f_b_release_commit": "18dd7e9f2d9f5737388f442a9f740cb82b4b163a",
+  "branch": "feat/arx-saas-foundation-phase1-seams",
+  "current_main_sha": "c53c13295edd4c319d27fc79c9d904ea4f80e0e6",
+  "main_drift_classification": "NON_OVERLAPPING",
+  "release_timestamp": "2026-10-04T19:05:00+02:00",
+  "migration": {
+    "strategy": "EXPAND_CONTRACT",
+    "current_phase": "EXPAND",
+    "contract_phase_authorized": false,
+    "legacy_user_id_columns_removed": false,
+    "legacy_owner_columns_renamed": false,
+    "workspace_id_not_null_enforced": false,
+    "destructive_schema_changes": false,
+    "migration_idempotent": true,
+    "backfill_idempotent": true,
+    "synthetic_or_guessed_workspace_assignments": 0,
+    "null_or_empty_user_id_backfilled_to_ws_default": false
+  },
+  "schema": {
+    "tenancy_core_tables": {
+      "workspaces": {
+        "workspace_id": "TEXT PRIMARY KEY",
+        "name": "TEXT NOT NULL",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+      },
+      "workspace_memberships": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "workspace_id": "TEXT NOT NULL REFERENCES workspaces(workspace_id)",
+        "user_id": "TEXT NOT NULL",
+        "role": "TEXT NOT NULL DEFAULT 'owner'",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "constraints": [
+          "UNIQUE(workspace_id, user_id)"
+        ]
+      }
+    },
+    "workspace_owned_entities": {
+      "portfolio_holdings": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_portfolio_holdings_ws",
+          "idx_portfolio_holdings_ws_sym"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "shares",
+          "entry_price",
+          "manual_shares",
+          "manual_entry_price"
+        ]
+      },
+      "user_trade_journal": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_user_trade_journal_ws"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "symbol",
+          "shares",
+          "entry_price",
+          "status"
+        ]
+      },
+      "user_cockpit_actions": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_user_cockpit_actions_ws"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "id",
+          "title",
+          "domain",
+          "priority_score"
+        ]
+      }
+    },
+    "actor_profile_entities": {
+      "user_profiles": {
+        "classification": "ACTOR_PROFILE",
+        "scoped_to": "user_id TEXT PRIMARY KEY",
+        "workspace_id_added": false
+      }
+    },
+    "immutable_evidence_entities": {
+      "tables": [
+        "gem_screening_history",
+        "forecast_history",
+        "trade_recommendation_history"
+      ],
+      "modified": false,
+      "tenancy_columns_added": false
+    },
+    "commercial_schema_fields_added": false
+  },
+  "runtime_architecture": {
+    "workspace_id_authority": "api.context.workspace_identity.derive_compatibility_workspace_id",
+    "ws_default_policy": "NON_PRIVATE_PERSISTENCE",
+    "private_persistence_requires_actor_bound_workspace": true,
+    "ws_default_membership_auto_provisioning": "PROHIBITED",
+    "actor_bound_membership_auto_provisioning": true,
+    "limit_atomicity_classification": "BEST_EFFORT",
+    "invariants": {
+      "INV-SAAS-01": "PRESERVED_11_PROTECTED_QUANT_ENGINES",
+      "INV-SAAS-02": "ENFORCED_PRIVATE_CACHE_NO_STORE",
+      "INV-SAAS-03": "ENFORCED_CROSS_WORKSPACE_ISOLATION",
+      "INV-SAAS-04": "PRESERVED_CAPABILITY_ROUTING",
+      "INV-SAAS-05": "PRESERVED_PUBLIC_ROUTES_CONTEXT_FREE",
+      "INV-SAAS-06": "ENFORCED_SINGLE_WORKSPACE_IDENTITY_AUTHORITY",
+      "INV-SAAS-07": "ENFORCED_SHARED_DEFAULT_WORKSPACE_NON_PERSISTENCE"
+    },
+    "capabilities": {
+      "capability_count": 17,
+      "limit_count": 5,
+      "commercial_plan_names_in_runtime": 0
+    },
+    "cross_track_isolation": {
+      "etf_v2_files_changed": false,
+      "openfigi_files_changed": false,
+      "tactical_setups_remediation_changed": false,
+      "radar_portfolio_backlog_changed": false,
+      "frontend_commercial_ui_changed": false,
+      "unrelated_arx_files_changed": 0
+    }
+  },
+  "candidate_verification": {
+    "private_route_candidate_parity": "VERIFIED_16_OF_16_IN_PROCESS",
+    "production_private_route_parity": "NOT_APPLICABLE_PRE_DEPLOYMENT",
+    "live_production_evidence": "NOT_COLLECTED",
+    "test_results": {
+      "saas_foundation_tests": "92_PASS",
+      "architecture_scope_tests": "63_PASS",
+      "journal_risk_telemetry_tests": "5_PASS",
+      "total_backend_tests": "160_PASS",
+      "frontend_unit_tests": "PASS",
+      "frontend_architecture_tests": "12_SUITES_38_INVARIANTS_PASS",
+      "frontend_typescript": "CLEAN_0_ERRORS",
+      "frontend_linter": "CLEAN_0_ERRORS",
+      "frontend_production_build": "SUCCESS_144_PAGES",
+      "predecessor_test_contract_coverage": "100_PERCENT",
+      "test_scope_weakening": false
+    }
+  },
+  "changed_file_inventory": {
+    "analyst_dashboard/data/db_engine.py": {
+      "classification": "AUTHORIZED_WORKSPACE_SCHEMA",
+      "sha256": "f6f75a73d6d58a7cf771a586ec37419bb018a6f5f972d74098d9118fb363bd71"
+    },
+    "api/context/__init__.py": {
+      "classification": "AUTHORIZED_WORKSPACE_IDENTITY",
+      "sha256": "49888565d6552f364a476c9e3331630d83f0dff20371b6544752bd9b65854ffd"
+    },
+    "api/context/resolver.py": {
+      "classification": "AUTHORIZED_WORKSPACE_IDENTITY",
+      "sha256": "30ecb1a4f2744bb56feaa9e9165689b7061a60fc9e936af173c087e94c623f9a"
+    },
+    "api/context/workspace_identity.py": {
+      "classification": "AUTHORIZED_WORKSPACE_IDENTITY",
+      "sha256": "f7c270084073b9bd83453bb8fe1556c648c740d8dd285d88b31ef4437167e568"
+    },
+    "api/services/cockpit_service.py": {
+      "classification": "AUTHORIZED_APPLICATION_SERVICE",
+      "sha256": "5a21697e0fd9acc9df398e3720c598884cd41d55f69affe94bf4d96e72308af3"
+    },
+    "api/services/journal_service.py": {
+      "classification": "AUTHORIZED_APPLICATION_SERVICE",
+      "sha256": "d9af5d8b9d7a27148eda439f0324def55bcc14fff0cef253517fd4774136c62f"
+    },
+    "api/services/portfolio_service.py": {
+      "classification": "AUTHORIZED_APPLICATION_SERVICE",
+      "sha256": "7cbe1ad77ffc217b3168d362a060e58c7be1215d65dadfa421a7ddbea3846490"
+    },
+    "database/models.py": {
+      "classification": "AUTHORIZED_WORKSPACE_SCHEMA",
+      "sha256": "e792b550924dc1f14034348e7e4c629c928e5e70f4d12d322c252a1fa5433b1d"
+    },
+    "database/migrations/002_arx_saas_workspace_tenancy.sql": {
+      "classification": "AUTHORIZED_MIGRATION",
+      "sha256": "c1451e8431324695cba0ad5c97c2a520de51ac61ee3a48d4669bb922d783c14f"
+    },
+    "database/workspace_migration.py": {
+      "classification": "AUTHORIZED_MIGRATION",
+      "sha256": "589aa77b7b9d50c7b8bf16d64e4eb012470d5db6a2c7eeb337e0da21fa2dca5a"
+    },
+    "database/workspace_repository.py": {
+      "classification": "AUTHORIZED_REPOSITORY",
+      "sha256": "101dc6ac78d4930845245da3dab9b5f6ef63caa5bc966442d443b731126b781e"
+    },
+    "tests/architecture/test_phase_1f_b_scope.py": {
+      "classification": "AUTHORIZED_TEST",
+      "sha256": "67910db157b590a864802ab19fea5ed83af47cfd0557ebf3d24eaf602e81b570"
+    },
+    "tests/architecture/test_phase_1g_scope.py": {
+      "classification": "AUTHORIZED_TEST",
+      "sha256": "9e68b6b793b3b7e1f5d81ad55cbff289c05cabd57ae4d33fb8c125150c2e3849"
+    },
+    "tests/architecture/test_changed_file_scope.py": {
+      "classification": "AUTHORIZED_TEST",
+      "sha256": "660f43f22c5bb7112ab946edd2390f6fbc84e5c3ca80e36edf32b377fd611736"
+    },
+    "tests/architecture/test_phase_scope.py": {
+      "classification": "AUTHORIZED_TEST",
+      "sha256": "af65cb6896221cef4d176228a6705c10fccf6de4c96e17aad2f8c44f6dd9e8e4"
+    },
+    "tests/saas/test_workspace_persistence.py": {
+      "classification": "AUTHORIZED_TEST",
+      "sha256": "153d59c4b34060187ab90b1bac10436bdf0d25d79d9d448aeff98acc76a2fac5"
+    },
+    "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_IMPLEMENTATION_REPORT.md": {
+      "classification": "AUTHORIZED_DOCUMENTATION",
+      "sha256": "a36677160afc97eeb1c7bee458c5671434be6814b7f36172883b414ef3b447b8"
+    }
+  }
+}

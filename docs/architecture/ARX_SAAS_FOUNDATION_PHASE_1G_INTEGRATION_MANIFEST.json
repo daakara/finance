@@ -1,0 +1,194 @@
+{
+  "gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_INTEGRATION",
+  "predecessor_gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1G_RELEASE",
+  "phase_1g_release_commit": "98ee62f15fcf4f79c7823ae798e53536dd8ad350",
+  "phase_1g_release_manifest_sha256": "00b693da82b6790c7d293bf71c5e4bfa64e729998e3f7486c7335765f30f2100",
+  "source_branch": "feat/arx-saas-foundation-phase1-seams",
+  "target_branch": "main",
+  "target_main_base_sha": "c53c13295edd4c319d27fc79c9d904ea4f80e0e6",
+  "merge_base_sha": "d20ec394133261df84885fb2d8c6f941a5b9ba19",
+  "integration_timestamp": "2026-10-04T19:55:00+02:00",
+  "migration": {
+    "strategy": "EXPAND_CONTRACT",
+    "current_phase": "EXPAND",
+    "contract_phase_authorized": false,
+    "legacy_user_id_columns_removed": false,
+    "legacy_owner_columns_renamed": false,
+    "workspace_id_not_null_enforced": false,
+    "destructive_schema_changes": false,
+    "migration_idempotent": true,
+    "backfill_idempotent": true,
+    "synthetic_or_guessed_workspace_assignments": 0,
+    "null_or_empty_user_id_backfilled_to_ws_default": false
+  },
+  "schema": {
+    "tenancy_core_tables": {
+      "workspaces": {
+        "workspace_id": "TEXT PRIMARY KEY",
+        "name": "TEXT NOT NULL",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+      },
+      "workspace_memberships": {
+        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+        "workspace_id": "TEXT NOT NULL REFERENCES workspaces(workspace_id)",
+        "user_id": "TEXT NOT NULL",
+        "role": "TEXT NOT NULL DEFAULT 'owner'",
+        "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        "constraints": [
+          "UNIQUE(workspace_id, user_id)"
+        ]
+      }
+    },
+    "workspace_owned_entities": {
+      "portfolio_holdings": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_portfolio_holdings_ws",
+          "idx_portfolio_holdings_ws_sym"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "shares",
+          "entry_price",
+          "manual_shares",
+          "manual_entry_price"
+        ]
+      },
+      "user_trade_journal": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_user_trade_journal_ws",
+          "idx_user_trade_journal_ws_sym"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "trade_id",
+          "symbol",
+          "status"
+        ]
+      },
+      "user_cockpit_actions": {
+        "added_columns": [
+          "workspace_id TEXT NULL"
+        ],
+        "added_indexes": [
+          "idx_user_cockpit_actions_ws"
+        ],
+        "preserved_columns": [
+          "user_id",
+          "action_id",
+          "status"
+        ]
+      }
+    },
+    "actor_bound_entities": {
+      "user_profiles": {
+        "workspace_id_column_added": false,
+        "classification": "ACTOR_PROFILE",
+        "preserved_columns": [
+          "user_id",
+          "experience_level",
+          "risk_tolerance",
+          "updated_at"
+        ]
+      }
+    }
+  },
+  "reconciliation_policies": {
+    "ws_default_policy": "NON_PRIVATE_PERSISTENCE",
+    "private_persistence_requires_actor_bound_workspace": true,
+    "inv_saas_07_enforced": true,
+    "ws_default_auto_provisioning_prohibited": true,
+    "actor_fallback_workspace_resolution": "deterministic_compat_ws_{actor_id}"
+  },
+  "main_drift_analysis": {
+    "drift_commits_on_main": 5,
+    "commits": [
+      "c53c13295edd4c319d27fc79c9d904ea4f80e0e6",
+      "c26fee69bc92040ae648e895c11f7cba7bc1eb4e",
+      "9a01ae4f364e5256e26b1c31a7c5c065fca1c676",
+      "c0c292cdbbf777e49e29a9972a95c962fca6f05e",
+      "0390957f864e5c83f36a53fe30424566c7f8a964"
+    ],
+    "file_overlap_with_saas_branch": 0,
+    "classification": "NON_OVERLAPPING",
+    "conflict_risk": "NONE",
+    "concurrent_tracks_verified": {
+      "radar_portfolio": "PRESERVED_100_PERCENT",
+      "tactical_setups_remediation": "PRESERVED_100_PERCENT",
+      "etf_v2_openfigi": "PRESERVED_100_PERCENT"
+    }
+  },
+  "verification_matrix": {
+    "backend": {
+      "total_tests": 175,
+      "passed": 175,
+      "failed": 0,
+      "warnings": 1,
+      "suites": {
+        "tests_saas": "92_PASSED",
+        "tests_architecture": "63_PASSED",
+        "test_journal_risk_telemetry": "5_PASSED",
+        "test_radar_domain_invariance": "5_PASSED",
+        "test_tactical_setups_latency_remediation": "10_PASSED"
+      }
+    },
+    "frontend": {
+      "unit_tests": {
+        "test_files": 18,
+        "tests_total": 154,
+        "tests_passed": 154,
+        "tests_failed": 0
+      },
+      "architecture_tests": "ALL_SUITES_PASSED",
+      "typecheck": "0_ERRORS",
+      "lint": {
+        "errors": 0,
+        "baseline_warnings": 9,
+        "integrated_warnings": 9,
+        "new_saas_warnings": 0
+      },
+      "build": {
+        "status": "PASSED",
+        "pages_generated": 144,
+        "build_errors": 0
+      }
+    },
+    "private_routes": {
+      "total_routes": 16,
+      "cache_control_no_store_verified": 16,
+      "in_process_behavior_parity_verified": 16,
+      "unauthorized_access_denied_fail_closed": true
+    }
+  },
+  "invariants": {
+    "INV_SAAS_01": "PRESERVED",
+    "INV_SAAS_02": "PRESERVED",
+    "INV_SAAS_03": "ENFORCED",
+    "INV_SAAS_04": "PRESERVED",
+    "INV_SAAS_05": "PRESERVED",
+    "INV_SAAS_06": "ENFORCED",
+    "INV_SAAS_07": "ENFORCED"
+  },
+  "commercial_boundaries": {
+    "authentication_implemented": false,
+    "subscriptions_implemented": false,
+    "billing_implemented": false,
+    "stripe_implemented": false,
+    "pricing_implemented": false,
+    "commercial_plan_enforcement": false,
+    "workspace_switching_ui": false,
+    "membership_ui": false
+  },
+  "release_boundaries": {
+    "integrated_into_main": true,
+    "production_deployment_authorized": false,
+    "contract_phase_authorized": false
+  }
+}
