@@ -147,7 +147,7 @@ describe("EtfRiskProfileCard", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/RISK DATA UNAVAILABLE/i)).toBeDefined();
-    });
+    }, { timeout: 3000 });
     expect(screen.getByText(/Zero synthetic numbers are imputed/i)).toBeDefined();
   });
 

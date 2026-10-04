@@ -86,7 +86,10 @@ export default function OptimalEntryExitCard({
     current_price <= 0
   ) {
     return (
-      <div className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-3 font-sans text-slate-300">
+      <div
+        data-testid="conditional-trade-plan"
+        className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-3 font-sans text-slate-300"
+      >
         <div className="flex items-center space-x-2 text-slate-400">
           <span className="w-2 h-2 rounded-full bg-slate-500"></span>
           <h3 className="text-sm font-bold text-slate-200">🎯 {symbol} Execution Setup Unavailable</h3>
@@ -214,6 +217,7 @@ export default function OptimalEntryExitCard({
 
   return (
     <div
+      data-testid="conditional-trade-plan"
       className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
         isDayTrader ? "border-amber-900/40" : "border-[#243044]"
       }`}
@@ -224,22 +228,42 @@ export default function OptimalEntryExitCard({
           <div className="flex items-center space-x-2">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                isDayTrader ? "bg-amber-400" : "bg-emerald-400"
-              } animate-pulse`}
+                isActionable
+                  ? "bg-emerald-400 animate-pulse"
+                  : "bg-amber-400"
+              }`}
             ></span>
             <h3 className="text-sm sm:text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-              <span>{isPlain ? `🎯 ${symbol} Safe Buy & Sell Plan` : `🎯 ${symbol} Optimal Execution Ladder`}</span>
+              <span>{isPlain ? `🎯 ${symbol} Conditional Trade Plan` : `🎯 ${symbol} Conditional Execution Ladder`}</span>
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-0.5 font-normal">
             {isPlain
-              ? "Calculated price ranges for smart accumulation, profit milestones, and loss protection."
+              ? "Calculated price ranges for conditional accumulation, profit milestones, and loss protection."
               : isDayTrader
               ? "Trend Momentum Pullback & Volatility-Protected Stop Ladder"
               : setup_pattern?.includes("Stage 4")
               ? "Stage 4 Correction & Volatility-Constrained Risk Boundaries"
               : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span
+              data-testid="current-action"
+              className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
+                isActionable
+                  ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                  : "bg-amber-950/80 text-amber-300 border-amber-700/80"
+              }`}
+            >
+              {isActionable ? "CURRENT ACTION: Execute Setup" : "CURRENT ACTION: Wait"}
+            </span>
+            <span
+              data-testid="plan-status"
+              className="px-2 py-0.5 rounded text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]"
+            >
+              Status: {decisionStateLabel || decisionState || (isActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
+            </span>
+          </div>
           <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
             <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono text-[10px]">
               <span>📡</span> {isPlain ? "Volatility Math Guard" : "Minervini VCP + 14-ATR"}
@@ -356,6 +380,33 @@ export default function OptimalEntryExitCard({
         </div>
       )}
 
+      {/* ⚡ Conditional Trigger & Corridor Distinction (UX-015, UX-021 through UX-025) */}
+      {!isActionable && (
+        <div data-testid="conditional-confirmation-block" className="bg-[#09111e] border border-cyan-800/60 rounded-xl p-3.5 text-xs space-y-2 font-sans">
+          <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-wide">
+            <span>⚡</span>
+            <span>IF CONFIRMATION OCCURS:</span>
+          </div>
+          <p className="text-slate-300 text-xs leading-relaxed">
+            This trade plan remains <strong>conditional</strong>. Current posture is to <strong>Wait</strong>. The entry corridor defines the spatial accumulation zone — price being inside the corridor alone does not constitute an actionable setup until confirmed by an active volume breakout or stabilization candle.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-xs">
+            <div className="p-2 rounded bg-[#060b13] border border-[#1b2639]">
+              <span className="text-slate-400 block text-xs font-bold">1. Spatial Location (Price Corridor):</span>
+              <span className="text-cyan-300 font-bold text-xs">
+                ${Math.min(optimal_entry_min, optimal_entry_max).toFixed(2)} – ${Math.max(optimal_entry_min, optimal_entry_max).toFixed(2)}
+              </span>
+            </div>
+            <div className="p-2 rounded bg-[#060b13] border border-[#1b2639]">
+              <span className="text-slate-400 block text-xs font-bold">2. Market Event Trigger:</span>
+              <span className="text-amber-300 font-bold text-xs">
+                Awaiting volume breakout / confirmation candle
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 🚀 5-Step Guided Trade Execution Stepper */}
       <TradeExecutionStepper
         symbol={symbol}
@@ -428,9 +479,9 @@ export default function OptimalEntryExitCard({
             <span className={isStage4 ? "text-amber-400 font-bold" : "text-cyan-400 font-bold"}>
               {isStage4
                 ? (isPlain ? "⏳ WATCHLIST ONLY (WAIT FOR BOUNCE)" : "⏳ PROSPECTIVE BASE CORRIDOR (AWAITING PIVOT)")
-                : (isPlain ? "🔵 BEST BUYING PRICE RANGE (Accumulation Area)" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE")}
+                : (isPlain ? "🔵 CONDITIONAL ACCUMULATION CORRIDOR" : "🔵 OPTIMAL ENTRY ACCUMULATION ZONE")}
             </span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">
+            <span className="text-xs text-slate-400 hidden sm:inline">
               {isStage4 ? "• Needs 50-Day Rebound" : (isPlain ? "• Best Price vs Risk Corridor" : "• 20 EMA & Value Area Pullback")}
             </span>
           </div>
@@ -443,22 +494,22 @@ export default function OptimalEntryExitCard({
         {zoneTacticalHint && (
           <div className={`p-2 rounded-lg border text-xs flex items-start gap-2 ${zoneTacticalHint.color}`}>
             <span className="font-bold shrink-0">{zoneTacticalHint.label}:</span>
-            <span className="text-[11px] leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
+            <span className="text-xs leading-relaxed text-slate-200 font-sans">{zoneTacticalHint.advice}</span>
           </div>
         )}
 
-        {/* Tactical Trade Management & Risk-Free Ratchet Rule */}
+        {/* Tactical Trade Management & Protected Ratchet Rule */}
         <div className="p-2.5 rounded-lg bg-[#0e1626] border border-cyan-900/50 text-xs space-y-1">
-          <div className="flex items-center justify-between text-[11px] font-bold text-cyan-300">
+          <div className="flex items-center justify-between text-xs font-bold text-cyan-300">
             <span className="flex items-center gap-1.5">
               <span>🎯</span>
               <span>{isPlain ? "Multi-Stage Profit Rule:" : "Tactical Execution & Ratchet Rule:"}</span>
             </span>
-            <span className="text-[10px] text-emerald-400 font-mono">Risk-Free Runner</span>
+            <span className="text-xs text-emerald-400 font-mono">Protected Trailing Runner</span>
           </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+          <p className="text-xs text-slate-300 leading-relaxed font-sans">
             {isPlain
-              ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to purchase price ($${current_price.toFixed(2)}) for a completely risk-free hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
+              ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to purchase price ($${current_price.toFixed(2)}) for a protected trailing hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
               : `Scale 0.50x tranche at TP1 ($${take_profit_1.toFixed(2)}). Immediately ratchet hard stop to cost basis ($${current_price.toFixed(2)}) to lock in net positive expectancy and allow remaining runner to compound to TP2 ($${take_profit_2.toFixed(2)}).`}
           </p>
         </div>
@@ -467,13 +518,13 @@ export default function OptimalEntryExitCard({
         <div className="flex items-center justify-between p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-xs">
           <div className="flex items-center space-x-2">
             <span className="text-rose-400 font-bold">{isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION"}</span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">{isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor"}</span>
+            <span className="text-xs text-slate-400 hidden sm:inline">{isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor"}</span>
           </div>
           <div className="text-right">
             <strong className="text-rose-400 text-sm font-bold font-mono tabular-nums">
               ${stop_loss.toFixed(2)}
             </strong>
-            <span className="text-[10px] text-rose-500 ml-1.5 font-mono tabular-nums">
+            <span className="text-xs text-rose-500 ml-1.5 font-mono tabular-nums">
               ({stop_loss_pct}%)
             </span>
           </div>

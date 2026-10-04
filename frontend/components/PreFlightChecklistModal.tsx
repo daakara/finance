@@ -182,7 +182,7 @@ export default function PreFlightChecklistModal({
 - **Stop Loss**: ${stopLossStr}
 - **Profit Goal 1 (TP1)**: ${target1Str}
 - **Profit Goal 2 (TP2 Runner)**: ${target2Str}
-- **Tactical Rule (Risk-Free Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a risk-free trade.` : "Establish verified target levels before executing tactical scaling rules."}
+- **Tactical Rule (Protected Trailing Transition)**: ${safeTarget !== null ? `When Profit Goal 1 ($${safeTarget.toFixed(2)}) is hit, sell 50% of position and immediately move Stop Loss on remaining 50% to purchase price ($${safePrice.toFixed(2)}) to lock in a protected trade.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Setup**: ${setupPattern || "Minervini VCP Pattern"}
 - **Pre-Flight Score**: ${convictionPct}% (${isCleared ? "🟢 CLEARED" : "⚠️ NOT CLEARED — wait for better setup"})
 `
@@ -193,7 +193,7 @@ export default function PreFlightChecklistModal({
 - **Hard Stop / Invalidation**: ${stopLossStr}
 - **Target 1 (TP1)**: ${target1Str}
 - **Target 2 (TP2 Runner)**: ${target2Str}
-- **Execution Rule (Risk-Free Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure zero-risk runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
+- **Execution Rule (Protected Trailing Ratchet)**: ${safeTarget !== null ? `Scale 0.50x tranche @ TP1 ($${safeTarget.toFixed(2)}). Ratchet trailing stop to cost basis ($${safePrice.toFixed(2)}) to ensure protected runner convexity.` : "Establish verified target levels before executing tactical scaling rules."}
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}

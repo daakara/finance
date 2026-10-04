@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createChart, IChartApi, ISeriesApi, LineStyle } from "lightweight-charts";
-import { CandleData } from "../lib/api";
+import { createChart, IChartApi, ISeriesApi, IPriceLine, LineStyle } from "lightweight-charts";
+import { CandleData, OptimalExecutionPlan } from "../lib/api";
 
 interface PriceChartProps {
   symbol: string;
@@ -10,6 +10,7 @@ interface PriceChartProps {
   currentPrice?: number | null;
   liveSpotPrice?: number | null;
   analysisReferencePrice?: number | null;
+  optimalExecution?: OptimalExecutionPlan | null;
   marketPriceState?: {
     liveSpotPrice?: number | null;
     liveFreshness?: string;
@@ -63,6 +64,7 @@ export default function PriceChart({
   currentPrice,
   liveSpotPrice,
   analysisReferencePrice,
+  optimalExecution,
   marketPriceState,
   priceChangePct = 0,
   interval = "1y_hist",
@@ -79,6 +81,7 @@ export default function PriceChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const overlayLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const priceLinesRef = useRef<IPriceLine[]>([]);
 
   const activeIntervalList = userRole === "DAY_TRADER" ? DAY_TRADER_INTERVALS : LONG_TERM_INTERVALS;
   const isIntraday = userRole === "DAY_TRADER";
@@ -217,6 +220,7 @@ export default function PriceChart({
       chartRef.current = null;
       candlestickSeriesRef.current = null;
       overlayLineSeriesRef.current = null;
+      priceLinesRef.current = [];
     };
   }, [isIntraday]);
 
@@ -376,6 +380,108 @@ export default function PriceChart({
       console.warn("Error rendering chart series:", err);
     }
   }, [candles, isIntraday, interval, tradeMarkers]);
+
+  // 3. Execution Level Overlays (CHART-001 through CHART-010: Parity with OptimalExecutionPlan)
+  useEffect(() => {
+    if (!candlestickSeriesRef.current) return;
+
+    // Clear existing price lines before attaching fresh overlays
+    priceLinesRef.current.forEach((line) => {
+      try {
+        candlestickSeriesRef.current?.removePriceLine(line);
+      } catch {
+        // Safe cleanup
+      }
+    });
+    priceLinesRef.current = [];
+
+    if (!optimalExecution) return;
+
+    const lines: IPriceLine[] = [];
+
+    // CHART-002: Entry minimum parity (optimal_entry_min)
+    if (typeof optimalExecution.optimal_entry_min === "number" && optimalExecution.optimal_entry_min > 0) {
+      lines.push(
+        candlestickSeriesRef.current.createPriceLine({
+          price: optimalExecution.optimal_entry_min,
+          color: "#06b6d4", // Cyan
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: "Entry Min",
+        })
+      );
+    }
+
+    // CHART-003: Entry maximum parity (optimal_entry_max)
+    if (typeof optimalExecution.optimal_entry_max === "number" && optimalExecution.optimal_entry_max > 0) {
+      lines.push(
+        candlestickSeriesRef.current.createPriceLine({
+          price: optimalExecution.optimal_entry_max,
+          color: "#06b6d4", // Cyan
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: "Entry Max",
+        })
+      );
+    }
+
+    // CHART-004: Stop loss parity (stop_loss)
+    if (typeof optimalExecution.stop_loss === "number" && optimalExecution.stop_loss > 0) {
+      lines.push(
+        candlestickSeriesRef.current.createPriceLine({
+          price: optimalExecution.stop_loss,
+          color: "#f43f5e", // Rose
+          lineWidth: 2,
+          lineStyle: LineStyle.Solid,
+          axisLabelVisible: true,
+          title: "Stop Loss",
+        })
+      );
+    }
+
+    // CHART-005: Target 1 parity (take_profit_1)
+    if (typeof optimalExecution.take_profit_1 === "number" && optimalExecution.take_profit_1 > 0) {
+      lines.push(
+        candlestickSeriesRef.current.createPriceLine({
+          price: optimalExecution.take_profit_1,
+          color: "#10b981", // Emerald
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: "Target 1",
+        })
+      );
+    }
+
+    // CHART-006: Target 2 parity (take_profit_2 when supplied)
+    if (typeof optimalExecution.take_profit_2 === "number" && optimalExecution.take_profit_2 > 0) {
+      lines.push(
+        candlestickSeriesRef.current.createPriceLine({
+          price: optimalExecution.take_profit_2,
+          color: "#059669", // Dark Emerald
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: "Target 2",
+        })
+      );
+    }
+
+    priceLinesRef.current = lines;
+
+    return () => {
+      lines.forEach((line) => {
+        try {
+          candlestickSeriesRef.current?.removePriceLine(line);
+        } catch {
+          // Safe cleanup
+        }
+      });
+      priceLinesRef.current = [];
+    };
+  }, [optimalExecution, isIntraday]);
 
   // Calculate dynamic period return based on the active candle dataset
   let dynamicPeriodReturn = priceChangePct;

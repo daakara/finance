@@ -326,96 +326,112 @@ function TerminalContent() {
               liveSpotPrice={data?.liveSpotPrice}
               liveFreshness={data?.liveFreshness}
               analysisReferencePrice={data?.analysisReferencePrice}
-            />
-          )}
+              chartSlot={
+                <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
+                  {data && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-xs font-mono">
+                      <div className="flex items-center gap-2">
+                        <DataSourceBadge source={data._dataSource} />
+                        {lastUpdatedTime && (
+                          <span className="text-slate-400 hidden sm:inline">
+                            Updated: <span className="text-slate-300 font-semibold">{lastUpdatedTime}</span>
+                          </span>
+                        )}
+                      </div>
 
-          {/* Main Candlestick Chart with Expanded 5-Year Horizons */}
-          <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
-            {data && (
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-[10px] font-mono">
-                <div className="flex items-center gap-2">
-                  <DataSourceBadge source={data._dataSource} />
-                  {lastUpdatedTime && (
-                    <span className="text-slate-400 hidden sm:inline">
-                      Updated: <span className="text-slate-300 font-semibold">{lastUpdatedTime}</span>
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {selectedSymbol.toUpperCase().includes("-USD") || ["BTC", "ETH", "SOL"].includes(selectedSymbol.toUpperCase()) ? (
-                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-[10px] font-mono text-emerald-300 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>24/7 Digital Asset Market Active</span>
-                    </span>
-                  ) : (
-                    <div className="text-slate-500 flex items-center gap-2">
-                      <span className="hidden md:inline">Reference Baseline:</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">
-                        {data.quoteStatus === "COMPLETED_SESSION" || interval === "1d" || interval.includes("hist")
-                          ? "Prior Completed Session"
-                          : (data._dataSource === "live" ? "Live Intraday" : "Delayed Intraday")}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {selectedSymbol.toUpperCase().includes("-USD") || ["BTC", "ETH", "SOL"].includes(selectedSymbol.toUpperCase()) ? (
+                          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-xs font-mono text-emerald-300 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>24/7 Digital Asset Market Active</span>
+                          </span>
+                        ) : (
+                          <div className="text-slate-500 flex items-center gap-2">
+                            <span className="hidden md:inline">Reference Baseline:</span>
+                            <span className="px-1.5 py-0.5 rounded bg-[#162030] text-cyan-300 font-semibold">
+                              {data.quoteStatus === "COMPLETED_SESSION" || interval === "1d" || interval.includes("hist")
+                                ? "Prior Completed Session"
+                                : (data._dataSource === "live" ? "Live Intraday" : "Delayed Intraday")}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
+
+                  <PriceChart
+                    symbol={selectedSymbol}
+                    candles={data?.candles || []}
+                    currentPrice={data?.currentPrice}
+                    liveSpotPrice={data?.liveSpotPrice}
+                    analysisReferencePrice={data?.analysisReferencePrice}
+                    optimalExecution={data?.optimalExecution}
+                    marketPriceState={data?.marketPriceState}
+                    priceChangePct={data?.priceChangePct24h}
+                    interval={interval}
+                    userRole={userRole}
+                    onRoleChange={handleRoleChange}
+                    onIntervalChange={setInterval}
+                    tradeMarkers={
+                      [
+                        ...(data?.smartMoney?.congressTrades?.map((ct) => ({
+                          date: ct.transaction_date || (ct as any).date || ct.filing_date,
+                          label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
+                          type: "CONGRESS" as const,
+                          amount: ct.amount_range,
+                        })) || []),
+                        ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
+                          date: st.filingDate || st.date || st.filing_date,
+                          label: `💼 ${st.insiderRole || "Insider"} Buy`,
+                          type: "INSIDER" as const,
+                          amount: st.transactionValue || st.shares,
+                        })) || []),
+                        ...(data?.smartMoney?.optionsFlow?.map((op) => ({
+                          date: (op as any).date || (op as any).timestamp || "2026-04-01",
+                          label: `⚡ ${op.type || "Call Sweep"}`,
+                          type: "OPTIONS" as const,
+                          amount: op.premium,
+                        })) || []),
+                      ].filter((m) => m.date)
+                    }
+                    smartMoneyHeadline={
+                      data?.smartMoney?.congressTrades?.[0]
+                        ? `${data.smartMoney.congressTrades[0].politician.split(" ")[0]} ${data.smartMoney.congressTrades[0].amount_range}`
+                        : data?.smartMoney?.optionsFlow?.[0]
+                        ? `${data.smartMoney.optionsFlow[0].type} (${data.smartMoney.optionsFlow[0].premium})`
+                        : undefined
+                    }
+                    catalystHeadline={
+                      data?.catalystForecast?.primary_drug_trial
+                        ? `${data.catalystForecast.primary_drug_trial} (${data.catalystForecast.trial_phase}) - ${data.catalystForecast.trial_readout_timeline}`
+                        : data?.catalystForecast?.efficacy_summary
+                        ? data.catalystForecast.efficacy_summary
+                        : undefined
+                    }
+                    loading={loading}
+                    technicals={data?.technicals}
+                  />
                 </div>
-              </div>
-            )}
-
-
-
-            <PriceChart
-              symbol={selectedSymbol}
-              candles={data?.candles || []}
-              currentPrice={data?.currentPrice}
-              liveSpotPrice={data?.liveSpotPrice}
-              analysisReferencePrice={data?.analysisReferencePrice}
-              marketPriceState={data?.marketPriceState}
-              priceChangePct={data?.priceChangePct24h}
-              interval={interval}
-              userRole={userRole}
-              onRoleChange={handleRoleChange}
-              onIntervalChange={setInterval}
-              tradeMarkers={
-                [
-                  ...(data?.smartMoney?.congressTrades?.map((ct) => ({
-                    date: ct.transaction_date || (ct as any).date || ct.filing_date,
-                    label: `🏛️ ${ct.politician?.split(" ")?.slice(-1)[0] || "Congress"} ${ct.transaction_type || (ct as any).type || "Buy"}`,
-                    type: "CONGRESS" as const,
-                    amount: ct.amount_range,
-                  })) || []),
-                  ...(((data?.smartMoney as any)?.secForm4Trades || (data?.smartMoney as any)?.secInsiderTrades || [])?.map((st: any) => ({
-                    date: st.filingDate || st.date || st.filing_date,
-                    label: `💼 ${st.insiderRole || "Insider"} Buy`,
-                    type: "INSIDER" as const,
-                    amount: st.transactionValue || st.shares,
-                  })) || []),
-                  ...(data?.smartMoney?.optionsFlow?.map((op) => ({
-                    date: (op as any).date || (op as any).timestamp || "2026-04-01",
-                    label: `⚡ ${op.type || "Call Sweep"}`,
-                    type: "OPTIONS" as const,
-                    amount: op.premium,
-                  })) || []),
-                ].filter((m) => m.date)
               }
-              smartMoneyHeadline={
-                data?.smartMoney?.congressTrades?.[0]
-                  ? `${data.smartMoney.congressTrades[0].politician.split(" ")[0]} ${data.smartMoney.congressTrades[0].amount_range}`
-                  : data?.smartMoney?.optionsFlow?.[0]
-                  ? `${data.smartMoney.optionsFlow[0].type} (${data.smartMoney.optionsFlow[0].premium})`
-                  : undefined
+              planSlot={
+                isETF(selectedSymbol) ? (
+                  <EtfCostOfOwnershipCard symbol={selectedSymbol} />
+                ) : isStock(selectedSymbol) ? (
+                  <OptimalEntryExitCard
+                    symbol={selectedSymbol}
+                    executionPlan={data?.optimalExecution}
+                    userRole={userRole}
+                    smartMoney={data?.smartMoney}
+                    macroRegime={macroData}
+                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                    canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
+                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                    decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
+                  />
+                ) : null
               }
-              catalystHeadline={
-                data?.catalystForecast?.primary_drug_trial
-                  ? `${data.catalystForecast.primary_drug_trial} (${data.catalystForecast.trial_phase}) - ${data.catalystForecast.trial_readout_timeline}`
-                  : data?.catalystForecast?.efficacy_summary
-                  ? data.catalystForecast.efficacy_summary
-                  : undefined
-              }
-              loading={loading}
-              technicals={data?.technicals}
             />
-          </div>
+          )}
 
           {/* Hub Guidance & Orientation — positioned below chart to prioritize verdict+chart viewport */}
           <PageIntro
@@ -503,149 +519,151 @@ function TerminalContent() {
             userRole={userRole}
           />
 
-          {/* Modular Domain Workspace Tabs */}
-          <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
-            <button
-              role="tab"
-              aria-selected={activeTab === "EXECUTION"}
-              onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                activeTab === "EXECUTION"
-                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-              }`}
-            >
-              <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
-            </button>
+          {/* Modular Domain Workspace Tabs (Detailed Domain Content) */}
+          <div data-testid="detailed-domain-content" className="space-y-4 sm:space-y-5">
+            <div role="tablist" aria-label="Quantitative Domain Workspaces" className="bg-[#0c1017] p-1.5 rounded-2xl border border-[#243044] grid grid-cols-2 sm:grid-cols-4 gap-1.5 shadow-xl font-mono text-xs">
+              <button
+                role="tab"
+                aria-selected={activeTab === "EXECUTION"}
+                onClick={() => handleTabChange("EXECUTION", "Execution & Levels")}
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                  activeTab === "EXECUTION"
+                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <Target className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Execution</span><span className="hidden sm:inline">Execution & Levels</span></span>
+              </button>
 
-            <button
-              role="tab"
-              aria-selected={activeTab === "SMART_MONEY"}
-              onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                activeTab === "SMART_MONEY"
-                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-              }`}
-            >
-              <Landmark className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap">Smart Money</span>
-            </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === "SMART_MONEY"}
+                onClick={() => handleTabChange("SMART_MONEY", "Smart Money")}
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                  activeTab === "SMART_MONEY"
+                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <Landmark className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="whitespace-nowrap">Smart Money</span>
+              </button>
 
-            <button
-              role="tab"
-              aria-selected={activeTab === "FUNDAMENTALS"}
-              onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                activeTab === "FUNDAMENTALS"
-                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap"><span className="sm:hidden">Factors</span><span className="hidden sm:inline">Factors & Macro</span></span>
-            </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === "FUNDAMENTALS"}
+                onClick={() => handleTabChange("FUNDAMENTALS", "Factors & Macro")}
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                  activeTab === "FUNDAMENTALS"
+                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Factors</span><span className="hidden sm:inline">Factors & Macro</span></span>
+              </button>
 
-            <button
-              role="tab"
-              aria-selected={activeTab === "RISK_CONTAGION"}
-              onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
-              className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
-                activeTab === "RISK_CONTAGION"
-                  ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span className="whitespace-nowrap"><span className="sm:hidden">Risk</span><span className="hidden sm:inline">Risk & Contagion</span></span>
-            </button>
-          </div>
+              <button
+                role="tab"
+                aria-selected={activeTab === "RISK_CONTAGION"}
+                onClick={() => handleTabChange("RISK_CONTAGION", "Risk & Contagion")}
+                className={`focus-ring flex items-center justify-center space-x-1.5 py-2.5 px-2.5 sm:px-3 rounded-xl font-bold transition-all active:scale-[0.97] text-xs min-h-[40px] cursor-pointer ${
+                  activeTab === "RISK_CONTAGION"
+                    ? "bg-cyan-600 text-slate-950 shadow-sm font-black"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#162030]"
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="whitespace-nowrap"><span className="sm:hidden">Risk</span><span className="hidden sm:inline">Risk & Contagion</span></span>
+              </button>
+            </div>
 
-          {/* TAB 1: EXECUTION & LEVELS */}
-          {activeTab === "EXECUTION" && (
-            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              {isETF(selectedSymbol) ? (
-                <EtfCostOfOwnershipCard symbol={selectedSymbol} />
-              ) : isStock(selectedSymbol) ? (
-                <>
-                  {userRole === "DAY_TRADER" && data && (
-                    <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
-                  )}
-                  <OptimalEntryExitCard
-                    symbol={selectedSymbol}
-                    executionPlan={data?.optimalExecution}
-                    userRole={userRole}
-                    smartMoney={data?.smartMoney}
-                    macroRegime={macroData}
-                    isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
-                    canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
-                    decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
-                    decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
-                  />
-                </>
-              ) : (
-                <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">
-                  <div className="flex items-center space-x-2 text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-slate-500" />
-                    <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
+            {/* TAB 1: EXECUTION & LEVELS */}
+            {activeTab === "EXECUTION" && (
+              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+                {isETF(selectedSymbol) ? (
+                  <EtfCostOfOwnershipCard symbol={selectedSymbol} />
+                ) : isStock(selectedSymbol) ? (
+                  <>
+                    {userRole === "DAY_TRADER" && data && (
+                      <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
+                    )}
+                    <OptimalEntryExitCard
+                      symbol={selectedSymbol}
+                      executionPlan={data?.optimalExecution}
+                      userRole={userRole}
+                      smartMoney={data?.smartMoney}
+                      macroRegime={macroData}
+                      isActionable={data?.decisionTrace?.isActionable ?? (data?.canonicalDecision as any)?.is_actionable}
+                      canSizeTrade={data?.decisionTrace?.canSizeTrade ?? (data?.canonicalDecision as any)?.can_size_trade}
+                      decisionState={data?.decisionTrace?.decisionState ?? (data?.canonicalDecision as any)?.decision_state}
+                      decisionStateLabel={data?.decisionTrace?.stateLabel ?? (data?.canonicalDecision as any)?.decision_state_label}
+                    />
+                  </>
+                ) : (
+                  <div className="bg-[#111722] border border-[#243044] rounded-xl p-5 shadow-xl space-y-2 font-mono text-slate-300">
+                    <div className="flex items-center space-x-2 text-slate-400">
+                      <span className="w-2 h-2 rounded-full bg-slate-500" />
+                      <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                      Asset classification for &quot;{selectedSymbol}&quot; is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                    Asset classification for &quot;{selectedSymbol}&quot; is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {/* TAB 2: SMART MONEY & INSIDER DISCLOSURES */}
-          {activeTab === "SMART_MONEY" && (
-            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              <CongressionalTradesCard
-                symbol={selectedSymbol}
-                congressTrades={data?.smartMoney?.congressTrades}
-                optionsFlow={data?.smartMoney?.optionsFlow}
-                userRole={userRole}
-                onSelectSymbol={setSelectedSymbol}
-              />
-              {!isETF(selectedSymbol) && (
-                <TraderArchetypesCard
+            {/* TAB 2: SMART MONEY & INSIDER DISCLOSURES */}
+            {activeTab === "SMART_MONEY" && (
+              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+                <CongressionalTradesCard
                   symbol={selectedSymbol}
-                  traderArchetypes={data?.traderArchetypes}
+                  congressTrades={data?.smartMoney?.congressTrades}
+                  optionsFlow={data?.smartMoney?.optionsFlow}
+                  userRole={userRole}
+                  onSelectSymbol={setSelectedSymbol}
                 />
-              )}
-            </div>
-          )}
+                {!isETF(selectedSymbol) && (
+                  <TraderArchetypesCard
+                    symbol={selectedSymbol}
+                    traderArchetypes={data?.traderArchetypes}
+                  />
+                )}
+              </div>
+            )}
 
-          {/* TAB 3: FUNDAMENTALS & MACRO REGIME */}
-          {activeTab === "FUNDAMENTALS" && (
-            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              {isStock(selectedSymbol) && (
-                <AssetFactorRadar
-                  symbol={selectedSymbol}
-                  factorScores={data?.factorScores}
-                  macroDifficulty={data?.macroDifficulty}
-                  expectedReturn={data?.expectedReturn}
-                />
-              )}
-              {isETF(selectedSymbol) && (
-                <EtfRiskProfileCard
-                  symbol={selectedSymbol}
-                />
-              )}
-              <InstitutionalFeeds activeSymbol={selectedSymbol} />
-              <CatalystForecastCard data={data?.catalystForecast} />
-            </div>
-          )}
+            {/* TAB 3: FUNDAMENTALS & MACRO REGIME */}
+            {activeTab === "FUNDAMENTALS" && (
+              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+                {isStock(selectedSymbol) && (
+                  <AssetFactorRadar
+                    symbol={selectedSymbol}
+                    factorScores={data?.factorScores}
+                    macroDifficulty={data?.macroDifficulty}
+                    expectedReturn={data?.expectedReturn}
+                  />
+                )}
+                {isETF(selectedSymbol) && (
+                  <EtfRiskProfileCard
+                    symbol={selectedSymbol}
+                  />
+                )}
+                <InstitutionalFeeds activeSymbol={selectedSymbol} />
+                <CatalystForecastCard data={data?.catalystForecast} />
+              </div>
+            )}
 
-          {/* TAB 4: RISK & CONTAGION */}
-          {activeTab === "RISK_CONTAGION" && (
-            <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-              <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
-              <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
-              <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
-            </div>
-          )}
+            {/* TAB 4: RISK & CONTAGION */}
+            {activeTab === "RISK_CONTAGION" && (
+              <div className="space-y-4 sm:space-y-5 animate-fadeIn">
+                <MarketGraphCard symbol={selectedSymbol} marketGraph={data?.marketGraph} />
+                <SelfHealingAccuracyCard symbol={selectedSymbol} auditData={data?.selfHealingAudit} />
+                <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Watchlist Sidebar (Left column on desktop, Below chart on mobile) */}
