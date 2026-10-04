@@ -42,26 +42,31 @@ def test_no_billing_or_payment_modules():
                 ), f"Prohibited billing file found: {os.path.join(root, fname)}"
 
 
-def test_no_database_migrations_added():
-    """Verify no migration files were added in this branch."""
+AUTHORIZED_MIGRATION_FILES = {
+    "database/migrations/002_arx_saas_workspace_tenancy.sql",
+    "database/workspace_migration.py",
+}
+
+
+def test_only_authorized_database_migrations_added():
+    """Verify only authorized Phase 1G migration files were added in this branch."""
     cmd = ["git", "diff", "--name-only", EXPECTED_BASE_SHA, "HEAD"]
     proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
     assert proc.returncode == 0
-    changed_files = [f for f in proc.stdout.splitlines() if f.strip()]
+    changed_files = [f.strip().replace("\\", "/") for f in proc.stdout.splitlines() if f.strip()]
 
     # Also check untracked files
     cmd_untracked = ["git", "status", "--porcelain=v1", "--untracked-files=all"]
     proc_untracked = subprocess.run(cmd_untracked, cwd=REPO_ROOT, capture_output=True, text=True)
     assert proc_untracked.returncode == 0
     all_files = changed_files + [
-        line[3:].strip() for line in proc_untracked.stdout.splitlines() if line.startswith("??")
+        line[3:].strip().replace("\\", "/") for line in proc_untracked.stdout.splitlines() if line.startswith("??")
     ]
 
     for f in all_files:
-        assert not any(
-            migration_marker in f.lower()
-            for migration_marker in ["migration", "alembic", "schema.sql", "upgrade.sql"]
-        ), f"Migration file detected: {f}"
+        if any(marker in f.lower() for marker in ["migration", "alembic", "schema.sql", "upgrade.sql"]):
+            assert f in AUTHORIZED_MIGRATION_FILES, f"Unauthorized migration file detected: {f}"
+
 
 
 def test_no_unauthorized_routes_modified():

@@ -43,6 +43,14 @@ class JournalApplicationService:
                 f"Actor '{context.actor_id}' is not authorized to access workspace '{context.workspace_id}'."
             )
 
+    def _verify_actor_bound_workspace(self, context: RequestContext) -> None:
+        """Enforce that private persistence operations require an authenticated or actor-bound workspace (INV-SAAS-07)."""
+        if not context.actor_id or context.workspace_id == "ws_default":
+            raise PermissionError(
+                "Private persistence operations require an authenticated or actor-bound workspace. "
+                "Shared 'ws_default' cannot own persistent data (INV-SAAS-07)."
+            )
+
     def _get_storage_selector(self, context: RequestContext) -> str:
         """Derive storage selector for the pre-tenancy database compatibility seam."""
         return context.actor_id or "default_user"
@@ -63,9 +71,19 @@ class JournalApplicationService:
         if not entitlements.can("journal.read"):
             raise PermissionError("Workspace is not entitled to capability 'journal.read'.")
 
+        # Under INV-SAAS-07, ws_default cannot access private persisted data
+        if not context.actor_id or context.workspace_id == "ws_default":
+            return []
+
         selector = self._get_storage_selector(context)
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "get_journal_trades"):
+            if hasattr(self.db_engine, "get_workspace_journal_trades"):
+                return self.db_engine.get_workspace_journal_trades(
+                    context.workspace_id,
+                    limit=limit,
+                    user_id=context.actor_id,
+                )
+            elif hasattr(self.db_engine, "get_journal_trades"):
                 return self.db_engine.get_journal_trades(selector, limit=limit)
             elif hasattr(self.db_engine, "get_user_trades"):
                 return self.db_engine.get_user_trades(selector, status=status)
@@ -79,7 +97,7 @@ class JournalApplicationService:
     ) -> Dict[str, Any]:
         """
         Log a new intended trade in the workspace journal.
-        Enforces workspace access and 'journal.write' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'journal.write' capability.
         """
         self._verify_workspace_access(context)
 
@@ -87,9 +105,17 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
+        self._verify_actor_bound_workspace(context)
+
         selector = self._get_storage_selector(context)
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "save_journal_trade"):
+            if hasattr(self.db_engine, "save_workspace_journal_trade"):
+                return self.db_engine.save_workspace_journal_trade(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    trade=trade_data,
+                )
+            elif hasattr(self.db_engine, "save_journal_trade"):
                 return self.db_engine.save_journal_trade(selector, trade_data)
             elif hasattr(self.db_engine, "log_trade"):
                 return self.db_engine.log_trade(selector, trade_data)
@@ -107,7 +133,7 @@ class JournalApplicationService:
     ) -> Dict[str, Any]:
         """
         Record execution fill for a journal trade.
-        Enforces workspace access and 'journal.write' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'journal.write' capability.
         """
         self._verify_workspace_access(context)
 
@@ -115,9 +141,17 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
+        self._verify_actor_bound_workspace(context)
+
         selector = self._get_storage_selector(context)
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "record_trade_fill"):
+            if hasattr(self.db_engine, "record_workspace_trade_fill"):
+                return self.db_engine.record_workspace_trade_fill(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    fill_data=fill_data,
+                )
+            elif hasattr(self.db_engine, "record_trade_fill"):
                 return self.db_engine.record_trade_fill(selector, fill_data)
             elif hasattr(self.db_engine, "record_fill"):
                 return self.db_engine.record_fill(selector, fill_data)
@@ -135,7 +169,7 @@ class JournalApplicationService:
     ) -> Dict[str, Any]:
         """
         Record a trade exit or partial position reduction.
-        Enforces workspace access and 'journal.write' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'journal.write' capability.
         """
         self._verify_workspace_access(context)
 
@@ -143,9 +177,18 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
+        self._verify_actor_bound_workspace(context)
+
         selector = self._get_storage_selector(context)
-        if self.db_engine is not None and hasattr(self.db_engine, "record_trade_exit"):
-            return self.db_engine.record_trade_exit(selector, exit_data)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "record_workspace_trade_exit"):
+                return self.db_engine.record_workspace_trade_exit(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    exit_data=exit_data,
+                )
+            elif hasattr(self.db_engine, "record_trade_exit"):
+                return self.db_engine.record_trade_exit(selector, exit_data)
 
         return {
             "status": "success",
@@ -174,7 +217,7 @@ class JournalApplicationService:
     ) -> Dict[str, Any]:
         """
         Close an existing trade in the workspace journal.
-        Enforces workspace access and 'journal.write' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'journal.write' capability.
         """
         self._verify_workspace_access(context)
 
@@ -182,10 +225,20 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
+        self._verify_actor_bound_workspace(context)
+
         selector = self._get_storage_selector(context)
         if self.db_engine is not None:
             if hasattr(self.db_engine, "close_trade"):
                 return self.db_engine.close_trade(selector, trade_id, close_data)
+            elif hasattr(self.db_engine, "record_workspace_trade_exit"):
+                exit_payload = dict(close_data)
+                exit_payload["tradeId"] = trade_id
+                return self.db_engine.record_workspace_trade_exit(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    exit_data=exit_payload,
+                )
             elif hasattr(self.db_engine, "record_trade_exit"):
                 exit_payload = dict(close_data)
                 exit_payload["tradeId"] = trade_id
@@ -209,9 +262,29 @@ class JournalApplicationService:
         if not entitlements.can("journal.read"):
             raise PermissionError("Workspace is not entitled to capability 'journal.read'.")
 
+        # Under INV-SAAS-07, ws_default cannot access private persisted data
+        if not context.actor_id or context.workspace_id == "ws_default":
+            return {
+                "available": False,
+                "workspaceId": context.workspace_id,
+                "userId": None,
+                "accountEquity": None,
+                "consecutiveLossStreak": 0,
+                "dailyDrawdownPct": 0.0,
+                "winRatePct": None,
+                "brierScore": None,
+                "isCalibrated": False,
+                "source": "DEFAULT_EMPTY",
+            }
+
         selector = self._get_storage_selector(context)
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "get_risk_telemetry"):
+            if hasattr(self.db_engine, "get_workspace_risk_telemetry"):
+                return self.db_engine.get_workspace_risk_telemetry(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id,
+                )
+            elif hasattr(self.db_engine, "get_risk_telemetry"):
                 return self.db_engine.get_risk_telemetry(selector)
             elif hasattr(self.db_engine, "get_journal_telemetry"):
                 return self.db_engine.get_journal_telemetry(selector)

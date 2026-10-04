@@ -27,6 +27,8 @@ AUTHORIZED_PATHS = (
     "api/routes/portfolio.py",
     "api/routes/journal.py",
     "api/routes/cockpit.py",
+    "database/",
+    "analyst_dashboard/data/db_engine.py",
     "frontend/lib/saas/",
     "tests/saas/",
     "tests/architecture/",
@@ -55,7 +57,7 @@ def _get_changed_and_untracked_files():
 
 
 def test_changed_files_within_authorized_scope():
-    """Verify all changed and untracked files match the authorized Phase 1F-B scope."""
+    """Verify all changed and untracked files match the authorized Phase 1G scope."""
     all_files = _get_changed_and_untracked_files()
     assert len(all_files) > 0, "Expected changed/new files for Phase 1 implementation."
 
@@ -65,7 +67,7 @@ def test_changed_files_within_authorized_scope():
             unauthorized_files.append(f)
 
     assert len(unauthorized_files) == 0, (
-        f"Unauthorized files detected outside Phase 1F-B scope:\n"
+        f"Unauthorized files detected outside Phase 1G scope:\n"
         + "\n".join(unauthorized_files)
     )
 
@@ -73,7 +75,7 @@ def test_changed_files_within_authorized_scope():
 def test_no_protected_quant_or_etf_files_in_diff():
     """Verify zero quant, ETF V2, OpenFIGI, or unapproved route files appear in git diff/status."""
     all_files = _get_changed_and_untracked_files()
-    forbidden_tokens = ["analyst_dashboard", "engines", "etf", "openfigi", "database"]
+    forbidden_tokens = ["analyst_dashboard/analyzers", "engines", "etf", "openfigi"]
 
     for f in all_files:
         f_lower = f.lower()
@@ -89,3 +91,7 @@ def test_no_protected_quant_or_etf_files_in_diff():
                 "api/routes/journal.py",
                 "api/routes/cockpit.py",
             ), f"Unauthorized route file modified: {f}"
+
+        # Enforce that inside analyst_dashboard/, ONLY data/db_engine.py is touched
+        if f.startswith("analyst_dashboard/"):
+            assert f == "analyst_dashboard/data/db_engine.py", f"Unauthorized analyst_dashboard file modified: {f}"

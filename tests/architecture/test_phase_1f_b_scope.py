@@ -63,16 +63,30 @@ def test_only_authorized_private_routes_rewired():
             assert f in AUTHORIZED_PRIVATE_ROUTES, f"Unauthorized route file modified: {f}"
 
 
-def test_database_schema_and_migrations_unchanged():
-    """Verify database engine and migration directories are untouched."""
+def test_database_schema_phase_1f_b_boundary():
+    """
+    Verify Phase 1F-B database boundary evolution in Phase 1G.
+
+    1F-B frozen historical assertion: schema unchanged during 1F-B.
+    1G successor assertion: only authorized additive tenancy schema changes allowed
+    (migration 002, workspace_migration, workspace_repository, models, and db_engine.py).
+    All other database tables and migrations remain untouched.
+    """
     cmd = ["git", "status", "--porcelain=v1"]
     proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
     assert proc.returncode == 0
     modified_files = [line[3:].strip().replace("\\", "/") for line in proc.stdout.splitlines() if line.strip()]
 
-    assert "analyst_dashboard/data/db_engine.py" not in modified_files
+    authorized_db_modifications = {
+        "analyst_dashboard/data/db_engine.py",
+        "database/models.py",
+        "database/workspace_repository.py",
+        "database/workspace_migration.py",
+        "database/migrations/002_arx_saas_workspace_tenancy.sql",
+    }
     for f in modified_files:
-        assert "migration" not in f.lower(), f"Unexpected migration file: {f}"
+        if "migration" in f.lower() or f.startswith("database/"):
+            assert f in authorized_db_modifications, f"Unexpected database/migration file: {f}"
 
 
 def test_request_context_field_count_and_schema_frozen():

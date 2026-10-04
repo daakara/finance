@@ -33,6 +33,7 @@ RequestType = getattr(
 )
 
 from api.context.request_context import RequestContext
+from api.context.workspace_identity import derive_compatibility_workspace_id
 
 # Phase status attestations
 AUTHENTICATED_ACTOR_RESOLUTION: str = "NOT_IMPLEMENTED"
@@ -157,11 +158,8 @@ class RequestContextResolver:
         sanitized_ws = _sanitize_identifier(x_workspace_id)
         if sanitized_ws:
             workspace_id = sanitized_ws
-        elif actor_id:
-            actor_hash = hashlib.sha256(actor_id.encode("utf-8")).hexdigest()[:16]
-            workspace_id = f"ws_usr_{actor_hash}"
         else:
-            workspace_id = "ws_default"
+            workspace_id = derive_compatibility_workspace_id(actor_id)
 
         return RequestContext(
             actor_id=actor_id,

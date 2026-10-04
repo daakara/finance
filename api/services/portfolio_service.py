@@ -43,6 +43,14 @@ class PortfolioApplicationService:
                 f"Actor '{context.actor_id}' is not authorized to access workspace '{context.workspace_id}'."
             )
 
+    def _verify_actor_bound_workspace(self, context: RequestContext) -> None:
+        """Enforce that private persistence operations require an authenticated or actor-bound workspace (INV-SAAS-07)."""
+        if not context.actor_id or context.workspace_id == "ws_default":
+            raise PermissionError(
+                "Private persistence operations require an authenticated or actor-bound workspace. "
+                "Shared 'ws_default' cannot own persistent data (INV-SAAS-07)."
+            )
+
     def _get_storage_selector(self, context: RequestContext) -> str:
         """Derive storage selector for the pre-tenancy database compatibility seam."""
         return context.actor_id or "default_user"
@@ -58,9 +66,18 @@ class PortfolioApplicationService:
         if not entitlements.can("portfolio.read"):
             raise PermissionError("Workspace is not entitled to capability 'portfolio.read'.")
 
+        # Under INV-SAAS-07, ws_default cannot access private persisted data
+        if not context.actor_id or context.workspace_id == "ws_default":
+            return []
+
         selector = self._get_storage_selector(context)
-        if self.db_engine is not None and hasattr(self.db_engine, "get_user_portfolio"):
-            return self.db_engine.get_user_portfolio(selector)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "get_workspace_portfolio"):
+                res = self.db_engine.get_workspace_portfolio(context.workspace_id, user_id=context.actor_id)
+                if isinstance(res, (dict, list)):
+                    return res
+            if hasattr(self.db_engine, "get_user_portfolio"):
+                return self.db_engine.get_user_portfolio(selector)
 
         return {
             "workspace_id": context.workspace_id,
@@ -72,7 +89,7 @@ class PortfolioApplicationService:
     def save_holding(self, context: RequestContext, holding: Dict[str, Any]) -> Dict[str, Any]:
         """
         Add or update a portfolio holding in the persistent repository.
-        Enforces workspace access, 'portfolio.manage' capability, and 'portfolio.max_holdings' limit.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), 'portfolio.manage' capability, and 'portfolio.max_holdings' limit.
         """
         self._verify_workspace_access(context)
 
@@ -85,8 +102,19 @@ class PortfolioApplicationService:
 
         # Enforce max holdings limit if defined
         max_holdings = entitlements.get_limit("portfolio.max_holdings")
-        if max_holdings is not None and self.db_engine is not None and hasattr(self.db_engine, "get_user_portfolio"):
-            current_portfolio = self.db_engine.get_user_portfolio(selector)
+        if max_holdings is not None and self.db_engine is not None:
+            current_portfolio = None
+            if hasattr(self.db_engine, "get_workspace_portfolio"):
+                res = self.db_engine.get_workspace_portfolio(context.workspace_id, user_id=context.actor_id)
+                if isinstance(res, (dict, list)):
+                    current_portfolio = res
+            if current_portfolio is None and hasattr(self.db_engine, "get_user_portfolio"):
+                res = self.db_engine.get_user_portfolio(selector)
+                if isinstance(res, (dict, list)):
+                    current_portfolio = res
+            if current_portfolio is None:
+                current_portfolio = []
+
             holdings_list = (
                 current_portfolio.get("holdings", [])
                 if isinstance(current_portfolio, dict)
@@ -104,8 +132,19 @@ class PortfolioApplicationService:
                     f"Workspace holding count ({len(holdings_list)}) exceeds limit of {max_holdings}."
                 )
 
+        # Enforce that persistence requires an actor-bound workspace (INV-SAAS-07)
+        self._verify_actor_bound_workspace(context)
+
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "save_user_holding"):
+            if hasattr(self.db_engine, "save_workspace_holding"):
+                success = self.db_engine.save_workspace_holding(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    holding=holding,
+                )
+                if not success:
+                    raise RuntimeError("Failed to save portfolio holding to persistent storage.")
+            elif hasattr(self.db_engine, "save_user_holding"):
                 success = self.db_engine.save_user_holding(user_id=selector, holding=holding)
                 if not success:
                     raise RuntimeError("Failed to save portfolio holding to persistent storage.")
@@ -160,9 +199,10 @@ class PortfolioApplicationService:
     def remove_holding(self, context: RequestContext, symbol: str) -> Dict[str, Any]:
         """
         Remove a holding from the workspace.
-        Enforces workspace access and 'portfolio.manage' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'portfolio.manage' capability.
         """
         self._verify_workspace_access(context)
+        self._verify_actor_bound_workspace(context)
 
         entitlements = self.entitlement_resolver.resolve(context)
         if not entitlements.can("portfolio.manage"):
@@ -172,7 +212,15 @@ class PortfolioApplicationService:
         clean_sym = symbol.upper().strip()
 
         if self.db_engine is not None:
-            if hasattr(self.db_engine, "delete_user_holding"):
+            if hasattr(self.db_engine, "delete_workspace_holding"):
+                success = self.db_engine.delete_workspace_holding(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    symbol=clean_sym,
+                )
+                if not success:
+                    raise RuntimeError("Failed to remove holding.")
+            elif hasattr(self.db_engine, "delete_user_holding"):
                 success = self.db_engine.delete_user_holding(selector, clean_sym)
                 if not success:
                     raise RuntimeError("Failed to remove holding.")
@@ -192,16 +240,24 @@ class PortfolioApplicationService:
     def bulk_migrate_holdings(self, context: RequestContext, items: List[Dict[str, Any]]) -> int:
         """
         Migrate client-side holdings into backend persistent storage.
-        Enforces workspace access and 'portfolio.manage' capability.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'portfolio.manage' capability.
         """
         self._verify_workspace_access(context)
+        self._verify_actor_bound_workspace(context)
 
         entitlements = self.entitlement_resolver.resolve(context)
         if not entitlements.can("portfolio.manage"):
             raise PermissionError("Workspace is not entitled to capability 'portfolio.manage'.")
 
         selector = self._get_storage_selector(context)
-        if self.db_engine is not None and hasattr(self.db_engine, "bulk_save_holdings"):
-            return int(self.db_engine.bulk_save_holdings(selector, items))
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "bulk_save_workspace_holdings"):
+                return int(self.db_engine.bulk_save_workspace_holdings(
+                    workspace_id=context.workspace_id,
+                    user_id=context.actor_id or "default_user",
+                    holdings=items,
+                ))
+            elif hasattr(self.db_engine, "bulk_save_holdings"):
+                return int(self.db_engine.bulk_save_holdings(selector, items))
 
         return len(items)
