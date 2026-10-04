@@ -1,0 +1,71 @@
+{
+  "gate": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION",
+  "primary_verdict": "INSUFFICIENT_NATURAL_EVIDENCE",
+  "checkpoint_state": "HOLD",
+  "checkpoint_eligibility": "NOT_SATISFIED",
+  "observation_epoch": {
+    "epoch_id": "ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_EPOCH_1",
+    "observation_mode": "PASSIVE_NATURAL_PRODUCTION_ONLY",
+    "epoch_start_utc": "2026-10-04T20:25:00Z",
+    "elapsed_time_hours": 0.0,
+    "eligibility_threshold_hours": 24.0,
+    "eligibility_threshold_requests": 10
+  },
+  "lineage": {
+    "production_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
+    "current_main_sha": "4eadd63cf8771a4cbe9990d743c26964ead0e0c5",
+    "current_main_relation_to_runtime": "DOCUMENTATION_ONLY_SUCCESSOR",
+    "production_release_identity": "EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR"
+  },
+  "natural_observation_denominators": {
+    "natural_private_context_requests": 0,
+    "natural_workspace_resolutions": 0,
+    "natural_private_reads": 0,
+    "natural_private_writes": 0,
+    "natural_portfolio_operations": 0,
+    "natural_journal_operations": 0,
+    "natural_cockpit_operations": 0,
+    "natural_public_route_requests": 0
+  },
+  "exclusion_counts": {
+    "operator_verification_probes_excluded": true,
+    "synthetic_api_calls_excluded": true,
+    "load_test_calls_excluded": true,
+    "synthetic_denominator_inflation": false
+  },
+  "criteria_matrix": {
+    "SAAS-1G-OBS01": "PASS",
+    "SAAS-1G-OBS02": "INSUFFICIENT_EVIDENCE",
+    "SAAS-1G-OBS03": "INSUFFICIENT_EVIDENCE",
+    "SAAS-1G-OBS04": "NOT_OBSERVED",
+    "SAAS-1G-OBS05": "NOT_OBSERVED",
+    "SAAS-1G-OBS06": "NOT_OBSERVED",
+    "SAAS-1G-OBS07": "NOT_OBSERVED",
+    "SAAS-1G-OBS08": "NOT_OBSERVED",
+    "SAAS-1G-OBS09": "PASS",
+    "SAAS-1G-OBS10": "NOT_OBSERVED",
+    "SAAS-1G-OBS11": "NOT_OBSERVED",
+    "SAAS-1G-OBS12": "NOT_OBSERVED",
+    "SAAS-1G-OBS13": "NOT_OBSERVED",
+    "SAAS-1G-OBS14": "NOT_OBSERVED",
+    "SAAS-1G-OBS15": "PASS"
+  },
+  "confirmed_defects": {
+    "cross_workspace_private_data_leakage": 0,
+    "ws_default_private_persistence_successes": 0,
+    "incorrect_actor_to_workspace_bindings": 0,
+    "database_corruption_events": 0,
+    "persistent_volume_losses": 0,
+    "unauthorized_contract_phase_mutations": 0,
+    "shared_cache_private_leakage_events": 0,
+    "systemic_runtime_failures": 0,
+    "confirmed_production_defect": false
+  },
+  "historical_evidence_boundary": {
+    "pre_deployment_backup": "NOT_ESTABLISHED",
+    "historical_zero_row_loss": "NOT_FULLY_ADJUDICABLE",
+    "historical_evidence_limitation_accepted": true
+  },
+  "next_authorized_action": "CONTINUE_PASSIVE_NATURAL_OBSERVATION",
+  "automatic_successor_execution": "NOT_AUTHORIZED"
+}
