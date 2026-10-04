@@ -120,7 +120,7 @@ PRODUCTION_RUNTIME_SHA =
   756674fb9d9e9dd4bd9709c6d00408f34dc02bcd
 
 CURRENT_MAIN_SHA =
-  4eadd63cf8771a4cbe9990d743c26964ead0e0c5
+  29bb9ce9254d375355a2979ae32e29e921b7a95b
 
 CURRENT_MAIN_RELATION_TO_RUNTIME =
   DOCUMENTATION_ONLY_SUCCESSOR
@@ -149,11 +149,17 @@ SYNTHETIC_DENOMINATOR_INFLATION =
 
 ---
 
-## 4. Current Denominators (At Epoch Start)
+## 4. Current Denominators (Checkpoint 1)
 
 ```ini
+CHECKPOINT_NUMBER =
+  1 (ELIGIBILITY-FIRST)
+
+CHECKPOINT_TIMESTAMP_UTC =
+  2026-10-04T20:34:55Z
+
 ELAPSED_OBSERVATION_TIME_HOURS =
-  0.0
+  0.165
 
 NATURAL_PRIVATE_CONTEXT_REQUESTS =
   0
@@ -185,15 +191,33 @@ NATURAL_PUBLIC_ROUTE_REQUESTS =
 ## 5. Checkpoint Eligibility Evaluation
 
 The first empirical observation checkpoint requires satisfaction of two mandatory thresholds:
-1. `ELAPSED_OBSERVATION_TIME_HOURS >= 24.0` (Current: `0.0` -> **NOT SATISFIED**).
+1. `ELAPSED_OBSERVATION_TIME_HOURS >= 24.0` (Current: `0.165` -> **NOT SATISFIED**).
 2. `NATURAL_PRIVATE_CONTEXT_REQUESTS >= 10` (Current: `0` -> **NOT SATISFIED**).
 
 ```ini
+CHECKPOINT_NUMBER =
+  1 (ELIGIBILITY-FIRST)
+
+CHECKPOINT_TIMESTAMP_UTC =
+  2026-10-04T20:34:55Z
+
+ELAPSED_OBSERVATION_TIME_HOURS =
+  0.165
+
+NATURAL_PRIVATE_CONTEXT_REQUESTS =
+  0
+
 CHECKPOINT_ELIGIBILITY =
   NOT_SATISFIED
 
 CHECKPOINT_STATE =
   HOLD
+
+CONFIRMED_PRODUCTION_DEFECT =
+  NO
+
+SYNTHETIC_DENOMINATOR_INFLATION =
+  NO
 
 NEXT_ACTION =
   CONTINUE_PASSIVE_NATURAL_OBSERVATION
@@ -246,13 +270,13 @@ HISTORICAL_EVIDENCE_LIMITATION_ACCEPTED =
 
 - **Manifest Path**: `docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION_MANIFEST.json`
 - **Algorithm**: `SHA-256`
-- **Manifest SHA-256**: `fd6152eb160d55882a07264ff615f06e9e1a227150d36cc7d7f3b01d281a51df`
+- **Manifest SHA-256**: `e327483b17a5ac37981f67554f0d57b3ea4a500cd574fb45ce1f6257fe96ced4`
 
 ---
 
-## 9. Initial Gate Verdict
+## 9. Checkpoint 1 Gate Verdict
 
-Because the observation epoch has just commenced and both eligibility thresholds are currently unfulfilled, the observation gate is held in passive monitoring mode:
+Because both eligibility thresholds are currently unfulfilled, the observation gate is held in passive monitoring mode:
 
 ```ini
 GATE =
@@ -266,6 +290,18 @@ CHECKPOINT_STATE =
 
 CHECKPOINT_ELIGIBILITY =
   NOT_SATISFIED
+
+ELAPSED_OBSERVATION_TIME_HOURS =
+  0.165
+
+NATURAL_PRIVATE_CONTEXT_REQUESTS =
+  0
+
+CONFIRMED_PRODUCTION_DEFECT =
+  NO
+
+SYNTHETIC_DENOMINATOR_INFLATION =
+  NO
 
 NEXT_ACTION =
   CONTINUE_PASSIVE_NATURAL_OBSERVATION
@@ -283,4 +319,4 @@ In compliance with Section 24 of the governing protocol:
 - Zero database records have been mutated.
 - Zero contract-phase migrations have been executed.
 - Automatic successor execution is strictly disabled.
-Execution stops immediately upon epoch initialization and artifact freeze.
+Execution stops immediately upon checkpoint evaluation and artifact freeze.

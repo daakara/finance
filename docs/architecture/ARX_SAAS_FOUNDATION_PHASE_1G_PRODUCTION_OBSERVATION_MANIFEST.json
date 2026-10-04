@@ -7,13 +7,14 @@
     "epoch_id": "ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_EPOCH_1",
     "observation_mode": "PASSIVE_NATURAL_PRODUCTION_ONLY",
     "epoch_start_utc": "2026-10-04T20:25:00Z",
-    "elapsed_time_hours": 0.0,
+    "checkpoint_timestamp_utc": "2026-10-04T20:34:55Z",
+    "elapsed_time_hours": 0.165,
     "eligibility_threshold_hours": 24.0,
     "eligibility_threshold_requests": 10
   },
   "lineage": {
     "production_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-    "current_main_sha": "4eadd63cf8771a4cbe9990d743c26964ead0e0c5",
+    "current_main_sha": "29bb9ce9254d375355a2979ae32e29e921b7a95b",
     "current_main_relation_to_runtime": "DOCUMENTATION_ONLY_SUCCESSOR",
     "production_release_identity": "EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR"
   },
