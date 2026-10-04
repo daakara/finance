@@ -1,0 +1,128 @@
+{
+  "manifestSchema": "arx-release-manifest-v1",
+  "gate": "ARX_RADAR_PORTFOLIO_AWARE_STATUS_RELEASE_GATE",
+  "releaseName": "ARX_RADAR_PORTFOLIO_AWARE_STATUS",
+  "releaseTimestamp": "2026-10-04T15:15:00Z",
+  "predecessorGate": "PASS_ARX_RADAR_PORTFOLIO_AWARE_STATUS_IMPLEMENTATION_VERIFIED",
+  "preReleaseHead": "9a01ae4b1956aaac6943cad21ecc7a12941715d6",
+  "branch": "main",
+  "mainSha": "9a01ae4b1956aaac6943cad21ecc7a12941715d6",
+  "mainDriftClassification": "NONE",
+  "changedFileInventory": {
+    "authorizedRadarUi": [
+      "frontend/app/radar/page.tsx",
+      "frontend/components/radar/RadarPortfolioBadge.tsx"
+    ],
+    "authorizedPortfolioComposition": [
+      "frontend/hooks/usePortfolioContext.ts",
+      "frontend/lib/portfolio.ts"
+    ],
+    "authorizedSymbolIdentity": [
+      "frontend/lib/assetRegistry.ts"
+    ],
+    "authorizedTests": [
+      "frontend/components/__tests__/RadarPortfolioBadge.test.tsx",
+      "frontend/hooks/__tests__/usePortfolioContext.test.ts",
+      "frontend/lib/__tests__/assetRegistry.test.ts",
+      "frontend/package.json",
+      "frontend/tests/radarPortfolioContext.test.ts",
+      "frontend/tests/radarPortfolioUxRegression.test.ts",
+      "tests/test_radar_domain_invariance.py"
+    ],
+    "authorizedDocumentation": [
+      "docs/ux/ARX_RADAR_PORTFOLIO_AWARE_STATUS_DESIGN.md",
+      "docs/ux/ARX_RADAR_PORTFOLIO_AWARE_STATUS_IMPLEMENTATION_REPORT.md",
+      "docs/ux/ARX_RADAR_PORTFOLIO_AWARE_STATUS_RELEASE_MANIFEST.json",
+      "docs/ux/ARX_RADAR_PORTFOLIO_AWARE_STATUS_RELEASE_REPORT.md"
+    ],
+    "unauthorizedChangedFilesCount": 0
+  },
+  "invariants": {
+    "INV_RADAR_PORTFOLIO_01": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_02": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_03": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_04": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_05": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_06": "PRESERVED",
+    "INV_RADAR_PORTFOLIO_07": "PRESERVED"
+  },
+  "architectureSpecification": {
+    "ownershipAuthority": "SQLITE_PORTFOLIO_HOLDINGS",
+    "clientCacheClassification": "NON_AUTHORITATIVE_CACHE",
+    "symbolNormalizationAuthority": "normalizeAssetSymbol",
+    "resolveAssetAliasUsage": "SEARCH_ONLY_NOT_OWNERSHIP",
+    "ownershipStateContract": [
+      "HELD",
+      "NOT_HELD",
+      "UNKNOWN"
+    ],
+    "filterSemantics": {
+      "ALL": "HELD + NOT_HELD + UNKNOWN",
+      "NEW_OPPORTUNITIES": "NOT_HELD only",
+      "MY_HOLDINGS": "HELD only"
+    },
+    "unknownExcludedFromOwnershipFilters": true,
+    "cacheSafetyState": "UNCONTAMINATED",
+    "rankingInvariant": "CANONICAL_CONFLUENCE_ORDER_PRESERVED",
+    "degradedStateBehavior": "RADAR_RENDERS_CANONICALLY_WITH_OWNERSHIP_UNKNOWN",
+    "ctaWordingContract": {
+      "HELD": "Review Position",
+      "NOT_HELD": "Analyze Opportunity",
+      "UNKNOWN": "Analyze Opportunity"
+    },
+    "backendNonChangeState": {
+      "screenerRouteChanged": false,
+      "screenerEngineChanged": false,
+      "portfolioSchemaChanged": false,
+      "portfolioPersistenceChanged": false
+    },
+    "deferredScopeState": {
+      "concentrationLogic": "NOT_IMPLEMENTED",
+      "availableCapital": "DEFERRED"
+    },
+    "crossTrackIsolation": {
+      "etfV2FilesChanged": 0,
+      "openfigiFilesChanged": 0,
+      "tacticalSetupsFilesChanged": 0,
+      "saasFoundationFilesChanged": 0,
+      "unrelatedArxFilesChanged": 0
+    }
+  },
+  "verificationResults": {
+    "frontendUnitTests": {
+      "command": "npm run test:unit",
+      "filesPassed": 18,
+      "testsPassed": 154,
+      "status": "PASS"
+    },
+    "frontendArchitectureTests": {
+      "command": "npm run test:arch",
+      "suitesPassed": 12,
+      "status": "PASS"
+    },
+    "typecheck": {
+      "command": "npx tsc --noEmit",
+      "errors": 0,
+      "status": "PASS"
+    },
+    "linter": {
+      "command": "npm run lint",
+      "errors": 0,
+      "status": "PASS"
+    },
+    "frontendBuild": {
+      "command": "npm run build",
+      "staticPagesGenerated": 144,
+      "status": "PASS"
+    },
+    "screenerAndDomainTests": {
+      "command": "python -m pytest tests/test_gem_screener.py tests/test_screener_execution.py tests/test_screener_actionability_boundary.py tests/test_radar_domain_invariance.py -v",
+      "testsPassed": 27,
+      "status": "PASS"
+    },
+    "gitDiffCheck": {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  }
+}

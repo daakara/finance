@@ -14,6 +14,8 @@ import {
 } from '../../lib/api';
 import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
+import { usePortfolioContext, OwnershipFilter } from '../../hooks/usePortfolioContext';
+import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge';
 
 interface RadarAsset {
   ticker: string;
@@ -65,6 +67,7 @@ function RadarContent() {
   const searchParams = useSearchParams();
   const initialQ = searchParams?.get('q') || searchParams?.get('symbol') || '';
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>('ALL');
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [sortBy, setSortBy] = useState<'SCORE' | 'RVOL' | 'PRICE'>('SCORE');
   const [allAssets, setAllAssets] = useState<RadarAsset[]>([]);
@@ -72,6 +75,13 @@ function RadarContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isOnDemandLoading, setIsOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
+
+  const {
+    isVerified: isPortfolioVerified,
+    isDegraded: isPortfolioDegraded,
+    getOwnershipState,
+    getHolding,
+  } = usePortfolioContext();
 
   // Synchronize searchQuery when URL search params change while component remains mounted (clears when query is removed)
   useEffect(() => {
@@ -175,7 +185,19 @@ function RadarContent() {
     };
   }, [allAssets, capabilities]);
 
-  // Filtered & Sorted Assets
+  // Ownership Counts (Calculated dynamically via authoritative portfolio context)
+  const ownershipCounts = useMemo(() => {
+    let held = 0;
+    let notHeld = 0;
+    for (const asset of allAssets) {
+      const st = getOwnershipState(asset.ticker);
+      if (st === 'HELD') held++;
+      else if (st === 'NOT_HELD') notHeld++;
+    }
+    return { held, notHeld, total: allAssets.length };
+  }, [allAssets, getOwnershipState]);
+
+  // Filtered & Sorted Assets (Canonical sort order strictly preserved per INV-RADAR-PORTFOLIO-04)
   const filteredAssets = useMemo(() => {
     return allAssets
       .filter((asset) => {
@@ -189,7 +211,18 @@ function RadarContent() {
               asset.name.toLowerCase().includes(q) ||
               asset.catalyst.toLowerCase().includes(q) ||
               asset.categories.some((c) => c.toLowerCase().includes(q));
-        return matchesCategory && matchesQuery;
+
+        const ownState = getOwnershipState(asset.ticker);
+        const matchesOwnership =
+          ownershipFilter === 'ALL'
+            ? true
+            : ownershipFilter === 'NEW_OPPORTUNITIES'
+            ? ownState === 'NOT_HELD'
+            : ownershipFilter === 'MY_HOLDINGS'
+            ? ownState === 'HELD'
+            : true;
+
+        return matchesCategory && matchesQuery && matchesOwnership;
       })
       .sort((a, b) => {
         if (sortBy === 'SCORE') return b.confluenceScore - a.confluenceScore;
@@ -201,7 +234,7 @@ function RadarContent() {
         if (sortBy === 'PRICE') return b.price - a.price;
         return 0;
       });
-  }, [allAssets, activeFilter, searchQuery, sortBy]);
+  }, [allAssets, activeFilter, searchQuery, sortBy, ownershipFilter, getOwnershipState]);
 
   const cleanQ = searchQuery.trim().toUpperCase();
   const isSearching = searchQuery.trim().length > 0;
@@ -456,6 +489,10 @@ function RadarContent() {
                   <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
                     ATTENTION CANDIDATE
                   </span>
+                  <RadarPortfolioBadge
+                    ownershipState={heroAsset ? getOwnershipState(heroAsset.ticker) : 'UNKNOWN'}
+                    shares={heroAsset ? getHolding(heroAsset.ticker)?.shares : undefined}
+                  />
                   <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
                     heroAsset.executionStatus === 'IN_BUY_ZONE'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
@@ -491,6 +528,15 @@ function RadarContent() {
                   <strong className="text-amber-400 font-semibold">Primary Catalyst: </strong>
                   {heroAsset.catalyst}
                 </p>
+
+                {heroAsset && getOwnershipState(heroAsset.ticker) === 'HELD' && (
+                  <div className="p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-700/60 text-indigo-200 text-xs font-mono flex items-center gap-2">
+                    <span className="text-sm">💼</span>
+                    <span>
+                      <strong>Existing Portfolio Holding:</strong> {getHolding(heroAsset.ticker)?.shares ?? 0} shares held. Aligns with top scanner confluence.
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
                   <div className="flex items-center gap-1.5">
@@ -533,14 +579,24 @@ function RadarContent() {
               </div>
 
               <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
-                <Link
-                  href={`/?symbol=${heroAsset.ticker}`}
-                  onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
-                  className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span>Analyze {heroAsset.ticker}</span>
-                  <span>→</span>
-                </Link>
+                {(() => {
+                  const isHeroHeld = getOwnershipState(heroAsset.ticker) === 'HELD';
+                  return (
+                    <Link
+                      href={`/?symbol=${heroAsset.ticker}`}
+                      onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-mono font-black tracking-tight transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
+                        isHeroHeld
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-950/50'
+                          : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-950/50'
+                      }`}
+                      title={isHeroHeld ? "Review existing position in Analysis hub" : `Inspect ${heroAsset.ticker} in Analysis hub`}
+                    >
+                      <span>{isHeroHeld ? `Review ${heroAsset.ticker} Position` : `Analyze ${heroAsset.ticker}`}</span>
+                      <span>→</span>
+                    </Link>
+                  );
+                })()}
                 <Link
                   href={`/setups?symbol=${heroAsset.ticker}`}
                   onClick={() => trackRadarAssetClick(heroAsset.ticker, 1)}
@@ -558,186 +614,255 @@ function RadarContent() {
         )}
 
         {/* Search & Filter Toolbar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          {/* Category Filter Tabs (WAI-ARIA Tablist) */}
-          <div
-            role="tablist"
-            aria-label="Radar Confluence Categories"
-            className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
-          >
-            <button
-              type="button"
-              role="tab"
-              id="tab-radar-filter-all"
-              aria-selected={activeFilter === 'ALL'}
-              aria-controls="panel-radar-candidates"
-              tabIndex={activeFilter === 'ALL' ? 0 : -1}
-              onKeyDown={(e) => handleFilterKeyDown(e, 'ALL')}
-              onClick={() => setActiveFilter('ALL')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeFilter === 'ALL'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-              }`}
+        <div className="space-y-3 border-b border-slate-800 pb-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            {/* Category Filter Tabs (WAI-ARIA Tablist) */}
+            <div
+              role="tablist"
+              aria-label="Radar Confluence Categories"
+              className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
             >
-              <span>All Confluences</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                {categoryMeta.ALL.badge}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              id="tab-radar-filter-value_garp"
-              aria-selected={activeFilter === 'VALUE_GARP'}
-              aria-controls="panel-radar-candidates"
-              tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
-              onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
-              onClick={() => setActiveFilter('VALUE_GARP')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeFilter === 'VALUE_GARP'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-              }`}
-            >
-              <span>💎 Value / GARP</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                {categoryMeta.VALUE_GARP.badge}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              id="tab-radar-filter-vcp"
-              aria-selected={activeFilter === 'VCP'}
-              aria-controls="panel-radar-candidates"
-              tabIndex={activeFilter === 'VCP' ? 0 : -1}
-              onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
-              onClick={() => setActiveFilter('VCP')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeFilter === 'VCP'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-              }`}
-            >
-              <span>⚡ Minervini VCP</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                  ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                  : 'bg-slate-800 text-slate-300'
-              }`}>
-                {categoryMeta.VCP.badge}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              id="tab-radar-filter-smart_money"
-              aria-selected={activeFilter === 'SMART_MONEY'}
-              aria-controls="panel-radar-candidates"
-              tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
-              onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
-              onClick={() => setActiveFilter('SMART_MONEY')}
-              className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                activeFilter === 'SMART_MONEY'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-              }`}
-            >
-              <span>🐋 Smart Money</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                  ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                  : 'bg-slate-800 text-slate-300'
-              }`}>
-                {categoryMeta.SMART_MONEY.badge}
-              </span>
-            </button>
-          </div>
-
-          {/* Search Input & Sort Controls */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (filteredAssets.length === 0 && isTickerQuery) {
-                  handleOnDemandScan(cleanQ);
-                }
-              }}
-              className="relative flex-1 sm:w-72 min-w-[220px]"
-            >
-              <input
-                type="text"
-                aria-label="Search candidate, ticker, or catalyst"
-                placeholder="Search candidate, ticker (e.g. NVDA, TSLA)..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setOnDemandError(null);
-                }}
-                className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-              <div className="absolute right-2 top-1.5 flex items-center gap-1">
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setOnDemandError(null);
-                    }}
-                    className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-1 rounded"
-                    title="Clear filter"
-                    aria-label="Clear search"
-                  >
-                    ✕
-                  </button>
-                )}
-                {isTickerQuery && filteredAssets.length === 0 && (
-                  <button
-                    type="submit"
-                    disabled={isOnDemandLoading}
-                    className="focus-ring text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
-                    title="Scan on-demand"
-                  >
-                    {isOnDemandLoading ? "..." : "Scan ↵"}
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {searchQuery && (
-              <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                {filteredAssets.length} of {allAssets.length}
-              </span>
-            )}
-
-            <div className="flex items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-0.5 text-xs font-mono shrink-0">
-              <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
               <button
                 type="button"
-                onClick={() => setSortBy('SCORE')}
-                className={`focus-ring px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                role="tab"
+                id="tab-radar-filter-all"
+                aria-selected={activeFilter === 'ALL'}
+                aria-controls="panel-radar-candidates"
+                tabIndex={activeFilter === 'ALL' ? 0 : -1}
+                onKeyDown={(e) => handleFilterKeyDown(e, 'ALL')}
+                onClick={() => setActiveFilter('ALL')}
+                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeFilter === 'ALL'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
               >
-                Score
+                <span>All Confluences</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {categoryMeta.ALL.badge}
+                </span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setSortBy('RVOL')}
-                className={`focus-ring px-2 py-1 rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                role="tab"
+                id="tab-radar-filter-value_garp"
+                aria-selected={activeFilter === 'VALUE_GARP'}
+                aria-controls="panel-radar-candidates"
+                tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
+                onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
+                onClick={() => setActiveFilter('VALUE_GARP')}
+                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeFilter === 'VALUE_GARP'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
               >
-                RVOL
+                <span>💎 Value / GARP</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {categoryMeta.VALUE_GARP.badge}
+                </span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setSortBy('PRICE')}
-                className={`focus-ring px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                role="tab"
+                id="tab-radar-filter-vcp"
+                aria-selected={activeFilter === 'VCP'}
+                aria-controls="panel-radar-candidates"
+                tabIndex={activeFilter === 'VCP' ? 0 : -1}
+                onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
+                onClick={() => setActiveFilter('VCP')}
+                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeFilter === 'VCP'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
               >
-                Price
+                <span>⚡ Minervini VCP</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                    : 'bg-slate-800 text-slate-300'
+                }`}>
+                  {categoryMeta.VCP.badge}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                id="tab-radar-filter-smart_money"
+                aria-selected={activeFilter === 'SMART_MONEY'}
+                aria-controls="panel-radar-candidates"
+                tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
+                onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
+                onClick={() => setActiveFilter('SMART_MONEY')}
+                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  activeFilter === 'SMART_MONEY'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
+              >
+                <span>🐋 Smart Money</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                    : 'bg-slate-800 text-slate-300'
+                }`}>
+                  {categoryMeta.SMART_MONEY.badge}
+                </span>
               </button>
             </div>
+
+            {/* Search Input & Sort Controls */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (filteredAssets.length === 0 && isTickerQuery) {
+                    handleOnDemandScan(cleanQ);
+                  }
+                }}
+                className="relative flex-1 sm:w-72 min-w-[220px]"
+              >
+                <input
+                  type="text"
+                  aria-label="Search candidate, ticker, or catalyst"
+                  placeholder="Search candidate, ticker (e.g. NVDA, TSLA)..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setOnDemandError(null);
+                  }}
+                  className="focus-ring w-full bg-[#0b1019] border border-slate-800 rounded-lg pl-3 pr-20 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+                <div className="absolute right-2 top-1.5 flex items-center gap-1">
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setOnDemandError(null);
+                      }}
+                      className="focus-ring text-xs text-slate-500 hover:text-slate-300 font-mono px-1 rounded"
+                      title="Clear filter"
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  {isTickerQuery && filteredAssets.length === 0 && (
+                    <button
+                      type="submit"
+                      disabled={isOnDemandLoading}
+                      className="focus-ring text-[10px] bg-cyan-900/80 hover:bg-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-700 cursor-pointer disabled:opacity-50"
+                      title="Scan on-demand"
+                    >
+                      {isOnDemandLoading ? "..." : "Scan ↵"}
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {searchQuery && (
+                <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                  {filteredAssets.length} of {allAssets.length}
+                </span>
+              )}
+
+              <div className="flex items-center gap-1 bg-[#0b1019] border border-slate-800 rounded-lg p-0.5 text-xs font-mono shrink-0">
+                <span className="text-[10px] text-slate-500 px-2 uppercase">Sort:</span>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('SCORE')}
+                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'SCORE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Score
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('RVOL')}
+                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'RVOL' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  RVOL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('PRICE')}
+                  className={`focus-ring px-2 py-1 rounded ${sortBy === 'PRICE' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Price
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary Row: Portfolio Ownership Filter Chips & Degraded Status */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/40">
+            <div className="flex items-center gap-1.5" role="group" aria-label="Portfolio Ownership Filter">
+              <span className="text-[10px] uppercase font-mono text-slate-500 mr-1">Portfolio:</span>
+              <button
+                type="button"
+                id="btn-ownership-filter-all"
+                aria-pressed={ownershipFilter === 'ALL'}
+                onClick={() => setOwnershipFilter('ALL')}
+                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                  ownershipFilter === 'ALL'
+                    ? 'bg-slate-800 text-white font-bold border border-slate-600'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
+              >
+                <span>All Candidates</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {ownershipCounts.total}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-ownership-filter-new"
+                aria-pressed={ownershipFilter === 'NEW_OPPORTUNITIES'}
+                onClick={() => setOwnershipFilter('NEW_OPPORTUNITIES')}
+                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                  ownershipFilter === 'NEW_OPPORTUNITIES'
+                    ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/70 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
+              >
+                <span>New Opportunities</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-ownership-filter-holdings"
+                aria-pressed={ownershipFilter === 'MY_HOLDINGS'}
+                onClick={() => setOwnershipFilter('MY_HOLDINGS')}
+                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                  ownershipFilter === 'MY_HOLDINGS'
+                    ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-700/70 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                }`}
+              >
+                <span>My Holdings</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  ownershipCounts.held > 0 ? 'bg-indigo-900/60 text-indigo-200 font-bold' : 'bg-slate-800 text-slate-400'
+                }`}>
+                  {isPortfolioVerified ? ownershipCounts.held : '—'}
+                </span>
+              </button>
+            </div>
+
+            {/* Degraded State Indicator */}
+            {isPortfolioDegraded && (
+              <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400/90 bg-amber-950/30 border border-amber-800/40 px-2 py-0.5 rounded">
+                <span>⚠️</span>
+                <span>Portfolio sync unavailable — ownership state UNKNOWN</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -753,7 +878,7 @@ function RadarContent() {
             <table className="w-full text-left font-mono text-xs">
               <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider">
                 <tr>
-                  <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[110px]">Asset</th>
+                  <th className="p-3 sticky left-0 bg-slate-950 z-10 min-w-[130px]">Asset</th>
                   <th className="p-3 min-w-[140px]">Screening Status</th>
                   <th className="p-3 min-w-[80px]">Price</th>
                   <th className="p-3 text-center min-w-[70px]" title="Screening Snapshot Confluence Conviction Score">Screen Score</th>
@@ -774,6 +899,12 @@ function RadarContent() {
                           <p className="text-sm font-bold text-white">
                             {searchQuery
                               ? `No assets match "${searchQuery}" in current confluence scan`
+                              : ownershipFilter === 'MY_HOLDINGS'
+                              ? (!isPortfolioVerified
+                                  ? "Portfolio sync unavailable (Ownership UNKNOWN)"
+                                  : "No active Radar candidates currently held in portfolio")
+                              : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
+                              ? "Portfolio sync unavailable (Ownership UNKNOWN)"
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? "Minervini VCP Screener: Universe Pipeline Pending"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
@@ -785,6 +916,12 @@ function RadarContent() {
                               ? (isTickerQuery
                                   ? `Asset "${cleanQ}" is not in today's top 24 pre-scanned confluence batch. You can scan it live across the exchange tape or review its tactical setup.`
                                   : `No confluence candidates match this search. Try searching by symbol (e.g. NVDA, CPRX, ASML, TSLA) or reset the filter.`)
+                              : ownershipFilter === 'MY_HOLDINGS'
+                              ? (!isPortfolioVerified
+                                  ? "The authoritative portfolio connection could not be verified. Radar renders canonically with ownership state UNKNOWN."
+                                  : "None of your current portfolio positions meet the active Radar screening confluence criteria. Switch to 'All Candidates' or 'New Opportunities' to view market setups.")
+                              : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
+                              ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
                               ? "Single-asset volatility contraction geometry is active on the Analysis (/) and Setups (/setups) hubs. Batch multi-timeframe universe scanning across all 60 stocks is currently pending deployment."
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
@@ -865,15 +1002,21 @@ function RadarContent() {
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
                         <td className="p-3 sticky left-0 bg-[#0a0f18] z-10">
-                          <Link
-                            href={`/?symbol=${asset.ticker}`}
-                            onClick={() => trackRadarAssetClick(asset.ticker)}
-                            className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
-                          >
-                            {asset.ticker}
-                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={`/?symbol=${asset.ticker}`}
+                              onClick={() => trackRadarAssetClick(asset.ticker)}
+                              className="font-black text-white text-sm tracking-tight hover:text-cyan-400 transition-colors block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
+                            >
+                              {asset.ticker}
+                            </Link>
+                            <RadarPortfolioBadge
+                              ownershipState={getOwnershipState(asset.ticker)}
+                              shares={getHolding(asset.ticker)?.shares}
+                            />
+                          </div>
                           {asset.name && asset.name !== asset.ticker && (
-                            <div className="text-[10px] text-slate-400 font-sans truncate max-w-[120px]" title={asset.name}>{asset.name}</div>
+                            <div className="text-[10px] text-slate-400 font-sans truncate max-w-[130px]" title={asset.name}>{asset.name}</div>
                           )}
                         </td>
                         <td className="p-3 whitespace-nowrap">
@@ -906,14 +1049,23 @@ function RadarContent() {
                           {asset.catalyst}
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
-                          <Link
-                            href={`/?symbol=${asset.ticker}`}
-                            onClick={() => trackRadarAssetClick(asset.ticker)}
-                            className="px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border border-slate-700 hover:border-cyan-500"
-                            title="Inspect in Analysis hub for live technical triggers & execution clearance"
-                          >
-                            Analyze →
-                          </Link>
+                          {(() => {
+                            const isAssetHeld = getOwnershipState(asset.ticker) === 'HELD';
+                            return (
+                              <Link
+                                href={`/?symbol=${asset.ticker}`}
+                                onClick={() => trackRadarAssetClick(asset.ticker)}
+                                className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono transition-colors inline-block focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none border ${
+                                  isAssetHeld
+                                    ? 'bg-indigo-950/80 hover:bg-indigo-600 text-indigo-200 hover:text-white border-indigo-700/80 hover:border-indigo-500'
+                                    : 'bg-slate-800 hover:bg-cyan-600 hover:text-white text-cyan-300 border-slate-700 hover:border-cyan-500'
+                                }`}
+                                title={isAssetHeld ? `Review existing ${asset.ticker} position in Analysis hub` : "Inspect in Analysis hub for live technical triggers & execution clearance"}
+                              >
+                                {isAssetHeld ? "Review Position →" : "Analyze →"}
+                              </Link>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );

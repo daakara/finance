@@ -568,3 +568,61 @@ export function exportPortfolioToCsv(positions: PortfolioPosition[]): void {
   link.click();
   document.body.removeChild(link);
 }
+
+export interface AuthoritativePortfolioResult {
+  isVerified: boolean;
+  positions: PortfolioPosition[];
+  error?: string;
+}
+
+/**
+ * Fetches authoritative portfolio state directly from SQLite backend persistence.
+ * Required by INV-RADAR-PORTFOLIO-06:
+ * - Server holdings are authoritative.
+ * - If server call succeeds, client localStorage projection is refreshed.
+ * - If server call fails, returns isVerified: false, preventing unverified localStorage from asserting HELD/NOT_HELD.
+ */
+export async function fetchAuthoritativePortfolio(): Promise<AuthoritativePortfolioResult> {
+  if (typeof window === "undefined") {
+    return { isVerified: false, positions: [], error: "Window undefined (SSR context)" };
+  }
+
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const anonId = getAnonymousUserId();
+    const res = await fetch(`${baseUrl}/portfolio`, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": anonId,
+      },
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (res.ok) {
+      const apiHoldings = await res.json();
+      if (Array.isArray(apiHoldings)) {
+        const normalized: PortfolioPosition[] = apiHoldings.map((h: any) => ({
+          symbol: (h.symbol || "").toUpperCase(),
+          name: h.name || h.symbol,
+          shares: Number(h.shares),
+          entryPrice: Number(h.entryPrice || h.entry_price),
+          currentPrice: (h.currentPrice !== undefined && h.currentPrice !== null && !isNaN(Number(h.currentPrice)) && Number(h.currentPrice) > 0)
+            ? Number(h.currentPrice)
+            : (h.current_price !== undefined && h.current_price !== null && !isNaN(Number(h.current_price)) && Number(h.current_price) > 0)
+            ? Number(h.current_price)
+            : null,
+          targetPrice: h.targetPrice ?? h.target_price,
+          stopLossPrice: h.stopLossPrice ?? h.stop_loss,
+          addedAt: h.addedAt || h.added_at || new Date().toISOString().split("T")[0],
+          assetType: h.assetType || h.asset_type || "Stock",
+        }));
+
+        savePortfolioPositions(normalized);
+        return { isVerified: true, positions: normalized };
+      }
+    }
+    return { isVerified: false, positions: [], error: `Server returned status ${res.status}` };
+  } catch (err: any) {
+    return { isVerified: false, positions: [], error: err?.message || "Failed to fetch authoritative portfolio" };
+  }
+}

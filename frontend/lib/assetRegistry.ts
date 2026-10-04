@@ -614,3 +614,45 @@ export function getCanonicalEtfSectorWeights(symbol: string): EtfSectorWeight[] 
   const sym = symbol.toUpperCase().replace("-USD", "");
   return CANONICAL_ETF_SECTOR_WEIGHTS[sym] || null;
 }
+
+/**
+ * Canonical Symbol Normalizer for deterministic identity joins (e.g. Radar <-> Portfolio).
+ * Enforces:
+ * 1. Whitespace trimming and uppercase conversion.
+ * 2. Standardized US equity share-class delimiter unification (e.g. BRK.B -> BRK-B, BF.B -> BF-B).
+ * 3. Preserves international listing exchange suffixes/prefixes (e.g. SHEL.L, LON:SHEL) without stripping.
+ * 4. Rejects arbitrary natural language text, empty inputs, or unparseable characters.
+ * 5. Invariant INV-RADAR-PORTFOLIO-07: Ambiguous or unresolved symbols must return null/fail closed.
+ */
+export function normalizeAssetSymbol(symbol: string | null | undefined): string | null {
+  if (!symbol || typeof symbol !== "string") return null;
+  const trimmed = symbol.trim().toUpperCase();
+  if (!trimmed) return null;
+
+  // Reject multi-word natural language strings (e.g. "APPLE INC", "BERKSHIRE HATHAWAY", "GOOGLE SEARCH")
+  if (/\s/.test(trimmed)) return null;
+
+  // Reject ambiguous multi-ticker dual listings (e.g. "AAPL/MSFT", "RIO/BHP")
+  if (/^[A-Z0-9]{2,}\/[A-Z0-9]{2,}$/.test(trimmed)) {
+    return null;
+  }
+
+  // Valid ticker symbols must conform to standard tape syntax (alphanumeric, dot, hyphen, colon, slash)
+  // Max length 16 (matching backend SYMBOL_REGEX in portfolio.py)
+  if (!/^[A-Z0-9.\-:_/]{1,16}$/.test(trimmed)) return null;
+
+  // Unify standard US equity share-class syntax:
+  // Berkshire Hathaway Class B: BRK.B -> BRK-B, BRK/B -> BRK-B
+  // Brown-Forman Class B: BF.B -> BF-B, BF/B -> BF-B
+  // Only normalize dot or slash to hyphen when it represents an approved US share-class letter suffix
+  if (/^[A-Z0-9]{1,5}[./][A-Z]{1,2}$/.test(trimmed)) {
+    // Distinguish known international single-letter exchange suffixes (e.g. London .L, Toronto .T, Paris .P)
+    // from US share classes (e.g. BRK.A, BRK.B, BF.A, BF.B).
+    // Specifically normalize US dual-class shares such as BRK.B -> BRK-B, BF.B -> BF-B.
+    if (/^(?:BRK|BF|HEI|BIO|LEN|CWEN)[./][A-Z]$/.test(trimmed)) {
+      return trimmed.replace(/[./]/, "-");
+    }
+  }
+
+  return trimmed;
+}
