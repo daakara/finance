@@ -61,6 +61,7 @@ def test_standard_library_purity_of_seam_packages():
         "datetime",
         "time",
         "json",
+        "hashlib",
         "api",  # internal project namespace
     }
 

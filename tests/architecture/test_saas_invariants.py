@@ -164,3 +164,19 @@ def compute_trade_risk(symbol: str, workspace_id: str, actor_id: str):
     assert len(violations_2) == 2
     assert any("prohibited SaaS parameter 'workspace_id'" in v for v in violations_2)
     assert any("prohibited SaaS parameter 'actor_id'" in v for v in violations_2)
+
+
+def test_inv_saas_05_public_routes_independence():
+    """
+    INV-SAAS-05: Verify public analytical routes are completely context-free.
+    """
+    from tests.architecture.test_public_context_independence import (
+        PUBLIC_CONTEXT_FREE_ROUTE_FILES,
+        check_public_route_source,
+    )
+    for rel_path in PUBLIC_CONTEXT_FREE_ROUTE_FILES:
+        full_path = os.path.join(REPO_ROOT, rel_path)
+        with open(full_path, "r", encoding="utf-8") as f:
+            src = f.read()
+        violations = check_public_route_source(src, rel_path)
+        assert len(violations) == 0, f"INV-SAAS-05 violation in {rel_path}: {violations}"

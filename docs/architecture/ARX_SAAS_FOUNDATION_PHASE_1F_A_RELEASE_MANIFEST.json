@@ -1,0 +1,157 @@
+{
+  "gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1F_A_RELEASE",
+  "predecessor_gate": "PASS_ARX_SAAS_FOUNDATION_PHASE_1F_A_IMPLEMENTATION_VERIFIED",
+  "baseline_phase_1a_1e_release_sha": "724b5e3659ba0287fc3d8b9d58b4ef7eecde8703",
+  "branch": "feat/arx-saas-foundation-phase1-seams",
+  "worktree": "C:/Users/akara/Documents/Projects/finance-arx-saas-foundation-phase1",
+  "release_timestamp": "2026-10-04T13:56:00+02:00",
+  "runtime_architecture": {
+    "request_context_schema": {
+      "dataclass": "RequestContext",
+      "frozen": true,
+      "field_count": 3,
+      "fields": ["actor_id", "workspace_id", "request_id"],
+      "schema_changed": false
+    },
+    "resolver": {
+      "module": "api/context/resolver.py",
+      "scope": "OPT_IN_PRIVATE_DEPENDENCY",
+      "universal_middleware": false,
+      "root_router_dependency": false,
+      "public_route_dependency": false,
+      "status_attestations": {
+        "authenticated_actor_resolution": "NOT_IMPLEMENTED",
+        "workspace_membership_resolution": "NOT_IMPLEMENTED",
+        "subscription_resolution": "NOT_IMPLEMENTED"
+      }
+    },
+    "application_services": {
+      "portfolio_service": "api/services/portfolio_service.py",
+      "journal_service": "api/services/journal_service.py",
+      "cockpit_service": "api/services/cockpit_service.py",
+      "authorizer": "api/services/authorizer.py",
+      "imported_by_existing_routes": false,
+      "call_graph_changed": false
+    },
+    "invariants": {
+      "INV-SAAS-01": "PRESERVED_12_PROTECTED_QUANT_MODULES",
+      "INV-SAAS-02": "PRESERVED_PRIVATE_CACHE_NO_STORE",
+      "INV-SAAS-03": "PRESERVED_WORKSPACE_TENANCY_TARGET",
+      "INV-SAAS-04": "PRESERVED_CANONICAL_TRUTH",
+      "INV-SAAS-05": "ENFORCED_PUBLIC_ROUTES_CONTEXT_FREE"
+    },
+    "capabilities": {
+      "capability_count": 17,
+      "limit_count": 5,
+      "vocabulary_changed": false
+    },
+    "persistence": {
+      "database_schema_changed": false,
+      "migration_files_added": 0,
+      "user_profiles_schema_changed": false,
+      "user_profiles_classification": "ACTOR_PROFILE_DATA"
+    },
+    "routes": {
+      "routes_rewired": false,
+      "public_analytics_symbol": "PUBLIC + CONTEXT_FREE + CANONICAL",
+      "public_analytics_setups": "PUBLIC + CONTEXT_FREE + DERIVED",
+      "public_volatility_symbol": "PUBLIC + CONTEXT_FREE + DERIVED",
+      "public_cache_behavior_changed": false
+    },
+    "cross_track_isolation": {
+      "etf_v2_files_changed": false,
+      "openfigi_files_changed": false,
+      "tactical_setups_remediation_changed": false,
+      "frontend_runtime_files_changed": false
+    }
+  },
+  "candidate_files": [
+    {
+      "path": "api/context/__init__.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/context/resolver.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/services/__init__.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/services/authorizer.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/services/portfolio_service.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/services/journal_service.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "api/services/cockpit_service.py",
+      "category": "AUTHORIZED_RUNTIME_INFRASTRUCTURE"
+    },
+    {
+      "path": "tests/saas/test_request_context_resolver.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/saas/test_application_service_contracts.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/architecture/test_public_context_independence.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/architecture/test_phase_1f_a_scope.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/architecture/test_saas_invariants.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/architecture/test_saas_governance.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "tests/architecture/test_changed_file_scope.py",
+      "category": "AUTHORIZED_TEST"
+    },
+    {
+      "path": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1A_1E_RELEASE_REPORT.md",
+      "category": "PREDECESSOR_DESIGN_ARTIFACT"
+    },
+    {
+      "path": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1F_1G_DESIGN_SPECIFICATION.md",
+      "category": "PREDECESSOR_DESIGN_ARTIFACT"
+    },
+    {
+      "path": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1F_A_IMPLEMENTATION_REPORT.md",
+      "category": "AUTHORIZED_DOCUMENTATION"
+    },
+    {
+      "path": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1F_A_RELEASE_MANIFEST.json",
+      "category": "AUTHORIZED_DOCUMENTATION"
+    },
+    {
+      "path": "docs/architecture/ARX_SAAS_FOUNDATION_PHASE_1F_A_RELEASE_REPORT.md",
+      "category": "AUTHORIZED_DOCUMENTATION"
+    }
+  ],
+  "verification_summary": {
+    "saas_unit_tests": "52_PASS",
+    "architecture_tests": "53_PASS",
+    "combined_backend_tests": "105_PASS",
+    "frontend_unit_tests": "PASS",
+    "frontend_arch_tests": "PASS",
+    "frontend_typescript": "PASS",
+    "frontend_lint": "PASS",
+    "frontend_build_pages": "144_STATIC_SSG_PAGES",
+    "diff_check": "PASS_CLEAN"
+  }
+}

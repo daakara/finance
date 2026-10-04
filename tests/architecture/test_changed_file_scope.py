@@ -68,9 +68,9 @@ def test_changed_files_within_authorized_scope():
 
 
 def test_no_protected_quant_or_etf_files_in_diff():
-    """Verify zero quant, ETF V2, or OpenFIGI files appear in git status."""
+    """Verify zero quant, ETF V2, OpenFIGI, or existing route files appear in git status."""
     all_files = _get_changed_and_untracked_files()
-    forbidden_tokens = ["analyst_dashboard", "engines", "etf", "openfigi", "cockpit", "database"]
+    forbidden_tokens = ["analyst_dashboard", "engines", "etf", "openfigi", "api/routes/cockpit", "database"]
 
     for f in all_files:
         f_lower = f.lower()
