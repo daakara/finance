@@ -355,6 +355,78 @@ def _build_tactical_setup(sym: str, clean_role: str, db_candles: List[Dict[str, 
     }
 
 
+# ── Bounded Server-Side Tactical Setups Cache ─────────────────────────────────
+# Governed in-memory cache satisfying:
+# APPROVED_WARM_RESPONSE_P95_MS <= 2000ms
+# APPROVED_CACHE_HIT_P95_MS <= 500ms
+# CACHE_BOUNDED = YES, CACHE_TTL_BOUNDED = YES, EVICTION_POLICY_DEFINED = YES
+TACTICAL_SETUPS_CACHE_TTL_SECONDS = 30
+TACTICAL_SETUPS_CACHE_MAX_ENTRIES = 20
+_tactical_setups_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+
+
+def _get_tactical_setups_cache_key(clean_role: str, symbols: List[str]) -> str:
+    """Compute fully qualified deterministic cache key reflecting user_role, ticker scope, and market session date."""
+    import hashlib
+    sorted_syms = sorted(set(symbols))
+    sym_digest = hashlib.sha256(",".join(sorted_syms).encode("utf-8")).hexdigest()[:16]
+
+    session_date = "UNKNOWN"
+    try:
+        cal = xcals.get_calendar("XNYS")
+        now_utc = pd.Timestamp.now("UTC")
+        prev_close = cal.previous_close(now_utc)
+        session_date = cal.minute_to_session(prev_close, direction="previous").strftime("%Y-%m-%d")
+    except Exception:
+        pass
+
+    return f"tactical_setups:{clean_role}:{sym_digest}:{session_date}"
+
+
+def _get_cached_tactical_setups(cache_key: str) -> Optional[Dict[str, Any]]:
+    """Retrieve unexpired cached tactical setups payload, or None if expired/missing."""
+    import time
+    entry = _tactical_setups_cache.get(cache_key)
+    if not entry:
+        return None
+    cached_at, payload = entry
+    if time.time() - cached_at > TACTICAL_SETUPS_CACHE_TTL_SECONDS:
+        _tactical_setups_cache.pop(cache_key, None)
+        return None
+    return {
+        "userRole": payload.get("userRole"),
+        "totalSetups": payload.get("totalSetups"),
+        "setups": list(payload.get("setups", [])),
+    }
+
+
+def _store_cached_tactical_setups(cache_key: str, payload: Dict[str, Any]) -> None:
+    """Store tactical setups payload into bounded cache with eviction policy."""
+    import time
+    # Safety invariant: Never cache failed or malformed payloads
+    if not payload or not isinstance(payload, dict) or "setups" not in payload:
+        return
+
+    now = time.time()
+    # Eviction policy: Evict expired entries first
+    if len(_tactical_setups_cache) >= TACTICAL_SETUPS_CACHE_MAX_ENTRIES:
+        expired_keys = [k for k, (t, _) in _tactical_setups_cache.items() if now - t > TACTICAL_SETUPS_CACHE_TTL_SECONDS]
+        for k in expired_keys:
+            _tactical_setups_cache.pop(k, None)
+
+        # If still at capacity, evict oldest entry
+        if len(_tactical_setups_cache) >= TACTICAL_SETUPS_CACHE_MAX_ENTRIES:
+            oldest_key = min(_tactical_setups_cache.keys(), key=lambda k: _tactical_setups_cache[k][0])
+            _tactical_setups_cache.pop(oldest_key, None)
+
+    _tactical_setups_cache[cache_key] = (now, payload)
+
+
+def _clear_tactical_setups_cache() -> None:
+    """Diagnostic and testing hook to purge tactical setups cache."""
+    _tactical_setups_cache.clear()
+
+
 @router.get("/setups", tags=["Setups"])
 def get_tactical_setups(
     tickers: Optional[str] = Query(None, description="Comma-separated ticker list"),
@@ -375,6 +447,12 @@ def get_tactical_setups(
         symbols = [t.strip().upper() for t in tickers.replace(",", " ").split() if t.strip() and SYMBOL_REGEX.match(t.strip().upper())]
     else:
         symbols = DAY_TRADER_CANDIDATES if clean_role == "DAY_TRADER" else LONG_TERM_CANDIDATES
+
+    # Check bounded in-memory cache
+    cache_key = _get_tactical_setups_cache_key(clean_role, symbols)
+    cached_payload = _get_cached_tactical_setups(cache_key)
+    if cached_payload is not None:
+        return cached_payload
 
     setups = []
     for sym in symbols:
@@ -402,11 +480,13 @@ def get_tactical_setups(
             logger.warning(f"Error computing setup for {sym}: {e}")
             continue
 
-    return {
+    result_payload = {
         "userRole": clean_role,
         "totalSetups": len(setups),
         "setups": setups,
     }
+    _store_cached_tactical_setups(cache_key, result_payload)
+    return result_payload
 
 
 @router.get("/setups/{symbol}", tags=["Setups"])

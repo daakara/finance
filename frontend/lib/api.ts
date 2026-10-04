@@ -1398,12 +1398,18 @@ export async function fetchScreenerGems(model: string = "all"): Promise<Screener
   };
 }
 
+/**
+ * Governed timeout for full-universe tactical setups calculation across candidate assets.
+ * Aligned with cold P95 execution budget and approved client reliability headroom (>= 5000 * 1.25, <= 30000ms).
+ */
+export const TACTICAL_SETUPS_TIMEOUT_MS = 15000;
+
 export async function fetchTacticalSetups(tickers?: string[], userRole: string = "LONG_TERM"): Promise<TradeSetupSpec[]> {
   const baseUrl = getApiBaseUrl();
   const tickerParam = tickers && tickers.length > 0 ? `&tickers=${encodeURIComponent(tickers.join(","))}` : "";
   const res = await fetch(`${baseUrl}/analytics/setups?user_role=${encodeURIComponent(userRole)}${tickerParam}`, {
     headers: ARX_API_HEADERS,
-    signal: AbortSignal.timeout(6000),
+    signal: AbortSignal.timeout(TACTICAL_SETUPS_TIMEOUT_MS),
   });
 
   if (!res.ok) {

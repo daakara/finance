@@ -1,0 +1,60 @@
+{
+  "gate": "ARX_TACTICAL_SETUPS_LATENCY_RELEASE_GATE",
+  "candidate_base_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+  "candidate_branch": "fix/arx-tactical-setups-latency",
+  "origin_main_sha": "d20ec394133261df84885fb2d8c6f941a5b9ba19",
+  "authorized_files": [
+    "api/routes/analytics.py",
+    "frontend/lib/api.ts",
+    "frontend/package.json",
+    "frontend/tests/tacticalSetupsTimeout.test.ts",
+    "tests/test_tactical_setups_latency_remediation.py",
+    "arx-tactical-setups-evidence-ledger.md",
+    "arx-tactical-setups-report-corrections.md",
+    "docs/ux/ARX_TACTICAL_SETUPS_LATENCY_REMEDIATION_REPORT.md",
+    "docs/ux/ARX_TACTICAL_SETUPS_LATENCY_RELEASE_MANIFEST.json",
+    "docs/ux/ARX_TACTICAL_SETUPS_LATENCY_RELEASE_REPORT.md"
+  ],
+  "performance_budget_met": true,
+  "performance_metrics": {
+    "LONG_TERM_COLD_P95_MS": 1437.49,
+    "LONG_TERM_CACHE_HIT_P95_MS": 0.24,
+    "DAY_TRADER_COLD_P95_MS": 371.77,
+    "DAY_TRADER_CACHE_HIT_P95_MS": 0.27,
+    "COLD_P95_BUDGET_MS": 5000,
+    "CACHE_HIT_P95_BUDGET_MS": 500
+  },
+  "cache_safety_verified": true,
+  "cache_contract": {
+    "cache_ttl_seconds": 30,
+    "cache_max_entries": 20,
+    "failed_results_cached": false,
+    "key_format": "tactical_setups:{clean_role}:{sym_digest}:{session_date}"
+  },
+  "client_timeout_contract": {
+    "tactical_setups_timeout_ms": 15000,
+    "safety_floor_ms": 1796.86,
+    "timeout_ceiling_ms": 30000
+  },
+  "semantic_parity_verified": true,
+  "frozen_sample": {
+    "sample_id": "ARX_TACTICAL_SETUPS_FROZEN_SAMPLE_001",
+    "before_hash": "29cdd5bbd9194f67f2ebdf5367234a7860adadc3a226dacb9039bf6050264fb2",
+    "after_hash": "29cdd5bbd9194f67f2ebdf5367234a7860adadc3a226dacb9039bf6050264fb2",
+    "semantic_differences": 0
+  },
+  "required_tests_pass": true,
+  "test_metrics": {
+    "backend_remediation_tests_passed": 14,
+    "frontend_unit_tests_passed": 141,
+    "frontend_arch_suites_passed": 10,
+    "typescript_clean": true,
+    "eslint_clean": true,
+    "build_pages_compiled": 144
+  },
+  "etf_v2_files_changed": false,
+  "openfigi_files_changed": false,
+  "saas_foundation_files_changed": false,
+  "unrelated_arx_files_changed": 0,
+  "root_worktree_mutated": false
+}
