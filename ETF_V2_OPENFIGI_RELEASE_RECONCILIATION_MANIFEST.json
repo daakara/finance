@@ -1,0 +1,186 @@
+{
+  "manifest_version": "1.0.0",
+  "artifact_type": "RELEASE_RECONCILIATION_MANIFEST",
+  "gate_name": "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_GATE",
+  "gate_verdict": "PASS_OPENFIGI_RELEASE_RECONCILIATION",
+  "predecessor_gate": "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_LIVE_GATE",
+  "predecessor_verdict": "PASS_OPENFIGI_COVERAGE_REMEDIATION_LIVE",
+  "remediation_run_id": "rem-run-77df2da0229c",
+  "implementation_release_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+  "repository_head_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+  "reconciliation_timestamp": "2026-10-04T08:52:00Z",
+  "reconciled_state": {
+    "openfigi_integration_technically_validated": true,
+    "openfigi_live_interface_validated": true,
+    "openfigi_validation_coverage_complete": true,
+    "openfigi_rate_limit_control_validated": true,
+    "openfigi_operational_persistence_validated": true,
+    "openfigi_canonical_firewall_validated": true,
+    "openfigi_production_use": "AUTHORIZED_WITHIN_FROZEN_DOWNSTREAM_ROLE",
+    "openfigi_canonical_authority": false,
+    "openfigi_population_authority": false,
+    "openfigi_denominator_authority": false,
+    "canonical_mutation": "NONE",
+    "canonical_population_completeness": "NOT_ESTABLISHED",
+    "ireland_ssga_population_completeness": "NOT_ESTABLISHED",
+    "etf_v2_denominator": "NOT_ESTABLISHED",
+    "unrestricted_openfigi_use": "NOT_AUTHORIZED"
+  },
+  "governance_lineage": [
+    {
+      "step": 1,
+      "gate_name": "ETF_V2_OPENFIGI_IMPLEMENTATION_RELEASE_GATE",
+      "verdict": "PASS_WITH_OPENFIGI_IMPLEMENTATION_RELEASE_VERIFIED",
+      "commit_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_PRODUCTION_ACTIVATION_READINESS_GATE"
+    },
+    {
+      "step": 2,
+      "gate_name": "ETF_V2_OPENFIGI_PRODUCTION_ACTIVATION_READINESS_GATE",
+      "verdict": "PASS_OPENFIGI_CONTROLLED_LIVE_VALIDATION_READY",
+      "commit_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_CONTROLLED_LIVE_INTERFACE_VALIDATION_RUNBOOK"
+    },
+    {
+      "step": 3,
+      "gate_name": "ETF_V2_OPENFIGI_RUNTIME_CREDENTIAL_INJECTION_REMEDIATION_GATE",
+      "verdict": "PASS_OPENFIGI_RUNTIME_CREDENTIAL_INJECTION_REMEDIATION",
+      "commit_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_CONTROLLED_LIVE_INTERFACE_VALIDATION_RUNBOOK"
+    },
+    {
+      "step": 4,
+      "gate_name": "ETF_V2_OPENFIGI_CONTROLLED_LIVE_INTERFACE_VALIDATION_GATE",
+      "verdict": "PASS_OPENFIGI_CONTROLLED_LIVE_INTERFACE_VALIDATION",
+      "run_id": "val-run-381c0ed7f26e",
+      "commit_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+      "requests": 6,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_LIVE_VALIDATION_RECONCILIATION_GATE"
+    },
+    {
+      "step": 5,
+      "gate_name": "ETF_V2_OPENFIGI_LIVE_VALIDATION_RECONCILIATION_GATE",
+      "verdict": "PASS_WITH_OPENFIGI_VALIDATION_COVERAGE_GAPS",
+      "commit_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_RECONCILIATION_ARTIFACT_CORRECTION_GATE"
+    },
+    {
+      "step": 6,
+      "gate_name": "ETF_V2_OPENFIGI_RECONCILIATION_ARTIFACT_CORRECTION_GATE",
+      "verdict": "PASS_OPENFIGI_RECONCILIATION_ARTIFACT_CORRECTION",
+      "commit_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_VALIDATION_COVERAGE_REMEDIATION_DESIGN_GATE"
+    },
+    {
+      "step": 7,
+      "gate_name": "ETF_V2_OPENFIGI_VALIDATION_COVERAGE_REMEDIATION_DESIGN_GATE",
+      "verdict": "PASS_OPENFIGI_VALIDATION_COVERAGE_REMEDIATION_DESIGN",
+      "commit_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_READINESS_GATE"
+    },
+    {
+      "step": 8,
+      "gate_name": "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_READINESS_GATE",
+      "verdict": "PASS_OPENFIGI_COVERAGE_REMEDIATION_READINESS",
+      "commit_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+      "requests": 0,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_LIVE_GATE"
+    },
+    {
+      "step": 9,
+      "gate_name": "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_LIVE_GATE",
+      "verdict": "PASS_OPENFIGI_COVERAGE_REMEDIATION_LIVE",
+      "run_id": "rem-run-77df2da0229c",
+      "commit_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+      "requests": 3,
+      "canonical_mutation": "NONE",
+      "successor": "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_GATE"
+    }
+  ],
+  "request_and_reservation_accounting": {
+    "first_live_run_requests": 6,
+    "first_live_run_reservations": 6,
+    "remediation_run_requests": 3,
+    "remediation_run_reservations": 3,
+    "total_authorized_validation_provider_requests": 9,
+    "total_authorized_validation_reservations": 9,
+    "unreserved_provider_requests": 0,
+    "orphaned_validation_reservations": 0,
+    "accounting_status": "RECONCILED"
+  },
+  "coverage_gaps_resolution": {
+    "GAP-01": {
+      "description": "Valid syntactic provider no-match",
+      "case_id": "REM-01-VALID-SYNTACTIC-NO-MATCH",
+      "status": "CLOSED",
+      "evidence": "Observed 0 candidates with provider warning 'No identifier found.'"
+    },
+    "GAP-02": {
+      "description": "Contextual disambiguation subset",
+      "case_id": "REM-02-CONTEXTUAL-DISAMBIGUATION-SUBSET",
+      "status": "CLOSED",
+      "evidence": "Observed 14 candidates filtered by exch_code='ER'"
+    },
+    "GAP-04": {
+      "description": "Single exact match promotion & persistence",
+      "case_id": "REM-03-SINGLE-EXACT-MATCH-PROMOTION",
+      "status": "CLOSED",
+      "evidence": "Observed 1 candidate (BBG000P71QK5, IWDA NA) persisted to operational store"
+    }
+  },
+  "operational_persistence_attestation": {
+    "total_observations": 10,
+    "first_run_observations": 7,
+    "remediation_observations": 3,
+    "total_active_mappings": 4,
+    "exact_mapping_figi": "BBG000P71QK5",
+    "exact_mapping_isin": "IE00B4L5Y983",
+    "exact_mapping_traceable_to_observation": "c601ede5-b6ec-4787-b647-66f525040725",
+    "historical_evidence_intact": true
+  },
+  "canonical_firewall_attestation": {
+    "canonical_db_sha256": "2f7f4e718d1adebfb4bf5ed5dd627b306fc2b44d55e5cc479e3b2fccb9cff643",
+    "canonical_backup_sha256": "7a2777d85c63d3aa1cc46c5134f8bf9a32236e671437df3dbebdc918659a2bec",
+    "canonical_snapshot_sha256": "938e0b00c4e7e5623b266ddddf6ad9eacf4614206b6525cabe1143db60cacaff",
+    "canonical_mutation": "NONE",
+    "canonical_population_changed": false,
+    "etf_v2_denominator_changed": false
+  },
+  "acceptance_matrix": {
+    "OFIGI-REL-REC01": "PASS",
+    "OFIGI-REL-REC02": "PASS",
+    "OFIGI-REL-REC03": "PASS",
+    "OFIGI-REL-REC04": "PASS",
+    "OFIGI-REL-REC05": "PASS",
+    "OFIGI-REL-REC06": "PASS",
+    "OFIGI-REL-REC07": "PASS",
+    "OFIGI-REL-REC08": "PASS",
+    "OFIGI-REL-REC09": "PASS",
+    "OFIGI-REL-REC10": "PASS",
+    "OFIGI-REL-REC11": "PASS",
+    "OFIGI-REL-REC12": "PASS",
+    "OFIGI-REL-REC13": "PASS",
+    "OFIGI-REL-REC14": "PASS",
+    "OFIGI-REL-REC15": "PASS",
+    "OFIGI-REL-REC16": "PASS",
+    "OFIGI-REL-REC17": "PASS",
+    "OFIGI-REL-REC18": "PASS",
+    "OFIGI-REL-REC19": "PASS",
+    "OFIGI-REL-REC20": "PASS"
+  },
+  "next_authorized_action": "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_GATE"
+}

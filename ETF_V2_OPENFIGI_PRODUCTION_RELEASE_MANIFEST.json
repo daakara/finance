@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-10-04T09:05:00Z",
+  "gate_name": "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_GATE",
+  "predecessor_gate": "PASS_OPENFIGI_RELEASE_RECONCILIATION",
+  "base_sha": "8a00d0143291ce7a43843ff983668b2462e376eb",
+  "implementation_release_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+  "production_role": "DOWNSTREAM_OPERATIONAL_SYMBOLOGY_CORROBORATION_AND_ENRICHMENT_ONLY",
+  "canonical_authority": false,
+  "population_authority": false,
+  "denominator_authority": false,
+  "core_openfigi_files": [
+    "scripts/research/etf_v2/openfigi_classifier.py",
+    "scripts/research/etf_v2/openfigi_client.py",
+    "scripts/research/etf_v2/openfigi_models.py",
+    "scripts/research/etf_v2/openfigi_normalizer.py",
+    "scripts/research/etf_v2/openfigi_operational_schema.sql",
+    "scripts/research/etf_v2/openfigi_persistence.py",
+    "scripts/research/etf_v2/openfigi_rate_limiter.py",
+    "scripts/research/etf_v2/openfigi_service.py"
+  ],
+  "test_files": [
+    "tests/test_etf_v2_openfigi_contract.py",
+    "tests/test_etf_v2_openfigi_global_rate_limiter.py",
+    "tests/fixtures/openfigi/01_single_exact_match.json",
+    "tests/fixtures/openfigi/02_warning_no_match.json",
+    "tests/fixtures/openfigi/03_legacy_error_no_match.json",
+    "tests/fixtures/openfigi/04_multiple_candidates_unresolved.json",
+    "tests/fixtures/openfigi/05_multiple_candidates_resolved_by_context.json",
+    "tests/fixtures/openfigi/06_malformed_envelope.json",
+    "tests/fixtures/openfigi/07_response_length_mismatch.json",
+    "tests/fixtures/openfigi/08_auth_failure_401.json",
+    "tests/fixtures/openfigi/09_rate_limit_429.json",
+    "tests/fixtures/openfigi/10_server_error_500.json",
+    "tests/fixtures/openfigi/11_server_error_502.json",
+    "tests/fixtures/openfigi/12_server_error_503.json",
+    "tests/fixtures/openfigi/13_server_error_504.json",
+    "tests/fixtures/openfigi/14_mixed_batch_interleaved.json",
+    "tests/fixtures/openfigi/15_null_optional_fields.json",
+    "tests/fixtures/openfigi/16_unexpected_provider_error.json"
+  ],
+  "governance_files": [
+    "ETF_V2_OPENFIGI_IMPLEMENTATION_RELEASE_MANIFEST.json",
+    "ETF_V2_OPENFIGI_IMPLEMENTATION_RELEASE_REPORT.md",
+    "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_MANIFEST.json",
+    "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_REPORT.md",
+    "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_MANIFEST.json",
+    "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_REPORT.md"
+  ],
+  "candidate_files": [
+    "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_MANIFEST.json",
+    "ETF_V2_OPENFIGI_RELEASE_RECONCILIATION_REPORT.md",
+    "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_MANIFEST.json",
+    "ETF_V2_OPENFIGI_PRODUCTION_RELEASE_REPORT.md"
+  ],
+  "excluded_validation_files": [
+    "data/operational/openfigi_operational.db",
+    "ETF_V2_OPENFIGI_LIVE_VALIDATION_RESULT_val-run-381c0ed7f26e.json",
+    "ETF_V2_OPENFIGI_COVERAGE_REMEDIATION_RESULT_rem-run-77df2da0229c.json",
+    "scripts/research/etf_v2/run_openfigi_controlled_live_validation.py",
+    "scripts/research/etf_v2/run_openfigi_coverage_remediation_validation.py"
+  ],
+  "runtime_configuration_requirements": [
+    {
+      "key": "OPENFIGI_API_KEY",
+      "required": true,
+      "source": "Process environment variable / Railway container secrets",
+      "exposure_policy": "STRICTLY_REDACTED"
+    },
+    {
+      "key": "OPENFIGI_RATE_LIMIT_DB",
+      "required": false,
+      "default": "data/operational/openfigi_operational.db",
+      "durability_policy": "EXT4_PERSISTENT_VOLUME_OR_CONTAINER_LOCAL"
+    }
+  ],
+  "canonical_fingerprints": {
+    "db": {
+      "path": "data/canonical/etf_v2_canonical_population.db",
+      "sha256": "2f7f4e718d1adebfb4bf5ed5dd627b306fc2b44d55e5cc479e3b2fccb9cff643",
+      "integrity": "ok"
+    },
+    "backup": {
+      "path": "data/canonical/etf_v2_canonical_population_backup.db",
+      "sha256": "7a2777d85c63d3aa1cc46c5134f8bf9a32236e671437df3dbebdc918659a2bec",
+      "integrity": "ok"
+    },
+    "snapshot": {
+      "path": "data/canonical/etf_v2_canonical_population_snapshot.json",
+      "sha256": "938e0b00c4e7e5623b266ddddf6ad9eacf4614206b6525cabe1143db60cacaff"
+    }
+  },
+  "rate_limit_policy": {
+    "ceiling": 20,
+    "window_seconds": 60,
+    "scope": "GLOBAL_MULTI_PROCESS",
+    "implementation": "GlobalSQLiteRateLimiter"
+  }
+}
