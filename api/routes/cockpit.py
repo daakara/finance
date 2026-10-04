@@ -18,13 +18,30 @@ import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Response, Header, Query, HTTPException, status
+from fastapi import APIRouter, Response, Header, Query, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+
+from api.context.request_context import RequestContext
+from api.context.resolver import resolve_request_context
+from api.services.cockpit_service import CockpitApplicationService
+from api.services.authorizer import DefaultWorkspaceAuthorizer
+from api.services.entitlement_resolver import DefaultEntitlementResolver
 
 logger = logging.getLogger("api.cockpit")
 router = APIRouter()
 history_db = HistoryDatabaseEngine()
+
+cockpit_service = CockpitApplicationService(
+    authorizer=DefaultWorkspaceAuthorizer(),
+    entitlement_resolver=DefaultEntitlementResolver(),
+    db_engine=history_db,
+)
+
+PRIVATE_CACHE_HEADERS = {
+    "Cache-Control": "private, no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+}
 
 
 class UserProfilePayload(BaseModel):
@@ -73,6 +90,7 @@ def get_unified_cockpit_state(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     profile_id: Optional[str] = Query(None, description="Profile Record Selector"),
     subject_id: Optional[str] = Query(None, description="Subject Selector Alias"),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Fetch authoritative CQRS Unified Cockpit Read Model for the specified record selector.
     
@@ -82,24 +100,29 @@ def get_unified_cockpit_state(
     - 200 OK with explicit UNAVAILABLE state if profile selector has no persisted records.
     - Zero fabricated default numbers (no fake 70/75/65 triad, no fake 88/70 confidence).
     """
-    # Enforce private non-shared cache policy on personal state
+    # Enforce private non-shared cache policy on personal state (INV-SAAS-02)
     response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Vary"] = "X-Profile-Id, X-User-Id"
 
-    sel_id = _resolve_profile_selector(x_profile_id, x_user_id, profile_id, subject_id)
+    sel_id = context.actor_id or "default"
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    # Query persistent SQLite database
+    # Query persistent SQLite database via CockpitApplicationService boundary
     try:
-        profile = history_db.get_user_profile(sel_id)
-        holdings = history_db.get_user_portfolio(sel_id)
-        actions = history_db.get_user_actions(sel_id)
+        state = cockpit_service.get_cockpit_state(context)
+        profile = state.get("profile") or None
+        holdings = state.get("holdings") or []
+        actions = state.get("actions") or []
+    except PermissionError as pe:
+        logger.warning(f"Permission denied reading cockpit state for context {context}: {pe}")
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error reading state for selector {sel_id}: {e}")
+        logger.error(f"Database error reading state for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database error reading cockpit state.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
     # If selector has no records, return explicit UNAVAILABLE state (DO NOT invent a fake person)
@@ -354,11 +377,13 @@ def update_user_profile(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     profile_id: Optional[str] = Query(None),
     subject_id: Optional[str] = Query(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Create or update profile records in persistent store. Zero auth required."""
     response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
-    sel_id = _resolve_profile_selector(x_profile_id, x_user_id, profile_id, subject_id)
+    response.headers["Pragma"] = "no-cache"
 
+    sel_id = context.actor_id or "default"
     profile_dict = {
         "name": payload.name or sel_id,
         "role": payload.role or "Investor",
@@ -370,28 +395,16 @@ def update_user_profile(
     }
 
     try:
-        success = history_db.save_user_profile(sel_id, profile_dict)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to persist profile to SQLite store.",
-            )
-    except HTTPException:
-        raise
+        return cockpit_service.update_profile(context, profile_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error persisting profile for {sel_id}: {e}")
+        logger.error(f"Database error persisting profile for context {context}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist profile to SQLite store.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
-
-    return {
-        "status": "SUCCESS",
-        "message": f"Profile persisted for record selector '{sel_id}'.",
-        "profileId": sel_id,
-        "userId": sel_id,
-        "updatedAt": datetime.now(timezone.utc).isoformat(),
-    }
 
 
 @router.post("/actions", status_code=status.HTTP_201_CREATED, tags=["Unified Cockpit"])
@@ -402,32 +415,24 @@ def add_user_action(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     profile_id: Optional[str] = Query(None),
     subject_id: Optional[str] = Query(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Add or update an action item for the specified profile selector."""
     response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
-    sel_id = _resolve_profile_selector(x_profile_id, x_user_id, profile_id, subject_id)
+    response.headers["Pragma"] = "no-cache"
 
     try:
-        success = history_db.save_user_action(sel_id, payload.dict())
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to persist action item to SQLite store.",
-            )
-    except HTTPException:
-        raise
+        action_dict = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
+        return cockpit_service.create_action(context, action_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error persisting action item for {sel_id}: {e}")
+        logger.error(f"Database error persisting action item for context {context}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist action item to SQLite store.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
-
-    return {
-        "status": "SUCCESS",
-        "message": f"Action item '{payload.id}' saved for selector '{sel_id}'.",
-        "actionId": payload.id,
-    }
 
 
 @router.post("/action", status_code=status.HTTP_201_CREATED, tags=["Unified Cockpit"], include_in_schema=False)
@@ -438,6 +443,7 @@ def add_user_action_singular(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     profile_id: Optional[str] = Query(None),
     subject_id: Optional[str] = Query(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Singular alias for add_user_action."""
     return add_user_action(
@@ -447,4 +453,5 @@ def add_user_action_singular(
         x_user_id=x_user_id,
         profile_id=profile_id,
         subject_id=subject_id,
+        context=context,
     )

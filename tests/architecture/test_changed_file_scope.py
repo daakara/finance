@@ -20,10 +20,13 @@ import pytest
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 EXPECTED_BASE_SHA = "d20ec394133261df84885fb2d8c6f941a5b9ba19"
 
-AUTHORIZED_PREFIXES = (
+AUTHORIZED_PATHS = (
     "api/context/",
     "api/capabilities/",
     "api/services/",
+    "api/routes/portfolio.py",
+    "api/routes/journal.py",
+    "api/routes/cockpit.py",
     "frontend/lib/saas/",
     "tests/saas/",
     "tests/architecture/",
@@ -52,25 +55,25 @@ def _get_changed_and_untracked_files():
 
 
 def test_changed_files_within_authorized_scope():
-    """Verify all changed and untracked files match the authorized Phase 1 prefix list."""
+    """Verify all changed and untracked files match the authorized Phase 1F-B scope."""
     all_files = _get_changed_and_untracked_files()
     assert len(all_files) > 0, "Expected changed/new files for Phase 1 implementation."
 
     unauthorized_files = []
     for f in all_files:
-        if not any(f.startswith(prefix) for prefix in AUTHORIZED_PREFIXES):
+        if not any(f.startswith(p) or f == p for p in AUTHORIZED_PATHS):
             unauthorized_files.append(f)
 
     assert len(unauthorized_files) == 0, (
-        f"Unauthorized files detected outside Phase 1 scope:\n"
+        f"Unauthorized files detected outside Phase 1F-B scope:\n"
         + "\n".join(unauthorized_files)
     )
 
 
 def test_no_protected_quant_or_etf_files_in_diff():
-    """Verify zero quant, ETF V2, OpenFIGI, or existing route files appear in git status."""
+    """Verify zero quant, ETF V2, OpenFIGI, or unapproved route files appear in git diff/status."""
     all_files = _get_changed_and_untracked_files()
-    forbidden_tokens = ["analyst_dashboard", "engines", "etf", "openfigi", "api/routes/cockpit", "database"]
+    forbidden_tokens = ["analyst_dashboard", "engines", "etf", "openfigi", "database"]
 
     for f in all_files:
         f_lower = f.lower()
@@ -78,3 +81,11 @@ def test_no_protected_quant_or_etf_files_in_diff():
             # Only forbidden outside tests/architecture or tests/saas
             if not f.startswith("tests/architecture/") and not f.startswith("tests/saas/"):
                 assert tok not in f_lower, f"Forbidden path modified/created: {f}"
+
+        # Enforce that no route outside the 3 authorized private routes is touched
+        if f.startswith("api/routes/"):
+            assert f in (
+                "api/routes/portfolio.py",
+                "api/routes/journal.py",
+                "api/routes/cockpit.py",
+            ), f"Unauthorized route file modified: {f}"

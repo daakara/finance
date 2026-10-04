@@ -64,13 +64,19 @@ def test_no_database_migrations_added():
         ), f"Migration file detected: {f}"
 
 
-def test_no_existing_routes_modified():
-    """Verify existing API routes (e.g., analytics.py) are untouched."""
+def test_no_unauthorized_routes_modified():
+    """Verify only explicitly authorized private routes were modified, and all public routes remain untouched."""
     cmd = ["git", "diff", "--name-only", EXPECTED_BASE_SHA, "api/routes"]
     proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
     assert proc.returncode == 0
-    diff_output = proc.stdout.strip()
-    assert diff_output == "", f"Existing api/routes files were modified:\n{diff_output}"
+    modified_routes = [f.strip().replace("\\", "/") for f in proc.stdout.splitlines() if f.strip()]
+    authorized_routes = {
+        "api/routes/portfolio.py",
+        "api/routes/journal.py",
+        "api/routes/cockpit.py",
+    }
+    for route in modified_routes:
+        assert route in authorized_routes, f"Unauthorized route file modified: {route}"
 
 
 def test_no_frontend_pages_or_components_modified():

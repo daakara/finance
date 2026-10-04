@@ -1,16 +1,31 @@
-"""FastAPI Router for Journal Trade Executions & Authoritative Behavioral Risk Telemetry."""
+"""FastAPI Router for Journal Trade Executions & Authoritative Behavioral Risk Telemetry.
+
+Migrated to JournalApplicationService boundary in Phase 1F-B.
+"""
 
 import re
 import logging
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Query, Response, Header
+from fastapi import APIRouter, HTTPException, Query, Response, Header, Depends
 from pydantic import BaseModel, Field
+
 from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+from api.context.request_context import RequestContext
+from api.context.resolver import resolve_request_context
+from api.services.journal_service import JournalApplicationService
+from api.services.authorizer import DefaultWorkspaceAuthorizer
+from api.services.entitlement_resolver import DefaultEntitlementResolver
 
 logger = logging.getLogger("api.routes.journal")
 
 router = APIRouter()
 history_db = HistoryDatabaseEngine()
+
+journal_service = JournalApplicationService(
+    authorizer=DefaultWorkspaceAuthorizer(),
+    entitlement_resolver=DefaultEntitlementResolver(),
+    db_engine=history_db,
+)
 
 SYMBOL_REGEX = re.compile(r"^[A-Z0-9.\-_]{1,16}$")
 
@@ -71,31 +86,37 @@ class RecordCloseRequest(BaseModel):
     notes: Optional[str] = Field(None, description="Closing notes or post-trade reflection")
 
 
-def _resolve_user_id(x_user_id: Optional[str] = Header(None)) -> str:
-    """Derive user or session identifier from header or default."""
-    if x_user_id and x_user_id.strip():
-        cleaned = re.sub(r"[^a-zA-Z0-9_\-]", "", x_user_id.strip())
-        if cleaned:
-            return cleaned[:64]
-    return "default_user"
+PRIVATE_CACHE_HEADERS = {
+    "Cache-Control": "private, no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+}
+
+
+def _set_private_cache_headers(response: Optional[Response]) -> None:
+    """Enforce private non-shared cache policy (INV-SAAS-02)."""
+    if response is not None and hasattr(response, "headers"):
+        response.headers["Cache-Control"] = PRIVATE_CACHE_HEADERS["Cache-Control"]
+        response.headers["Pragma"] = PRIVATE_CACHE_HEADERS["Pragma"]
 
 
 @router.get("/telemetry", response_model=Dict[str, Any])
 def get_risk_telemetry(
     response: Response = None,
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Retrieve authoritative behavioral risk telemetry derived directly from persistent trades and portfolio."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
     try:
-        return history_db.get_risk_telemetry(user_id)
+        return journal_service.get_telemetry(context)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error calculating risk telemetry for {user_id}: {e}")
+        logger.error(f"Database error calculating risk telemetry for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure deriving behavioral risk telemetry.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
 
@@ -104,18 +125,20 @@ def get_trades(
     response: Response = None,
     limit: int = Query(50, ge=1, le=500),
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Retrieve chronological trade log for the user."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "private, no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
     try:
-        return history_db.get_journal_trades(user_id, limit=limit)
+        return journal_service.get_trades(context, limit=limit)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error retrieving journal trades for {user_id}: {e}")
+        logger.error(f"Database error retrieving journal trades for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure retrieving trade logs.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
 
@@ -124,32 +147,35 @@ def log_trade(
     trade: JournalTradeItem,
     response: Response = None,
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Record an executed trade plan in the persistent journal."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
 
     sym = trade.symbol.strip().upper()
     if not SYMBOL_REGEX.match(sym):
-        raise HTTPException(status_code=400, detail="Invalid symbol format.")
+        raise HTTPException(status_code=400, detail="Invalid symbol format.", headers=PRIVATE_CACHE_HEADERS)
 
-    status = trade.status.strip().upper()
-    if status not in ("OPEN", "CLOSED"):
-        raise HTTPException(status_code=400, detail="Invalid trade lifecycle status. Must be 'OPEN' or 'CLOSED'.")
+    status_str = trade.status.strip().upper()
+    if status_str not in ("OPEN", "CLOSED"):
+        raise HTTPException(status_code=400, detail="Invalid trade lifecycle status. Must be 'OPEN' or 'CLOSED'.", headers=PRIVATE_CACHE_HEADERS)
+
+    trade_dict = trade.model_dump() if hasattr(trade, "model_dump") else trade.dict()
+    trade_dict["symbol"] = sym
+    trade_dict["status"] = status_str
 
     try:
-        trade_dict = trade.model_dump() if hasattr(trade, "model_dump") else trade.dict()
-        trade_dict["symbol"] = sym
-        trade_dict["status"] = status
-        return history_db.save_journal_trade(user_id, trade_dict)
+        return journal_service.record_trade(context, trade_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error logging trade for {user_id}: {e}")
+        logger.error(f"Database error logging trade for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure saving trade log.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
 
@@ -158,27 +184,30 @@ def record_fill(
     fill: RecordFillRequest,
     response: Response = None,
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Record an actual broker execution fill in the persistent journal and sync active portfolio holding."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
 
     sym = fill.symbol.strip().upper()
     if not SYMBOL_REGEX.match(sym):
-        raise HTTPException(status_code=400, detail="Invalid symbol format.")
+        raise HTTPException(status_code=400, detail="Invalid symbol format.", headers=PRIVATE_CACHE_HEADERS)
+
+    fill_dict = fill.model_dump() if hasattr(fill, "model_dump") else fill.dict()
+    fill_dict["symbol"] = sym
 
     try:
-        fill_dict = fill.model_dump() if hasattr(fill, "model_dump") else fill.dict()
-        fill_dict["symbol"] = sym
-        return history_db.record_trade_fill(user_id, fill_dict)
+        return journal_service.record_fill(context, fill_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error recording fill for {user_id}: {e}")
+        logger.error(f"Database error recording fill for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure recording trade fill.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
 
@@ -187,31 +216,34 @@ def record_exit(
     exit_req: RecordExitRequest,
     response: Response = None,
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Record a partial scale-out or complete exit on an active open position."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
 
     if not exit_req.tradeId and not exit_req.symbol:
-        raise HTTPException(status_code=400, detail="Either tradeId or symbol must be specified.")
+        raise HTTPException(status_code=400, detail="Either tradeId or symbol must be specified.", headers=PRIVATE_CACHE_HEADERS)
 
     sym = exit_req.symbol.strip().upper() if exit_req.symbol else None
     if sym and not SYMBOL_REGEX.match(sym):
-        raise HTTPException(status_code=400, detail="Invalid symbol format.")
+        raise HTTPException(status_code=400, detail="Invalid symbol format.", headers=PRIVATE_CACHE_HEADERS)
+
+    exit_dict = exit_req.model_dump() if hasattr(exit_req, "model_dump") else exit_req.dict()
+    if sym:
+        exit_dict["symbol"] = sym
 
     try:
-        exit_dict = exit_req.model_dump() if hasattr(exit_req, "model_dump") else exit_req.dict()
-        if sym:
-            exit_dict["symbol"] = sym
-        return history_db.record_trade_exit(user_id, exit_dict)
+        return journal_service.record_exit(context, exit_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error recording exit for {user_id}: {e}")
+        logger.error(f"Database error recording exit for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure recording trade exit.",
+            headers=PRIVATE_CACHE_HEADERS,
         )
 
 
@@ -220,31 +252,32 @@ def record_close(
     close_req: RecordCloseRequest,
     response: Response = None,
     x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
 ):
     """Convenience endpoint to close 100% of an active open holding."""
-    if response is not None and hasattr(response, "headers"):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    user_id = _resolve_user_id(x_user_id)
+    _set_private_cache_headers(response)
 
     if not close_req.tradeId and not close_req.symbol:
-        raise HTTPException(status_code=400, detail="Either tradeId or symbol must be specified.")
+        raise HTTPException(status_code=400, detail="Either tradeId or symbol must be specified.", headers=PRIVATE_CACHE_HEADERS)
 
     sym = close_req.symbol.strip().upper() if close_req.symbol else None
     if sym and not SYMBOL_REGEX.match(sym):
-        raise HTTPException(status_code=400, detail="Invalid symbol format.")
+        raise HTTPException(status_code=400, detail="Invalid symbol format.", headers=PRIVATE_CACHE_HEADERS)
+
+    close_dict = close_req.model_dump() if hasattr(close_req, "model_dump") else close_req.dict()
+    if sym:
+        close_dict["symbol"] = sym
 
     try:
-        close_dict = close_req.model_dump() if hasattr(close_req, "model_dump") else close_req.dict()
-        if sym:
-            close_dict["symbol"] = sym
-        # shares=None in record_trade_exit defaults to all parent remaining shares
-        close_dict["shares"] = None
-        return history_db.record_trade_exit(user_id, close_dict)
+        return journal_service.record_close(context, close_dict)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe), headers=PRIVATE_CACHE_HEADERS)
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve), headers=PRIVATE_CACHE_HEADERS)
     except Exception as e:
-        logger.error(f"Database error closing position for {user_id}: {e}")
+        logger.error(f"Database error closing position for context {context}: {e}")
         raise HTTPException(
             status_code=500,
             detail="Persistent database failure closing position.",
+            headers=PRIVATE_CACHE_HEADERS,
         )

@@ -1,5 +1,5 @@
 """
-JournalApplicationService Seam for ARX SaaS Foundation (Wave 1F-A).
+JournalApplicationService Seam for ARX SaaS Foundation (Wave 1F-B).
 
 This application service defines the bounded orchestration interface for journal
 and trade lifecycle operations. It coordinates:
@@ -10,7 +10,7 @@ and trade lifecycle operations. It coordinates:
 Guarantees:
 - Pure application coordination; zero commercial plan names or pricing logic.
 - Domain purity (INV-SAAS-01): Never passes RequestContext or EntitlementSet into quant engines.
-- NOT wired to routes in Phase 1F-A (wiring reserved for Phase 1F-B).
+- Private cache safety (INV-SAAS-02): All operations operate within private boundaries.
 """
 
 from typing import Optional, Any, Dict, List
@@ -43,9 +43,14 @@ class JournalApplicationService:
                 f"Actor '{context.actor_id}' is not authorized to access workspace '{context.workspace_id}'."
             )
 
+    def _get_storage_selector(self, context: RequestContext) -> str:
+        """Derive storage selector for the pre-tenancy database compatibility seam."""
+        return context.actor_id or "default_user"
+
     def get_trades(
         self,
         context: RequestContext,
+        limit: int = 50,
         status: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
@@ -58,9 +63,12 @@ class JournalApplicationService:
         if not entitlements.can("journal.read"):
             raise PermissionError("Workspace is not entitled to capability 'journal.read'.")
 
-        if self.db_engine is not None and hasattr(self.db_engine, "get_user_trades"):
-            selector = context.actor_id or context.workspace_id
-            return self.db_engine.get_user_trades(selector, status=status)
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "get_journal_trades"):
+                return self.db_engine.get_journal_trades(selector, limit=limit)
+            elif hasattr(self.db_engine, "get_user_trades"):
+                return self.db_engine.get_user_trades(selector, status=status)
 
         return []
 
@@ -79,9 +87,12 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
-        if self.db_engine is not None and hasattr(self.db_engine, "log_trade"):
-            selector = context.actor_id or context.workspace_id
-            return self.db_engine.log_trade(selector, trade_data)
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "save_journal_trade"):
+                return self.db_engine.save_journal_trade(selector, trade_data)
+            elif hasattr(self.db_engine, "log_trade"):
+                return self.db_engine.log_trade(selector, trade_data)
 
         return {
             "status": "success",
@@ -104,15 +115,56 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
-        if self.db_engine is not None and hasattr(self.db_engine, "record_fill"):
-            selector = context.actor_id or context.workspace_id
-            return self.db_engine.record_fill(selector, fill_data)
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "record_trade_fill"):
+                return self.db_engine.record_trade_fill(selector, fill_data)
+            elif hasattr(self.db_engine, "record_fill"):
+                return self.db_engine.record_fill(selector, fill_data)
 
         return {
             "status": "success",
             "workspace_id": context.workspace_id,
             "fill": fill_data,
         }
+
+    def record_exit(
+        self,
+        context: RequestContext,
+        exit_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Record a trade exit or partial position reduction.
+        Enforces workspace access and 'journal.write' capability.
+        """
+        self._verify_workspace_access(context)
+
+        entitlements = self.entitlement_resolver.resolve(context)
+        if not entitlements.can("journal.write"):
+            raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
+
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None and hasattr(self.db_engine, "record_trade_exit"):
+            return self.db_engine.record_trade_exit(selector, exit_data)
+
+        return {
+            "status": "success",
+            "workspace_id": context.workspace_id,
+            "exit": exit_data,
+        }
+
+    def record_close(
+        self,
+        context: RequestContext,
+        close_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Close 100% of an active holding.
+        Enforces workspace access and 'journal.write' capability.
+        """
+        close_data_copy = dict(close_data)
+        close_data_copy["shares"] = None
+        return self.record_exit(context, close_data_copy)
 
     def close_trade(
         self,
@@ -130,9 +182,14 @@ class JournalApplicationService:
         if not entitlements.can("journal.write"):
             raise PermissionError("Workspace is not entitled to capability 'journal.write'.")
 
-        if self.db_engine is not None and hasattr(self.db_engine, "close_trade"):
-            selector = context.actor_id or context.workspace_id
-            return self.db_engine.close_trade(selector, trade_id, close_data)
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "close_trade"):
+                return self.db_engine.close_trade(selector, trade_id, close_data)
+            elif hasattr(self.db_engine, "record_trade_exit"):
+                exit_payload = dict(close_data)
+                exit_payload["tradeId"] = trade_id
+                return self.db_engine.record_trade_exit(selector, exit_payload)
 
         return {
             "status": "success",
@@ -152,9 +209,12 @@ class JournalApplicationService:
         if not entitlements.can("journal.read"):
             raise PermissionError("Workspace is not entitled to capability 'journal.read'.")
 
-        if self.db_engine is not None and hasattr(self.db_engine, "get_journal_telemetry"):
-            selector = context.actor_id or context.workspace_id
-            return self.db_engine.get_journal_telemetry(selector)
+        selector = self._get_storage_selector(context)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "get_risk_telemetry"):
+                return self.db_engine.get_risk_telemetry(selector)
+            elif hasattr(self.db_engine, "get_journal_telemetry"):
+                return self.db_engine.get_journal_telemetry(selector)
 
         return {
             "workspace_id": context.workspace_id,

@@ -107,13 +107,20 @@ def test_request_context_ast_no_quant_imports():
             assert not mod.startswith("engines"), f"Prohibited import: {mod}"
 
 
-def test_no_existing_routes_consume_request_context():
-    """Assert RequestContext is NOT yet passed to or imported by existing routes."""
+def test_no_public_routes_consume_request_context():
+    """Assert RequestContext is NEVER imported by public context-free routes (INV-SAAS-05)."""
     routes_dir = os.path.join(os.path.dirname(__file__), "..", "..", "api", "routes")
+    authorized_private_routes = {"portfolio.py", "journal.py", "cockpit.py"}
     for root, _, files in os.walk(routes_dir):
         for f in files:
-            if f.endswith(".py"):
-                path = os.path.join(root, f)
-                with open(path, "r", encoding="utf-8") as fp:
-                    content = fp.read()
-                    assert "RequestContext" not in content, f"RequestContext leaked into existing route: {f}"
+            if f.endswith(".py") and f != "__init__.py":
+                if f not in authorized_private_routes:
+                    path = os.path.join(root, f)
+                    with open(path, "r", encoding="utf-8") as fp:
+                        content = fp.read()
+                        assert "RequestContext" not in content, f"RequestContext leaked into public/unrewired route: {f}"
+                else:
+                    path = os.path.join(root, f)
+                    with open(path, "r", encoding="utf-8") as fp:
+                        content = fp.read()
+                        assert "RequestContext" in content, f"RequestContext expected in authorized private route: {f}"

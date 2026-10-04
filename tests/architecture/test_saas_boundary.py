@@ -56,15 +56,37 @@ def _check_route_ast_for_saas(route_rel_path: str):
     )
 
 
-def test_all_existing_routes_boundary_isolation():
-    """Verify all files in api/routes/ are completely isolated from SaaS context and entitlements."""
+REWIRED_PRIVATE_ROUTES = {"portfolio.py", "journal.py", "cockpit.py"}
+
+
+def test_public_and_unrewired_routes_boundary_isolation():
+    """Verify all public and unmigrated routes in api/routes/ remain completely isolated from SaaS."""
     routes_dir = os.path.join(REPO_ROOT, "api", "routes")
     route_files = [f for f in os.listdir(routes_dir) if f.endswith(".py") and f != "__init__.py"]
     assert len(route_files) >= 5, f"Expected at least 5 route files, found {len(route_files)}"
 
     for rfile in route_files:
-        rel_path = os.path.join("api", "routes", rfile)
-        _check_route_ast_for_saas(rel_path)
+        if rfile not in REWIRED_PRIVATE_ROUTES:
+            rel_path = os.path.join("api", "routes", rfile)
+            _check_route_ast_for_saas(rel_path)
+
+
+def test_rewired_private_routes_use_dedicated_application_services():
+    """Verify rewired private routes correctly integrate with their application service seams."""
+    routes_dir = os.path.join(REPO_ROOT, "api", "routes")
+    expected_service_wiring = {
+        "portfolio.py": ("PortfolioApplicationService", "portfolio_service"),
+        "journal.py": ("JournalApplicationService", "journal_service"),
+        "cockpit.py": ("CockpitApplicationService", "cockpit_service"),
+    }
+    for rfile, (service_cls, service_inst) in expected_service_wiring.items():
+        rel_path = os.path.join(routes_dir, rfile)
+        with open(rel_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert service_cls in content, f"Expected {service_cls} in {rfile}"
+        assert service_inst in content, f"Expected {service_inst} in {rfile}"
+        assert "RequestContext" in content, f"Expected RequestContext in {rfile}"
+        assert "resolve_request_context" in content, f"Expected resolve_request_context in {rfile}"
 
 
 def test_request_context_contract_integrity():

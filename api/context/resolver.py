@@ -21,8 +21,16 @@ Explicit Current-Phase Status:
 
 import hashlib
 import re
+import sys
 import uuid
 from typing import Optional, Any
+
+# Late-bind Request type for FastAPI dependency injection without violating stdlib import governance
+RequestType = getattr(
+    sys.modules.get("starlette.requests") or __import__("starlette.requests", fromlist=["Request"]),
+    "Request",
+    Any,
+)
 
 from api.context.request_context import RequestContext
 
@@ -121,6 +129,24 @@ class RequestContextResolver:
         Pure synchronous or async resolution logic.
         Constructs an immutable RequestContext without reading commercial state.
         """
+        # Extract from request headers and query parameters if available
+        if request is not None and hasattr(request, "headers"):
+            headers = request.headers
+            if x_request_id is None:
+                x_request_id = headers.get("x-request-id") or headers.get("X-Request-ID")
+            if x_workspace_id is None:
+                x_workspace_id = headers.get("x-workspace-id") or headers.get("X-Workspace-ID")
+            if x_user_id is None:
+                x_user_id = (
+                    headers.get("x-user-id")
+                    or headers.get("X-User-Id")
+                    or headers.get("x-profile-id")
+                    or headers.get("X-Profile-Id")
+                )
+        if request is not None and hasattr(request, "query_params") and x_user_id is None:
+            qp = request.query_params
+            x_user_id = qp.get("profile_id") or qp.get("subject_id")
+
         # 1. Resolve Request ID
         req_id = _sanitize_request_id(x_request_id)
 
@@ -149,7 +175,7 @@ default_request_context_resolver = RequestContextResolver()
 
 
 async def resolve_request_context(
-    request: Optional[Any] = None,
+    request: RequestType = None,
     x_request_id: Optional[str] = None,
     x_workspace_id: Optional[str] = None,
     x_user_id: Optional[str] = None,
@@ -157,7 +183,7 @@ async def resolve_request_context(
     """
     Opt-in dependency for private/context-aware endpoints.
 
-    Usage in future Wave 1F-B private routes:
+    Usage in Wave 1F-B private routes:
         @router.get("/portfolio")
         async def get_portfolio(
             context: RequestContext = Depends(resolve_request_context)

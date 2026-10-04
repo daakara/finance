@@ -1,5 +1,5 @@
 """
-CockpitApplicationService Seam for ARX SaaS Foundation (Wave 1F-A).
+CockpitApplicationService Seam for ARX SaaS Foundation (Wave 1F-B).
 
 This application service defines the bounded orchestration interface for the unified
 cockpit experience. It coordinates:
@@ -11,9 +11,10 @@ cockpit experience. It coordinates:
 Guarantees:
 - Pure application coordination; zero commercial plan names or pricing logic.
 - Domain purity (INV-SAAS-01): Never passes RequestContext or EntitlementSet into quant engines.
-- NOT wired to routes in Phase 1F-A (wiring reserved for Phase 1F-B).
+- Private cache safety (INV-SAAS-02): All operations operate within private boundaries.
 """
 
+from datetime import datetime, timezone
 from typing import Optional, Any, Dict, List
 
 from api.context.request_context import RequestContext
@@ -44,31 +45,36 @@ class CockpitApplicationService:
                 f"Actor '{context.actor_id}' is not authorized to access workspace '{context.workspace_id}'."
             )
 
+    def _get_storage_selector(self, context: RequestContext) -> str:
+        """Derive storage selector for actor profile records (Strategy A: ACTOR_PROFILE_DATA)."""
+        return context.actor_id or "default"
+
     def get_cockpit_state(self, context: RequestContext) -> Dict[str, Any]:
         """
-        Retrieve unified cockpit state: actor profile resilience + workspace actions.
+        Retrieve unified cockpit state: actor profile resilience + workspace actions and holdings.
         Enforces workspace access.
         """
         self._verify_workspace_access(context)
 
-        # Actor selector (personal profile data under Strategy A)
-        actor_selector = context.actor_id or "default"
-        # Workspace selector (shared holdings/actions)
-        workspace_selector = context.workspace_id
+        sel_id = self._get_storage_selector(context)
 
-        profile_data = {}
+        profile_data: Dict[str, Any] = {}
+        holdings_data: List[Dict[str, Any]] = []
         actions_data: List[Dict[str, Any]] = []
 
         if self.db_engine is not None:
             if hasattr(self.db_engine, "get_user_profile"):
-                profile_data = self.db_engine.get_user_profile(actor_selector) or {}
+                profile_data = self.db_engine.get_user_profile(sel_id) or {}
+            if hasattr(self.db_engine, "get_user_portfolio"):
+                holdings_data = self.db_engine.get_user_portfolio(sel_id) or []
             if hasattr(self.db_engine, "get_user_actions"):
-                actions_data = self.db_engine.get_user_actions(actor_selector) or []
+                actions_data = self.db_engine.get_user_actions(sel_id) or []
 
         return {
             "actor_id": context.actor_id,
             "workspace_id": context.workspace_id,
             "profile": profile_data,
+            "holdings": holdings_data,
             "actions": actions_data,
         }
 
@@ -83,15 +89,22 @@ class CockpitApplicationService:
         """
         self._verify_workspace_access(context)
 
-        actor_selector = context.actor_id or "default"
+        sel_id = self._get_storage_selector(context)
 
-        if self.db_engine is not None and hasattr(self.db_engine, "update_user_profile"):
-            return self.db_engine.update_user_profile(actor_selector, profile_data)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "save_user_profile"):
+                success = self.db_engine.save_user_profile(sel_id, profile_data)
+                if not success:
+                    raise RuntimeError("Failed to persist profile to SQLite store.")
+            elif hasattr(self.db_engine, "update_user_profile"):
+                return self.db_engine.update_user_profile(sel_id, profile_data)
 
         return {
-            "status": "success",
-            "actor_id": actor_selector,
-            "updated_profile": profile_data,
+            "status": "SUCCESS",
+            "message": f"Profile persisted for record selector '{sel_id}'.",
+            "profileId": sel_id,
+            "userId": sel_id,
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
         }
 
     def create_action(
@@ -105,15 +118,21 @@ class CockpitApplicationService:
         """
         self._verify_workspace_access(context)
 
-        actor_selector = context.actor_id or "default"
+        sel_id = self._get_storage_selector(context)
 
-        if self.db_engine is not None and hasattr(self.db_engine, "add_user_action"):
-            return self.db_engine.add_user_action(actor_selector, action_data)
+        if self.db_engine is not None:
+            if hasattr(self.db_engine, "save_user_action"):
+                success = self.db_engine.save_user_action(sel_id, action_data)
+                if not success:
+                    raise RuntimeError("Failed to persist action item to SQLite store.")
+            elif hasattr(self.db_engine, "add_user_action"):
+                return self.db_engine.add_user_action(sel_id, action_data)
 
+        action_id = str(action_data.get("id", ""))
         return {
-            "status": "success",
-            "workspace_id": context.workspace_id,
-            "action": action_data,
+            "status": "SUCCESS",
+            "message": f"Action item '{action_id}' saved for selector '{sel_id}'.",
+            "actionId": action_id,
         }
 
     def update_action(
@@ -128,14 +147,11 @@ class CockpitApplicationService:
         """
         self._verify_workspace_access(context)
 
-        actor_selector = context.actor_id or "default"
+        sel_id = self._get_storage_selector(context)
 
         if self.db_engine is not None and hasattr(self.db_engine, "update_user_action"):
-            return self.db_engine.update_user_action(actor_selector, action_id, action_data)
+            return self.db_engine.update_user_action(sel_id, action_id, action_data)
 
-        return {
-            "status": "success",
-            "workspace_id": context.workspace_id,
-            "action_id": action_id,
-            "updated": True,
-        }
+        action_dict = dict(action_data)
+        action_dict["id"] = action_id
+        return self.create_action(context, action_dict)
