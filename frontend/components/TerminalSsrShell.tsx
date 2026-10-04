@@ -143,7 +143,7 @@ export default function TerminalSsrShell() {
             <div className="flex items-center justify-between border-b border-[#1b2434] pb-3">
               <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <span>🎯</span>
-                <span>AAPL Safe Buy & Sell Plan (Optimal Execution Ladder)</span>
+                <span>AAPL Conditional Trade Plan (Optimal Execution Ladder)</span>
               </h2>
               <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
                 PROFIT : RISK 2.15 : 1.0
@@ -156,7 +156,7 @@ export default function TerminalSsrShell() {
                 <span className="font-bold">$255.00 (+13.7%)</span>
               </div>
               <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-800/40 flex justify-between items-center text-emerald-400">
-                <span>🟢 PROFIT GOAL 1 (Sell Half Here / Risk-Free Runner)</span>
+                <span>🟢 PROFIT GOAL 1 (Sell Half Here / Trailing Runner)</span>
                 <span className="font-bold">$242.00 (+7.9%)</span>
               </div>
               <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/80 flex justify-between items-center text-cyan-300 font-bold">

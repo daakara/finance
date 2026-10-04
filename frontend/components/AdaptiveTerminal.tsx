@@ -32,6 +32,8 @@ interface AdaptiveTerminalProps {
   liveSpotPrice?: number | null;
   liveFreshness?: string;
   analysisReferencePrice?: number | null;
+  chartSlot?: React.ReactNode;
+  planSlot?: React.ReactNode;
 }
 
 export default function AdaptiveTerminal({
@@ -51,6 +53,8 @@ export default function AdaptiveTerminal({
   liveSpotPrice,
   liveFreshness,
   analysisReferencePrice,
+  chartSlot,
+  planSlot,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -129,18 +133,18 @@ export default function AdaptiveTerminal({
             <span>←</span>
             <span>Back to &ldquo;{fromGoal.replace(/_/g, " ").toUpperCase()}&rdquo; Candidates {fromCount ? `(${fromCount} saved)` : ""}</span>
           </Link>
-          <span className="text-[10px] text-slate-400 hidden sm:inline">Context & Filters Preserved</span>
+          <span className="text-xs text-slate-400 hidden sm:inline">Context & Filters Preserved</span>
         </div>
       )}
 
       {/* ⏱️ Authoritative Trading Horizon & Evidence Provenance Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 text-[11px] font-bold">Horizon:</span>
+          <span className="text-slate-400 text-xs font-bold">Horizon:</span>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold font-mono bg-[#131d2c] border border-cyan-900/60 text-cyan-300">
             <span>{userRole === "DAY_TRADER" ? "⚡ INTRADAY (Day Scalp)" : "🏛️ SWING (Multi-Day)"}</span>
           </span>
-          <span className="text-[10px] text-slate-500 hidden md:inline">
+          <span className="text-xs text-slate-500 hidden md:inline">
             (Governed by Trading Horizon switch)
           </span>
         </div>
@@ -148,7 +152,7 @@ export default function AdaptiveTerminal({
         {/* 🛡️ Evidence State Provenance Badge */}
         <div
           title={evidenceBadge.tooltip}
-          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[10px] font-mono font-semibold cursor-help transition-colors ${evidenceBadge.badgeClass}`}
+          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-xs font-mono font-semibold cursor-help transition-colors ${evidenceBadge.badgeClass}`}
         >
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-current" />
           <span>{evidenceBadge.label}</span>
@@ -165,7 +169,7 @@ export default function AdaptiveTerminal({
                 ? "Insufficient Evidence to Derive Confident Posture"
                 : "Partial Evidence: Reduced Domain Confidence"}
             </strong>
-            <p className="text-slate-300 text-[11px] font-sans leading-relaxed">
+            <p className="text-slate-300 text-xs font-sans leading-relaxed">
               {insight.terminalState.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
             </p>
           </div>
@@ -178,6 +182,8 @@ export default function AdaptiveTerminal({
           insight={insight}
           onOpenSizer={() => setIsSizerOpen(true)}
           onOpenWhy={() => setIsWhyOpen(true)}
+          chartSlot={chartSlot}
+          planSlot={planSlot}
         />
       )}
 
@@ -186,6 +192,8 @@ export default function AdaptiveTerminal({
           insight={insight}
           onOpenSizer={() => setIsSizerOpen(true)}
           onOpenWhy={() => setIsWhyOpen(true)}
+          chartSlot={chartSlot}
+          planSlot={planSlot}
         />
       )}
 
@@ -194,6 +202,8 @@ export default function AdaptiveTerminal({
           insight={insight}
           onOpenSizer={() => setIsSizerOpen(true)}
           onOpenWhy={() => setIsWhyOpen(true)}
+          chartSlot={chartSlot}
+          planSlot={planSlot}
         />
       )}
 
@@ -210,7 +220,7 @@ export default function AdaptiveTerminal({
             <button
               type="button"
               onClick={() => handleSetOwnership("NOT_OWNED")}
-              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer flex items-center justify-center ${
+              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "NOT_OWNED"
                   ? "bg-cyan-950 text-cyan-300 border border-cyan-700"
                   : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
@@ -221,7 +231,7 @@ export default function AdaptiveTerminal({
             <button
               type="button"
               onClick={() => handleSetOwnership("OWNED")}
-              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors cursor-pointer flex items-center justify-center ${
+              className={`min-h-[44px] sm:min-h-[32px] px-2.5 py-1 rounded-lg font-mono text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 ownership === "OWNED"
                   ? "bg-emerald-950 text-emerald-300 border border-emerald-700"
                   : "bg-[#111722] hover:bg-[#182232] text-slate-400 border border-[#223147]"
@@ -233,7 +243,7 @@ export default function AdaptiveTerminal({
               <button
                 type="button"
                 onClick={() => handleSetOwnership("UNKNOWN")}
-                className="min-h-[44px] sm:min-h-[32px] px-2 py-1 text-slate-500 hover:text-slate-300 text-[10px] cursor-pointer flex items-center justify-center"
+                className="min-h-[44px] sm:min-h-[32px] px-2 py-1 text-slate-500 hover:text-slate-300 text-xs cursor-pointer flex items-center justify-center"
                 title="Reset relationship"
               >
                 Reset

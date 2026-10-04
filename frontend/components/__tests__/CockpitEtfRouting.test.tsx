@@ -97,7 +97,7 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
   it("renders stock Execution panel (OptimalEntryExitCard) for canonical stock", () => {
     render(<CockpitTabRoutingHarness initialSymbol="NVDA" />);
 
-    expect(screen.getByText(/Safe Buy & Sell Plan/i)).toBeDefined();
+    expect(screen.getByText(/Conditional Trade Plan/i)).toBeDefined();
     expect(screen.queryByText(/Cost of Ownership/i)).toBeNull();
     expect(screen.queryByTestId("unresolved-execution-card")).toBeNull();
   });
@@ -106,7 +106,7 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     render(<CockpitTabRoutingHarness initialSymbol="SPY" />);
 
     expect(screen.getByText(/Cost of Ownership/i)).toBeDefined();
-    expect(screen.queryByText(/Safe Buy & Sell Plan/i)).toBeNull();
+    expect(screen.queryByText(/Conditional Trade Plan/i)).toBeNull();
     expect(screen.queryByTestId("unresolved-execution-card")).toBeNull();
   });
 
@@ -116,7 +116,7 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     expect(screen.getByTestId("unresolved-execution-card")).toBeDefined();
     expect(screen.getByText(/UNKNOWN_XYZ Execution Unresolved/i)).toBeDefined();
     expect(screen.queryByText(/Cost of Ownership/i)).toBeNull();
-    expect(screen.queryByText(/Safe Buy & Sell Plan/i)).toBeNull();
+    expect(screen.queryByText(/Conditional Trade Plan/i)).toBeNull();
   });
 
   it("suppresses corporate TraderArchetypesCard for ETFs in Smart Money tab", () => {
@@ -161,14 +161,14 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     render(<CockpitTabRoutingHarness initialSymbol="NVDA" />);
 
     // In Execution tab initially: stock
-    expect(screen.getByText(/Safe Buy & Sell Plan/i)).toBeDefined();
+    expect(screen.getByText(/Conditional Trade Plan/i)).toBeDefined();
 
     // Switch to SPY (ETF)
     fireEvent.click(screen.getByText("Select SPY"));
 
     // Execution tab now renders ETF Cost of Ownership
     expect(screen.getByText(/Cost of Ownership/i)).toBeDefined();
-    expect(screen.queryByText(/Safe Buy & Sell Plan/i)).toBeNull();
+    expect(screen.queryByText(/Conditional Trade Plan/i)).toBeNull();
 
     // Switch to Fundamentals tab: broken radar is suppressed
     fireEvent.click(screen.getByText("Tab Fundamentals"));
@@ -189,7 +189,7 @@ describe("Cockpit ETF Routing & Behavioral Boundary (Milestone P1)", () => {
     fireEvent.click(screen.getByText("Select NVDA"));
 
     // Execution tab restores stock ladder
-    expect(screen.getByText(/Safe Buy & Sell Plan/i)).toBeDefined();
+    expect(screen.getByText(/Conditional Trade Plan/i)).toBeDefined();
     expect(screen.queryByText(/Cost of Ownership/i)).toBeNull();
 
     // Switch to Fundamentals: restores factor radar
