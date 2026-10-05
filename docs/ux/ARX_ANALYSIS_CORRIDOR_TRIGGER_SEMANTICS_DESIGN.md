@@ -517,3 +517,122 @@ Until a subsequent implementation gate explicitly authorizes work, the following
 - Zero alteration of corridor calculations, stop/target geometry, actionability, scoring, or ranking.
 - Zero alteration of the quant engine or paper-trading outcome contracts.
 - Execution stops immediately upon formal gate adjudication.
+
+---
+
+## 8. Bounded Implementation & Parity Verification Report
+
+### 8.1 Gate Identification & Purpose
+
+```ini
+GATE =
+  PASS_ARX_ANALYSIS_CORRIDOR_TRIGGER_SEMANTICS_IMPLEMENTATION
+PREDECESSOR_GATE =
+  PASS_ARX_ANALYSIS_CORRIDOR_TRIGGER_SEMANTICS_RECONCILIATION
+SCOPE =
+  FRONTEND_BOUNDED_IMPLEMENTATION_AND_PARITY
+QUANT_ENGINE_CHANGED =
+  NO
+SCORING_CHANGED =
+  NO
+RANKING_CHANGED =
+  NO
+PAPER_TRADING_CONTRACT_CHANGED =
+  NO
+```
+
+### 8.2 Inventory of Modified Implementation Files
+
+| File | Subsystem | Nature of Change |
+|---|---|---|
+| `frontend/types/insight.ts` | Shared Types | Added canonical `entryMin?: number` and `entryMax?: number` to `keyLevels` interface. |
+| `frontend/lib/insightGenerator.ts` | Data Layer | Populated `entryMin` and `entryMax` in `keyLevels` directly from canonical backend `optimalExecution.optimal_entry_min` / `optimal_entry_max`. |
+| `frontend/lib/decisionHierarchyUtils.ts` | Domain Presentation | Removed `stopLoss * 1.02` and `sma50` synthetic corridor derivations; bound corridor condition directly to `kl.entryMin` and `kl.entryMax` with `watchZone` fallback. Emits fail-closed `"Accumulation Corridor Unavailable"` when bounds are absent. |
+| `frontend/app/radar/page.tsx` | Radar Surface | Removed client-invented statuses (`'NEAR_PIVOT' \| 'VOLUME_DRYUP' \| 'AWAITING_TRIGGER'`); imported canonical `ExecutionStatus`; bound `RadarAsset.executionStatus` to canonical `ExecutionStatus`; implemented `parseCanonicalExecutionStatus` and `formatRadarExecutionStatus`. |
+| `frontend/components/DayTraderPositionSizer.tsx` | Workstation Tool | Disabled `SELL / SHORT` radio input (`disabled={true}`, `aria-disabled="true"`, informative tooltip); locked active `tradeDirection` to `"LONG"`; eliminated synthetic short stop loss and profit target calculations. |
+| `frontend/components/workstation/ExecutionCorridor.tsx` | Workstation Presentation | Normalized distance wording to eliminate double negatives: replaced inverted `${((spotPrice - entryLow) / entryLow * 100).toFixed(1)}% below pivot` with `${Math.abs(...).toFixed(1)}% below corridor`. |
+| `frontend/components/__tests__/AnalysisDecisionHierarchy.test.tsx` | Test Suite | Added comprehensive invariant regression tests enforcing INV-ANALYSIS-01 through INV-ANALYSIS-08. |
+
+### 8.3 Competing Domain Logic Removed
+
+1. **Synthetic Corridor Calculations**:
+   - `decisionHierarchyUtils.ts` previously synthesized corridor bounds as `kl.stopLoss * 1.02` up to `kl.sma50` whenever `kl.watchZone` was unparseable. This completely overrode the backend's `OptimalExecutionEngine` corridor.
+   - **Resolution**: Fully removed. The component now reads `kl.entryMin` and `kl.entryMax` (populated directly from `optimal_entry_min` / `optimal_entry_max`), falling back safely to the canonical formatted `watchZone` string. If both are unpopulated, it renders a fail-closed status `"Accumulation Corridor Unavailable"`. Zero synthetic geometry is created.
+
+2. **Synthetic Radar Execution Statuses**:
+   - `radar/page.tsx` previously defined an ad-hoc union `'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'AWAITING_TRIGGER' | ...` and mapped assets into these synthetic states via heuristic client string parsing.
+   - **Resolution**: Ad-hoc union eliminated. `radar/page.tsx` imports canonical `ExecutionStatus` from `types/decisionContract.ts`. A deterministic mapper `parseCanonicalExecutionStatus` maps backend execution statuses directly, maintaining 100% vocabulary parity with Analysis.
+
+3. **Synthetic SHORT Geometry in DayTraderPositionSizer**:
+   - `DayTraderPositionSizer.tsx` previously allowed switching to `"SHORT"`, which then mathematically inverted risk math using `spotPrice + (riskPerShare)` and computed synthetic downside targets (`target15 = spot - risk * 1.5`, etc.).
+   - **Resolution**: The `SELL / SHORT` option is explicitly disabled in the UI with a descriptive tooltip explaining that ARX quantitatively models Long accumulation only. The execution state is hardcoded to `"LONG"`, eliminating all synthetic short stop and target generation.
+
+4. **Inverted Distance Wording**:
+   - `ExecutionCorridor.tsx` previously computed `(spotPrice - entryLow) / entryLow * 100` when price was below the corridor, producing a negative number (e.g. `-3.2%`), which was displayed as `"-3.2% below pivot"`.
+   - **Resolution**: Normalized to `Math.abs(...)` and formatted as `X.X% below corridor`, eliminating directional ambiguity and double negatives.
+
+### 8.4 Disposition of `entryPivot`
+
+An audit of all references to `entryPivot` across the codebase (`setups/page.tsx`, `governorSizingEngine.ts`, `orderClipboard.ts`) was completed:
+- `entryPivot` represents a scalar limit-order planning ceiling (`optimal_entry_max` / `LMT: $X`) used for order drafting and conservative share-count ceilings.
+- It does **not** act as an independent trigger price, does not trigger automated entries, and does not compete with the two-sided accumulation corridor.
+- Its role is ratified as a limit-order planning parameter.
+
+### 8.5 Verification & Test Execution Results
+
+```ini
+FRONTEND_VITEST_SUITE =
+  PASS (18 test files, 161 tests passing)
+FRONTEND_TYPECHECK_SUITE =
+  PASS (cmd.exe /c npx tsc --noEmit — 0 errors)
+BACKEND_QUANT_EXECUTION_SUITE =
+  PASS (tests/test_optimal_execution.py & test_phase2_decision_authority.py — 12 tests passing)
+GOVERNANCE_INVARIANTS_SUITE =
+  PASS (tests/governance/test_counterfactual_phase_a.py & test_counterfactual_phase_b.py — 32 tests passing)
+STATIC_COMPETING_LOGIC_AUDIT =
+  PASS (0 instances of unauthorized competing domain logic in production paths)
+WHITESPACE_AND_FORMATTING =
+  PASS (git diff --check — 0 errors)
+```
+
+### 8.6 Invariant Adherence Attestation
+
+| Invariant | Description | Verification Method | Status |
+|---|---|---|---|
+| **INV-ANALYSIS-01** | Canonical corridor authority (`OptimalExecutionEngine`) | Unit test in `AnalysisDecisionHierarchy.test.tsx` | **PASS** |
+| **INV-ANALYSIS-02** | Zero frontend corridor recalculation | Unit test & static code audit | **PASS** |
+| **INV-ANALYSIS-03** | Zero synthetic numeric trigger price | Unit test verifying absence of trigger price | **PASS** |
+| **INV-ANALYSIS-04** | Paper-trading fill decoupled from Analysis trigger | Governance separation verified | **PASS** |
+| **INV-ANALYSIS-05** | Stabilization not equated to trigger | Verified in `DecisionHierarchyEngine` | **PASS** |
+| **INV-ANALYSIS-06** | Actionability rendered strictly from canonical authority | Unit test asserting fail-closed gate | **PASS** |
+| **INV-ANALYSIS-07** | Unsupported SHORT UI disabled | Unit test asserting `disabled={true}` on short button | **PASS** |
+| **INV-ANALYSIS-08** | Distance wording free of double negatives | Unit test verifying non-negative corridor distance string | **PASS** |
+| **INV-ANALYSIS-09** | Session fallback cannot create Analysis semantics | Verified in `weeklyConfluenceSpotlightDecoupling.test.ts` | **PASS** |
+| **INV-ANALYSIS-10** | Zero alteration of backend quant, scoring, or ranking | Verified across all test suites | **PASS** |
+
+### 8.7 Formal Implementation Verdict
+
+```ini
+GATE =
+  PASS_ARX_ANALYSIS_CORRIDOR_TRIGGER_SEMANTICS_IMPLEMENTATION
+VERDICT =
+  PASS
+CORRIDOR_SEMANTICS =
+  CANONICAL_OPTIMAL_EXECUTION_BOUND
+TRIGGER_SEMANTICS =
+  STATE_BASED_READINESS_WITHOUT_NUMERIC_TRIGGER
+SHORT_SEMANTICS =
+  DISABLED_IN_UI_LONG_ONLY_AUTHORITATIVE
+QUANT_ENGINE_CHANGED =
+  NO
+SCORING_CHANGED =
+  NO
+RANKING_CHANGED =
+  NO
+PAPER_TRADING_CONTRACT_CHANGED =
+  NO
+UNAUTHORIZED_COMPETING_DOMAIN_LOGIC =
+  0
+NEXT_AUTHORIZED_ACTION =
+  AWAIT_USER_DIRECTION
+```

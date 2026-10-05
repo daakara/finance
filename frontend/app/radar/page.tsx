@@ -16,6 +16,7 @@ import { trackRadarAssetClick } from '../../lib/matomo';
 import { MASTER_ASSET_CATALOG } from '../../lib/masterCatalog';
 import { usePortfolioContext, OwnershipFilter } from '../../hooks/usePortfolioContext';
 import { RadarPortfolioBadge } from '../../components/radar/RadarPortfolioBadge';
+import { ExecutionStatus } from '../../types/decisionContract';
 
 interface RadarAsset {
   ticker: string;
@@ -29,7 +30,7 @@ interface RadarAsset {
   catalyst: string;
   categories: CanonicalRadarCategory[];
   sector: string;
-  executionStatus: 'IN_BUY_ZONE' | 'NEAR_PIVOT' | 'VOLUME_DRYUP' | 'WAITING_PULLBACK' | 'AWAITING_TRIGGER' | 'APPROACHING_TARGET' | 'UNKNOWN';
+  executionStatus: ExecutionStatus;
   screeningStatus?: string;
   screeningGeometry?: string;
   decisionState?: string;
@@ -62,6 +63,48 @@ const DEFAULT_RADAR_CAPABILITIES: RadarCapabilities = {
     rationale: "Single-asset SEC Form 4 and Congressional STOCK Act disclosures active on /smart-money; universe-level institutional accumulation screener pipeline is pending deployment.",
   },
 };
+
+function parseCanonicalExecutionStatus(raw: string): ExecutionStatus {
+  const s = raw.trim().toUpperCase();
+  if (s === 'IN_BUY_ZONE' || s === 'READY_TO_BUY') return s;
+  if (s === 'IN_BUY_ZONE_AWAITING_TRIGGER') return s;
+  if (s === 'WAITING_PULLBACK') return s;
+  if (s === 'APPROACHING_TARGET') return s;
+  if (s === 'STOPPED_OUT') return s;
+  if (s === 'INSUFFICIENT_HISTORY') return s;
+  if (s === 'UNVERIFIED_ASSET') return s;
+  if (s === 'STALE_MARKET_DATA') return s;
+  if (s.includes('BUY_ZONE') && !s.includes('AWAITING')) return 'IN_BUY_ZONE';
+  if (s.includes('AWAITING') || s.includes('TRIGGER')) return 'IN_BUY_ZONE_AWAITING_TRIGGER';
+  if (s.includes('APPROACHING') || s.includes('TARGET')) return 'APPROACHING_TARGET';
+  if (s.includes('PULLBACK') || s.includes('WAITING')) return 'WAITING_PULLBACK';
+  return 'UNKNOWN';
+}
+
+function formatRadarExecutionStatus(status: ExecutionStatus): string {
+  switch (status) {
+    case 'IN_BUY_ZONE':
+      return 'NEAR SCREENING ZONE';
+    case 'READY_TO_BUY':
+      return 'READY TO BUY';
+    case 'IN_BUY_ZONE_AWAITING_TRIGGER':
+      return 'AWAITING TRIGGER';
+    case 'APPROACHING_TARGET':
+      return 'APPROACHING TARGET';
+    case 'WAITING_PULLBACK':
+      return 'PULLBACK PENDING';
+    case 'STOPPED_OUT':
+      return 'STOPPED OUT';
+    case 'INSUFFICIENT_HISTORY':
+      return 'INSUFFICIENT HISTORY';
+    case 'UNVERIFIED_ASSET':
+      return 'UNVERIFIED ASSET';
+    case 'STALE_MARKET_DATA':
+      return 'STALE MARKET DATA';
+    default:
+      return 'UNKNOWN';
+  }
+}
 
 function RadarContent() {
   const searchParams = useSearchParams();
@@ -105,13 +148,7 @@ function RadarContent() {
             : [];
 
           const rawStatus = (gem.execution_status || gem.factor_verdict || "").toUpperCase();
-          let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
-          if (rawStatus.includes("BUY_ZONE") && !rawStatus.includes("AWAITING")) executionStatus = 'IN_BUY_ZONE';
-          else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
-          else if (rawStatus.includes("NEAR_PIVOT")) executionStatus = 'NEAR_PIVOT';
-          else if (rawStatus.includes("APPROACHING")) executionStatus = 'APPROACHING_TARGET';
-          else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
-          else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'WAITING_PULLBACK';
+          const executionStatus = parseCanonicalExecutionStatus(rawStatus);
 
           const dryUp = typeof gem.volume_dry_up === 'number' ? gem.volume_dry_up : (typeof gem.volumeDryUpPct === 'number' ? gem.volumeDryUpPct : null);
           const rvolVal = typeof gem.rvol === 'string' && gem.rvol !== 'N/A' ? gem.rvol : null;
@@ -264,12 +301,7 @@ function RadarContent() {
 
       const opt = data.optimalExecution;
       const rawStatus = (opt?.execution_status || "").toUpperCase();
-      let executionStatus: RadarAsset['executionStatus'] = 'UNKNOWN';
-      if (rawStatus.includes("BUY_ZONE") && !rawStatus.includes("AWAITING")) executionStatus = 'IN_BUY_ZONE';
-      else if (rawStatus.includes("AWAITING")) executionStatus = 'AWAITING_TRIGGER';
-      else if (rawStatus.includes("NEAR_PIVOT") || rawStatus.includes("APPROACHING")) executionStatus = 'NEAR_PIVOT';
-      else if (rawStatus.includes("DRYUP")) executionStatus = 'VOLUME_DRYUP';
-      else if (rawStatus.includes("PULLBACK") || rawStatus.includes("WAITING")) executionStatus = 'WAITING_PULLBACK';
+      const executionStatus = parseCanonicalExecutionStatus(rawStatus);
 
       const cat: CanonicalRadarCategory[] = [];
       // On-demand asset is evaluated across single-asset execution and confluence engines.
@@ -494,25 +526,13 @@ function RadarContent() {
                     shares={heroAsset ? getHolding(heroAsset.ticker)?.shares : undefined}
                   />
                   <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                    heroAsset.executionStatus === 'IN_BUY_ZONE'
+                    heroAsset.executionStatus === 'IN_BUY_ZONE' || heroAsset.executionStatus === 'READY_TO_BUY'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                      : heroAsset.executionStatus === 'NEAR_PIVOT'
+                      : heroAsset.executionStatus === 'IN_BUY_ZONE_AWAITING_TRIGGER'
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
                       : 'bg-slate-800/80 text-slate-300 border-slate-700'
                   }`}>
-                    {heroAsset.executionStatus === 'IN_BUY_ZONE'
-                      ? 'NEAR SCREENING ZONE'
-                      : heroAsset.executionStatus === 'NEAR_PIVOT'
-                      ? 'NEAR PIVOT BREAKOUT'
-                      : heroAsset.executionStatus === 'APPROACHING_TARGET'
-                      ? 'NEAR TARGET CORRIDOR'
-                      : heroAsset.executionStatus === 'WAITING_PULLBACK'
-                      ? 'PULLBACK PENDING'
-                      : heroAsset.executionStatus === 'VOLUME_DRYUP'
-                      ? 'VOLUME DRY-UP'
-                      : heroAsset.executionStatus === 'AWAITING_TRIGGER'
-                      ? 'AWAITING TRIGGER'
-                      : 'UNKNOWN'}
+                    {formatRadarExecutionStatus(heroAsset.executionStatus)}
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-slate-400">
                     Posture: Analyze for Trigger
@@ -982,22 +1002,9 @@ function RadarContent() {
                   </tr>
                 ) : (
                   filteredAssets.map((asset) => {
-                    const isNearZone = asset.executionStatus === 'IN_BUY_ZONE';
-                    const isPivot = asset.executionStatus === 'NEAR_PIVOT';
+                    const isNearZone = asset.executionStatus === 'IN_BUY_ZONE' || asset.executionStatus === 'READY_TO_BUY';
                     const isTarget = asset.executionStatus === 'APPROACHING_TARGET';
-                    const screeningLabel = isNearZone
-                      ? 'NEAR SCREENING ZONE'
-                      : isPivot
-                      ? 'NEAR PIVOT BREAKOUT'
-                      : isTarget
-                      ? 'APPROACHING TARGET'
-                      : asset.executionStatus === 'WAITING_PULLBACK'
-                      ? 'PULLBACK PENDING'
-                      : asset.executionStatus === 'VOLUME_DRYUP'
-                      ? 'VOLUME DRY-UP'
-                      : asset.executionStatus === 'AWAITING_TRIGGER'
-                      ? 'AWAITING TRIGGER'
-                      : 'UNKNOWN';
+                    const screeningLabel = formatRadarExecutionStatus(asset.executionStatus);
 
                     return (
                       <tr key={asset.ticker} className="hover:bg-slate-900/70 transition-colors group">
@@ -1023,7 +1030,7 @@ function RadarContent() {
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             isNearZone
                               ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-700/60'
-                              : isPivot
+                              : asset.executionStatus === 'IN_BUY_ZONE_AWAITING_TRIGGER'
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
                               : isTarget
                               ? 'bg-blue-950 text-blue-300 border border-blue-800'

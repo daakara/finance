@@ -21,34 +21,54 @@ export function deriveUnmetConditions(insight: QuantitativeInsight): UnmetCondit
 
   // 1. Spatial Corridor (Location)
   if (kl) {
-    const minEntry = kl.stopLoss ? kl.stopLoss * 1.02 : price * 0.95;
-    const maxEntry = kl.sma50 ? kl.sma50 : price * 1.02;
-    const lower = Math.min(minEntry, maxEntry);
-    const upper = Math.max(minEntry, maxEntry);
+    let lower: number | undefined = kl.entryMin;
+    let upper: number | undefined = kl.entryMax;
 
-    const isInCorridor = price >= lower && price <= upper;
-    if (isInCorridor) {
-      conditions.push({
-        id: "corridor",
-        category: "CORRIDOR",
-        title: "Price Inside Accumulation Corridor",
-        description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${lower.toFixed(2)} – $${upper.toFixed(2)}`}).`,
-        status: "MET",
-      });
-    } else if (price > upper) {
-      conditions.push({
-        id: "corridor",
-        category: "CORRIDOR",
-        title: "Pullback into Accumulation Corridor",
-        description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${lower.toFixed(2)} – $${upper.toFixed(2)}`}). Wait for low-volume pullback.`,
-        status: "UNMET",
-      });
+    // Fallback: parse canonical watchZone string ("$182.50 – $185.00") if entryMin/Max not explicitly provided
+    if ((lower == null || upper == null) && kl.watchZone && kl.watchZone !== "Unavailable") {
+      const match = kl.watchZone.match(/\$?([\d.]+)\s*[–-]\s*\$?([\d.]+)/);
+      if (match) {
+        lower = parseFloat(match[1]);
+        upper = parseFloat(match[2]);
+      }
+    }
+
+    if (lower != null && upper != null && !isNaN(lower) && !isNaN(upper) && lower > 0 && upper > 0) {
+      const canonicalLower = Math.min(lower, upper);
+      const canonicalUpper = Math.max(lower, upper);
+      const isInCorridor = price >= canonicalLower && price <= canonicalUpper;
+
+      if (isInCorridor) {
+        conditions.push({
+          id: "corridor",
+          category: "CORRIDOR",
+          title: "Price Inside Accumulation Corridor",
+          description: `Current spot ($${price.toFixed(2)}) is positioned within the preferred risk corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}).`,
+          status: "MET",
+        });
+      } else if (price > canonicalUpper) {
+        conditions.push({
+          id: "corridor",
+          category: "CORRIDOR",
+          title: "Pullback into Accumulation Corridor",
+          description: `Price ($${price.toFixed(2)}) is extended above preferred entry corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)} – $${canonicalUpper.toFixed(2)}`}). Wait for low-volume pullback.`,
+          status: "UNMET",
+        });
+      } else {
+        conditions.push({
+          id: "corridor",
+          category: "CORRIDOR",
+          title: "Reclaim Base Floor",
+          description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${canonicalLower.toFixed(2)}`}). Requires stabilization before entry.`,
+          status: "UNMET",
+        });
+      }
     } else {
       conditions.push({
         id: "corridor",
         category: "CORRIDOR",
-        title: "Reclaim Base Floor",
-        description: `Price ($${price.toFixed(2)}) is testing lower bounds below corridor (${kl.watchZone || `$${lower.toFixed(2)}`}). Requires stabilization before entry.`,
+        title: "Accumulation Corridor Unavailable",
+        description: "Canonical execution corridor bounds are unavailable for this asset (insufficient trading history or unverified market data).",
         status: "UNMET",
       });
     }

@@ -22,7 +22,7 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
     return 25000;
   });
   const [riskPct, setRiskPct] = useState<number>(1.0);
-  const [tradeDirection, setTradeDirection] = useState<"LONG" | "SHORT">("LONG");
+  const [tradeDirection] = useState<"LONG">("LONG");
   const [accountType, setAccountType] = useState<"CASH" | "MARGIN">("CASH");
   const [allowFractional, setAllowFractional] = useState<boolean>(false);
   const [addedFeedback, setAddedFeedback] = useState<boolean>(false);
@@ -91,22 +91,11 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
   const totalPositionValue = Number((positionUnits * currentPrice).toFixed(2));
   const leverageRatio = accountSize > 0 ? (totalPositionValue / accountSize).toFixed(1) : "1.0";
 
-  // Price targets based on Risk-to-Reward multiples
-  const stopPrice = tradeDirection === "LONG"
-    ? Math.max(0.01, currentPrice - stopDistanceDollar)
-    : currentPrice + stopDistanceDollar;
-
-  const target15 = tradeDirection === "LONG"
-    ? currentPrice + stopDistanceDollar * 1.5
-    : Math.max(0.01, currentPrice - stopDistanceDollar * 1.5);
-
-  const target20 = tradeDirection === "LONG"
-    ? currentPrice + stopDistanceDollar * 2.0
-    : Math.max(0.01, currentPrice - stopDistanceDollar * 2.0);
-
-  const target30 = tradeDirection === "LONG"
-    ? currentPrice + stopDistanceDollar * 3.0
-    : Math.max(0.01, currentPrice - stopDistanceDollar * 3.0);
+  // Price targets based on Risk-to-Reward multiples (Long-Only Model)
+  const stopPrice = Math.max(0.01, currentPrice - stopDistanceDollar);
+  const target15 = currentPrice + stopDistanceDollar * 1.5;
+  const target20 = currentPrice + stopDistanceDollar * 2.0;
+  const target30 = currentPrice + stopDistanceDollar * 3.0;
 
     const handleSaveToPortfolio = () => {
     if (positionUnits <= 0) return;
@@ -201,31 +190,27 @@ export default function DayTraderPositionSizer({ symbol, data }: DayTraderPositi
             </button>
           </div>
 
-          {/* Long / Short Toggle */}
+          {/* Long-Only Model Direction Control */}
           <div role="radiogroup" aria-label="Trade direction" className="flex items-center bg-[#090d14] p-1 rounded-lg border border-[#243044]">
             <button
               role="radio"
-              aria-checked={tradeDirection === "LONG"}
-              onClick={() => setTradeDirection("LONG")}
-              className={`px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-pointer ${
-                tradeDirection === "LONG"
-                  ? "bg-emerald-500 text-black shadow-md shadow-emerald-950/60"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              aria-checked={true}
+              type="button"
+              className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md bg-emerald-500 text-black shadow-md shadow-emerald-950/60 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none cursor-default"
             >
               BUY / LONG
             </button>
             <button
               role="radio"
-              aria-checked={tradeDirection === "SHORT"}
-              onClick={() => setTradeDirection("SHORT")}
-              className={`px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md transition-colors active:scale-[0.96] motion-reduce:transform-none transition-transform duration-100 ease-out focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none cursor-pointer ${
-                tradeDirection === "SHORT"
-                  ? "bg-rose-500 text-white shadow-md shadow-rose-950/60"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              aria-checked={false}
+              disabled={true}
+              aria-disabled="true"
+              type="button"
+              title="Short analysis is not supported by the quantitative model (Long-Only)"
+              className="px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] text-xs font-bold rounded-md text-slate-500 opacity-50 cursor-not-allowed border border-transparent"
             >
-              SELL / SHORT
+              <span>SELL / SHORT</span>
+              <span className="ml-1 text-[9px] uppercase tracking-wider text-slate-400 font-mono">(Disabled)</span>
             </button>
           </div>
         </div>

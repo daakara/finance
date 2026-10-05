@@ -174,8 +174,8 @@ export default function ExecutionCorridor({
               {isInBuyZone
                 ? "In Buy Zone"
                 : spotPrice > entryHigh
-                ? `+${((spotPrice - entryHigh) / entryHigh * 100).toFixed(1)}% extended`
-                : `${((spotPrice - entryLow) / entryLow * 100).toFixed(1)}% below pivot`}
+                ? `+${((spotPrice - entryHigh) / entryHigh * 100).toFixed(1)}% above corridor`
+                : `${Math.abs((entryLow - spotPrice) / entryLow * 100).toFixed(1)}% below corridor`}
             </span>
           </div>
         </div>

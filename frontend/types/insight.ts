@@ -132,21 +132,21 @@ export interface QuantitativeInsight {
   price: number;
   changePct: number;
   setupScore: number;
-  
+
   // Horizon & Posture State
   horizon: TimeHorizon;
   assessment: Assessment;
   posture: DecisionPosture;
   postureLabel: string;
   ownership: OwnershipState;
-  
+
   // Normalized Terminal State
   terminalState: TerminalViewState;
-  
+
   // Legacy verdict for existing components
   verdict: "WAIT_FOR_TRIGGER" | "STRONG_BUY_ZONE" | "ACTIONABLE_BUY_ZONE" | "PILOT_BUY" | "AVOID_STAGE_4" | "TAKE_PROFIT" | "UNVERIFIED";
   verdictLabel: string;
-  
+
   // Tier 1: Human Language (Guided)
   human: {
     assessmentHeadline: string;
@@ -181,6 +181,8 @@ export interface QuantitativeInsight {
     keyLevels: {
       currentPrice: number;
       watchZone: string;
+      entryMin?: number;
+      entryMax?: number;
       sma50?: number;
       stopLoss: number;
       stopLossPct: number;

@@ -499,6 +499,8 @@ export function generateQuantitativeInsight(
         watchZone: (optimalExecution?.optimal_entry_min != null && optimalExecution?.optimal_entry_max != null && !isExecutionSuppressed)
           ? `$${optimalExecution.optimal_entry_min.toFixed(2)} – $${optimalExecution.optimal_entry_max.toFixed(2)}`
           : "Unavailable",
+        entryMin: (optimalExecution?.optimal_entry_min != null && !isExecutionSuppressed) ? optimalExecution.optimal_entry_min : undefined,
+        entryMax: (optimalExecution?.optimal_entry_max != null && !isExecutionSuppressed) ? optimalExecution.optimal_entry_max : undefined,
         sma50,
         stopLoss: !isExecutionSuppressed ? stopLoss : 0,
         stopLossPct: (isPriceValid && !isExecutionSuppressed && stopLoss > 0)

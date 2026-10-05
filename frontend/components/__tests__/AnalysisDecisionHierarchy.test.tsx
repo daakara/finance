@@ -5,9 +5,29 @@ import StandardTerminalView from "../terminal/StandardTerminalView";
 import GuidedTerminalView from "../terminal/GuidedTerminalView";
 import AdvancedTerminalView from "../terminal/AdvancedTerminalView";
 import OptimalEntryExitCard from "../OptimalEntryExitCard";
+import DayTraderPositionSizer from "../DayTraderPositionSizer";
+import ExecutionCorridor from "../workstation/ExecutionCorridor";
 import { QuantitativeInsight } from "../../types/insight";
 import { OptimalExecutionPlan } from "../../lib/api";
 import { deriveUnmetConditions } from "../../lib/decisionHierarchyUtils";
+
+const mockAnalyticsData: any = {
+  symbol: "NVDA",
+  currentPrice: 184.2,
+  technicals: {
+    rsi14: 55.4,
+    vwap: 183.5,
+    ema20: 182.0,
+    sma50: 178.0,
+    atr: 4.8,
+  },
+  analytics: {
+    advanced_metrics: {
+      daily_volatility: 0.025,
+      intraday_atr: 4.8,
+    },
+  },
+};
 
 // Sample canonical execution plan
 const mockPlan: OptimalExecutionPlan = {
@@ -467,6 +487,221 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       expect(screen.getByText(/CONFIRMED ACCUMULATION BREAKOUT/i)).toBeDefined();
       expect(screen.getByText(/^ACTIONABLE$/i)).toBeDefined();
       expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+    });
+  });
+
+  // ── ANALYSIS CORRIDOR & TRIGGER SEMANTICS INVARIANTS ─────────────────────────
+  describe("ARX Analysis Corridor & Trigger Semantics Invariants (Gate Re-Attestation)", () => {
+    it("INV-ANALYSIS-01 & 02: deriveUnmetConditions rejects corridor reconstruction from stopLoss/SMA50 and consumes canonical bounds", () => {
+      // Case A: Insight with canonical entryMin/Max
+      const canonicalInsight = createFixtureInsight({
+        price: 184.2,
+        standard: {
+          ...createFixtureInsight().standard,
+          keyLevels: {
+            ...createFixtureInsight().standard.keyLevels,
+            entryMin: 182.5,
+            entryMax: 185.0,
+            watchZone: "$182.50 – $185.00",
+            stopLoss: 174.0,
+            sma50: 178.0,
+          },
+        },
+      });
+
+      const conditionsA = deriveUnmetConditions(canonicalInsight);
+      const corridorCondA = conditionsA.find((c) => c.id === "corridor");
+      expect(corridorCondA).toBeDefined();
+      expect(corridorCondA?.status).toBe("MET");
+      expect(corridorCondA?.description).toContain("$182.50 – $185.00");
+
+      // Case B: Price above canonical entryMax
+      const extendedInsight = createFixtureInsight({
+        price: 190.0,
+        standard: {
+          ...createFixtureInsight().standard,
+          keyLevels: {
+            ...createFixtureInsight().standard.keyLevels,
+            entryMin: 182.5,
+            entryMax: 185.0,
+            watchZone: "$182.50 – $185.00",
+            stopLoss: 174.0,
+            sma50: 178.0,
+          },
+        },
+      });
+      const conditionsB = deriveUnmetConditions(extendedInsight);
+      const corridorCondB = conditionsB.find((c) => c.id === "corridor");
+      expect(corridorCondB?.status).toBe("UNMET");
+      expect(corridorCondB?.title).toContain("Pullback into Accumulation Corridor");
+
+      // Case C: Missing canonical corridor does NOT synthesize bounds from stopLoss * 1.02 or sma50
+      const missingCorridorInsight = createFixtureInsight({
+        price: 184.2,
+        standard: {
+          ...createFixtureInsight().standard,
+          keyLevels: {
+            ...createFixtureInsight().standard.keyLevels,
+            entryMin: undefined,
+            entryMax: undefined,
+            watchZone: "Unavailable",
+            stopLoss: 174.0,
+            sma50: 178.0,
+          },
+        },
+      });
+      const conditionsC = deriveUnmetConditions(missingCorridorInsight);
+      const corridorCondC = conditionsC.find((c) => c.id === "corridor");
+      expect(corridorCondC?.status).toBe("UNMET");
+      expect(corridorCondC?.title).toBe("Accumulation Corridor Unavailable");
+      expect(corridorCondC?.description).toContain("unavailable for this asset");
+    });
+
+    it("INV-ANALYSIS-01: OptimalEntryExitCard renders canonical backend corridor min/max unchanged", () => {
+      render(
+        <OptimalEntryExitCard
+          symbol="NVDA"
+          executionPlan={mockPlan}
+          isActionable={false}
+        />
+      );
+
+      // Verify canonical corridor bounds render
+      expect(screen.getAllByText(/\$182\.50/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/\$185\.00/).length).toBeGreaterThan(0);
+    });
+
+    it("INV-ANALYSIS-03: Noncanonical numeric trigger price is absent across terminal views", () => {
+      const insight = createFixtureInsight();
+      const { container } = render(
+        <StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
+      );
+
+      // Verify no element declares a numeric "Trigger: $..." price
+      const allText = container.textContent || "";
+      expect(allText).not.toMatch(/Trigger Price:\s*\$\d+/i);
+      expect(allText).not.toMatch(/Numeric Trigger:\s*\$\d+/i);
+      expect(allText).not.toMatch(/Trigger:\s*\$18/i);
+    });
+
+    it("INV-ANALYSIS-05: Canonical awaiting-readiness state renders correctly without synthetic domain trigger", () => {
+      const insight = createFixtureInsight({
+        terminalState: {
+          ...createFixtureInsight().terminalState,
+          isActionable: false,
+          uiStateLabel: "Awaiting Trigger Confluence",
+        },
+      });
+
+      render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
+      expect(screen.getByText(/WAIT FOR TRIGGER/i)).toBeDefined();
+    });
+
+    it("INV-ANALYSIS-06: Actionability CTA follows canonical decision contract strictly", () => {
+      // Non-actionable setup
+      const nonActionableInsight = createFixtureInsight({
+        terminalState: {
+          ...createFixtureInsight().terminalState,
+          isActionable: false,
+          canSizeTrade: false,
+        },
+      });
+      const { rerender } = render(
+        <StandardTerminalView insight={nonActionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />
+      );
+      expect(screen.queryByText(/Size & Execute Position/i)).toBeNull();
+
+      // Actionable setup
+      const actionableInsight = createFixtureInsight({
+        verdictLabel: "CONFIRMED ACCUMULATION BREAKOUT",
+        terminalState: {
+          ...createFixtureInsight().terminalState,
+          decisionState: "ACTIONABLE_SETUP",
+          isActionable: true,
+          canSizeTrade: true,
+          posture: "ACQUIRE",
+        },
+      });
+      rerender(<StandardTerminalView insight={actionableInsight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
+      expect(screen.getByText(/Size & Execute Position/i)).toBeDefined();
+    });
+
+    it("INV-ANALYSIS-07: SHORT control cannot activate unsupported calculations in DayTraderPositionSizer", () => {
+      render(
+        <DayTraderPositionSizer
+          symbol="NVDA"
+          data={mockAnalyticsData}
+        />
+      );
+
+      const shortBtn = screen.getByRole("radio", { name: /SELL \/ SHORT/i });
+      expect(shortBtn).toBeDefined();
+      expect(shortBtn.getAttribute("disabled")).not.toBeNull();
+      expect(shortBtn.getAttribute("aria-disabled")).toBe("true");
+      expect(shortBtn.getAttribute("title")).toContain("Short analysis is not supported");
+      expect(screen.getByText(/BUY \/ LONG/i).getAttribute("aria-checked")).toBe("true");
+    });
+
+    it("INV-ANALYSIS-08: Distance wording agrees with numerical sign without double negatives or pivot conflation", () => {
+      // Case 1: Below corridor (96.8 spot vs 100.0 entryLow) -> positive distance, no "-3.2% below pivot"
+      const { rerender, container } = render(
+        <ExecutionCorridor
+          ticker="NVDA"
+          spotPrice={96.8}
+          entryLow={100.0}
+          entryHigh={105.0}
+          stopLoss={92.0}
+          target1={115.0}
+          target2={125.0}
+          riskRewardRatio={2.5}
+          executionState="WAITING_PULLBACK"
+          advShareLimit={5000}
+          onOpenPositionSizer={vi.fn()}
+        />
+      );
+
+      const textBelow = container.textContent || "";
+      expect(textBelow).toContain("3.2% below corridor");
+      expect(textBelow).not.toContain("-3.2%");
+      expect(textBelow).not.toContain("below pivot");
+
+      // Case 2: Above corridor (110.0 spot vs 105.0 entryHigh)
+      rerender(
+        <ExecutionCorridor
+          ticker="NVDA"
+          spotPrice={110.0}
+          entryLow={100.0}
+          entryHigh={105.0}
+          stopLoss={92.0}
+          target1={115.0}
+          target2={125.0}
+          riskRewardRatio={2.5}
+          executionState="WAITING_PULLBACK"
+          advShareLimit={5000}
+          onOpenPositionSizer={vi.fn()}
+        />
+      );
+      const textAbove = container.textContent || "";
+      expect(textAbove).toContain("+4.8% above corridor");
+
+      // Case 3: Inside corridor (102.0 spot)
+      rerender(
+        <ExecutionCorridor
+          ticker="NVDA"
+          spotPrice={102.0}
+          entryLow={100.0}
+          entryHigh={105.0}
+          stopLoss={92.0}
+          target1={115.0}
+          target2={125.0}
+          riskRewardRatio={2.5}
+          executionState="IN_BUY_ZONE"
+          advShareLimit={5000}
+          onOpenPositionSizer={vi.fn()}
+        />
+      );
+      const textInside = container.textContent || "";
+      expect(textInside).toContain("In Buy Zone");
     });
   });
 });
