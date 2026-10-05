@@ -5,9 +5,11 @@
   "observationMode": "PASSIVE_NATURAL_PRODUCTION_ONLY",
   "featureReleaseCommit": "c26fee6f4673b05a161968fbd71d1122cce7eacb",
   "predecessorReleaseCommit": "c53c13295edd4c319d27fc79c9d904ea4f80e0e6",
-  "currentHeadSha": "1d2b8a4d39ef72219da157ab1378923cf7b4786d",
+  "currentHeadSha": "f5c4363aafeabf1487f8a1884baafb1fe35ce854",
   "productionReleaseIdentity": "RUNTIME_EQUIVALENT_SUCCESSOR_SHA",
   "runtimeEquivalence": "VERIFIED_DOCUMENTATION_ONLY_SUCCESSOR",
+  "radarFeatureRuntimeSha": "c26fee6f4673b05a161968fbd71d1122cce7eacb",
+  "releaseDrift": false,
   "predecessorReleaseEvidence": {
     "predecessorCanonicalRadarParity": "VERIFIED",
     "predecessorPublicCacheContract": "VERIFIED",
@@ -15,9 +17,19 @@
     "predecessorUnknownFailClosedContract": "VERIFIED",
     "predecessorFrontendProbeHealth": "PASS_NO_FATAL_HTTP_SURFACE_FAILURE_OBSERVED"
   },
+  "denominatorObservability": {
+    "status": "VERIFIED",
+    "primarySource": "RAILWAY_CONTAINER_ACCESS_LOGS_ARX_API",
+    "eventOrRecord": "http_request_completed_GET_api_v1_portfolio",
+    "identityRule": "fetchAuthoritativePortfolio_invocation_with_valid_auth_or_guest_context",
+    "timeBoundary": ">= 2026-10-04T17:05:00Z",
+    "deduplicationRule": "EXCLUDE_SAME_SESSION_REHYDRATIONS_WITHIN_WINDOW",
+    "retryDoubleCounting": false,
+    "rehydrationDoubleCounting": false
+  },
   "cohort": {
-    "naturalRadarPageViews": 0,
-    "naturalPortfolioContextLoads": 0,
+    "naturalRadarPageViews": 1,
+    "naturalPortfolioContextLoads": 1,
     "naturalHeldRenderEvents": 0,
     "naturalNotHeldRenderEvents": 0,
     "naturalUnknownRenderEvents": 0,
@@ -25,6 +37,23 @@
     "naturalReviewPositionClicks": 0,
     "naturalAnalyzeClicks": 0,
     "syntheticDenominatorInflation": false
+  },
+  "trafficAccounting": {
+    "naturalSessions": 1,
+    "naturalPortfolioContextLoads": 1,
+    "rehydrationReFetchesDeduplicated": 1,
+    "excludedOperatorDiagnostics": 1,
+    "excludedSyntheticRequests": 0,
+    "excludedTestTraffic": 0,
+    "excludedReplays": 0,
+    "unclassifiedRequests": 0
+  },
+  "decisionTable": {
+    "matchedPriority": 3,
+    "preconditions": "DENOMINATOR_OBSERVABILITY = VERIFIED and NATURAL_PORTFOLIO_CONTEXT_LOADS < 10",
+    "requiredResult": "CHECKPOINT_ELIGIBILITY = NOT_SATISFIED and COHORT_ELIGIBILITY = NOT_SATISFIED",
+    "requiredAction": "HOLD_OBSERVATION_CONTINUE_PASSIVE_NATURAL_OBSERVATION",
+    "matrixAuthorization": "UNAUTHORIZED_PENDING_COHORT_THRESHOLD"
   },
   "watches": {
     "canonicalDriftStatus": "NOT_OBSERVED",
@@ -50,17 +79,24 @@
     }
   },
   "checkpointEligibility": {
-    "checkpointNumber": 2,
-    "elapsedObservationTimeHours": 25.63,
+    "checkpointNumber": 3,
+    "elapsedObservationTimeHours": 26.86,
     "minimumElapsedTimeHours": 24.0,
-    "naturalPortfolioContextLoads": 0,
+    "naturalPortfolioContextLoads": 1,
     "minimumNaturalLoads": 10,
     "earliestTimeEligibleUtc": "2026-10-05T17:05:00Z",
     "earliestTimeEligibleLocal": "2026-10-05T19:05:00+02:00",
     "checkpointEligibility": "NOT_SATISFIED",
     "checkpointState": "HOLD",
     "temporalEligibility": "SATISFIED",
-    "cohortEligibility": "NOT_SATISFIED"
+    "cohortEligibility": "NOT_SATISFIED",
+    "denominatorObservability": "VERIFIED"
+  },
+  "coverageAndPrivacy": {
+    "requiredNaturalStatesSufficientlyCovered": "NOT_ADJUDICABLE",
+    "privacyBoundaryAcceptable": "NOT_ADJUDICABLE",
+    "confirmedPrivacyDefect": "NO",
+    "rationale": "Full matrix and privacy review unauthorized while NATURAL_PORTFOLIO_CONTEXT_LOADS < 10 per Decision Table Priority 3"
   },
   "acceptanceMatrixSummary": {
     "passCount": 3,
@@ -77,5 +113,5 @@
     "nextAction": "CONTINUE_PASSIVE_NATURAL_OBSERVATION",
     "automaticSuccessorExecution": "NOT_AUTHORIZED"
   },
-  "checkpointTimestamp": "2026-10-05T18:42:32Z"
+  "checkpointTimestamp": "2026-10-05T19:56:31Z"
 }
