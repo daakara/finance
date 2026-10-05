@@ -1,42 +1,66 @@
 {
   "gate": "HOLD_ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_OBSERVATION",
+  "checkpoint_type": "ELIGIBILITY_FIRST",
+  "checkpoint_number": 2,
   "primary_verdict": "INSUFFICIENT_NATURAL_EVIDENCE",
   "checkpoint_state": "HOLD",
   "checkpoint_eligibility": "NOT_SATISFIED",
+  "temporal_eligibility": "SATISFIED",
+  "cohort_eligibility": "NOT_SATISFIED",
   "observation_epoch": {
     "epoch_id": "ARX_SAAS_FOUNDATION_PHASE_1G_PRODUCTION_EPOCH_1",
     "observation_mode": "PASSIVE_NATURAL_PRODUCTION_ONLY",
     "epoch_start_utc": "2026-10-04T20:25:00Z",
-    "checkpoint_timestamp_utc": "2026-10-04T20:34:55Z",
-    "elapsed_time_hours": 0.165,
+    "checkpoint_timestamp_utc": "2026-10-05T20:30:35Z",
+    "checkpoint_timestamp_local": "2026-10-05T22:30:35+02:00",
+    "elapsed_time_hours": 24.09,
     "eligibility_threshold_hours": 24.0,
     "eligibility_threshold_requests": 10
   },
   "lineage": {
-    "production_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
-    "current_main_sha": "29bb9ce9254d375355a2979ae32e29e921b7a95b",
-    "current_main_relation_to_runtime": "DOCUMENTATION_ONLY_SUCCESSOR",
+    "current_head_sha": "8a75a0718ce3fc423fa22b927bfe4ded0159f308",
+    "origin_main_sha": "8a75a0718ce3fc423fa22b927bfe4ded0159f308",
+    "remote_main_sha": "8a75a0718ce3fc423fa22b927bfe4ded0159f308",
+    "frontend_production_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
+    "backend_production_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
+    "phase_1g_runtime_sha": "756674fb9d9e9dd4bd9709c6d00408f34dc02bcd",
+    "release_drift": false,
     "production_release_identity": "EXACT_INTEGRATION_RUNTIME_SHA_WITH_DOCUMENTATION_ONLY_MAIN_SUCCESSOR"
   },
+  "denominator_observability": {
+    "status": "VERIFIED",
+    "primary_source": "RAILWAY_CONTAINER_ACCESS_LOGS_ARX_API",
+    "event_or_record": "http_request_completed",
+    "identity_rule": "AUTHORITATIVE_PRIVATE_CONTEXT_REQUEST_RESOLVER",
+    "time_boundary": ">= 2026-10-04T20:25:00Z",
+    "deduplication_rule": "EXCLUDE_SAME_SESSION_REHYDRATIONS_WITHIN_WINDOW",
+    "retry_double_counting": false,
+    "rehydration_double_counting": false,
+    "polling_double_counting": false
+  },
   "natural_observation_denominators": {
-    "natural_private_context_requests": 0,
-    "natural_workspace_resolutions": 0,
-    "natural_private_reads": 0,
-    "natural_private_writes": 0,
-    "natural_portfolio_operations": 0,
-    "natural_journal_operations": 0,
-    "natural_cockpit_operations": 0,
-    "natural_public_route_requests": 0
+    "natural_private_context_requests": 3,
+    "natural_private_workspace_loads": 1,
+    "natural_membership_context_loads": 1,
+    "natural_portfolio_operations": 1,
+    "natural_journal_operations": 1,
+    "natural_cockpit_operations": 1,
+    "natural_public_route_requests": 1
   },
   "exclusion_counts": {
-    "operator_verification_probes_excluded": true,
-    "synthetic_api_calls_excluded": true,
-    "load_test_calls_excluded": true,
-    "synthetic_denominator_inflation": false
+    "excluded_operator_diagnostics": 1,
+    "excluded_synthetic_requests": 0,
+    "excluded_test_traffic": 0,
+    "excluded_replays": 0,
+    "unclassified_requests": 0,
+    "synthetic_denominator_inflation": false,
+    "forced_traffic_used": false,
+    "test_traffic_counted": false,
+    "operator_traffic_counted": false
   },
   "criteria_matrix": {
     "SAAS-1G-OBS01": "PASS",
-    "SAAS-1G-OBS02": "INSUFFICIENT_EVIDENCE",
+    "SAAS-1G-OBS02": "PASS",
     "SAAS-1G-OBS03": "INSUFFICIENT_EVIDENCE",
     "SAAS-1G-OBS04": "NOT_OBSERVED",
     "SAAS-1G-OBS05": "NOT_OBSERVED",
@@ -60,7 +84,8 @@
     "unauthorized_contract_phase_mutations": 0,
     "shared_cache_private_leakage_events": 0,
     "systemic_runtime_failures": 0,
-    "confirmed_production_defect": false
+    "confirmed_privacy_defect": false,
+    "confirmed_release_defect": false
   },
   "historical_evidence_boundary": {
     "pre_deployment_backup": "NOT_ESTABLISHED",
