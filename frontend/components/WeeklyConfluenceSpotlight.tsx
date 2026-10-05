@@ -8,8 +8,80 @@ import { SpotPriceRegistry, fetchBatchQuotes, fetchTacticalSetups, isQuoteFresh 
 import type { TradeSetupSpec } from "../lib/simulation/governorSizingEngine";
 import MiniSparkline from "./MiniSparkline";
 
-interface ConfluenceCandidate {
+// ── Canonical Decoupled Types ────────────────────────────────────────────────
+
+export type MarketSessionStatus =
+  | "REGULAR_OPEN"
+  | "PRE_MARKET"
+  | "AFTER_HOURS"
+  | "CLOSED"
+  | "HOLIDAY"
+  | "UNKNOWN";
+
+export type QuoteTelemetryStatus =
+  | "LIVE_FRESH"
+  | "STALE"
+  | "DELAYED"
+  | "MISSING"
+  | "UNKNOWN";
+
+export type SetupValidityStatus =
+  | "VALID"
+  | "STALE"
+  | "EXPIRED"
+  | "INVALID"
+  | "UNKNOWN";
+
+export type SpotlightPresentationState =
+  | "LOADING"
+  | "ERROR"
+  | "SETUP_STALE"
+  | "NO_QUALIFYING_CANDIDATES"
+  | "READY_LIVE"
+  | "READY_MARKET_CLOSED"
+  | "READY_LIVE_TELEMETRY_DEGRADED";
+
+export type SpotlightState =
+  | "LOADING"
+  | "ERROR"
+  | "STALE_MARKET_DATA"
+  | "NO_QUALIFYING_CANDIDATES"
+  | "READY"
+  | SpotlightPresentationState;
+
+export interface DecoupledPriceResult {
+  analysisPrice: number; // ROLE: RESEARCH_AND_ANALYSIS_ONLY (verified setup.analysisReferencePrice only)
+  analysisDate?: string;
+  marketOverlayPrice: number | null; // ROLE: PRESENTATION_ONLY_UNLESS_EXECUTION_QUALIFIED
+  marketOverlayChangePct: number | null;
+  displayPrice: number; // marketOverlayPrice if fresh, else analysisPrice
+  displayChangePct: number;
+  executionPrice: number | null; // ROLE: EXECUTION_QUALIFIED_ONLY (only present when execution is qualified)
+  isLiveQuoteFresh: boolean;
+  priceMode: "LIVE_OVERLAY" | "ANALYSIS_REFERENCE";
+  sessionStatus: MarketSessionStatus;
+  canonicalBackendSession: string | null;
+  telemetryStatus: QuoteTelemetryStatus;
+  canExecuteLive: boolean;
+}
+
+export interface ConfluenceCandidate {
   entry: MasterAssetEntry;
+  analysisPrice: number;
+  analysisDate?: string;
+  marketOverlayPrice: number | null;
+  marketOverlayChangePct: number | null;
+  displayPrice: number;
+  displayChangePct: number;
+  executionPrice: number | null;
+  isLiveQuoteFresh: boolean;
+  priceMode: "LIVE_OVERLAY" | "ANALYSIS_REFERENCE";
+  sessionStatus: MarketSessionStatus;
+  canonicalBackendSession: string | null;
+  telemetryStatus: QuoteTelemetryStatus;
+  setupValidity: SetupValidityStatus;
+  canExecuteLive: boolean;
+  // Backward compatibility aliases
   livePrice: number;
   liveChangePct: number;
   convictionScore: number;
@@ -26,7 +98,248 @@ interface ConfluenceCandidate {
   rewardRiskRatio: string;
 }
 
-export type SpotlightState = 'LOADING' | 'ERROR' | 'STALE_MARKET_DATA' | 'NO_QUALIFYING_CANDIDATES' | 'READY';
+// ── Pure Domain Evaluation Helpers ───────────────────────────────────────────
+
+/**
+ * Resolves market session state for UI presentation fallback.
+ * Backend `marketPriceState.marketSession` is the authoritative source.
+ * Client clock derivation is strictly PRESENTATION_ONLY and CANNOT authorize execution.
+ */
+export function resolveMarketSession(
+  backendSessionStr?: string | null,
+  nowMs: number = Date.now()
+): MarketSessionStatus {
+  if (backendSessionStr && typeof backendSessionStr === "string") {
+    const norm = backendSessionStr.toUpperCase().trim();
+    if (norm === "REGULAR_SESSION" || norm === "REGULAR_OPEN" || norm === "OPEN") {
+      return "REGULAR_OPEN";
+    }
+    if (norm === "PREMARKET" || norm === "PRE_MARKET" || norm === "PRE") {
+      return "PRE_MARKET";
+    }
+    if (norm === "AFTER_HOURS" || norm === "POST_MARKET" || norm === "POST") {
+      return "AFTER_HOURS";
+    }
+    if (norm === "WEEKEND" || norm === "CLOSED") {
+      return "CLOSED";
+    }
+    if (norm === "HOLIDAY") {
+      return "HOLIDAY";
+    }
+  }
+
+  // Frontend deterministic presentation fallback in America/New_York
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      weekday: "short",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(new Date(nowMs));
+    let weekdayStr = "";
+    let hour = 0;
+    let minute = 0;
+    for (const part of parts) {
+      if (part.type === "weekday") weekdayStr = part.value;
+      if (part.type === "hour") hour = parseInt(part.value, 10);
+      if (part.type === "minute") minute = parseInt(part.value, 10);
+    }
+
+    if (weekdayStr === "Sat" || weekdayStr === "Sun") {
+      return "CLOSED";
+    }
+
+    const minuteOfDay = hour * 60 + minute;
+    // 04:00 is 240, 09:30 is 570, 16:00 is 960, 20:00 is 1200
+    if (minuteOfDay < 240) return "CLOSED";
+    if (minuteOfDay >= 240 && minuteOfDay < 570) return "PRE_MARKET";
+    if (minuteOfDay >= 570 && minuteOfDay < 960) return "REGULAR_OPEN";
+    if (minuteOfDay >= 960 && minuteOfDay < 1200) return "AFTER_HOURS";
+    return "CLOSED";
+  } catch {
+    return "UNKNOWN";
+  }
+}
+
+/**
+ * Evaluates live quote telemetry freshness.
+ * Requires finite positive price and valid observation age strictly within QUOTE_MAX_AGE_MS.
+ */
+export function resolveQuoteTelemetry(
+  quote?: { price?: number; lastUpdated?: number; changePct?: number } | null
+): QuoteTelemetryStatus {
+  if (!quote) return "MISSING";
+  if (typeof quote.price !== "number" || isNaN(quote.price) || quote.price <= 0) {
+    return "UNKNOWN";
+  }
+  if (!quote.lastUpdated || typeof quote.lastUpdated !== "number" || quote.lastUpdated <= 0) {
+    return "UNKNOWN";
+  }
+
+  const isFresh = isQuoteFresh(quote.lastUpdated);
+  if (isFresh) return "LIVE_FRESH";
+
+  const age = Date.now() - quote.lastUpdated;
+  if (age > 24 * 60 * 60 * 1000) {
+    return "DELAYED";
+  }
+  return "STALE";
+}
+
+/**
+ * Validates setup structural integrity and verified analytical reference price authority.
+ * Sourced independently from live quote feeds.
+ * INVARIANT: Must strictly require verified `setup.analysisReferencePrice`.
+ * Never falls back to `setup.currentPrice` (which can be a mutable realtime spot override).
+ */
+export function evaluateSetupValidity(setup: TradeSetupSpec): SetupValidityStatus {
+  if (!setup || typeof setup !== "object") return "INVALID";
+
+  // Check if backend marked the setup stale due to >4 calendar days historical candle age
+  if (
+    setup.executionStatus === "STALE_MARKET_DATA" ||
+    setup.decisionState === "STALE_DATA" ||
+    setup.setupName === "Stale Market Tape"
+  ) {
+    return "STALE";
+  }
+
+  // Check valid stop loss and target 1
+  if (!setup.stopLoss || typeof setup.stopLoss !== "number" || setup.stopLoss <= 0) {
+    return "INVALID";
+  }
+  if (!setup.target1 || typeof setup.target1 !== "number" || setup.target1 <= 0) {
+    return "INVALID";
+  }
+
+  // Confluence score must be an authentic positive number
+  if (typeof setup.confluenceScore !== "number" || isNaN(setup.confluenceScore) || setup.confluenceScore <= 0) {
+    return "INVALID";
+  }
+
+  // Strict Invariant: Analysis reference price MUST come from verified analysisReferencePrice ONLY.
+  // Never accept setup.currentPrice as fallback.
+  if (
+    typeof setup.analysisReferencePrice !== "number" ||
+    isNaN(setup.analysisReferencePrice) ||
+    setup.analysisReferencePrice <= 0
+  ) {
+    return "INVALID";
+  }
+
+  return "VALID";
+}
+
+/**
+ * Resolves decoupled prices separating analysis reference price from market overlay and execution price.
+ *
+ * Invariants:
+ * 1. ANALYSIS_REFERENCE_PRICE is for RESEARCH_AND_ANALYSIS_ONLY.
+ * 2. MARKET_OVERLAY_PRICE is for PRESENTATION_ONLY unless execution-qualified.
+ * 3. EXECUTION_PRICE requires:
+ *    - Canonical backend session is REGULAR_OPEN (frontend clock fallback cannot authorize execution).
+ *    - LIVE_FRESH quote telemetry (age < 5 min, price > 0).
+ *    - Setup is actionable.
+ *    Otherwise EXECUTION_PRICE is strictly null and paper execution is disabled.
+ */
+export function resolveDecoupledPrices(
+  setup: TradeSetupSpec,
+  quote: { price?: number; lastUpdated?: number; changePct?: number } | null | undefined,
+  sessionStatus: MarketSessionStatus,
+  canonicalBackendSession?: string | null
+): DecoupledPriceResult | null {
+  const validity = evaluateSetupValidity(setup);
+  if (validity !== "VALID") {
+    return null;
+  }
+
+  // Sourced strictly from verified analysisReferencePrice
+  const analysisPrice = setup.analysisReferencePrice!;
+  const telemetry = resolveQuoteTelemetry(quote);
+  const isFresh = telemetry === "LIVE_FRESH";
+
+  const marketOverlayPrice = (isFresh && typeof quote?.price === "number" && quote.price > 0) ? quote.price : null;
+  const marketOverlayChangePct = (isFresh && typeof quote?.changePct === "number") ? quote.changePct : null;
+
+  // Price Mode selection:
+  // Live overlay is used ONLY when market is in regular session AND quote is fresh
+  const isRegularOpen = sessionStatus === "REGULAR_OPEN";
+  const useOverlay = isRegularOpen && isFresh && marketOverlayPrice !== null;
+  const displayPrice = useOverlay ? marketOverlayPrice! : analysisPrice;
+  const displayChangePct = useOverlay ? (marketOverlayChangePct ?? 0.0) : 0.0;
+  const priceMode = useOverlay ? "LIVE_OVERLAY" : "ANALYSIS_REFERENCE";
+
+  // Execution Qualification:
+  // Requires:
+  // 1. Authoritative CANONICAL BACKEND SESSION is REGULAR_OPEN (frontend clock fallback cannot authorize execution)
+  // 2. LIVE_FRESH quote telemetry
+  // 3. Setup is actionable
+  const rawBackend = (canonicalBackendSession || setup.marketPriceState?.marketSession || "").toUpperCase().trim();
+  const isBackendRegularOpen = rawBackend === "REGULAR_SESSION" || rawBackend === "REGULAR_OPEN" || rawBackend === "OPEN";
+
+  const canExecuteLive = isBackendRegularOpen && isFresh && marketOverlayPrice !== null && Boolean(setup.isActionable);
+  const executionPrice = canExecuteLive ? marketOverlayPrice : null;
+
+  const analysisDate = setup.marketPriceState?.analysisReferenceDate || (setup as any).observationDate || undefined;
+
+  return {
+    analysisPrice,
+    analysisDate,
+    marketOverlayPrice,
+    marketOverlayChangePct,
+    displayPrice,
+    displayChangePct,
+    executionPrice,
+    isLiveQuoteFresh: isFresh,
+    priceMode,
+    sessionStatus,
+    canonicalBackendSession: canonicalBackendSession || setup.marketPriceState?.marketSession || null,
+    telemetryStatus: telemetry,
+    canExecuteLive,
+  };
+}
+
+/**
+ * Deterministically derives the component-level presentation state.
+ */
+export function deriveOverallSpotlightState(params: {
+  isLoadingSetups: boolean;
+  setupError: string | null;
+  tacticalSetups: TradeSetupSpec[];
+  topCandidates: ConfluenceCandidate[];
+  sessionStatus: MarketSessionStatus;
+}): SpotlightPresentationState {
+  if (params.isLoadingSetups) return "LOADING";
+  if (params.setupError) return "ERROR";
+  if (!params.tacticalSetups || params.tacticalSetups.length === 0) return "NO_QUALIFYING_CANDIDATES";
+
+  // Check if all tactical setups are stale from historical data
+  const allStale = params.tacticalSetups.every(
+    (s) => s.executionStatus === "STALE_MARKET_DATA" || s.decisionState === "STALE_DATA"
+  );
+  if (allStale) {
+    return "SETUP_STALE";
+  }
+
+  if (params.topCandidates.length === 0) {
+    return "NO_QUALIFYING_CANDIDATES";
+  }
+
+  // Candidates exist and are valid. Determine presentation mode based on session and telemetry.
+  if (params.sessionStatus === "REGULAR_OPEN") {
+    const anyFresh = params.topCandidates.some((c) => c.isLiveQuoteFresh);
+    if (anyFresh) {
+      return "READY_LIVE";
+    }
+    return "READY_LIVE_TELEMETRY_DEGRADED";
+  }
+
+  return "READY_MARKET_CLOSED";
+}
+
+// ── Component Implementation ─────────────────────────────────────────────────
 
 interface WeeklyConfluenceSpotlightProps {
   defaultCollapsed?: boolean;
@@ -102,7 +415,7 @@ export default function WeeklyConfluenceSpotlight({
     };
   }, [userRole, retryNonce]);
 
-  // Derive quotes strictly from actual candidate universe (Step 10 fix)
+  // Derive quotes strictly from actual candidate universe
   useEffect(() => {
     refreshLocalQuotes();
 
@@ -169,41 +482,45 @@ export default function WeeklyConfluenceSpotlight({
   const isPlain = vernacularMode === "PLAIN_ENGLISH";
   const isDayTrader = userRole === "DAY_TRADER";
 
-  // Dynamically compute the Top 3 High-Confluence Plays strictly from authoritative live setups
+  // Authoritative Session State
+  const backendSession = useMemo(() => {
+    return tacticalSetups.find((s) => s.marketPriceState?.marketSession)?.marketPriceState?.marketSession || null;
+  }, [tacticalSetups]);
+
+  const currentSession: MarketSessionStatus = useMemo(() => {
+    return resolveMarketSession(backendSession);
+  }, [backendSession]);
+
+  // Dynamically compute the Top 3 High-Confluence Plays decoupled from live quote freshness
   const topCandidates: ConfluenceCandidate[] = useMemo(() => {
     if (!tacticalSetups || tacticalSetups.length === 0) return [];
 
-    // Filter valid setups with authentic positive prices, verified setup levels, and valid confluence score
+    // Filter valid setups with verified analytical reference prices, valid levels, and positive confluence
     const valid = tacticalSetups
       .map((setup) => {
         const sym = setup.ticker;
         const live = liveQuotes[sym];
         const reg = SpotPriceRegistry.get(sym);
-        const isLiveFresh = Boolean(live?.price && live.price > 0 && live.lastUpdated && isQuoteFresh(live.lastUpdated));
-        const isRegFresh = Boolean(reg?.price && reg.price > 0 && reg.lastUpdated && isQuoteFresh(reg.lastUpdated));
-        const effectivePrice = isLiveFresh
-          ? live!.price
-          : (isRegFresh && reg?.price ? reg.price : null);
+        const resolvedQuote = (live && live.price > 0) ? live : (reg && reg.price > 0 ? reg : null);
 
-        // Zero Fabricated Data Invariant: Candidate requires an observed market price on live tape. Never substitute entryPivot or cold stored snapshots.
-        if (!effectivePrice || effectivePrice <= 0) return null;
-        if (!setup.stopLoss || setup.stopLoss <= 0 || !setup.target1 || setup.target1 <= 0) return null;
-        
-        // Confluence score must be an authentic positive number. Never default missing/invalid confluence to 0.
-        if (typeof setup.confluenceScore !== "number" || isNaN(setup.confluenceScore) || setup.confluenceScore <= 0) {
+        const priceResult = resolveDecoupledPrices(setup, resolvedQuote, currentSession, backendSession);
+        if (!priceResult) return null;
+
+        const confScore = setup.confluenceScore;
+        if (typeof confScore !== "number" || isNaN(confScore) || confScore <= 0) {
           return null;
         }
-        const confScore = setup.confluenceScore;
 
         return {
           setup,
-          effectivePrice,
+          priceResult,
           confScore,
         };
       })
-      .filter((item): item is { setup: TradeSetupSpec; effectivePrice: number; confScore: number } => item !== null);
+      .filter((item): item is { setup: TradeSetupSpec; priceResult: DecoupledPriceResult; confScore: number } => item !== null);
 
-    // Sort: Actionable first, then highest confluenceScore descending
+    // Canonical Sort: Actionable first, then highest confluenceScore descending
+    // (Live quote freshness CANNOT alter weekly rank)
     const sorted = [...valid].sort((a, b) => {
       const aAct = Boolean(a.setup.isActionable);
       const bAct = Boolean(b.setup.isActionable);
@@ -213,16 +530,8 @@ export default function WeeklyConfluenceSpotlight({
       return b.confScore - a.confScore;
     });
 
-    return sorted.slice(0, 3).map(({ setup, effectivePrice, confScore }) => {
+    return sorted.slice(0, 3).map(({ setup, priceResult, confScore }) => {
       const sym = setup.ticker;
-      const live = liveQuotes[sym];
-      const reg = SpotPriceRegistry.get(sym);
-      const isLiveFresh = Boolean(live?.lastUpdated && isQuoteFresh(live.lastUpdated));
-      const isRegFresh = Boolean(reg?.lastUpdated && isQuoteFresh(reg.lastUpdated));
-      const effectiveChange = (isLiveFresh && live?.changePct !== undefined)
-        ? live.changePct
-        : (isRegFresh && reg?.changePct !== undefined ? reg.changePct : 0.0);
-
       const master = MASTER_ASSET_CATALOG[sym];
       const entry: MasterAssetEntry = master || {
         symbol: sym,
@@ -253,20 +562,36 @@ export default function WeeklyConfluenceSpotlight({
         thesis: setup.entryThesis || "Live Confluence Setup",
       };
 
+      const effPrice = priceResult.displayPrice;
       const stopVal = setup.stopLoss ?? 0;
       const target1Val = setup.target1 ?? 0;
       const target2Val = setup.target2 ?? target1Val;
-      const stopPct = (((effectivePrice - stopVal) / effectivePrice) * 100).toFixed(1);
-      const t1Pct = (((target1Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
-      const t2Pct = (((target2Val - effectivePrice) / effectivePrice) * 100).toFixed(1);
-      const riskDelta = effectivePrice - stopVal;
-      const rewardDelta = target1Val - effectivePrice;
+      const stopPct = effPrice > 0 ? (((effPrice - stopVal) / effPrice) * 100).toFixed(1) : "0.0";
+      const t1Pct = effPrice > 0 ? (((target1Val - effPrice) / effPrice) * 100).toFixed(1) : "0.0";
+      const t2Pct = effPrice > 0 ? (((target2Val - effPrice) / effPrice) * 100).toFixed(1) : "0.0";
+      const riskDelta = effPrice - stopVal;
+      const rewardDelta = target1Val - effPrice;
       const rr = riskDelta > 0 && rewardDelta > 0 ? (rewardDelta / riskDelta).toFixed(1) : "N/A";
 
       return {
         entry,
-        livePrice: effectivePrice,
-        liveChangePct: effectiveChange,
+        analysisPrice: priceResult.analysisPrice,
+        analysisDate: priceResult.analysisDate,
+        marketOverlayPrice: priceResult.marketOverlayPrice,
+        marketOverlayChangePct: priceResult.marketOverlayChangePct,
+        displayPrice: priceResult.displayPrice,
+        displayChangePct: priceResult.displayChangePct,
+        executionPrice: priceResult.executionPrice,
+        isLiveQuoteFresh: priceResult.isLiveQuoteFresh,
+        priceMode: priceResult.priceMode,
+        sessionStatus: priceResult.sessionStatus,
+        canonicalBackendSession: priceResult.canonicalBackendSession,
+        telemetryStatus: priceResult.telemetryStatus,
+        setupValidity: "VALID",
+        canExecuteLive: priceResult.canExecuteLive,
+        // Backward compatibility
+        livePrice: priceResult.displayPrice,
+        liveChangePct: priceResult.displayChangePct,
         convictionScore: Math.min(99, Math.round(confScore)),
         setupBadge: setup.setupName || (isDayTrader ? "⚡ HIGH-RVOL MOMENTUM" : "INSTITUTIONAL ACCUMULATION"),
         setupBadgePlain: isPlain ? "High Confluence Setup" : (setup.setupName || "High Confluence"),
@@ -281,37 +606,36 @@ export default function WeeklyConfluenceSpotlight({
         rewardRiskRatio: rr,
       };
     });
-  }, [tacticalSetups, liveQuotes, isDayTrader, isPlain]);
+  }, [tacticalSetups, liveQuotes, currentSession, backendSession, isDayTrader, isPlain]);
 
-  // Explicit 5-state model (Step 8 & 11)
-  const spotlightState: SpotlightState = useMemo(() => {
-    if (isLoadingSetups) return 'LOADING';
-    if (setupError) return 'ERROR';
-    if (!tacticalSetups || tacticalSetups.length === 0) return 'NO_QUALIFYING_CANDIDATES';
-
-    if (topCandidates.length > 0) {
-      return 'READY';
-    }
-
-    // Check if tactical setups exist but none had fresh quotes
-    const anyHasStaleQuote = tacticalSetups.some((s) => {
-      const live = liveQuotes[s.ticker];
-      const reg = SpotPriceRegistry.get(s.ticker);
-      return (live && !isQuoteFresh(live.lastUpdated)) || (reg && !isQuoteFresh(reg.lastUpdated));
+  // Deterministic presentation state
+  const presentationState: SpotlightPresentationState = useMemo(() => {
+    return deriveOverallSpotlightState({
+      isLoadingSetups,
+      setupError,
+      tacticalSetups,
+      topCandidates,
+      sessionStatus: currentSession,
     });
+  }, [isLoadingSetups, setupError, tacticalSetups, topCandidates, currentSession]);
 
-    if (anyHasStaleQuote) {
-      return 'STALE_MARKET_DATA';
-    }
+  const spotlightState: SpotlightState = presentationState;
 
-    return 'NO_QUALIFYING_CANDIDATES';
-  }, [isLoadingSetups, setupError, tacticalSetups, topCandidates, liveQuotes]);
-
+  // Live execution action: permitted ONLY when execution qualified
   const handleQuickLog = async (e: React.MouseEvent, cand: ConfluenceCandidate) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const userSharesStr = window.prompt(`Enter quantity of ${cand.entry.symbol} shares to add:`, "10");
+    // Guard: Fail closed if execution is not qualified
+    if (!cand.canExecuteLive || !cand.executionPrice) {
+      alert("Paper execution is disabled: Live market session and fresh exchange tape quote required.");
+      return;
+    }
+
+    const userSharesStr = window.prompt(
+      `Enter quantity of ${cand.entry.symbol} shares to execute fill (Live Quote $${cand.executionPrice.toFixed(2)}):`,
+      "10"
+    );
     if (!userSharesStr) return;
     const parsedShares = parseFloat(userSharesStr);
     if (isNaN(parsedShares) || parsedShares <= 0) {
@@ -323,14 +647,57 @@ export default function WeeklyConfluenceSpotlight({
       symbol: cand.entry.symbol,
       name: cand.entry.name,
       shares: parsedShares,
-      entryPrice: cand.livePrice,
-      currentPrice: cand.livePrice,
+      entryPrice: cand.executionPrice, // Strictly qualified live execution quote
+      currentPrice: cand.executionPrice,
       targetPrice: cand.target1Price,
       stopLossPrice: cand.stopPrice,
     });
 
-    setLoggedSymbol(`${cand.entry.symbol}: ${res.isDuplicate ? "Already in Portfolio" : res.success ? "Logged!" : "Failed: " + res.message}`);
+    setLoggedSymbol(`${cand.entry.symbol}: ${res.isDuplicate ? "Already in Portfolio" : res.success ? "Logged Fill!" : "Failed: " + res.message}`);
     setTimeout(() => setLoggedSymbol(null), 3500);
+  };
+
+  // Intent / Planning action: used outside live execution windows (Zero synthetic fill creation)
+  const handlePlanSetup = (e: React.MouseEvent, cand: ConfluenceCandidate) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const reason = cand.sessionStatus === "CLOSED" ? "Market Closed" : "Tape Delayed";
+    const userSharesStr = window.prompt(
+      `Plan entry for ${cand.entry.symbol} (${reason} • reference $${cand.analysisPrice.toFixed(2)}). Enter target shares to watch:`,
+      "10"
+    );
+    if (!userSharesStr) return;
+    const parsedShares = parseFloat(userSharesStr);
+    if (isNaN(parsedShares) || parsedShares <= 0) {
+      alert("Invalid share quantity. Must be a positive number.");
+      return;
+    }
+
+    try {
+      if (typeof window !== "undefined") {
+        const existingRaw = localStorage.getItem("FINANCE_PLANNED_SETUPS");
+        const existing = existingRaw ? JSON.parse(existingRaw) : [];
+        const updated = [
+          ...existing.filter((p: any) => p.symbol !== cand.entry.symbol),
+          {
+            symbol: cand.entry.symbol,
+            name: cand.entry.name,
+            shares: parsedShares,
+            referencePrice: cand.analysisPrice,
+            target1: cand.target1Price,
+            stopLoss: cand.stopPrice,
+            plannedAt: new Date().toISOString(),
+            status: "PLANNED_PENDING_MARKET_OPEN",
+          },
+        ];
+        localStorage.setItem("FINANCE_PLANNED_SETUPS", JSON.stringify(updated));
+      }
+      setLoggedSymbol(`${cand.entry.symbol}: Setup Planned! (Pending Open)`);
+      setTimeout(() => setLoggedSymbol(null), 3500);
+    } catch {
+      alert("Could not save planned setup to local storage.");
+    }
   };
 
   const handleCardClick = (e: React.MouseEvent, symbol: string) => {
@@ -338,7 +705,6 @@ export default function WeeklyConfluenceSpotlight({
       e.preventDefault();
       onSelectSymbol(symbol);
     }
-    // Auto-collapse spotlight on mobile/click so active asset details render above the fold
     setIsCollapsed(true);
     if (typeof window !== "undefined") {
       const target = document.getElementById("market-workspace-chart") || document.getElementById("main-content");
@@ -384,6 +750,35 @@ export default function WeeklyConfluenceSpotlight({
               }`}>
                 {isDayTrader ? "⚡ DAY TRADER SIEVE" : "🏛️ LONG-TERM SIEVE"}
               </span>
+
+              {/* Accessible Market / Telemetry Status Indicators */}
+              {spotlightState === 'READY_MARKET_CLOSED' && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border bg-slate-900/90 border-slate-700 text-slate-300 hidden sm:inline-flex items-center gap-1"
+                  aria-label="Market session closed. Analysis active based on completed session close."
+                >
+                  <span aria-hidden="true">🌙</span>
+                  <span>SESSION CLOSED</span>
+                </span>
+              )}
+              {spotlightState === 'READY_LIVE_TELEMETRY_DEGRADED' && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border bg-amber-950/80 border-amber-700 text-amber-300 hidden sm:inline-flex items-center gap-1"
+                  aria-label="Live quote telemetry delayed. Trade setups active on reference analysis."
+                >
+                  <span aria-hidden="true">⏳</span>
+                  <span>TAPE DELAYED</span>
+                </span>
+              )}
+              {spotlightState === 'READY_LIVE' && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border bg-emerald-950/80 border-emerald-700 text-emerald-300 hidden sm:inline-flex items-center gap-1"
+                  aria-label="Live exchange tape active"
+                >
+                  <span aria-hidden="true">⚡</span>
+                  <span>LIVE TAPE</span>
+                </span>
+              )}
             </div>
             {!isCollapsed && (
               <p className="text-xs text-slate-400 mt-0.5">
@@ -427,6 +822,7 @@ export default function WeeklyConfluenceSpotlight({
             {topCandidates.length > 0 ? (
               topCandidates.map((cand, idx) => {
                 const isSelected = selectedSymbol?.toUpperCase() === cand.entry.symbol.toUpperCase();
+                const isOverlay = cand.priceMode === "LIVE_OVERLAY";
                 return (
                   <button
                     key={cand.entry.symbol}
@@ -437,12 +833,16 @@ export default function WeeklyConfluenceSpotlight({
                         ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
                         : "bg-[#111722] border-[#243044] text-slate-300 hover:border-cyan-500/60 hover:text-white"
                     }`}
-                    aria-label={`Select ${cand.entry.symbol}`}
+                    aria-label={`Select ${cand.entry.symbol}, ${isOverlay ? 'live price' : 'reference price'} $${cand.displayPrice.toFixed(2)}`}
                   >
                     <span className="text-[9px] text-slate-400 font-normal">#{idx + 1}</span>
                     <span className="font-extrabold">{cand.entry.symbol}</span>
-                    <span className={`text-[10px] tabular-nums ${cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      ${cand.livePrice.toFixed(2)}
+                    <span className={`text-[10px] tabular-nums ${
+                      isOverlay
+                        ? (cand.displayChangePct >= 0 ? "text-emerald-400" : "text-rose-400")
+                        : "text-slate-300"
+                    }`}>
+                      {!isOverlay ? "Ref: " : ""}${cand.displayPrice.toFixed(2)}
                     </span>
                   </button>
                 );
@@ -451,8 +851,8 @@ export default function WeeklyConfluenceSpotlight({
               <span className="text-xs text-slate-500 font-mono animate-pulse">Scanning setups...</span>
             ) : spotlightState === 'ERROR' ? (
               <span className="text-xs text-rose-400 font-mono">⚠️ Setups telemetry error</span>
-            ) : spotlightState === 'STALE_MARKET_DATA' ? (
-              <span className="text-xs text-amber-400 font-mono">⏳ Market closed / Stale tape</span>
+            ) : spotlightState === 'SETUP_STALE' ? (
+              <span className="text-xs text-amber-400 font-mono">⏳ Tactical setups stale (&gt;4 days)</span>
             ) : (
               <span className="text-xs text-slate-500 font-mono">0 qualifying plays</span>
             )}
@@ -474,13 +874,14 @@ export default function WeeklyConfluenceSpotlight({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
             {topCandidates.map((cand, idx) => {
               const isRank1 = idx === 0;
+              const isOverlay = cand.priceMode === "LIVE_OVERLAY";
 
               return (
                 <Link
                   key={cand.entry.symbol}
                   href={`/?symbol=${cand.entry.symbol}`}
                   onClick={(e) => handleCardClick(e, cand.entry.symbol)}
-                  aria-label={`Analyze ${cand.entry.symbol} (${cand.entry.name})`}
+                  aria-label={`Analyze ${cand.entry.symbol} (${cand.entry.name}), ${isOverlay ? 'live' : 'reference'} price $${cand.displayPrice.toFixed(2)}`}
                   className={`p-4 rounded-xl border transition-all duration-150 active:scale-[0.98] active:bg-[#0e1522] bg-[#111722] space-y-3 block group cursor-pointer ${
                     isRank1
                       ? "border-cyan-500/60 shadow-[0_0_16px_rgba(6,182,212,0.12)] hover:border-cyan-400"
@@ -504,20 +905,60 @@ export default function WeeklyConfluenceSpotlight({
                             {cand.entry.name}
                           </span>
                         </div>
-                        <div className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate">
-                          ${cand.livePrice.toFixed(2)}{" "}
-                          <span className={cand.liveChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                            ({cand.liveChangePct >= 0 ? "+" : ""}{cand.liveChangePct}%)
-                          </span>
-                        </div>
+
+                        {/* Price Display with Explicit Provenance */}
+                        {isOverlay ? (
+                          <div
+                            className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate flex items-center gap-1"
+                            aria-label={`Live price $${cand.displayPrice.toFixed(2)}, change ${cand.displayChangePct >= 0 ? "+" : ""}${cand.displayChangePct}%`}
+                          >
+                            <span>${cand.displayPrice.toFixed(2)}</span>
+                            <span className={cand.displayChangePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                              ({cand.displayChangePct >= 0 ? "+" : ""}{cand.displayChangePct}%)
+                            </span>
+                            <span
+                              className="px-1 py-0.2 rounded text-[9px] bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 font-semibold"
+                              title="Verified live quote from exchange tape"
+                            >
+                              LIVE
+                            </span>
+                          </div>
+                        ) : (
+                          <div
+                            className="text-xs font-mono font-bold text-slate-300 tabular-nums truncate flex items-center gap-1"
+                            aria-label={`Analysis reference price $${cand.displayPrice.toFixed(2)}, session closed`}
+                          >
+                            <span className="text-slate-400 font-normal">Ref:</span>
+                            <span>${cand.displayPrice.toFixed(2)}</span>
+                            <span
+                              className={`px-1 py-0.2 rounded text-[9px] font-semibold border ${
+                                cand.sessionStatus === 'CLOSED'
+                                  ? "bg-slate-900 border-slate-700 text-slate-400"
+                                  : "bg-amber-950/80 border-amber-800/60 text-amber-300"
+                              }`}
+                              title={
+                                cand.sessionStatus === 'CLOSED'
+                                  ? "Anchored to latest completed session close"
+                                  : "Live tape reconnecting; using verified reference close"
+                              }
+                            >
+                              {cand.sessionStatus === 'CLOSED' ? "CLOSED" : "DELAYED"}
+                            </span>
+                          </div>
+                        )}
+                        {!isOverlay && cand.analysisDate && (
+                          <div className="text-[10px] text-slate-500 font-mono truncate" title={`Anchored to ${cand.analysisDate} close`}>
+                            {cand.analysisDate} close
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Sparkline & Compact Score Pill */}
                     <div className="flex items-center gap-2 shrink-0">
                       <MiniSparkline
-                        basePrice={cand.livePrice}
-                        changePct={cand.liveChangePct}
+                        basePrice={cand.displayPrice}
+                        changePct={cand.displayChangePct}
                         width={40}
                         height={18}
                         className="hidden sm:inline-block"
@@ -564,17 +1005,33 @@ export default function WeeklyConfluenceSpotlight({
                     {isPlain ? cand.catalystSummaryPlain : cand.catalystSummary}
                   </p>
 
-                  {/* Footer CTAs */}
+                  {/* Footer CTAs: Explicit separation between Live Execution and Setup Planning */}
                   <div className="flex items-center justify-between pt-1 border-t border-[#1e293b] text-[11px]">
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickLog(e, cand)}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-indigo-600/20 hover:bg-indigo-500 hover:text-slate-950 border-indigo-500/40 text-indigo-300 transition-colors flex items-center gap-1 shrink-0 active:scale-95"
-                      title="Log directly into your Paper Portfolio"
-                    >
-                      <span>💼</span>
-                      <span>{isPlain ? "Quick Paper Log" : "Log to Portfolio"}</span>
-                    </button>
+                    {cand.canExecuteLive ? (
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickLog(e, cand)}
+                        className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-emerald-600/20 hover:bg-emerald-500 hover:text-slate-950 border-emerald-500/40 text-emerald-300 transition-colors flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
+                        title={`Log live execution fill into Paper Portfolio at live price $${cand.executionPrice!.toFixed(2)}`}
+                      >
+                        <span>💼</span>
+                        <span>{isPlain ? "Quick Paper Log" : "Log Live Fill"}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handlePlanSetup(e, cand)}
+                        className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-slate-800/80 hover:bg-slate-700 hover:text-white border-slate-700 text-slate-300 transition-colors flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
+                        title={
+                          cand.sessionStatus === 'CLOSED'
+                            ? "Market session closed; plan setup entry (execution triggers resume at market open)"
+                            : "Live tape delayed; plan setup entry (live execution triggers suspended)"
+                        }
+                      >
+                        <span>📌</span>
+                        <span>{isPlain ? "Track Setup" : "Plan Entry"}</span>
+                      </button>
+                    )}
 
                     <span className="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono border bg-cyan-500/10 border-cyan-500/40 text-cyan-300 group-hover:bg-cyan-500 group-hover:text-slate-950 group-hover:border-cyan-400 transition-colors flex items-center gap-1 shrink-0">
                       Analyze <span className="group-hover:translate-x-0.5 transition-transform">➔</span>
@@ -587,7 +1044,7 @@ export default function WeeklyConfluenceSpotlight({
         ) : spotlightState === 'LOADING' ? (
           <div className="p-8 text-center text-xs font-mono text-cyan-400 bg-[#111722] rounded-xl border border-[#243044] animate-pulse flex items-center justify-center gap-3">
             <span>⏳</span>
-            <span>Scanning multi-factor confluence setups & live quotes...</span>
+            <span>Scanning multi-factor confluence setups &amp; reference quotes...</span>
           </div>
         ) : spotlightState === 'ERROR' ? (
           <div className="p-6 text-center space-y-3 font-mono bg-rose-950/20 rounded-xl border border-rose-800/60 text-xs">
@@ -606,14 +1063,14 @@ export default function WeeklyConfluenceSpotlight({
               🔄 Retry Sieve
             </button>
           </div>
-        ) : spotlightState === 'STALE_MARKET_DATA' ? (
+        ) : spotlightState === 'SETUP_STALE' ? (
           <div className="p-6 text-center space-y-2 font-mono bg-amber-950/20 rounded-xl border border-amber-800/60 text-xs">
             <div className="text-amber-400 font-bold text-sm flex items-center justify-center gap-2">
-              <span>⏳</span>
-              <span>Market Session Offline / Stale Price Telemetry</span>
+              <span>⚠️</span>
+              <span>Tactical Setups Telemetry Stale</span>
             </div>
             <p className="text-slate-300 max-w-lg mx-auto font-sans text-xs">
-              Live exchange tape is closed or candidate prices are older than 4 trading sessions. Live execution triggers are suspended until regular trading session resumes.
+              Market history telemetry is older than 4 trading days. Tactical setups are pending fresh historical data from the exchange.
             </p>
           </div>
         ) : (
