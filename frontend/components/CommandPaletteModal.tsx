@@ -85,10 +85,11 @@ export default function CommandPaletteModal({
 
     // 1. Canonical 4 Flagship Release 1 Hubs (Radar → Analysis → Trade Plan → Portfolio)
     const hubKeywords: Record<string, string[]> = {
-      radar: ["radar", "screener", "gems", "find", "/radar"],
-      terminal: ["terminal", "analysis", "blueprint", "understand", "/terminal", "/analysis"],
-      setups: ["setups", "trade plan", "decide", "execution", "/setups"],
-      portfolio: ["portfolio", "holdings", "manage", "tracker", "/portfolio"],
+      radar: ["radar", "screener", "gems", "find", "/radar", "confluence", "scans"],
+      analysis: ["analysis", "terminal", "blueprint", "understand", "deep dive", "/", "/terminal", "/analysis"],
+      terminal: ["analysis", "terminal", "blueprint", "understand", "deep dive", "/", "/terminal", "/analysis"],
+      setups: ["setups", "trade plan", "decide", "execution", "trade", "plan", "/setups"],
+      portfolio: ["portfolio", "holdings", "manage", "tracker", "risk", "risk heat", "/portfolio"],
     };
 
     CANONICAL_HUBS.forEach((hub) => {
@@ -143,6 +144,7 @@ export default function CommandPaletteModal({
       subtitle: "Deep risk telemetry, sizing clamps & regime controls in Setups",
       badge: "Governor",
       icon: "🛡️",
+      keywords: ["cockpit", "/cockpit", "governor", "guardrails", "risk", "clamps", "regime"],
       action: () => {
         router.push("/setups");
         onClose();

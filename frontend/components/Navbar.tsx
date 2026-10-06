@@ -91,9 +91,6 @@ export default function Navbar({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
-      } else if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
       }
     };
     window.addEventListener("keydown", handleGlobalKey);
@@ -250,7 +247,7 @@ export default function Navbar({
         <header
           role="banner"
           data-testid="navbar"
-          className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-14 flex items-center overflow-x-clip max-w-full"
+          className="border-b border-[#243044] bg-[#0c1017]/95 backdrop-blur h-12 flex items-center overflow-x-clip max-w-full"
         >
           <div className="max-w-[1750px] mx-auto px-2 sm:px-3 xl:px-6 w-full h-14 flex items-center justify-between gap-1 xl:gap-4 min-w-0">
             {/* Left: Brand Logo & Title */}
@@ -484,7 +481,7 @@ export default function Navbar({
         className="fixed top-24 right-4 z-[1000] bg-cyan-950/95 border border-cyan-500 text-cyan-200 px-3.5 py-2 rounded-xl text-xs font-mono shadow-2xl flex items-center gap-2 animate-fadeIn"
       >
         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-        <span>⚡ Local cache purged — Live quotes re-synced!</span>
+        <RefreshCw className="w-3.5 h-3.5 text-cyan-400 shrink-0" aria-hidden="true" /><span>Local cache purged — Live quotes re-synced!</span>
       </div>
     )}
 

@@ -552,7 +552,7 @@ export default function PortfolioPage() {
 
   return (
     <TerminalShell activeHub="portfolio" activeSymbol={activeSymbol}>
-      <main className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
+      <div role="region" aria-label="Portfolio Risk Ledger" className="max-w-[1450px] mx-auto p-4 sm:p-6 space-y-6 pb-28 sm:pb-8">
         {/* Hub Guidance & Orientation (A3-AC1, A3-AC2, A3-AC6, Finding T02) */}
         <PageIntro
           hubId="portfolio"
@@ -621,14 +621,14 @@ export default function PortfolioPage() {
             {/* Right Rail: Total Capital & Deployment */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0 font-mono text-xs">
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                <span className="text-[10px] text-slate-400 uppercase block">Total Net Worth</span>
+                <span className="text-[10px] text-slate-400 uppercase block">Tracked Portfolio Equity</span>
                 <span className="text-base font-bold text-white tabular-nums">
                   {totalNetWorth !== null ? `$${totalNetWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--"}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
                 <span className="text-[10px] text-slate-400 uppercase block">Active Holdings</span>
-                <span className="text-base font-bold text-cyan-400 tabular-nums">
+                <span className="text-base font-bold text-slate-100 tabular-nums">
                   {investedEquity !== null ? `$${investedEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${investedPct?.toFixed(0)}%)` : <span className="text-amber-400">Incomplete ({summary.unpricedCount} unpriced)</span>}
                 </span>
               </div>
@@ -1436,7 +1436,7 @@ export default function PortfolioPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </TerminalShell>
   );
 }

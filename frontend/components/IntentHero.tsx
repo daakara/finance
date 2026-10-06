@@ -68,9 +68,10 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
         </Link>
 
         {/* Step 2: Analyze a stock */}
-        <div
+        <button
+          type="button"
           onClick={() => setIsSearchOpen(true)}
-          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between cursor-pointer"
+          className="bg-[#070b13] hover:bg-[#0e1624] border border-[#1b2537] hover:border-cyan-500/60 rounded-xl p-3 sm:p-4 transition-all duration-200 group shadow-lg flex flex-col justify-between cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
         >
           <div className="space-y-1">
             <div className="flex items-center justify-between">
@@ -88,10 +89,10 @@ export default function IntentHero({ onSelectSymbol }: IntentHeroProps) {
               </p>
             </div>
           </div>
-          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2">
+          <span className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-2 sm:mt-3 block border-t border-[#131d2b] pt-1.5 sm:pt-2 w-full">
             Analysis
           </span>
-        </div>
+        </button>
 
         {/* Step 3: Decide whether/how */}
         <Link

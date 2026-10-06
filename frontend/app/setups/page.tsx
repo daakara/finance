@@ -685,7 +685,7 @@ function SetupsContent() {
                 <div className="sm:hidden flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-900/60 font-mono text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-white font-bold text-sm">{effectiveSetup.ticker}</span>
-                    <span className="text-cyan-400 font-bold">{formatConfluenceScore(effectiveSetup.confluenceScore)}</span>
+                    <span className="text-slate-200 font-bold font-mono">{formatConfluenceScore(effectiveSetup.confluenceScore)}</span>
                     <span className="text-[11px] text-slate-400 truncate max-w-[120px]">{effectiveSetup.setupName}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -735,7 +735,7 @@ function SetupsContent() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-base font-bold font-mono text-white">{setup.ticker}</span>
-                          <span className="text-xs font-mono font-bold text-cyan-400">
+                          <span className="text-xs font-mono font-bold text-slate-200">
                             {formatConfluenceScore(setup.confluenceScore)}
                           </span>
                         </div>
@@ -857,7 +857,7 @@ function SetupsContent() {
                       </div>
                       <div className="flex justify-between border-b border-slate-900 pb-1.5">
                         <span className="text-slate-400">Position Size:</span>
-                        <span className="text-cyan-400 font-bold">{sizing.isAvailable ? `${sizing.recommendedShares} Shares` : 'Unavailable'}</span>
+                        <span className="text-slate-200 font-bold font-mono">{sizing.isAvailable ? `${sizing.recommendedShares} Shares` : 'Unavailable'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-400">Capital Allocated:</span>
@@ -936,7 +936,7 @@ function SetupsContent() {
                         </div>
                         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                           <span className="text-slate-500 block text-[9px] uppercase">Sortino Skew</span>
-                          <span className="text-cyan-400 font-bold">+2.84</span>
+                          <span className="text-emerald-400 font-bold">+2.84</span>
                         </div>
                         <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                           <span className="text-slate-500 block text-[9px] uppercase">Half-Kelly Sizing</span>

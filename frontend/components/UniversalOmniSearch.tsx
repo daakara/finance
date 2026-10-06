@@ -21,16 +21,19 @@ export default function UniversalOmniSearch() {
     setIsOpen(true);
   };
 
-  // Global hotkey: Press "/" or "Cmd+K" / "Ctrl+K" anywhere to open omni-search
+  // Global hotkey: Press "/" anywhere to open omni-search (Cmd+K owned by CommandPalette)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) &&
-        document.activeElement?.tagName !== "INPUT" &&
-        document.activeElement?.tagName !== "TEXTAREA"
-      ) {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInput =
+        activeEl?.tagName === "INPUT" ||
+        activeEl?.tagName === "TEXTAREA" ||
+        activeEl?.tagName === "SELECT" ||
+        activeEl?.isContentEditable;
+
+      if (e.key === "/" && !isInput) {
         e.preventDefault();
-        triggerRef.current = (document.activeElement as HTMLElement) || null;
+        triggerRef.current = activeEl || null;
         setIsOpen(true);
       } else if (e.key === "Escape" && isOpen) {
         setIsOpen(false);

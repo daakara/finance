@@ -354,73 +354,79 @@ export default function WatchlistSidebar({ activeSymbol, onSelectSymbol, liveCur
             return (
               <div
                 key={item.symbol}
-                onClick={() => {
-                  onSelectSymbol(item.symbol);
-                  setIsMobileExpanded(false);
-                }}
-                onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
-                className={`w-full flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition-all active:scale-[0.98] ${
+                className={`w-full flex items-center justify-between p-1 rounded-lg border transition-all ${
                   isSelected
                     ? "bg-[#162030] border-cyan-500 shadow-md shadow-cyan-950/40"
                     : "bg-[#0b1019] border-[#1b2434] hover:bg-[#131b28] hover:border-[#2b3a52]"
                 }`}
               >
-                <div className="flex items-center space-x-2 min-w-0">
-                  <button
-                    type="button"
-                    onClick={(e) => togglePin(e, item.symbol)}
-                    aria-label={isPinned ? `Unpin ${item.symbol}` : `Pin ${item.symbol}`}
-                    className="text-xs hover:scale-125 transition-transform shrink-0 p-0.5"
-                  >
-                    <span className={isPinned ? "text-amber-400" : "text-slate-600 hover:text-slate-400"}>
-                      ★
-                    </span>
-                  </button>
-                  <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-bold text-xs text-white">{item.symbol}</span>
-                      <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
-                        {item.type}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate max-w-[90px] sm:max-w-[100px]">
-                      {item.name}
+                <button
+                  type="button"
+                  onClick={(e) => togglePin(e, item.symbol)}
+                  aria-label={isPinned ? `Unpin ${item.symbol}` : `Pin ${item.symbol}`}
+                  className="text-xs hover:scale-125 transition-transform shrink-0 p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 rounded"
+                >
+                  <span className={isPinned ? "text-amber-400" : "text-slate-600 hover:text-slate-400"}>
+                    ★
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectSymbol(item.symbol);
+                    setIsMobileExpanded(false);
+                  }}
+                  onMouseEnter={() => prefetchAssetAnalytics(item.symbol)}
+                  className="flex-1 flex items-center justify-between p-1 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 rounded min-w-0"
+                >
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-xs text-white">{item.symbol}</span>
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-[#1e293b] text-slate-400">
+                          {item.type}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate max-w-[90px] sm:max-w-[100px]">
+                        {item.name}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Inline Mini Sparkline */}
-                <div className="hidden sm:block shrink-0 px-1">
-                  {item.price && parseFloat(item.price.replace(/[^0-9.]/g, "")) > 0 ? (
-                    <MiniSparkline
-                      basePrice={parseFloat(item.price.replace(/[^0-9.]/g, ""))}
-                      changePct={parseFloat(item.change?.replace(/[^0-9.-]/g, "") || "0") || 0}
-                      isPositive={item.isUp ?? true}
-                      width={42}
-                      height={18}
-                    />
-                  ) : (
-                    <div className="w-[42px] h-[18px] bg-[#162030] rounded animate-pulse" />
-                  )}
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="text-xs font-bold text-slate-200 tabular-nums">
-                    {item.price || <span className="text-slate-500 font-mono text-[11px] animate-pulse">--.--</span>}
+                  {/* Inline Mini Sparkline */}
+                  <div className="hidden sm:block shrink-0 px-1">
+                    {item.price && parseFloat(item.price.replace(/[^0-9.]/g, "")) > 0 ? (
+                      <MiniSparkline
+                        basePrice={parseFloat(item.price.replace(/[^0-9.]/g, ""))}
+                        changePct={parseFloat(item.change?.replace(/[^0-9.-]/g, "") || "0") || 0}
+                        isPositive={item.isUp ?? true}
+                        width={42}
+                        height={18}
+                      />
+                    ) : (
+                      <div className="w-[42px] h-[18px] bg-[#162030] rounded animate-pulse" />
+                    )}
                   </div>
-                  {item.change ? (
-                    <div
-                      title="24-Hour Daily Return relative to previous close"
-                      aria-label={`24-hour change: ${item.change}`}
-                      className={`text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5 ${
-                        item.isUp ? "text-emerald-400" : "text-rose-400"
-                      }`}
-                    >
-                      <span>{item.change}</span>
-                      <span className="text-[8px] opacity-70 font-normal">24H</span>
+
+                  <div className="text-right shrink-0">
+                    <div className="text-xs font-bold text-slate-200 tabular-nums">
+                      {item.price || <span className="text-slate-500 font-mono text-[11px] animate-pulse">--.--</span>}
                     </div>
-                  ) : null}
-                </div>
+                    {item.change ? (
+                      <div
+                        title="24-Hour Daily Return relative to previous close"
+                        aria-label={`24-hour change: ${item.change}`}
+                        className={`text-[10px] font-semibold tabular-nums flex items-center justify-end gap-0.5 ${
+                          item.isUp ? "text-emerald-400" : "text-rose-400"
+                        }`}
+                      >
+                        <span>{item.change}</span>
+                        <span className="text-[8px] opacity-70 font-normal">24H</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
               </div>
             );
           })

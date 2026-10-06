@@ -21,39 +21,20 @@ export default function MiniSparkline({
   isPositive,
   className = "",
 }: MiniSparklineProps) {
+  const isAvailable = Boolean(data && data.length >= 2);
   const positive = isPositive !== undefined ? isPositive : changePct >= 0;
 
-  // Generate deterministic points if data series not explicitly passed
-  const points = useMemo(() => {
-    if (data && data.length >= 2) return data;
-
-    // Generate smooth 8-point deterministic curve matching changePct trend
-    const pts: number[] = [];
-    const count = 8;
-    const start = positive ? basePrice * (1 - Math.abs(changePct) * 0.01) : basePrice * (1 + Math.abs(changePct) * 0.01);
-    const end = basePrice;
-    const diff = end - start;
-
-    for (let i = 0; i < count; i++) {
-      const progress = i / (count - 1);
-      // Add slight organic volatility oscillation
-      const oscillation = Math.sin(progress * Math.PI * 2) * (Math.abs(diff) * 0.25);
-      pts.push(start + diff * progress + (i === 0 || i === count - 1 ? 0 : oscillation));
-    }
-    return pts;
-  }, [data, basePrice, changePct, positive]);
-
   const { pathD, fillD } = useMemo(() => {
-    if (points.length < 2) return { pathD: "", fillD: "" };
+    if (!data || data.length < 2) return { pathD: "", fillD: "" };
 
-    const min = Math.min(...points);
-    const max = Math.max(...points);
+    const min = Math.min(...data);
+    const max = Math.max(...data);
     const range = max - min || 1;
     const padding = 2;
     const usableHeight = height - padding * 2;
 
-    const coords = points.map((val, idx) => {
-      const x = (idx / (points.length - 1)) * width;
+    const coords = data.map((val, idx) => {
+      const x = (idx / (data.length - 1)) * width;
       const y = height - padding - ((val - min) / range) * usableHeight;
       return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) };
     });
@@ -65,7 +46,22 @@ export default function MiniSparkline({
     const fill = `${path} L ${width} ${height} L 0 ${height} Z`;
 
     return { pathD: path, fillD: fill };
-  }, [points, width, height]);
+  }, [data, width, height]);
+
+  // D04: Truthful rendering - never render synthetic curves when series is unavailable (< 2 points)
+  if (!isAvailable) {
+    return (
+      <div
+        role="img"
+        className={`inline-flex items-center justify-center font-mono text-[11px] text-slate-500 select-none ${className}`}
+        style={{ width, height }}
+        title="Historical series unavailable"
+        aria-label="No historical series available"
+      >
+        —
+      </div>
+    );
+  }
 
   const strokeColor = positive ? "#10b981" : "#f43f5e";
   const gradId = `spark-grad-${positive ? "pos" : "neg"}-${Math.round(basePrice * 10)}`;
