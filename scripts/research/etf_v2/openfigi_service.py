@@ -30,6 +30,7 @@ from .openfigi_models import (
     OpenFIGIMappingJob,
     OpenFIGIObservation,
 )
+from .openfigi_config import validate_store_path_parity
 from .openfigi_normalizer import OpenFIGINormalizer
 from .openfigi_persistence import OpenFIGIPersistenceRepository
 
@@ -49,6 +50,8 @@ class OpenFIGICorroborationService:
     ):
         self.client = client
         self.repository = repository
+        if hasattr(client, "rate_limiter") and hasattr(client.rate_limiter, "db_path"):
+            validate_store_path_parity(client.rate_limiter.db_path, repository.db_path)
 
     def run_corroboration(
         self,

@@ -245,7 +245,7 @@ def sample_canonical_record() -> AuthorizedCanonicalInputRecord:
 def test_rlg08_non_dispatched_local_rejection(tmp_path: Path, sample_canonical_record):
     """RLG-08: Locally rejected invalid request consumes no dispatch reservation."""
     db_path = tmp_path / "rlg08.db"
-    repo = OpenFIGIPersistenceRepository(db_path=tmp_path / "test_op.db")
+    repo = OpenFIGIPersistenceRepository(db_path=db_path)
     limiter = GlobalSQLiteRateLimiter(db_path=db_path)
     client = OpenFIGIClient(api_key="TEST_KEY", rate_limiter=limiter)
     service = OpenFIGICorroborationService(client=client, repository=repo)
@@ -395,9 +395,22 @@ def test_rlg16_no_canonical_access(tmp_path: Path):
         GlobalSQLiteRateLimiter(db_path=CANONICAL_DB_PATH)
 
 
-def test_rlg17_no_production_operational_side_effect():
-    """RLG-17: Tests do not create/mutate production operational state."""
-    assert not os.path.exists("data/operational/openfigi_operational.db")
+def test_rlg17_no_production_operational_side_effect(tmp_path: Path):
+    """RLG-17: Tests using isolated temporary databases do not mutate production operational DB."""
+    prod_db = DEFAULT_OPERATIONAL_DB_PATH
+    prod_stat_before = prod_db.stat() if prod_db.exists() else None
+
+    isolated_db = tmp_path / "rlg17_isolated.db"
+    limiter = GlobalSQLiteRateLimiter(db_path=isolated_db)
+    assert limiter.try_reserve()[0] is True
+    assert isolated_db.exists()
+
+    if prod_stat_before is not None:
+        prod_stat_after = prod_db.stat()
+        assert prod_stat_after.st_mtime == prod_stat_before.st_mtime
+        assert prod_stat_after.st_size == prod_stat_before.st_size
+    else:
+        assert not prod_db.exists()
 
 
 def test_rlg18_live_network_kill_switch_preserved(tmp_path: Path):

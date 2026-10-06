@@ -57,8 +57,9 @@ FIXTURES_DIR = Path("tests/fixtures/openfigi")
 @pytest.fixture(autouse=True)
 def isolate_operational_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Guarantees zero production operational database side effects during test runs."""
-    temp_rate_db = tmp_path / "test_openfigi_rate_limit.db"
-    monkeypatch.setenv("OPENFIGI_RATE_LIMIT_DB", str(temp_rate_db))
+    temp_op_db = tmp_path / "test_openfigi_operational.db"
+    monkeypatch.setenv("OPENFIGI_OPERATIONAL_DB", str(temp_op_db))
+    monkeypatch.delenv("OPENFIGI_RATE_LIMIT_DB", raising=False)
     yield
 
 
@@ -93,8 +94,9 @@ def test_adv01_cannot_contaminate_canonical_database(tmp_path: Path):
         OpenFIGIPersistenceRepository(db_path=CANONICAL_DB_PATH)
 
 
-def test_adv02_missing_api_key_fails_before_transport():
+def test_adv02_missing_api_key_fails_before_transport(monkeypatch: pytest.MonkeyPatch):
     """ADV-02: Client fails immediately with CONFIGURATION_FAILURE when API key is missing."""
+    monkeypatch.delenv("OPENFIGI_API_KEY", raising=False)
     client = OpenFIGIClient(api_key=None)
     with pytest.raises(OpenFIGIConfigurationError) as exc_info:
         client.post_mapping_jobs([OpenFIGIMappingJob(idType="ID_ISIN", idValue="IE00B3FL3272")])
@@ -127,8 +129,9 @@ def test_adv04_secret_redaction_in_diagnostics_and_exceptions():
     assert "..." in redacted
 
 
-def test_adv05_unauthenticated_fallback_impossible():
+def test_adv05_unauthenticated_fallback_impossible(monkeypatch: pytest.MonkeyPatch):
     """ADV-05: Client has zero fallback code to unauthenticated requests."""
+    monkeypatch.delenv("OPENFIGI_API_KEY", raising=False)
     client = OpenFIGIClient(api_key="")
     with pytest.raises(OpenFIGIConfigurationError):
         client.post_mapping_jobs([OpenFIGIMappingJob(idType="ID_ISIN", idValue="IE00B3FL3272")])

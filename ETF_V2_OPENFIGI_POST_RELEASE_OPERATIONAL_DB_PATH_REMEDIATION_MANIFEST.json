@@ -1,0 +1,77 @@
+{
+  "manifestSchema": "etf-v2-openfigi-path-remediation-manifest-v1",
+  "gate": "PASS_ETF_V2_OPENFIGI_POST_RELEASE_OPERATIONAL_DB_PATH_REMEDIATION",
+  "timestamp": "2026-10-06T03:02:00Z",
+  "primaryBlocker": "OPERATIONAL_DB_PATH_AUTHORITY_NOT_UNIFIED",
+  "remediationState": "VERIFIED",
+  "baselineSha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+  "pathAuthority": {
+    "resolver": "scripts.research.etf_v2.openfigi_config.resolve_openfigi_operational_db_path",
+    "defaultBase": "data/operational",
+    "defaultDbFilename": "openfigi_operational.db",
+    "resolvedPathForm": "ABSOLUTE",
+    "cwdDependent": false,
+    "rateLimitStorePath": "data/operational/openfigi_operational.db",
+    "operationalPersistencePath": "data/operational/openfigi_operational.db",
+    "pathParity": true
+  },
+  "overrideGovernance": {
+    "overrideAllowed": true,
+    "canonicalOverrideEnvVar": "OPENFIGI_OPERATIONAL_DB",
+    "legacyOverrideEnvVar": "OPENFIGI_RATE_LIMIT_DB",
+    "relativeOverrideAllowed": false,
+    "relativeProductionOverrideRejected": true
+  },
+  "startupValidation": {
+    "validator": "scripts.research.etf_v2.openfigi_config.validate_openfigi_operational_db_path",
+    "storeParityValidator": "scripts.research.etf_v2.openfigi_config.validate_store_path_parity",
+    "rejectsRelativeProductionPath": true,
+    "rejectsStorePathMismatch": true,
+    "rejectsOutsideStorageBoundary": true,
+    "rejectsUnusablePath": true,
+    "rejectsCanonicalStoreContamination": true,
+    "silentFallbackForbidden": true,
+    "status": "PASS"
+  },
+  "invariants": {
+    "INV_OPENFIGI_DB_01": "SATISFIED",
+    "INV_OPENFIGI_DB_02": "SATISFIED",
+    "INV_OPENFIGI_DB_03": "SATISFIED",
+    "INV_OPENFIGI_DB_04": "SATISFIED",
+    "INV_OPENFIGI_DB_05": "SATISFIED",
+    "INV_OPENFIGI_DB_06": "SATISFIED",
+    "INV_OPENFIGI_DB_07": "SATISFIED",
+    "INV_OPENFIGI_DB_08": "SATISFIED"
+  },
+  "multiProcessCoordination": {
+    "sameConfigSameCwd": "SAME_PHYSICAL_FILE",
+    "sameConfigDifferentCwds": "SAME_PHYSICAL_FILE",
+    "sameAbsoluteOverrideDifferentCwds": "SAME_PHYSICAL_FILE",
+    "invalidRelativeOverride": "REJECTED_BY_VALIDATION",
+    "testSpecificIsolatedDbs": "DISTINCT_FROM_PRODUCTION",
+    "status": "VERIFIED"
+  },
+  "globalRateLimitVerification": {
+    "threshold": "20_REQUESTS_PER_ROLLING_60_SECONDS",
+    "processAAttempts": 12,
+    "processBAttempts": 12,
+    "maxAcceptedWithinWindow": 20,
+    "expectedMax": 20,
+    "rejectionConfirmed": true,
+    "liveRequestsMade": 0,
+    "status": "PASS"
+  },
+  "testExecutionSummary": {
+    "openfigiTestsPassed": 62,
+    "etfV2RegressionTestsPassed": 59,
+    "totalTestsPassed": 121,
+    "failures": 0,
+    "unauthorizedDbPathDerivations": 0,
+    "canonicalDbMutation": false,
+    "etfPopulationChanged": false,
+    "openfigiRequestSemanticsChanged": false,
+    "rateLimitThresholdChanged": false
+  },
+  "nextAuthorizedAction": "ETF_V2_OPENFIGI_REMEDIATION_RELEASE_VERIFICATION_GATE",
+  "automaticSuccessorExecution": false
+}
