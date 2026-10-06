@@ -1,0 +1,89 @@
+{
+  "manifestSchema": "etf-v2-openfigi-mainline-integration-manifest-v1",
+  "gate": "PASS_ETF_V2_OPENFIGI_MAINLINE_INTEGRATION",
+  "timestamp": "2026-10-06T04:26:00Z",
+  "sourceLineage": {
+    "sourceTrack": "ETF_V2_OPENFIGI_REMEDIATION",
+    "sourceBranch": "arx/etf-v2-openfigi-remediation",
+    "sourceWorktree": "C:/Users/akara/Documents/Projects/finance-etf-v2",
+    "sourceRemediationCodeSha": "6aadcdf5d69ad0811ada4e6215233fa4e9abbd90",
+    "sourceBranchHead": "cc6a7a4cb7bf465cab6b8d0b1d81d68d751ef750",
+    "sourceBranchBase": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+    "intermediateMainlineSha": "c25553db6b5963caeddc10b2aeb65e855042fb40"
+  },
+  "integrationTopology": {
+    "targetBaseSha": "2a239fb3ecf3e88744a42ae64a4443c039a8d626",
+    "integrationBranch": "arx/etf-v2-openfigi-main-integration",
+    "integrationWorktree": "C:/Users/akara/Documents/Projects/finance-etf-v2-integration",
+    "releaseCandidateSha": "c3f5b134a3c8e77191d2b44b907cb465787a70ff",
+    "mainlineHeadSha": "c3f5b134a3c8e77191d2b44b907cb465787a70ff",
+    "originIntegrationPushed": true,
+    "strategy": "FORWARD_PORT_REMEDIATION_ONTO_CURRENT_MAIN"
+  },
+  "reconciledFiles": [
+    "scripts/research/etf_v2/openfigi_config.py",
+    "scripts/research/etf_v2/openfigi_persistence.py",
+    "scripts/research/etf_v2/openfigi_rate_limiter.py",
+    "scripts/research/etf_v2/openfigi_service.py",
+    "tests/test_etf_v2_openfigi_contract.py",
+    "tests/test_etf_v2_openfigi_global_rate_limiter.py",
+    "tests/test_etf_v2_openfigi_path_resolution.py"
+  ],
+  "mainlinePreservation": {
+    "saasFoundationPhase1Preserved": true,
+    "arxAnalysisDecisionHierarchyPreserved": true,
+    "radarPortfolioAwarePreserved": true,
+    "securityMasterPreserved": true,
+    "unrelatedMainlineCommitsPreserved": true
+  },
+  "invariantsVerified": {
+    "INV-01-DETERMINISTIC_PATH_RESOLVER": "PASS",
+    "INV-02-ABSOLUTE_CWD_INDEPENDENT": "PASS",
+    "INV-03-RELATIVE_OVERRIDE_REJECTION": "PASS",
+    "INV-04-STARTUP_VALIDATION": "PASS",
+    "INV-05-STORE_PARITY": "PASS",
+    "INV-06-GLOBAL_RATE_LIMIT_20_60": "PASS",
+    "INV-07-SHARED_SQLITE_COORDINATION": "PASS",
+    "INV-08-TEST_DB_ISOLATION": "PASS",
+    "INV-09-CANONICAL_DB_FIREWALL": "PASS",
+    "INV-10-LIVE_NETWORK_KILL_SWITCH": "PASS"
+  },
+  "testExecutionSummary": {
+    "openfigiSuite": {
+      "pathResolutionTests": 16,
+      "globalRateLimiterTests": 19,
+      "contractAndPersistenceTests": 27,
+      "totalPassed": 62,
+      "failed": 0,
+      "durationSeconds": 46.12
+    },
+    "etfV2RegressionSuite": {
+      "canonicalPopulationTests": 35,
+      "normalizationTests": 3,
+      "ixbrlBoundariesTests": 21,
+      "passed": 42,
+      "skipped": 17,
+      "failed": 0,
+      "durationSeconds": 47.55
+    },
+    "flake8OpenfigiDiff": {
+      "violations": 0,
+      "status": "CLEAN"
+    }
+  },
+  "checksumAttestation": {
+    "etf_v2_canonical_population.db": "2F7F4E718D1ADEBFB4BF5ED5DD627B306FC2B44D55E5CC479E3B2FCCB9CFF643",
+    "etf_v2_canonical_population_backup.db": "7A2777D85C63D3AA1CC46C5134F8BF9A32236E671437DF3DBEBDC918659A2BEC",
+    "openfigi_operational.db": "090D9236645F6B69A8E34C455CCC4231179DE8469F687C8C949A7A05834604B1",
+    "ETF_V2_OPENFIGI_FIRST_LIVE_VALIDATION_INPUT.json": "F7C71A4E85E623A97AC76D122F61D70E22991EB5FE23AABC8E2D2EE55DCAED56"
+  },
+  "gateVerdict": {
+    "verdict": "PASS_ETF_V2_OPENFIGI_MAINLINE_INTEGRATION",
+    "releaseCandidateSha": "c3f5b134a3c8e77191d2b44b907cb465787a70ff",
+    "deploymentPlatform": "Railway Container Platform",
+    "railwayDeploymentSource": "github://daakara/finance@refs/heads/main",
+    "openfigiActivation": "HOLD",
+    "liveOpenfigiRequestsAuthorized": false,
+    "nextAuthorizedAction": "AWAIT_CONTROLLED_PRODUCTION_ACTIVATION_OR_SECURITY_MASTER_SYNC"
+  }
+}
