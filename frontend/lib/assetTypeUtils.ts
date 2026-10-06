@@ -53,6 +53,16 @@ export interface InstrumentContext {
   [key: string]: any;
 }
 
+export interface InstrumentCapabilities {
+  canRenderStockExecution: boolean;
+  canRenderStockDetails: boolean;
+  canOpenPreflight: boolean;
+  canOpenPositionSizer: boolean;
+  canUseETFWorkflow: boolean;
+  canUseCryptoWorkflow: boolean;
+  disqualificationReason?: string;
+}
+
 /**
  * Resolves authoritative execution eligibility from server-owned metadata.
  * Fails closed if metadata is missing, unverified, conflicted, or unsupported.
@@ -72,6 +82,83 @@ export function resolveExecutionEligibility(
   if (rawEligibility === 'CRYPTO_EXECUTION') return 'CRYPTO_EXECUTION';
 
   return 'FAIL_CLOSED';
+}
+
+/**
+ * Resolves comprehensive functional capabilities derived strictly from
+ * authoritative Server Security Master state and verified trade data.
+ */
+export function resolveCapabilities(
+  context?: InstrumentContext | null,
+  optimalExecution?: any | null
+): InstrumentCapabilities {
+  if (!context) {
+    return {
+      canRenderStockExecution: false,
+      canRenderStockDetails: false,
+      canOpenPreflight: false,
+      canOpenPositionSizer: false,
+      canUseETFWorkflow: false,
+      canUseCryptoWorkflow: false,
+      disqualificationReason: 'Awaiting authoritative server classification handshake.',
+    };
+  }
+
+  const eligibility = resolveExecutionEligibility(context);
+  const secType = String(
+    context.canonicalInstrument?.security_type ||
+    context.instrument?.security_type ||
+    context.securityType ||
+    ''
+  ).toUpperCase();
+  const status = String(
+    context.canonicalInstrument?.classification_status ||
+    context.instrument?.classification_status ||
+    context.classificationStatus ||
+    ''
+  ).toUpperCase();
+
+  const isVerifiedStock =
+    eligibility === 'STOCK_EXECUTION' &&
+    secType === 'COMMON_STOCK' &&
+    status === 'VERIFIED';
+
+  const isVerifiedEtf =
+    eligibility === 'ETF_EXECUTION' &&
+    secType === 'ETF' &&
+    status === 'VERIFIED';
+
+  const isVerifiedCrypto =
+    eligibility === 'CRYPTO_EXECUTION' &&
+    status === 'VERIFIED';
+
+  const hasTradePlanData = Boolean(
+    optimalExecution &&
+    typeof optimalExecution.current_price === 'number' &&
+    optimalExecution.current_price > 0 &&
+    typeof optimalExecution.stop_loss === 'number' &&
+    optimalExecution.stop_loss > 0 &&
+    typeof optimalExecution.optimal_entry_min === 'number'
+  );
+
+  let disqualificationReason: string | undefined;
+  if (!isVerifiedStock && !isVerifiedEtf && !isVerifiedCrypto) {
+    if (secType && secType !== 'UNKNOWN') {
+      disqualificationReason = `Instrument is classified as ${secType.replace(/_/g, ' ')} and is not eligible for long-only common stock execution under ARX Terminal quantitative integrity rules.`;
+    } else {
+      disqualificationReason = 'Asset classification is unverified under ARX Server Security Master integrity rules.';
+    }
+  }
+
+  return {
+    canRenderStockExecution: isVerifiedStock,
+    canRenderStockDetails: isVerifiedStock,
+    canOpenPreflight: isVerifiedStock && hasTradePlanData,
+    canOpenPositionSizer: isVerifiedStock && hasTradePlanData,
+    canUseETFWorkflow: isVerifiedEtf,
+    canUseCryptoWorkflow: isVerifiedCrypto,
+    disqualificationReason,
+  };
 }
 
 /**
@@ -134,7 +221,7 @@ export function isETF(
   context?: InstrumentContext | null
 ): boolean {
   if (context) {
-    return resolveExecutionEligibility(context) === 'ETF_EXECUTION';
+    return resolveCapabilities(context).canUseETFWorkflow;
   }
   return resolveAssetType(symbol) === 'ETF';
 }
@@ -145,7 +232,7 @@ export function isStock(
   context?: InstrumentContext | null
 ): boolean {
   if (context) {
-    return resolveExecutionEligibility(context) === 'STOCK_EXECUTION';
+    return resolveCapabilities(context).canRenderStockExecution;
   }
   return resolveAssetType(symbol) === 'Stock';
 }
@@ -156,7 +243,7 @@ export function isCrypto(
   context?: InstrumentContext | null
 ): boolean {
   if (context) {
-    return resolveExecutionEligibility(context) === 'CRYPTO_EXECUTION';
+    return resolveCapabilities(context).canUseCryptoWorkflow;
   }
   return resolveAssetType(symbol) === 'Crypto';
 }

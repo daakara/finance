@@ -10,3 +10,6 @@
 /politician/  /smart-money  301
 /strategy     /setups  301
 /strategy/    /setups  301
+
+# Dynamic Stock Route Fallback for Uncataloged Operating Equities
+/stock/*  /stock/index.html  200

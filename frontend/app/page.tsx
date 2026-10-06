@@ -3,7 +3,7 @@
 import { trackAnalysisToSetup } from "../lib/matomo";
 import { useDataSource } from "../lib/DataSourceContext";
 
-import { useEffect, useState, useRef, useCallback, Suspense } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
@@ -31,7 +31,7 @@ import EtfRiskProfileCard from "../components/EtfRiskProfileCard";
 import { fetchAssetAnalytics, AnalyticsResponse, SpotPriceRegistry } from "../lib/api";
 import { trackWorkspaceSwitch, trackRoleSwitch, trackSymbolSearch } from "../lib/matomo";
 import { resolveAssetAlias } from "../lib/assetRegistry";
-import { isETF, isStock, isUnknownAsset } from "../lib/assetTypeUtils";
+import { isETF, resolveCapabilities } from "../lib/assetTypeUtils";
 import { emitEtfIntentAttempt } from "../lib/telemetry/etfIntentClient";
 import TerminalSsrShell from "../components/TerminalSsrShell";
 import { Target, Landmark, BarChart3, Shield } from "lucide-react";
@@ -58,6 +58,7 @@ function TerminalContent() {
   );
   const [macroData, setMacroData] = useState<FredMacroData | null>(null);
   const [insiderTrades, setInsiderTrades] = useState<SecForm4Trade[]>([]);
+  const capabilities = useMemo(() => resolveCapabilities(data, data?.optimalExecution), [data]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const cacheRef = useRef<Map<string, AnalyticsResponse>>(new Map());
 
@@ -419,9 +420,9 @@ function TerminalContent() {
                     <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
                     <span>Resolving authoritative execution routing...</span>
                   </div>
-                ) : isETF(selectedSymbol, data) ? (
+                ) : capabilities.canUseETFWorkflow ? (
                   <EtfCostOfOwnershipCard symbol={selectedSymbol} />
-                ) : isStock(selectedSymbol, data) ? (
+                ) : capabilities.canRenderStockExecution ? (
                   <OptimalEntryExitCard
                     symbol={selectedSymbol}
                     executionPlan={data?.optimalExecution}
@@ -440,10 +441,8 @@ function TerminalContent() {
                       <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      {(data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType) &&
-                      (data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType) !== "UNKNOWN"
-                        ? `Instrument is classified as ${String(data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType).replace(/_/g, " ")} and is not eligible for long-only common stock execution under ARX Terminal quantitative integrity rules.`
-                        : `Asset classification for "${selectedSymbol}" is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.`
+                      {capabilities.disqualificationReason ||
+                        `Asset classification for "${selectedSymbol}" is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.`
                       }
                     </p>
                   </div>
@@ -606,9 +605,9 @@ function TerminalContent() {
                     <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
                     <span>Resolving authoritative execution routing...</span>
                   </div>
-                ) : isETF(selectedSymbol, data) ? (
+                ) : capabilities.canUseETFWorkflow ? (
                   <EtfCostOfOwnershipCard symbol={selectedSymbol} />
-                ) : isStock(selectedSymbol, data) ? (
+                ) : capabilities.canRenderStockExecution ? (
                   <>
                     {userRole === "DAY_TRADER" && data && (
                       <DayTraderPositionSizer symbol={selectedSymbol} data={data} />
@@ -632,10 +631,8 @@ function TerminalContent() {
                       <h3 className="text-sm font-bold text-slate-200">🎯 {selectedSymbol} Execution Unresolved</h3>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      {(data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType) &&
-                      (data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType) !== "UNKNOWN"
-                        ? `Instrument is classified as ${String(data?.canonicalInstrument?.security_type || data?.instrument?.security_type || data?.securityType).replace(/_/g, " ")} and is not eligible for long-only common stock execution under ARX Terminal quantitative integrity rules.`
-                        : `Asset classification for "${selectedSymbol}" is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.`
+                      {capabilities.disqualificationReason ||
+                        `Asset classification for "${selectedSymbol}" is unverified. Under ARX Terminal quantitative integrity rules, swing execution ladders are constrained to verified operating equities, and ETF cost analysis is constrained to verified fund instruments.`
                       }
                     </p>
                   </div>
@@ -653,7 +650,7 @@ function TerminalContent() {
                   userRole={userRole}
                   onSelectSymbol={setSelectedSymbol}
                 />
-                {!isETF(selectedSymbol, data) && (
+                {!capabilities.canUseETFWorkflow && (
                   <TraderArchetypesCard
                     symbol={selectedSymbol}
                     traderArchetypes={data?.traderArchetypes}
@@ -665,7 +662,7 @@ function TerminalContent() {
             {/* TAB 3: FUNDAMENTALS & MACRO REGIME */}
             {activeTab === "FUNDAMENTALS" && (
               <div className="space-y-4 sm:space-y-5 animate-fadeIn">
-                {isStock(selectedSymbol, data) && (
+                {capabilities.canRenderStockExecution && (
                   <AssetFactorRadar
                     symbol={selectedSymbol}
                     factorScores={data?.factorScores}
@@ -673,7 +670,7 @@ function TerminalContent() {
                     expectedReturn={data?.expectedReturn}
                   />
                 )}
-                {isETF(selectedSymbol, data) && (
+                {capabilities.canUseETFWorkflow && (
                   <EtfRiskProfileCard
                     symbol={selectedSymbol}
                   />

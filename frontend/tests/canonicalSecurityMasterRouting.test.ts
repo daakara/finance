@@ -2,6 +2,7 @@ import assert from "node:assert";
 import {
   resolveAssetType,
   resolveExecutionEligibility,
+  resolveCapabilities,
   isStock,
   isETF,
   isCrypto,
@@ -179,5 +180,62 @@ assert.strictEqual(isStock("UNVERIFIED_XYZ", unverifiedPayload), false, "Generic
 assert.strictEqual(isETF("UNVERIFIED_XYZ", unverifiedPayload), false);
 assert.strictEqual(isCrypto("UNVERIFIED_XYZ", unverifiedPayload), false);
 console.log("   [OK] Generic fallback to Stock is strictly prohibited and fails closed");
+
+// ---------------------------------------------------------------------------
+// 6. Comprehensive resolveCapabilities Tests
+// ---------------------------------------------------------------------------
+console.log("6. Testing resolveCapabilities across security types, data states, and modalities...");
+
+// 6.1 Verified common stock (e.g. PLSE) with complete trade plan data
+const validTradePlan = {
+  current_price: 10.50,
+  optimal_entry_min: 10.20,
+  optimal_entry_max: 10.60,
+  stop_loss: 9.75,
+  take_profit_1: 12.00,
+  risk_reward_ratio: 2.0,
+};
+
+const plseCaps = resolveCapabilities(stockPayload, validTradePlan);
+assert.strictEqual(plseCaps.canRenderStockExecution, true, "PLSE must be authorized for stock execution");
+assert.strictEqual(plseCaps.canRenderStockDetails, true, "PLSE must be authorized for stock detail blueprint");
+assert.strictEqual(plseCaps.canOpenPreflight, true, "PLSE with trade plan must open preflight checklist");
+assert.strictEqual(plseCaps.canOpenPositionSizer, true, "PLSE with trade plan must open position sizer");
+assert.strictEqual(plseCaps.canUseETFWorkflow, false, "PLSE must not route to ETF workflow");
+assert.strictEqual(plseCaps.canUseCryptoWorkflow, false, "PLSE must not route to Crypto workflow");
+assert.strictEqual(plseCaps.disqualificationReason, undefined, "PLSE must not have disqualification reason");
+console.log("   [OK] Verified common stock with trade plan passes all capabilities");
+
+// 6.2 Verified common stock without trade plan (e.g. data still loading or uncalculated)
+const plseNoPlanCaps = resolveCapabilities(stockPayload, null);
+assert.strictEqual(plseNoPlanCaps.canRenderStockExecution, true, "Stock execution card rendered");
+assert.strictEqual(plseNoPlanCaps.canRenderStockDetails, true, "Stock details rendered");
+assert.strictEqual(plseNoPlanCaps.canOpenPreflight, false, "Preflight disabled without valid price/stop levels");
+assert.strictEqual(plseNoPlanCaps.canOpenPositionSizer, false, "Sizer disabled without valid price/stop levels");
+console.log("   [OK] Verified common stock without trade plan safely disables sizing/preflight modals");
+
+// 6.3 Verified ETF (e.g. SPY)
+const spyCaps = resolveCapabilities(etfPayload, validTradePlan);
+assert.strictEqual(spyCaps.canUseETFWorkflow, true, "ETF must activate ETF workflow");
+assert.strictEqual(spyCaps.canRenderStockExecution, false, "ETF must not activate stock execution");
+assert.strictEqual(spyCaps.canRenderStockDetails, false, "ETF must not activate stock details");
+assert.strictEqual(spyCaps.canOpenPreflight, false, "ETF must not activate stock preflight checklist");
+console.log("   [OK] ETF capabilities strictly segregated to ETF workflow");
+
+// 6.4 ADR / REIT / Unsupported fail-closed
+const adrCaps = resolveCapabilities(failClosedPayload, validTradePlan);
+assert.strictEqual(adrCaps.canRenderStockExecution, false, "ADR must not render stock execution");
+assert.strictEqual(adrCaps.canRenderStockDetails, false, "ADR must not render stock details");
+assert.strictEqual(adrCaps.canUseETFWorkflow, false, "ADR must not route to ETF");
+assert.ok(adrCaps.disqualificationReason?.includes("ADR"), "Disqualification reason must mention ADR");
+console.log("   [OK] Specialized equity subtype (ADR) fails closed with descriptive reason");
+
+// 6.5 Null / Missing context fails closed
+const nullCaps = resolveCapabilities(null, null);
+assert.strictEqual(nullCaps.canRenderStockExecution, false);
+assert.strictEqual(nullCaps.canRenderStockDetails, false);
+assert.strictEqual(nullCaps.canOpenPreflight, false);
+assert.ok(nullCaps.disqualificationReason !== undefined, "Null context must have disqualification explanation");
+console.log("   [OK] Null context fails closed safely");
 
 console.log("\nALL ARX CANONICAL SECURITY MASTER FRONTEND ROUTING TESTS PASSED SUCCESSFULLY!\n");

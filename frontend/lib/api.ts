@@ -659,6 +659,11 @@ export interface AnalyticsResponse {
   decisionId?: string;
   canonicalDecision?: any;
   instrument?: CanonicalInstrumentEnvelope;
+  canonicalInstrument?: CanonicalInstrumentEnvelope;
+  executionEligibility?: string;
+  securityType?: string;
+  assetClass?: string;
+  classificationStatus?: string;
   analytics?: {
     advanced_metrics?: {
       VaR_95?: number;
