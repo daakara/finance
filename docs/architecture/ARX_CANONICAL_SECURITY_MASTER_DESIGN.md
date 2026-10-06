@@ -1,378 +1,389 @@
 # ARX TERMINAL — CANONICAL SERVER SECURITY MASTER
 ## CLASSIFICATION & EXECUTION ELIGIBILITY CONTRACT
-### ARCHITECTURAL DESIGN SPECIFICATION & GATE ARTIFACT
+### ARCHITECTURAL DESIGN SPECIFICATION & EVIDENCE-RECONCILED DESIGN FREEZE
 
-**Document Version**: 1.0.0
-**Design Gate Status**: `PASS_ARX_CANONICAL_SECURITY_MASTER_DESIGN`
-**Implementation Prerequisite**: `PROVIDER_ACCESS_READINESS`
-**Target Subsystem**: `api/` (Backend Security Master & Routing Contract) & `frontend/` (Enrichment-Only Client)
-**Governing Invariants**: `INV-SECMASTER-01` through `INV-SECMASTER-14`
-
----
-
-## 0. Executive Summary & Purpose
-
-This specification formally designs and freezes the **Canonical Server Security Master**, **Instrument Classification Authority**, and **Execution Eligibility Policy** for ARX Terminal.
-
-### Problem Statement
-An architectural audit triggered by ticker `PLSE` (Pulse Biosciences, Inc.) revealed that ARX Terminal's execution routing was gated exclusively by client-side dictionaries (`MASTER_ASSET_CATALOG` with ~40 entries and `SHARED_WATCHLIST_ITEMS` with 20 entries in `frontend/lib/assetTypeUtils.ts`). Any valid exchange-traded equity outside this hardcoded list—regardless of quantitative validity on the server—resolved as `UNKNOWN` and was suppressed from execution surfaces (`OptimalEntryExitCard` and `PreFlightChecklistModal`).
-
-### Solution
-This design relocates instrument classification authority entirely to the server, defines a typed classification and eligibility contract, decouples quantitative analytics capability from execution eligibility, preserves strict fail-closed routing for unsupported and ambiguous instruments, and demotes curated catalogs to pure presentation and discovery enrichment.
+**Document Version**: 2.0.0 (Evidence-Reconciled Freeze)
+**Design Gate Status**: `PASS_ARX_CANONICAL_SECURITY_MASTER_DESIGN_FREEZE`
+**Predecessor Gate**: `PASS_ARX_SECURITY_MASTER_PROVIDER_AND_ELIGIBILITY_EVIDENCE`
+**Dedicated Branch**: `arx/security-master`
+**Design Freeze Implementation State**: `NOT_AUTHORIZED`
+**Implementation Gate Status**: `NOT_YET_OPENED`
+**Governing Invariants**: `INV-SECMASTER-01` through `INV-SECMASTER-20`
 
 ---
 
-## 1. Required Architectural Separation
+## 0. Purpose & Executive Summary
 
-The platform enforces five strictly decoupled operational layers:
+This specification formally freezes the canonical server-owned **Security Master**, **Instrument Classification Authority**, and **Execution Eligibility Policy** for ARX Terminal, fully reconciled with the live provider-capability and execution-eligibility evidence.
 
-```mermaid
-flowchart TD
-    subgraph Data Layer
-        P1[Primary Provider: Massive / Polygon Reference] --> SM[Server Security Master]
-        P2[Secondary Provider: Alpaca Assets API] --> SM
-        P3[Cross-Check: OpenFIGI V3] --> SM
-    end
+### Background & Finding
+An investigation into symbol `PLSE` (Pulse Biosciences, Inc.) revealed that execution routing was gated exclusively by frontend static dictionaries (`MASTER_ASSET_CATALOG` and `SHARED_WATCHLIST_ITEMS` in `frontend/lib/assetTypeUtils.ts`). Valid operating equities outside this hardcoded whitelist resolved client-side as `UNKNOWN`, suppressing `OptimalEntryExitCard` and `PreFlightChecklistModal`.
 
-    subgraph Authority Layer
-        SM --> CI[CanonicalInstrument Identity & Classification]
-        CI --> EEP[Execution Eligibility Policy Engine]
-    end
-
-    subgraph Consumer Layer
-        EEP --> RC[Routing Contract: Stock / ETF / Crypto / Fail-Closed]
-        RC --> UI[ARX Terminal UI Surfaces]
-    end
-
-    subgraph Independent Subsystems
-        AE[Analytics Engine: Candles, ATR, VCP, Confluence] -.->|Informs Diagnostics Only| UI
-        CAT[Curated Catalogs & Watchlists] -.->|Enrichment Only: Moat, Catalyst, Notes| UI
-    end
-```
-
-### Architectural Guarantees
-1. **Instrument Identity Authority**: Answered exclusively by `Server Security Master` (*"What is this instrument?"*).
-2. **Execution Support Authority**: Answered exclusively by `Execution Eligibility Policy` (*"May this instrument use a particular execution surface?"*).
-3. **Analytics Capability Authority**: Answered by `Analytics Engine` (*"Can the system calculate quantitative models for this data?"*). Analytics success **never** confers trading eligibility.
-4. **Curated Metadata Authority**: Managed by `Curated Catalogs` for display labels, investment narratives, and watchlist defaults. Catalog membership **never** determines classification or routing.
+### Reconciled Architecture
+This design establishes a server-owned, composite-authority Security Master that normalizes real-time listing and active state from Alpaca with structural security-subtype precision from OpenFIGI. It decouples quantitative analytics capability from execution eligibility, preserves strict fail-closed routing for unsupported instruments, purges informal liquidity thresholds, and demotes curated frontend catalogs to presentation/discovery enrichment.
 
 ---
 
-## 2. Canonical Security Master Contract
-
-### 2.1 Server Domain Model (`CanonicalInstrument`)
-
-```python
-from enum import Enum
-from typing import Optional
-from pydantic import BaseModel, Field
-
-class AssetClass(str, Enum):
-    EQUITY = "EQUITY"
-    ETF = "ETF"
-    CRYPTO = "CRYPTO"
-    FUND = "FUND"
-    FIXED_INCOME = "FIXED_INCOME"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
-
-class SecurityType(str, Enum):
-    COMMON_STOCK = "COMMON_STOCK"
-    ADR = "ADR"
-    PREFERRED = "PREFERRED"
-    REIT = "REIT"
-    CLOSED_END_FUND = "CLOSED_END_FUND"
-    WARRANT = "WARRANT"
-    UNIT = "UNIT"
-    RIGHT = "RIGHT"
-    ETF = "ETF"
-    CRYPTO = "CRYPTO"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
-
-class ListingStatus(str, Enum):
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    DELISTED = "DELISTED"
-    UNKNOWN = "UNKNOWN"
-
-class ClassificationStatus(str, Enum):
-    VERIFIED = "VERIFIED"
-    UNVERIFIED = "UNVERIFIED"
-    UNSUPPORTED = "UNSUPPORTED"
-    CONFLICTED = "CONFLICTED"
-
-class ExecutionEligibility(str, Enum):
-    STOCK_EXECUTION = "STOCK_EXECUTION"
-    ETF_EXECUTION = "ETF_EXECUTION"
-    CRYPTO_EXECUTION = "CRYPTO_EXECUTION"
-    UNSUPPORTED = "UNSUPPORTED"
-    UNKNOWN = "UNKNOWN"
-
-class AnalyticsCapability(str, Enum):
-    AVAILABLE = "AVAILABLE"
-    UNAVAILABLE = "UNAVAILABLE"
-    PARTIAL = "PARTIAL"
-    UNKNOWN = "UNKNOWN"
-
-class CanonicalInstrument(BaseModel):
-    symbol: str = Field(..., description="Normalized canonical ARX ticker")
-    provider_symbol: str = Field(..., description="Provider-native lookup identifier")
-    asset_class: AssetClass = Field(default=AssetClass.UNKNOWN)
-    security_type: SecurityType = Field(default=SecurityType.UNKNOWN)
-    primary_exchange: str = Field(default="UNKNOWN")
-    listing_status: ListingStatus = Field(default=ListingStatus.UNKNOWN)
-    classification_status: ClassificationStatus = Field(default=ClassificationStatus.UNVERIFIED)
-    execution_eligibility: ExecutionEligibility = Field(default=ExecutionEligibility.UNKNOWN)
-    analytics_capability: AnalyticsCapability = Field(default=AnalyticsCapability.UNKNOWN)
-    classification_authority: str = Field(..., description="Authoritative server subsystem/provider")
-    source_provider: str = Field(..., description="Primary provider supplying metadata")
-    classification_timestamp: str = Field(..., description="ISO 8601 UTC timestamp of resolution")
-    source_updated_at: Optional[str] = Field(None, description="Provider timestamp of source record update")
-```
-
----
-
-## 3. Canonical Identity & Normalization Rules
-
-| Normalization Domain | Canonical Rule | Example Input $\rightarrow$ Output | Failure / Fallback Policy |
-| :--- | :--- | :--- | :--- |
-| **Symbol Case & Whitespace** | Strip surrounding whitespace; uppercase ASCII strictly. | `" plse "` $\rightarrow$ `"PLSE"` | Empty / non-alphanumeric fails as `UNKNOWN`. |
-| **Share Class Delimiters** | Convert dot notations to standard hyphen representation. | `"BRK.B"` $\rightarrow$ `"BRK-B"`, `"BF.B"` $\rightarrow$ `"BF-B"` | Unrecognized delimiter patterns fail closed. |
-| **Provider Suffixes** | Strip regional vendor suffixes for primary US equities. | `"AAPL.US"` $\rightarrow$ `"AAPL"` | Non-US exchange suffixes resolve to `OTHER` / `UNSUPPORTED`. |
-| **Crypto Pairs** | Digital assets must adhere to `{BASE}-USD` standard. | `"BTC"` $\rightarrow$ `"BTC-USD"` (when classified as Crypto) | Bare tokens lacking fiat pair resolve to `UNVERIFIED`. |
-| **Exchange Disambiguation** | Primary exchange mapped to ISO MIC codes (`XNAS`, `XNYS`, `BATS`, `ARCX`). | `"NASDAQ"` $\rightarrow$ `"XNAS"`, `"NYSE"` $\rightarrow$ `"XNYS"` | Unmapped exchange defaults to `"UNKNOWN"`. |
-| **Symbol Collisions** | Composite FIGI / CIK used as invariant secondary anchor. | Delisted vs Relisted symbol collisions | Resolve to currently `ACTIVE` listing; delisted remains archived. |
-| **Corporate Renames** | Maintain CIK/FIGI identity ledger across rebrands. | `FB` $\rightarrow$ `META` | Historic lookups redirect with deprecation notice; zero data mix. |
-| **Delisting Policy** | Mark `listing_status = DELISTED`; revoke execution eligibility. | Delisted equity | `execution_eligibility = UNSUPPORTED`; `route = FAIL_CLOSED`. |
-
----
-
-## 4. Classification Source Authority & Precedence
-
-### 4.1 Source Inventory
-
-| Source Candidate | Fields Available | Asset Class? | Security Type? | Exchange? | Active Status? | Rate Limit / Plan | Production Readiness |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Massive / Polygon Reference** | `ticker`, `name`, `market`, `type`, `primary_exchange`, `active`, `cik`, `composite_figi` | **YES** | **YES** (`CS`, `ETF`, `ADRC`, `PREF`, `WARRANT`, `RIGHT`, `UNIT`) | **YES** | **YES** | Bounded per plan tier | Primary Authority Candidate |
-| **Alpaca Asset API (`/v2/assets`)** | `symbol`, `name`, `class`, `exchange`, `status`, `tradable`, `attributes` | **YES** (`us_equity`, `crypto`) | **PARTIAL** (Attributes distinguish fractionable/options) | **YES** | **YES** | Standard account limit | Secondary Authority Candidate |
-| **OpenFIGI V3 API** | `figi`, `securityType`, `marketSector`, `shareClassFIGI` | **YES** | **YES** | **YES** | **PARTIAL** | Open tier rate-limited | Tertiary Institutional Crosscheck |
-| **SEC EDGAR CIK Mapping** | `cik`, `ticker`, `title` | **PARTIAL** (Corporate reporting) | **NO** | **NO** | **PARTIAL** | 10 req/sec strict | Regulatory Crosscheck Only |
-| **Backend `KNOWN_ETFS`** | Set of 15 institutional ETF tickers | **YES** | **YES** | **NO** | **NO** | Zero overhead | Internal Emergency Fallback Only |
-| **Frontend Catalogs** | Hardcoded JSON profiles | **NO** (Curated) | **NO** (Unverified) | **NO** | **NO** | In-memory | **Zero Classification Precedence** |
-
-### 4.2 Source Precedence Chain
+## 1. Correct Provider Authority Model
 
 ```ini
-PRIMARY_CLASSIFICATION_SOURCE =
-  MASSIVE_POLYGON_REFERENCE
+CANONICAL_AUTHORITY =
+  ARX_SERVER_SECURITY_MASTER
 
-SECONDARY_CLASSIFICATION_SOURCE =
+IDENTITY_LISTING_AUTHORITY =
   ALPACA_ASSET_DIRECTORY
 
-TERTIARY_CROSSCHECK_SOURCE =
+SECURITY_SUBTYPE_AUTHORITY =
   OPENFIGI_V3_MAPPING
 
+MASSIVE_POLYGON_ROLE =
+  OPTIONAL_FUTURE_PROVIDER
+
+MASSIVE_POLYGON_REQUIRED_FOR_V1 =
+  NO
+```
+
+### Provider Responsibilities
+- **Alpaca Asset Directory** (`/v2/assets`): Authoritative for provider identity, exchange, real-time listing/activity status, tradability metadata, and broad asset class (`us_equity` vs `crypto`).
+- **OpenFIGI V3 Mapping** (`/v3/mapping`): Authoritative for structural security subtype (`Common Stock`, `ETP`, `ADR`, `REIT`, `Warrant`), share class FIGI, and composite FIGI.
+- **Normalization Invariant**: The ARX server normalizes both sources into a single `CanonicalInstrument`. Alpaca's broad `us_equity` value is **not** sufficient proof of common-stock subtype.
+
+---
+
+## 2. Field-Level Precedence Table
+
+| Canonical Field | Primary Evidence | Secondary / Crosscheck | Missing Behavior | Conflict Behavior |
+| :--- | :--- | :--- | :--- | :--- |
+| **`symbol`** | Alpaca asset directory symbol for the resolved provider asset | OpenFIGI mapping symbol or submitted identifier, when available | If no authoritative symbol is available, do not create a canonical instrument; return `UNVERIFIED` and fail closed. | If Alpaca and OpenFIGI identify materially different symbols for the same requested instrument, mark `CONFLICTED`; do not select the more permissive or executable symbol. |
+| **`provider_symbol`** | Alpaca provider-native symbol used for asset lookup and execution routing | Submitted symbol and OpenFIGI mapping input/output symbol, used only to verify normalization | If provider-native symbol cannot be established, retain no executable provider symbol; mark `UNVERIFIED` and fail closed. | If provider-native symbol conflicts with submitted or mapped symbol in a way that routes to a different asset, mark `CONFLICTED` and fail closed; harmless formatting/case normalization is not a conflict. |
+| **`asset_class`** | Alpaca asset directory broad asset class, normalized from values such as `us_equity` to `EQUITY` | OpenFIGI market sector and security type, used to corroborate the broad class | If Alpaca asset class is missing or unsupported, use OpenFIGI only when its mapping provides an unambiguous broad class; otherwise mark `UNVERIFIED` and fail closed. | If Alpaca and OpenFIGI disagree on broad class, mark `CONFLICTED` and fail closed unless the difference is documented vocabulary normalization (e.g. `us_equity` $\rightarrow$ `EQUITY`). |
+| **`security_type`** | OpenFIGI v3 mapping security type and related subtype fields (`securityType`, `securityType2`) | Alpaca broad asset class, exchange, and listing metadata; may corroborate equity nature but cannot independently establish subtype | If OpenFIGI subtype evidence is unavailable, do not infer from symbol suffixes, catalog membership, frontend metadata, or analytics; mark `UNVERIFIED` and fail closed. | If subtype evidence conflicts materially with other provider evidence or produces an execution-relevant ambiguity, mark `CONFLICTED` and fail closed; do not silently choose Common Stock. |
+| **`primary_exchange`** | Alpaca asset directory `exchange` field | OpenFIGI exchange, market, or venue fields when present | If primary exchange is unavailable, preserve instrument only if identity and execution policy remain independently verified; otherwise mark `UNVERIFIED` and fail closed. | If provider exchange values differ only by documented naming or code normalization, normalize them; if they identify materially different venues or affect eligibility, mark `CONFLICTED` and fail closed. |
+| **`listing_status`** | Alpaca asset directory listing/activity status (`status: "active"`) | Alpaca tradability/shortability metadata; OpenFIGI active/listing indicators when available | If listing status is unavailable, do not assume active or tradable; mark `UNVERIFIED` and fail closed for execution. | If authoritative status indicates incompatible states (active vs inactive), mark `CONFLICTED` and fail closed; do not treat tradability metadata as proof that an inactive listing is executable. |
+| **`classification_status`** | ARX server normalization of identity, listing, asset class, and subtype evidence | Provider provenance, timestamps, raw normalized fields, and crosscheck results | Set `UNVERIFIED` when required evidence is absent, stale beyond approved policy, or insufficient to establish a supported classification. | Set `CONFLICTED` for any material provider disagreement capable of changing identity, subtype, listing status, or eligibility; set `VERIFIED` only when evidence is consistent. |
+| **`execution_eligibility`** | ARX execution policy applied to normalized `security_type`, `asset_class`, `listing_status`, and `classification_status` | None; frontend catalogs, analytics, suffixes, and provider convenience fields have zero authority to override policy | If classification is `UNVERIFIED`, `CONFLICTED`, unsupported, inactive, or outside authorized contract, set `FAIL_CLOSED`. | If any material conflict could change the execution route, set `FAIL_CLOSED`; never resolve a conflict by selecting the more permissive execution policy. |
+| **`stable_identifier`** | Provider stable identifier, preferably FIGI from OpenFIGI, with Alpaca asset UUID retained as provider provenance | The other provider's stable identifier and symbol mapping, used to verify both records refer to the same instrument | If no stable identifier is available, retain instrument only with sufficient non-identifier evidence for approved use; otherwise mark `UNVERIFIED` and fail closed. | If stable identifiers map to different instruments, mark `CONFLICTED` and fail closed; if absent from one provider but available identifiers agree, record missing provenance without inventing an ID. |
+
+```ini
 FRONTEND_CATALOG_PRECEDENCE =
-  NONE (ZERO_AUTHORITY)
+  NONE
 
 SYMBOL_SUFFIX_PRECEDENCE =
-  NONE_UNLESS_EXPLICITLY_APPROVED
+  NONE
+
+ANALYTICS_SUCCESS_PRECEDENCE =
+  NONE
 ```
 
-### 4.3 Conflict Resolution Policy
-If Primary and Secondary sources disagree on `asset_class` or `security_type`:
+---
+
+## 3. Conflict Semantics
+
 ```ini
-CONFLICT_BEHAVIOR =
-  CLASSIFICATION_STATUS = CONFLICTED
-  EXECUTION_ELIGIBILITY = UNSUPPORTED
-  ROUTING = FAIL_CLOSED
+MATERIAL_PROVIDER_CONFLICT =
+  conflicting identity, asset class, security subtype, listing status,
+  or other field capable of changing execution eligibility
+
+CLASSIFICATION_STATUS_ON_MATERIAL_CONFLICT =
+  CONFLICTED
+
+CONFLICTED_ROUTING =
+  FAIL_CLOSED
 ```
-Silent elevation to a permissive classification is **strictly prohibited**.
+Distinguish harmless vocabulary normalization (`us_equity` $\rightarrow$ `EQUITY`, `NASDAQ` $\rightarrow$ `XNAS`) from material classification disagreement. Never silently prefer the more permissive classification.
 
 ---
 
-## 5. Freshness, Invalidation & Caching Model
+## 4. Security-Type Support Matrix Correction
 
-| Metadata Class | Fields | Cache Location | Cache TTL | Invalidation Trigger | Stale Behavior |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Stable Identity** | `asset_class`, `security_type`, `primary_exchange`, `figi`, `cik` | Persistent DB (`canonical_instruments`) + In-Memory LRU | **168 Hours (7 Days)** | Upstream corporate action event / manual re-indexing | Serve stale up to 14 days if upstream unreachable |
-| **Dynamic Listing** | `listing_status`, `tradable`, `marginable` | Redis / Memory Cache | **24 Hours** | Market open event / provider webhook | Re-verify on session transition; fallback to `UNVERIFIED` |
-| **Negative / Unknown** | Unmapped tickers, 404s, unlisted queries | Memory Cache | **1 Hour** | Cache miss on subsequent user query | Expire quickly to allow newly listed / IPO discovery |
-| **Conflicted State** | Conflicting provider records | Memory Cache | **15 Minutes** | Source sync job completion | Strict fail-closed routing during conflict |
-
----
-
-## 6. Execution Eligibility & Security-Type Support Matrix
-
-The execution eligibility policy maps verified instrument identity directly into supported terminal execution surfaces.
-
-### Authoritative Support Matrix
-
-| Security Type | Asset Class | Classification Supported | Analytics Supported | Stock Execution (`OptimalEntryExitCard`) | ETF Execution (`EtfCostOfOwnershipCard`) | Crypto Execution (`CryptoSurface`) | Fail-Closed Default |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Common Stock (`COMMON_STOCK`)** | `EQUITY` | **YES** | **YES** | **YES** | NO | NO | NO |
-| **Real Estate Trust (`REIT`)** | `EQUITY` | **YES** | **YES** | **YES** | NO | NO | NO |
-| **American Depository Receipt (`ADR`)** | `EQUITY` | **YES** | **YES** | **CONDITIONAL** (Requires ADV > $2M) | NO | NO | If ADV < $2M: **FAIL_CLOSED** |
-| **Exchange Traded Fund (`ETF`)** | `ETF` | **YES** | **YES** | NO | **YES** | NO | NO |
-| **Digital Asset (`CRYPTO`)** | `CRYPTO` | **YES** | **YES** | NO | NO | **YES** | NO |
-| **Preferred Stock (`PREFERRED`)** | `EQUITY` | **YES** | **PARTIAL** | NO | NO | NO | **FAIL_CLOSED** |
-| **Closed-End Fund (`CLOSED_END_FUND`)**| `FUND` | **YES** | **PARTIAL** | NO | NO | NO | **FAIL_CLOSED** |
-| **Warrant (`WARRANT`)** | `EQUITY` | **YES** | **PARTIAL** | NO | NO | NO | **FAIL_CLOSED** |
-| **Unit (`UNIT`)** | `EQUITY` | **YES** | **PARTIAL** | NO | NO | NO | **FAIL_CLOSED** |
-| **Subscription Right (`RIGHT`)** | `EQUITY` | **YES** | **NO** | NO | NO | NO | **FAIL_CLOSED** |
-| **Other / Exotic (`OTHER`)** | `OTHER` | **YES** | **NO** | NO | NO | NO | **FAIL_CLOSED** |
-| **Unknown Instrument (`UNKNOWN`)** | `UNKNOWN` | **YES** | **PARTIAL** | NO | NO | NO | **FAIL_CLOSED** |
-
-### Execution Invariants
-- `GENERIC_LONG_ONLY_EXECUTION = NOT_SUPPORTED` (Zero generic execution bypass).
-- Preferreds, Warrants, Units, and Rights **must fail closed** because equity swing ladders (Minervini VCP, 20 EMA pullbacks) are mathematically invalid for structured and derivative leverage instruments.
-
----
-
-## 7. Decoupled Capability vs. Classification
-
-The platform guarantees orthogonal separation across three distinct statuses:
-
-| Scenario / Instrument | Classification Status | Execution Eligibility | Analytics Capability | Selected Terminal Route |
-| :--- | :--- | :--- | :--- | :--- |
-| **Verified Stock with Full Data (`NVDA`, `PLSE`)** | `VERIFIED` | `STOCK_EXECUTION` | `AVAILABLE` | `OptimalEntryExitCard` mounted |
-| **Verified Stock with Thin History (<50 bars)** | `VERIFIED` | `STOCK_EXECUTION` | `PARTIAL` | `OptimalEntryExitCard` mounts showing `Execution Setup Unavailable` |
-| **Verified ETF (`SPY`, `QQQ`)** | `VERIFIED` | `ETF_EXECUTION` | `AVAILABLE` | `EtfCostOfOwnershipCard` mounted |
-| **Unsupported Warrant (`AAPL.WS`)** | `UNSUPPORTED` | `UNSUPPORTED` | `AVAILABLE` (Candles exist) | `FAIL_CLOSED` (`🎯 Execution Unsupported: Warrant Instrument`) |
-| **Delisted Equity (`SBNY`)** | `VERIFIED` | `UNSUPPORTED` | `UNAVAILABLE` | `FAIL_CLOSED` (`🎯 Execution Unavailable: Delisted Instrument`) |
-| **Unknown / Typo Symbol (`XYZ999`)** | `UNKNOWN` | `UNKNOWN` | `UNAVAILABLE` | `FAIL_CLOSED` (`🎯 Execution Unresolved: Uncataloged Asset`) |
-
----
-
-## 8. API Contract Specification
-
-### Endpoint: `GET /api/v1/market/instruments/{symbol}`
-
-#### Successful Verified Stock Response (e.g. `PLSE`):
-```json
-{
-  "symbol": "PLSE",
-  "provider_symbol": "PLSE",
-  "asset_class": "EQUITY",
-  "security_type": "COMMON_STOCK",
-  "primary_exchange": "XNAS",
-  "listing_status": "ACTIVE",
-  "classification_status": "VERIFIED",
-  "execution_eligibility": "STOCK_EXECUTION",
-  "analytics_capability": "AVAILABLE",
-  "classification_authority": "ARX_SERVER_SECURITY_MASTER",
-  "source_provider": "POLYGON_REFERENCE",
-  "classification_timestamp": "2026-10-06T00:35:00Z",
-  "source_updated_at": "2026-10-05T20:00:00Z"
-}
-```
-
-#### Unsupported Instrument Response (e.g. Warrant):
-```json
-{
-  "symbol": "ACAMW",
-  "provider_symbol": "ACAMW",
-  "asset_class": "EQUITY",
-  "security_type": "WARRANT",
-  "primary_exchange": "XNAS",
-  "listing_status": "ACTIVE",
-  "classification_status": "UNSUPPORTED",
-  "execution_eligibility": "UNSUPPORTED",
-  "analytics_capability": "AVAILABLE",
-  "classification_authority": "ARX_SERVER_SECURITY_MASTER",
-  "source_provider": "POLYGON_REFERENCE",
-  "classification_timestamp": "2026-10-06T00:35:00Z",
-  "source_updated_at": "2026-10-05T20:00:00Z"
-}
-```
-
-### Integration into `/api/v1/analytics/{symbol}`
-The existing `/api/v1/analytics/{symbol}` endpoint must be amended to include the canonical instrument envelope:
-```json
-{
-  "symbol": "PLSE",
-  "instrument": {
-    "asset_class": "EQUITY",
-    "security_type": "COMMON_STOCK",
-    "classification_status": "VERIFIED",
-    "execution_eligibility": "STOCK_EXECUTION"
-  },
-  "currentPrice": 50.5,
-  "optimalExecution": { ... },
-  "decisionTrace": { ... }
-}
-```
-This guarantees that clients consume the authoritative classification in a single round-trip without race conditions or mismatched versioning.
-
----
-
-## 9. Frontend Migration Contract
-
-### 9.1 Target Architecture
-1. **Remove Client-Side Authority**: Purge hardcoded type branching in `frontend/lib/assetTypeUtils.ts`.
-2. **Consume Server Eligibility**: Frontend components route purely based on `data.instrument.execution_eligibility`:
-   ```tsx
-   // Target routing contract in page.tsx
-   {instrument?.execution_eligibility === "STOCK_EXECUTION" ? (
-     <OptimalEntryExitCard symbol={selectedSymbol} executionPlan={data.optimalExecution} ... />
-   ) : instrument?.execution_eligibility === "ETF_EXECUTION" ? (
-     <EtfCostOfOwnershipCard symbol={selectedSymbol} />
-   ) : instrument?.execution_eligibility === "CRYPTO_EXECUTION" ? (
-     <CryptoExecutionCard symbol={selectedSymbol} />
-   ) : (
-     <ExecutionUnresolvedCard symbol={selectedSymbol} status={instrument?.classification_status} />
-   )}
-   ```
-3. **Curated Catalogs Role**: `MASTER_ASSET_CATALOG` is refactored into `ENRICHMENT_ONLY`. It provides qualitative overlay fields (`moatSummary`, `upcomingCatalyst`, `thesis`) when available, but has **zero veto or enabling power** over execution eligibility.
-
----
-
-## 10. Target State for `PLSE`
-
-Under the frozen design, `PLSE` resolves organically:
 ```ini
-SYMBOL = PLSE
-ASSET_CLASS = EQUITY
-SECURITY_TYPE = COMMON_STOCK
-PRIMARY_EXCHANGE = XNAS
-LISTING_STATUS = ACTIVE
-CLASSIFICATION_STATUS = VERIFIED
-EXECUTION_ELIGIBILITY = STOCK_EXECUTION
-CATALOG_MEMBERSHIP_REQUIRED = NO
-SELECTED_ROUTE = OptimalEntryExitCard
-PREFLIGHT_ACCESSIBLE = YES
-CANONICAL_CLEARANCE_STATUS = LOCKED_CONFLUENCE_BELOW_75 (Faithfully preserved by PreFlightChecklistModal)
+COMMON_STOCK =
+  STOCK_EXECUTION
+
+ADR =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+REIT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+PREFERRED =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+WARRANT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+UNIT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+RIGHT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+ETF =
+  ETF_EXECUTION
+
+CRYPTO =
+  CRYPTO_EXECUTION
+
+UNKNOWN =
+  FAIL_CLOSED
+
+CONFLICTED =
+  FAIL_CLOSED
+
+UNVERIFIED =
+  FAIL_CLOSED
 ```
-Pulse Biosciences, Inc. is recognized as an operating NASDAQ equity without any ticker-specific special cases.
+
+### Removal of Invented Thresholds
+```ini
+ADR_ADV_2M_EXECUTION_GATE =
+  REJECTED_NOT_CANONICAL
+
+NEW_EXECUTION_THRESHOLDS =
+  0
+```
+Unsupported subtypes are not described as mathematically invalid unless proven by existing evidence; they are simply not currently authorized by ARX's execution capability contract.
 
 ---
 
-## 11. Persistence & Infrastructure Decision
+## 5. PLSE Frozen Regression Case
+
+```ini
+SYMBOL =
+  PLSE
+
+ALPACA_ASSET_CLASS =
+  us_equity
+
+ALPACA_EXCHANGE =
+  NASDAQ
+
+ALPACA_LISTING_STATUS =
+  active
+
+OPENFIGI_SECURITY_TYPE =
+  Common Stock
+
+OPENFIGI_SECURITY_TYPE_2 =
+  Common Stock
+
+OPENFIGI_MARKET_SECTOR =
+  Equity
+
+CANONICAL_ASSET_CLASS =
+  EQUITY
+
+CANONICAL_SECURITY_TYPE =
+  COMMON_STOCK
+
+CLASSIFICATION_STATUS =
+  VERIFIED
+
+EXECUTION_ELIGIBILITY =
+  STOCK_EXECUTION
+
+CATALOG_MEMBERSHIP_REQUIRED =
+  NO
+
+SYMBOL_SPECIFIC_EXCEPTION =
+  NO
+```
+`PLSE` resolves organically through the generic server contract.
+
+---
+
+## 6. Persistence Model
 
 ```ini
 PERSISTENCE_MODEL =
   HYBRID_SQLITE_PERSISTENCE_WITH_LRU_CACHE
 
-DATABASE_TABLE =
-  canonical_instruments
+SECURITY_MASTER_DB =
+  LOGICALLY_SEPARATE_FROM_ETF_V2_OPENFIGI_OPERATIONAL_DB
 
-SCHEMA_LOCATION =
-  database/schema/canonical_instruments.sql
+SHARED_DB_ASSUMED =
+  NO
 
-PRIMARY_PROVIDER =
-  POLYGON_MASSIVE_REFERENCE
-
-SECONDARY_PROVIDER =
-  ALPACA_ASSET_DIRECTORY
+SHARED_INFRASTRUCTURE =
+  REQUIRES_SEPARATE_AUTHORIZATION
 ```
 
 ### Rationale
-Storing canonical reference records in the local operational database eliminates runtime provider latency on repeated searches, bounds external API rate-limit burn, survives process restarts, and provides a fully auditable point-in-time record of all asset classifications.
+- OpenFIGI is externally rate limited (25 req/min).
+- Reference provider calls incur network latency (~350ms – 800ms).
+- Classification decisions must survive process/container restarts.
+- Classification decisions require auditability.
+- In-memory-only resolution would cause avoidable provider traffic.
+- Does **not** automatically reuse the ETF v2 operational SQLite database.
 
 ---
 
-## 12. Canonical Invariants
+## 7. Cross-Track OpenFIGI Rate-Limit Authority
+
+```ini
+OPENFIGI_PROVIDER_RATE_LIMIT_SCOPE =
+  GLOBAL_ACROSS_ARX_CONSUMERS
+
+INDEPENDENT_COMPONENTS_MAY_EXCEED_PROVIDER_QUOTA =
+  NO
+
+ETF_V2_LOCAL_LIMIT =
+  20_REQUESTS_PER_ROLLING_60_SECONDS
+
+SECURITY_MASTER_RATE_LIMIT =
+  SUBJECT_TO_GLOBAL_OPENFIGI_PROVIDER_LIMIT
+
+CROSS_TRACK_IMPLEMENTATION_DEPENDENCY =
+  SHARED_OPENFIGI_PROVIDER_RATE_LIMIT_COORDINATION
+```
+All ARX consumers share the same provider-level quota. Neither subsystem may independently exhaust the registered provider allowance.
+
+---
+
+## 8. Canonical Contract
+
+```python
+class CanonicalInstrument(BaseModel):
+    symbol: str
+    provider_symbol: str
+    asset_class: AssetClass
+    security_type: SecurityType
+    primary_exchange: str
+    listing_status: ListingStatus
+    classification_status: ClassificationStatus
+    execution_eligibility: ExecutionEligibility
+    analytics_capability: AnalyticsCapability
+    classification_authority: str
+    source_provider: str
+    classification_timestamp: str
+    stable_identifier: Optional[str] = None
+    provider_provenance: Optional[Dict[str, Any]] = None
+```
+
+```ini
+SINGLE_NORMALIZED_SERVER_CONTRACT =
+  YES
+
+FRONTEND_CLASSIFICATION_AUTHORITY =
+  NO
+
+CURATED_CATALOG_AUTHORITY =
+  ENRICHMENT_ONLY
+```
+
+---
+
+## 9. Analytics Separation
+
+```ini
+ANALYTICS_SUCCESS_GRANTS_CLASSIFICATION =
+  NO
+
+ANALYTICS_SUCCESS_GRANTS_EXECUTION_ELIGIBILITY =
+  NO
+
+ANALYTICS_FAILURE_REMOVES_VERIFIED_CLASSIFICATION =
+  NO
+```
+Analytics capability remains an independent field.
+
+---
+
+## 10. ETF Compatibility
+
+```ini
+ETF_CLASSIFICATION_TARGET =
+  SERVER_SECURITY_MASTER
+
+ETF_EXECUTION_ELIGIBILITY =
+  ETF_EXECUTION
+
+ETF_STOCK_ROUTING =
+  PROHIBITED
+
+ETF_V2_BUSINESS_LOGIC_CHANGED =
+  NO
+
+ETF_V2_OPENFIGI_REMEDIATION_CHANGED =
+  NO
+```
+The Security Master may eventually supersede fragmented ETF lookup, but this design does not mutate ETF v2.
+
+---
+
+## 11. Crypto Compatibility
+
+```ini
+CRYPTO_CLASSIFICATION_TARGET =
+  SERVER_SECURITY_MASTER
+
+CRYPTO_EXECUTION_ELIGIBILITY =
+  CRYPTO_EXECUTION
+
+CRYPTO_SUFFIX_HEURISTIC_AUTHORITY =
+  NONE
+
+CRYPTO_STOCK_ROUTING =
+  PROHIBITED
+```
+
+---
+
+## 12. Frontend Migration Target
+
+```ini
+BEFORE =
+  assetTypeUtils + catalog/watchlist/suffix inference -> execution routing
+
+AFTER =
+  CanonicalInstrument.execution_eligibility -> execution routing
+  curated frontend metadata -> presentation/discovery only
+
+MASTER_ASSET_CATALOG_TARGET_ROLE =
+  ENRICHMENT_ONLY
+
+SHARED_WATCHLIST_TARGET_ROLE =
+  ENRICHMENT_ONLY
+
+FRONTEND_SECURITY_TYPE_INFERENCE_TARGET =
+  REMOVED
+```
+
+---
+
+## 13. Implementation Dependency Register
+
+```ini
+DEPENDENCY_1 =
+  ALPACA_REFERENCE_ACCESS_AVAILABLE
+DEPENDENCY_1_STATUS =
+  SATISFIED
+
+DEPENDENCY_2 =
+  OPENFIGI_REFERENCE_ACCESS_AVAILABLE
+DEPENDENCY_2_STATUS =
+  SATISFIED
+
+DEPENDENCY_3 =
+  SECURITY_MASTER_PERSISTENCE_PATH_AUTHORITY
+DEPENDENCY_3_STATUS =
+  REQUIRED_DURING_IMPLEMENTATION
+
+DEPENDENCY_4 =
+  GLOBAL_OPENFIGI_PROVIDER_RATE_LIMIT_COORDINATION
+DEPENDENCY_4_STATUS =
+  REQUIRED_DURING_IMPLEMENTATION
+
+DEPENDENCY_5 =
+  SERVER_CONTRACT_TEST_FIXTURES
+DEPENDENCY_5_STATUS =
+  REQUIRED_DURING_IMPLEMENTATION
+```
+No dependency is currently BLOCKING; the remaining three are bounded implementation tasks rather than unresolved design contradictions.
+
+---
+
+## 14. Canonical Invariants (`INV-SECMASTER-01..20`)
 
 - **`INV-SECMASTER-01`**: Canonical asset classification is strictly server-owned.
 - **`INV-SECMASTER-02`**: Frontend curated catalogs are not classification authorities.
@@ -388,74 +399,183 @@ Storing canonical reference records in the local operational database eliminates
 - **`INV-SECMASTER-12`**: Provider or infrastructure failure cannot promote an instrument into a supported class.
 - **`INV-SECMASTER-13`**: Search, analytics, and execution routing consume the same normalized authority.
 - **`INV-SECMASTER-14`**: `PLSE` or any other ticker is never handled through symbol-specific exception logic.
+- **`INV-SECMASTER-15`**: Alpaca broad asset class cannot independently establish security subtype.
+- **`INV-SECMASTER-16`**: OpenFIGI subtype evidence and Alpaca listing evidence are normalized server-side before routing.
+- **`INV-SECMASTER-17`**: Provider conflicts capable of changing eligibility fail closed.
+- **`INV-SECMASTER-18`**: All ARX OpenFIGI consumers respect a provider-level global quota authority.
+- **`INV-SECMASTER-19`**: Security Master persistence does not silently reuse unrelated operational databases.
+- **`INV-SECMASTER-20`**: No new execution threshold may be introduced through classification logic.
 
 ---
 
-## 13. Design Acceptance Matrix
+## 15. Design Acceptance Matrix
 
-| Check Code | Requirement Description | Evaluation | Evidence |
+### 15.1 SECMASTER-DESIGN-01..20 Acceptance Results
+
+| ID | Acceptance Criterion | Result | Evidence Reference |
 | :--- | :--- | :--- | :--- |
-| `SECMASTER-DESIGN-01` | Canonical server authority defined | **PASS** | Section 1 & Section 2 specification. |
-| `SECMASTER-DESIGN-02` | Source precedence defined | **PASS** | Section 4.2 precedence chain. |
-| `SECMASTER-DESIGN-03` | Normalization rules defined | **PASS** | Section 3 normalization table. |
-| `SECMASTER-DESIGN-04` | Freshness/cache policy defined | **PASS** | Section 5 caching model. |
-| `SECMASTER-DESIGN-05` | Classification schema defined | **PASS** | Section 2.1 `CanonicalInstrument` schema. |
-| `SECMASTER-DESIGN-06` | Execution eligibility schema defined | **PASS** | Section 2.1 `ExecutionEligibility` enum. |
-| `SECMASTER-DESIGN-07` | Security subtype support matrix complete | **PASS** | Section 6 support matrix. |
-| `SECMASTER-DESIGN-08` | Analytics capability separated | **PASS** | Section 7 capability decoupling table. |
-| `SECMASTER-DESIGN-09` | Routing contract defined | **PASS** | Section 6 & Section 9.1 routing flow. |
-| `SECMASTER-DESIGN-10` | Frontend migration contract defined | **PASS** | Section 9 frontend contract. |
-| `SECMASTER-DESIGN-11` | Enrichment separation defined | **PASS** | Section 9.1 catalog demotion. |
-| `SECMASTER-DESIGN-12` | Unknown/unsupported/conflicted semantics defined | **PASS** | Section 4.3 & Section 7 fail-closed rules. |
-| `SECMASTER-DESIGN-13` | Provider failure semantics defined | **PASS** | Section 5 fail-closed fallback rules. |
-| `SECMASTER-DESIGN-14` | Deterministic fixtures defined | **PASS** | Section 7 & Section 8 representative fixtures. |
-| `SECMASTER-DESIGN-15` | Contract test plan defined | **PASS** | Invariants 1-14 mapped to test suite. |
-| `SECMASTER-DESIGN-16` | Persistence model decided | **PASS** | Section 11 hybrid SQLite/LRU decision. |
-| `SECMASTER-DESIGN-17` | Provider dependency classified | **PASS** | Section 4.1 & Section 11 inventory. |
-| `SECMASTER-DESIGN-18` | PLSE target state defined without exception logic | **PASS** | Section 10 PLSE specification. |
-| `SECMASTER-DESIGN-19` | Zero quantitative engine changes required | **PASS** | No math/VCP modifications. |
-| `SECMASTER-DESIGN-20` | Zero scoring/actionability changes required | **PASS** | Decision trace and confluence preserved. |
+| `SECMASTER-DESIGN-01` | Canonical authority is ARX server Security Master | **PASS** | Section 1 authority; Section 8 |
+| `SECMASTER-DESIGN-02` | Identity and listing authority is Alpaca | **PASS** | Section 1; Section 2 symbol, exchange, listing_status |
+| `SECMASTER-DESIGN-03` | Security subtype authority is OpenFIGI v3 | **PASS** | Section 1; Section 2 security_type |
+| `SECMASTER-DESIGN-04` | Alpaca broad asset class is not subtype proof | **PASS** | Sections 1, 2, and 14 INV-SECMASTER-15 |
+| `SECMASTER-DESIGN-05` | Provider conflicts are classified and routed fail closed | **PASS** | Sections 2, 3, and 14 INV-SECMASTER-17 |
+| `SECMASTER-DESIGN-06` | Unsupported subtypes are fail closed without invented thresholds | **PASS** | Section 4 support matrix and rejected ADR gate |
+| `SECMASTER-DESIGN-07` | Common Stock execution policy is established | **PASS** | Sections 4 and 5 |
+| `SECMASTER-DESIGN-08` | ETF execution remains distinct from stock execution | **PASS** | Sections 4 and 10 |
+| `SECMASTER-DESIGN-09` | Crypto execution remains distinct from stock execution | **PASS** | Sections 4 and 11 |
+| `SECMASTER-DESIGN-10` | Unknown, conflicted, and unverified instruments fail closed | **PASS** | Sections 2 and 4 |
+| `SECMASTER-DESIGN-11` | PLSE resolves as verified Common Stock through generic contract | **PASS** | Section 5 |
+| `SECMASTER-DESIGN-12` | Frontend catalogs and suffix heuristics have no authority | **PASS** | Sections 2 and 12 |
+| `SECMASTER-DESIGN-13` | Analytics capability is independent of classification and eligibility | **PASS** | Sections 8 and 9 |
+| `SECMASTER-DESIGN-14` | Persistence uses hybrid SQLite plus LRU cache | **PASS** | Section 6 |
+| `SECMASTER-DESIGN-15` | Security Master persistence is separate from ETF v2 storage | **PASS** | Section 6 |
+| `SECMASTER-DESIGN-16` | OpenFIGI quota authority is global across ARX consumers | **PASS** | Sections 7 and 14 INV-SECMASTER-18 |
+| `SECMASTER-DESIGN-17` | ETF v2 behavior and local 20/60 limiter remain unchanged | **PASS** | Sections 7 and 10 |
+| `SECMASTER-DESIGN-18` | Canonical server contract contains provenance and stable identifiers | **PASS** | Sections 2 and 8 |
+| `SECMASTER-DESIGN-19` | Required implementation dependencies are registered | **PASS** | Section 13 (no blocking dependencies) |
+| `SECMASTER-DESIGN-20` | No runtime implementation is authorized during this gate | **PASS** | Sections 0, 15, 16, and 19 |
+
+### 15.2 SECMASTER-FREEZE-01..10 Acceptance Results
+
+| ID | Acceptance Criterion | Result | Evidence Reference |
+| :--- | :--- | :--- | :--- |
+| `SECMASTER-FREEZE-01` | Provider authority is field-level composite authority | **PASS** | Sections 1 and 2 |
+| `SECMASTER-FREEZE-02` | Massive/Polygon is not required for V1 | **PASS** | Section 1 |
+| `SECMASTER-FREEZE-03` | Unsupported subtype policy is fail closed | **PASS** | Sections 3 and 4 |
+| `SECMASTER-FREEZE-04` | Invented ADR threshold is removed | **PASS** | Section 4 |
+| `SECMASTER-FREEZE-05` | PLSE classification uses direct provider evidence | **PASS** | Section 5 |
+| `SECMASTER-FREEZE-06` | Persistence boundary is frozen | **PASS** | Section 6 |
+| `SECMASTER-FREEZE-07` | Cross-track OpenFIGI quota dependency is documented | **PASS** | Section 7 |
+| `SECMASTER-FREEZE-08` | Frontend migration contract is frozen | **PASS** | Section 12 |
+| `SECMASTER-FREEZE-09` | No runtime implementation is performed or authorized | **PASS** | Sections 0, 16, and 19 |
+| `SECMASTER-FREEZE-10` | No ETF v2 behavior is changed | **PASS** | Sections 7 and 10 |
+
+### 15.3 Acceptance Summary
+
+```ini
+SECMASTER-DESIGN-01..20 =
+  PASS
+
+SECMASTER-FREEZE-01..10 =
+  PASS
+
+OVERALL_DESIGN_ACCEPTANCE =
+  PASS
+
+DEPENDENCY_STATUS_SUMMARY =
+  DEPENDENCY_1: SATISFIED
+  DEPENDENCY_2: SATISFIED
+  DEPENDENCY_3: REQUIRED_DURING_IMPLEMENTATION
+  DEPENDENCY_4: REQUIRED_DURING_IMPLEMENTATION
+  DEPENDENCY_5: REQUIRED_DURING_IMPLEMENTATION
+
+BLOCKING_DEPENDENCIES =
+  NONE
+
+DESIGN_FREEZE_IMPLEMENTATION_AUTHORIZED =
+  NO
+
+POST_PASS_REPOSITORY_ACTION =
+  REQUIRED_BEFORE_IMPLEMENTATION_GATE
+
+POST_PASS_IMPLEMENTATION_STATE =
+  NOT_AUTHORIZED
+
+NEXT_AUTHORIZED_ACTION =
+  EXECUTE_SECTION_17_REPOSITORY_FREEZE_ONLY
+
+IMPLEMENTATION_GATE_STATUS =
+  NOT_YET_OPENED
+
+AUTOMATIC_SUCCESSOR_EXECUTION =
+  NOT_AUTHORIZED
+```
 
 ---
 
-## 14. Formal Design Gate Adjudication
+## 16. PASS Gate Adjudication
 
 ```ini
 GATE =
-  PASS_ARX_CANONICAL_SECURITY_MASTER_DESIGN
+  PASS_ARX_CANONICAL_SECURITY_MASTER_DESIGN_FREEZE
 
 DESIGN_STATE =
   VERIFIED
 
-CANONICAL_ASSET_CLASSIFICATION_AUTHORITY =
-  ARX_SERVER_SECURITY_MASTER_SERVICE
+REPOSITORY_FREEZE_STATE =
+  REQUIRED
 
-SERVER_OWNED =
-  YES
+DESIGN_FREEZE_IMPLEMENTATION_AUTHORIZED =
+  NO
+
+IMPLEMENTATION_GATE =
+  NOT_YET_OPENED
+
+NEXT_AUTHORIZED_ACTION =
+  EXECUTE_SECTION_17_REPOSITORY_FREEZE_ONLY
+
+AUTOMATIC_SUCCESSOR_EXECUTION =
+  NOT_AUTHORIZED
+
+CANONICAL_AUTHORITY =
+  ARX_SERVER_SECURITY_MASTER
+
+IDENTITY_LISTING_AUTHORITY =
+  ALPACA_ASSET_DIRECTORY
+
+SECURITY_SUBTYPE_AUTHORITY =
+  OPENFIGI_V3_MAPPING
+
+MASSIVE_POLYGON_REQUIRED_FOR_V1 =
+  NO
 
 EXECUTION_ELIGIBILITY_POLICY =
   ESTABLISHED
 
-SECURITY_TYPE_SUPPORT_MATRIX =
-  ESTABLISHED
+COMMON_STOCK =
+  STOCK_EXECUTION
 
-UNKNOWN_ROUTING =
+ADR =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+REIT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+PREFERRED =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+WARRANT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+UNIT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+RIGHT =
+  FAIL_CLOSED_PENDING_EXPLICIT_CAPABILITY_AUTHORIZATION
+
+ETF =
+  ETF_EXECUTION
+
+CRYPTO =
+  CRYPTO_EXECUTION
+
+UNKNOWN =
   FAIL_CLOSED
 
-UNSUPPORTED_ROUTING =
+CONFLICTED =
   FAIL_CLOSED
 
-CONFLICTED_ROUTING =
+UNVERIFIED =
   FAIL_CLOSED
 
 FRONTEND_CATALOG_ROLE =
   ENRICHMENT_ONLY
 
-ANALYTICS_CAPABILITY_SEPARATED =
-  YES
+PERSISTENCE_MODEL =
+  HYBRID_SQLITE_PERSISTENCE_WITH_LRU_CACHE
 
-SEARCH_ANALYTICS_ROUTING_AUTHORITY =
-  SINGLE_NORMALIZED_CONTRACT
+OPENFIGI_PROVIDER_LIMIT_SCOPE =
+  GLOBAL_ACROSS_ARX_CONSUMERS
 
 QUANT_ENGINE_CHANGE_REQUIRED =
   NO
@@ -468,17 +588,30 @@ RANKING_CHANGE_REQUIRED =
 
 ACTIONABILITY_CHANGE_REQUIRED =
   NO
-
-IMPLEMENTATION_PREREQUISITE =
-  PROVIDER_ACCESS_READINESS
-
-NEXT_AUTHORIZED_ACTION =
-  ARX_CANONICAL_SECURITY_MASTER_IMPLEMENTATION_GATE
-
-AUTOMATIC_SUCCESSOR_EXECUTION =
-  NOT_AUTHORIZED
 ```
 
 ---
+
+## 17. Repository Freeze Record
+
+```ini
+BRANCH =
+  arx/security-master
+
+WORKTREE =
+  c:/Users/akara/Documents/Projects/finance
+
+POST_FREEZE_IMPLEMENTATION_STATE =
+  IMPLEMENTATION_GATE_MAY_BE_OPENED
+
+DESIGN_FREEZE_IMPLEMENTATION_AUTHORIZED =
+  NO
+
+NEXT_AUTHORIZED_ACTION =
+  FORMAL_ARX_CANONICAL_SECURITY_MASTER_IMPLEMENTATION_GATE
+
+AUTOMATIC_IMPLEMENTATION =
+  NOT_AUTHORIZED
+```
 
 *Architectural specification frozen in accordance with ARX Terminal Governance Protocols.*
