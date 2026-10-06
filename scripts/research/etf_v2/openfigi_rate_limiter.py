@@ -28,8 +28,12 @@ import time
 from typing import Callable, List, Optional, Tuple, Union
 import uuid
 
-CANONICAL_DB_NAME = "etf_v2_canonical_population"
-DEFAULT_OPERATIONAL_DB_PATH = Path("data/operational/openfigi_operational.db")
+from .openfigi_config import (
+    CANONICAL_DB_NAME,
+    DEFAULT_OPERATIONAL_DB_PATH,
+    resolve_openfigi_operational_db_path,
+)
+
 GLOBAL_CAPACITY = 20
 GLOBAL_WINDOW_SECONDS = 60.0
 
@@ -61,11 +65,7 @@ class GlobalSQLiteRateLimiter:
         sleep_func: Optional[Callable[[float], None]] = None,
         timeout: float = 30.0
     ):
-        if db_path is not None:
-            self.db_path = Path(db_path)
-        else:
-            env_db = os.environ.get("OPENFIGI_RATE_LIMIT_DB")
-            self.db_path = Path(env_db) if env_db else DEFAULT_OPERATIONAL_DB_PATH
+        self.db_path = resolve_openfigi_operational_db_path(db_path)
 
         self.capacity = capacity
         self.window_seconds = window_seconds

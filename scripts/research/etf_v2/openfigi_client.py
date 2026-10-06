@@ -109,20 +109,22 @@ class OpenFIGIClient:
         sleep_func: Optional[Callable[[float], None]] = None,
         jitter_source: Optional[Callable[[], float]] = None,
         rate_limiter: Optional[Any] = None,
-        rate_limit_db_path: Optional[Union[str, Path]] = None
+        rate_limit_db_path: Optional[Union[str, Path]] = None,
+        operational_db_path: Optional[Union[str, Path]] = None
     ):
-        self.api_key = api_key or os.environ.get("OPENFIGI_API_KEY")
+        self.api_key = api_key if api_key is not None else os.environ.get("OPENFIGI_API_KEY")
         self.base_url = base_url
         self.transport = transport
         self.clock = clock or time.time
         self.sleep_func = sleep_func or time.sleep
         self.jitter_source = jitter_source or (lambda: 0.0)
 
+        effective_db_path = operational_db_path if operational_db_path is not None else rate_limit_db_path
         if rate_limiter is not None:
             self.rate_limiter = rate_limiter
         else:
             self.rate_limiter = GlobalSQLiteRateLimiter(
-                db_path=rate_limit_db_path,
+                db_path=effective_db_path,
                 clock=self.clock,
                 sleep_func=self.sleep_func
             )

@@ -1,0 +1,111 @@
+{
+  "manifest_version": "1.0.0",
+  "gate_name": "ETF_V2_OPENFIGI_POST_RELEASE_REMEDIATION_GATE",
+  "gate_verdict": "PASS",
+  "decision_case": "CASE_A / POST_RELEASE_REMEDIATION_COMPLETE",
+  "remediation_state": "CLOSED / VERIFIED / READY_FOR_PUSH",
+  "openfigi_release_sha": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+  "entry_sha": "443c70d77cdb31fb3a17c88eb032a77a3ebd1c02",
+  "live_mapping_authorized": false,
+  "live_openfigi_requests_executed": 0,
+  "next_authorized_action": "ETF_V2_OPENFIGI_REMEDIATION_RELEASE_VERIFICATION_GATE",
+  "path_authority": {
+    "resolver_module": "scripts/research/etf_v2/openfigi_config.py",
+    "resolver_function": "resolve_openfigi_operational_db_path",
+    "project_root_authority": "Path(__file__).resolve().parents[3]",
+    "authority_count": 1,
+    "default_operational_db_path": "data/operational/openfigi_operational.db",
+    "default_path_cwd_dependent": false,
+    "precedence": "EXPLICIT_CONSTRUCTOR_ARG > OPENFIGI_OPERATIONAL_DB > OPENFIGI_RATE_LIMIT_DB > REPO_ROOT_DEFAULT",
+    "canonical_env_var": "OPENFIGI_OPERATIONAL_DB",
+    "legacy_env_alias": "OPENFIGI_RATE_LIMIT_DB",
+    "relative_env_override_policy": "RESOLVE_RELATIVE_TO_REPO_ROOT"
+  },
+  "remediation_report": {
+    "file": "ETF_V2_OPENFIGI_POST_RELEASE_REMEDIATION_REPORT.md",
+    "bytes": 14440,
+    "sha256": "d70c1aef3c271aa9aa8e3f8533172303f46450373ce78b81116b76ca7f6a3a45"
+  },
+  "affected_files": [
+    {
+      "path": "scripts/research/etf_v2/openfigi_config.py",
+      "status": "created",
+      "bytes": 3256,
+      "sha256": "20b9a010243dfeb80bafd7212c310cc67a21c4f69864c5a05ca05c9611dfb80f"
+    },
+    {
+      "path": "scripts/research/etf_v2/openfigi_client.py",
+      "status": "modified",
+      "bytes": 11037,
+      "sha256": "403b83410e4b0a206937df2e611af07925eb98529fc3549daa51992c6c2658dc"
+    },
+    {
+      "path": "scripts/research/etf_v2/openfigi_persistence.py",
+      "status": "modified",
+      "bytes": 14110,
+      "sha256": "f0a50d006901899b07a8cd81c45978c6dae402c8cdac6f59b5be0bf34e874118"
+    },
+    {
+      "path": "scripts/research/etf_v2/openfigi_rate_limiter.py",
+      "status": "modified",
+      "bytes": 11079,
+      "sha256": "a0e9581efca2b5cdf9af99efe054bdbd07ae3c77d81c9446980befe1da32ed98"
+    },
+    {
+      "path": "tests/test_etf_v2_openfigi_contract.py",
+      "status": "modified",
+      "bytes": 21543,
+      "sha256": "16216e5af62fd6794e22f185cc130c5cd951c17037d4f1e17cb753d894267f86"
+    },
+    {
+      "path": "tests/test_etf_v2_openfigi_global_rate_limiter.py",
+      "status": "modified",
+      "bytes": 16400,
+      "sha256": "9017d5fe53891afefc72448005127193954c9f0d459ac84f0f279f2ebff55c4e"
+    },
+    {
+      "path": "tests/test_etf_v2_openfigi_path_resolution.py",
+      "status": "created",
+      "bytes": 13630,
+      "sha256": "fd2b4ecc20d7adbc1e5e7e4d2aec6735e581246391277b9eb49b88abee007b0a"
+    }
+  ],
+  "first_live_input_artifact": {
+    "file": "ETF_V2_OPENFIGI_FIRST_LIVE_VALIDATION_INPUT.json",
+    "bytes": 3386,
+    "sha256": "f7c71a4e85e623a97ac76d122f61d70e22991eb5fe23aabc8e2d2ee55dcaed56",
+    "mutated": false
+  },
+  "canonical_integrity": {
+    "canonical_db_sha256": "2f7f4e718d1adebfb4bf5ed5dd627b306fc2b44d55e5cc479e3b2fccb9cff643",
+    "canonical_backup_sha256": "7a2777d85c63d3aa1cc46c5134f8bf9a32236e671437df3dbebdc918659a2bec",
+    "canonical_snapshot_sha256": "938e0b00c4e7e5623b266ddddf6ad9eacf4614206b6525cabe1143db60cacaff",
+    "canonical_share_class_count": 141,
+    "integrity_ok": true,
+    "mutated": false
+  },
+  "operational_db_state": {
+    "exists": true,
+    "bytes": 282624,
+    "sha256": "090d9236645f6b69a8e34c455ccc4231179de8469f687c8c949a7a05834604b1",
+    "mutated": false
+  },
+  "test_execution_summary": {
+    "test_etf_v2_openfigi_path_resolution": "12/12 PASS",
+    "test_etf_v2_openfigi_global_rate_limiter": "19/19 PASS",
+    "test_etf_v2_openfigi_contract": "27/27 PASS",
+    "test_etf_v2_canonical_population": "35/35 PASS",
+    "test_etf_pipeline_v2": "4/4 PASS",
+    "total_tests_passed": 97,
+    "total_tests_failed": 0,
+    "success_rate_percent": 100.0
+  },
+  "activation_readiness_reconciliation": {
+    "OFIGI-ACT11": "PASS",
+    "OFIGI-ACT12": "PASS",
+    "OFIGI-ACT28": "PASS",
+    "total_pass_count": 30,
+    "total_fail_count": 0,
+    "total_not_established_count": 0
+  }
+}

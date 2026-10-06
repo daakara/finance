@@ -21,11 +21,14 @@ from pathlib import Path
 import sqlite3
 from typing import Generator, List, Optional, Sequence, Tuple
 
+from .openfigi_config import (
+    DEFAULT_OPERATIONAL_DB_PATH,
+    resolve_openfigi_operational_db_path,
+)
 from .openfigi_models import OpenFIGIActiveMapping, OpenFIGIObservation
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_OPERATIONAL_DB_PATH = Path("data/operational/openfigi_operational.db")
 SCHEMA_SQL_PATH = Path(__file__).parent / "openfigi_operational_schema.sql"
 
 
@@ -43,7 +46,7 @@ class OpenFIGIPersistenceRepository:
     """ACID SQLite repository managing openfigi_observations and openfigi_active_mappings."""
 
     def __init__(self, db_path: Optional[Path | str] = None, auto_init: bool = True):
-        self.db_path = Path(db_path) if db_path else DEFAULT_OPERATIONAL_DB_PATH
+        self.db_path = resolve_openfigi_operational_db_path(db_path)
 
         # Strict Canonical Firewall: Refuse to initialize against canonical database paths
         resolved_str = str(self.db_path.resolve()).replace("\\", "/").lower()
