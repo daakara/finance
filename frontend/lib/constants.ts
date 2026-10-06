@@ -1,6 +1,11 @@
 /**
- * Shared Single Source of Truth for Asset Data, Price Fallbacks, and Factor Baselines.
- * Enforces state parity across Watchlist, Radar, Chart, and Terminal components.
+ * Shared Baseline for Presentation Watchlist, Price Fallbacks, and Factor Baselines.
+ *
+ * CANONICAL SECURITY MASTER INVARIANTS:
+ * - FRONTEND_CATALOG_AUTHORITY = NONE
+ * - ROLE = PRESENTATION_ENRICHMENT_ONLY
+ * - CANONICAL_CLASSIFICATION_AUTHORITY = ARX_SERVER_SECURITY_MASTER
+ * - Under no circumstances does this watchlist grant execution eligibility (INV-SECMASTER-02).
  */
 
 import { AssetFactorScores, MacroDifficultyRating, ExpectedReturnForecast } from "./api";

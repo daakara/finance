@@ -1,9 +1,14 @@
 /**
- * ARX Terminal Master Asset Catalog (Single Source of Truth)
- * 
- * Consolidates all static baseline asset profiles, authentic fundamental metrics,
- * execution price boundaries, and risk parameters into a unified, strongly-typed repository.
- * Eliminates dual-maintenance drift across Screener, Terminal, Compare, Strategy, and Radar hubs.
+ * ARX Terminal Master Asset Catalog
+ *
+ * Consolidates static baseline asset presentation profiles, authentic fundamental metrics,
+ * and risk parameters for UI shell display and discovery enrichment.
+ *
+ * CANONICAL SECURITY MASTER INVARIANTS:
+ * - FRONTEND_CATALOG_AUTHORITY = NONE
+ * - ROLE = PRESENTATION_ENRICHMENT_ONLY
+ * - CANONICAL_CLASSIFICATION_AUTHORITY = ARX_SERVER_SECURITY_MASTER
+ * - Under no circumstances does this catalog grant execution eligibility (INV-SECMASTER-02).
  */
 
 export interface MasterAssetEntry {

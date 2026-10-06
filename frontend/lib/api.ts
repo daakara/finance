@@ -5,6 +5,9 @@ import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 import { DecisionTrace, FreshnessInfo } from "../types/insight";
 import type { TradeSetupSpec } from "./simulation/governorSizingEngine";
 import type { TradeFillInput, TradeExitInput, TradeCloseInput } from "./tradeLifecycle";
+import type { CanonicalInstrumentEnvelope } from "./assetTypeUtils";
+
+export type { CanonicalInstrumentEnvelope };
 
 const DEFAULT_ORIGIN_API_URL = "https://web-production-e370b.up.railway.app/api/v1";
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || DEFAULT_ORIGIN_API_URL;
@@ -655,6 +658,7 @@ export interface AnalyticsResponse {
   decisionTrace?: DecisionTrace;
   decisionId?: string;
   canonicalDecision?: any;
+  instrument?: CanonicalInstrumentEnvelope;
   analytics?: {
     advanced_metrics?: {
       VaR_95?: number;
@@ -1320,6 +1324,29 @@ export async function fetchAssetAnalytics(
     (window as any)._paq.push(["trackEvent", "Terminal Interaction", "Fallback Generator Engaged", upper]);
   }
   return generateFallbackAnalytics(symbol, period, interval);
+}
+
+/**
+ * Fetches canonical instrument classification and execution eligibility from the Security Master API.
+ * Authoritative endpoint: GET /api/v1/market/instruments/{symbol}
+ */
+export async function fetchCanonicalInstrument(
+  symbol: string
+): Promise<CanonicalInstrumentEnvelope | null> {
+  const clean = symbol.trim().toUpperCase();
+  if (!clean) return null;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/market/instruments/${encodeURIComponent(clean)}`, {
+      headers: ARX_API_HEADERS,
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body?.instrument || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchScreenerGems(model: string = "all"): Promise<ScreenerResponse> {
