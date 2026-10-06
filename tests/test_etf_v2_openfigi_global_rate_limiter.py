@@ -245,7 +245,7 @@ def sample_canonical_record() -> AuthorizedCanonicalInputRecord:
 def test_rlg08_non_dispatched_local_rejection(tmp_path: Path, sample_canonical_record):
     """RLG-08: Locally rejected invalid request consumes no dispatch reservation."""
     db_path = tmp_path / "rlg08.db"
-    repo = OpenFIGIPersistenceRepository(db_path=tmp_path / "test_op.db")
+    repo = OpenFIGIPersistenceRepository(db_path=db_path)
     limiter = GlobalSQLiteRateLimiter(db_path=db_path)
     client = OpenFIGIClient(api_key="TEST_KEY", rate_limiter=limiter)
     service = OpenFIGICorroborationService(client=client, repository=repo)
@@ -397,7 +397,7 @@ def test_rlg16_no_canonical_access(tmp_path: Path):
 
 def test_rlg17_no_production_operational_side_effect(tmp_path: Path):
     """RLG-17: Tests using isolated temporary databases do not mutate production operational DB."""
-    prod_db = Path("data/operational/openfigi_operational.db")
+    prod_db = DEFAULT_OPERATIONAL_DB_PATH
     prod_stat_before = prod_db.stat() if prod_db.exists() else None
 
     isolated_db = tmp_path / "rlg17_isolated.db"

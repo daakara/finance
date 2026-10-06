@@ -57,8 +57,9 @@ FIXTURES_DIR = Path("tests/fixtures/openfigi")
 @pytest.fixture(autouse=True)
 def isolate_operational_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Guarantees zero production operational database side effects during test runs."""
-    temp_rate_db = tmp_path / "test_openfigi_rate_limit.db"
-    monkeypatch.setenv("OPENFIGI_RATE_LIMIT_DB", str(temp_rate_db))
+    temp_op_db = tmp_path / "test_openfigi_operational.db"
+    monkeypatch.setenv("OPENFIGI_OPERATIONAL_DB", str(temp_op_db))
+    monkeypatch.delenv("OPENFIGI_RATE_LIMIT_DB", raising=False)
     yield
 
 

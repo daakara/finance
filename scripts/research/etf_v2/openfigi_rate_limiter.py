@@ -30,17 +30,13 @@ import uuid
 
 from .openfigi_config import (
     CANONICAL_DB_NAME,
+    CanonicalStoreContaminationError,
     DEFAULT_OPERATIONAL_DB_PATH,
     resolve_openfigi_operational_db_path,
 )
 
 GLOBAL_CAPACITY = 20
 GLOBAL_WINDOW_SECONDS = 60.0
-
-
-class CanonicalStoreContaminationError(RuntimeError):
-    """Raised when an operational component attempts to connect to a canonical database."""
-    pass
 
 
 class OpenFIGIRateLimitTimeoutError(TimeoutError):

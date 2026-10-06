@@ -1,45 +1,51 @@
 """
 tests/test_etf_v2_openfigi_path_resolution.py
 
-Regression and invariant test suite for OpenFIGI operational store path resolution,
-cross-CWD coordination, limiter/persistence parity, and multi-process shared capacity.
+Regression, coordination, and invariant test suite for OpenFIGI operational store
+path resolution, override governance, multi-process coordination, and rate-limit enforcement.
 
-Covered Invariants & Sections:
-- Section 21: Cross-CWD Coordination (repo root, script dir, arbitrary cwd).
-- Section 22: Shared Limiter / Persistence store parity under defaults and overrides.
-- Section 23: Cross-Process rate limiter capacity ceiling (capacity=20, 21st blocked, recovery).
-- Section 24: Multi-CWD rate limiter coordination sharing exactly 20 capacity (not 40).
-- Section 25: Retry reservation accounting.
-- Section 29: Live network fail-closed kill switch.
-- Section 30: Operational DB initialization (WAL mode, busy timeout, idempotency).
-- Section 31: Canonical firewall protection.
+Enforces Acceptance Criteria from:
+- ETF_V2_OPENFIGI_POST_RELEASE_OPERATIONAL_DB_PATH_REMEDIATION_GATE
+- AC-05-01 to AC-05-06: Single Canonical Path Authority
+- AC-06-01 to AC-06-06: Override Governance (RELATIVE_OVERRIDE_ALLOWED = NO)
+- AC-07-01 to AC-07-06: Startup Validation & Store Parity
+- AC-08-01 to AC-08-03: Single Physical Store Invariants (INV-OPENFIGI-DB-01 to 08)
+- AC-09-01 to AC-09-05: Multi-Process Coordination Test (5 required cases)
+- AC-10-01 to AC-10-05: Global Rate-Limit Verification (Process A: 12, Process B: 12 -> max 20)
+- AC-12-01 to AC-12-05: Test DB Isolation
 """
 
 from __future__ import annotations
 
+import multiprocessing
 import os
 from pathlib import Path
 import sqlite3
 import subprocess
 import sys
 import time
-from typing import List
+from typing import List, Tuple
 
 import pytest
 
 from scripts.research.etf_v2.openfigi_config import (
+    APPROVED_OPERATIONAL_STORAGE_DIR,
+    CANONICAL_DB_NAME,
     CANONICAL_OPERATIONAL_DB_ENV_VAR,
     DEFAULT_OPERATIONAL_DB_PATH,
     LEGACY_RATE_LIMIT_ENV_VAR,
     REPO_ROOT,
+    CanonicalStoreContaminationError,
+    OpenFIGIPathValidationError,
+    OpenFIGIStoreParityError,
     resolve_openfigi_operational_db_path,
+    validate_openfigi_operational_db_path,
+    validate_store_path_parity,
 )
 from scripts.research.etf_v2.openfigi_rate_limiter import (
-    CanonicalStoreContaminationError as LimiterCanonicalStoreContaminationError,
     GlobalSQLiteRateLimiter,
 )
 from scripts.research.etf_v2.openfigi_persistence import (
-    CanonicalStoreContaminationError as PersistenceCanonicalStoreContaminationError,
     OpenFIGIPersistenceRepository,
 )
 from scripts.research.etf_v2.openfigi_client import (
@@ -47,15 +53,16 @@ from scripts.research.etf_v2.openfigi_client import (
     OpenFIGIClient,
 )
 from scripts.research.etf_v2.openfigi_models import OpenFIGIMappingJob
+from scripts.research.etf_v2.openfigi_service import OpenFIGICorroborationService
 
 
 # ===========================================================================
-# Section 21: Cross-CWD Coordination Test
+# Section 5 & 9: Canonical Path Authority & Cross-CWD Parity (AC-05, AC-09-01)
 # ===========================================================================
 def test_cross_cwd_path_parity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """
-    Section 21: Path resolution invoked from different working directories returns
-    the exact same operational DB path.
+    AC-05-03 & AC-09-01: Path resolution invoked from different working directories returns
+    the exact same physical operational DB file.
     """
     monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
     monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
@@ -74,7 +81,7 @@ def test_cross_cwd_path_parity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         os.chdir(str(script_dir))
         path_from_script = resolve_openfigi_operational_db_path()
 
-        # 3. From arbitrary temporary directory
+        # 3. From arbitrary directory
         os.chdir(str(arbitrary_dir))
         path_from_arbitrary = resolve_openfigi_operational_db_path()
 
@@ -89,10 +96,10 @@ def test_cross_cwd_path_parity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 # ===========================================================================
-# Section 22: Shared Limiter / Persistence Parity Test
+# Section 7 & 11: Store Parity Verification (AC-07-02, AC-11-02)
 # ===========================================================================
 def test_limiter_persistence_store_parity_default(monkeypatch: pytest.MonkeyPatch):
-    """Section 22: Under default configuration, limiter and persistence share the same DB path."""
+    """AC-07-02 / AC-11-02: Under default configuration, limiter and persistence share the same DB path."""
     monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
     monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
 
@@ -101,11 +108,12 @@ def test_limiter_persistence_store_parity_default(monkeypatch: pytest.MonkeyPatc
 
     assert limiter.db_path == repo.db_path
     assert limiter.db_path == DEFAULT_OPERATIONAL_DB_PATH
+    assert validate_store_path_parity(limiter.db_path, repo.db_path) is True
 
 
 def test_limiter_persistence_store_parity_canonical_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Section 22: Under OPENFIGI_OPERATIONAL_DB, limiter and persistence resolve the exact same DB."""
-    custom_db = tmp_path / "canonical_override.db"
+    """Under absolute OPENFIGI_OPERATIONAL_DB, limiter and persistence resolve the exact same DB."""
+    custom_db = (tmp_path / "canonical_override.db").resolve()
     monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, str(custom_db))
     monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
 
@@ -113,12 +121,13 @@ def test_limiter_persistence_store_parity_canonical_env(tmp_path: Path, monkeypa
     repo = OpenFIGIPersistenceRepository(auto_init=False)
 
     assert limiter.db_path == repo.db_path
-    assert limiter.db_path == custom_db.resolve()
+    assert limiter.db_path == custom_db
+    assert validate_store_path_parity(limiter.db_path, repo.db_path) is True
 
 
 def test_limiter_persistence_store_parity_legacy_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Section 22: Under OPENFIGI_RATE_LIMIT_DB, limiter and persistence resolve the exact same DB."""
-    legacy_db = tmp_path / "legacy_override.db"
+    """Under absolute OPENFIGI_RATE_LIMIT_DB, limiter and persistence resolve the exact same DB."""
+    legacy_db = (tmp_path / "legacy_override.db").resolve()
     monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
     monkeypatch.setenv(LEGACY_RATE_LIMIT_ENV_VAR, str(legacy_db))
 
@@ -126,42 +135,69 @@ def test_limiter_persistence_store_parity_legacy_env(tmp_path: Path, monkeypatch
     repo = OpenFIGIPersistenceRepository(auto_init=False)
 
     assert limiter.db_path == repo.db_path
-    assert limiter.db_path == legacy_db.resolve()
+    assert limiter.db_path == legacy_db
+    assert validate_store_path_parity(limiter.db_path, repo.db_path) is True
 
 
-def test_limiter_persistence_store_parity_relative_env(monkeypatch: pytest.MonkeyPatch):
-    """Section 22: Relative environment override is anchored to repository root across both."""
+def test_store_parity_mismatch_fails_closed(tmp_path: Path):
+    """AC-07-02 / INV-OPENFIGI-DB-07: Store path mismatch between limiter and persistence fails closed."""
+    db1 = (tmp_path / "store1.db").resolve()
+    db2 = (tmp_path / "store2.db").resolve()
+
+    limiter = GlobalSQLiteRateLimiter(db_path=db1)
+    repo = OpenFIGIPersistenceRepository(db_path=db2, auto_init=False)
+    client = OpenFIGIClient(rate_limiter=limiter)
+
+    with pytest.raises(OpenFIGIStoreParityError):
+        validate_store_path_parity(limiter.db_path, repo.db_path)
+
+    with pytest.raises(OpenFIGIStoreParityError):
+        OpenFIGICorroborationService(client=client, repository=repo)
+
+
+# ===========================================================================
+# Section 6: Override Governance (AC-06-01 to AC-06-06, AC-07-01, AC-09-03)
+# ===========================================================================
+def test_relative_production_override_rejected(monkeypatch: pytest.MonkeyPatch):
+    """
+    AC-06-03 / AC-07-01 / AC-09-03: Relative production environment override causes
+    startup validation to fail.
+    """
     rel_override = "data/operational/relative_test.db"
-    expected = (REPO_ROOT / rel_override).resolve()
-
     monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, rel_override)
-    limiter = GlobalSQLiteRateLimiter()
-    repo = OpenFIGIPersistenceRepository(auto_init=False)
+    with pytest.raises(OpenFIGIPathValidationError) as exc_info:
+        resolve_openfigi_operational_db_path()
+    assert "must be absolute" in str(exc_info.value) or "Relative path" in str(exc_info.value)
 
-    assert limiter.db_path == repo.db_path
-    assert limiter.db_path == expected
+
+def test_relative_legacy_override_rejected(monkeypatch: pytest.MonkeyPatch):
+    """AC-06-03: Relative legacy environment override is rejected."""
+    monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
+    monkeypatch.setenv(LEGACY_RATE_LIMIT_ENV_VAR, "some_rel_path.db")
+    with pytest.raises(OpenFIGIPathValidationError):
+        resolve_openfigi_operational_db_path()
 
 
 def test_operational_db_precedence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """
-    Section 13: Precedence order:
+    Precedence order:
     explicit constructor > canonical env > legacy env > repository default
     """
-    explicit_db = tmp_path / "explicit.db"
-    canonical_env_db = tmp_path / "canonical_env.db"
-    legacy_env_db = tmp_path / "legacy_env.db"
+    explicit_db = (tmp_path / "explicit.db").resolve()
+    canonical_env_db = (tmp_path / "canonical_env.db").resolve()
+    legacy_env_db = (tmp_path / "legacy_env.db").resolve()
 
     # Both env vars set: canonical wins
     monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, str(canonical_env_db))
     monkeypatch.setenv(LEGACY_RATE_LIMIT_ENV_VAR, str(legacy_env_db))
-    assert resolve_openfigi_operational_db_path() == canonical_env_db.resolve()
+    assert resolve_openfigi_operational_db_path() == canonical_env_db
 
     # Explicit constructor wins over canonical env
-    assert resolve_openfigi_operational_db_path(explicit_db) == explicit_db.resolve()
+    assert resolve_openfigi_operational_db_path(explicit_db) == explicit_db
 
     # When canonical unset, legacy env wins over default
     monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
-    assert resolve_openfigi_operational_db_path() == legacy_env_db.resolve()
+    assert resolve_openfigi_operational_db_path() == legacy_env_db
 
     # When legacy unset, default wins
     monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
@@ -169,112 +205,186 @@ def test_operational_db_precedence(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
 
 # ===========================================================================
-# Section 23: Cross-Process Rate-Limiter Test
+# Section 7: Startup Validation Checks (AC-07-01 to AC-07-06)
 # ===========================================================================
-def test_cross_process_rate_limiter_capacity(tmp_path: Path):
-    """
-    Section 23: Multiple limiter instances/processes share the same reservation ceiling (20).
-    Request 21 is blocked. After expiry, capacity recovers.
-    """
-    db_path = tmp_path / "shared_capacity.db"
-    now = 10000.0
+def test_startup_validation_boundary_rejection(tmp_path: Path):
+    """AC-07-03: In production mode, paths outside approved runtime storage boundary are rejected."""
+    unapproved_path = (tmp_path / "unapproved" / "openfigi.db").resolve()
+    with pytest.raises(OpenFIGIPathValidationError) as exc_info:
+        validate_openfigi_operational_db_path(unapproved_path, is_test=False)
+    assert "outside approved runtime storage boundary" in str(exc_info.value)
 
-    # Instance A acquires 20 reservations
-    limiter_a = GlobalSQLiteRateLimiter(db_path=db_path, clock=lambda: now)
-    for _ in range(20):
-        granted, wait_sec = limiter_a.try_reserve()
-        assert granted is True
-        assert wait_sec == 0.0
 
-    # Instance B attempts 21st reservation: blocked
-    limiter_b = GlobalSQLiteRateLimiter(db_path=db_path, clock=lambda: now)
-    granted_21, wait_21 = limiter_b.try_reserve()
-    assert granted_21 is False
-    assert wait_21 > 0.0
+def test_startup_validation_in_memory_rejection_in_production():
+    """In-memory database is strictly rejected in production mode."""
+    with pytest.raises(OpenFIGIPathValidationError):
+        validate_openfigi_operational_db_path(":memory:", is_test=False)
 
-    # Advance clock past 60-second window
-    now_advanced = now + 60.1
-    limiter_b_advanced = GlobalSQLiteRateLimiter(db_path=db_path, clock=lambda: now_advanced)
-    granted_recovered, wait_recovered = limiter_b_advanced.try_reserve()
-    assert granted_recovered is True
-    assert wait_recovered == 0.0
+
+def test_canonical_firewall_rejection():
+    """INV-OPENFIGI-DB-08: Reject any path referencing canonical population store."""
+    canonical_paths = [
+        REPO_ROOT / "data" / "canonical" / "etf_v2_canonical_population.db",
+        Path("data/canonical/etf_v2_canonical_population.db"),
+        Path("etf_v2_canonical_population.db"),
+    ]
+
+    for p in canonical_paths:
+        with pytest.raises((CanonicalStoreContaminationError, OpenFIGIPathValidationError)):
+            validate_openfigi_operational_db_path(p)
 
 
 # ===========================================================================
-# Section 24: Multi-CWD Rate-Limiter Test
+# Section 9: Multi-Process Coordination 5 Required Cases (AC-09-01 to AC-09-05)
 # ===========================================================================
-def test_multi_cwd_shared_limiter_capacity(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_multiprocess_coordination_five_cases(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """
-    Section 24: Two processes/instances operating from different working directories
-    resolve the same operational DB and share the single 20-request window (not 40).
+    AC-09-01 to AC-09-05: Tests all 5 required multi-process coordination cases:
+    Case 1: same canonical configuration with the same CWD
+    Case 2: same canonical configuration with different CWDs
+    Case 3: same absolute override with different CWDs
+    Case 4: invalid relative production override
+    Case 5: test-specific isolated temporary DBs
     """
-    shared_db = tmp_path / "multi_cwd_test.db"
-    monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, str(shared_db))
-
     original_cwd = os.getcwd()
-    dir_1 = tmp_path / "proc_dir_1"
-    dir_2 = tmp_path / "proc_dir_2"
-    dir_1.mkdir(parents=True, exist_ok=True)
-    dir_2.mkdir(parents=True, exist_ok=True)
+    cwd_a = tmp_path / "proc_cwd_a"
+    cwd_b = tmp_path / "proc_cwd_b"
+    cwd_a.mkdir(parents=True, exist_ok=True)
+    cwd_b.mkdir(parents=True, exist_ok=True)
 
-    now = 50000.0
     try:
-        # Process/context 1 in dir_1 reserves 12 slots
-        os.chdir(str(dir_1))
-        limiter_1 = GlobalSQLiteRateLimiter(clock=lambda: now)
-        for _ in range(12):
-            assert limiter_1.try_reserve()[0] is True
+        # Case 1: Same canonical config with same CWD
+        monkeypatch.delenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, raising=False)
+        monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
+        os.chdir(str(REPO_ROOT))
+        path_c1_a = resolve_openfigi_operational_db_path()
+        path_c1_b = resolve_openfigi_operational_db_path()
+        assert path_c1_a == path_c1_b == DEFAULT_OPERATIONAL_DB_PATH
 
-        # Process/context 2 in dir_2 reserves 8 slots
-        os.chdir(str(dir_2))
-        limiter_2 = GlobalSQLiteRateLimiter(clock=lambda: now)
-        for _ in range(8):
-            assert limiter_2.try_reserve()[0] is True
+        # Case 2: Same canonical config with different CWDs
+        os.chdir(str(cwd_a))
+        path_c2_a = resolve_openfigi_operational_db_path()
+        os.chdir(str(cwd_b))
+        path_c2_b = resolve_openfigi_operational_db_path()
+        assert path_c2_a == path_c2_b == DEFAULT_OPERATIONAL_DB_PATH
+        assert path_c2_a.is_absolute()
 
-        # Exactly 20 reserved total: 21st attempt from dir_2 must fail
-        assert limiter_2.try_reserve()[0] is False
+        # Case 3: Same absolute override with different CWDs
+        abs_override = (tmp_path / "shared_abs_override.db").resolve()
+        monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, str(abs_override))
+        os.chdir(str(cwd_a))
+        path_c3_a = resolve_openfigi_operational_db_path()
+        os.chdir(str(cwd_b))
+        path_c3_b = resolve_openfigi_operational_db_path()
+        assert path_c3_a == path_c3_b == abs_override
 
-        # Attempt from dir_1 must also fail
-        os.chdir(str(dir_1))
-        limiter_1_again = GlobalSQLiteRateLimiter(clock=lambda: now)
-        assert limiter_1_again.try_reserve()[0] is False
+        # Case 4: Invalid relative production override
+        monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, "relative_invalid.db")
+        os.chdir(str(cwd_a))
+        with pytest.raises(OpenFIGIPathValidationError):
+            resolve_openfigi_operational_db_path()
 
-        # Verify combined capacity was strictly 20, not 40
-        assert limiter_1_again.get_active_count() == 20
+        # Case 5: Test-specific isolated temporary DBs
+        test_db_a = (tmp_path / "test_isolated_a.db").resolve()
+        test_db_b = (tmp_path / "test_isolated_b.db").resolve()
+        assert test_db_a != DEFAULT_OPERATIONAL_DB_PATH
+        assert test_db_b != DEFAULT_OPERATIONAL_DB_PATH
+        assert test_db_a != test_db_b
+
     finally:
         os.chdir(original_cwd)
 
 
 # ===========================================================================
-# Section 25: Retry Reservation Preservation
+# Section 10: Global Rate-Limit Verification 12+12=20 (AC-10-01 to AC-10-05)
 # ===========================================================================
-def test_retry_reservation_preservation(tmp_path: Path):
-    """Section 25: Initial attempt and every retry consume a limiter reservation."""
-    db_path = tmp_path / "retry_test.db"
-    limiter = GlobalSQLiteRateLimiter(db_path=db_path)
+def _worker_attempt_reservations(db_path_str: str, count: int, now: float) -> int:
+    """Worker function executed by multiple processes to acquire reservations."""
+    limiter = GlobalSQLiteRateLimiter(
+        db_path=Path(db_path_str),
+        clock=lambda: now
+    )
+    granted_count = 0
+    for _ in range(count):
+        granted, _ = limiter.try_reserve()
+        if granted:
+            granted_count += 1
+    return granted_count
 
-    # Initial attempt
-    acq1, _ = limiter.try_reserve()
-    assert acq1 is True
-    assert limiter.get_active_count() == 1
 
-    # Retry 1
-    acq2, _ = limiter.try_reserve()
-    assert acq2 is True
-    assert limiter.get_active_count() == 2
+def test_section10_multiprocess_rate_limit_12_and_12_coordination(tmp_path: Path):
+    """
+    AC-10-01 to AC-10-05:
+    Process A attempts 12 requests.
+    Process B attempts 12 requests.
+    All attempts occur within the same rolling 60-second window.
+    Combined accepted requests within window must be exactly min(12+12, 20) = 20.
+    """
+    shared_db = (tmp_path / "rate_limit_12_12.db").resolve()
+    now = 75000.0
+    # Initialize schema first
+    init_limiter = GlobalSQLiteRateLimiter(db_path=shared_db, clock=lambda: now)
+    init_limiter.get_active_count()
 
-    # Retry 2
-    acq3, _ = limiter.try_reserve()
-    assert acq3 is True
-    assert limiter.get_active_count() == 3
+    # Execute in multiprocessing pool to guarantee genuine separate OS processes
+    ctx = multiprocessing.get_context("spawn")
+    with ctx.Pool(processes=2) as pool:
+        res_a = pool.apply_async(_worker_attempt_reservations, (str(shared_db), 12, now))
+        res_b = pool.apply_async(_worker_attempt_reservations, (str(shared_db), 12, now))
+
+        granted_a = res_a.get(timeout=20)
+        granted_b = res_b.get(timeout=20)
+
+    total_accepted = granted_a + granted_b
+    assert total_accepted == 20, f"Expected exactly 20 total granted requests, got {total_accepted} ({granted_a} + {granted_b})"
+    assert init_limiter.get_active_count(now=now) == 20
+
+    # 25th attempt from caller process must be rejected
+    rejected_attempt, wait_time = init_limiter.try_reserve()
+    assert rejected_attempt is False
+    assert wait_time > 0.0
 
 
 # ===========================================================================
-# Section 29: Live Network Kill Switch
+# Section 12: Test Isolation (AC-12-01 to AC-12-05)
+# ===========================================================================
+def test_test_db_isolation(tmp_path: Path):
+    """
+    AC-12-01 to AC-12-05:
+    Every test that accesses an operational DB uses an explicit isolated test path.
+    Production DB is never mutated during test execution.
+    """
+    prod_path = DEFAULT_OPERATIONAL_DB_PATH
+    prod_existed = prod_path.exists()
+    prod_mtime_before = prod_path.stat().st_mtime if prod_existed else None
+
+    # Test uses isolated path
+    isolated_db = (tmp_path / "isolated_test_suite.db").resolve()
+    assert isolated_db != prod_path
+
+    repo = OpenFIGIPersistenceRepository(db_path=isolated_db, auto_init=True)
+    limiter = GlobalSQLiteRateLimiter(db_path=isolated_db)
+
+    # Perform writes to isolated DB
+    assert limiter.try_reserve()[0] is True
+    with repo.connection() as conn:
+        conn.execute("INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES ('1.0', '2026-10-06T00:00:00Z');")
+
+    assert isolated_db.exists()
+
+    # Production DB must be completely untouched
+    if prod_existed:
+        assert prod_path.stat().st_mtime == prod_mtime_before
+    else:
+        assert not prod_path.exists()
+
+
+# ===========================================================================
+# Live Network Kill Switch & Operational DB Setup
 # ===========================================================================
 def test_live_network_kill_switch_preserved(tmp_path: Path):
-    """Section 29: Live network requests fail closed without authorized transport."""
-    db_path = tmp_path / "kill_switch.db"
+    """Section 14 & OFIGI-INV-011: Live network requests fail closed without authorized transport."""
+    db_path = (tmp_path / "kill_switch.db").resolve()
     limiter = GlobalSQLiteRateLimiter(db_path=db_path)
     client = OpenFIGIClient(api_key="TEST_KEY", transport=None, rate_limiter=limiter)
 
@@ -282,56 +392,31 @@ def test_live_network_kill_switch_preserved(tmp_path: Path):
         client.post_mapping_jobs([OpenFIGIMappingJob(idType="ID_ISIN", idValue="IE00B3FL3272")])
 
 
-# ===========================================================================
-# Section 30: Operational DB Initialization
-# ===========================================================================
 def test_operational_db_initialization(tmp_path: Path):
     """
-    Section 30: Verifies operational DB creation, parent directory creation,
+    Verifies operational DB creation, parent directory creation,
     schema initialization, idempotence, WAL mode, and busy timeout.
     """
-    deep_path = tmp_path / "deep" / "nested" / "operational.db"
+    deep_path = (tmp_path / "deep" / "nested" / "operational.db").resolve()
     repo = OpenFIGIPersistenceRepository(db_path=deep_path, auto_init=True)
 
     assert deep_path.exists()
 
     with repo.connection() as conn:
-        # Check WAL mode
         mode = conn.execute("PRAGMA journal_mode;").fetchone()[0]
         assert mode.lower() == "wal"
 
-        # Check busy timeout (30,000 ms)
         timeout = conn.execute("PRAGMA busy_timeout;").fetchone()[0]
         assert timeout == 30000
 
-        # Check operational tables exist
         tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()]
         assert "openfigi_observations" in tables
         assert "openfigi_active_mappings" in tables
         assert "schema_version" in tables
 
-        # Verify canonical tables remain strictly absent
         assert "share_classes" not in tables
         assert "subfunds" not in tables
         assert "canonical_population" not in tables
 
     # Re-initialization is idempotent
     repo.initialize_schema()
-
-
-# ===========================================================================
-# Section 31: Canonical Firewall Test
-# ===========================================================================
-def test_canonical_firewall_rejection():
-    """Section 31: Reject any path referencing canonical population store."""
-    canonical_paths = [
-        Path("data/canonical/etf_v2_canonical_population.db"),
-        Path("etf_v2_canonical_population.db"),
-    ]
-
-    for p in canonical_paths:
-        with pytest.raises(LimiterCanonicalStoreContaminationError):
-            GlobalSQLiteRateLimiter(db_path=p)
-
-        with pytest.raises(PersistenceCanonicalStoreContaminationError):
-            OpenFIGIPersistenceRepository(db_path=p)

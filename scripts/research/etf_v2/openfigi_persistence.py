@@ -22,6 +22,7 @@ import sqlite3
 from typing import Generator, List, Optional, Sequence, Tuple
 
 from .openfigi_config import (
+    CanonicalStoreContaminationError,
     DEFAULT_OPERATIONAL_DB_PATH,
     resolve_openfigi_operational_db_path,
 )
@@ -34,11 +35,6 @@ SCHEMA_SQL_PATH = Path(__file__).parent / "openfigi_operational_schema.sql"
 
 class OpenFIGIPersistenceError(Exception):
     """Raised when operational persistence operations fail."""
-    pass
-
-
-class CanonicalStoreContaminationError(OpenFIGIPersistenceError):
-    """Raised if an operational persistence component is configured with a canonical database path."""
     pass
 
 
