@@ -30,6 +30,7 @@ from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngi
 from analyst_dashboard.governance.passive_capture import PassiveCaptureHook
 from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
+from analyst_dashboard.security_master import get_security_master_service
 
 router = APIRouter()
 risk_analyzer = AdvancedRiskAnalyzer()
@@ -1260,8 +1261,43 @@ def get_asset_analytics(
             else current_price
         )
 
+        # Authoritative canonical instrument classification envelope
+        try:
+            sec_master_service = get_security_master_service()
+            instrument_obj = sec_master_service.get_or_resolve_instrument(upper_sym)
+            instrument_envelope = {
+                "symbol": instrument_obj.symbol,
+                "provider_symbol": instrument_obj.provider_symbol,
+                "asset_class": instrument_obj.asset_class.value if hasattr(instrument_obj.asset_class, "value") else str(instrument_obj.asset_class),
+                "security_type": instrument_obj.security_type.value if hasattr(instrument_obj.security_type, "value") else str(instrument_obj.security_type),
+                "primary_exchange": instrument_obj.primary_exchange,
+                "listing_status": instrument_obj.listing_status.value if hasattr(instrument_obj.listing_status, "value") else str(instrument_obj.listing_status),
+                "classification_status": instrument_obj.classification_status.value if hasattr(instrument_obj.classification_status, "value") else str(instrument_obj.classification_status),
+                "execution_eligibility": instrument_obj.execution_eligibility.value if hasattr(instrument_obj.execution_eligibility, "value") else str(instrument_obj.execution_eligibility),
+                "classification_authority": instrument_obj.classification_authority,
+            }
+        except Exception as e:
+            logger.warning(f"Security Master resolution failed for {upper_sym}: {e}")
+            instrument_envelope = {
+                "symbol": upper_sym,
+                "provider_symbol": upper_sym,
+                "asset_class": "UNKNOWN",
+                "security_type": "UNKNOWN",
+                "primary_exchange": "UNKNOWN",
+                "listing_status": "UNKNOWN",
+                "classification_status": "UNVERIFIED",
+                "execution_eligibility": "FAIL_CLOSED",
+                "classification_authority": "ARX_SERVER_SECURITY_MASTER",
+            }
+
         return {
             "symbol": upper_sym,
+            "instrument": instrument_envelope,
+            "canonicalInstrument": instrument_envelope,
+            "executionEligibility": instrument_envelope["execution_eligibility"],
+            "securityType": instrument_envelope["security_type"],
+            "assetClass": instrument_envelope["asset_class"],
+            "classificationStatus": instrument_envelope["classification_status"],
             "period": clean_period,
             "interval": clean_interval,
             "userRole": clean_role,
