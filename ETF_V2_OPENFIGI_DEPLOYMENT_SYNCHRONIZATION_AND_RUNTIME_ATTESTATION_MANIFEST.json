@@ -1,0 +1,122 @@
+{
+  "manifestSchema": "etf-v2-openfigi-deployment-attestation-manifest-v1",
+  "gate": "HOLD_ETF_V2_OPENFIGI_REMEDIATION_RELEASE_VERIFICATION",
+  "timestamp": "2026-10-06T03:36:00Z",
+  "repositoryBoundary": {
+    "worktree": "C:/Users/akara/Documents/Projects/finance-etf-v2",
+    "branch": "arx/etf-v2-openfigi-remediation",
+    "localHead": "ac6461c5615b9793c32bde69e7d583ce30e71102",
+    "originHead": "ac6461c5615b9793c32bde69e7d583ce30e71102",
+    "worktreeClean": true,
+    "securityMasterFilesPresent": false,
+    "unrelatedArxFilesPresent": false
+  },
+  "candidateShaAmbiguityResolution": {
+    "remediationCodeSha": "6aadcdf5d69ad0811ada4e6215233fa4e9abbd90",
+    "branchHead": "ac6461c5615b9793c32bde69e7d583ce30e71102",
+    "runtimeCodeDifference": false,
+    "runtimeEquivalence": "VERIFIED_DOCUMENTATION_ONLY_SUCCESSOR",
+    "productionReleaseCandidateSha": "ac6461c5615b9793c32bde69e7d583ce30e71102"
+  },
+  "testAttestation": {
+    "testedRuntimeSha": "6aadcdf5d69ad0811ada4e6215233fa4e9abbd90",
+    "openfigiTestsPassed": 62,
+    "etfV2RegressionTestsPassed": 59,
+    "totalTests": 121,
+    "failures": 0,
+    "status": "PASS"
+  },
+  "deploymentWorkflowDiscovery": {
+    "railwayDeploymentSource": "github://daakara/finance@refs/heads/main",
+    "mergeToMainRequiredForDeployment": true,
+    "cliDeployFromBranchSupported": false
+  },
+  "mergeSafetyAnalysis": {
+    "mergeBase": "f5ba5b28fb08091e1adc2ef2e704db1dc938e91a",
+    "mergeConflictsCount": 6,
+    "conflictingFiles": [
+      "scripts/research/etf_v2/openfigi_config.py",
+      "scripts/research/etf_v2/openfigi_persistence.py",
+      "scripts/research/etf_v2/openfigi_rate_limiter.py",
+      "tests/test_etf_v2_openfigi_contract.py",
+      "tests/test_etf_v2_openfigi_global_rate_limiter.py",
+      "tests/test_etf_v2_openfigi_path_resolution.py"
+    ],
+    "unrelatedMainChanges": "26 commits (SaaS foundation, Analysis UX, Radar portfolio-aware status, Security Master design 2a239fb)",
+    "mergeSafety": "HOLD"
+  },
+  "deploymentAndRuntimeIdentity": {
+    "deploymentPlatform": "Railway Container Platform",
+    "serviceName": "web",
+    "deploymentId": "f0270890-4d5d-482f-b570-b49004baf49b",
+    "deployedSha": "2a239fb3ecf3e88744a42ae64a4443c039a8d626",
+    "productionRuntimeSha": "2a239fb3ecf3e88744a42ae64a4443c039a8d626",
+    "runtimeCandidateParity": false,
+    "productionStatus": "online"
+  },
+  "productionConfigurationEvidence": {
+    "productionPathAbsolute": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "productionPathCwdIndependent": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "relativeOverrideActive": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "approvedStorageBoundary": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "productionStoreParity": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "startupPathValidation": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE",
+    "fallbackDbCreated": "NOT_ESTABLISHED_ON_DEPLOYED_CANDIDATE"
+  },
+  "productionErrorReview": {
+    "remediationRelatedErrors": 0,
+    "unexplainedErrors": 0
+  },
+  "boundariesAndInvariants": {
+    "liveOpenfigiRequests": 0,
+    "canonicalDbMutation": false,
+    "etfPopulationChanged": false,
+    "openfigiMappingSemanticsChanged": false,
+    "rateLimitThresholdChanged": false,
+    "securityMasterRuntimeIntegration": false,
+    "securityMasterFilesChanged": false,
+    "globalArxOpenfigiQuotaRedesign": false,
+    "etfV2LocalLimit": "20_REQUESTS_PER_ROLLING_60_SECONDS"
+  },
+  "acceptanceCriteriaSummary": {
+    "ETF-RELEASE-01": "PASS",
+    "ETF-RELEASE-02": "PASS",
+    "ETF-RELEASE-03": "PASS",
+    "ETF-RELEASE-04": "PASS",
+    "ETF-RELEASE-05": "HOLD",
+    "ETF-RELEASE-06": "HOLD",
+    "ETF-RELEASE-07": "HOLD",
+    "ETF-RELEASE-08": "HOLD",
+    "ETF-RELEASE-09": "HOLD",
+    "ETF-RELEASE-10": "HOLD",
+    "ETF-RELEASE-11": "HOLD",
+    "ETF-RELEASE-12": "HOLD",
+    "ETF-RELEASE-13": "HOLD",
+    "ETF-RELEASE-14": "PASS",
+    "ETF-RELEASE-15": "PASS",
+    "ETF-RELEASE-16": "PASS",
+    "ETF-RELEASE-17": "PASS",
+    "ETF-RELEASE-18": "PASS",
+    "ETF-RELEASE-19": "PASS",
+    "ETF-RELEASE-20": "PASS"
+  },
+  "gateVerdict": {
+    "verdict": "HOLD_ETF_V2_OPENFIGI_REMEDIATION_RELEASE_VERIFICATION",
+    "primaryReason": "PRODUCTION_DEPLOYMENT_PARITY_PENDING_MERGE_RECONCILIATION",
+    "unverifiedCriteria": [
+      "ETF-RELEASE-05",
+      "ETF-RELEASE-06",
+      "ETF-RELEASE-07",
+      "ETF-RELEASE-08",
+      "ETF-RELEASE-09",
+      "ETF-RELEASE-10",
+      "ETF-RELEASE-11",
+      "ETF-RELEASE-12",
+      "ETF-RELEASE-13"
+    ],
+    "missingEvidence": "Railway production runtime is executing commit 2a239fb3ecf3e88744a42ae64a4443c039a8d626; candidate ac6461c5615b9793c32bde69e7d583ce30e71102 has 6 merge conflicts against origin/main due to predecessor intermediate commit c25553d. Deployed candidate runtime evidence (ETF-RELEASE-08..13) cannot be established until reviewed merge and deployment synchronization are performed.",
+    "openfigiActivation": "HOLD",
+    "nextAuthorizedAction": "CONDUCT_REVIEWED_MERGE_RECONCILIATION_AND_SYNCHRONIZE_RAILWAY_DEPLOYMENT",
+    "automaticSuccessorExecution": false
+  }
+}
