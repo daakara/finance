@@ -7,6 +7,10 @@
 **Predecessor State**: `HOLD_ARX_CANONICAL_SECURITY_MASTER_DESIGN`
 **Implementation Authorization**: `NOT_AUTHORIZED` (Evidence-Only Gate)
 **Governing Invariants**: `INV-SECMASTER-01` through `INV-SECMASTER-14`
+**Policy Artifact Hierarchy**:
+- `CANONICAL_ARCHITECTURE`: `docs/architecture/ARX_CANONICAL_SECURITY_MASTER_DESIGN.md`
+- `PROVIDER_EVIDENCE`: `docs/architecture/ARX_SECURITY_MASTER_PROVIDER_ELIGIBILITY_EVIDENCE.md`
+- `UX_POLICY_COMPANION`: `docs/ux/ARX_ASSET_CLASSIFICATION_AUTHORITY_DESIGN.md`
 
 ---
 
