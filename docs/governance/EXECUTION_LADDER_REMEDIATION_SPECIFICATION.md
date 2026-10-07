@@ -1,15 +1,16 @@
 # ARX TERMINAL — EXECUTION LADDER REMEDIATION
 ## RATIFIED QUANTITATIVE CONTRACT & GOVERNANCE SPECIFICATION
+### TP1 AUTHORITY & NON-ENTERED TARGET-STATE CLOSURE
 
 ```text
 DOCUMENT_TYPE =
   BINDING_QUANTITATIVE_REMEDIATION_SPECIFICATION
 STATUS =
-  RATIFIED_BY_QUANT_GOVERNANCE
+  RATIFIED_AND_SEMANTICALLY_CLOSED
 TARGET_MODULE =
   analyst_dashboard/analyzers/optimal_execution.py
 BASELINE_PARENT_SHA =
-  0d0f9b141ff56b0d2bfac977541cc5f0451b667b
+  3896464da19c35734dd3a46100dfbf9e03f8107c
 PRODUCTION_ANCESTOR_SHA =
   9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69
 IMPLEMENTATION_BRANCH =
@@ -22,154 +23,214 @@ ISOLATED_WORKTREE =
 
 # 1. CANONICAL BASELINE & PROVENANCE
 
-* **`MAIN_HEAD`**: `0d0f9b141ff56b0d2bfac977541cc5f0451b667b` (`docs(prd): ratify Wave 4 decision readiness specification`)
-* **`ORIGIN_MAIN` / `REMOTE_MAIN`**: `9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69` (`feat(decision-integrity): implement synthesis e wave 3 decision integrity and epistemic consistency`)
-* **`WORKTREE_STATUS`**: Clean of tracked modifications. Local `main` carries exactly one documentation commit (`0d0f9b1`) ahead of `origin/main`.
-* **Authorized Implementation Baseline**: The commit containing this ratified specification on `main` (`EXECUTION_LADDER_AUTHORIZED_BASELINE_SHA = HEAD`).
+* **`PRODUCTION_ANCESTOR_SHA`**: `9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69` (`origin/main`).
+* **`BASELINE_COMMIT_SHA`**: `3896464da19c35734dd3a46100dfbf9e03f8107c` (`docs(governance): ratify execution ladder remediation`).
+* **`WORKTREE_STATUS`**: Clean of tracked source changes. All implementation is isolated strictly within `C:/Users/akara/Documents/Projects/finance-execution-ladder-remediation`.
 
 ---
 
-# 2. RATIFIED TP2 RUNNER CONTRACT
+# 2. RESOLUTION OF STATUS PRECEDENCE CONTRADICTION
 
-### 2.1 Confirmed Defect
-In current production code (`OptimalExecutionEngine._enforce_execution_invariants`):
+### 2.1 The Confirmed Contradiction
+Prior draft logic proposed:
 ```python
-clamped_tp2_pct = max(plan["take_profit_1_pct"] + 1.0, min(45.0, raw_tp2_pct))
+elif eval_price >= take_profit_1:
+    exec_status = "TARGET_REACHED"
+elif eval_price > ext_threshold:
+    exec_status = "WAITING_PULLBACK"
 ```
-Whenever $\text{TP1\_pct} \ge 44.0\%$, the expression collapses to $\text{TP1\_pct} + 1.0\%$, locking the secondary runner to exactly $0.01 \times \text{spot}$ (e.g. 2 cents on NAUT). This behavior is strictly prohibited.
+Under this ordering, NAUT Long ($\text{spot} = \$1.96$, $\text{planned\_entry} = \$1.46$, $\text{TP1} = \$1.89$) evaluated to `TARGET_REACHED` because $\$1.96 \ge \$1.89$. However, the simulation report simultaneously classified NAUT as `WAITING_PULLBACK`.
 
-### 2.2 Ratified Formula (Option E — Hybrid Hierarchy)
-$$\text{RATIFIED\_TP2\_FORMULA} = \text{TP1} + \text{TP2\_RUNNER\_SPREAD}$$
-where:
-$$\text{TP2\_RUNNER\_SPREAD} = \max(1.5 \times \text{ATR}_{14},\, 1.0 \times \text{EXECUTION\_RISK})$$
+```text
+STATUS_PRECEDENCE_CONTRADICTION =
+  CONFIRMED
+```
 
-### 2.3 Post-Rounding Separation Invariant
-$$\text{TP2} - \text{TP1} \ge \text{RATIFIED\_TP2\_MINIMUM\_SEPARATION}$$
-where:
-$$\text{RATIFIED\_TP2\_MINIMUM\_SEPARATION} = \max\left(\text{min\_tick},\, 1.0 \times \text{ATR}_{14},\, 0.75 \times \text{EXECUTION\_RISK},\, 0.05 \times \text{planned\_entry}\right)$$
+### 2.2 Root Cause & Resolution
+`TARGET_REACHED` is an **outcome state of an active, entered trade position**, NOT an entry-readiness state of an un-entered setup. Evaluating `TARGET_REACHED` on an un-entered prospective asset causes serious semantic corruption: it suggests to a scanning user that an unowned trade was executed.
 
-### 2.4 Reference Price Definition
-$$\text{REFERENCE\_PRICE} = \text{planned\_entry}$$
-where:
-$$\text{planned\_entry} = \min(\max(\text{spot},\, \text{optimal\_entry\_min}),\, \text{optimal\_entry\_max})$$
-* If `spot` is within corridor (`IN_BUY_ZONE`): $\text{planned\_entry} = \text{spot}$.
-* If `spot` is extended above corridor (`WAITING_PULLBACK`): $\text{planned\_entry} = \text{optimal\_entry\_max}$.
-* If `spot` is below corridor: $\text{planned\_entry} = \text{optimal\_entry\_min}$.
+```text
+TARGET_REACHED_REQUIRES_ACTIVE_OR_ENTERED_PLAN =
+  YES
+```
+For prospective assets scanned on Analysis / Radar surfaces (`NO_ACTIVE_POSITION`), the status is strictly an **ENTRY READINESS** indicator.
 
 ---
 
-# 3. EXECUTION RISK AUTHORITY
+# 3. ORTHOGONAL STATUS ARCHITECTURE
 
-$$\text{EXECUTION\_RISK} = \text{planned\_entry} - \text{structural\_invalidation}$$
-* $\text{EXECUTION\_RISK}$ is measured strictly relative to the accumulation base corridor, never relative to extended spot.
-* For non-actionable, extended assets, spot is never the assumed purchase execution price.
-
----
-
-# 4. RATIFIED STOP OWNERSHIP HIERARCHY
-
-The four concepts are decoupled under strict ownership precedence:
+The execution system decouples four distinct dimensions:
 
 ```mermaid
-flowchart TD
-    A["THESIS_INVALIDATION<br/>Low[-5:] - 0.25 * ATR14<br/>Owned by Setup Recognition"] --> B["CORRIDOR_FLOOR<br/>optimal_entry_min<br/>Invariant: Stop < Floor"]
-    B --> C["EXECUTION_STOP<br/>Active stop for corridor entries<br/>Owned by Order Execution"]
-    C --> D["RISK_BUDGET<br/>Max capital loss (-6.5% max)<br/>Owned by Portfolio Risk Governor"]
-    D --> E["POSITION SIZING GOVERNOR<br/>Wide Stop => Reduce Shares<br/>NEVER mutate structural stop!"]
+graph TD
+    subgraph Dimensions["4 Orthogonal Dimensions"]
+        D1["1. POSITION_LIFECYCLE_STATE<br/>PLANNED vs OPEN vs CLOSED<br/>Owned by Portfolio Engine"]
+        D2["2. ENTRY_READINESS_STATE<br/>IN_BUY_ZONE vs WAITING_PULLBACK<br/>Owned by OptimalExecutionEngine"]
+        D3["3. MARKET_LOCATION_STATE<br/>BELOW_BASE vs IN_BASE vs ABOVE_TP1<br/>Owned by Ladder Geometry"]
+        D4["4. TARGET_PROGRESS_STATE<br/>Progress % toward TP1<br/>Owned by Mathematical Progress"]
+    end
 ```
 
-### Governing Policy:
-1. `RISK_BUDGET` governs position sizing (shares allocated).
-2. `RISK_BUDGET` **must not silently relocate** `THESIS_INVALIDATION`.
-3. If structural risk is wide, position size is reduced; the stop is never pulled into random market noise to satisfy an arbitrary percentage cap.
+1. **`POSITION_LIFECYCLE_STATE`** (`PLANNED` | `OPEN` | `CLOSED`):
+   * Authority: `frontend/lib/tradeLifecycle.ts` / `usePortfolioContext.ts`.
+   * On general screener and analysis pages, the state is strictly `PLANNED` (`NO_ACTIVE_POSITION`).
+2. **`ENTRY_READINESS_STATE`** (`IN_BUY_ZONE` | `IN_BUY_ZONE_AWAITING_TRIGGER` | `EXTENDED_ABOVE_BUY_ZONE` | `WAITING_PULLBACK` | `STOPPED_OUT`):
+   * Authority: `OptimalExecutionEngine`.
+   * Governs whether a new market entrant is authorized to execute immediately.
+3. **`MARKET_LOCATION_STATE`** (`BELOW_BASE` | `IN_BUY_ZONE` | `BETWEEN_BASE_AND_TP1` | `BETWEEN_TP1_AND_TP2` | `ABOVE_TP2`):
+   * Pure spatial description of spot relative to the static technical base ladder.
+4. **`TARGET_PROGRESS_STATE`** (`progress = (spot - entry_max) / (TP1 - entry_max)`):
+   * Active trade metric tracking progress along the projected channel.
 
 ---
 
-# 5. EXTENDED-ASSET STOP CONTRACT
+# 4. STATUS PRECEDENCE CONTRACTS
 
-When $\text{spot} > \text{optimal\_entry\_max}$ and the setup is non-actionable (`WAITING_PULLBACK`):
-* `EXTENDED_ASSET_EXECUTION_STOP = SUPPRESSED` (no active execution stop order emitted for immediate entry).
-* `EXTENDED_ASSET_INVALIDATION_REFERENCE = structural_invalidation` ($\min(\text{Low}_{[-5:]} - 0.25 \times \text{ATR}_{14},\, \text{entry\_min} - 0.25 \times \text{ATR}_{14})$).
-* In API payloads and UI presentation, `stop_loss_pct` must be evaluated against $\text{planned\_entry}$ ($\text{optimal\_entry\_max}$), not against extended spot. The UI must never display a misleading synthetic stop (e.g. $-35.7\%$) from current extended spot.
+### 4.1 `NO_POSITION_STATUS_PRECEDENCE` (Prospective Scanner / Analysis)
+When an asset has no open position, the engine evaluates strictly for entry actionability:
 
----
+1. **Base Invalidation Floor**:
+   $$\text{If } \text{eval\_price} < \text{structural\_invalidation} \implies \text{execution\_status} = \text{"STOPPED\_OUT"}$$
+2. **Accumulation Buy Zone**:
+   $$\text{If } \text{optimal\_entry\_min} \le \text{eval\_price} \le \text{optimal\_entry\_max} \implies$$
+   $$\text{execution\_status} = \text{"IN\_BUY\_ZONE"} \text{ (if stabilized) else } \text{"IN\_BUY\_ZONE\_AWAITING\_TRIGGER"}$$
+3. **Mild Extension (Chase Penalty Zone)**:
+   $$\text{If } \text{optimal\_entry\_max} < \text{eval\_price} \le \text{extension\_threshold} \implies \text{execution\_status} = \text{"EXTENDED\_ABOVE\_BUY\_ZONE"}$$
+4. **Material Extension (Pullback Required)**:
+   $$\text{If } \text{eval\_price} > \text{extension\_threshold} \implies \text{execution\_status} = \text{"WAITING\_PULLBACK"}$$
+   *(Note: This applies unconditionally whether $\text{eval\_price} < \text{TP1}$ or $\text{eval\_price} \ge \text{TP1}$. If an unowned asset has already blown past its base targets, a new entrant MUST wait for a pullback or rebase).*
 
-# 6. RATIFIED EXTENSION-THRESHOLD POLICY (OPTION B — OR POLICY)
-
-* **Policy**: `RATIFIED_EXTENSION_POLICY = OR` (Either material extension measure is sufficient to trigger `WAITING_PULLBACK`).
-* **Domain Justification**: Under institutional risk principles (Minervini VCP / O'Neil base rules), an asset is unsafe to chase if EITHER it exceeds the absolute structural price ceiling ($+5.0\%$ above pivot) OR it exceeds a full daily volatility expectation ($+1.0 \times \text{ATR}_{14}$ above pivot).
-* **Ratified Formula**:
-  $$\text{extension\_threshold} = \text{optimal\_entry\_max} + \min(\text{optimal\_entry\_max} \times 0.05,\, 1.0 \times \text{ATR}_{14})$$
-  $$\text{If } \text{spot} > \text{extension\_threshold} \implies \text{execution\_status} = \text{"WAITING\_PULLBACK"}$$
-  $$\text{If } \text{optimal\_entry\_max} < \text{spot} \le \text{extension\_threshold} \implies \text{execution\_status} = \text{"EXTENDED\_ABOVE\_BUY\_ZONE"}$$
-
----
-
-# 7. RATIFIED APPROACHING_TARGET CONTRACT
-
-`APPROACHING_TARGET` must not be assigned solely because $\text{optimal\_entry\_max} < \text{spot} < \text{TP1}$. It is reserved strictly for genuine progress toward the primary target:
-$$\text{progress} = \frac{\text{spot} - \text{optimal\_entry\_max}}{\text{TP1} - \text{optimal\_entry\_max}}$$
-* **`APPROACHING_TARGET_THRESHOLD`**: `0.70` ($70\%$ progress).
-* **Authority**: Newly ratified quantitative threshold (`ARX-EL-THRESH-01`).
-* **State Behavior**:
-  * If $\text{progress} \ge 0.70$ and $\text{spot} < \text{TP1}$: $\text{execution\_status} = \text{"APPROACHING\_TARGET"}$.
-  * If $\text{spot} \ge \text{TP1}$: $\text{execution\_status} = \text{"TARGET\_REACHED"}$.
-  * If $\text{progress} < 0.70$ and $\text{spot} > \text{extension\_threshold}$: $\text{execution\_status} = \text{"WAITING\_PULLBACK"}$.
+### 4.2 `ACTIVE_POSITION_STATUS_PRECEDENCE` (Portfolio / Open Trade)
+If and only if `position_lifecycle == OPEN`:
+1. $\text{eval\_price} < \text{stop\_loss} \implies \text{"STOPPED\_OUT"}$
+2. $\text{eval\_price} \ge \text{TP2} \implies \text{"TARGET\_2\_REACHED"}$
+3. $\text{eval\_price} \ge \text{TP1} \implies \text{"TARGET\_1\_REACHED"}$
+4. $\text{progress} \ge 0.70 \implies \text{"APPROACHING\_TARGET"}$
+5. $\text{Otherwise} \implies \text{"IN\_TRADE\_HOLD"}$
 
 ---
 
-# 8. CROSS-UNIVERSE SIMULATION EVIDENCE
+# 5. RATIFIED TP1 AUTHORITY & FORMULA
 
-Rerun with ratified rules across all 6 representative asset classes:
+### 5.1 Authority Decision
+Current production calculated TP1 by measuring risk from **spot** to the base stop ($\text{spot} - \text{stop}$), causing TP1 to chase upwards into the stratosphere on extended assets ($3.26 on NAUT). This is replaced:
 
-| Symbol (Class) | Spot ($) | Corridor ($) | Planned Entry ($) | Structural Invalidation ($) | Execution Risk ($) | TP1 ($) | TP2 ($) | TP2 Spread ($) | Status | Actionable | Exec Stop Visible |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **NAUT** (Sub-$2 Volatile) | $1.96 | [$1.27, $1.46] | $1.46 | $1.22 (-16.4%) | $0.24 | $1.90 | $2.19 | $0.29 | `WAITING_PULLBACK`* | NO | NO |
-| **PLSE** ($5–$20 Growth) | $7.50 | [$7.10, $7.60] | $7.50 | $6.83 (-8.9%) | $0.67 | $8.74 | $9.49 | $0.75 | `IN_BUY_ZONE` | YES | YES |
-| **NVDA** (Large-Cap Tech) | $125.00 | [$120.00, $126.00] | $125.00 | $116.80 (-6.6%) | $8.20 | $140.17 | $148.37 | $8.20 | `IN_BUY_ZONE` | YES | YES |
-| **SPY** (Index ETF) | $575.00 | [$568.00, $576.00] | $575.00 | $564.70 (-1.8%) | $10.30 | $594.05 | $622.80 | $28.75 | `IN_BUY_ZONE` | YES | YES |
-| **KO** (Low-Vol Defensive) | $68.00 | [$67.20, $68.30] | $68.00 | $66.83 (-1.7%) | $1.17 | $70.16 | $73.56 | $3.40 | `IN_BUY_ZONE` | YES | YES |
-| **MSTR** (High-Vol Momentum) | $180.00 | [$165.00, $182.00] | $180.00 | $156.00 (-13.3%) | $24.00 | $224.40 | $248.40 | $24.00 | `IN_BUY_ZONE` | YES | YES |
+```text
+LONG_TP1_AUTHORITY =
+  REPLACE_WITH_PLANNED_ENTRY_RISK_MODEL
+```
 
-*\*Note on NAUT*: Because spot ($1.96) has already crossed the base target ($1.90), it is classified as `TARGET_REACHED` / `WAITING_PULLBACK`, correctly preventing unanchored chase entries while preserving a valid $0.29 TP2 spread.
+### 5.2 Exact Mathematical Definition
+1. **Precision & Tick**:
+   $$\text{dec} = 6 \text{ if } \text{spot} < 0.01 \text{ else } (4 \text{ if } \text{spot} < 1.0 \text{ else } 2)$$
+   $$\text{min\_tick} = 10^{-\text{dec}}$$
+2. **Planned Entry Reference**:
+   $$\text{planned\_entry} = \text{round}(\min(\max(\text{spot},\, \text{entry\_min}),\, \text{entry\_max}),\, \text{dec})$$
+3. **Structural Invalidation**:
+   $$\text{structural\_stop} = \min(\min(\text{Low}_{[-5:]}) - 0.25 \times \text{ATR}_{14},\, \text{entry\_min} - \text{min\_tick})$$
+   $$\text{raw\_stop} = \max(\text{entry\_min} \times 0.935,\, \min(\text{entry\_min} \times 0.970,\, \text{structural\_stop}))$$
+   $$\text{structural\_invalidation} = \text{round}(\min(\text{entry\_min} - \text{min\_tick},\, \text{raw\_stop}),\, \text{dec})$$
+4. **Execution Risk**:
+   $$\text{execution\_risk} = \text{round}(\max(\text{min\_tick},\, \text{planned\_entry} - \text{structural\_invalidation}),\, \text{dec})$$
+5. **TP1 Target Components**:
+   $$\text{TP1\_RR\_TARGET} = \text{round}(\text{planned\_entry} + 1.85 \times \text{execution\_risk},\, \text{dec})$$
+   $$\text{TP1\_ATR\_TARGET} = \text{round}(\text{entry\_max} + 1.25 \times \text{ATR}_{14},\, \text{dec})$$
+6. **Take Profit 1 Finalization**:
+   $$\text{TP1} = \text{round}(\max(\text{TP1\_RR\_TARGET},\, \text{TP1\_ATR\_TARGET},\, \text{entry\_max} + \text{min\_tick}),\, \text{dec})$$
+   *(In Stage 4 Downtrend, clamped to breakout pivot ceilings as specified in Section 1).*
 
 ---
 
-# 9. PROPERTY-BASED INVARIANTS
+# 6. HYPOTHETICAL TARGET BEHIND SPOT POLICY
 
-* **INV-EL-01**: $\text{TP2} > \text{TP1}$ under all spot prices and rounding modes.
-* **INV-EL-02**: $\text{TP2} - \text{TP1} \ge \max(\text{min\_tick},\, 1.0 \times \text{ATR}_{14},\, 0.75 \times \text{EXECUTION\_RISK},\, 0.05 \times \text{planned\_entry})$.
+```text
+HYPOTHETICAL_TARGET_BEHIND_SPOT_POLICY =
+  KEEP_AS_REFERENCE
+```
+* When $\text{spot} > \text{TP1}$ on an un-entered setup, TP1 ($1.89 on NAUT) is preserved as the **Historical Base Reference Target**.
+* Preserving this level visually demonstrates why the asset is in `WAITING_PULLBACK`: the breakout move from the last documented accumulation base has completed.
+* The engine strictly does **not** synthesize arbitrary floating rebases without verified technical consolidation sessions.
+
+---
+
+# 7. RATIFIED TP2 RUNNER CONTRACT
+
+$$\text{RATIFIED\_TP2\_FORMULA} = \text{TP1} + \text{TP2\_RUNNER\_SPREAD}$$
+$$\text{TP2\_RUNNER\_SPREAD} = \max(1.5 \times \text{ATR}_{14},\, 1.0 \times \text{execution\_risk})$$
+
+### Post-Rounding Separation Invariant
+$$\text{TP2} - \text{TP1} \ge \max(\text{min\_tick},\, 1.0 \times \text{ATR}_{14},\, 0.75 \times \text{execution\_risk},\, 0.05 \times \text{planned\_entry})$$
+
+---
+
+# 8. EXTENDED-ASSET STOP CONTRACT
+
+When $\text{spot} > \text{optimal\_entry\_max}$ and $\text{execution\_status} == \text{"WAITING\_PULLBACK"}$:
+```text
+EXTENDED_ASSET_EXECUTION_STOP =
+  SUPPRESSED
+EXTENDED_ASSET_INVALIDATION_REFERENCE =
+  structural_invalidation
+```
+* The platform suppresses any active stop order for immediate spot entry (`execution_stop_visible = false`).
+* `stop_loss_pct` is evaluated relative to $\text{planned\_entry}$ ($\text{optimal\_entry\_max}$), **never against extended spot**, eliminating synthetic $-35.7\%$ display artifacts.
+
+---
+
+# 9. RATIFIED EXTENSION THRESHOLD (OPTION B — OR POLICY)
+
+```text
+RATIFIED_EXTENSION_POLICY =
+  OR
+RATIFIED_FORMULA =
+  spot > optimal_entry_max + min(optimal_entry_max * 0.05, 1.0 * atr_14)
+```
+
+---
+
+# 10. CROSS-UNIVERSE SIMULATION EVIDENCE
+
+| Symbol (Class) | Spot ($) | Corridor ($) | Planned Entry ($) | Invalidation ($) | Execution Risk ($) | TP1 ($) | TP2 ($) | TP2 Spread ($) | Market Location | Entry Readiness | Position State | Display Status | Actionable | Exec Stop Visible |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **NAUT** (Sub-$2 Volatile) | $1.96 | [$1.27, $1.46] | $1.46 | $1.23 (-15.8%) | $0.23 | $1.89 | $2.18 | $0.29 | `BETWEEN_TP1_AND_TP2` | `WAITING_PULLBACK` | `NO_ACTIVE_POSITION` | `WAITING_PULLBACK` | NO | **NO** |
+| **PLSE** ($5–$20 Growth) | $7.50 | [$7.10, $7.60] | $7.50 | $6.83 (-8.9%) | $0.67 | $8.74 | $9.49 | $0.75 | `IN_BUY_ZONE` | `IN_BUY_ZONE` | `NO_ACTIVE_POSITION` | `IN_BUY_ZONE` | YES | **YES** |
+| **NVDA** (Large-Cap Tech) | $125.00 | [$120.00, $126.00] | $125.00 | $116.40 (-6.9%) | $8.60 | $140.91 | $149.51 | $8.60 | `IN_BUY_ZONE` | `IN_BUY_ZONE` | `NO_ACTIVE_POSITION` | `IN_BUY_ZONE` | YES | **YES** |
+| **SPY** (Index ETF) | $575.00 | [$568.00, $576.00] | $575.00 | $550.96 (-4.2%) | $24.04 | $619.47 | $648.22 | $28.75 | `IN_BUY_ZONE` | `IN_BUY_ZONE` | `NO_ACTIVE_POSITION` | `IN_BUY_ZONE` | YES | **YES** |
+| **KO** (Low-Vol Defensive) | $68.00 | [$67.20, $68.30] | $68.00 | $65.18 (-4.1%) | $2.82 | $73.22 | $76.62 | $3.40 | `IN_BUY_ZONE` | `IN_BUY_ZONE` | `NO_ACTIVE_POSITION` | `IN_BUY_ZONE` | YES | **YES** |
+| **MSTR** (High-Vol Momentum) | $180.00 | [$165.00, $182.00] | $180.00 | $156.00 (-13.3%) | $24.00 | $224.40 | $248.40 | $24.00 | `IN_BUY_ZONE` | `IN_BUY_ZONE` | `NO_ACTIVE_POSITION` | `IN_BUY_ZONE` | YES | **YES** |
+
+---
+
+# 11. RATIFIED PROPERTY-BASED INVARIANTS
+
+* **INV-EL-01**: `TP2 > TP1` under all spot prices and rounding modes.
+* **INV-EL-02**: `TP2 - TP1 >= max(min_tick, 1.0 * ATR14, 0.75 * execution_risk, 0.05 * planned_entry)`.
 * **INV-EL-03**: Non-actionable extended assets (`WAITING_PULLBACK`, `EXTENDED_ABOVE_BUY_ZONE`) suppress immediate execution stops (`execution_stop_visible = false`).
-* **INV-EL-04**: Portfolio risk-budget constraints modulate share sizing only; they never mutate or relocate `THESIS_INVALIDATION`.
-* **INV-EL-05**: `WAITING_PULLBACK` strictly executes Option B (OR policy: $\text{pct\_ext} > 5\%$ OR $\text{atr\_ext} > 1.0$).
-* **INV-EL-06**: `APPROACHING_TARGET` requires $\text{progress} \ge 0.70$ toward TP1; never assigned solely for $\text{spot} > \text{optimal\_entry\_max}$.
+* **INV-EL-04**: Portfolio risk-budget constraints modulate share sizing only; never mutate structural invalidation.
+* **INV-EL-05**: `WAITING_PULLBACK` executes Option B (OR policy: $\text{pct\_ext} > 5\%$ OR $\text{atr\_ext} > 1.0$).
+* **INV-EL-06**: `APPROACHING_TARGET` requires open position progress $\ge 0.70$ toward TP1; unowned extended setups evaluate strictly to `WAITING_PULLBACK`.
 * **INV-EL-07**: `DAY_TRADER` role calculations, intraday 5m EMA/VWAP anchors, and ATR bands remain 100% byte-for-byte regression-free.
 
 ---
 
-# 10. QUANT GOVERNANCE DECISION RECORD
+# 12. QUANT GOVERNANCE DECISION RECORD
 
 ```text
-TP2_HYBRID_RULE =
-  APPROVED
+TP1_AUTHORITY =
+  RATIFIED (REPLACE_WITH_PLANNED_ENTRY_RISK_MODEL)
 
-STOP_OWNERSHIP_CONTRACT =
-  APPROVED
+NON_ENTERED_TARGET_SEMANTICS =
+  RATIFIED (WAITING_PULLBACK; TARGET_REACHED requires active position)
 
-EXTENDED_ASSET_STOP_SUPPRESSION =
-  APPROVED
+STATUS_PRECEDENCE =
+  RATIFIED (NO_POSITION vs ACTIVE_POSITION decoupled)
 
-EXTENSION_THRESHOLD_POLICY =
-  APPROVED
+HYPOTHETICAL_TARGET_BEHIND_SPOT_POLICY =
+  RATIFIED (KEEP_AS_REFERENCE)
 
-APPROACHING_TARGET_RULE =
-  APPROVED
+CROSS_UNIVERSE_SIMULATION =
+  COHERENT
+
+EXECUTION_LADDER_IMPLEMENTATION_AUTHORIZATION =
+  AUTHORIZED
 ```
-
----
-
-# 11. IMPLEMENTATION WORKTREE BOUNDARY
-
-* **Implementation Branch**: `fix/execution-ladder-remediation`
-* **Isolated Worktree**: `C:\Users\akara\Documents\Projects\finance-execution-ladder-remediation`
-* **Creation Baseline**: `EXECUTION_LADDER_AUTHORIZED_BASELINE_SHA` (the git commit recording this ratified specification).
