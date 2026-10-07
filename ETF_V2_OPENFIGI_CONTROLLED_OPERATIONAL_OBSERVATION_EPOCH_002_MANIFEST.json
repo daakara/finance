@@ -1,0 +1,86 @@
+{
+  "manifest_version": "1.0.0",
+  "gate_name": "ETF_V2_OPENFIGI_DURABLE_PERSISTENCE_REMEDIATION_GATE",
+  "gate_verdict": "PASS_ETF_V2_OPENFIGI_DURABLE_PERSISTENCE_REMEDIATION",
+  "epoch_id": "ETF_V2_OPENFIGI_CONTROLLED_OPERATIONAL_EPOCH_002",
+  "epoch_status": "OPEN / PROSPECTIVE_OBSERVATION",
+  "epoch_start_timestamp_utc": "2026-10-07T13:30:00Z",
+  "epoch_end_timestamp_utc": null,
+  "predecessor_epoch": {
+    "epoch_id": "ETF_V2_OPENFIGI_CONTROLLED_OPERATIONAL_EPOCH_001",
+    "closure_status": "CLOSED_INFRASTRUCTURE_INVALIDATED",
+    "valid_prospective_denominator": 0,
+    "closure_reason": "OBSERVATION_LEDGER_NOT_DURABLE_ACROSS_PRODUCTION_DEPLOYMENTS",
+    "empirical_conclusion": "NONE"
+  },
+  "runtime_identity": {
+    "origin_main_sha": "e3d76a3",
+    "deployed_sha": "e3d76a3",
+    "production_runtime_sha": "e3d76a3",
+    "railway_deployment_id": "5084ce79-0882-4893-b10e-0236d02468c0",
+    "railway_deployment_status": "SUCCESS"
+  },
+  "durable_operational_store": {
+    "configured_env_var": "OPENFIGI_OPERATIONAL_DB",
+    "database_path": "/root/data/operational/openfigi_operational.db",
+    "volume_mount": "/root",
+    "volume_name": "web-volume",
+    "volume_id": "7867d923-89e9-4619-955a-cc7a43344f73",
+    "durability": "PERSISTENT",
+    "initial_file_size_bytes": 61440,
+    "initial_sha256": "ecf2ddbfc50a6bd9fda80265f7a87fd6faaabed87b93f8bf7a6307db404ce0ea",
+    "integrity": "ok",
+    "tables": [
+      "openfigi_active_mappings",
+      "openfigi_observations",
+      "openfigi_rate_limit_reservations",
+      "schema_version",
+      "sqlite_sequence"
+    ]
+  },
+  "prospective_denominator_contract": {
+    "denominator_unit": "UNIQUE_OPERATIONAL_CORROBORATION_DECISION",
+    "initial_prospective_n": 0,
+    "eligibility_criteria": {
+      "after_epoch_start": true,
+      "real_provider_response": true,
+      "authorized_controlled_operational_path": true,
+      "legitimate_operational_need": true,
+      "not_replayed": true,
+      "not_synthetic": true,
+      "not_test_fixture": true,
+      "not_forced_for_denominator_growth": true,
+      "not_post_hoc_selected": true
+    },
+    "retry_counts_as_new_denominator_record": false,
+    "multiple_provider_candidates_count_as_multiple_records": false,
+    "persistence_reload_counts_as_new_record": false,
+    "manually_constructed_validation_cohorts_eligible": false,
+    "synthetic_identifiers_eligible": false,
+    "forced_requests_to_increase_n_eligible": false
+  },
+  "shared_quota_authority": {
+    "limiter_class": "GlobalSQLiteRateLimiter",
+    "global_capacity": 20,
+    "rolling_window_seconds": 60.0,
+    "operational_db_path": "/root/data/operational/openfigi_operational.db",
+    "cross_process_coordination": "ATOMIC_BEGIN_IMMEDIATE",
+    "security_master_quota_sharing": true,
+    "security_master_traffic_distinguishable": true,
+    "security_master_request_counts_as_etf_denominator": false
+  },
+  "checkpoint_thresholds": {
+    "first_checkpoint_min_eligible_n": 10,
+    "first_checkpoint_min_elapsed_time": "24_HOURS",
+    "checkpoint_trigger": "BOTH_THRESHOLDS_REQUIRED",
+    "premature_adjudication_allowed": false,
+    "forced_requests_to_satisfy_threshold_allowed": false
+  },
+  "adjudication": {
+    "gate": "PASS_ETF_V2_OPENFIGI_DURABLE_PERSISTENCE_REMEDIATION",
+    "openfigi_activation": "CONTROLLED_OPERATIONAL",
+    "next_authorized_action": "CONTINUE_PASSIVE_OBSERVATION_EPOCH_002",
+    "automatic_provider_requests": false,
+    "automatic_successor_execution": false
+  }
+}
