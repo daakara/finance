@@ -161,6 +161,25 @@ export default function PriceChart({
       }
     };
 
+    // Container-aware ResizeObserver for responsive refit without window resize
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && chartContainerRef.current) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const width = entry.contentRect.width;
+          const height = entry.contentRect.height;
+          if (chartRef.current && width > 0 && height > 0) {
+            chartRef.current.applyOptions({
+              width,
+              height,
+            });
+            chartRef.current.timeScale().fitContent();
+          }
+        }
+      });
+      resizeObserver.observe(chartContainerRef.current);
+    }
+
     const handleThemeChange = () => {
       const isLight = document.documentElement.getAttribute("data-theme") === "paper";
       if (chartRef.current) {
@@ -212,6 +231,9 @@ export default function PriceChart({
     }
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("finance:theme-change", handleThemeChange);
       observer.disconnect();
@@ -641,7 +663,7 @@ export default function PriceChart({
       <div
         role="region"
         aria-label={`${symbol} interactive candlestick and trend chart`}
-        className="flex-1 w-full min-h-[320px] h-[340px] sm:h-[400px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
+        className="flex-1 w-full min-h-[320px] h-[320px] sm:h-[380px] xl:h-[430px] mt-2 relative rounded-lg overflow-hidden border border-[#1b2434]"
       >
         <div ref={chartContainerRef} className="w-full h-full" />
         {loading && (

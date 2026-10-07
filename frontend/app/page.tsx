@@ -329,7 +329,7 @@ function TerminalContent() {
               analysisReferencePrice={data?.analysisReferencePrice}
               isDemo={!hasExplicitSymbol}
               chartSlot={
-                <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
+                <div id="market-workspace-chart" className="w-full min-h-[380px] sm:min-h-[420px]">
                   {data && (
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1 text-xs font-mono">
                       <div className="flex items-center gap-2">

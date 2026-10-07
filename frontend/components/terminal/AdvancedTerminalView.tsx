@@ -27,96 +27,105 @@ export default function AdvancedTerminalView({
 
   return (
     <div className="space-y-4 font-mono text-xs text-slate-100 animate-fade-in">
-      {/* 1. DECISION VERDICT & 2. DECISION REASON */}
-      <div
-        data-testid="decision-verdict"
-        className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 font-sans"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
-          <div>
-            <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
-              ARX Quant Verdict & Posture
-            </span>
-            <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-0.5">
-              {insight.verdictLabel}
-            </h2>
-          </div>
+      {/* 🎯 FIRST-VIEWPORT COMPOSITION: QUANT VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+        {/* Left Column (xl:col-span-5): Verdict Card & Preconditions */}
+        <div className="xl:col-span-5 space-y-4 min-w-0">
+          {/* 1. DECISION VERDICT & 2. DECISION REASON */}
+          <div
+            data-testid="decision-verdict"
+            className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 font-sans"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
+              <div>
+                <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  ARX Quant Verdict & Posture
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-0.5">
+                  {insight.verdictLabel}
+                </h2>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <span
-              className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
-                isActionable
-                  ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                  : "bg-amber-950/80 text-amber-300 border-amber-700/80"
-              }`}
-            >
-              {isActionable ? "ACTIONABLE" : "WAIT FOR TRIGGER"}
-            </span>
-            <span className="px-3 py-1 rounded-md text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]">
-              {insight.terminalState.uiStateLabel}
-            </span>
-          </div>
-        </div>
-
-        {/* 2. CANONICAL REASON */}
-        <div
-          data-testid="decision-reason"
-          className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1"
-        >
-          <span className="text-xs text-slate-400 font-bold block uppercase mb-1">
-            Quant Thesis / Reason:
-          </span>
-          <p>{insight.terminalState.headlineExplanation || insight.standard.bottomLine}</p>
-        </div>
-      </div>
-
-      {/* 3. WHAT NEEDS TO CHANGE */}
-      <div
-        data-testid="unmet-condition"
-        className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2 font-mono">
-          <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wide flex items-center gap-2">
-            <span>🎯</span>
-            <span>What Needs to Change (Model Preconditions)</span>
-          </h3>
-          <span className="text-xs text-slate-400 font-mono">
-            {isActionable ? "All Preconditions Cleared" : "Awaiting Trigger Confluence"}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
-          {unmetConditions.map((cond) => (
-            <div
-              key={cond.id}
-              className="p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1 font-mono"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 text-xs">{cond.title}</span>
+              <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                    cond.status === "MET"
-                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                      : cond.status === "UNMET"
-                      ? "bg-rose-950 text-rose-400 border border-rose-800"
-                      : "bg-amber-950 text-amber-400 border border-amber-800"
+                  className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
+                    isActionable
+                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                      : "bg-amber-950/80 text-amber-300 border-amber-700/80"
                   }`}
                 >
-                  {cond.status}
+                  {isActionable ? "ACTIONABLE" : "WAIT FOR TRIGGER"}
+                </span>
+                <span className="px-3 py-1 rounded-md text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]">
+                  {insight.terminalState.uiStateLabel}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans">{cond.description}</p>
             </div>
-          ))}
+
+            {/* 2. CANONICAL REASON */}
+            <div
+              data-testid="decision-reason"
+              className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1"
+            >
+              <span className="text-xs text-slate-400 font-bold block uppercase mb-1">
+                Quant Thesis / Reason:
+              </span>
+              <p>{insight.terminalState.headlineExplanation || insight.standard.bottomLine}</p>
+            </div>
+          </div>
+
+          {/* 3. WHAT NEEDS TO CHANGE */}
+          <div
+            data-testid="unmet-condition"
+            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2 font-mono">
+              <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase tracking-wide flex items-center gap-2">
+                <span>🎯</span>
+                <span>What Needs to Change (Model Preconditions)</span>
+              </h3>
+              <span className="text-xs text-slate-400 font-mono">
+                {isActionable ? "All Preconditions Cleared" : "Awaiting Trigger Confluence"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-2.5 text-xs">
+              {unmetConditions.map((cond) => (
+                <div
+                  key={cond.id}
+                  className="p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1 font-mono"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-200 text-xs">{cond.title}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                        cond.status === "MET"
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                          : cond.status === "UNMET"
+                          ? "bg-rose-950 text-rose-400 border border-rose-800"
+                          : "bg-amber-950 text-amber-400 border border-amber-800"
+                      }`}
+                    >
+                      {cond.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed font-sans">{cond.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (xl:col-span-7): Price Chart */}
+        <div className="xl:col-span-7 space-y-2 min-w-0">
+          {/* 4. PRICE / CHART CONTEXT */}
+          {chartSlot && (
+            <div data-testid="market-workspace-chart" className="space-y-2">
+              {chartSlot}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* 4. PRICE / CHART CONTEXT */}
-      {chartSlot && (
-        <div data-testid="market-workspace-chart" className="space-y-2">
-          {chartSlot}
-        </div>
-      )}
 
       {/* 5. CONDITIONAL TRADE PLAN */}
       {planSlot && (
