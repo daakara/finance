@@ -420,3 +420,56 @@ def test_operational_db_initialization(tmp_path: Path):
 
     # Re-initialization is idempotent
     repo.initialize_schema()
+
+
+# ===========================================================================
+# Persistent Volume Durable Store Regression Tests (Epoch 002 Infrastructure)
+# ===========================================================================
+def test_persistent_volume_path_override_shared_and_respected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """
+    Verifies that when OPENFIGI_OPERATIONAL_DB points to a persistent volume path,
+    both OpenFIGIPersistenceRepository and GlobalSQLiteRateLimiter share the identical path,
+    validate_store_path_parity passes, and no dual databases are created.
+    """
+    persistent_mount = (tmp_path / "persistent_vol").resolve()
+    persistent_mount.mkdir(parents=True, exist_ok=True)
+    persistent_db = (persistent_mount / "data" / "operational" / "openfigi_operational.db").resolve()
+
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(persistent_mount))
+    monkeypatch.setenv(CANONICAL_OPERATIONAL_DB_ENV_VAR, str(persistent_db))
+    monkeypatch.delenv(LEGACY_RATE_LIMIT_ENV_VAR, raising=False)
+
+    resolved_path = resolve_openfigi_operational_db_path()
+    assert resolved_path == persistent_db
+
+    limiter = GlobalSQLiteRateLimiter()
+    repo = OpenFIGIPersistenceRepository(auto_init=False)
+
+    assert limiter.db_path == persistent_db
+    assert repo.db_path == persistent_db
+    assert limiter.db_path == repo.db_path
+    assert validate_store_path_parity(limiter.db_path, repo.db_path) is True
+
+
+def test_persistent_volume_boundary_validation_in_production_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """
+    Verifies that in production mode (is_test=False), paths residing on the
+    configured persistent volume mount pass boundary validation, while arbitrary
+    paths outside both the repo operational dir and persistent volume are rejected.
+    """
+    persistent_mount = (tmp_path / "persistent_vol").resolve()
+    persistent_mount.mkdir(parents=True, exist_ok=True)
+    persistent_db = (persistent_mount / "data" / "operational" / "openfigi_operational.db").resolve()
+    unapproved_db = (tmp_path / "other_unapproved" / "openfigi_operational.db").resolve()
+
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(persistent_mount))
+
+    # Path inside persistent volume passes
+    validated = validate_openfigi_operational_db_path(persistent_db, is_test=False)
+    assert validated == persistent_db
+
+    # Path outside both repo operational dir and persistent volume is rejected
+    with pytest.raises(OpenFIGIPathValidationError) as exc_info:
+        validate_openfigi_operational_db_path(unapproved_db, is_test=False)
+    assert "outside approved runtime storage boundary" in str(exc_info.value)
+

@@ -114,18 +114,36 @@ def validate_openfigi_operational_db_path(
     test_mode = is_test if is_test is not None else _is_running_tests()
     if not test_mode:
         # In production: must be inside approved runtime storage boundary
-        try:
-            resolved.relative_to(APPROVED_OPERATIONAL_STORAGE_DIR)
-        except ValueError:
+        # Approved boundaries: repository data/operational OR persistent volume mount (e.g. /root)
+        approved_dirs = [APPROVED_OPERATIONAL_STORAGE_DIR]
+        vol_env = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
+        if vol_env and vol_env.strip():
+            approved_dirs.append(Path(vol_env.strip()).resolve())
+        elif os.name != "nt":
+            approved_dirs.append(Path("/root").resolve())
+
+        is_inside_approved_boundary = False
+        for b_dir in approved_dirs:
+            try:
+                resolved.relative_to(b_dir)
+                is_inside_approved_boundary = True
+                break
+            except ValueError:
+                pass
+
+        if not is_inside_approved_boundary:
             raise OpenFIGIPathValidationError(
                 f"AC-07-03 VIOLATION: Production DB path '{resolved}' is outside approved "
-                f"runtime storage boundary ({APPROVED_OPERATIONAL_STORAGE_DIR})."
+                f"runtime storage boundary ({APPROVED_OPERATIONAL_STORAGE_DIR} or persistent volume mount)."
             )
 
-        # Prohibit temp directories in production
+        # Prohibit temp directories in production (unless explicitly mounted as persistent volume)
+        vol_normalized = str(Path(vol_env.strip()).resolve()).replace("\\", "/").lower() if vol_env and vol_env.strip() else ""
         temp_markers = ["temp", "tmp", "appdata/local/temp", "pytest-of-"]
         for marker in temp_markers:
             if marker in resolved_normalized:
+                if vol_normalized and marker in vol_normalized and resolved_normalized.startswith(vol_normalized):
+                    continue
                 raise OpenFIGIPathValidationError(
                     f"AC-07-03 VIOLATION: Temporary test path '{resolved}' cannot be used in production."
                 )
