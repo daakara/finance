@@ -27,7 +27,7 @@ function computeCategoryBadge(
   if (!isAvailable) {
     return {
       count: null,
-      badge: capabilities[category]?.status === "PIPELINE_PENDING" ? "Pipeline Pending" : "Unavailable",
+      badge: capabilities[category]?.status === "PIPELINE_PENDING" ? "Universe Scanner Pending" : "Unavailable",
     };
   }
   const matching = candidates.filter((c) => c.categories.includes(category));
@@ -66,12 +66,12 @@ assert.strictEqual(valueGarpBadge.badge, "0");
 // VCP is PIPELINE_PENDING -> Must NOT render count 0!
 const vcpBadge = computeCategoryBadge("VCP", emptyCandidates, mockCapabilities);
 assert.strictEqual(vcpBadge.count, null, "PIPELINE_PENDING category must NEVER produce count 0");
-assert.strictEqual(vcpBadge.badge, "Pipeline Pending");
+assert.strictEqual(vcpBadge.badge, "Universe Scanner Pending");
 
 // SMART_MONEY is PIPELINE_PENDING -> Must NOT render count 0!
 const smartMoneyBadge = computeCategoryBadge("SMART_MONEY", emptyCandidates, mockCapabilities);
 assert.strictEqual(smartMoneyBadge.count, null, "PIPELINE_PENDING category must NEVER produce count 0");
-assert.strictEqual(smartMoneyBadge.badge, "Pipeline Pending");
+assert.strictEqual(smartMoneyBadge.badge, "Universe Scanner Pending");
 console.log("[OK] Zero-semantics invariants verified: PIPELINE_PENDING never produces count 0");
 
 // 3. Adversarial String Invariance: Fallback strings must not generate categories

@@ -260,8 +260,9 @@ assert.ok(
   "PreFlightChecklistModal must require canonical actionability for isCleared"
 );
 assert.ok(
-  preflightSource.includes("FLIGHT CLEARANCE REVOKED: CANONICAL AUTHORITY"),
-  "PreFlightChecklistModal must render revocation banner when isActionable is false"
+  preflightSource.includes("TRADE NOT CLEARED: AWAITING CONFIRMATION") &&
+  preflightSource.includes("NON-ACTIONABLE STATE: AWAITING TRIGGER CONFIRMATION"),
+  "PreFlightChecklistModal must render non-actionable banner when isActionable is false"
 );
 console.log("   [OK] PreFlightChecklistModal enforces canonical clearance gate");
 

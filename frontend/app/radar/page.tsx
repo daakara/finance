@@ -211,12 +211,12 @@ function RadarContent() {
       },
       VCP: {
         count: isAvailable('VCP') ? allAssets.filter((a) => a.categories.includes('VCP')).length : null,
-        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Pipeline Pending',
+        badge: isAvailable('VCP') ? `${allAssets.filter((a) => a.categories.includes('VCP')).length}` : 'Universe Scanner Pending',
         status: capabilities.VCP?.status || 'PIPELINE_PENDING',
       },
       SMART_MONEY: {
         count: isAvailable('SMART_MONEY') ? allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length : null,
-        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Pipeline Pending',
+        badge: isAvailable('SMART_MONEY') ? `${allAssets.filter((a) => a.categories.includes('SMART_MONEY')).length}` : 'Universe Scanner Pending',
         status: capabilities.SMART_MONEY?.status || 'PIPELINE_PENDING',
       },
     };
@@ -693,6 +693,7 @@ function RadarContent() {
                 tabIndex={activeFilter === 'VCP' ? 0 : -1}
                 onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
                 onClick={() => setActiveFilter('VCP')}
+                title={categoryMeta.VCP.status === 'PIPELINE_PENDING' ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs." : undefined}
                 className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   activeFilter === 'VCP'
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -718,6 +719,7 @@ function RadarContent() {
                 tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
                 onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
                 onClick={() => setActiveFilter('SMART_MONEY')}
+                title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money." : undefined}
                 className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   activeFilter === 'SMART_MONEY'
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
@@ -926,9 +928,9 @@ function RadarContent() {
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Portfolio sync unavailable (Ownership UNKNOWN)"
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? "Minervini VCP Screener: Universe Pipeline Pending"
+                              ? "Minervini VCP — Universe Scanner Pending"
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? "Smart Money Flow Screener: Universe Pipeline Pending"
+                              ? "Smart Money — Universe Scanner Pending"
                               : `No qualifying candidates currently in "${activeFilter === 'VALUE_GARP' ? 'Value / GARP' : activeFilter}"`}
                           </p>
                           <p className="text-xs text-slate-400 font-sans leading-relaxed">
@@ -943,9 +945,9 @@ function RadarContent() {
                               : ownershipFilter === 'NEW_OPPORTUNITIES' && !isPortfolioVerified
                               ? "Filtering for new opportunities requires verified portfolio state. Currently running in degraded UNKNOWN mode."
                               : activeFilter === 'VCP' && categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                              ? "Single-asset volatility contraction geometry is active on the Analysis (/) and Setups (/setups) hubs. Batch multi-timeframe universe scanning across all 60 stocks is currently pending deployment."
+                              ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs."
                               : activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                              ? "Single-asset SEC Form 4 insider transactions and Congressional STOCK Act disclosures are active on /smart-money. Batch universe institutional accumulation scanning is currently pending deployment."
+                              ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money."
                               : `Try switching to "All Confluences" to view all active setups.`}
                           </p>
                         </div>

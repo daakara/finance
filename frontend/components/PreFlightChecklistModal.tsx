@@ -232,7 +232,7 @@ export default function PreFlightChecklistModal({
               </h2>
               <p className="text-xs text-slate-400">
                 {isPlain
-                  ? "5-Point sanity check before risking your hard-earned money."
+                  ? "5-point risk and confirmation checklist before entering this position."
                   : "Automated pre-trade validation gate enforcing risk-reward and flow confluence."}
               </p>
             </div>
@@ -249,17 +249,31 @@ export default function PreFlightChecklistModal({
 
         {/* Scrollable body — barometer + 5-point checklist */}
         <div className="overflow-y-auto flex-1 space-y-4 py-4 pr-0.5">
-          {/* Actionability Revocation Banner (DecisionHierarchyEngine Authority) */}
+          {/* Actionability State Banner (Awaiting Trigger / Non-Actionable Gate) */}
           {isActionable === false && (
-            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-600/80 text-xs font-mono text-rose-200 flex items-start gap-2.5">
-              <span className="text-base shrink-0">🛑</span>
-              <div className="space-y-0.5">
-                <strong className="font-bold text-[11px] uppercase tracking-wide block">
-                  FLIGHT CLEARANCE REVOKED: CANONICAL AUTHORITY
+            <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-600/60 text-xs text-amber-200 flex items-start gap-2.5">
+              <span className="text-base shrink-0">⏸️</span>
+              <div className="space-y-1 w-full">
+                <strong className="font-bold text-[11px] uppercase tracking-wide block text-amber-300 font-mono">
+                  {isPlain
+                    ? "TRADE NOT CLEARED: AWAITING CONFIRMATION"
+                    : "NON-ACTIONABLE STATE: AWAITING TRIGGER CONFIRMATION"}
                 </strong>
-                <p className="text-[11px] leading-relaxed">
-                  DecisionHierarchyEngine reports non-actionable state ({decisionState || "NOT_ACTIONABLE"}). Local checklist cannot override canonical decision authority.
+                <p className="text-[11px] leading-relaxed text-slate-300 font-sans">
+                  {isPlain
+                    ? `A valid setup is forming for ${symbol}, but the entry trigger has not confirmed yet. This checklist reviews setup and risk conditions; it does not bypass the required confirmation trigger.`
+                    : `Valid setup structure is present (${decisionState || "VALID_SETUP"}), but execution criteria remain incomplete. Current state: WAIT FOR TRIGGER. Sizing and execution remain locked until confirmation conditions are satisfied.`}
                 </p>
+                <details className="pt-1 text-[10px] text-slate-400 font-mono">
+                  <summary className="cursor-pointer hover:text-slate-200 select-none">
+                    Technical Provenance
+                  </summary>
+                  <div className="mt-1 pl-2 border-l border-amber-800/40 text-[10px] space-y-0.5 text-slate-400">
+                    <div>State: {decisionState || "VALID_SETUP"}</div>
+                    <div>Actionable: false</div>
+                    <div>Authority: Canonical Decision Engine</div>
+                  </div>
+                </details>
               </div>
             </div>
           )}
