@@ -59,6 +59,7 @@ export default function Navbar({
   const shortcutsCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const utilitiesMenuRef = useRef<HTMLDivElement | null>(null);
   const utilitiesMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const firstVisitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [mounted, setMounted] = useState<boolean>(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number; maxHeight: number }>({
@@ -290,6 +291,10 @@ export default function Navbar({
       }
     };
     const handleOnboardingEvent = () => {
+      if (firstVisitTimerRef.current) {
+        clearTimeout(firstVisitTimerRef.current);
+        firstVisitTimerRef.current = null;
+      }
       setIsOnboardingOpen(true);
     };
     const handleShortcutsEvent = () => {
@@ -306,11 +311,11 @@ export default function Navbar({
     window.addEventListener("open-privacy", handlePrivacyEvent);
 
     // B4: Auto-show onboarding tour on first visit
-    let firstVisitTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       if (!localStorage.getItem("FINANCE_ONBOARDING_COMPLETED")) {
-        firstVisitTimer = setTimeout(() => {
+        firstVisitTimerRef.current = setTimeout(() => {
           setIsOnboardingOpen(true);
+          firstVisitTimerRef.current = null;
         }, 1000);
       }
     } catch {}
@@ -321,12 +326,30 @@ export default function Navbar({
       window.removeEventListener("open-onboarding", handleOnboardingEvent);
       window.removeEventListener("open-shortcuts", handleShortcutsEvent);
       window.removeEventListener("open-privacy", handlePrivacyEvent);
-      if (firstVisitTimer) clearTimeout(firstVisitTimer);
+      if (firstVisitTimerRef.current) {
+        clearTimeout(firstVisitTimerRef.current);
+        firstVisitTimerRef.current = null;
+      }
     };
   }, []);
 
   const handleOpenOnboarding = () => {
+    if (firstVisitTimerRef.current) {
+      clearTimeout(firstVisitTimerRef.current);
+      firstVisitTimerRef.current = null;
+    }
     setIsOnboardingOpen(true);
+  };
+
+  const handleCloseOnboarding = () => {
+    if (firstVisitTimerRef.current) {
+      clearTimeout(firstVisitTimerRef.current);
+      firstVisitTimerRef.current = null;
+    }
+    try {
+      localStorage.setItem("FINANCE_ONBOARDING_COMPLETED", "true");
+    } catch {}
+    setIsOnboardingOpen(false);
   };
 
   return (
@@ -644,7 +667,7 @@ export default function Navbar({
       {/* Onboarding Tour Modal */}
       <OnboardingTourModal
         isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
+        onClose={handleCloseOnboarding}
       />
 
       {/* GDPR Privacy & Analytics Settings Modal */}

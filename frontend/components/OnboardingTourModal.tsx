@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { trackOnboardingCompleted } from "../lib/matomo";
 
 interface OnboardingTourModalProps {
@@ -47,13 +47,20 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
   const [currentSlide, setCurrentSlide] = useState(0);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  const handleDismiss = useCallback(() => {
+    try {
+      localStorage.setItem("FINANCE_ONBOARDING_COMPLETED", "true");
+    } catch {}
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     triggerRef.current = (document.activeElement as HTMLElement) || null;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        handleDismiss();
       } else if (e.key === "Tab") {
         const dialog = document.querySelector('[role="dialog"][aria-labelledby="tour-modal-title"]');
         if (!dialog) return;
@@ -86,7 +93,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
       const trigger = triggerRef.current;
       setTimeout(() => trigger?.focus(), 20);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, handleDismiss]);
 
   if (!isOpen) return null;
 
@@ -132,7 +139,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleDismiss}
             aria-label="Close tour modal"
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all text-sm focus-ring"
           >
@@ -195,7 +202,7 @@ export default function OnboardingTourModal({ isOpen, onClose }: OnboardingTourM
           <div className="flex items-center space-x-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleDismiss}
               className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
             >
               Skip
