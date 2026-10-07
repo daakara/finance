@@ -56,26 +56,51 @@ export default function Navbar({
   const shortcutsTriggerRef = useRef<HTMLElement | null>(null);
   const shortcutsCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const utilitiesMenuRef = useRef<HTMLDivElement | null>(null);
+  const utilitiesMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!isUtilitiesMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
+
+    const handleOutsideInteraction = (e: MouseEvent | TouchEvent | PointerEvent) => {
       if (utilitiesMenuRef.current && !utilitiesMenuRef.current.contains(e.target as Node)) {
         setIsUtilitiesMenuOpen(false);
       }
     };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsUtilitiesMenuOpen(false);
+        utilitiesMenuTriggerRef.current?.focus();
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+
+    if (typeof window !== "undefined" && "PointerEvent" in window) {
+      document.addEventListener("pointerdown", handleOutsideInteraction);
+    } else {
+      document.addEventListener("mousedown", handleOutsideInteraction);
+      document.addEventListener("touchstart", handleOutsideInteraction);
+    }
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      if (typeof window !== "undefined" && "PointerEvent" in window) {
+        document.removeEventListener("pointerdown", handleOutsideInteraction);
+      } else {
+        document.removeEventListener("mousedown", handleOutsideInteraction);
+        document.removeEventListener("touchstart", handleOutsideInteraction);
+      }
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isUtilitiesMenuOpen]);
+
+  const handleUtilitiesBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      utilitiesMenuRef.current &&
+      !utilitiesMenuRef.current.contains(e.relatedTarget as Node)
+    ) {
+      setIsUtilitiesMenuOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (isShortcutsOpen) {
@@ -312,25 +337,28 @@ export default function Navbar({
             </div>
 
             {/* Unified Utilities Menu (A3: Grouped by HELP, SETTINGS, SYSTEM) */}
-            <div className="relative" ref={utilitiesMenuRef}>
+            <div className="relative" ref={utilitiesMenuRef} onBlur={handleUtilitiesBlur}>
               <button
+                ref={utilitiesMenuTriggerRef}
                 id="utilities-menu-btn"
                 type="button"
-                onClick={() => setIsUtilitiesMenuOpen(!isUtilitiesMenuOpen)}
+                onClick={() => setIsUtilitiesMenuOpen((prev) => !prev)}
                 aria-expanded={isUtilitiesMenuOpen}
-                aria-haspopup="true"
+                aria-haspopup="menu"
+                aria-controls="utilities-menu-dropdown"
                 aria-label="Terminal Utilities and System Settings"
                 title="Utilities & Settings"
-                className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] transition-all flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] active:scale-90 motion-reduce:transform-none ${
+                className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] active:bg-[#162030] transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] ${
                   isUtilitiesMenuOpen ? "border-cyan-500 text-cyan-300 bg-[#162030]" : ""
                 }`}
               >
-                <span aria-hidden="true" className="font-mono text-sm leading-none font-bold">⋯</span>
+                <span aria-hidden="true" className="font-mono text-sm leading-none font-bold pointer-events-none">⋯</span>
               </button>
 
               {/* Grouped Utilities Dropdown Menu */}
               {isUtilitiesMenuOpen && (
                 <div
+                  id="utilities-menu-dropdown"
                   role="menu"
                   aria-label="Terminal Utilities"
                   className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-[#243044] bg-[#0c1017] p-2.5 shadow-2xl space-y-2 text-xs font-mono animate-fadeIn"
