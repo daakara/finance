@@ -196,4 +196,39 @@ describe("Mobile Navigation Overflow Menu Interaction Architecture", () => {
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
     expect(document.getElementById("utilities-menu-dropdown")).toBeNull();
   });
+
+  it("9. WebKit/iOS touch tolerance: blur with relatedTarget=null does NOT dismiss menu", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    const rootContainer = triggerBtn.parentElement!;
+
+    // On iOS Safari / WebKit, touch events emit blur with relatedTarget: null.
+    // This must NOT prematurely close the menu. Outside dismissal is governed by handleOutsideInteraction.
+    fireEvent.blur(rootContainer, { relatedTarget: null });
+
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById("utilities-menu-dropdown")).not.toBeNull();
+  });
+
+  it("10. WebKit/iOS touch tolerance: focus within dropdown does NOT dismiss menu", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    const rootContainer = triggerBtn.parentElement!;
+    const shortcutsItem = screen.getByRole("menuitem", { name: /Keyboard Shortcuts/i });
+
+    // Focus movement inside the composite container
+    fireEvent.blur(rootContainer, { relatedTarget: shortcutsItem });
+
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById("utilities-menu-dropdown")).not.toBeNull();
+  });
 });
+

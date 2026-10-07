@@ -95,6 +95,7 @@ export default function Navbar({
 
   const handleUtilitiesBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (
+      e.relatedTarget &&
       utilitiesMenuRef.current &&
       !utilitiesMenuRef.current.contains(e.relatedTarget as Node)
     ) {
@@ -268,7 +269,7 @@ export default function Navbar({
 
   return (
     <>
-      <div className="sticky top-0 z-50">
+      <div className="sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)] bg-[#0c1017]">
         <header
           role="banner"
           data-testid="navbar"
@@ -348,7 +349,7 @@ export default function Navbar({
                 aria-controls="utilities-menu-dropdown"
                 aria-label="Terminal Utilities and System Settings"
                 title="Utilities & Settings"
-                className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] active:bg-[#162030] transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] ${
+                className={`p-2.5 rounded-xl border border-[#243044] bg-[#090d14] text-slate-300 hover:text-cyan-300 hover:bg-[#162030] active:bg-[#162030] touch-manipulation transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none cursor-pointer text-xs min-h-[44px] min-w-[44px] ${
                   isUtilitiesMenuOpen ? "border-cyan-500 text-cyan-300 bg-[#162030]" : ""
                 }`}
               >
