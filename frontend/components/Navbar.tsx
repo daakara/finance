@@ -5,6 +5,8 @@ import { trackFirstHubNavigation } from "../lib/matomo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
+// @ts-ignore
+import { createPortal } from "react-dom";
 import UniversalOmniSearch from "./UniversalOmniSearch";
 import ThemeToggle from "./ThemeToggle";
 import OnboardingTourModal from "./OnboardingTourModal";
@@ -58,11 +60,62 @@ export default function Navbar({
   const utilitiesMenuRef = useRef<HTMLDivElement | null>(null);
   const utilitiesMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number; maxHeight: number }>({
+    top: 56,
+    right: 16,
+    maxHeight: 480,
+  });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!utilitiesMenuTriggerRef.current) return;
+    const rect = utilitiesMenuTriggerRef.current.getBoundingClientRect();
+
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    const viewportWidth = vv ? vv.width : (typeof window !== "undefined" ? window.innerWidth : 390);
+    const viewportHeight = vv ? vv.height : (typeof window !== "undefined" ? window.innerHeight : 844);
+    const viewportOffsetTop = vv ? vv.offsetTop : 0;
+    const viewportOffsetLeft = vv ? vv.offsetLeft : 0;
+
+    // Anchor top to bottom of trigger plus margin
+    const top = Math.max(viewportOffsetTop, rect.bottom + 6);
+
+    // Anchor right edge inside viewport
+    const rightOffsetFromViewportEdge = (viewportOffsetLeft + viewportWidth) - rect.right;
+    const right = Math.max(8, rightOffsetFromViewportEdge);
+
+    // Calculate max height within visual viewport
+    const availableHeight = (viewportOffsetTop + viewportHeight) - top - 16;
+    const maxHeight = Math.max(200, Math.min(availableHeight, 520));
+
+    setMenuPosition({ top, right, maxHeight });
+  }, []);
+
   useEffect(() => {
     if (!isUtilitiesMenuOpen) return;
+    updateMenuPosition();
+
+    const handleReposition = () => {
+      updateMenuPosition();
+    };
+
+    window.addEventListener("resize", handleReposition, { passive: true });
+    window.addEventListener("scroll", handleReposition, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleReposition);
+      window.visualViewport.addEventListener("scroll", handleReposition);
+    }
 
     const handleOutsideInteraction = (e: MouseEvent | TouchEvent | PointerEvent) => {
-      if (utilitiesMenuRef.current && !utilitiesMenuRef.current.contains(e.target as Node)) {
+      const dropdownEl = document.getElementById("utilities-menu-dropdown");
+      const targetNode = e.target as Node;
+      const isInsideTrigger = utilitiesMenuRef.current?.contains(targetNode);
+      const isInsideDropdown = dropdownEl?.contains(targetNode);
+      if (!isInsideTrigger && !isInsideDropdown) {
         setIsUtilitiesMenuOpen(false);
       }
     };
@@ -83,6 +136,12 @@ export default function Navbar({
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", handleReposition);
+        window.visualViewport.removeEventListener("scroll", handleReposition);
+      }
       if (typeof window !== "undefined" && "PointerEvent" in window) {
         document.removeEventListener("pointerdown", handleOutsideInteraction);
       } else {
@@ -91,13 +150,16 @@ export default function Navbar({
       }
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isUtilitiesMenuOpen]);
+  }, [isUtilitiesMenuOpen, updateMenuPosition]);
 
   const handleUtilitiesBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    const dropdownEl = document.getElementById("utilities-menu-dropdown");
+    const relatedTargetNode = e.relatedTarget as Node | null;
     if (
-      e.relatedTarget &&
+      relatedTargetNode &&
       utilitiesMenuRef.current &&
-      !utilitiesMenuRef.current.contains(e.relatedTarget as Node)
+      !utilitiesMenuRef.current.contains(relatedTargetNode) &&
+      (!dropdownEl || !dropdownEl.contains(relatedTargetNode))
     ) {
       setIsUtilitiesMenuOpen(false);
     }
@@ -356,13 +418,19 @@ export default function Navbar({
                 <span aria-hidden="true" className="font-mono text-sm leading-none font-bold pointer-events-none">⋯</span>
               </button>
 
-              {/* Grouped Utilities Dropdown Menu */}
-              {isUtilitiesMenuOpen && (
+              {/* Grouped Utilities Dropdown Menu (Portaled to document.body to escape WebKit clipping) */}
+              {mounted && isUtilitiesMenuOpen && typeof document !== "undefined" && createPortal(
                 <div
                   id="utilities-menu-dropdown"
                   role="menu"
                   aria-label="Terminal Utilities"
-                  className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-[#243044] bg-[#0c1017] p-2.5 shadow-2xl space-y-2 text-xs font-mono animate-fadeIn"
+                  style={{
+                    position: "fixed",
+                    top: `${menuPosition.top}px`,
+                    right: `${menuPosition.right}px`,
+                    maxHeight: `${menuPosition.maxHeight}px`,
+                  }}
+                  className="z-[9999] w-64 max-w-[calc(100vw-16px)] rounded-xl border border-[#243044] bg-[#0c1017] p-2.5 shadow-2xl space-y-2 text-xs font-mono overflow-y-auto animate-fadeIn"
                 >
                   {/* On smaller viewports: Terminal Experience depth switcher */}
                   <div className="lg:hidden pb-2 border-b border-slate-800 space-y-1">
@@ -450,7 +518,8 @@ export default function Navbar({
                       </div>
                     </button>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
 

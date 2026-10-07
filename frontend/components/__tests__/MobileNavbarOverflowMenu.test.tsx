@@ -230,5 +230,68 @@ describe("Mobile Navigation Overflow Menu Interaction Architecture", () => {
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
     expect(document.getElementById("utilities-menu-dropdown")).not.toBeNull();
   });
+
+  it("11. Portal architecture: dropdown panel mounts outside header into document.body", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    const menuPanel = document.getElementById("utilities-menu-dropdown");
+    expect(menuPanel).not.toBeNull();
+
+    const headerEl = document.querySelector("header");
+    expect(headerEl).not.toBeNull();
+
+    // The portal escapes the header ancestor completely
+    expect(headerEl?.contains(menuPanel!)).toBe(false);
+    expect(document.body.contains(menuPanel!)).toBe(true);
+  });
+
+  it("12. Clipping escape regression: OVERLAY_ESCAPES_HEADER_CLIP", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+
+    const menuPanel = document.getElementById("utilities-menu-dropdown");
+    expect(menuPanel).not.toBeNull();
+
+    // Verify fixed position and z-index escaping header layer
+    expect(menuPanel?.style.position).toBe("fixed");
+    expect(menuPanel?.className).toContain("z-[9999]");
+  });
+
+  it("13. Visual viewport containment: panel remains bounded and scrollable", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+
+    const menuPanel = document.getElementById("utilities-menu-dropdown");
+    expect(menuPanel).not.toBeNull();
+
+    // Bounded max-width and vertical scroll containment
+    expect(menuPanel?.className).toContain("max-w-[calc(100vw-16px)]");
+    expect(menuPanel?.className).toContain("overflow-y-auto");
+  });
+
+  it("14. Singularity: menu item click executes once and dismisses menu", () => {
+    render(<Navbar />);
+
+    const triggerBtn = screen.getByRole("button", { name: /Terminal Utilities and System Settings/i });
+    fireEvent.click(triggerBtn);
+
+    const shortcutsBtn = screen.getByRole("menuitem", { name: /Keyboard Shortcuts/i });
+    fireEvent.click(shortcutsBtn);
+
+    // Menu dismissed
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById("utilities-menu-dropdown")).toBeNull();
+
+    // Modal active
+    expect(screen.getByRole("dialog", { name: "Keyboard Shortcuts Guide" })).toBeDefined();
+  });
 });
 

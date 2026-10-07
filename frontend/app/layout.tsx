@@ -86,6 +86,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -134,6 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#06b6d4" />
+        <meta name="arx-release-sha" content={process.env.NEXT_PUBLIC_ARX_RELEASE || ""} />
         {/* Canonical Apex & pages.dev to WWW & HTTPS Domain Enforcement */}
         <script
           dangerouslySetInnerHTML={{
