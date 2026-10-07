@@ -15,6 +15,7 @@ interface OptimalEntryExitCardProps {
   userRole?: "DAY_TRADER" | "LONG_TERM";
   smartMoney?: any;
   macroRegime?: any;
+  vix?: number | null;
   isActionable?: boolean;
   canSizeTrade?: boolean;
   decisionState?: string;
@@ -27,6 +28,7 @@ export default function OptimalEntryExitCard({
   userRole = "LONG_TERM",
   smartMoney,
   macroRegime,
+  vix,
   isActionable,
   canSizeTrade,
   decisionState,
@@ -144,17 +146,42 @@ export default function OptimalEntryExitCard({
     (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
     (smartMoney?.congressTrades && smartMoney.congressTrades.some((t: any) => t.tx_type === "Purchase"))
   );
-  const isAdverseMacro = Boolean(
-    macroRegime?.vix && Number(macroRegime.vix) > 20
-  );
+  // ── Pre-Flight VIX authority resolution (AC-W3-MACRO-001) ───────────────
+  // Resolves strictly through canonical macro ribbon authority.
+  // 1. Direct macroRegime prop if it carries vix.value or vix.level or numeric vix
+  // 2. localStorage snapshot from MarketCommandRibbon (FINANCE_MARKET_SNAPSHOTS_V1)
+  // If unavailable, vix is strictly undefined (no synthetic 28.0/99.0/15.0 fallbacks).
+  const resolvedVix = (() => {
+    if (typeof vix === "number" && !isNaN(vix) && vix > 0) {
+      return vix;
+    }
+    if (macroRegime?.vix != null) {
+      if (typeof macroRegime.vix === "number" && !isNaN(macroRegime.vix) && macroRegime.vix > 0) {
+        return macroRegime.vix;
+      }
+      const val = macroRegime.vix.value ?? macroRegime.vix.level;
+      if (typeof val === "number" && !isNaN(val) && val > 0) {
+        return val;
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
+          if (typeof v === "number" && !isNaN(v) && v > 0) {
+            return v;
+          }
+        }
+      } catch {}
+    }
+    return undefined;
+  })();
 
-  // ── Pre-Flight real data derivation ─────────────────────────────────────
-  // VIX proxy: FredMacroData doesn't expose VIX directly; macroRiskMultiplier
-  // encodes macro stress (1.0 = neutral, >1.1 = elevated). Map to VIX-equivalent:
-  // multiplier 1.0 → VIX~15, 1.1 → VIX~20, 1.2 → VIX~26, 1.25+ → VIX~32
-  const derivedVix = macroRegime?.macroRiskMultiplier
-    ? Math.round((Number(macroRegime.macroRiskMultiplier) - 1.0) * 130 + 15)
-    : 15;
+  const isAdverseMacro = Boolean(
+    resolvedVix ? resolvedVix > 20 : (macroRegime?.vix && Number(macroRegime.vix) > 20)
+  );
 
   // hasImminentEarnings: true if any catalyst event is of Earnings category
   // and its expectedDate is within 7 days from today
@@ -169,24 +196,9 @@ export default function OptimalEntryExitCard({
     });
   })();
 
-  // isDistributionTrap: true if net smart money is bearish on this asset
-  const derivedIsDistributionTrap = (() => {
-    if (!smartMoney) return undefined; // let modal use catalog heuristic
-    const bearishOptions = (smartMoney.optionsFlow || []).filter((f: any) =>
-      f.sentiment === "Bearish" || f.type?.includes("PUT")
-    ).length;
-    const bullishOptions = (smartMoney.optionsFlow || []).filter((f: any) =>
-      f.sentiment === "Bullish" || f.type?.includes("CALL")
-    ).length;
-    const netSelling = (smartMoney.congressTrades || []).filter((t: any) =>
-      t.tx_type === "Sale" || t.transaction_type?.toLowerCase().includes("sale")
-    ).length;
-    const netBuying = (smartMoney.congressTrades || []).filter((t: any) =>
-      t.tx_type === "Purchase" || t.transaction_type?.toLowerCase().includes("purchase")
-    ).length;
-    // Distribution trap = more bearish options + net congressional selling
-    return bearishOptions > bullishOptions && netSelling > netBuying;
-  })();
+  // isDistributionTrap: Deprecated options-flow heuristic; single-asset options flow is unconnected.
+  // Pre-Flight Check 3 is canonically scoped to Capital Risk evaluated via MASTER_ASSET_CATALOG.
+  const derivedIsDistributionTrap = undefined;
 
   const handleLogToPortfolio = async () => {
     if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
@@ -617,7 +629,7 @@ export default function OptimalEntryExitCard({
         optimalEntryMin={optimal_entry_min}
         optimalEntryMax={optimal_entry_max}
         breakoutPivot={executionPlan.breakout_pivot || Number((current_price * 1.072).toFixed(2))}
-        vix={derivedVix}
+        vix={resolvedVix}
         hasImminentEarnings={derivedHasImminentEarnings}
         isDistributionTrap={derivedIsDistributionTrap}
         isActionable={isActionable}

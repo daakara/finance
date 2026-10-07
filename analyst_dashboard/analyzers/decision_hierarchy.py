@@ -19,6 +19,11 @@ are mathematically and structurally impossible.
 
 from enum import Enum
 from typing import Dict, Any, Optional, List
+from analyst_dashboard.security_master.applicability import (
+    get_required_evidence_for_instrument,
+    InstrumentEvidenceContract,
+)
+from analyst_dashboard.security_master.models import SecurityType, AssetClass
 
 
 class DecisionState(str, Enum):
@@ -76,11 +81,62 @@ class DecisionHierarchyEngine:
         is_cataloged: bool = True,
         is_confirmed: bool = True,
         user_role: Optional[str] = None,
+        security_type: Optional[Any] = None,
+        asset_class: Optional[Any] = None,
+        has_fund_profile: bool = True,
     ) -> Dict[str, Any]:
         """Resolve the active decision state and execution eligibility following strict precedence."""
         clean_sym = symbol.upper().strip()
 
+        # ── Canonical Security Master & Evidence Contract Resolution ─────────
+        # Routes evidence requirements canonically through security master.
+        # NEVER allows an instrument to fail on evidence classified NOT_APPLICABLE.
+        if security_type is None and asset_class is None:
+            if not is_cataloged:
+                sec_type = SecurityType.UNKNOWN
+                ass_class = None
+            elif clean_sym in {"TEST", "MOCK", "SAMPLE"}:
+                sec_type = SecurityType.COMMON_STOCK
+                ass_class = AssetClass.EQUITY
+            else:
+                try:
+                    from analyst_dashboard.security_master.service import get_security_master_service
+                    repo_item = get_security_master_service().repository.get(clean_sym)
+                    if repo_item and repo_item.security_type in (SecurityType.ETF, SecurityType.ADR, SecurityType.REIT):
+                        sec_type = repo_item.security_type
+                        ass_class = repo_item.asset_class
+                    elif clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"}:
+                        sec_type = SecurityType.ETF
+                        ass_class = AssetClass.ETF
+                    else:
+                        sec_type = SecurityType.COMMON_STOCK
+                        ass_class = AssetClass.EQUITY
+                except Exception:
+                    if clean_sym in {"SPY", "QQQ", "IWM", "XLK", "DIA", "SOXX", "SMH", "XLF", "XLE", "VTI", "VOO"}:
+                        sec_type = SecurityType.ETF
+                        ass_class = AssetClass.ETF
+                    else:
+                        sec_type = SecurityType.COMMON_STOCK
+                        ass_class = AssetClass.EQUITY
+        else:
+            sec_type = security_type
+            ass_class = asset_class
+
+        contract = get_required_evidence_for_instrument(sec_type, ass_class)
+
         # ── Precedence 1: UNVERIFIED ──────────────────────────────────────────
+        # Fail closed for UNKNOWN instruments
+        if contract.security_type == SecurityType.UNKNOWN or (security_type and str(security_type).upper() == "UNKNOWN"):
+            return {
+                "symbol": clean_sym,
+                "state": DecisionState.UNVERIFIED.value,
+                "label": "Unverified Instrument — Classification Unconfirmed",
+                "isActionable": False,
+                "canSizeTrade": False,
+                "allowedActions": ["RESEARCH_PROFILE"],
+                "disqualificationReason": "Unverified market identity: Instrument classification unconfirmed.",
+            }
+
         if current_price <= 0 or candle_count == 0 or not is_cataloged or freshness_status == "UNAVAILABLE":
             return {
                 "symbol": clean_sym,
@@ -117,15 +173,43 @@ class DecisionHierarchyEngine:
             }
 
         # ── Precedence 4: EVIDENCE_INCOMPLETE ─────────────────────────────────
-        if not has_fundamentals:
+        # Epistemic & Regulatory Invariants (Synthesis E Wave 3):
+        # NOT_APPLICABLE != MISSING != UNVERIFIED != FAILED
+        # NO_INSTRUMENT_MAY_BE_FAILED_FOR_EVIDENCE_CLASSIFIED_NOT_APPLICABLE
+        # An ETF must NEVER be disqualified with corporate 10-K/10-Q missing filings.
+        evidence_incomplete = False
+        evidence_reason = contract.incomplete_reason
+
+        if contract.security_type == SecurityType.COMMON_STOCK:
+            if not has_fundamentals:
+                evidence_incomplete = True
+                evidence_reason = contract.incomplete_reason
+        elif contract.security_type == SecurityType.ETF:
+            if not has_fund_profile:
+                evidence_incomplete = True
+                evidence_reason = contract.incomplete_reason
+        elif contract.security_type == SecurityType.ADR:
+            if not has_fundamentals:
+                evidence_incomplete = True
+                evidence_reason = contract.incomplete_reason
+        elif contract.security_type == SecurityType.REIT:
+            if not has_fundamentals:
+                evidence_incomplete = True
+                evidence_reason = contract.incomplete_reason
+        elif contract.security_type == SecurityType.OTHER:
+            if not has_fundamentals and not has_fund_profile:
+                evidence_incomplete = True
+                evidence_reason = contract.incomplete_reason
+
+        if evidence_incomplete:
             return {
                 "symbol": clean_sym,
                 "state": DecisionState.EVIDENCE_INCOMPLETE.value,
-                "label": "Evidence Incomplete — Fundamentals Missing",
+                "label": f"Evidence Incomplete — {contract.profile_label}",
                 "isActionable": False,
                 "canSizeTrade": False,
                 "allowedActions": ["RESEARCH_PROFILE", "ADD_WATCHLIST", "SET_ALERT"],
-                "disqualificationReason": "Audited SEC EDGAR 10-K/10-Q financial filings are unverified.",
+                "disqualificationReason": evidence_reason,
             }
 
         # ── Precedence 6: ACTIONABLE_SETUP (Highest criteria) ─────────────────

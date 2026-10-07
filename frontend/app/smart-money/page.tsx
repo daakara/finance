@@ -151,7 +151,7 @@ function SmartMoneyContent() {
     return true;
   });
 
-  // Top Actionable Radar Assets
+  // Top Actionable Radar Assets (Curated Archive)
   const actionableAssets = (data?.congress_trades || []).slice(0, 6).map((item, idx) => {
     const bgMap = [
       { bg: "bg-[#111722]", border: "border-emerald-700/60", badge: "Whale Alert" },
@@ -163,12 +163,14 @@ function SmartMoneyContent() {
     ];
     const styling = bgMap[idx % bgMap.length];
     const polName = item.politician.replace(/^(Rep\.|Sen\.)\s*/, "");
+    const filingDateStr = item.filing_date || "Aug 2026";
     return {
       ticker: item.ticker,
       name: item.asset_name,
       type: `${polName} · ${item.transaction_type.includes("Call") ? "Calls" : "Equity"}`,
       postTradeAlpha: `${item.performance_since_pct > 0 ? "+" : ""}${item.performance_since_pct}%`,
       amountRange: item.amount_range || "Undisclosed",
+      filingDate: filingDateStr,
       sector: item.sector || "Equity",
       badge: styling.badge,
       bg: styling.bg,
@@ -224,13 +226,18 @@ function SmartMoneyContent() {
           </div>
         </div>
 
-        {/* TOP ACTIONABLE SMART MONEY RADAR (Stocknear style instant cards) */}
+        {/* TOP ACTIONABLE SMART MONEY RADAR (Curated Archive) */}
         <section aria-label="Top Smart Money Discoveries" className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <span>🔥</span>
-              <span>TOP ACTIONABLE SMART MONEY DISCOVERIES TODAY</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
+                <span>📚</span>
+                <span>CURATED HISTORICAL SMART MONEY ARCHIVE</span>
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-700/60">
+                ARCHIVED DISCLOSURES (AUG 2026)
+              </span>
+            </div>
             <span className="text-[10px] text-slate-500 uppercase tracking-wider">Instant Terminal Jump</span>
           </div>
 
@@ -240,7 +247,7 @@ function SmartMoneyContent() {
                 key={i}
                 href={`/?symbol=${card.ticker}`}
                 onClick={() => trackSmartMoneyAssetClick(card.ticker, card.badge)}
-                className={`${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block`}
+                className={`${card.bg} border ${card.border} rounded-xl p-3 hover:scale-[1.02] transition-transform shadow-lg group block relative overflow-hidden`}
               >
                 <div className="flex items-start justify-between gap-1">
                   <div>
@@ -248,7 +255,7 @@ function SmartMoneyContent() {
                       {card.ticker}
                     </span>
                     <div className="text-[10px] text-slate-400">
-                      Filed: <span className="text-emerald-400 font-bold">{card.amountRange}</span>
+                      Filed: <span className="text-emerald-400 font-bold">{card.filingDate}</span>
                     </div>
                   </div>
                   <div className="text-right">
@@ -259,7 +266,9 @@ function SmartMoneyContent() {
                 <div className="text-[11px] text-slate-300 font-medium truncate mt-0.5">{card.name}</div>
                 <div className="text-[10px] text-slate-400 truncate mt-1">{card.type}</div>
                 <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
-                  <span className="text-cyan-300 font-semibold">{card.badge}</span>
+                  <span className="text-amber-400/90 font-mono text-[9px] font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/40">
+                    ARCHIVED
+                  </span>
                   <span className="text-slate-400 group-hover:text-white">Analyze →</span>
                 </div>
               </Link>
@@ -517,8 +526,23 @@ function SmartMoneyContent() {
                 <tbody className="divide-y divide-[#1e293b]">
                   {secInsiders.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-8 text-center text-slate-500">
-                        No SEC Form 4 insider transactions found matching filter.
+                      <td colSpan={10} className="py-10 text-center">
+                        <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-cyan-900/40 font-mono">
+                          <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                            🏢 SEC Form 4 Disclosures
+                          </span>
+                          <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                            Zero insider filings in active {timeframe === "ALL" ? "filter" : `${timeframe} window`}.
+                          </p>
+                          {timeframe !== "ALL" && (data?.sec_insider_trades || []).length > 0 && (
+                            <button
+                              onClick={() => setTimeframe("ALL")}
+                              className="px-3 py-1.5 rounded text-xs font-bold bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 border border-cyan-600 transition shadow-sm"
+                            >
+                              View All SEC Disclosures ({(data?.sec_insider_trades || []).length} Records) →
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -598,8 +622,23 @@ function SmartMoneyContent() {
                     </tr>
                   ) : congressTrades.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="py-8 text-center text-slate-500">
-                        No congressional trades found matching filter criteria.
+                      <td colSpan={11} className="py-10 text-center">
+                        <div className="max-w-md mx-auto space-y-3 p-4 rounded-xl bg-[#090d14] border border-amber-900/40 font-mono">
+                          <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                            📚 Curated Historical Archive (Filing Dates: August 2026)
+                          </span>
+                          <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                            Zero filings in active {timeframe === "ALL" ? "filter" : `${timeframe} window`}. All curated STOCK Act disclosures on file are historical records from August 2026. Under ARX epistemic invariants, event dates are immutable and never rolled forward.
+                          </p>
+                          {timeframe !== "ALL" && (
+                            <button
+                              onClick={() => setTimeframe("ALL")}
+                              className="px-3 py-1.5 rounded text-xs font-bold bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-600 transition shadow-sm"
+                            >
+                              View All Archived Disclosures ({(data?.congress_trades || []).length} Records) →
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (

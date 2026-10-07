@@ -10,6 +10,7 @@ import {
 import { deriveAssessmentState } from "./assessmentEngine";
 import { CandleData, ConfluenceData, OptimalExecutionPlan } from "./api";
 import { evaluateLevelRelation } from "./reclaimSemantics";
+import { MASTER_ASSET_CATALOG } from "./masterCatalog";
 
 export function generateQuantitativeInsight(
   symbol: string,
@@ -139,10 +140,38 @@ export function generateQuantitativeInsight(
     : (fundPillar?.status === "positive" ? "FAVORABLE" : (fundPillar?.status === "warning" ? "UNFAVORABLE" : "MIXED"));
   const healthPointImpact = isHealthAvailable ? Math.round((fundPillar?.score || 0) * 0.20) : 0;
 
+  const cleanSym = (symbol || "").toUpperCase().replace("-USD", "");
+  const catalogEntry = MASTER_ASSET_CATALOG[cleanSym];
+  const isEtf =
+    catalogEntry?.type === "ETF" ||
+    (decisionTrace as any)?.instrumentProfile?.securityType === "ETF" ||
+    (decisionTrace as any)?.instrument?.security_type === "ETF";
+
   // Build Normalized Domain Assessments (Unknown != Negative Invariant Enforced)
   const domains: DomainAssessment[] = [
-    // Domain 1: Company Health (Fundamental)
-    isHealthAvailable
+    // Domain 1: Company Health / Fund Profile
+    isEtf
+      ? {
+          domainId: "health",
+          domainName: "Fund Profile",
+          availability: "AVAILABLE",
+          status: "FAVORABLE",
+          pointImpact: 0,
+          importanceLevel: "MEDIUM",
+          observation: "Fund / ETF Profile: Evaluated via fund liquidity, net expense ratio, and underlying index momentum. Corporate 10-K financial filings are not applicable.",
+          modelRule: "Fund structure evaluated via AUM liquidity and index tracking; corporate operating margins not applicable.",
+          evidence: [
+            {
+              metricName: "Fund Structure Classification",
+              currentValue: "Registered Fund / ETF",
+              benchmarkValue: "10-K Exemption",
+              significance: "HIGH",
+              status: "POSITIVE",
+            },
+          ],
+          whatWouldChangeAssessment: "Significant tracking error or liquidity deterioration would trigger an ETF profile review.",
+        }
+      : (isHealthAvailable
       ? {
           domainId: "health",
           domainName: "Company Health",
@@ -174,7 +203,7 @@ export function generateQuantitativeInsight(
           modelRule: "Fundamental company health requires verified financial statements; zero points awarded when evidence is unavailable.",
           evidence: [],
           whatWouldChangeAssessment: "Publication of audited Form 10-Q or 10-K financial disclosures will unlock fundamental scoring.",
-        },
+        }),
 
     // Domain 2: Price Trend (Technical)
     isTrendAvailable

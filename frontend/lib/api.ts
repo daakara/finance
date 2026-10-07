@@ -651,8 +651,10 @@ export interface AnalyticsResponse {
   liquidityDefense?: LiquidityDefenseData;
   confluence?: ConfluenceData;
   smartMoney?: {
+    status?: "AVAILABLE" | "VALID_EMPTY" | "PIPELINE_PENDING" | "SOURCE_UNAVAILABLE";
     congressTrades?: CongressTradeItem[];
     optionsFlow?: OptionsFlowItem[];
+    notice?: string;
   };
   freshness?: FreshnessInfo;
   decisionTrace?: DecisionTrace;
@@ -850,8 +852,10 @@ export function generateFallbackAnalytics(
       atr_14: 0,
     },
     smartMoney: {
+      status: "SOURCE_UNAVAILABLE",
       congressTrades: [],
       optionsFlow: [],
+      notice: "Live exchange feed unavailable: Smart money pipeline offline.",
     },
     freshness: {
       status: "UNAVAILABLE",
@@ -1115,8 +1119,10 @@ export async function fetchDirectYahooFinanceChart(
         },
         optimalExecution,
         smartMoney: {
+          status: "PIPELINE_PENDING",
           congressTrades: [],
           optionsFlow: [],
+          notice: "Single-asset smart money tracking is pending ingestion for this symbol.",
         },
         freshness: {
           status: isObservationFresh ? "LIVE" : "END_OF_DAY",

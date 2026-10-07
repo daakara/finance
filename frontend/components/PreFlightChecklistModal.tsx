@@ -120,7 +120,7 @@ export default function PreFlightChecklistModal({
   const safeEntryMax = (typeof optimalEntryMax === "number" && !isNaN(optimalEntryMax) && optimalEntryMax > 0) ? optimalEntryMax : null;
   const safePivot = (typeof breakoutPivot === "number" && !isNaN(breakoutPivot) && breakoutPivot > 0) ? breakoutPivot : null;
   const isVixValid = typeof vix === "number" && !isNaN(vix) && vix > 0;
-  const safeVix = isVixValid ? vix : 99.0;
+  const currentVix = isVixValid ? vix : null;
 
   const stopLossPct = (isPriceValid && safeStop !== null) ? (((safeStop - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
   const target1Pct = (isPriceValid && safeTarget !== null) ? (((safeTarget - safePrice) / safePrice) * 100).toFixed(2) : "N/A";
@@ -135,28 +135,41 @@ export default function PreFlightChecklistModal({
   const isExtendedAboveZone = Boolean(safeEntryMax && safePrice > safeEntryMax * 1.02);
   const isTrendPassed = isPriceValid && !isStage4 && !isExtendedAboveZone && safeEntryMin !== null && safeEntryMax !== null;
 
-  // Check 3: Smart Money Flow & Distribution Traps
-  // isDistributionTrapResolved = true means a trap EXISTS (bad). Naming is unambiguous.
-  const isDistributionTrapResolved = isDistributionTrap ?? Boolean(
-    catalogItem && (
-      (Number(catalogItem.shortFloat) || 0) > 12.0 ||
-      String(catalogItem.verdict || "").toLowerCase().includes("turnaround") ||
-      (Number(catalogItem.qualityScore) || 100) < 60
-    )
+  // Check 3: CHK-3-CAPITAL-RISK (Structural Capital Risk & Squeeze Floor)
+  // Epistemic Contract: CLAIM_SET ⊆ EVIDENCE_SET.
+  // Evaluates shortFloat, qualityScore, verdict via MASTER_ASSET_CATALOG.
+  const hasShortFloat = catalogItem !== undefined && catalogItem.shortFloat !== undefined && catalogItem.shortFloat !== null;
+  const hasQualityScore = catalogItem !== undefined && catalogItem.qualityScore !== undefined && catalogItem.qualityScore !== null;
+  const capitalRiskEvidenceState: "COMPLETE" | "PARTIAL" | "UNAVAILABLE" =
+    hasShortFloat && hasQualityScore
+      ? "COMPLETE"
+      : hasShortFloat || hasQualityScore
+      ? "PARTIAL"
+      : "UNAVAILABLE";
+
+  const shortFloatNum = Number(catalogItem?.shortFloat) || 0;
+  const qualityScoreNum = Number(catalogItem?.qualityScore) || 0;
+  const isTurnaround = String(catalogItem?.verdict || "").toLowerCase().includes("turnaround");
+
+  const isCapitalRiskFailed = isPriceValid && (
+    (capitalRiskEvidenceState === "COMPLETE" && (shortFloatNum > 12.0 || isTurnaround || qualityScoreNum < 60)) ||
+    isDistributionTrap === true
   );
-  const distributionTrapActive = isDistributionTrapResolved;
-  const isSmartMoneyPassed = isPriceValid && !distributionTrapActive;
+
+  // Mandatory Fail-Closed Rule: PARTIAL_EVIDENCE => NOT_CERTIFIED. Must be COMPLETE to PASS.
+  const isCapitalRiskPassed = isPriceValid && capitalRiskEvidenceState === "COMPLETE" && !isCapitalRiskFailed && isDistributionTrap !== true;
 
   // Check 4: Catalyst Hazard Buffer
   const isCatalystPassed = isPriceValid && !hasImminentEarnings;
 
   // Check 5: Macro Regime Guard (VIX < 26.0 with valid macro reading)
-  const isMacroPassed = isPriceValid && isVixValid && safeVix < 26.0;
+  // Single authority: binds to canonical macro ribbon VIX. Missing VIX is strictly UNAVAILABLE (never 28.0 or 99.0).
+  const isMacroPassed = isPriceValid && isVixValid && currentVix !== null && currentVix < 26.0;
 
-  const passedCount = [isRRPassed, isTrendPassed, isSmartMoneyPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
+  const passedCount = [isRRPassed, isTrendPassed, isCapitalRiskPassed, isCatalystPassed, isMacroPassed].filter(Boolean).length;
   const convictionPct = isPriceValid ? Math.round((passedCount / 5) * 100) : 0;
   const isActionableGranted = isActionable === true;
-  const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isSmartMoneyPassed && isTrendPassed;
+  const isCleared = isActionableGranted && isPriceValid && isRRValid && convictionPct >= 80 && !isStage4 && isCapitalRiskPassed && isTrendPassed;
 
   // Analytics — inline try/catch, no useEffect needed (stable values within a single open session)
   try {
@@ -197,7 +210,7 @@ export default function PreFlightChecklistModal({
 - **Risk/Reward**: ${isRRValid ? `${safeRR.toFixed(2)} : 1.0` : "Unverified"}
 - **Setup Pattern**: ${setupPattern || "Minervini VCP"}
 - **Pre-Flight Clearance**: ${convictionPct}% — ${isCleared ? "🟢 CLEARED FOR EXECUTION" : "⚠️ CONDITIONAL / AWAIT BASE CLEARANCE"}
-- **VIX Regime**: ${safeVix.toFixed(1)} | **Distribution Trap**: ${distributionTrapActive ? "DETECTED" : "CLEAR"} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
+- **VIX Regime**: ${currentVix !== null ? currentVix.toFixed(1) : "UNAVAILABLE"} | **Capital Risk**: ${isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "DETECTED" : capitalRiskEvidenceState} | **Earnings Hazard**: ${hasImminentEarnings ? "ACTIVE" : "CLEAR"}
 `;
 
   const handleCopy = async () => {
@@ -360,22 +373,34 @@ export default function PreFlightChecklistModal({
             <div className="p-3 rounded-lg bg-[#111722] border border-[#1e293b] flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                  <span>{isSmartMoneyPassed ? "✅" : "❌"}</span>
-                  <span>{isPlain ? "3. Big Player Activity (No aggressive insider selling)" : "3. Institutional Flow (No Net Form 4 C-Suite Dumping)"}</span>
+                  <span>{isCapitalRiskPassed ? "✅" : (isCapitalRiskFailed ? "❌" : "⚠️")}</span>
+                  <span>{isPlain ? "3. Capital Health & Squeeze Risk (Manageable short float & solvent balance sheet)" : "3. Structural Capital Risk (Short Interest Floor & Quality Rating)"}</span>
                 </div>
                 <p className="text-[11px] text-slate-400 pl-5">
-                  {isSmartMoneyPassed
+                  {isCapitalRiskPassed
                     ? (isPlain
-                        ? "Institutional order sweeps & Congressional filings indicate steady accumulation."
-                        : "Institutional Flow: Positive net accumulation detected.")
+                        ? "Short interest is moderate (<12%) and financial quality metrics indicate stable balance sheet health."
+                        : "Capital Risk Guard: Short float (<12%) and fundamental solvency score confirm absence of acute balance sheet distress.")
+                    : isCapitalRiskFailed
+                    ? (isPlain
+                        ? "⚠️ Warning: Elevated short interest (>12%) or turnaround rating indicates potential capital distress."
+                        : "⚠️ Capital Risk Warning: Elevated short interest (>12%), turnaround status, or sub-60 quality score detected.")
+                    : capitalRiskEvidenceState === "PARTIAL"
+                    ? (isPlain
+                        ? "Capital risk evidence partial: Short interest or solvency rating unverified. Cannot certify capital safety."
+                        : "Evidence Incomplete: Fundamental quality score or short interest input missing. Pre-Flight cannot certify capital risk.")
                     : (isPlain
-                        ? "⚠️ Warning: Heavy corporate insider selling / distribution trap detected."
-                        : "⚠️ Institutional Distribution Trap: Net Form 4 C-Suite selling / elevated short interest.")}
+                        ? "Capital risk evidence unavailable: Financial quality metrics unverified."
+                        : "Capital risk evidence unavailable: Financial quality metrics unverified.")}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${
-                isSmartMoneyPassed ? "bg-emerald-950 text-emerald-300 border-emerald-800" : "bg-rose-950 text-rose-300 border-rose-800"
-              }`}>{isSmartMoneyPassed ? "PASS" : "DISTRIBUTION"}</span>
+                isCapitalRiskPassed
+                  ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                  : isCapitalRiskFailed
+                  ? "bg-rose-950 text-rose-300 border-rose-800"
+                  : "bg-amber-950 text-amber-300 border-amber-800"
+              }`}>{isCapitalRiskPassed ? "PASS" : isCapitalRiskFailed ? "CAPITAL RISK" : capitalRiskEvidenceState === "PARTIAL" ? "PARTIAL" : "UNAVAILABLE"}</span>
             </div>
 
             {/* Check 4 */}
@@ -410,15 +435,15 @@ export default function PreFlightChecklistModal({
                 <p className="text-[11px] text-slate-400 pl-5">
                   {isMacroPassed
                     ? (isPlain
-                        ? `Market volatility is within standard parameters (VIX ${safeVix.toFixed(1)}).`
-                        : `Macro Guard: Normal volatility regime (VIX ${safeVix.toFixed(1)} < 26.0).`)
+                        ? `Market volatility is within standard parameters (VIX ${currentVix?.toFixed(1)}).`
+                        : `Macro Guard: Normal volatility regime (VIX ${currentVix?.toFixed(1)} < 26.0).`)
                     : !isVixValid
                     ? (isPlain
-                        ? "Market volatility reading (VIX) is currently unavailable."
-                        : "Macro Guard: CBOE Volatility Index (VIX) feed unavailable.")
+                        ? "Market volatility reading (VIX) is currently unavailable. Macro guard uncertified."
+                        : "Market Volatility: Volatility evidence unavailable from live exchange feed. Macro guard cannot be certified.")
                     : (isPlain
-                        ? `⚠️ High Volatility: Market VIX (${safeVix.toFixed(1)}) indicates elevated systemic turbulence.`
-                        : `⚠️ Elevated Macro Risk: VIX (${safeVix.toFixed(1)}) exceeds 26.0 threshold.`)}
+                        ? `⚠️ High Volatility: Market VIX (${currentVix?.toFixed(1)}) indicates elevated systemic turbulence.`
+                        : `⚠️ Elevated Macro Risk: VIX (${currentVix?.toFixed(1)}) exceeds 26.0 threshold.`)}
                 </p>
               </div>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${

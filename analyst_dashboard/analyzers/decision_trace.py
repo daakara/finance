@@ -7,6 +7,10 @@ for every ticker and analytical recommendation.
 
 from typing import Dict, Any, Optional, List
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
+from analyst_dashboard.security_master.applicability import (
+    get_required_evidence_for_instrument,
+    SecurityType,
+)
 
 
 class DecisionTraceEngine:
@@ -26,6 +30,9 @@ class DecisionTraceEngine:
         macro_difficulty: Optional[Dict[str, Any]] = None,
         catalyst_report: Optional[Dict[str, Any]] = None,
         user_role: Optional[str] = None,
+        security_type: Optional[Any] = None,
+        asset_class: Optional[Any] = None,
+        has_fund_profile: bool = True,
     ) -> Dict[str, Any]:
         """Construct the comprehensive Decision Trace tree."""
         clean_sym = symbol.upper().strip()
@@ -62,6 +69,9 @@ class DecisionTraceEngine:
             is_cataloged=True,
             is_confirmed=is_confirmed,
             user_role=effective_role,
+            security_type=security_type,
+            asset_class=asset_class,
+            has_fund_profile=has_fund_profile,
         )
 
         # 2. Extract Pillar Statuses
@@ -75,19 +85,28 @@ class DecisionTraceEngine:
         penalties = confluence.get("warnings", []) if confluence else []
 
         # 4. Formulate Plain English Explainability Narrative
+        evidence_contract = get_required_evidence_for_instrument(security_type, asset_class)
         state_str = decision_state["state"]
         if state_str == DecisionState.UNVERIFIED.value:
-            explanation = "Trade decision withheld: No verified real-time or historical market tape on record."
+            explanation = f"Trade decision withheld: {decision_state.get('disqualificationReason') or 'No verified real-time or historical market tape on record.'}"
         elif state_str == DecisionState.INSUFFICIENT_DATA.value:
             explanation = f"Trade decision withheld: Asset has {candle_count} daily sessions, below the 50 sessions required for trend confirmation."
         elif state_str == DecisionState.STALE_DATA.value:
             explanation = "Live orders suspended: Historical data is older than 4 calendar days. Awaiting fresh market tape."
         elif state_str == DecisionState.EVIDENCE_INCOMPLETE.value:
-            explanation = "Execution withheld: Core SEC Form 10-Q/10-K financial filings are unverified. Full due diligence required."
+            explanation = f"Execution withheld: {decision_state.get('disqualificationReason') or evidence_contract.incomplete_reason} Full due diligence required."
         elif state_str == DecisionState.ACTIONABLE_SETUP.value:
-            explanation = f"High conviction buy setup: Multi-factor confluence ({confluence_score:.1f}/100) confirmed in buy zone with {rr:.1f}:1 R:R."
+            if evidence_contract.security_type == SecurityType.ETF:
+                explanation = f"High conviction ETF setup: Multi-factor confluence ({confluence_score:.1f}/100) confirmed in buy zone with {rr:.1f}:1 R:R. Fund / ETF Profile: Evaluated via fund liquidity, net expense ratio, and underlying index momentum. Corporate 10-K financial filings are not applicable."
+            else:
+                explanation = f"High conviction buy setup: Multi-factor confluence ({confluence_score:.1f}/100) confirmed in buy zone with {rr:.1f}:1 R:R."
         else:
-            explanation = f"Valid asset structure: Confluence is {confluence_score:.1f}/100. {decision_state.get('disqualificationReason', 'Awaiting directional breakout.')}"
+            if evidence_contract.security_type == SecurityType.ETF:
+                disq = decision_state.get("disqualificationReason")
+                suffix = f" {disq}" if disq else ""
+                explanation = f"Fund / ETF Profile: Evaluated via fund liquidity, net expense ratio, and underlying index momentum. Corporate 10-K financial filings are not applicable.{suffix}".strip()
+            else:
+                explanation = f"Valid asset structure: Confluence is {confluence_score:.1f}/100. {decision_state.get('disqualificationReason', 'Awaiting directional breakout.')}"
 
         return {
             "symbol": clean_sym,
@@ -98,6 +117,13 @@ class DecisionTraceEngine:
             "allowedActions": decision_state["allowedActions"],
             "disqualificationReason": decision_state["disqualificationReason"],
             "confluenceScore": confluence_score,
+            "explanation": explanation,
+            "instrumentProfile": {
+                "securityType": evidence_contract.security_type.value,
+                "label": evidence_contract.profile_label,
+                "description": evidence_contract.profile_description,
+                "notApplicableEvidence": list(evidence_contract.not_applicable_evidence),
+            },
             "trace": {
                 "marketData": {
                     "currentPrice": current_price,
