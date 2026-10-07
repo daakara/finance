@@ -117,6 +117,9 @@ export default function OptimalEntryExitCard({
   const inZone = current_price >= entryMin && current_price <= entryMax;
   const zoneWidth = Math.max(0.01, entryMax - entryMin);
   const zonePositionPct = inZone ? ((current_price - entryMin) / zoneWidth) * 100 : 50;
+  const isStopVisible = executionPlan.execution_stop_visible !== undefined && executionPlan.execution_stop_visible !== null
+    ? Boolean(executionPlan.execution_stop_visible)
+    : Boolean(isActionable || inZone);
 
   // Tactical Execution Hint
   let zoneTacticalHint: { label: string; advice: string; color: string } | null = null;
@@ -527,17 +530,29 @@ export default function OptimalEntryExitCard({
         </div>
 
         {/* Stop Loss / Invalidation */}
-        <div className="flex items-center justify-between p-2 rounded-lg bg-rose-950/30 border border-rose-800/40 text-xs">
+        <div className={`flex items-center justify-between p-2 rounded-lg text-xs ${
+          isStopVisible
+            ? "bg-rose-950/30 border border-rose-800/40"
+            : "bg-slate-900/60 border border-slate-700/60"
+        }`}>
           <div className="flex items-center space-x-2">
-            <span className="text-rose-400 font-bold">{isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION"}</span>
-            <span className="text-xs text-slate-400 hidden sm:inline">{isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor"}</span>
+            <span className={isStopVisible ? "text-rose-400 font-bold" : "text-slate-300 font-bold"}>
+              {isStopVisible
+                ? (isPlain ? "🛑 SAFETY EXIT (Cut Loss Price)" : "🛑 HARD STOP-LOSS / INVALIDATION")
+                : (isPlain ? "🛑 STRUCTURAL INVALIDATION FLOOR" : "🛑 STRUCTURAL INVALIDATION REFERENCE")}
+            </span>
+            <span className="text-xs text-slate-400 hidden sm:inline">
+              {isStopVisible
+                ? (isPlain ? "• Exit here to protect account" : "• -1.5x ATR Volatility Cut Floor")
+                : (isPlain ? "• Base Invalidation Floor (Wait for Pullback)" : "• Base Invalidation Reference (Non-Active)")}
+            </span>
           </div>
           <div className="text-right">
-            <strong className="text-rose-400 text-sm font-bold font-mono tabular-nums">
+            <strong className={`text-sm font-bold font-mono tabular-nums ${isStopVisible ? "text-rose-400" : "text-slate-200"}`}>
               ${stop_loss.toFixed(2)}
             </strong>
-            <span className="text-xs text-rose-500 ml-1.5 font-mono tabular-nums">
-              ({stop_loss_pct}%)
+            <span className={`text-xs ml-1.5 font-mono tabular-nums ${isStopVisible ? "text-rose-500" : "text-slate-400"}`}>
+              ({stop_loss_pct}%{isStopVisible ? "" : " from base"})
             </span>
           </div>
         </div>

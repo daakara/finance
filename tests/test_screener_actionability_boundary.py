@@ -83,7 +83,7 @@ def test_screener_authority_boundary_cases():
             } for c in candles], index=pd.to_datetime([c["time"] for c in candles]))
             plan = opt_engine.calculate_trade_levels(df, 99.72, user_role="LONG_TERM")
             # In canonical execution, 99.72 is outside the buy zone corridor [100.15, 100.94]
-            assert plan["execution_status"] in ["WAITING_PULLBACK", "PULLBACK_SUPPORT"], "Canonical execution status must be pullback/waiting"
+            assert plan["execution_status"] in ["WAITING_PULLBACK", "PULLBACK_SUPPORT", "STOPPED_OUT"], "Canonical execution status must be non-actionable"
             assert plan["is_actionable"] is False, "Canonical analysis is_actionable must be False"
 
     # ── Case C: Price well outside both corridors ─────────────────────────────

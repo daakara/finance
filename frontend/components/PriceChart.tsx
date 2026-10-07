@@ -451,14 +451,15 @@ export default function PriceChart({
 
     // CHART-004: Stop loss parity (stop_loss)
     if (typeof optimalExecution.stop_loss === "number" && optimalExecution.stop_loss > 0) {
+      const isStopActive = optimalExecution.execution_stop_visible !== false;
       lines.push(
         candlestickSeriesRef.current.createPriceLine({
           price: optimalExecution.stop_loss,
-          color: "#f43f5e", // Rose
-          lineWidth: 2,
-          lineStyle: LineStyle.Solid,
+          color: isStopActive ? "#f43f5e" : "#94a3b8",
+          lineWidth: isStopActive ? 2 : 1,
+          lineStyle: isStopActive ? LineStyle.Solid : LineStyle.Dotted,
           axisLabelVisible: true,
-          title: "Stop Loss",
+          title: isStopActive ? "Stop Loss" : "Invalidation Floor",
         })
       );
     }

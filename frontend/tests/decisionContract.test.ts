@@ -25,6 +25,7 @@ console.log("[OK] Actionable execution statuses verified");
 // 2. Verify Non-Actionable Statuses
 const nonActionable = [
   "WAITING_PULLBACK",
+  "EXTENDED_ABOVE_BUY_ZONE",
   "IN_BUY_ZONE_AWAITING_TRIGGER",
   "APPROACHING_TARGET",
   "STOPPED_OUT",

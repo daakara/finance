@@ -421,6 +421,11 @@ export interface OptimalExecutionPlan {
   stage_phase: string;
   vcp_contraction_status: string;
   execution_status?: string;
+  planned_entry?: number | null;
+  structural_invalidation?: number | null;
+  execution_risk?: number | null;
+  market_location?: string | null;
+  execution_stop_visible?: boolean | null;
   breakout_pivot?: number;
   atr_14?: number;
   liquidity_defense?: LiquidityDefenseData;

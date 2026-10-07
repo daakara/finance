@@ -19,6 +19,7 @@ ACTIONABLE_EXECUTION_STATUSES = frozenset({
 
 NON_ACTIONABLE_EXECUTION_STATUSES = frozenset({
     "WAITING_PULLBACK",
+    "EXTENDED_ABOVE_BUY_ZONE",
     "IN_BUY_ZONE_AWAITING_TRIGGER",
     "APPROACHING_TARGET",
     "STOPPED_OUT",
@@ -93,7 +94,7 @@ class OptimalExecutionEngine:
         if math.isnan(atr_14) or atr_14 <= 0:
             atr_14 = current_price * 0.025
         # Clamp ATR between 0.8% and 9.5% of spot price (Phase 22 calibration: prevents distortion on high-beta and defensive assets)
-        atr_14 = min(current_price * 0.095, max(current_price * 0.008, atr_14))
+        atr_14 = round(min(current_price * 0.095, max(current_price * 0.008, atr_14)), dec)
         liquidity_report = LiquidityGuard.evaluate_liquidity(price_df, eval_price)
 
         # Strict Epistemic Invariant: Insufficient history cannot synthesize actionable trade levels
@@ -206,18 +207,71 @@ class OptimalExecutionEngine:
             if entry_min > entry_max:
                 entry_min, entry_max = entry_max, entry_min
             recent_swing_low = float(low.iloc[-5:].min()) if len(close) >= 5 else current_price * 0.96
-            # Structural swing stop: anchored below 5-session swing reaction low with 0.25x ATR buffer
+
+            # Section 4: Planned entry bounded within accumulation corridor
+            planned_entry = round(
+                min(max(current_price, entry_min), entry_max),
+                dec,
+            )
+
+            # Section 5: Structural swing stop anchored below 5-session swing reaction low with 0.25x ATR buffer
             structural_stop = min(recent_swing_low - (0.25 * atr_14), entry_min - min_tick)
-            # Bound raw stop between entry_min * 0.935 and entry_min * 0.970
             raw_stop = max(entry_min * 0.935, min(entry_min * 0.970, structural_stop))
-            # Strictly cap Swing risk while guaranteeing stop_loss < entry_min
-            stop_loss = round(min(entry_min - min_tick, raw_stop), dec)
-            if stop_loss >= entry_min:
-                stop_loss = round(entry_min - max(min_tick, 0.5 * atr_14), dec)
-            take_profit_1 = round(max(entry_max + (1.25 * atr_14), current_price * 1.045), dec)
-            if take_profit_1 <= entry_max:
-                take_profit_1 = round(entry_max + max(min_tick, 1.0 * atr_14), dec)
-            take_profit_2 = round(max(take_profit_1 + min_tick, take_profit_1 + (1.75 * atr_14)), dec)
+            structural_invalidation = round(min(entry_min - min_tick, raw_stop), dec)
+            stop_loss = structural_invalidation
+
+            # Section 6: Execution risk
+            execution_risk = round(
+                max(
+                    min_tick,
+                    planned_entry - structural_invalidation,
+                ),
+                dec,
+            )
+
+            # Section 7: Ratified TP1 Authority (replaces spot-chasing)
+            tp1_rr = round(
+                planned_entry + (1.85 * execution_risk),
+                dec,
+            )
+            tp1_atr = round(
+                entry_max + (1.25 * atr_14),
+                dec,
+            )
+            take_profit_1 = round(
+                max(
+                    tp1_rr,
+                    tp1_atr,
+                    entry_max + min_tick,
+                ),
+                dec,
+            )
+            while round((take_profit_1 - planned_entry) / execution_risk, 4) < 1.85:
+                take_profit_1 = round(take_profit_1 + min_tick, dec)
+
+            # Section 8: Ratified TP2 Runner Contract & Separation Invariant
+            tp2_spread = max(
+                1.5 * atr_14,
+                1.0 * execution_risk,
+            )
+            take_profit_2 = round(
+                take_profit_1 + tp2_spread,
+                dec,
+            )
+            minimum_separation = round(
+                max(
+                    min_tick,
+                    1.0 * atr_14,
+                    0.75 * execution_risk,
+                    0.05 * planned_entry,
+                ),
+                dec,
+            )
+            if take_profit_2 - take_profit_1 < minimum_separation:
+                take_profit_2 = round(
+                    take_profit_1 + minimum_separation,
+                    dec,
+                )
 
             if is_stage_4_downtrend:
                 setup_name = "Stage 4 Correction / Base Building Required"
@@ -229,6 +283,8 @@ class OptimalExecutionEngine:
                 breakout_pivot = round(min(current_price * 1.16, max(sma_50, current_price * 1.04)), dec) if sma_50 is not None else round(current_price * 1.05, dec)
                 take_profit_1 = round(min(current_price * 1.245, max(breakout_pivot * 1.08, current_price * 1.12)), dec)
                 take_profit_2 = round(min(current_price * 1.35, max(breakout_pivot * 1.16, current_price * 1.20)), dec)
+                if take_profit_2 - take_profit_1 < minimum_separation:
+                    take_profit_2 = round(take_profit_1 + minimum_separation, dec)
             elif sma_50 is None:
                 setup_name = "Trend Evidence Incomplete (< 50 Sessions)"
                 thesis = "Insufficient historical sessions to compute 50-day moving average. Maintain defensive risk control."
@@ -252,31 +308,46 @@ class OptimalExecutionEngine:
         # stop_loss < entry_min <= entry_max < take_profit_1 < take_profit_2
         entry_min = round(entry_min, dec)
         entry_max = round(max(entry_min, entry_max), dec)
-        stop_loss = round(min(stop_loss, entry_min - max(min_tick, 0.15 * atr_14)), dec)
-        min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
-        stop_loss = max(min_stop_floor, stop_loss)
-        if stop_loss >= current_price:
-            stop_loss = round(current_price * 0.95, dec)
-        
-        # Ensure TP1 satisfies minimum institutional R:R >= 1.85:1 vs current price and stop loss
-        risk_per_share = max(min_tick, current_price - stop_loss)
-        min_tp1_for_rr = current_price + (1.85 * risk_per_share)
-        take_profit_1 = round(max(take_profit_1, min_tp1_for_rr, entry_max + max(min_tick, 0.5 * atr_14)), dec)
-        if take_profit_1 <= current_price:
-            take_profit_1 = round(current_price + (1.85 * risk_per_share), dec)
-        take_profit_2 = round(max(take_profit_2, take_profit_1 + max(min_tick, 0.5 * atr_14)), dec)
-        if take_profit_2 <= take_profit_1:
-            take_profit_2 = round(take_profit_1 + max(min_tick, 0.5 * atr_14), dec)
 
-        # Calculate multi-stage blended reward (50% at TP1 + 50% at TP2) for institutional execution
-        tp1_reward = max(min_tick, take_profit_1 - current_price)
-        tp2_reward = max(min_tick, take_profit_2 - current_price)
-        blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
-        
-        blended_rr = round(blended_reward / risk_per_share, 2)
-        
-        # Enforce realistic bounds with minimum 1.85:1 floor without artificial buy-zone inflation (Phase 22 calibration)
-        rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
+        if user_role == "DAY_TRADER":
+            stop_loss = round(min(stop_loss, entry_min - max(min_tick, 0.15 * atr_14)), dec)
+            min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
+            stop_loss = max(min_stop_floor, stop_loss)
+            if stop_loss >= current_price:
+                stop_loss = round(current_price * 0.95, dec)
+
+            # Ensure TP1 satisfies minimum institutional R:R >= 1.85:1 vs current price and stop loss
+            risk_per_share = round(max(min_tick, current_price - stop_loss), dec)
+            min_tp1_for_rr = current_price + (1.85 * risk_per_share)
+            take_profit_1 = round(max(take_profit_1, min_tp1_for_rr, entry_max + max(min_tick, 0.5 * atr_14)), dec)
+            if take_profit_1 <= current_price:
+                take_profit_1 = round(current_price + (1.85 * risk_per_share), dec)
+            take_profit_2 = round(max(take_profit_2, take_profit_1 + max(min_tick, 0.5 * atr_14)), dec)
+            if take_profit_2 <= take_profit_1:
+                take_profit_2 = round(take_profit_1 + max(min_tick, 0.5 * atr_14), dec)
+
+            # Calculate multi-stage blended reward (50% at TP1 + 50% at TP2) for institutional execution
+            tp1_reward = max(min_tick, take_profit_1 - current_price)
+            tp2_reward = max(min_tick, take_profit_2 - current_price)
+            blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
+            blended_rr = round(blended_reward / risk_per_share, 2)
+            rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
+
+            planned_entry = current_price
+            structural_invalidation = stop_loss
+            execution_risk = risk_per_share
+        else:
+            # Long Mode: Structural invalidation is authoritative and must not be mutated by spot risk clamps
+            min_stop_floor = 0.01 if current_price >= 1.0 else max(0.00005, current_price * 0.5)
+            structural_invalidation = max(min_stop_floor, structural_invalidation)
+            stop_loss = structural_invalidation
+            execution_risk = round(max(min_tick, planned_entry - structural_invalidation), dec)
+
+            tp1_reward = max(min_tick, take_profit_1 - planned_entry)
+            tp2_reward = max(min_tick, take_profit_2 - planned_entry)
+            blended_reward = 0.50 * tp1_reward + 0.50 * tp2_reward
+            blended_rr = round(blended_reward / execution_risk, 2)
+            rr_ratio = round(min(5.0, max(1.85, blended_rr)), 2)
 
         # Check confirmation / stabilization candle
         open_series = price_df["Open"] if "Open" in price_df.columns else (price_df["open"] if "open" in price_df.columns else None)
@@ -297,23 +368,63 @@ class OptimalExecutionEngine:
         # 4. Holding 20 EMA: close >= ema_20
         is_stabilized = (range_pos >= 0.45) or (last_close >= last_open) or (last_close >= prev_close_val) or (last_close >= ema_20)
 
-        raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
         if user_role == "DAY_TRADER":
+            raw_stop_pct = round(((stop_loss - current_price) / current_price) * 100, 2)
             stop_loss_pct = max(-2.2, min(-0.9, raw_stop_pct))
-        else:
-            stop_loss_pct = max(-6.5, min(-3.5, raw_stop_pct))
-
-        if stop_loss is not None and eval_price < stop_loss:
-            exec_status = "STOPPED_OUT"
-        elif entry_min is not None and entry_max is not None and eval_price >= entry_min and eval_price <= entry_max:
-            if is_stabilized:
-                exec_status = "IN_BUY_ZONE"
+            if stop_loss is not None and eval_price < stop_loss:
+                exec_status = "STOPPED_OUT"
+            elif entry_min is not None and entry_max is not None and eval_price >= entry_min and eval_price <= entry_max:
+                if is_stabilized:
+                    exec_status = "IN_BUY_ZONE"
+                else:
+                    exec_status = "IN_BUY_ZONE_AWAITING_TRIGGER"
+            elif take_profit_1 is not None and entry_max is not None and eval_price > entry_max and eval_price < take_profit_1:
+                exec_status = "APPROACHING_TARGET"
             else:
-                exec_status = "IN_BUY_ZONE_AWAITING_TRIGGER"
-        elif take_profit_1 is not None and entry_max is not None and eval_price > entry_max and eval_price < take_profit_1:
-            exec_status = "APPROACHING_TARGET"
+                exec_status = "WAITING_PULLBACK"
         else:
-            exec_status = "WAITING_PULLBACK"
+            # Section 13: Stop percentage relative to planned_entry (not spot)
+            stop_loss_pct = round(((structural_invalidation - planned_entry) / planned_entry) * 100, 2)
+
+            # Section 9: No-position entry-readiness precedence & Option B OR policy
+            extension_threshold = round(
+                entry_max
+                + min(
+                    entry_max * 0.05,
+                    1.0 * atr_14,
+                ),
+                dec,
+            )
+
+            if eval_price < structural_invalidation:
+                exec_status = "STOPPED_OUT"
+            elif entry_min <= eval_price <= entry_max:
+                exec_status = (
+                    "IN_BUY_ZONE"
+                    if is_stabilized
+                    else "IN_BUY_ZONE_AWAITING_TRIGGER"
+                )
+            elif eval_price > entry_max and eval_price <= extension_threshold:
+                exec_status = "EXTENDED_ABOVE_BUY_ZONE"
+            else:
+                exec_status = "WAITING_PULLBACK"
+
+        # Section 10: Market Location State
+        if eval_price < structural_invalidation:
+            market_location = "BELOW_BASE"
+        elif eval_price < entry_min:
+            market_location = "BELOW_BUY_ZONE"
+        elif eval_price <= entry_max:
+            market_location = "IN_BUY_ZONE"
+        elif eval_price <= take_profit_1:
+            market_location = "BETWEEN_BASE_AND_TP1"
+        elif eval_price <= take_profit_2:
+            market_location = "BETWEEN_TP1_AND_TP2"
+        else:
+            market_location = "ABOVE_TP2"
+
+        # Section 11: Execution stop visibility
+        execution_stop_visible = bool(exec_status in ACTIONABLE_EXECUTION_STATUSES)
 
         distance_to_entry = round(((eval_price - entry_min) / entry_min) * 100, 2) if entry_min else None
         distance_to_stop = round(((eval_price - stop_loss) / eval_price) * 100, 2) if (stop_loss and eval_price > 0) else None
@@ -326,6 +437,9 @@ class OptimalExecutionEngine:
             "eval_price": eval_price,
             "optimal_entry_min": entry_min,
             "optimal_entry_max": entry_max,
+            "planned_entry": planned_entry,
+            "structural_invalidation": structural_invalidation,
+            "execution_risk": execution_risk,
             "stop_loss": stop_loss,
             "stop_loss_pct": stop_loss_pct,
             "take_profit_1": take_profit_1,
@@ -337,7 +451,9 @@ class OptimalExecutionEngine:
             "distance_to_tp1_pct": distance_to_tp1,
             "risk_reward_ratio": max(1.85, rr_ratio),
             "execution_status": exec_status,
+            "market_location": market_location,
             "is_in_buy_zone": exec_status in ACTIONABLE_EXECUTION_STATUSES,
+            "execution_stop_visible": execution_stop_visible,
             "setup_pattern": setup_name,
             "entry_thesis": thesis,
             "invalidation_condition": invalidation,
@@ -429,100 +545,235 @@ class OptimalExecutionEngine:
         if raw_entry_max is None or math.isnan(raw_entry_max) or raw_entry_max <= 0:
             raw_entry_max = spot * (1.008 if user_role == "DAY_TRADER" else 1.018)
 
-        entry_min = round(raw_entry_min, dec)
-        entry_max = round(raw_entry_max, dec)
-        if entry_max < entry_min:
-            entry_max = entry_min
+        emin = min(raw_entry_min, raw_entry_max)
+        emax = max(raw_entry_min, raw_entry_max)
+        entry_min = round(emin, dec)
+        entry_max = round(emax, dec)
         plan["optimal_entry_min"] = entry_min
         plan["optimal_entry_max"] = entry_max
 
         # 2. Stop loss calculation and clamping
-        raw_stop = plan.get("stop_loss")
-        if raw_stop is None or math.isnan(raw_stop) or raw_stop <= 0:
-            raw_stop = spot * (0.985 if user_role == "DAY_TRADER" else 0.95)
-
-        raw_stop_pct = round(((raw_stop - spot) / spot) * 100, 2)
         if user_role == "DAY_TRADER":
+            raw_stop = plan.get("stop_loss")
+            if raw_stop is None or math.isnan(raw_stop) or raw_stop <= 0:
+                raw_stop = spot * 0.985
+
+            raw_stop_pct = round(((raw_stop - spot) / spot) * 100, 2)
             plan["stop_loss_pct"] = max(-2.2, min(-0.9, raw_stop_pct))
             plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
-        else:
-            plan["stop_loss_pct"] = max(-6.5, min(-3.5, raw_stop_pct))
-            plan["stop_loss"] = round(spot * (1.0 + (plan["stop_loss_pct"] / 100.0)), dec)
 
-        if plan["stop_loss"] >= plan["optimal_entry_min"]:
-            plan["stop_loss"] = round(plan["optimal_entry_min"] - max(min_tick, spot * 0.005), dec)
+            if plan["stop_loss"] >= plan["optimal_entry_min"]:
+                plan["stop_loss"] = round(plan["optimal_entry_min"] - max(min_tick, spot * 0.005), dec)
 
-        if plan["stop_loss"] >= spot:
-            plan["stop_loss"] = round(spot * 0.98, dec)
             if plan["stop_loss"] >= spot:
-                plan["stop_loss"] = round(spot - min_tick, dec)
+                plan["stop_loss"] = round(spot * 0.98, dec)
+                if plan["stop_loss"] >= spot:
+                    plan["stop_loss"] = round(spot - min_tick, dec)
 
-        min_stop_floor = 0.01 if spot >= 1.0 else max(0.00005, spot * 0.5)
-        plan["stop_loss"] = max(min_stop_floor, plan["stop_loss"])
-        if plan["stop_loss"] >= spot:
-            plan["stop_loss"] = round(spot * 0.90, dec)
+            min_stop_floor = 0.01 if spot >= 1.0 else max(0.00005, spot * 0.5)
+            plan["stop_loss"] = max(min_stop_floor, plan["stop_loss"])
+            if plan["stop_loss"] >= spot:
+                plan["stop_loss"] = round(spot * 0.90, dec)
 
-        plan["stop_loss_pct"] = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
+            plan["stop_loss_pct"] = round(((plan["stop_loss"] - spot) / spot) * 100, 2)
 
-        # Re-verify optimal_entry_min > stop_loss
-        if plan["optimal_entry_min"] <= plan["stop_loss"]:
-            plan["optimal_entry_min"] = round(plan["stop_loss"] + min_tick, dec)
-            if plan["optimal_entry_max"] < plan["optimal_entry_min"]:
-                plan["optimal_entry_max"] = plan["optimal_entry_min"]
+            # Re-verify optimal_entry_min > stop_loss
+            if plan["optimal_entry_min"] <= plan["stop_loss"]:
+                plan["optimal_entry_min"] = round(plan["stop_loss"] + min_tick, dec)
+                if plan["optimal_entry_max"] < plan["optimal_entry_min"]:
+                    plan["optimal_entry_max"] = plan["optimal_entry_min"]
 
-        # 3. Target 1 & 2 bounds and progression (Mandatory R:R >= 1.85:1 floor)
-        risk = max(min_tick, spot - plan["stop_loss"])
-        min_tp1_for_rr = spot + (1.85 * risk)
+            # 3. Target 1 & 2 bounds and progression (Mandatory R:R >= 1.85:1 floor)
+            risk = round(max(min_tick, spot - plan["stop_loss"]), dec)
+            min_tp1_for_rr = spot + (1.85 * risk)
 
-        raw_tp1 = plan.get("take_profit_1")
-        if raw_tp1 is None or math.isnan(raw_tp1) or raw_tp1 <= spot:
-            raw_tp1_pct = 4.0 if user_role == "DAY_TRADER" else 6.0
+            raw_tp1 = plan.get("take_profit_1")
+            if raw_tp1 is None or math.isnan(raw_tp1) or raw_tp1 <= spot:
+                raw_tp1_pct = 4.0
+            else:
+                raw_tp1_pct = round(((raw_tp1 - spot) / spot) * 100, 2)
+
+            clamped_tp1_pct = max(1.5 if spot < 1.0 else 4.0, min(24.5, raw_tp1_pct))
+            candidate_tp1 = round(spot * (1.0 + (clamped_tp1_pct / 100.0)), dec)
+
+            tp1 = round(max(candidate_tp1, min_tp1_for_rr, plan["optimal_entry_max"] + min_tick), dec)
+            while tp1 <= plan["optimal_entry_max"] or tp1 <= spot or round((tp1 - spot) / risk, 4) < 1.85:
+                tp1 = round(tp1 + min_tick, dec)
+
+            plan["take_profit_1"] = tp1
+            plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+
+            raw_tp2 = plan.get("take_profit_2")
+            if raw_tp2 is None or math.isnan(raw_tp2) or raw_tp2 <= tp1:
+                raw_tp2_pct = plan["take_profit_1_pct"] + 2.0
+            else:
+                raw_tp2_pct = round(((raw_tp2 - spot) / spot) * 100, 2)
+
+            clamped_tp2_pct = max(plan["take_profit_1_pct"] + 1.0, min(45.0, raw_tp2_pct))
+            candidate_tp2 = round(spot * (1.0 + (clamped_tp2_pct / 100.0)), dec)
+            tp2 = round(max(candidate_tp2, plan["take_profit_1"] + min_tick), dec)
+            while tp2 <= plan["take_profit_1"]:
+                tp2 = round(tp2 + min_tick, dec)
+
+            plan["take_profit_2"] = tp2
+            plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+
+            # 4. Stage 4 Breakout Pivot bounds (Day mode fallback)
+            if plan.get("breakout_pivot") is not None:
+                clamped_pivot = min(spot * 1.16, max(spot * 1.04, plan["breakout_pivot"]))
+                plan["breakout_pivot"] = round(clamped_pivot, dec)
+                if plan["take_profit_1"] < plan["breakout_pivot"] * 1.04:
+                    plan["take_profit_1"] = round(max(plan["breakout_pivot"] * 1.08, min_tp1_for_rr), dec)
+                    while round((plan["take_profit_1"] - spot) / risk, 4) < 1.85:
+                        plan["take_profit_1"] = round(plan["take_profit_1"] + min_tick, dec)
+                    plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+                if plan["take_profit_2"] <= plan["take_profit_1"]:
+                    plan["take_profit_2"] = round(plan["take_profit_1"] + max(min_tick, plan["take_profit_1"] * 0.05), dec)
+                    while plan["take_profit_2"] <= plan["take_profit_1"]:
+                        plan["take_profit_2"] = round(plan["take_profit_2"] + min_tick, dec)
+                    plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+
+            # 5. Mandatory R:R ratio calculation and clamp floor >= 1.85:1
+            actual_tp1_rr = round((plan["take_profit_1"] - spot) / risk, 2)
+            plan["risk_reward_ratio"] = round(min(5.0, max(1.85, max(actual_tp1_rr, plan.get("risk_reward_ratio", 1.85)))), 2)
+
+            plan["planned_entry"] = plan.get("planned_entry", spot)
+            plan["structural_invalidation"] = plan.get("structural_invalidation", plan["stop_loss"])
+            plan["execution_risk"] = plan.get("execution_risk", risk)
+
+            # 7. Live market spot price re-evaluation for Day Trader
+            eval_p = plan.get("eval_price")
+            eval_p = eval_p if (eval_p is not None and math.isfinite(eval_p) and eval_p > 0) else spot
+            if plan.get("stop_loss") is not None and eval_p < plan["stop_loss"]:
+                plan["execution_status"] = "STOPPED_OUT"
+            elif "execution_status" not in plan or plan.get("execution_status") in ("IN_BUY_ZONE", "IN_BUY_ZONE_AWAITING_TRIGGER", "APPROACHING_TARGET", "WAITING_PULLBACK"):
+                if plan.get("optimal_entry_min") is not None and plan.get("optimal_entry_max") is not None:
+                    if plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
+                        plan["execution_status"] = "IN_BUY_ZONE"
+                    elif plan.get("take_profit_1") is not None and eval_p > plan["optimal_entry_max"] and eval_p < plan["take_profit_1"]:
+                        plan["execution_status"] = "APPROACHING_TARGET"
+                    else:
+                        plan["execution_status"] = "WAITING_PULLBACK"
+
+            if eval_p < plan["stop_loss"]:
+                plan["market_location"] = "BELOW_BASE"
+            elif eval_p < plan["optimal_entry_min"]:
+                plan["market_location"] = "BELOW_BUY_ZONE"
+            elif eval_p <= plan["optimal_entry_max"]:
+                plan["market_location"] = "IN_BUY_ZONE"
+            elif eval_p <= plan["take_profit_1"]:
+                plan["market_location"] = "BETWEEN_BASE_AND_TP1"
+            elif eval_p <= plan["take_profit_2"]:
+                plan["market_location"] = "BETWEEN_TP1_AND_TP2"
+            else:
+                plan["market_location"] = "ABOVE_TP2"
+
         else:
-            raw_tp1_pct = round(((raw_tp1 - spot) / spot) * 100, 2)
+            # Long Mode: Ratified Quantitative Contract
+            # Section 4: Planned entry bounded within accumulation corridor
+            planned_entry = plan.get("planned_entry")
+            if planned_entry is None or math.isnan(planned_entry) or planned_entry <= 0:
+                planned_entry = round(min(max(spot, entry_min), entry_max), dec)
+            plan["planned_entry"] = planned_entry
 
-        clamped_tp1_pct = max(1.5 if spot < 1.0 else 4.0, min(24.5, raw_tp1_pct))
-        candidate_tp1 = round(spot * (1.0 + (clamped_tp1_pct / 100.0)), dec)
+            # Section 5: Structural invalidation (must not be mutated by spot risk clamps)
+            raw_stop = plan.get("structural_invalidation") or plan.get("stop_loss")
+            if raw_stop is None or math.isnan(raw_stop) or raw_stop <= 0:
+                raw_stop = round(entry_min * 0.95, dec)
+            min_stop_floor = 0.01 if spot >= 1.0 else max(0.00005, spot * 0.5)
+            if raw_stop >= spot and plan.get("execution_status") != "STOPPED_OUT":
+                raw_stop = round(min(raw_stop, spot * 0.98), dec)
+            structural_invalidation = round(min(entry_min - min_tick, max(min_stop_floor, raw_stop)), dec)
+            plan["structural_invalidation"] = structural_invalidation
+            plan["stop_loss"] = structural_invalidation
 
-        tp1 = round(max(candidate_tp1, min_tp1_for_rr, plan["optimal_entry_max"] + min_tick), dec)
-        while tp1 <= plan["optimal_entry_max"] or tp1 <= spot or round((tp1 - spot) / risk, 4) < 1.85:
-            tp1 = round(tp1 + min_tick, dec)
+            # Section 13: stop_loss_pct evaluated relative to planned_entry (never spot)
+            plan["stop_loss_pct"] = round(((structural_invalidation - planned_entry) / planned_entry) * 100, 2)
 
-        plan["take_profit_1"] = tp1
-        plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+            # Section 6: Execution risk measured from planned entry to structural invalidation
+            exec_risk = round(max(min_tick, planned_entry - structural_invalidation), dec)
+            plan["execution_risk"] = exec_risk
 
-        raw_tp2 = plan.get("take_profit_2")
-        if raw_tp2 is None or math.isnan(raw_tp2) or raw_tp2 <= tp1:
-            raw_tp2_pct = plan["take_profit_1_pct"] + 2.0
-        else:
-            raw_tp2_pct = round(((raw_tp2 - spot) / spot) * 100, 2)
+            # Section 7: Target 1 (Planned Entry Risk Model)
+            atr_val = plan.get("atr_14") or (spot * 0.03)
+            raw_tp1 = plan.get("take_profit_1")
+            if raw_tp1 is None or math.isnan(raw_tp1) or raw_tp1 <= entry_max:
+                tp1_rr = round(planned_entry + (1.85 * exec_risk), dec)
+                tp1_atr = round(entry_max + (1.25 * atr_val), dec)
+                tp1 = round(max(tp1_rr, tp1_atr, entry_max + min_tick), dec)
+            else:
+                tp1 = round(raw_tp1, dec)
+            while tp1 <= entry_max or round((tp1 - planned_entry) / exec_risk, 4) < 1.85:
+                tp1 = round(tp1 + min_tick, dec)
+            plan["take_profit_1"] = tp1
+            plan["take_profit_1_pct"] = round(((tp1 - spot) / spot) * 100, 2)
 
-        clamped_tp2_pct = max(plan["take_profit_1_pct"] + 1.0, min(45.0, raw_tp2_pct))
-        candidate_tp2 = round(spot * (1.0 + (clamped_tp2_pct / 100.0)), dec)
-        tp2 = round(max(candidate_tp2, plan["take_profit_1"] + min_tick), dec)
-        while tp2 <= plan["take_profit_1"]:
-            tp2 = round(tp2 + min_tick, dec)
+            # Section 8: Target 2 (Runner Model & Separation Invariant)
+            raw_tp2 = plan.get("take_profit_2")
+            tp2_spread = max(1.5 * atr_val, 1.0 * exec_risk)
+            if raw_tp2 is None or math.isnan(raw_tp2) or raw_tp2 <= tp1:
+                tp2 = round(tp1 + tp2_spread, dec)
+            else:
+                tp2 = round(raw_tp2, dec)
 
-        plan["take_profit_2"] = tp2
-        plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+            minimum_separation = round(
+                max(min_tick, 1.0 * atr_val, 0.75 * exec_risk, 0.05 * planned_entry),
+                dec,
+            )
+            if tp2 - tp1 < minimum_separation:
+                tp2 = round(tp1 + minimum_separation, dec)
+            while tp2 <= tp1:
+                tp2 = round(tp2 + min_tick, dec)
 
-        # 4. Stage 4 Breakout Pivot bounds
-        if plan.get("breakout_pivot") is not None:
-            clamped_pivot = min(spot * 1.16, max(spot * 1.04, plan["breakout_pivot"]))
-            plan["breakout_pivot"] = round(clamped_pivot, dec)
-            if plan["take_profit_1"] < plan["breakout_pivot"] * 1.04:
-                plan["take_profit_1"] = round(max(plan["breakout_pivot"] * 1.08, min_tp1_for_rr), dec)
-                while round((plan["take_profit_1"] - spot) / risk, 4) < 1.85:
-                    plan["take_profit_1"] = round(plan["take_profit_1"] + min_tick, dec)
+            plan["take_profit_2"] = tp2
+            plan["take_profit_2_pct"] = round(((tp2 - spot) / spot) * 100, 2)
+
+            # Stage 4 Breakout Pivot bounds
+            if plan.get("breakout_pivot") is not None:
+                clamped_pivot = min(spot * 1.16, max(spot * 1.04, plan["breakout_pivot"]))
+                plan["breakout_pivot"] = round(clamped_pivot, dec)
+                if plan["take_profit_2"] <= plan["take_profit_1"]:
+                    plan["take_profit_2"] = round(plan["take_profit_1"] + minimum_separation, dec)
                 plan["take_profit_1_pct"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
-            if plan["take_profit_2"] <= plan["take_profit_1"]:
-                plan["take_profit_2"] = round(plan["take_profit_1"] + max(min_tick, plan["take_profit_1"] * 0.05), dec)
-                while plan["take_profit_2"] <= plan["take_profit_1"]:
-                    plan["take_profit_2"] = round(plan["take_profit_2"] + min_tick, dec)
                 plan["take_profit_2_pct"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
 
-        # 5. Mandatory R:R ratio calculation and clamp floor >= 1.85:1
-        actual_tp1_rr = round((plan["take_profit_1"] - spot) / risk, 2)
-        plan["risk_reward_ratio"] = round(min(5.0, max(1.85, max(actual_tp1_rr, plan.get("risk_reward_ratio", 1.85)))), 2)
+            # R:R ratio calculation relative to planned entry
+            tp1_gain = max(min_tick, plan["take_profit_1"] - plan["planned_entry"])
+            tp2_gain = max(min_tick, plan["take_profit_2"] - plan["planned_entry"])
+            blended_reward = 0.50 * tp1_gain + 0.50 * tp2_gain
+            blended_rr = round(blended_reward / plan["execution_risk"], 2)
+            plan["risk_reward_ratio"] = round(min(5.0, max(1.85, blended_rr)), 2)
+
+            # Section 9: Status determination via Option B (OR policy)
+            eval_p = plan.get("eval_price")
+            eval_p = eval_p if (eval_p is not None and math.isfinite(eval_p) and eval_p > 0) else spot
+            ext_threshold = round(plan["optimal_entry_max"] + min(plan["optimal_entry_max"] * 0.05, 1.0 * atr_val), dec)
+
+            if eval_p < plan["structural_invalidation"]:
+                plan["execution_status"] = "STOPPED_OUT"
+            elif plan.get("execution_status") == "APPROACHING_TARGET":
+                plan["execution_status"] = "WAITING_PULLBACK"
+            elif "execution_status" not in plan or plan.get("execution_status") is None:
+                if plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
+                    plan["execution_status"] = "IN_BUY_ZONE"
+                elif eval_p > plan["optimal_entry_max"] and eval_p <= ext_threshold:
+                    plan["execution_status"] = "EXTENDED_ABOVE_BUY_ZONE"
+                else:
+                    plan["execution_status"] = "WAITING_PULLBACK"
+
+            # Section 10: Market Location State
+            if eval_p < plan["structural_invalidation"]:
+                plan["market_location"] = "BELOW_BASE"
+            elif eval_p < plan["optimal_entry_min"]:
+                plan["market_location"] = "BELOW_BUY_ZONE"
+            elif eval_p <= plan["optimal_entry_max"]:
+                plan["market_location"] = "IN_BUY_ZONE"
+            elif eval_p <= plan["take_profit_1"]:
+                plan["market_location"] = "BETWEEN_BASE_AND_TP1"
+            elif eval_p <= plan["take_profit_2"]:
+                plan["market_location"] = "BETWEEN_TP1_AND_TP2"
+            else:
+                plan["market_location"] = "ABOVE_TP2"
 
         # 6. Liquidity Guard execution hazard annotation
         liq = plan.get("liquidity_defense")
@@ -530,25 +781,9 @@ class OptimalExecutionEngine:
             plan["execution_hazard"] = True
             plan["liquidity_warning"] = liq.get("pro_summary")
 
-        # 7. Live market spot price re-evaluation for execution status
-        eval_p = plan.get("eval_price")
-        if eval_p is not None and plan.get("stop_loss") is not None and eval_p < plan["stop_loss"]:
-            plan["execution_status"] = "STOPPED_OUT"
-        elif "execution_status" not in plan:
-            eval_p = eval_p if eval_p is not None else spot
-            if plan.get("stop_loss") is not None and eval_p < plan["stop_loss"]:
-                plan["execution_status"] = "STOPPED_OUT"
-            elif plan.get("optimal_entry_min") is not None and plan.get("optimal_entry_max") is not None:
-                if plan["optimal_entry_min"] <= eval_p <= plan["optimal_entry_max"]:
-                    plan["execution_status"] = "IN_BUY_ZONE"
-                elif plan.get("take_profit_1") is not None and eval_p > plan["optimal_entry_max"] and eval_p < plan["take_profit_1"]:
-                    plan["execution_status"] = "APPROACHING_TARGET"
-                else:
-                    plan["execution_status"] = "WAITING_PULLBACK"
-
+        # 7. Actionability, buy zone, and execution stop visibility flags
         plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-
-        # 8. Actionability verification based on authoritative taxonomy and non-null levels
+        plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
         plan["is_actionable"] = bool(
             plan.get("stop_loss") is not None
             and plan.get("optimal_entry_max") is not None
