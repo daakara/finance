@@ -34,6 +34,7 @@ interface AdaptiveTerminalProps {
   analysisReferencePrice?: number | null;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  isDemo?: boolean;
 }
 
 export default function AdaptiveTerminal({
@@ -55,6 +56,7 @@ export default function AdaptiveTerminal({
   analysisReferencePrice,
   chartSlot,
   planSlot,
+  isDemo = false,
 }: AdaptiveTerminalProps) {
   const searchParams = useSearchParams();
   const fromGoal = searchParams.get("fromGoal");
@@ -137,18 +139,8 @@ export default function AdaptiveTerminal({
         </div>
       )}
 
-      {/* ⏱️ Authoritative Trading Horizon & Evidence Provenance Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400 text-xs font-bold">Horizon:</span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold font-mono bg-[#131d2c] border border-cyan-900/60 text-cyan-300">
-            <span>{userRole === "DAY_TRADER" ? "⚡ INTRADAY (Day Scalp)" : "🏛️ SWING (Multi-Day)"}</span>
-          </span>
-          <span className="text-xs text-slate-500 hidden md:inline">
-            (Governed by Trading Horizon switch)
-          </span>
-        </div>
-
+      {/* 🛡️ Evidence State Provenance Bar */}
+      <div className="flex items-center justify-end bg-[#080d16] px-3 py-1.5 rounded-xl border border-[#1b2537] text-xs font-mono">
         {/* 🛡️ Evidence State Provenance Badge */}
         <div
           title={evidenceBadge.tooltip}
@@ -194,6 +186,7 @@ export default function AdaptiveTerminal({
           onOpenWhy={() => setIsWhyOpen(true)}
           chartSlot={chartSlot}
           planSlot={planSlot}
+          isDemo={isDemo}
         />
       )}
 

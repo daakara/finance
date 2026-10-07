@@ -327,6 +327,7 @@ function TerminalContent() {
               liveSpotPrice={data?.liveSpotPrice}
               liveFreshness={data?.liveFreshness}
               analysisReferencePrice={data?.analysisReferencePrice}
+              isDemo={!hasExplicitSymbol}
               chartSlot={
                 <div id="market-workspace-chart" className="min-h-[380px] sm:min-h-[420px]">
                   {data && (
@@ -450,38 +451,6 @@ function TerminalContent() {
               }
             />
           )}
-
-          {/* Hub Guidance & Orientation — positioned below chart to prioritize verdict+chart viewport */}
-          <PageIntro
-            hubId="analysis"
-            title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
-            purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
-            badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
-            symbol={hasExplicitSymbol ? selectedSymbol : null}
-            isDemo={!hasExplicitSymbol}
-            demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
-            primaryAction={{
-              label: `Prepare Trade Setup (${selectedSymbol}) →`,
-              href: `/setups?symbol=${selectedSymbol}`,
-              onClick: () => trackAnalysisToSetup(selectedSymbol),
-            }}
-            secondaryAction={{
-              label: "Scan Radar Candidates →",
-              href: "/radar",
-            }}
-          />
-
-          {/* Intent-First Home Hero: only when no explicit asset is being analyzed */}
-          {!hasExplicitSymbol && (
-            <IntentHero onSelectSymbol={handleSelectSymbol} />
-          )}
-
-          {/* Weekly High-Confluence Alpha Spotlight (Auto-folded on dedicated ticker search) */}
-          <WeeklyConfluenceSpotlight
-            defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
-            onSelectSymbol={handleSelectSymbol}
-            selectedSymbol={selectedSymbol}
-          />
 
           {/* Intelligent Did You Mean Ticker Recommendation Banner */}
           {aliasRecommendation && aliasRecommendation.canonicalTicker.toUpperCase() !== selectedSymbol.toUpperCase() && (
@@ -678,6 +647,38 @@ function TerminalContent() {
                 <RiskMetricsCard analyticsData={data || undefined} userRole={userRole} />
               </div>
             )}
+          </div>
+
+          {/* Below-Fold Narrative & Discovery Guidance */}
+          <div className="space-y-4 pt-4 border-t border-[#182335]">
+            <PageIntro
+              hubId="analysis"
+              title={hasExplicitSymbol ? `Analysis — ${selectedSymbol}` : "Analysis"}
+              purpose="Evaluate whether an asset deserves capital based on confluence, technicals, and risk."
+              badge={hasExplicitSymbol ? "Active Target" : "Demonstration Mode"}
+              symbol={hasExplicitSymbol ? selectedSymbol : null}
+              isDemo={!hasExplicitSymbol}
+              demoNotice={!hasExplicitSymbol ? `Displaying ${selectedSymbol} as a demonstration asset. Search any ticker to analyze your target.` : undefined}
+              primaryAction={{
+                label: `Prepare Trade Setup (${selectedSymbol}) →`,
+                href: `/setups?symbol=${selectedSymbol}`,
+                onClick: () => trackAnalysisToSetup(selectedSymbol),
+              }}
+              secondaryAction={{
+                label: "Scan Radar Candidates →",
+                href: "/radar",
+              }}
+            />
+
+            {!hasExplicitSymbol && (
+              <IntentHero onSelectSymbol={handleSelectSymbol} />
+            )}
+
+            <WeeklyConfluenceSpotlight
+              defaultCollapsed={selectedSymbol.toUpperCase() !== "SPY"}
+              onSelectSymbol={handleSelectSymbol}
+              selectedSymbol={selectedSymbol}
+            />
           </div>
         </section>
 

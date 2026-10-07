@@ -12,6 +12,7 @@ interface StandardTerminalViewProps {
   onOpenWhy: () => void;
   chartSlot?: React.ReactNode;
   planSlot?: React.ReactNode;
+  isDemo?: boolean;
 }
 
 export default function StandardTerminalView({
@@ -20,6 +21,7 @@ export default function StandardTerminalView({
   onOpenWhy,
   chartSlot,
   planSlot,
+  isDemo = false,
 }: StandardTerminalViewProps) {
   const kl = insight.standard.keyLevels;
   const unmetConditions = deriveUnmetConditions(insight);
@@ -34,9 +36,19 @@ export default function StandardTerminalView({
       >
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
           <div>
-            <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
-              ARX Analytical Verdict
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                ARX Analytical Verdict
+              </span>
+              {isDemo && (
+                <span
+                  id="demo-asset-tag"
+                  className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-950/80 text-amber-300 border border-amber-800/80"
+                >
+                  Demo Asset
+                </span>
+              )}
+            </div>
             <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-0.5">
               {insight.verdictLabel}
             </h2>
@@ -184,6 +196,7 @@ export default function StandardTerminalView({
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-slate-300 font-bold">Confluence Breakdown</span>
             <button
+              id="why-score-btn"
               onClick={onOpenWhy}
               aria-label={`Why Score ${insight.setupScore}? Inspect Confluence Attribution`}
               className="text-xs text-cyan-400 hover:text-cyan-300 underline font-bold cursor-pointer py-1 px-1 min-h-[36px] inline-flex items-center focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none rounded"
