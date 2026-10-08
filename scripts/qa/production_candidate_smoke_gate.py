@@ -162,12 +162,12 @@ def evaluate_instrument(inst: Dict[str, Any]) -> Dict[str, Any]:
             "atr_14": inst["price"] * 0.02,
         }
         plan = OptimalExecutionEngine._enforce_execution_invariants(raw_plan, "LONG_TERM")
-        
+
         # Invariant checks
         if not (plan["stop_loss"] < plan["optimal_entry_min"] <= plan["optimal_entry_max"] < plan["take_profit_1"] < plan["take_profit_2"]):
             findings.append(f"FAILED: Execution ladder order violated: Stop {plan['stop_loss']} < Entry {plan['optimal_entry_min']}-{plan['optimal_entry_max']} < TP1 {plan['take_profit_1']} < TP2 {plan['take_profit_2']}")
             status = "HOLD"
-        
+
         if plan["risk_reward_ratio"] <= 0:
             findings.append(f"FAILED: Risk:Reward non-positive: {plan['risk_reward_ratio']}")
             status = "HOLD"

@@ -310,7 +310,7 @@ Prior tests asserted `expect(container).toBeDefined()`. Tests mocked a static ar
 
 ## 6. Pre-Flight Semantic Quality Audit: Deterministic Invariants vs Subjective Quality
 
-Pre-Flight is an **execution-readiness validator**, not a secondary decision engine. 
+Pre-Flight is an **execution-readiness validator**, not a secondary decision engine.
 
 ### 6.1 Deterministic Semantic Invariants (Automated & Enforced)
 1. **Clearance Gate Invariant**:
@@ -398,10 +398,10 @@ Timestamp:   2026-10-08T06:14:51.825378+00:00
 Release SHA: 3ae385c7d9b338d0dde96e0e0d6ecfebfc36debb
 
 Auditing 5 Representative Canonical Instruments...
-  [PASS] AAPL            Type: COMMON_STOCK    State: ACTIONABLE_SETUP       Actionable: True 
-  [PASS] SPY             Type: ETF             State: ACTIONABLE_SETUP       Actionable: True 
-  [PASS] TSM             Type: ADR             State: ACTIONABLE_SETUP       Actionable: True 
-  [PASS] AMT             Type: REIT            State: ACTIONABLE_SETUP       Actionable: True 
+  [PASS] AAPL            Type: COMMON_STOCK    State: ACTIONABLE_SETUP       Actionable: True
+  [PASS] SPY             Type: ETF             State: ACTIONABLE_SETUP       Actionable: True
+  [PASS] TSM             Type: ADR             State: ACTIONABLE_SETUP       Actionable: True
+  [PASS] AMT             Type: REIT            State: ACTIONABLE_SETUP       Actionable: True
   [PASS] UNKNOWN_TICKER  Type: UNKNOWN         State: UNVERIFIED             Actionable: False
 
 -------------------------------------------------------------------------------
@@ -578,9 +578,13 @@ ORIGINAL_QA_BASE_SHA =
 CURRENT_CANONICAL_SHA =
   6f0559d93a681c3bb7c3a89883e0a820934a4a7a
 CURRENT_PRODUCTION_DEPLOYMENT_SHA =
+  6f0559d93a681c3bb7c3a89883e0a820934a4a7a
+FUNCTIONAL_RELEASE_SHA =
   5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950
-RECONCILED_QA_HEAD_SHA =
-  59466ae869c9320f3a339af76f05640a26288575
+DEPLOYED_FUNCTIONAL_ANCESTOR_SHA =
+  5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950
+RELEASE_NOTES_COMMIT_SHA =
+  6f0559d93a681c3bb7c3a89883e0a820934a4a7a
 QA_AUDIT_BRANCH =
   audit/arx-production-escape-analysis
 QA_AUDIT_WORKTREE =
@@ -604,10 +608,14 @@ RENDERED_JOURNEY_GAPS =
 PRODUCTION_SMOKE_GAPS =
   5
 REGRESSION_TESTS_ADDED =
-  16
+  24
 SEMANTIC_INVARIANTS_ADDED =
   8
 DOM_COMPONENT_AND_ARCH_TESTS_ADDED =
+  8
+BACKEND_INVARIANT_PROPERTY_TESTS_ADDED =
+  8
+POST_DEPLOY_REDEPLOYMENT_TESTS_ADDED =
   8
 TRUE_BROWSER_E2E_TESTS_ADDED =
   0
@@ -618,9 +626,9 @@ PHYSICAL_IOS_TESTS_EXECUTED =
 RELEASE_SMOKE_CHECKS_ADDED =
   9
 TOTAL_CHANGED_FILES =
-  8
+  9
 QA_ONLY_FILES =
-  8
+  9
 PRODUCTION_FILES =
   0
 QUANT_FILES_CHANGED =
@@ -641,10 +649,20 @@ CURRENT_PRODUCTION_HEALTH_VERIFICATION =
   VERIFIED
 QA_BRANCH_PRODUCTION_VERIFICATION =
   NOT_APPLICABLE_NOT_DEPLOYED
+DOCUMENTATION_ONLY_REDEPLOY_SUPPORTED =
+  YES
+FUNCTIONAL_RELEASE_RESOLUTION_METHOD =
+  RELEASE_NOTE_METADATA_AND_GIT_ANCESTRY
+FUNCTIONAL_RELEASE_IS_ANCESTOR =
+  YES
+RELEASE_NOTE_FOUND =
+  YES
 QA_SYSTEM_STATUS =
   PASS
 CURRENT_PRODUCTION_REMEDIATIONS_REQUIRED =
   NONE
+FINAL_INTEGRATION_GATE =
+  PASS
 INTEGRATION_GATE =
   READY_FOR_INTEGRATION
 NEXT_AUTHORIZED_EVENT =
@@ -662,12 +680,14 @@ At the initiation of the Reconciliation Gate, the repository states were verifie
 | Parameter | Recorded Value | Provenance / Notes |
 | :--- | :--- | :--- |
 | `ORIGINAL_QA_BASE_SHA` | `3ae385c7d9b338d0dde96e0e0d6ecfebfc36debb` | Point of branch divergence for `audit/arx-production-escape-analysis` |
-| `CURRENT_PRODUCTION_DEPLOYMENT_SHA` | `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` | Deployed execution-ladder passive capture candidate |
-| `CURRENT_MAIN_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Fast-forward integration commit on canonical `origin/main` |
+| `CURRENT_PRODUCTION_DEPLOYMENT_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Deployed runtime commit on canonical `origin/main` |
+| `CURRENT_CANONICAL_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Fast-forward integration commit on canonical `origin/main` |
+| `FUNCTIONAL_RELEASE_SHA` | `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` | Documented functional release candidate (passive capture) |
+| `DEPLOYED_FUNCTIONAL_ANCESTOR_SHA` | `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` | Direct ancestor containing substantive functional changes |
+| `RELEASE_NOTES_COMMIT_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Documentation-only commit recording release notes |
 | `REMOTE_MAIN_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Upstream GitHub canonical ref (`refs/heads/main`) |
 | `QA_AUDIT_BRANCH` | `audit/arx-production-escape-analysis` | Dedicated isolated audit worktree |
 | `REBASE_RESULT` | `CLEAN_ZERO_CONFLICTS` | Rebased onto `6f0559d` cleanly; 0 conflict resolution markers |
-| `RECONCILED_QA_HEAD_SHA` | `59466ae869c9320f3a339af76f05640a26288575` | Head commit of reconciled QA branch |
 
 ### 20.2 Overstated Evidence Classifications Corrected
 
@@ -678,7 +698,7 @@ To preserve institutional truthfulness, evidence classifications previously stat
    - `RECONCILED_CANONICAL_SMOKE_GATE = PASS`: Verified by executing `python scripts/qa/production_candidate_smoke_gate.py --release-sha 5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`. All 5 canonical instruments (`AAPL`, `MSFT`, `NVDA`, `PLSE`, `SPY`) passed across market data freshness, structural envelopes, decision schemas, and security master constraints.
 
 2. **Production Verification Scope**:
-   - `CURRENT_PRODUCTION_HEALTH_VERIFICATION = VERIFIED`: Live Railway backend and Cloudflare edge distribution serving `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` passed all 5 checks, including committed release notes under `docs/releases/`.
+   - `CURRENT_PRODUCTION_HEALTH_VERIFICATION = VERIFIED`: Live Railway backend and Cloudflare edge distribution serving runtime `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` (descended from functional release `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`) passed all 5 checks, including committed release notes under `docs/releases/`.
    - `QA_BRANCH_PRODUCTION_VERIFICATION = NOT_APPLICABLE_NOT_DEPLOYED`: The QA branch itself contains test suites, scripts, and governance documentation. It has not been deployed to production and will not be deployed independently of an authorized integration release.
 
 3. **E2E & Device Testing Claims Truthfulness**:
@@ -732,27 +752,36 @@ A rigorous audit of the passive capture candidate (`5dcfeb41d75bb3ae02f25cb3599a
 - **Zero Prospective Denominator Inflation**: The QA test additions (`tests/test_qa_escape_invariants.py`, `qaEscapeSemanticInvariants.test.ts`) execute completely in memory using ephemeral mocks and parameterized unit fixtures. No prospective ledger records, database entries, or capture logs are written to disk or production environments.
 - **Pytest Suite Isolation**: Running `pytest tests/test_execution_ladder_passive_capture.py` yields 42 passed in 4.11s with 100% pass rate.
 
-### 20.5 Updated Release Quality Model
+### 20.5 Updated Release Quality Model & Deployment Identity Invariant
 
-The Release Quality Model has been formally updated to incorporate immutable committed release documentation:
-1. **Committed Release Notes Audit**:
-   - `scripts/qa/post_deploy_production_verification.py` now includes Step 5: `check_release_notes`.
-   - Gate verifies that every production deployment commit SHA has a corresponding immutable release note committed under `docs/releases/YYYY-MM-DD_<short_sha>_<title>.md`.
-   - Production candidate `5dcfeb4` is validated by existing note `docs/releases/2026-10-08_5dcfeb4_execution-ladder-passive-capture.md`.
-2. **Four-State Release Gate Taxonomy**:
+The Release Quality Model has been formally updated to incorporate immutable committed release documentation and decouple documentation redeployments from functional releases:
+
+1. **Canonical Invariant for Release-Note Verification**:
+   - The naive policy ("every production deployment SHA must have its own release note") is replaced by the canonical invariant:
+     **A deployed runtime must resolve to a documented functional release.**
+   - The verification chain establishes:
+     `CURRENT_DEPLOYED_SHA (6f0559d...)` $\to$ contains / descends from $\to$ `FUNCTIONAL_RELEASE_SHA (5dcfeb4...)` $\to$ has canonical release note `docs/releases/2026-10-08_5dcfeb4_execution-ladder-passive-capture.md`.
+   - Documentation-only redeployments (such as `6f0559d`, which committed release notes) are automatically recognized as descending from their functional release ancestor, eliminating false HOLD verdicts while maintaining zero-escape governance.
+
+2. **Deterministic Functional-Release Resolution**:
+   - Implemented `resolve_and_verify_functional_release()` in `scripts/qa/post_deploy_production_verification.py`.
+   - Resolution parses explicit `RELEASE_SHA = ...` metadata and index references from `docs/releases/`, validating ancestry via `git merge-base --is-ancestor`.
+   - Operates both via explicit parameter (`--expected-functional-sha`) and automatic ancestry discovery (`RELEASE_NOTE_METADATA_AND_GIT_ANCESTRY`).
+
+3. **Four-State Release Gate Taxonomy**:
    - Every candidate release must satisfy:
      - `STATIC_CHECKS` (Type-check, ESLint, Python syntax)
      - `INVARIANT_SUITES` (Semantic invariants, property tests, architecture rules)
-     - `PRE_PROMOTION_SMOKE` (5 representative instruments live audit)
-     - `POST_DEPLOY_AUDIT` (Backend health, Macro authority, Security Master parity, Bundle SHA, and Committed release notes)
+     - `PRE_PROMOTION_SMOKE` (5 representative canonical instruments live audit)
+     - `POST_DEPLOY_AUDIT` (Backend health, Macro authority, Security Master parity, Bundle SHA, and Functional release resolution)
 
 ### 20.6 Diff Inventory & Purity Audit
 
 A git diff inspection of the reconciled branch `audit/arx-production-escape-analysis` against `origin/main` (`6f0559d93a681c3bb7c3a89883e0a820934a4a7a`) confirms total purity:
 
 ```text
-TOTAL_CHANGED_FILES = 8
-QA_ONLY_FILES = 8
+TOTAL_CHANGED_FILES = 9
+QA_ONLY_FILES = 9
 PRODUCTION_FILES = 0
 QUANT_FILES = 0
 UNEXPECTED_FILES = 0
@@ -765,13 +794,14 @@ UNEXPECTED_FILES = 0
 5. `frontend/tests/qaEscapeSemanticInvariants.test.ts` (FRONTEND_TEST)
 6. `scripts/qa/post_deploy_production_verification.py` (QA_SCRIPT)
 7. `scripts/qa/production_candidate_smoke_gate.py` (QA_SCRIPT)
-8. `tests/test_qa_escape_invariants.py` (BACKEND_TEST)
+8. `tests/test_post_deploy_verification.py` (BACKEND_TEST)
+9. `tests/test_qa_escape_invariants.py` (BACKEND_TEST)
 
 ### 20.7 Integration Readiness Conclusion
 
 - **PASS**: All 10 escapes resolved, verified, and mapped to authoritative commits in canonical main.
 - **PASS**: All backend and frontend test suites pass with zero regressions.
-- **PASS**: Zero changes to production quant logic or execution code.
-- **PASS**: Zero interference with execution-ladder passive capture candidate.
+- **PASS**: Zero changes to production quant logic or execution code (`QUANT_FILES_CHANGED = 0`, `PRODUCTION_FILES_CHANGED = 0`).
+- **PASS**: Zero interference with execution-ladder passive capture candidate (`PROSPECTIVE_DENOMINATOR = 0`).
+- **PASS**: Deployment identity reconciled (`RUNTIME_SHA = 6f0559d`, `FUNCTIONAL_RELEASE_SHA = 5dcfeb4`, ancestry verified, documentation-only redeployment supported).
 - **GATE VERDICT**: `READY_FOR_INTEGRATION`.
-
