@@ -4,6 +4,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import EtfRiskProfileCard from "../EtfRiskProfileCard";
 import { EtfRiskProfileData } from "../../lib/api";
 
+vi.mock("../../lib/api", async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    fetchEtfProfile: vi.fn().mockImplementation((sym: string) => {
+      if (sym === "UNKNOWN_ETF") {
+        return Promise.reject(new Error("Failed to load ETF risk profile"));
+      }
+      return Promise.resolve(null);
+    }),
+  };
+});
+
 const mockEtfProfile: EtfRiskProfileData = {
   symbol: "SPY",
   as_of: "2026-10-02T12:00:00Z",
