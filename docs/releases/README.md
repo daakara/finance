@@ -24,3 +24,4 @@ RELEASE_NOTES_COMMITTED
 | 2026-10-08 | [`5a084a9`](2026-10-08_5a084a9_qa-release-hardening.md) | Production QA Escape Hardening & Release Governance | VERIFIED |
 | 2026-10-08 | [`dd972e9`](2026-10-08_dd972e9_qa-functional-release-resolution-fix.md) | QA Functional Release Resolution Fix | VERIFIED |
 | 2026-10-08 | [`a05331f`](2026-10-08_a05331f_decision-surface-integrity-remediation.md) | Decision-Surface Integrity Remediation (QA-ESC-011) | VERIFIED |
+| 2026-10-08 | [`3f89f8f`](2026-10-08_3f89f8f_synthesis-e-wave-4-decision-readiness.md) | Synthesis E Wave 4 Decision Readiness & State Harmonization | VERIFIED |
