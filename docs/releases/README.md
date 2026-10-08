@@ -22,3 +22,4 @@ RELEASE_NOTES_COMMITTED
 | :--- | :--- | :--- | :--- |
 | 2026-10-08 | [`5dcfeb4`](2026-10-08_5dcfeb4_execution-ladder-passive-capture.md) | Execution Ladder Prospective Passive Capture | VERIFIED |
 | 2026-10-08 | [`5a084a9`](2026-10-08_5a084a9_qa-release-hardening.md) | Production QA Escape Hardening & Release Governance | VERIFIED |
+| 2026-10-08 | [`dd972e9`](2026-10-08_dd972e9_qa-functional-release-resolution-fix.md) | QA Functional Release Resolution Fix | VERIFIED |
