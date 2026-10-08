@@ -700,6 +700,32 @@ class ExperimentLedger:
         ])
 
     @classmethod
+    def record_execution_ladder_plan_snapshot(
+        cls,
+        snapshot: Dict[str, Any],
+        ledger_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Atomically appends an execution ladder plan snapshot to paper_trading_ledger.json.
+
+        Guarantees idempotency via plan_id deduplication.
+        """
+        ledger = cls.load_ledger(ledger_path)
+        if "execution_ladder_plans" not in ledger:
+            ledger["execution_ladder_plans"] = []
+
+        plan_id = snapshot.get("plan_id")
+        existing = next(
+            (p for p in ledger["execution_ladder_plans"] if p.get("plan_id") == plan_id),
+            None,
+        )
+        if existing:
+            return existing
+
+        ledger["execution_ladder_plans"].append(snapshot)
+        cls.save_ledger(ledger, ledger_path)
+        return snapshot
+
+    @classmethod
     def get_activation_record(
         cls,
         activation_record_path: Optional[str] = None,

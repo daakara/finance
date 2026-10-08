@@ -46,6 +46,17 @@ from analyst_dashboard.governance.governance_db import (
 )
 from analyst_dashboard.governance.storage import resolve_data_root
 
+# Execution Ladder Passive Capture Re-exports
+from analyst_dashboard.governance.passive_capture import (
+    EXECUTION_LADDER_EPOCH_ID,
+    EXECUTION_LADDER_OBSERVATION_STREAM,
+    EXECUTION_LADDER_AUTHORITY_SHA,
+    RATIFIED_EXECUTION_LADDER_STATUSES,
+    resolve_release_sha,
+    compute_execution_ladder_plan_id,
+    build_execution_ladder_snapshot,
+)
+
 logger = logging.getLogger("arx.governance.prospective_capture")
 
 # Schema Constants

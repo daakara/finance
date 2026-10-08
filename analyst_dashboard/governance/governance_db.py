@@ -213,6 +213,44 @@ def init_governance_db(db_path: Optional[str] = None) -> None:
             BEGIN
                 SELECT RAISE(FAIL, 'FAIL_CLOSED: epoch_supersession_records cannot be deleted');
             END;
+
+            -- 5. Execution Ladder Prospective Plans (Immutable Epoch 001 Evidence)
+            CREATE TABLE IF NOT EXISTS execution_ladder_prospective_plans (
+                plan_id TEXT PRIMARY KEY,
+                epoch_id TEXT NOT NULL,
+                observation_stream TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                instrument_class TEXT NOT NULL,
+                user_role TEXT NOT NULL,
+                generation_timestamp TEXT NOT NULL,
+                source_data_timestamp TEXT NOT NULL,
+                release_sha TEXT NOT NULL,
+                execution_ladder_authority_sha TEXT NOT NULL,
+                current_spot REAL NOT NULL,
+                planned_entry REAL NOT NULL,
+                structural_invalidation REAL NOT NULL,
+                take_profit_1 REAL NOT NULL,
+                take_profit_2 REAL NOT NULL,
+                execution_status TEXT NOT NULL,
+                is_actionable INTEGER NOT NULL,
+                snapshot_payload_json TEXT NOT NULL,
+                created_at_utc TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_exec_ladder_plans_lookup
+            ON execution_ladder_prospective_plans (epoch_id, symbol, user_role, generation_timestamp);
+
+            CREATE TRIGGER IF NOT EXISTS trg_prevent_update_execution_ladder_plans
+            BEFORE UPDATE ON execution_ladder_prospective_plans
+            BEGIN
+                SELECT RAISE(FAIL, 'IMMUTABILITY_VIOLATION: Updates to execution_ladder_prospective_plans are strictly prohibited.');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS trg_prevent_delete_execution_ladder_plans
+            BEFORE DELETE ON execution_ladder_prospective_plans
+            BEGIN
+                SELECT RAISE(FAIL, 'IMMUTABILITY_VIOLATION: Deletions from execution_ladder_prospective_plans are strictly prohibited.');
+            END;
             """)
     finally:
         conn.close()
@@ -635,6 +673,130 @@ class GovernanceDatabaseEngine:
                 "clean_prospective_signals_captured": row["clean_prospective_signals_captured"],
                 "empirical_evidence_lost": row["empirical_evidence_lost"],
                 "supersession_payload": json.loads(row["supersession_payload_json"]),
+            }
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def insert_execution_ladder_plan(self, plan: Dict[str, Any]) -> bool:
+        """Atomically inserts an immutable execution ladder prospective plan snapshot.
+
+        Returns True on successful insertion, False if plan_id already exists (idempotent).
+        Raises sqlite3.IntegrityError if an immutability trigger or constraint is violated.
+        """
+        import json
+        conn = self.get_connection()
+        try:
+            with conn:
+                conn.execute(
+                    """
+                    INSERT INTO execution_ladder_prospective_plans (
+                        plan_id, epoch_id, observation_stream, symbol, instrument_class,
+                        user_role, generation_timestamp, source_data_timestamp, release_sha,
+                        execution_ladder_authority_sha, current_spot, planned_entry,
+                        structural_invalidation, take_profit_1, take_profit_2,
+                        execution_status, is_actionable, snapshot_payload_json, created_at_utc
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )
+                    """,
+                    (
+                        plan["plan_id"],
+                        plan["epoch_id"],
+                        plan["observation_stream"],
+                        plan["symbol"],
+                        plan["instrument_class"],
+                        plan["user_role"],
+                        plan["generation_timestamp"],
+                        plan["source_data_timestamp"],
+                        plan["release_sha"],
+                        plan["execution_ladder_authority_sha"],
+                        float(plan["current_spot"]),
+                        float(plan["planned_entry"]),
+                        float(plan["structural_invalidation"]),
+                        float(plan["take_profit_1"]),
+                        float(plan["take_profit_2"]),
+                        plan["execution_status"],
+                        1 if plan.get("is_actionable") else 0,
+                        json.dumps(plan, sort_keys=True, default=str),
+                        plan.get("created_at_utc") or plan.get("generation_timestamp"),
+                    ),
+                )
+                return True
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in str(e) or "PRIMARY KEY" in str(e):
+                return False  # Duplicate plan_id
+            raise
+        finally:
+            conn.close()
+
+    def get_execution_ladder_plan(self, plan_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves an execution ladder prospective plan snapshot by plan_id."""
+        import json
+        conn = self.get_connection()
+        try:
+            cur = conn.execute(
+                "SELECT * FROM execution_ladder_prospective_plans WHERE plan_id = ?",
+                (plan_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            snapshot = json.loads(row["snapshot_payload_json"])
+            snapshot["created_at_utc"] = row["created_at_utc"]
+            snapshot["snapshot_payload"] = dict(snapshot)
+            return snapshot
+        finally:
+            conn.close()
+
+    def count_execution_ladder_plans(
+        self,
+        epoch_id: str = "EXECUTION_LADDER_PROSPECTIVE_EPOCH_001",
+        user_role: Optional[str] = None,
+    ) -> int:
+        """Counts recorded execution ladder plans for a given epoch, optionally filtered by user_role."""
+        conn = self.get_connection()
+        try:
+            if user_role:
+                cur = conn.execute(
+                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
+                    (epoch_id, user_role),
+                )
+            else:
+                cur = conn.execute(
+                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ?",
+                    (epoch_id,),
+                )
+            return cur.fetchone()[0]
+        finally:
+            conn.close()
+
+    def get_execution_ladder_stratification(
+        self,
+        epoch_id: str = "EXECUTION_LADDER_PROSPECTIVE_EPOCH_001",
+    ) -> Dict[str, Any]:
+        """Returns stratification breakdown by user_role and execution_status."""
+        conn = self.get_connection()
+        try:
+            total = self.count_execution_ladder_plans(epoch_id=epoch_id)
+            by_role = {}
+            for r in ("DAY_TRADER", "LONG_TERM"):
+                cur = conn.execute(
+                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
+                    (epoch_id, r),
+                )
+                by_role[r] = cur.fetchone()[0]
+
+            cur = conn.execute(
+                "SELECT execution_status, COUNT(*) as cnt FROM execution_ladder_prospective_plans WHERE epoch_id = ? GROUP BY execution_status",
+                (epoch_id,),
+            )
+            by_status = {row["execution_status"]: row["cnt"] for row in cur.fetchall()}
+
+            return {
+                "total": total,
+                "by_role": by_role,
+                "by_status": by_status,
             }
         finally:
             conn.close()

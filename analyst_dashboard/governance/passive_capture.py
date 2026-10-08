@@ -31,7 +31,7 @@ import contextvars
 from enum import Enum
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 from analyst_dashboard.governance.experiment_ledger import (
     ExperimentLedger,
@@ -39,6 +39,291 @@ from analyst_dashboard.governance.experiment_ledger import (
 )
 
 logger = logging.getLogger("arx.governance.passive_capture")
+
+
+# ==============================================================================
+# EXECUTION LADDER REMEDIATION — PROSPECTIVE VALIDATION EPOCH 001 AUTHORITIES
+# ==============================================================================
+EXECUTION_LADDER_EPOCH_ID = "EXECUTION_LADDER_PROSPECTIVE_EPOCH_001"
+EXECUTION_LADDER_OBSERVATION_STREAM = "EXECUTION_LADDER_PLANS"
+EXECUTION_LADDER_AUTHORITY_SHA = "7bcb7780221f58cf596dabce484d83276e0a3c50"
+
+# Centralized Ratified Status Set (Derived from OptimalExecutionEngine Authority)
+# Strictly entry-readiness states for un-entered plans (NO_ACTIVE_POSITION).
+# Active-position target-progress states (APPROACHING_TARGET, TARGET_REACHED) and aliases (READY_TO_BUY) are excluded.
+from analyst_dashboard.analyzers.optimal_execution import (
+    ACTIONABLE_EXECUTION_STATUSES,
+    NON_ACTIONABLE_EXECUTION_STATUSES,
+)
+
+RATIFIED_EXECUTION_LADDER_STATUSES = frozenset({
+    "IN_BUY_ZONE",
+    "IN_BUY_ZONE_AWAITING_TRIGGER",
+    "EXTENDED_ABOVE_BUY_ZONE",
+    "WAITING_PULLBACK",
+    "STOPPED_OUT",
+})
+assert RATIFIED_EXECUTION_LADDER_STATUSES.issubset(
+    ACTIONABLE_EXECUTION_STATUSES | NON_ACTIONABLE_EXECUTION_STATUSES
+)
+
+
+def resolve_release_sha(override_sha: Optional[str] = None) -> Optional[str]:
+    """Resolves authoritative runtime/build release SHA with fail-closed provenance semantics.
+
+    Checks in priority order:
+    1. Explicit override_sha (if provided and non-empty)
+    2. ARX_RELEASE_SHA
+    3. ARX_RELEASE
+    4. NEXT_PUBLIC_ARX_RELEASE
+    5. RAILWAY_GIT_COMMIT_SHA
+
+    Returns None if missing (fail-closed, never fabricates placeholders).
+    """
+    if override_sha and str(override_sha).strip():
+        return str(override_sha).strip()
+    for env_k in ("ARX_RELEASE_SHA", "ARX_RELEASE", "NEXT_PUBLIC_ARX_RELEASE", "RAILWAY_GIT_COMMIT_SHA"):
+        val = os.getenv(env_k)
+        if val and val.strip():
+            return val.strip()
+    return None
+
+
+def compute_execution_ladder_plan_id(snapshot: Dict[str, Any]) -> str:
+    """Computes deterministic 24-character hex plan_id for an immutable execution ladder snapshot.
+
+    Guarantees cross-request stability across page refreshes, multiple consumers, and surfaces
+    by hashing canonical plan levels, symbol, role, epoch, release, authority, and source trading date.
+    Volatile subsecond request timestamps are excluded from the hash preimage.
+    """
+    source_ts = str(snapshot.get("source_data_timestamp") or snapshot.get("generation_timestamp") or "")
+    date_bucket = source_ts[:10]  # Canonical trading date (YYYY-MM-DD)
+    elements = [
+        str(snapshot.get("epoch_id") or ""),
+        str(snapshot.get("symbol") or "").upper().strip(),
+        str(snapshot.get("user_role") or "").upper().strip(),
+        date_bucket,
+        str(snapshot.get("release_sha") or ""),
+        str(snapshot.get("execution_ladder_authority_sha") or ""),
+        str(snapshot.get("planned_entry") or ""),
+        str(snapshot.get("structural_invalidation") or ""),
+        str(snapshot.get("take_profit_1") or ""),
+        str(snapshot.get("take_profit_2") or ""),
+        str(snapshot.get("execution_status") or ""),
+    ]
+    raw = "|".join(elements)
+    h = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return f"PLAN_{h[:24]}"
+
+
+def build_execution_ladder_snapshot(
+    symbol: Optional[str] = None,
+    optimal_execution_plan: Optional[Dict[str, Any]] = None,
+    current_price: Optional[float] = None,
+    user_role: Optional[str] = None,
+    instrument_class: Optional[str] = None,
+    generation_timestamp: Optional[str] = None,
+    source_data_timestamp: Optional[str] = None,
+    release_sha: Optional[str] = None,
+    authority_sha: Optional[str] = None,
+    live_spot_price: Optional[float] = None,
+    is_actionable: Optional[bool] = None,
+    snapshot_dict: Optional[Dict[str, Any]] = None,
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Constructs and strictly validates an immutable execution ladder snapshot.
+
+    Returns (snapshot_dict, None) on success, or (None, rejection_reason) on failure.
+    Enforces all 20 mandatory snapshot fields from Section 6.
+    """
+    s_dict = snapshot_dict or {}
+    opt_plan = optimal_execution_plan or {}
+
+    # 1. symbol
+    sym = s_dict.get("symbol") if "symbol" in s_dict else symbol
+    if not sym or not str(sym).strip():
+        return None, "MISSING_SYMBOL"
+
+    # 2. instrument_class
+    iclass = s_dict.get("instrument_class") if "instrument_class" in s_dict else instrument_class
+    if not iclass or not str(iclass).strip():
+        return None, "MISSING_INSTRUMENT_CLASS"
+
+    # 3. user_role
+    role = s_dict.get("user_role") if "user_role" in s_dict else (user_role or opt_plan.get("user_role"))
+    if not role or role not in ("DAY_TRADER", "LONG_TERM"):
+        return None, "MISSING_USER_ROLE"
+
+    # 4. generation_timestamp
+    gts = s_dict.get("generation_timestamp") if "generation_timestamp" in s_dict else generation_timestamp
+    if not gts or not str(gts).strip():
+        return None, "MISSING_GENERATION_TIMESTAMP"
+
+    # 5. source_data_timestamp
+    sdts = s_dict.get("source_data_timestamp") if "source_data_timestamp" in s_dict else source_data_timestamp
+    if not sdts or not str(sdts).strip():
+        return None, "MISSING_SOURCE_DATA_TIMESTAMP"
+
+    # 6. release_sha
+    rsha = s_dict.get("release_sha") if "release_sha" in s_dict else resolve_release_sha(release_sha)
+    if not rsha or not str(rsha).strip():
+        return None, "MISSING_RELEASE_SHA"
+
+    # 7. execution_ladder_authority_sha
+    asha = s_dict.get("execution_ladder_authority_sha") if "execution_ladder_authority_sha" in s_dict else authority_sha
+    if not asha or not str(asha).strip():
+        return None, "MISSING_AUTHORITY_SHA"
+    if str(asha).strip() != EXECUTION_LADDER_AUTHORITY_SHA:
+        return None, "INVALID_AUTHORITY_SHA"
+
+    # 8. current_spot
+    cspot = s_dict.get("current_spot") if "current_spot" in s_dict else (live_spot_price if live_spot_price is not None else current_price)
+    if cspot is None:
+        return None, "MISSING_CURRENT_SPOT"
+    try:
+        cspot_f = float(cspot)
+        if cspot_f <= 0.0 or not math.isfinite(cspot_f):
+            return None, "MISSING_CURRENT_SPOT"
+    except (ValueError, TypeError):
+        return None, "MISSING_CURRENT_SPOT"
+
+    # 9. entry_min
+    emin = s_dict.get("entry_min") if "entry_min" in s_dict else (opt_plan.get("optimal_entry_min") if opt_plan.get("optimal_entry_min") is not None else opt_plan.get("entry_min"))
+    if emin is None:
+        return None, "MISSING_ENTRY_MIN"
+    try:
+        emin_f = float(emin)
+        if emin_f <= 0.0 or not math.isfinite(emin_f):
+            return None, "MISSING_ENTRY_MIN"
+    except (ValueError, TypeError):
+        return None, "MISSING_ENTRY_MIN"
+
+    # 10. entry_max
+    emax = s_dict.get("entry_max") if "entry_max" in s_dict else (opt_plan.get("optimal_entry_max") if opt_plan.get("optimal_entry_max") is not None else opt_plan.get("entry_max"))
+    if emax is None:
+        return None, "MISSING_ENTRY_MAX"
+    try:
+        emax_f = float(emax)
+        if emax_f <= 0.0 or not math.isfinite(emax_f):
+            return None, "MISSING_ENTRY_MAX"
+    except (ValueError, TypeError):
+        return None, "MISSING_ENTRY_MAX"
+
+    # 11. planned_entry
+    pe = s_dict.get("planned_entry") if "planned_entry" in s_dict else opt_plan.get("planned_entry")
+    if pe is None:
+        return None, "MISSING_PLANNED_ENTRY"
+    try:
+        pe_f = float(pe)
+        if pe_f <= 0.0 or not math.isfinite(pe_f):
+            return None, "MISSING_PLANNED_ENTRY"
+    except (ValueError, TypeError):
+        return None, "MISSING_PLANNED_ENTRY"
+
+    # 12. structural_invalidation
+    si = s_dict.get("structural_invalidation") if "structural_invalidation" in s_dict else opt_plan.get("structural_invalidation")
+    if si is None:
+        return None, "MISSING_STRUCTURAL_INVALIDATION"
+    try:
+        si_f = float(si)
+        if si_f <= 0.0 or not math.isfinite(si_f):
+            return None, "MISSING_STRUCTURAL_INVALIDATION"
+    except (ValueError, TypeError):
+        return None, "MISSING_STRUCTURAL_INVALIDATION"
+
+    # 13. execution_risk
+    er = s_dict.get("execution_risk") if "execution_risk" in s_dict else opt_plan.get("execution_risk")
+    if er is None:
+        return None, "MISSING_EXECUTION_RISK"
+    try:
+        er_f = float(er)
+        if er_f <= 0.0 or not math.isfinite(er_f):
+            return None, "MISSING_EXECUTION_RISK"
+    except (ValueError, TypeError):
+        return None, "MISSING_EXECUTION_RISK"
+
+    # 14. atr_14
+    atr = s_dict.get("atr_14") if "atr_14" in s_dict else opt_plan.get("atr_14")
+    if atr is None:
+        return None, "MISSING_ATR_14"
+    try:
+        atr_f = float(atr)
+        if atr_f <= 0.0 or not math.isfinite(atr_f):
+            return None, "MISSING_ATR_14"
+    except (ValueError, TypeError):
+        return None, "MISSING_ATR_14"
+
+    # 15. take_profit_1
+    tp1 = s_dict.get("take_profit_1") if "take_profit_1" in s_dict else opt_plan.get("take_profit_1")
+    if tp1 is None:
+        return None, "MISSING_TAKE_PROFIT_1"
+    try:
+        tp1_f = float(tp1)
+        if tp1_f <= 0.0 or not math.isfinite(tp1_f):
+            return None, "MISSING_TAKE_PROFIT_1"
+    except (ValueError, TypeError):
+        return None, "MISSING_TAKE_PROFIT_1"
+
+    # 16. take_profit_2
+    tp2 = s_dict.get("take_profit_2") if "take_profit_2" in s_dict else opt_plan.get("take_profit_2")
+    if tp2 is None:
+        return None, "MISSING_TAKE_PROFIT_2"
+    try:
+        tp2_f = float(tp2)
+        if tp2_f <= 0.0 or not math.isfinite(tp2_f):
+            return None, "MISSING_TAKE_PROFIT_2"
+    except (ValueError, TypeError):
+        return None, "MISSING_TAKE_PROFIT_2"
+
+    # 17. market_location
+    mloc = s_dict.get("market_location") if "market_location" in s_dict else opt_plan.get("market_location")
+    if not mloc or not str(mloc).strip():
+        return None, "MISSING_MARKET_LOCATION"
+
+    # 18. execution_status
+    estatus = s_dict.get("execution_status") if "execution_status" in s_dict else opt_plan.get("execution_status")
+    if not estatus or not str(estatus).strip():
+        return None, "MISSING_EXECUTION_STATUS"
+    if str(estatus).strip() not in RATIFIED_EXECUTION_LADDER_STATUSES:
+        return None, "UNRATIFIED_EXECUTION_STATUS"
+
+    # 19. is_actionable
+    act = s_dict.get("is_actionable") if "is_actionable" in s_dict else is_actionable
+    if act is None or not isinstance(act, bool):
+        return None, "MISSING_IS_ACTIONABLE"
+
+    # 20. execution_stop_visible
+    esv = s_dict.get("execution_stop_visible") if "execution_stop_visible" in s_dict else opt_plan.get("execution_stop_visible")
+    if esv is None or not isinstance(esv, bool):
+        return None, "MISSING_EXECUTION_STOP_VISIBLE"
+
+    # All fields validated successfully: assemble canonical immutable snapshot
+    constructed = {
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": str(sym).upper().strip(),
+        "instrument_class": str(iclass),
+        "user_role": str(role),
+        "generation_timestamp": str(gts),
+        "source_data_timestamp": str(sdts),
+        "release_sha": str(rsha),
+        "execution_ladder_authority_sha": str(asha),
+        "current_spot": round(float(cspot_f), 6),
+        "entry_min": round(float(emin_f), 6),
+        "entry_max": round(float(emax_f), 6),
+        "planned_entry": round(float(pe_f), 6),
+        "structural_invalidation": round(float(si_f), 6),
+        "execution_risk": round(float(er_f), 6),
+        "atr_14": round(float(atr_f), 6),
+        "take_profit_1": round(float(tp1_f), 6),
+        "take_profit_2": round(float(tp2_f), 6),
+        "market_location": str(mloc),
+        "execution_status": str(estatus),
+        "is_actionable": bool(act),
+        "execution_stop_visible": bool(esv),
+    }
+    plan_id = compute_execution_ladder_plan_id(constructed)
+    constructed["plan_id"] = plan_id
+    return constructed, None
 
 
 class ExecutionContext(str, Enum):
@@ -141,6 +426,13 @@ class PassiveCaptureHook:
         factor_scores: Optional[Dict[str, Any]] = None,
         macro_inputs: Optional[Dict[str, Any]] = None,
         provider_source: Optional[str] = None,
+        epoch_id: Optional[str] = None,
+        user_role: Optional[str] = None,
+        instrument_class: Optional[str] = None,
+        generation_timestamp: Optional[str] = None,
+        source_data_timestamp: Optional[str] = None,
+        execution_ladder_authority_sha: Optional[str] = None,
+        snapshot_dict: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Evaluates whether an observation meets all strict prospective admission criteria.
 
@@ -155,6 +447,123 @@ class PassiveCaptureHook:
         - LIVE_SPOT_INVALID
         - DUPLICATE
         """
+        # ==============================================================================
+        # EPOCH 001 OBSERVATIONAL EXECUTION LADDER ADMISSION PATH
+        # ==============================================================================
+        target_epoch = epoch_id or (snapshot_dict or {}).get("epoch_id") or cls.EPOCH_ID
+        if target_epoch == EXECUTION_LADDER_EPOCH_ID:
+            # 1. EXECUTION CONTEXT & SYNTHETIC ENVIRONMENT GATE
+            effective_context = execution_context or CURRENT_EXECUTION_CONTEXT.get()
+            if effective_context != ExecutionContext.NATURAL_CLIENT:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+                }
+
+            if (
+                os.getenv("ARX_TEST_MODE") == "1"
+                or os.getenv("ARX_REPLAY_MODE") == "1"
+                or os.getenv("ARX_SIMULATION_MODE") == "1"
+                or os.getenv("ARX_CERTIFICATION_MODE") == "1"
+            ):
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+                }
+
+            if ledger_path is None and db_path is None and "PYTEST_CURRENT_TEST" in os.environ:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+                }
+
+            opt_plan = optimal_execution_plan or (snapshot_dict or {})
+            macro = macro_inputs or {}
+            factors = factor_scores or {}
+            if (
+                opt_plan.get("isSynthetic")
+                or opt_plan.get("isSimulated")
+                or opt_plan.get("isCertification")
+                or opt_plan.get("isReplay")
+                or opt_plan.get("isTest")
+                or macro.get("isSynthetic")
+                or macro.get("isCertification")
+                or factors.get("isSynthetic")
+                or factors.get("isCertification")
+                or provider_source in ("SYNTHETIC_MOCK", "SYNTHETIC_FALLBACK", "SIMULATION", "REPLAY", "CERTIFICATION")
+            ):
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "NON_NATURAL_CONTEXT",
+                }
+
+            # 2. RESOLVE RELEASE SHA (FAIL-CLOSED)
+            rel_sha = resolve_release_sha(runtime_release_sha or (snapshot_dict or {}).get("release_sha"))
+            if not rel_sha:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "MISSING_RELEASE_SHA",
+                }
+
+            # 3. AUTHORITY SHA (FAIL-CLOSED)
+            auth_sha = execution_ladder_authority_sha or (snapshot_dict or {}).get("execution_ladder_authority_sha")
+            if not auth_sha:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "MISSING_AUTHORITY_SHA",
+                }
+            if str(auth_sha).strip() != EXECUTION_LADDER_AUTHORITY_SHA:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "INVALID_AUTHORITY_SHA",
+                }
+
+            # 4. RATIFIED STATUS & SNAPSHOT COMPLETENESS
+            now_iso = datetime.now(timezone.utc).isoformat()
+            plan_snapshot, missing_reason = build_execution_ladder_snapshot(
+                symbol=symbol,
+                optimal_execution_plan=optimal_execution_plan,
+                current_price=current_price,
+                user_role=user_role or opt_plan.get("user_role") or (snapshot_dict or {}).get("user_role") or "LONG_TERM",
+                instrument_class=instrument_class or (snapshot_dict or {}).get("instrument_class") or "EQUITY",
+                generation_timestamp=generation_timestamp or (snapshot_dict or {}).get("generation_timestamp") or now_iso,
+                source_data_timestamp=source_data_timestamp or (snapshot_dict or {}).get("source_data_timestamp") or (market_price_state or {}).get("liveObservedAt") or now_iso,
+                release_sha=rel_sha,
+                authority_sha=auth_sha,
+                live_spot_price=live_spot_price if live_spot_price is not None else (snapshot_dict or {}).get("current_spot"),
+                is_actionable=is_actionable if is_actionable is not None else (snapshot_dict or {}).get("is_actionable"),
+                snapshot_dict=snapshot_dict,
+            )
+            if not plan_snapshot:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": missing_reason,
+                }
+
+            # 5. DEDUPLICATION GATE (IDEMPOTENT BY DETERMINISTIC PLAN_ID)
+            plan_id = plan_snapshot["plan_id"]
+            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+            gov_db = GovernanceDatabaseEngine(db_path=db_path)
+            existing = gov_db.get_execution_ladder_plan(plan_id)
+            if existing:
+                return {
+                    "prospectiveCaptureEligible": False,
+                    "prospectiveCaptureRejectionReason": "DUPLICATE",
+                    "plan_id": plan_id,
+                    "existingRecord": existing,
+                }
+
+            return {
+                "prospectiveCaptureEligible": True,
+                "prospectiveCaptureRejectionReason": None,
+                "plan_id": plan_id,
+                "observationStream": EXECUTION_LADDER_OBSERVATION_STREAM,
+                "snapshot": plan_snapshot,
+            }
+
+        # ==============================================================================
+        # GENERIC / LEGACY PROSPECTIVE ADMISSION GATES (PRESERVED UNCHANGED)
+        # ==============================================================================
         # 1. EXECUTION CONTEXT & SYNTHETIC ENVIRONMENT GATE
         effective_context = execution_context or CURRENT_EXECUTION_CONTEXT.get()
         if effective_context != ExecutionContext.NATURAL_CLIENT:
@@ -338,6 +747,89 @@ class PassiveCaptureHook:
         }
 
     @classmethod
+    def record_execution_ladder_plan(
+        cls,
+        symbol: str,
+        optimal_execution_plan: Optional[Dict[str, Any]] = None,
+        current_price: Optional[float] = None,
+        user_role: str = "LONG_TERM",
+        instrument_class: str = "EQUITY",
+        generation_timestamp: Optional[str] = None,
+        source_data_timestamp: Optional[str] = None,
+        release_sha: Optional[str] = None,
+        authority_sha: Optional[str] = None,
+        live_spot_price: Optional[float] = None,
+        is_actionable: Optional[bool] = None,
+        db_path: Optional[str] = None,
+        ledger_path: Optional[str] = None,
+        execution_context: Optional[ExecutionContext] = None,
+        snapshot_dict: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Passively captures an immutable execution ladder prospective plan snapshot into governance.db.
+
+        Fail-closed: Returns captured snapshot dict on success, None on rejection/error.
+        Idempotent: Duplicate plan_id returns existing record without denominator increment.
+        Never blocks live API responses or mutates trading behavior.
+        """
+        try:
+            admission = cls.evaluate_prospective_admission(
+                symbol=symbol,
+                is_actionable=is_actionable if is_actionable is not None else False,
+                live_spot_price=live_spot_price,
+                current_price=current_price,
+                execution_context=execution_context,
+                runtime_release_sha=release_sha,
+                db_path=db_path,
+                ledger_path=ledger_path,
+                optimal_execution_plan=optimal_execution_plan,
+                epoch_id=EXECUTION_LADDER_EPOCH_ID,
+                user_role=user_role,
+                instrument_class=instrument_class,
+                generation_timestamp=generation_timestamp,
+                source_data_timestamp=source_data_timestamp,
+                execution_ladder_authority_sha=authority_sha or EXECUTION_LADDER_AUTHORITY_SHA,
+                snapshot_dict=snapshot_dict,
+            )
+            cls.last_admission_result = admission
+
+            if not admission.get("prospectiveCaptureEligible"):
+                rejection = admission.get("prospectiveCaptureRejectionReason")
+                if rejection == "DUPLICATE":
+                    logger.info(
+                        f"[PASSIVE_CAPTURE] Deduplicated execution ladder plan {admission.get('plan_id')}. Zero denominator increment."
+                    )
+                    return admission.get("existingRecord")
+                logger.warning(
+                    f"[PASSIVE_CAPTURE] Suppressed execution ladder plan: {rejection} for symbol {symbol}"
+                )
+                return None
+
+            snapshot = admission["snapshot"]
+            from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
+            gov_db = GovernanceDatabaseEngine(db_path=db_path)
+            inserted = gov_db.insert_execution_ladder_plan(snapshot)
+            if not inserted:
+                # Concurrent or existing insertion
+                return gov_db.get_execution_ladder_plan(snapshot["plan_id"])
+
+            try:
+                ExperimentLedger.record_execution_ladder_plan_snapshot(snapshot, ledger_path=ledger_path)
+            except Exception as e:
+                logger.warning(f"[PASSIVE_CAPTURE] Non-blocking ledger sync failure: {e}")
+
+            logger.info(
+                f"[PASSIVE_CAPTURE] Admitted execution ladder plan {snapshot['plan_id']} "
+                f"symbol={symbol} status={snapshot['execution_status']} role={snapshot['user_role']}"
+            )
+            return snapshot
+        except Exception as e:
+            logger.error(
+                f"[PASSIVE_CAPTURE] Fail-closed: execution ladder capture error for symbol {symbol}: {e}",
+                exc_info=True,
+            )
+            return None
+
+    @classmethod
     def record_natural_recommendation(
         cls,
         symbol: str,
@@ -362,6 +854,10 @@ class PassiveCaptureHook:
         execution_context: Optional[ExecutionContext] = None,
         is_actionable: bool = False,
         decision_state: Optional[str] = None,
+        epoch_id: Optional[str] = None,
+        user_role: Optional[str] = None,
+        instrument_class: Optional[str] = None,
+        execution_ladder_authority_sha: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Passively captures a single natural production recommendation.
 
@@ -374,6 +870,24 @@ class PassiveCaptureHook:
         Never raises exceptions to callers.
         Zero side-effects on capital, orders, or broker connections.
         """
+        if epoch_id == EXECUTION_LADDER_EPOCH_ID:
+            return cls.record_execution_ladder_plan(
+                symbol=symbol,
+                optimal_execution_plan=optimal_execution_plan,
+                current_price=current_price,
+                user_role=user_role or (optimal_execution_plan or {}).get("user_role") or "LONG_TERM",
+                instrument_class=instrument_class or "EQUITY",
+                generation_timestamp=fetched_at,
+                source_data_timestamp=observed_at or (market_price_state or {}).get("liveObservedAt"),
+                release_sha=runtime_release_sha,
+                authority_sha=execution_ladder_authority_sha,
+                live_spot_price=live_spot_price,
+                is_actionable=is_actionable,
+                db_path=db_path,
+                ledger_path=ledger_path,
+                execution_context=execution_context,
+            )
+
         try:
             now_dt = datetime.now(timezone.utc)
 
