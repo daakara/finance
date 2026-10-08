@@ -8,6 +8,9 @@ import AlertTriggerModal from "./AlertTriggerModal";
 import PreFlightChecklistModal from "./PreFlightChecklistModal";
 import TradeExecutionStepper from "./TradeExecutionStepper";
 import { addPortfolioPosition } from "../lib/portfolio";
+import { resolveDecisionReadiness } from "../lib/decisionReadiness";
+import { resolvePresentationState } from "../lib/decisionPresentation";
+import DecisionReadinessCard from "./DecisionReadinessCard";
 
 interface OptimalEntryExitCardProps {
   symbol: string;
@@ -78,6 +81,39 @@ export default function OptimalEntryExitCard({
     [K in keyof OptimalExecutionPlan]: NonNullable<OptimalExecutionPlan[K]>;
   };
 
+  // ── Pre-Flight VIX authority resolution (AC-W3-MACRO-001) ───────────────
+  // Resolves strictly through canonical macro ribbon authority.
+  // 1. Direct macroRegime prop if it carries vix.value or vix.level or numeric vix
+  // 2. localStorage snapshot from MarketCommandRibbon (FINANCE_MARKET_SNAPSHOTS_V1)
+  // If unavailable, vix is strictly undefined (no synthetic 28.0/99.0/15.0 fallbacks).
+  const resolvedVix = (() => {
+    if (typeof vix === "number" && !isNaN(vix) && vix > 0) {
+      return vix;
+    }
+    if (macroRegime?.vix != null) {
+      if (typeof macroRegime.vix === "number" && !isNaN(macroRegime.vix) && macroRegime.vix > 0) {
+        return macroRegime.vix;
+      }
+      const val = macroRegime.vix.value ?? macroRegime.vix.level;
+      if (typeof val === "number" && !isNaN(val) && val > 0) {
+        return val;
+      }
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
+          if (typeof v === "number" && !isNaN(v) && v > 0) {
+            return v;
+          }
+        }
+      } catch {}
+    }
+    return undefined;
+  })();
+
   if (
     optimal_entry_min == null ||
     optimal_entry_max == null ||
@@ -87,10 +123,24 @@ export default function OptimalEntryExitCard({
     risk_reward_ratio == null ||
     current_price <= 0
   ) {
+    const unavailableReadiness = resolveDecisionReadiness({
+      currentPrice: current_price,
+      optimalEntryMin: optimal_entry_min,
+      optimalEntryMax: optimal_entry_max,
+      stagePhase: stage_phase,
+      setupPattern: setup_pattern,
+      candleCount: (executionPlan as any)?.candle_count ?? 0,
+      isConfirmed: false,
+      riskRewardRatio: risk_reward_ratio,
+      stopLoss: stop_loss,
+      takeProfit1: take_profit_1,
+      vix: resolvedVix,
+    });
+
     return (
       <div
         data-testid="conditional-trade-plan"
-        className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-3 font-sans text-slate-300"
+        className="bg-[#111722] border border-slate-800 rounded-xl p-5 shadow-xl space-y-4 font-sans text-slate-300"
       >
         <div className="flex items-center space-x-2 text-slate-400">
           <span className="w-2 h-2 rounded-full bg-slate-500"></span>
@@ -102,6 +152,15 @@ export default function OptimalEntryExitCard({
         <div className="text-[11px] text-slate-400 font-mono bg-[#0b0f17] p-2.5 rounded border border-slate-800/80">
           Status: {executionPlan.execution_status || "INSUFFICIENT_HISTORY"} • Invalidation: {invalidation_condition || "Awaiting verified historical exchange candles"}
         </div>
+
+        {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression (Unavailable Fallback) */}
+        <DecisionReadinessCard
+          symbol={symbol}
+          readinessResult={unavailableReadiness}
+          onSizePosition={() => setIsSizerOpen(true)}
+          onSetAlert={() => setIsAlertOpen(true)}
+          onOpenPreFlight={() => setIsChecklistOpen(true)}
+        />
       </div>
     );
   }
@@ -149,38 +208,6 @@ export default function OptimalEntryExitCard({
     (smartMoney?.optionsFlow && smartMoney.optionsFlow.some((f: any) => f.sentiment === "Bullish" || f.type?.includes("CALL"))) ||
     (smartMoney?.congressTrades && smartMoney.congressTrades.some((t: any) => t.tx_type === "Purchase"))
   );
-  // ── Pre-Flight VIX authority resolution (AC-W3-MACRO-001) ───────────────
-  // Resolves strictly through canonical macro ribbon authority.
-  // 1. Direct macroRegime prop if it carries vix.value or vix.level or numeric vix
-  // 2. localStorage snapshot from MarketCommandRibbon (FINANCE_MARKET_SNAPSHOTS_V1)
-  // If unavailable, vix is strictly undefined (no synthetic 28.0/99.0/15.0 fallbacks).
-  const resolvedVix = (() => {
-    if (typeof vix === "number" && !isNaN(vix) && vix > 0) {
-      return vix;
-    }
-    if (macroRegime?.vix != null) {
-      if (typeof macroRegime.vix === "number" && !isNaN(macroRegime.vix) && macroRegime.vix > 0) {
-        return macroRegime.vix;
-      }
-      const val = macroRegime.vix.value ?? macroRegime.vix.level;
-      if (typeof val === "number" && !isNaN(val) && val > 0) {
-        return val;
-      }
-    }
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("FINANCE_MARKET_SNAPSHOTS_V1");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const v = parsed?.vix?.value ?? parsed?.vix?.level ?? (typeof parsed?.vix === "number" ? parsed.vix : undefined);
-          if (typeof v === "number" && !isNaN(v) && v > 0) {
-            return v;
-          }
-        }
-      } catch {}
-    }
-    return undefined;
-  })();
 
   const isAdverseMacro = Boolean(
     resolvedVix ? resolvedVix > 20 : (macroRegime?.vix && Number(macroRegime.vix) > 20)
@@ -230,15 +257,41 @@ export default function OptimalEntryExitCard({
     setTimeout(() => setLogStatus(null), 3500);
   };
 
+  const isTriggerConfirmed = isActionable !== undefined
+    ? Boolean(isActionable)
+    : (executionPlan.execution_status === "IN_BUY_ZONE" || executionPlan.execution_status === "READY_TO_BUY");
+
+  const readinessResult = resolveDecisionReadiness({
+    currentPrice: current_price,
+    optimalEntryMin: optimal_entry_min,
+    optimalEntryMax: optimal_entry_max,
+    stagePhase: stage_phase,
+    setupPattern: setup_pattern,
+    candleCount: (executionPlan as any)?.candle_count ?? 100,
+    isConfirmed: isTriggerConfirmed,
+    riskRewardRatio: risk_reward_ratio,
+    stopLoss: stop_loss,
+    takeProfit1: take_profit_1,
+    vix: resolvedVix,
+  });
+
+  const presentation = resolvePresentationState({
+    decisionState,
+    decisionStateLabel,
+    executionStatus: executionPlan.execution_status,
+    isActionable,
+    readinessResult,
+  });
+
   return (
     <div
       data-testid="conditional-trade-plan"
-      className={`bg-[#111722] border rounded-xl p-4 sm:p-5 shadow-xl space-y-4 font-sans transition-colors ${
+      className={`bg-[#111722] border rounded-xl p-2.5 sm:p-5 shadow-xl space-y-2.5 sm:space-y-4 font-sans transition-colors ${
         isDayTrader ? "border-amber-900/40" : "border-[#243044]"
       }`}
     >
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2434] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[#1b2434] pb-1.5 sm:pb-3">
         <div>
           <div className="flex items-center space-x-2">
             <span
@@ -252,7 +305,7 @@ export default function OptimalEntryExitCard({
               <span>{isPlain ? `🎯 ${symbol} Conditional Trade Plan` : `🎯 ${symbol} Conditional Execution Ladder`}</span>
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5 font-normal">
+          <p className="text-xs text-slate-400 mt-0.5 font-normal hidden sm:block">
             {isPlain
               ? "Calculated price ranges for conditional accumulation, profit milestones, and loss protection."
               : isDayTrader
@@ -261,7 +314,7 @@ export default function OptimalEntryExitCard({
               ? "Stage 4 Correction & Volatility-Constrained Risk Boundaries"
               : "Institutional Accumulation Breakout & Precision Entry Ladder"}
           </p>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-1.5 sm:mt-2">
             <span
               data-testid="current-action"
               className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${
@@ -279,7 +332,7 @@ export default function OptimalEntryExitCard({
               Status: {decisionStateLabel || decisionState || (isActionable ? "CONFIRMED_TRIGGER" : "WAIT_FOR_TRIGGER")}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
+          <div className="hidden sm:flex flex-wrap items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-400">
             <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 inline-flex items-center gap-1 font-mono text-[10px]">
               <span>📡</span> {isPlain ? "Volatility Math Guard" : "Minervini VCP + 14-ATR"}
             </span>
@@ -328,7 +381,7 @@ export default function OptimalEntryExitCard({
           <span
             aria-label={`Active playbook: ${isDayTrader ? "Intraday Scalp Playbook" : "Swing/Growth Playbook"}`}
             title="Trading playbook governed by global Trading Horizon switch"
-            className={`text-xs px-2.5 py-1 rounded-md font-semibold border ${
+            className={`text-xs px-2.5 py-1 rounded-md font-semibold border hidden sm:inline-flex ${
               isDayTrader
                 ? "text-amber-400 bg-amber-950/40 border-amber-800/60"
                 : "text-emerald-400 bg-emerald-950/40 border-emerald-800/60"
@@ -338,6 +391,15 @@ export default function OptimalEntryExitCard({
           </span>
         </div>
       </div>
+
+      {/* 🚦 Synthesis E Wave 4: 3-Gate Decision Readiness Progression */}
+      <DecisionReadinessCard
+        symbol={symbol}
+        readinessResult={readinessResult}
+        onSizePosition={() => setIsSizerOpen(true)}
+        onSetAlert={() => setIsAlertOpen(true)}
+        onOpenPreFlight={() => setIsChecklistOpen(true)}
+      />
 
       {/* 🛑 Liquidity Defense Alert Banner (Shadow Observation Mode) */}
       {executionPlan.liquidity_defense?.execution_hazard === true && (

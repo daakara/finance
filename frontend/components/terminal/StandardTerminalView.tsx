@@ -26,19 +26,20 @@ export default function StandardTerminalView({
   const kl = insight.standard.keyLevels;
   const unmetConditions = deriveUnmetConditions(insight);
   const isActionable = Boolean(insight.terminalState.isActionable);
+  const [isPreconditionsOpen, setIsPreconditionsOpen] = React.useState(false);
 
   return (
     <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
         {/* Left Column (xl:col-span-5): Verdict Card & Preconditions */}
-        <div className="xl:col-span-5 space-y-4 min-w-0">
+        <div className="xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
           <div
             data-testid="decision-verdict"
-            className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-3"
+            className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-3 sm:p-5 shadow-xl space-y-2 sm:space-y-3"
           >
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#182335] pb-3">
+            <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3 border-b border-[#182335] pb-2 sm:pb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
@@ -75,9 +76,9 @@ export default function StandardTerminalView({
             {/* 2. CANONICAL REASON (Directly Below Verdict) */}
             <div
               data-testid="decision-reason"
-              className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed pt-1"
+              className="text-xs sm:text-sm text-slate-200 font-sans leading-snug sm:leading-relaxed pt-0.5 sm:pt-1"
             >
-              <span className="text-xs text-slate-400 font-bold block uppercase mb-1">
+              <span className="text-xs text-slate-400 font-bold block uppercase mb-0.5 sm:mb-1">
                 Reason / Bottom Line:
               </span>
               <p>{insight.standard.bottomLine}</p>
@@ -87,28 +88,45 @@ export default function StandardTerminalView({
           {/* 3. WHAT NEEDS TO CHANGE (Unmet Conditions & Preconditions) */}
           <div
             data-testid="unmet-condition"
-            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3"
+            className="bg-[#080e18] border border-cyan-900/50 rounded-2xl p-2.5 sm:p-5 shadow-lg space-y-2 sm:space-y-3"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#182335] pb-2">
+            <div
+              className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-b border-[#182335] pb-2 cursor-pointer sm:cursor-default"
+              onClick={() => setIsPreconditionsOpen((prev) => !prev)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setIsPreconditionsOpen((prev) => !prev);
+                }
+              }}
+              aria-expanded={isPreconditionsOpen}
+            >
               <h3 className="text-xs sm:text-sm font-bold text-cyan-300 uppercase font-mono tracking-wide flex items-center gap-2">
                 <span>🎯</span>
                 <span>What Needs to Change (Execution Preconditions)</span>
               </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                {isActionable ? "Preconditions Cleared" : "Awaiting Confirmation"}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
+                  {isActionable ? "Preconditions Cleared" : "Awaiting Confirmation"}
+                </span>
+                <span className="sm:hidden text-slate-400 text-xs" aria-hidden="true">
+                  {isPreconditionsOpen ? "▲" : "▼"}
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-2.5 text-xs">
+            <div className={`${isPreconditionsOpen ? "grid" : "hidden sm:grid"} grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
               {unmetConditions.map((cond) => (
                 <div
                   key={cond.id}
-                  className="p-3 rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
+                  className="py-1.5 px-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-[#060b13] border border-[#1b2639] space-y-1"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-200 text-xs">{cond.title}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-200 text-xs truncate">{cond.title}</span>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                      className={`px-2 py-0.5 rounded text-[10px] sm:text-xs font-mono font-bold shrink-0 ${
                         cond.status === "MET"
                           ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
                           : cond.status === "UNMET"
@@ -119,7 +137,9 @@ export default function StandardTerminalView({
                       {cond.status}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed font-sans">{cond.description}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed font-sans hidden sm:block">
+                    {cond.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -127,7 +147,7 @@ export default function StandardTerminalView({
         </div>
 
         {/* Right Column (xl:col-span-7): Price Chart */}
-        <div className="xl:col-span-7 space-y-2 min-w-0">
+        <div className="xl:col-span-7 space-y-2 min-w-0 order-3 xl:order-2">
           {/* 4. PRICE / CHART CONTEXT */}
           {chartSlot && (
             <div data-testid="market-workspace-chart" className="space-y-2">
@@ -135,14 +155,14 @@ export default function StandardTerminalView({
             </div>
           )}
         </div>
-      </div>
 
-      {/* 5. CONDITIONAL TRADE PLAN */}
-      {planSlot && (
-        <div className="space-y-2">
-          {planSlot}
-        </div>
-      )}
+        {/* 5. CONDITIONAL TRADE PLAN */}
+        {planSlot && (
+          <div className="order-2 xl:order-3 xl:col-span-12 space-y-2 w-full">
+            {planSlot}
+          </div>
+        )}
+      </div>
 
       {/* 6. SUPPORTING EVIDENCE (Score Subordinated & Confluence Breakdown) */}
       <div
@@ -150,7 +170,7 @@ export default function StandardTerminalView({
         className="bg-[#0b101b] border border-[#1d293d] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 font-sans text-xs"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182335] pb-3">
-          <div>
+          <div className="min-w-0 max-w-full">
             <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
               Supporting Evidence
             </span>
@@ -170,7 +190,7 @@ export default function StandardTerminalView({
                 onOpenWhy();
               }
             }}
-            className={`flex items-center gap-3 px-3.5 py-2 bg-[#06090f] border rounded-xl cursor-pointer transition-all shrink-0 min-h-[44px] ${
+            className={`flex items-center gap-3 px-3.5 py-2 bg-[#06090f] border rounded-xl cursor-pointer transition-all shrink-0 max-w-full min-h-[44px] ${
               insight.terminalState.overallEligibility !== "ELIGIBLE"
                 ? "border-slate-700 hover:border-slate-500"
                 : "border-[#24334b] hover:border-cyan-500"

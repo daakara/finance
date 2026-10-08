@@ -153,15 +153,15 @@ export default function AdaptiveTerminal({
 
       {/* ⚠️ Ineligible / Limited Evidence Notice */}
       {insight.terminalState.overallEligibility !== "ELIGIBLE" && (
-        <div className="bg-[#181106] border border-amber-800/60 p-3 rounded-xl flex items-start gap-2.5 text-xs text-amber-200" role="alert">
+        <div className="bg-[#181106] border border-amber-800/60 p-2.5 sm:p-3 rounded-xl flex items-start gap-2 sm:gap-2.5 text-xs text-amber-200" role="alert">
           <span className="text-base shrink-0">⚠️</span>
-          <div className="space-y-1">
+          <div className="space-y-0.5 sm:space-y-1">
             <strong className="font-mono font-bold block text-amber-300">
               {insight.terminalState.overallEligibility === "INELIGIBLE"
                 ? "Insufficient Evidence to Derive Confident Posture"
                 : "Partial Evidence: Reduced Domain Confidence"}
             </strong>
-            <p className="text-slate-300 text-xs font-sans leading-relaxed">
+            <p className="text-slate-300 text-xs font-sans leading-snug sm:leading-relaxed">
               {insight.terminalState.headlineExplanation} Some model inputs (e.g. quarterly SEC filings or options flow) are unavailable. Missing data is treated as unassessed, not negative.
             </p>
           </div>
