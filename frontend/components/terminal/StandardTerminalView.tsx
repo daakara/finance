@@ -27,13 +27,22 @@ export default function StandardTerminalView({
   const unmetConditions = deriveUnmetConditions(insight);
   const isActionable = Boolean(insight.terminalState.isActionable);
   const [isPreconditionsOpen, setIsPreconditionsOpen] = React.useState(false);
+  const [isChartExpanded, setIsChartExpanded] = React.useState(false);
+
+  const rawPrice = insight.price || kl.currentPrice;
+  const hasValidPrice = typeof rawPrice === "number" && !isNaN(rawPrice) && rawPrice > 0;
+  const hasValidZone = Boolean(
+    kl.watchZone &&
+    kl.watchZone.trim().toLowerCase() !== "unavailable" &&
+    (kl.entryMin != null || kl.entryMax != null || kl.watchZone.includes("$"))
+  );
 
   return (
     <div className="space-y-4 font-sans text-slate-100 animate-fade-in">
       {/* 🎯 FIRST-VIEWPORT COMPOSITION: VERDICT (LEFT 5-COL) + CHART (RIGHT 7-COL) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-        {/* Left Column (xl:col-span-5): Verdict Card & Preconditions */}
-        <div className="xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 xl:order-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-12 gap-4 items-start">
+        {/* Left Column (lg:col-span-5 xl:col-span-5): Verdict Card & Preconditions */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-2.5 sm:space-y-4 min-w-0 order-1 lg:order-1 xl:order-1">
           {/* 1. DECISION VERDICT (Dominant Visual Weight) & 2. DECISION REASON */}
           <div
             data-testid="decision-verdict"
@@ -117,7 +126,7 @@ export default function StandardTerminalView({
               </div>
             </div>
 
-            <div className={`${isPreconditionsOpen ? "grid" : "hidden sm:grid"} grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
+            <div className={`${isPreconditionsOpen ? "grid" : "hidden sm:grid"} grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-1.5 sm:gap-2.5 text-xs`}>
               {unmetConditions.map((cond) => (
                 <div
                   key={cond.id}
@@ -146,11 +155,72 @@ export default function StandardTerminalView({
           </div>
         </div>
 
-        {/* Right Column (xl:col-span-7): Price Chart */}
-        <div className="xl:col-span-7 space-y-2 min-w-0 order-3 xl:order-2">
-          {/* 4. PRICE / CHART CONTEXT */}
+        {/* Right Column (lg:col-span-7 xl:col-span-7): Price Chart & Mobile Preview */}
+        <div className="lg:col-span-7 xl:col-span-7 min-w-0 order-2 lg:order-2 xl:order-2">
+          {/* Mobile Chart Preview Affordance (< md only, ~56-64px height) */}
+          <div
+            data-testid="mobile-chart-preview"
+            className="md:hidden bg-[#0e1420] border border-[#1e2a3c] rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-md min-h-[56px] mb-2"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="font-mono font-bold text-white text-xs sm:text-sm">
+                  {insight.symbol || "UNAVAILABLE"}
+                </span>
+                {hasValidPrice ? (
+                  <span
+                    data-testid="preview-spot-price"
+                    className="text-emerald-400 font-mono font-bold text-xs sm:text-sm tabular-nums"
+                  >
+                    ${(rawPrice as number).toFixed(2)}
+                  </span>
+                ) : (
+                  <span
+                    data-testid="preview-spot-price"
+                    className="text-slate-400 font-mono text-xs font-semibold"
+                  >
+                    UNAVAILABLE
+                  </span>
+                )}
+              </div>
+              {hasValidZone ? (
+                <span
+                  data-testid="preview-watch-zone"
+                  title={`Watch Zone: ${kl.watchZone}`}
+                  className="text-[10px] font-mono text-amber-300 bg-amber-950/70 border border-amber-800/80 px-1.5 py-0.5 rounded truncate max-w-[120px]"
+                >
+                  {kl.watchZone}
+                </span>
+              ) : (
+                <span
+                  data-testid="preview-watch-zone"
+                  className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded"
+                >
+                  UNAVAILABLE
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsChartExpanded((prev) => !prev)}
+              aria-expanded={isChartExpanded}
+              aria-controls="market-workspace-chart"
+              aria-label={isChartExpanded ? "Collapse candlestick price chart" : "Expand candlestick price chart"}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/80 font-mono text-xs font-bold min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none transition-colors touch-manipulation cursor-pointer shrink-0"
+            >
+              <span>📈</span>
+              <span>{isChartExpanded ? "Hide Chart ▲" : "View Candlestick Chart ▾"}</span>
+            </button>
+          </div>
+
+          {/* 4. PRICE / CHART CONTEXT (Full canonical chart) */}
           {chartSlot && (
-            <div data-testid="market-workspace-chart" className="space-y-2">
+            <div
+              id="market-workspace-chart"
+              data-testid="market-workspace-chart"
+              className={`${isChartExpanded ? "block" : "hidden md:block"} space-y-2`}
+            >
               {chartSlot}
             </div>
           )}
@@ -158,7 +228,7 @@ export default function StandardTerminalView({
 
         {/* 5. CONDITIONAL TRADE PLAN */}
         {planSlot && (
-          <div className="order-2 xl:order-3 xl:col-span-12 space-y-2 w-full">
+          <div className="order-3 lg:order-3 xl:order-3 lg:col-span-12 xl:col-span-12 space-y-2 w-full">
             {planSlot}
           </div>
         )}
