@@ -60,16 +60,14 @@ export default function StandardTerminalView({
 
               <div className="flex items-center gap-2">
                 <span
+                  data-testid="actionability-badge"
                   className={`px-3 py-1 rounded-md text-xs font-mono font-bold border ${
                     isActionable
                       ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
-                      : "bg-amber-950/80 text-amber-300 border-amber-700/80"
+                      : "bg-slate-900/80 text-slate-400 border-slate-700/80"
                   }`}
                 >
-                  {isActionable ? "ACTIONABLE" : "WAIT FOR TRIGGER"}
-                </span>
-                <span className="px-3 py-1 rounded-md text-xs font-mono bg-[#162030] text-slate-300 border border-[#243044]">
-                  {insight.terminalState.uiStateLabel}
+                  {isActionable ? "ACTIONABLE" : "NOT ACTIONABLE"}
                 </span>
               </div>
             </div>

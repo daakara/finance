@@ -203,9 +203,11 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
         : false
     );
 
+    const canonicalStateLabel = decisionTrace?.decisionStateLabel || decisionTrace?.stateLabel;
+
     if (isCanonicalActionable) {
       posture = "ACQUIRE";
-      uiStateLabel = decisionTrace?.stateLabel || "Actionable Setup";
+      uiStateLabel = canonicalStateLabel || "Actionable Setup";
       headlineExplanation = "Multi-factor confluence confirmed in optimal buy zone.";
     } else if (assessment === "UNFAVORABLE") {
       posture = "AVOID";
@@ -213,7 +215,7 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
       headlineExplanation = "Negative trend or poor fundamentals present unfavorable risk/reward.";
     } else {
       posture = "WATCH";
-      uiStateLabel = decisionTrace?.stateLabel || "Wait for Trigger";
+      uiStateLabel = canonicalStateLabel || "Setup Evaluation Pending";
       const levelRel = evaluateLevelRelation(safePrice, reclaimMilestonePrice, "50-day SMA", symbol);
       headlineExplanation = (decisionTrace && decisionTrace.disqualificationReason)
         ? decisionTrace.disqualificationReason
@@ -265,8 +267,9 @@ export function deriveAssessmentState(input: AssessmentEngineInput): TerminalVie
   let decisionState: DecisionState = "VALID_SETUP";
   if (decisionTrace) {
     decisionState = decisionTrace.decisionState;
-    if (decisionTrace.stateLabel) {
-      uiStateLabel = decisionTrace.stateLabel;
+    const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
+    if (canonicalStateLabel && posture !== "AVOID" && ownershipState !== "OWNED") {
+      uiStateLabel = canonicalStateLabel;
     }
     if (decisionTrace.disqualificationReason && posture !== "ACQUIRE") {
       headlineExplanation = decisionTrace.disqualificationReason;

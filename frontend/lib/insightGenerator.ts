@@ -334,10 +334,11 @@ export function generateQuantitativeInsight(
   // Phase 21 Epistemic Alignment: Honor authoritative backend decisionTrace if provided
   if (decisionTrace) {
     terminalState.decisionState = decisionTrace.decisionState;
+    const canonicalStateLabel = decisionTrace.decisionStateLabel || decisionTrace.stateLabel;
 
     if (decisionTrace.decisionState === "UNVERIFIED" || isDegradedDecision) {
       terminalState.posture = "RESEARCH";
-      terminalState.uiStateLabel = decisionTrace.stateLabel || "Unverified Asset — Live Tape Required";
+      terminalState.uiStateLabel = canonicalStateLabel || "Unverified Asset — Live Tape Required";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
         "Direct market data tape only. Analytical decision authority is unavailable."
       );
@@ -348,10 +349,10 @@ export function generateQuantitativeInsight(
       };
     } else if (!decisionTrace.isActionable && terminalState.posture === "ACQUIRE") {
       terminalState.posture = "WATCH";
-      terminalState.uiStateLabel = decisionTrace.stateLabel || "Valid Setup — Awaiting Trigger";
+      terminalState.uiStateLabel = canonicalStateLabel || "Valid Setup — Awaiting Trigger";
       terminalState.headlineExplanation = decisionTrace.disqualificationReason || (
-        decisionTrace.stateLabel
-          ? `Setup state: ${decisionTrace.stateLabel}; awaiting confirmed entry trigger.`
+        canonicalStateLabel
+          ? `Setup state: ${canonicalStateLabel}; awaiting confirmed entry trigger.`
           : "Asset structure is under evaluation; awaiting confirmed entry trigger in buy zone."
       );
       terminalState.primaryAction = {
@@ -359,8 +360,8 @@ export function generateQuantitativeInsight(
         actionType: "SET_ALERT",
         enabled: true,
       };
-    } else if (decisionTrace.stateLabel) {
-      terminalState.uiStateLabel = decisionTrace.stateLabel;
+    } else if (canonicalStateLabel && terminalState.posture !== "AVOID" && ownership !== "OWNED") {
+      terminalState.uiStateLabel = canonicalStateLabel;
       if (decisionTrace.disqualificationReason) {
         terminalState.headlineExplanation = decisionTrace.disqualificationReason;
       }
@@ -392,7 +393,9 @@ export function generateQuantitativeInsight(
 
   const finalVerdict = (decisionTrace?.decisionState === "UNVERIFIED" || isDegradedDecision)
     ? "UNVERIFIED"
-    : (decisionTrace?.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER");
+    : (terminalState.posture === "AVOID"
+        ? "AVOID_STAGE_4"
+        : (decisionTrace?.isActionable ? "ACTIONABLE_BUY_ZONE" : "WAIT_FOR_TRIGGER"));
 
   const smaLevelRelation = evaluateLevelRelation(safePrice, sma50, "50-day moving average", symbol);
 

@@ -233,8 +233,8 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
         />
       );
 
-      // Verdict remains WAIT
-      expect(screen.getByText(/WAIT FOR TRIGGER/i)).toBeDefined();
+      // Actionability badge remains NOT ACTIONABLE
+      expect(screen.getByText(/NOT ACTIONABLE/i)).toBeDefined();
       expect(screen.queryByText(/^ACTIONABLE$/i)).toBeNull();
 
       // Conditional trade plan renders CURRENT ACTION: Wait
@@ -401,7 +401,8 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
 
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
       expect(screen.getAllByText(/UNVERIFIED ASSET/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/WAIT FOR TRIGGER/i)).toBeDefined();
+      expect(screen.getByText(/NOT ACTIONABLE/i)).toBeDefined();
+      expect(screen.queryByText(/WAIT FOR TRIGGER/i)).toBeNull();
     });
 
     it("State 2: INSUFFICIENT_DATA omits synthesized values", () => {
@@ -467,7 +468,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
 
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
       expect(screen.getByText(/CONSTRUCTIVE BASE FORMATION/i)).toBeDefined();
-      expect(screen.getByText(/WAIT FOR TRIGGER/i)).toBeDefined();
+      expect(screen.getByText(/NOT ACTIONABLE/i)).toBeDefined();
     });
 
     it("State 6: ACTIONABLE_SETUP renders ACTIONABLE badge and execution state", () => {
@@ -594,7 +595,7 @@ describe("ARX Terminal Analysis Decision Hierarchy Acceptance Suite", () => {
       });
 
       render(<StandardTerminalView insight={insight} onOpenSizer={vi.fn()} onOpenWhy={vi.fn()} />);
-      expect(screen.getByText(/WAIT FOR TRIGGER/i)).toBeDefined();
+      expect(screen.getByText(/NOT ACTIONABLE/i)).toBeDefined();
     });
 
     it("INV-ANALYSIS-06: Actionability CTA follows canonical decision contract strictly", () => {

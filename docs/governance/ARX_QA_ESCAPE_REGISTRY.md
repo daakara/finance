@@ -237,3 +237,24 @@ Every escape is classified according to its primary detection failure mechanisms
 * **PREVENTION_CONTROL_STATUS**: `ENFORCED`
 * **PRODUCTION_VERIFICATION_STATUS**: `VERIFIED`
 * **REMAINING_ACTION**: `NONE`
+
+---
+
+### QA-ESC-011: Analytical Verdict Decision-Surface Multi-Authority Duplication & Contradictory Actionability Collapse
+* **ESCAPE_ID**: `QA-ESC-011`
+* **DATE**: `2026-10-08`
+* **PRODUCTION_SYMPTOM**: On ARX Analytical Verdict card (notably observed on NAUT production screenshot), the same decision state ("Wait for Trigger") rendered three times (Headline, Amber Badge, Secondary Grey Badge). On `AVOID` setups, `OWNED`/`HOLD` positions, and `UNVERIFIED` assets, non-actionable state collapsed to `"WAIT FOR TRIGGER"`, presenting contradictory guidance.
+* **ROOT_CAUSE**:
+  1. Backend-frontend contract misalignment: `DecisionHierarchyEngine` emitted `decisionStateLabel`, while frontend `assessmentEngine.ts` read `decisionTrace?.stateLabel`, causing fallback to generic `"Wait for Trigger"`.
+  2. Generic fallback on missing state: `assessmentEngine.ts` line 216 defaulted undefined `decisionTrace` to `"Wait for Trigger"` rather than failing closed to an explicit neutral/unassessed condition (`"Setup Evaluation Pending"`).
+  3. Actionability-trigger presentation collapse: `StandardTerminalView`, `GuidedTerminalView`, and `AdvancedTerminalView` hardcoded `{isActionable ? "ACTIONABLE" : "WAIT FOR TRIGGER"}`, falsely equating `!isActionable` with awaiting a trade trigger.
+  4. Redundant secondary badge: Terminal views rendered `{insight.verdictLabel}` as headline and `{insight.terminalState.uiStateLabel}` as secondary grey badge, repeating identical text when `verdictLabel` was mapped to `uiStateLabel`.
+* **DEFECT_STATUS**: `REMEDIATED_PENDING_PRODUCTION_VERIFICATION`
+* **FIX_COMMIT**: `LOCAL_CANDIDATE`
+* **FIX_FILE**: `frontend/types/insight.ts`, `frontend/lib/assessmentEngine.ts`, `frontend/lib/insightGenerator.ts`, `frontend/components/terminal/StandardTerminalView.tsx`, `frontend/components/terminal/GuidedTerminalView.tsx`, `frontend/components/terminal/AdvancedTerminalView.tsx`
+* **CURRENT_MAIN_CONTAINS_FIX**: `PENDING_INTEGRATION`
+* **REGRESSION_TEST**: `frontend/components/__tests__/DecisionSurfaceIntegrity.test.tsx`, `frontend/components/__tests__/AnalysisDecisionHierarchy.test.tsx`
+* **REGRESSION_COVERAGE_STATUS**: `REGRESSION_VERIFIED`
+* **PREVENTION_CONTROL_STATUS**: `ENFORCED`
+* **PRODUCTION_VERIFICATION_STATUS**: `NOT_YET_VERIFIED_IN_PRODUCTION`
+* **REMAINING_ACTION**: `DEPLOY_AND_VERIFY_PRODUCTION_DECISION_SURFACE`

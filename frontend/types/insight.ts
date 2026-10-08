@@ -239,12 +239,16 @@ export interface FreshnessInfo {
 export interface DecisionTrace {
   symbol: string;
   decisionState: DecisionState;
-  stateLabel: string;
+  decisionStateLabel?: string;
+  stateLabel?: string;
   isActionable: boolean;
   canSizeTrade: boolean;
   allowedActions: string[];
   disqualificationReason: string | null;
   pillarBreakdown?: Record<string, any>;
   timestamp?: string;
+  explanation?: string;
+  confluenceScore?: number;
+  instrumentProfile?: Record<string, any>;
 }
 
