@@ -249,12 +249,14 @@ Every escape is classified according to its primary detection failure mechanisms
   2. Generic fallback on missing state: `assessmentEngine.ts` line 216 defaulted undefined `decisionTrace` to `"Wait for Trigger"` rather than failing closed to an explicit neutral/unassessed condition (`"Setup Evaluation Pending"`).
   3. Actionability-trigger presentation collapse: `StandardTerminalView`, `GuidedTerminalView`, and `AdvancedTerminalView` hardcoded `{isActionable ? "ACTIONABLE" : "WAIT FOR TRIGGER"}`, falsely equating `!isActionable` with awaiting a trade trigger.
   4. Redundant secondary badge: Terminal views rendered `{insight.verdictLabel}` as headline and `{insight.terminalState.uiStateLabel}` as secondary grey badge, repeating identical text when `verdictLabel` was mapped to `uiStateLabel`.
-* **DEFECT_STATUS**: `REMEDIATED_PENDING_PRODUCTION_VERIFICATION`
-* **FIX_COMMIT**: `LOCAL_CANDIDATE`
+* **DEFECT_STATUS**: `REMEDIATED`
+* **FIX_COMMIT**: `a05331f0accf17c004c0c2efb1ff8e4af59ed9a1`
 * **FIX_FILE**: `frontend/types/insight.ts`, `frontend/lib/assessmentEngine.ts`, `frontend/lib/insightGenerator.ts`, `frontend/components/terminal/StandardTerminalView.tsx`, `frontend/components/terminal/GuidedTerminalView.tsx`, `frontend/components/terminal/AdvancedTerminalView.tsx`
-* **CURRENT_MAIN_CONTAINS_FIX**: `PENDING_INTEGRATION`
+* **CURRENT_MAIN_CONTAINS_FIX**: `YES`
 * **REGRESSION_TEST**: `frontend/components/__tests__/DecisionSurfaceIntegrity.test.tsx`, `frontend/components/__tests__/AnalysisDecisionHierarchy.test.tsx`
 * **REGRESSION_COVERAGE_STATUS**: `REGRESSION_VERIFIED`
 * **PREVENTION_CONTROL_STATUS**: `ENFORCED`
-* **PRODUCTION_VERIFICATION_STATUS**: `NOT_YET_VERIFIED_IN_PRODUCTION`
-* **REMAINING_ACTION**: `DEPLOY_AND_VERIFY_PRODUCTION_DECISION_SURFACE`
+* **PRODUCTION_VERIFICATION_STATUS**: `VERIFIED`
+* **FUNCTIONAL_RELEASE_SHA**: `a05331f0accf17c004c0c2efb1ff8e4af59ed9a1`
+* **LIVE_NAUT_ACCEPTANCE**: `PASS`
+* **REMAINING_ACTION**: `NONE`
