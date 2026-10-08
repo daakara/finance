@@ -26,3 +26,4 @@ RELEASE_NOTES_COMMITTED
 | 2026-10-08 | [`a05331f`](2026-10-08_a05331f_decision-surface-integrity-remediation.md) | Decision-Surface Integrity Remediation (QA-ESC-011) | VERIFIED |
 | 2026-10-08 | [`3f89f8f`](2026-10-08_3f89f8f_synthesis-e-wave-4-decision-readiness.md) | Synthesis E Wave 4 Decision Readiness & State Harmonization | VERIFIED |
 | 2026-10-08 | [`defdf89`](2026-10-08_defdf89_responsive-chart-priority-remediation.md) | Responsive Chart Priority & Data Authority Remediation | VERIFIED |
+| 2026-10-08 | [`b26163f`](2026-10-08_b26163f_execution-ladder-capture-wiring-v3-governance.md) | Execution Ladder Capture Wiring Remediation & Epoch 4 V3 Governance | VERIFIED |
