@@ -16,6 +16,7 @@ Validates:
 
 import os
 import json
+import math
 import sqlite3
 import tempfile
 import pytest
@@ -767,3 +768,625 @@ def test_same_day_state_evolution_not_collapsed():
     altered_tp2 = dict(base_plan)
     altered_tp2["take_profit_2"] = 2.25
     assert compute_execution_ladder_plan_id(altered_tp2) != base_id
+
+
+# ==============================================================================
+# SECTION 10: ENTRYPOINT WIRING & ADMISSION TESTS (TESTS A - J + E2E + SHA)
+# ==============================================================================
+
+def _create_mock_optimal_execution_plan(
+    status: str = "WAITING_PULLBACK",
+    is_actionable: bool = False,
+    current_spot: float = 1.96,
+    entry_min: float = 1.27,
+    entry_max: float = 1.46,
+    planned_entry: float = 1.46,
+    stop_loss: float = 1.26,
+    tp1: float = 1.90,
+    tp2: float = 2.19,
+    atr_14: float = 0.15,
+) -> dict:
+    """Creates a mock optimal_execution_plan dictionary returned by calculate_trade_levels."""
+    return {
+        "execution_status": status,
+        "is_actionable": is_actionable,
+        "entry_min": entry_min,
+        "entry_max": entry_max,
+        "optimal_entry_min": entry_min,
+        "optimal_entry_max": entry_max,
+        "planned_entry": planned_entry,
+        "structural_invalidation": stop_loss,
+        "stop_loss": stop_loss,
+        "take_profit_1": tp1,
+        "take_profit_2": tp2,
+        "atr_14": atr_14,
+        "execution_risk": round(planned_entry - stop_loss, 4),
+        "execution_stop_visible": True,
+        "market_location": "PULLBACK_CORRIDOR",
+        "user_role": "LONG_TERM",
+    }
+
+
+def test_entrypoint_wiring_test_a_non_actionable_waiting_pullback(temp_db_path, temp_ledger_path):
+    """TEST A: Non-actionable ratified state (WAITING_PULLBACK) reaches capture hook and persists."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        user_role="LONG_TERM",
+        instrument_class="EQUITY",
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert result is not None
+    assert result["epoch_id"] == EXECUTION_LADDER_EPOCH_ID
+    assert result["execution_status"] == "WAITING_PULLBACK"
+    assert result["is_actionable"] is False
+
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_entrypoint_wiring_test_b_actionable_state(temp_db_path, temp_ledger_path):
+    """TEST B: Actionable qualifying state reaches capture hook and persists under Epoch 001."""
+    plan = _create_mock_optimal_execution_plan(status="IN_BUY_ZONE_AWAITING_TRIGGER", is_actionable=True)
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="AAPL",
+        current_price=225.50,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=225.50,
+        is_actionable=True,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        user_role="LONG_TERM",
+        instrument_class="EQUITY",
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert result is not None
+    assert result["epoch_id"] == EXECUTION_LADDER_EPOCH_ID
+    assert result["execution_status"] == "IN_BUY_ZONE_AWAITING_TRIGGER"
+    assert result["is_actionable"] is True
+
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_entrypoint_wiring_test_c_in_buy_zone_awaiting_trigger_non_actionable(temp_db_path, temp_ledger_path):
+    """TEST C: IN_BUY_ZONE_AWAITING_TRIGGER with is_actionable=False reaches hook and persists."""
+    plan = _create_mock_optimal_execution_plan(status="IN_BUY_ZONE_AWAITING_TRIGGER", is_actionable=False)
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="IREN",
+        current_price=12.50,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=12.50,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        user_role="LONG_TERM",
+        instrument_class="EQUITY",
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert result is not None
+    assert result["execution_status"] == "IN_BUY_ZONE_AWAITING_TRIGGER"
+    assert result["is_actionable"] is False
+
+
+def test_entrypoint_wiring_test_d_legacy_capture_preservation(temp_db_path, temp_ledger_path):
+    """TEST D: Legacy capture path (epoch_id=None) preserves strict is_actionable filter."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    # Calling legacy path (epoch_id=None) with is_actionable=False fails admission
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=None,  # Legacy route
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+    )
+    assert result is None
+    # Execution ladder table was untouched
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 0
+
+
+def test_entrypoint_wiring_test_e_test_context_rejection(temp_db_path, temp_ledger_path, monkeypatch):
+    """TEST E: Test context or ARX_TEST_MODE prevents prospective plan persistence."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    # 1. Via ExecutionContext.TEST
+    res1 = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.GOVERNANCE_CERTIFICATION,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert res1 is None
+
+    # 2. Via ARX_TEST_MODE=1
+    monkeypatch.setenv("ARX_TEST_MODE", "1")
+    res2 = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert res2 is None
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 0
+
+
+def test_entrypoint_wiring_test_f_synthetic_context_rejection(temp_db_path, temp_ledger_path):
+    """TEST F: Synthetic indicators in optimal plan or provider prevent persistence."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    plan["isSynthetic"] = True
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert result is None
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 0
+
+
+def test_entrypoint_wiring_test_g_admin_context_rejection(temp_db_path, temp_ledger_path):
+    """TEST G: Admin execution context prevents prospective plan persistence."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    result = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context="ADMIN",
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert result is None
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 0
+
+
+def test_entrypoint_wiring_test_h_stale_quote_rejection():
+    """TEST H: Stale quote (non-REALTIME) skips prospective capture hook."""
+    class MockMarketPriceState:
+        live_freshness = "DELAYED"
+        market_session = "REGULAR_SESSION"
+        live_spot_price = 1.96
+
+    mps = MockMarketPriceState()
+    quote_and_session_eligible = (
+        mps.live_freshness == "REALTIME"
+        and mps.market_session == "REGULAR_SESSION"
+        and mps.live_spot_price is not None
+    )
+    assert quote_and_session_eligible is False
+
+
+def test_entrypoint_wiring_test_i_non_regular_session_rejection():
+    """TEST I: Non-regular market session skips prospective capture hook."""
+    class MockMarketPriceState:
+        live_freshness = "REALTIME"
+        market_session = "CLOSED"
+        live_spot_price = 1.96
+
+    mps = MockMarketPriceState()
+    quote_and_session_eligible = (
+        mps.live_freshness == "REALTIME"
+        and mps.market_session == "REGULAR_SESSION"
+        and mps.live_spot_price is not None
+    )
+    assert quote_and_session_eligible is False
+
+
+def test_entrypoint_wiring_test_j_duplicate_idempotency(temp_db_path, temp_ledger_path):
+    """TEST J: Duplicate capture with same canonical plan identity yields row count 1."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    kwargs = dict(
+        symbol="NAUT",
+        current_price=1.96,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=1.96,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        user_role="LONG_TERM",
+        instrument_class="EQUITY",
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    res1 = PassiveCaptureHook.record_natural_recommendation(**kwargs)
+    assert res1 is not None
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+    # Second invocation with same plan
+    res2 = PassiveCaptureHook.record_natural_recommendation(**kwargs)
+    assert res2 is not None
+    assert res2["plan_id"] == res1["plan_id"]
+    # Row count strictly remains 1
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_isolated_end_to_end_capture_pipeline(temp_db_path, temp_ledger_path):
+    """End-to-end simulated analytics request pipeline to isolated temporary database."""
+    # 1. Generate execution ladder levels
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+
+    # 2. Check quote and session gating
+    live_freshness = "REALTIME"
+    market_session = "REGULAR_SESSION"
+    live_spot_price = 1.96
+    current_price = 1.96
+    quote_eligible = (
+        live_freshness == "REALTIME"
+        and market_session == "REGULAR_SESSION"
+        and live_spot_price is not None
+        and math.isfinite(live_spot_price)
+        and live_spot_price > 0
+        and current_price is not None
+        and math.isfinite(current_price)
+        and current_price > 0
+    )
+    assert quote_eligible is True
+
+    # 3. Invoke capture hook with EXECUTION_LADDER_EPOCH_ID
+    captured = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT",
+        current_price=current_price,
+        optimal_execution_plan=plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=live_spot_price,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        user_role="LONG_TERM",
+        instrument_class="EQUITY",
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert captured is not None
+    assert captured["execution_status"] == "WAITING_PULLBACK"
+
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+    # 4. Ineligible synthetic attempt on same pipeline does NOT persist
+    synth_plan = dict(plan)
+    synth_plan["isSynthetic"] = True
+    synth_captured = PassiveCaptureHook.record_natural_recommendation(
+        symbol="NAUT_SYNTH",
+        current_price=current_price,
+        optimal_execution_plan=synth_plan,
+        confluence_output={},
+        technicals={},
+        factor_scores={},
+        macro_inputs={},
+        observed_at="2026-10-08T18:00:00Z",
+        fetched_at="2026-10-08T18:00:01Z",
+        freshness_status="LIVE",
+        provider_source="YAHOO_AUTHENTIC",
+        live_spot_price=live_spot_price,
+        is_actionable=False,
+        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+        db_path=temp_db_path,
+        ledger_path=temp_ledger_path,
+        execution_context=ExecutionContext.NATURAL_CLIENT,
+        runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+    )
+    assert synth_captured is None
+    # Database still only contains the 1 genuine plan
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_dynamic_runtime_release_sha_resolution(temp_db_path, temp_ledger_path, monkeypatch):
+    """Verifies that release_sha resolves dynamically from runtime environment and persists accurately."""
+    test_shas = [
+        "d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+        "defdf8900ab64d14705b57ecdd0c8ed902526195",
+        "aabbccddeeff00112233445566778899aabbccdd",
+    ]
+    for sha in test_shas:
+        monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", sha)
+        resolved = resolve_release_sha()
+        assert resolved == sha
+
+        plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK")
+        captured = PassiveCaptureHook.record_natural_recommendation(
+            symbol=f"TEST_{sha[:4]}",
+            current_price=10.0,
+            optimal_execution_plan=plan,
+            confluence_output={},
+            technicals={},
+            factor_scores={},
+            macro_inputs={},
+            observed_at="2026-10-08T18:00:00Z",
+            fetched_at="2026-10-08T18:00:01Z",
+            freshness_status="LIVE",
+            provider_source="YAHOO_AUTHENTIC",
+            live_spot_price=10.0,
+            is_actionable=False,
+            epoch_id=EXECUTION_LADDER_EPOCH_ID,
+            user_role="LONG_TERM",
+            instrument_class="EQUITY",
+            db_path=temp_db_path,
+            ledger_path=temp_ledger_path,
+            execution_context=ExecutionContext.NATURAL_CLIENT,
+            runtime_release_sha=sha,
+            execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+        )
+        assert captured is not None
+        assert captured["release_sha"] == sha
+
+
+def test_coexistence_actionable_with_execution_plan(temp_db_path, temp_ledger_path, monkeypatch):
+    """Verifies that an actionable qualifying request invokes BOTH Execution Ladder and legacy capture routes."""
+    plan = _create_mock_optimal_execution_plan(status="IN_BUY_ZONE", is_actionable=True)
+    calls = []
+    original_fn = PassiveCaptureHook.record_natural_recommendation
+
+    def spy_record(*args, **kwargs):
+        calls.append(kwargs)
+        return original_fn(*args, **kwargs)
+
+    monkeypatch.setattr(PassiveCaptureHook, "record_natural_recommendation", spy_record)
+
+    # Simulate analytics.py control flow
+    optimal_execution_plan = plan
+    is_actionable = True
+    quote_and_session_eligible = True
+
+    if quote_and_session_eligible:
+        if optimal_execution_plan:
+            PassiveCaptureHook.record_natural_recommendation(
+                symbol="NAUT",
+                current_price=1.96,
+                optimal_execution_plan=optimal_execution_plan,
+                confluence_output={},
+                technicals={},
+                factor_scores={},
+                macro_inputs={},
+                observed_at="2026-10-08T18:00:00Z",
+                fetched_at="2026-10-08T18:00:01Z",
+                freshness_status="LIVE",
+                provider_source="YAHOO_AUTHENTIC",
+                live_spot_price=1.96,
+                is_actionable=is_actionable,
+                epoch_id=EXECUTION_LADDER_EPOCH_ID,
+                user_role="LONG_TERM",
+                instrument_class="EQUITY",
+                db_path=temp_db_path,
+                ledger_path=temp_ledger_path,
+                execution_context=ExecutionContext.NATURAL_CLIENT,
+                runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+                execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+            )
+        if is_actionable:
+            PassiveCaptureHook.record_natural_recommendation(
+                symbol="NAUT",
+                current_price=1.96,
+                optimal_execution_plan=optimal_execution_plan,
+                confluence_output={},
+                technicals={},
+                factor_scores={},
+                macro_inputs={},
+                observed_at="2026-10-08T18:00:00Z",
+                fetched_at="2026-10-08T18:00:01Z",
+                freshness_status="LIVE",
+                provider_source="YAHOO_AUTHENTIC",
+                live_spot_price=1.96,
+                is_actionable=is_actionable,
+                db_path=temp_db_path,
+                ledger_path=temp_ledger_path,
+                execution_context=ExecutionContext.NATURAL_CLIENT,
+                runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+            )
+
+    execution_ladder_calls = [c for c in calls if c.get("epoch_id") == EXECUTION_LADDER_EPOCH_ID]
+    legacy_calls = [c for c in calls if c.get("epoch_id") != EXECUTION_LADDER_EPOCH_ID]
+
+    assert len(execution_ladder_calls) == 1
+    assert execution_ladder_calls[0]["epoch_id"] == EXECUTION_LADDER_EPOCH_ID
+    assert len(legacy_calls) == 1
+    assert legacy_calls[0].get("epoch_id") is None
+
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_coexistence_non_actionable_with_execution_plan(temp_db_path, temp_ledger_path, monkeypatch):
+    """Verifies that a non-actionable qualifying request invokes Execution Ladder capture but NOT legacy route."""
+    plan = _create_mock_optimal_execution_plan(status="WAITING_PULLBACK", is_actionable=False)
+    calls = []
+    original_fn = PassiveCaptureHook.record_natural_recommendation
+
+    def spy_record(*args, **kwargs):
+        calls.append(kwargs)
+        return original_fn(*args, **kwargs)
+
+    monkeypatch.setattr(PassiveCaptureHook, "record_natural_recommendation", spy_record)
+
+    # Simulate analytics.py control flow
+    optimal_execution_plan = plan
+    is_actionable = False
+    quote_and_session_eligible = True
+
+    if quote_and_session_eligible:
+        if optimal_execution_plan:
+            PassiveCaptureHook.record_natural_recommendation(
+                symbol="NAUT",
+                current_price=1.96,
+                optimal_execution_plan=optimal_execution_plan,
+                confluence_output={},
+                technicals={},
+                factor_scores={},
+                macro_inputs={},
+                observed_at="2026-10-08T18:00:00Z",
+                fetched_at="2026-10-08T18:00:01Z",
+                freshness_status="LIVE",
+                provider_source="YAHOO_AUTHENTIC",
+                live_spot_price=1.96,
+                is_actionable=is_actionable,
+                epoch_id=EXECUTION_LADDER_EPOCH_ID,
+                user_role="LONG_TERM",
+                instrument_class="EQUITY",
+                db_path=temp_db_path,
+                ledger_path=temp_ledger_path,
+                execution_context=ExecutionContext.NATURAL_CLIENT,
+                runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+                execution_ladder_authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+            )
+        if is_actionable:
+            PassiveCaptureHook.record_natural_recommendation(
+                symbol="NAUT",
+                current_price=1.96,
+                optimal_execution_plan=optimal_execution_plan,
+                confluence_output={},
+                technicals={},
+                factor_scores={},
+                macro_inputs={},
+                observed_at="2026-10-08T18:00:00Z",
+                fetched_at="2026-10-08T18:00:01Z",
+                freshness_status="LIVE",
+                provider_source="YAHOO_AUTHENTIC",
+                live_spot_price=1.96,
+                is_actionable=is_actionable,
+                db_path=temp_db_path,
+                ledger_path=temp_ledger_path,
+                execution_context=ExecutionContext.NATURAL_CLIENT,
+                runtime_release_sha="d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+            )
+
+    execution_ladder_calls = [c for c in calls if c.get("epoch_id") == EXECUTION_LADDER_EPOCH_ID]
+    legacy_calls = [c for c in calls if c.get("epoch_id") != EXECUTION_LADDER_EPOCH_ID]
+
+    assert len(execution_ladder_calls) == 1
+    assert execution_ladder_calls[0]["epoch_id"] == EXECUTION_LADDER_EPOCH_ID
+    assert len(legacy_calls) == 0
+
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+    assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID) == 1

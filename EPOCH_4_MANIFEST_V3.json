@@ -1,0 +1,72 @@
+{
+  "manifestVersion": "3.0.0",
+  "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
+  "lifecycleState": "PRE_ACTIVATION",
+  "activationPolicy": "SUCCESSFUL_PRODUCTION_ACTIVATION",
+  "epochStartUtc": null,
+  "epochStartAuthority": "PRODUCTION_ACTIVATION_RECORD",
+  "observationGovernanceVersion": "3.0.0",
+  "observationGovernanceIdentity": "MANIFEST_HASH",
+  "observationGovernanceManifestHash": "7fc5ece99d67510807593d1c7f4d1efe7a7295d41934385a3b958765b5535dd8",
+  "observationGovernanceArtifactIdentity": "7fc5ece99d67510807593d1c7f4d1efe7a7295d41934385a3b958765b5535dd8",
+  "observationGovernanceSha": "7fc5ece99d67510807593d1c7f4d1efe7a7295d41934385a3b958765b5535dd8",
+  "decisionEngineSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineCompositeSha": "23cd1b20401f8fedd596da065ee16b04bc9cd5a2ab62bf4064830dbab05ccac3",
+  "decisionEngineVersion": "2.5.0",
+  "parentManifest": "EPOCH_4_MANIFEST.json",
+  "parentManifestVersion": "2.0.0",
+  "parentRuntimeSha": "d23bbf34655aee48ba8b9d0ccf6f9e60fd39d354",
+  "activationRule": "first deployed runtime containing V3 and passing current-manifest verification",
+  "authorizationRationale": "Reconcile authorized mainline functional evolution (commits 0390957, 329790c, 9d5fc2b) and shared governance evolution for Execution Ladder prospective capture (commit 5dcfeb4) while preserving historical v2 manifest immutability.",
+  "driftReconciliationReferences": [
+    "0390957b6a24a62a98c623656b79806fa9eeda4a",
+    "329790c0f2106b5af5e0d193a27fff4afb8ad5e4",
+    "9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69",
+    "5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950"
+  ],
+  "createdAtUtc": "2026-10-08T21:15:00Z",
+  "supersedesRuntimeBoundary": "EPOCH_4_MANIFEST.json",
+  "historicalManifestImmutable": true,
+  "executableGovernanceFiles": {
+    "analyst_dashboard/governance/passive_capture.py": {
+      "sha256": "0c6915e6a2820a3ef2d23b4af2bc71da11735125e30a1f1d446bb7de5d00e28b"
+    },
+    "analyst_dashboard/governance/experiment_ledger.py": {
+      "sha256": "c09306b4d2cdcaa8ba7ced4f452011908fdf91f4abf8d1eecf9a95f911e8b5a9"
+    },
+    "analyst_dashboard/governance/governance_db.py": {
+      "sha256": "caebbb5369311b5253633c1be60ee067e4fca9f7456c98a5fc23a254f5ba283b"
+    },
+    "analyst_dashboard/governance/storage.py": {
+      "sha256": "ebb0ceecac1acef022d23637f97efb96fd751763f4078412e1f95d052354c889"
+    },
+    "analyst_dashboard/data/fred_fetcher.py": {
+      "sha256": "d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08"
+    },
+    "api/routes/analytics.py": {
+      "sha256": "7d2c0325ea604b3a796bdec4c42e4d1ba949b51f088c0fd36ea95c3b80b68696"
+    },
+    "analyst_dashboard/data/alpaca_fetcher.py": {
+      "sha256": "f409b75627bd95b588c2ccac8028ea22f106dedb957912b0c3bcab7271c64ff9"
+    },
+    "analyst_dashboard/data/market_price_state.py": {
+      "sha256": "83846723d76a9b3e0a91cda0fc9373179075fe5773ebceb89a1e30e3e505a797"
+    },
+    "api/routes/screener.py": {
+      "sha256": "d62c5f5bac835458686ba137f9f071d93afbd1342048487610533931ae60f978"
+    },
+    "analyst_dashboard/analyzers/gem_screener.py": {
+      "sha256": "7ffbe27ab943ea5e2352f4411a7dbd065df3653f6e38bfce7f1407826b33d6b2"
+    }
+  },
+  "invariants": {
+    "zero_unauthorized_production_mutation": true,
+    "zero_brokerage_execution_side_effects": true,
+    "fail_closed_passive_capture": true,
+    "epistemic_null_unobserved_excursions": true,
+    "completed_session_market_data_authority": true,
+    "live_market_dual_price_contract": true,
+    "zero_synthetic_prospective_writes": true,
+    "single_canonical_actionability_authority": true
+  }
+}

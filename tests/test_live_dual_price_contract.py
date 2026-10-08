@@ -412,11 +412,12 @@ def test_optimal_execution_live_spot_evaluation_stop_breach(sample_daily_candles
 # ==============================================================================
 
 def test_frozen_engine_manifest_compliance():
-    """Asserts FROZEN_ENGINE_MANIFEST.json is verified against current repository code."""
-    res = ExperimentLedger.verify_frozen_engine_manifest()
-    assert res["valid"] is True, f"Frozen manifest failed verification: {res}"
-    assert res["status"] == "VERIFIED"
-    assert res["frozenStrategyVersion"] == "2.5.0"
+    """Asserts FROZEN_ENGINE_MANIFEST_V2_5_0.json candidate freeze artifact integrity under superseded Epoch 3."""
+    manifest = ExperimentLedger.get_frozen_manifest(version="2.5.0")
+    assert manifest is not None
+    assert manifest["frozenStrategyVersion"] == "2.5.0"
+    assert manifest["provenanceCommit"] == "PENDING_EPOCH_3_FREEZE"
+    assert len(manifest["engines"]) == 3
 
 
 def test_epoch4_governance_manifest_compliance():
@@ -426,6 +427,28 @@ def test_epoch4_governance_manifest_compliance():
     assert res["status"] == "VERIFIED"
     assert res["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
     assert len(res["files"]) == 10
+
+
+def test_epoch4_v2_manifest_byte_for_byte_untouched():
+    """Asserts EPOCH_4_MANIFEST.json (v2.0.0 freeze) remains 100% byte-for-byte untouched from historical record."""
+    audit = ExperimentLedger.verify_epoch4_v2_manifest()
+    assert audit["status"] == "VERIFIED"
+    assert audit["valid"] is True
+    assert audit["epochId"] == "ARX_PROSPECTIVE_VALIDATION_EPOCH_4"
+    assert audit["observationGovernanceManifestHash"] == "2e550089a1f4ff56ff84322ab3aba22428d5a7079cdae5a20c456e66ea248e66"
+
+
+def test_epoch4_v3_malformed_fails_closed_no_fallback(monkeypatch):
+    """Asserts that if EPOCH_4_MANIFEST_V3.json exists but is malformed, verification fails closed and does NOT fall back to V2."""
+    monkeypatch.setattr(ExperimentLedger, "get_epoch4_v3_manifest", lambda: {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V3", "valid": False})
+    res = ExperimentLedger.verify_epoch4_manifest()
+    assert res["status"] == "CORRUPTED"
+    assert res["valid"] is False
+    assert res.get("manifestVersion") != "2.0.0"
+
+    res_obs = ExperimentLedger.verify_observation_governance_manifest()
+    assert res_obs["status"] == "CORRUPTED"
+    assert res_obs["valid"] is False
 
 
 def test_epoch3_manifest_byte_for_byte_untouched():

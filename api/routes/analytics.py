@@ -27,7 +27,7 @@ from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.analyzers.decision_trace import DecisionTraceEngine
 from analyst_dashboard.analyzers.decision_hierarchy import DecisionHierarchyEngine, DecisionState
-from analyst_dashboard.governance.passive_capture import PassiveCaptureHook
+from analyst_dashboard.governance.passive_capture import PassiveCaptureHook, EXECUTION_LADDER_EPOCH_ID
 from analyst_dashboard.data.alpaca_fetcher import AlpacaMarketFetcher
 from analyst_dashboard.data.market_price_state import resolve_dual_price_state, MarketPriceState
 from analyst_dashboard.security_master import get_security_master_service
@@ -1254,13 +1254,12 @@ def get_asset_analytics(
         )
 
         # Step 2: Passive Prospective Recommendation Capture (Zero execution mutation, Fail-closed)
-        # Defense in depth: Never invoke capture when quote freshness, session, or actionability is ineligible
+        # Defense in depth: Never invoke capture when quote freshness or session is ineligible
         try:
             is_actionable = bool(decision_trace.get("isActionable", False))
             decision_state_val = decision_trace.get("decisionState")
-            if (
-                is_actionable
-                and market_price_state.live_freshness == "REALTIME"
+            quote_and_session_eligible = (
+                market_price_state.live_freshness == "REALTIME"
                 and market_price_state.market_session == "REGULAR_SESSION"
                 and live_spot_price is not None
                 and math.isfinite(live_spot_price)
@@ -1268,24 +1267,60 @@ def get_asset_analytics(
                 and current_price is not None
                 and math.isfinite(current_price)
                 and current_price > 0
-            ):
-                PassiveCaptureHook.record_natural_recommendation(
-                    symbol=upper_sym,
-                    current_price=current_price,
-                    optimal_execution_plan=optimal_execution_plan,
-                    confluence_output=confluence_output,
-                    technicals=technicals,
-                    factor_scores=factor_scores,
-                    macro_inputs=macro_inputs,
-                    observed_at=observed_at,
-                    fetched_at=fetched_at,
-                    freshness_status=freshness_status,
-                    provider_source=provider_source,
-                    candles=candles,
-                    live_spot_price=live_spot_price,
-                    market_price_state=market_price_state.to_dict(),
-                    is_actionable=is_actionable,
-                    decision_state=decision_state_val,
+            )
+
+            if quote_and_session_eligible:
+                # 2A: Execution Ladder Prospective Epoch 001 Capture
+                # Observes ratified execution status plans regardless of isActionable
+                if optimal_execution_plan:
+                    PassiveCaptureHook.record_natural_recommendation(
+                        symbol=upper_sym,
+                        current_price=current_price,
+                        optimal_execution_plan=optimal_execution_plan,
+                        confluence_output=confluence_output,
+                        technicals=technicals,
+                        factor_scores=factor_scores,
+                        macro_inputs=macro_inputs,
+                        observed_at=observed_at,
+                        fetched_at=fetched_at,
+                        freshness_status=freshness_status,
+                        provider_source=provider_source,
+                        candles=candles,
+                        live_spot_price=live_spot_price,
+                        market_price_state=market_price_state.to_dict(),
+                        is_actionable=is_actionable,
+                        decision_state=decision_state_val,
+                        epoch_id=EXECUTION_LADDER_EPOCH_ID,
+                        user_role=clean_role,
+                        instrument_class=asset_class_val,
+                    )
+
+                # 2B: Legacy Actionable Recommendation Capture (Epoch 4)
+                # Invariant preserved: Gated strictly behind is_actionable
+                if is_actionable:
+                    PassiveCaptureHook.record_natural_recommendation(
+                        symbol=upper_sym,
+                        current_price=current_price,
+                        optimal_execution_plan=optimal_execution_plan,
+                        confluence_output=confluence_output,
+                        technicals=technicals,
+                        factor_scores=factor_scores,
+                        macro_inputs=macro_inputs,
+                        observed_at=observed_at,
+                        fetched_at=fetched_at,
+                        freshness_status=freshness_status,
+                        provider_source=provider_source,
+                        candles=candles,
+                        live_spot_price=live_spot_price,
+                        market_price_state=market_price_state.to_dict(),
+                        is_actionable=is_actionable,
+                        decision_state=decision_state_val,
+                    )
+            else:
+                logger.debug(
+                    f"[PASSIVE_CAPTURE] event=EXECUTION_LADDER_CAPTURE_HOOK_SKIPPED symbol={upper_sym} "
+                    f"reason=INELIGIBLE_SESSION_OR_FRESHNESS freshness={market_price_state.live_freshness} "
+                    f"session={market_price_state.market_session}"
                 )
         except Exception as e:
             logger.warning(f"Passive recommendation capture bypassed on error: {e}")
