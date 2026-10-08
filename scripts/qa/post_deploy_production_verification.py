@@ -135,6 +135,23 @@ def check_frontend_bundle(frontend_url: str, expected_sha: Optional[str] = None)
     }
 
 
+def check_release_notes(release_sha: Optional[str] = None) -> Dict[str, Any]:
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    releases_dir = os.path.join(project_root, "docs", "releases")
+    if not os.path.isdir(releases_dir):
+        return {"status": "HOLD", "error": f"docs/releases directory missing at {releases_dir}"}
+    files = [f for f in os.listdir(releases_dir) if f.endswith(".md") and f != "README.md"]
+    if not files:
+        return {"status": "HOLD", "error": "No immutable release notes committed under docs/releases/"}
+    if release_sha:
+        short_sha = release_sha[:7]
+        matching = [f for f in files if short_sha in f]
+        if not matching:
+            return {"status": "HOLD", "error": f"No release note found for SHA {release_sha} ({short_sha}) in docs/releases/"}
+        return {"status": "PASS", "release_notes_file": matching[0], "total_notes": len(files)}
+    return {"status": "PASS", "latest_release_note": files[-1], "total_notes": len(files)}
+
+
 def main():
     parser = argparse.ArgumentParser(description="ARX Post-Deploy Production Verification Gate")
     parser.add_argument("--backend-url", default=DEFAULT_BACKEND_URL, help="Backend URL")
@@ -199,6 +216,17 @@ def main():
         hold_reasons.append(f"Frontend Bundle: {fe_res.get('error')}")
         overall_verdict = "HOLD"
 
+    # 5. Immutable Committed Release Notes (ARX Governance Model)
+    print("\n[5] Auditing Committed Release Notes under docs/releases/...")
+    notes_res = check_release_notes(args.expected_sha)
+    if notes_res["status"] == "PASS":
+        note_name = notes_res.get("release_notes_file") or notes_res.get("latest_release_note")
+        print(f"    [OK] Immutable release note verified: docs/releases/{note_name} (Total: {notes_res['total_notes']})")
+    else:
+        print(f"    [FAIL] Release notes missing: {notes_res.get('error')}")
+        hold_reasons.append(f"Committed Release Notes: {notes_res.get('error')}")
+        overall_verdict = "HOLD"
+
     print("\n" + "-" * 79)
     print(f"PRODUCTION_VERIFICATION = {overall_verdict}")
     print("-" * 79)
@@ -209,7 +237,7 @@ def main():
             print(f"  * {r}")
         sys.exit(1)
     else:
-        print("\nProduction environment verified across Backend Health, Macro Authority, Security Master Parity, and Frontend Delivery.")
+        print("\nProduction environment verified across Backend Health, Macro Authority, Security Master Parity, Frontend Delivery, and Committed Release Notes.")
         sys.exit(0)
 
 

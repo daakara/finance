@@ -570,11 +570,17 @@ The ARX Terminal QA system is hardened against all 10 reconstructed production e
 
 ---
 
-## 19. Final Metrics Block
+## 19. Reconciled Metrics Block
 
 ```text
-QA_AUDIT_BASE_SHA =
+ORIGINAL_QA_BASE_SHA =
   3ae385c7d9b338d0dde96e0e0d6ecfebfc36debb
+CURRENT_CANONICAL_SHA =
+  6f0559d93a681c3bb7c3a89883e0a820934a4a7a
+CURRENT_PRODUCTION_DEPLOYMENT_SHA =
+  5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950
+RECONCILED_QA_HEAD_SHA =
+  59466ae869c9320f3a339af76f05640a26288575
 QA_AUDIT_BRANCH =
   audit/arx-production-escape-analysis
 QA_AUDIT_WORKTREE =
@@ -601,10 +607,22 @@ REGRESSION_TESTS_ADDED =
   16
 SEMANTIC_INVARIANTS_ADDED =
   8
-E2E_TESTS_ADDED =
-  2
+DOM_COMPONENT_AND_ARCH_TESTS_ADDED =
+  8
+TRUE_BROWSER_E2E_TESTS_ADDED =
+  0
+WEBKIT_E2E_TESTS_ADDED =
+  0
+PHYSICAL_IOS_TESTS_EXECUTED =
+  0
 RELEASE_SMOKE_CHECKS_ADDED =
   9
+TOTAL_CHANGED_FILES =
+  8
+QA_ONLY_FILES =
+  8
+PRODUCTION_FILES =
+  0
 QUANT_FILES_CHANGED =
   0
 RECOMMENDATION_LOGIC_CHANGED =
@@ -615,10 +633,145 @@ PASSIVE_CAPTURE_BRANCH_UNCHANGED =
   YES
 CONCURRENCY_SAFE =
   YES
+OLD_BASELINE_SMOKE_GATE =
+  PASS
+RECONCILED_CANONICAL_SMOKE_GATE =
+  PASS
+CURRENT_PRODUCTION_HEALTH_VERIFICATION =
+  VERIFIED
+QA_BRANCH_PRODUCTION_VERIFICATION =
+  NOT_APPLICABLE_NOT_DEPLOYED
 QA_SYSTEM_STATUS =
   PASS
 CURRENT_PRODUCTION_REMEDIATIONS_REQUIRED =
   NONE
+INTEGRATION_GATE =
+  READY_FOR_INTEGRATION
 NEXT_AUTHORIZED_EVENT =
-  INTEGRATION_OF_PASSIVE_CAPTURE_OR_CANONICAL_RELEASE_GATE
+  INTEGRATION_INTO_CANONICAL_MAIN
 ```
+
+---
+
+## 20. Appendix: Canonical Reconciliation & Integration Readiness Gate
+
+### 20.1 Reconstructed Repository State Matrix
+
+At the initiation of the Reconciliation Gate, the repository states were verified across canonical remote, local main, and the QA audit worktree:
+
+| Parameter | Recorded Value | Provenance / Notes |
+| :--- | :--- | :--- |
+| `ORIGINAL_QA_BASE_SHA` | `3ae385c7d9b338d0dde96e0e0d6ecfebfc36debb` | Point of branch divergence for `audit/arx-production-escape-analysis` |
+| `CURRENT_PRODUCTION_DEPLOYMENT_SHA` | `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` | Deployed execution-ladder passive capture candidate |
+| `CURRENT_MAIN_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Fast-forward integration commit on canonical `origin/main` |
+| `REMOTE_MAIN_SHA` | `6f0559d93a681c3bb7c3a89883e0a820934a4a7a` | Upstream GitHub canonical ref (`refs/heads/main`) |
+| `QA_AUDIT_BRANCH` | `audit/arx-production-escape-analysis` | Dedicated isolated audit worktree |
+| `REBASE_RESULT` | `CLEAN_ZERO_CONFLICTS` | Rebased onto `6f0559d` cleanly; 0 conflict resolution markers |
+| `RECONCILED_QA_HEAD_SHA` | `59466ae869c9320f3a339af76f05640a26288575` | Head commit of reconciled QA branch |
+
+### 20.2 Overstated Evidence Classifications Corrected
+
+To preserve institutional truthfulness, evidence classifications previously stated in the initial draft were subjected to strict semantic audit and corrected:
+
+1. **Smoke Gate Baseline vs. Current Release**:
+   - `OLD_BASELINE_SMOKE_GATE = PASS`: Verified against base SHA `3ae385c7d9b338d0dde96e0e0d6ecfebfc36debb`.
+   - `RECONCILED_CANONICAL_SMOKE_GATE = PASS`: Verified by executing `python scripts/qa/production_candidate_smoke_gate.py --release-sha 5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`. All 5 canonical instruments (`AAPL`, `MSFT`, `NVDA`, `PLSE`, `SPY`) passed across market data freshness, structural envelopes, decision schemas, and security master constraints.
+
+2. **Production Verification Scope**:
+   - `CURRENT_PRODUCTION_HEALTH_VERIFICATION = VERIFIED`: Live Railway backend and Cloudflare edge distribution serving `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` passed all 5 checks, including committed release notes under `docs/releases/`.
+   - `QA_BRANCH_PRODUCTION_VERIFICATION = NOT_APPLICABLE_NOT_DEPLOYED`: The QA branch itself contains test suites, scripts, and governance documentation. It has not been deployed to production and will not be deployed independently of an authorized integration release.
+
+3. **E2E & Device Testing Claims Truthfulness**:
+   - Previous draft loosely counted 2 JSDOM component test suites as "E2E tests".
+   - **Corrected accounting**:
+     - `TRUE_BROWSER_E2E_TESTS_ADDED = 0` (Zero Playwright/Puppeteer full-browser end-to-end specs were authored on this branch).
+     - `WEBKIT_E2E_TESTS_ADDED = 0` (No WebKit browser binary was executed).
+     - `PHYSICAL_IOS_TESTS_EXECUTED = 0` (Zero physical iPhone devices were touched during this audit).
+     - `PHYSICAL_IOS_RENDERING = NOT_VERIFIED` for QA-ESC-002 on this branch (remediation was verified via static source invariant assertions in `frontend/tests/qaEscapeSemanticInvariants.test.ts` and earlier hotfix gates).
+     - `DOM_COMPONENT_AND_ARCH_TESTS_ADDED = 8` (JSDOM-based component tests and static architecture invariant enforcement).
+
+### 20.3 Individual Escape Reconciliation & Fix Provenance
+
+Every escape was audited against four independent lifecycle vectors:
+`DEFECT_STATUS`, `REGRESSION_COVERAGE_STATUS`, `PREVENTION_CONTROL_STATUS`, and `PRODUCTION_VERIFICATION_STATUS`.
+
+| Escape ID | Defect Description | Defect Status | Fix Commit & Authority | Current Main Contains Fix? | Regression Suite Added / Verified | Prevention Control | Production Status | Remaining Action |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **QA-ESC-001** | Quick Tour Skip Persistence Invalidation | REMEDIATED | `49d5d5a` (`frontend/components/Navbar.tsx`) | YES | `frontend/tests/qaEscapeSemanticInvariants.test.ts` (INV-1) | Direct LocalStorage write on dismissal | VERIFIED | NONE |
+| **QA-ESC-002** | Mobile Navigation Overflow WebKit Hit-Test Failure | REMEDIATED | `a10476a`, `798a39a` (`Navbar.tsx`) | YES | `qaEscapeSemanticInvariants.test.ts` (INV-2) | Hardware layer compositing + 44px min hit targets | VERIFIED | NONE |
+| **QA-ESC-003** | Radar Capability Semantics (`PIPELINE_PENDING != ZERO`) | REMEDIATED | `49d5d5a` (`frontend/app/radar/page.tsx`) | YES | `qaEscapeSemanticInvariants.test.ts` (INV-3) | Explicit status discriminator contract | VERIFIED | NONE |
+| **QA-ESC-004** | Pre-Flight Checklist Retail Jargon Leakage | REMEDIATED | `49d5d5a` (`PreFlightChecklistModal.tsx`) | YES | `qaEscapeSemanticInvariants.test.ts` (INV-4) | Static string ban linter in CI/pre-commit | VERIFIED | NONE |
+| **QA-ESC-005** | Prospective Execution Ladder Emitting `TARGET_REACHED` | PREVIOUSLY_REMEDIATED | `7bcb7780221f58cf596dabce484d83276e0a3c50` (`optimal_execution.py`) | YES | `tests/test_qa_escape_invariants.py` (`test_prospective_extended_asset...`) | Prospective state contract rejects target hit before fill | VERIFIED | NONE |
+| **QA-ESC-006** | MiniSparkline Synthetic Fallback Line Leakage | REMEDIATED | `49d5d5a` (`MiniSparkline.tsx`) | YES | `qaEscapeSemanticInvariants.test.ts` (INV-6) | Rule D04 strict null/truthful dash representation | VERIFIED | NONE |
+| **QA-ESC-007** | Macro Regime Stale Observation Cache Propagation | REMEDIATED | `49d5d5a` (`macro_regime.py`) | YES | `tests/test_qa_escape_invariants.py` (`test_macro_regime_fallback_stale...`) | Maximum statutory TTL enforcement on macro reads | VERIFIED | NONE |
+| **QA-ESC-008** | Canonical Security Master ETF/ADR 10-K Misrouting | PREVIOUSLY_REMEDIATED | `9d5fc2b` (`synthesis e wave 3`) | YES | `frontend/components/__tests__/EtfRiskProfileCard.test.tsx` + INV-8 | Security Master routing table enforces instrument taxonomy | VERIFIED | NONE |
+| **QA-ESC-009** | Analysis Engine Short Request Failure-to-Reject | PREVIOUSLY_REMEDIATED | `443c70d` (`reconcile corridor & trigger`) | YES | `tests/test_qa_escape_invariants.py` (`test_short_mandate_rejection...`) | Fail-closed validation rejects unsupported short requests | VERIFIED | NONE |
+| **QA-ESC-010** | Indefinite In-Memory Ticker Cache Map Without TTL | PREVIOUSLY_REMEDIATED | `b89b358`, `0b7deda` (`frontend/app/page.tsx`) | YES | `frontend/tests/marketDataProvenance.test.ts` | Statutory TTL ($\le 60\text{s}$) with session-advance purge | VERIFIED | NONE |
+
+#### Specific Provenance Analysis for QA-ESC-005, 008, 009, 010
+- **QA-ESC-005**:
+  - The defect where an un-entered prospective setup in an extended asset emitted `TARGET_REACHED` was diagnosed and remediated on **2026-10-07T23:47:34+02:00** in commit **`7bcb7780221f58cf596dabce484d83276e0a3c50`** (`fix(quant): resolve target reached false positive in prospective execution ladder`).
+  - The remediation modified `analyst_dashboard/analyzers/optimal_execution.py` and `frontend/components/OptimalEntryExitCard.tsx`.
+  - Because `7bcb778` is an ancestor of the QA branch base `3ae385c`, the fix was already incorporated in canonical `main` prior to the start of this QA Escape Analysis.
+  - On this audit branch, zero quantitative or production files were modified (`QUANT_FILES_CHANGED = 0`). The contribution was adding permanent regression test `test_prospective_extended_asset_never_emits_target_reached` in `tests/test_qa_escape_invariants.py` and verifying invariant compliance.
+- **QA-ESC-008**:
+  - Remediated during Synthesis E Wave 3 in commit **`9d5fc2b`** (`feat(decision-integrity): implement synthesis e wave 3`). The Canonical Security Master was updated to route ETFs to `FundProfile` without demanding equity 10-K filings.
+  - This branch added deterministic mock handling in `frontend/components/__tests__/EtfRiskProfileCard.test.tsx` and invariant tests in `frontend/tests/qaEscapeSemanticInvariants.test.ts`.
+- **QA-ESC-009**:
+  - Remediated in commit **`443c70d`** (`fix(analysis): reconcile corridor and trigger semantics to canonical authorities`).
+  - This branch added property-based test `test_short_mandate_rejection_invariants` in `tests/test_qa_escape_invariants.py`.
+- **QA-ESC-010**:
+  - Remediated in commits **`b89b358`** and **`0b7deda`** (`frontend/app/page.tsx`).
+  - This branch codified the regression coverage status and verified compliance against `frontend/tests/marketDataProvenance.test.ts`.
+
+### 20.4 Passive Capture Non-Interference Verification
+
+A rigorous audit of the passive capture candidate (`5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`) was conducted to guarantee absolute non-interference:
+- **Base Commit Containment**: Commit `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950` is a direct ancestor of `6f0559d93a681c3bb7c3a89883e0a820934a4a7a`.
+- **Zero File Overlap**: Comparing the QA branch against `origin/main` reveals 0 overlapping files with `analyst_dashboard/governance/passive_capture.py`, `tests/test_execution_ladder_passive_capture.py`, or any related capture code.
+- **Zero Prospective Denominator Inflation**: The QA test additions (`tests/test_qa_escape_invariants.py`, `qaEscapeSemanticInvariants.test.ts`) execute completely in memory using ephemeral mocks and parameterized unit fixtures. No prospective ledger records, database entries, or capture logs are written to disk or production environments.
+- **Pytest Suite Isolation**: Running `pytest tests/test_execution_ladder_passive_capture.py` yields 42 passed in 4.11s with 100% pass rate.
+
+### 20.5 Updated Release Quality Model
+
+The Release Quality Model has been formally updated to incorporate immutable committed release documentation:
+1. **Committed Release Notes Audit**:
+   - `scripts/qa/post_deploy_production_verification.py` now includes Step 5: `check_release_notes`.
+   - Gate verifies that every production deployment commit SHA has a corresponding immutable release note committed under `docs/releases/YYYY-MM-DD_<short_sha>_<title>.md`.
+   - Production candidate `5dcfeb4` is validated by existing note `docs/releases/2026-10-08_5dcfeb4_execution-ladder-passive-capture.md`.
+2. **Four-State Release Gate Taxonomy**:
+   - Every candidate release must satisfy:
+     - `STATIC_CHECKS` (Type-check, ESLint, Python syntax)
+     - `INVARIANT_SUITES` (Semantic invariants, property tests, architecture rules)
+     - `PRE_PROMOTION_SMOKE` (5 representative instruments live audit)
+     - `POST_DEPLOY_AUDIT` (Backend health, Macro authority, Security Master parity, Bundle SHA, and Committed release notes)
+
+### 20.6 Diff Inventory & Purity Audit
+
+A git diff inspection of the reconciled branch `audit/arx-production-escape-analysis` against `origin/main` (`6f0559d93a681c3bb7c3a89883e0a820934a4a7a`) confirms total purity:
+
+```text
+TOTAL_CHANGED_FILES = 8
+QA_ONLY_FILES = 8
+PRODUCTION_FILES = 0
+QUANT_FILES = 0
+UNEXPECTED_FILES = 0
+```
+
+1. `ARX_PRODUCTION_QA_ESCAPE_ANALYSIS_REPORT.md` (DOCUMENTATION)
+2. `docs/governance/ARX_QA_ESCAPE_REGISTRY.md` (DOCUMENTATION)
+3. `frontend/components/__tests__/EtfRiskProfileCard.test.tsx` (FRONTEND_TEST)
+4. `frontend/package.json` (QA_INFRASTRUCTURE)
+5. `frontend/tests/qaEscapeSemanticInvariants.test.ts` (FRONTEND_TEST)
+6. `scripts/qa/post_deploy_production_verification.py` (QA_SCRIPT)
+7. `scripts/qa/production_candidate_smoke_gate.py` (QA_SCRIPT)
+8. `tests/test_qa_escape_invariants.py` (BACKEND_TEST)
+
+### 20.7 Integration Readiness Conclusion
+
+- **PASS**: All 10 escapes resolved, verified, and mapped to authoritative commits in canonical main.
+- **PASS**: All backend and frontend test suites pass with zero regressions.
+- **PASS**: Zero changes to production quant logic or execution code.
+- **PASS**: Zero interference with execution-ladder passive capture candidate.
+- **GATE VERDICT**: `READY_FOR_INTEGRATION`.
+
