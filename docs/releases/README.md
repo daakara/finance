@@ -21,3 +21,4 @@ RELEASE_NOTES_COMMITTED
 | Date | Release SHA | Summary | Status |
 | :--- | :--- | :--- | :--- |
 | 2026-10-08 | [`5dcfeb4`](2026-10-08_5dcfeb4_execution-ladder-passive-capture.md) | Execution Ladder Prospective Passive Capture | VERIFIED |
+| 2026-10-08 | [`5a084a9`](2026-10-08_5a084a9_qa-release-hardening.md) | Production QA Escape Hardening & Release Governance | VERIFIED |
