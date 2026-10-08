@@ -262,8 +262,15 @@ def resolve_and_verify_functional_release(
                 if is_git_ancestor(doc_sha, runtime_sha, project_root):
                     valid_ancestors.append((doc, doc_sha))
             if valid_ancestors:
-                # Latest ancestor in release list
-                matched_note, resolved_functional_sha = valid_ancestors[-1]
+                # Find the most recent ancestor in Git history (closest descendant among ancestors)
+                best_doc = valid_ancestors[0][0]
+                best_sha = valid_ancestors[0][1]
+                for doc, cand_sha in valid_ancestors[1:]:
+                    if is_git_ancestor(best_sha, cand_sha, project_root):
+                        best_doc = doc
+                        best_sha = cand_sha
+                matched_note = best_doc
+                resolved_functional_sha = best_sha
                 resolution_method = "RELEASE_NOTE_METADATA_AND_GIT_ANCESTRY"
             else:
                 return {
