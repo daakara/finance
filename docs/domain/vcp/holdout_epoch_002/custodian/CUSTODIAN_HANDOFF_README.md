@@ -15,7 +15,15 @@ You MUST NOT, under any circumstances, reveal, transmit, or leak to the ARX deve
 1. **Case Assembly**: Select genuinely unseen market cases according to `ARX_VCP_EPOCH_002_SAMPLING_POLICY` and `ARX_VCP_EPOCH_002_SCOPE_POLICY`. Verify zero overlap with revealed historical cases (`REUSED_PREVIOUSLY_REVEALED_CASES = 0`).
 2. **Double-Blind Adjudication**: Distribute cases to qualified external human adjudicators (`EXTERNAL_ADJUDICATOR_INTAKE.schema.json`). Adjudicators must not observe ARX implementation outputs or peer preliminary verdicts.
 3. **Private Payload Construction**: Format private records strictly according to `PRIVATE_HOLDOUT_PAYLOAD.schema.json`.
-4. **Deterministic Canonicalization**: Canonicalize the private payload using `ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION` (UTF-8, sort keys lexicographically, sort cases by `case_id` ascending, compact JSON without whitespace).
+4. **Deterministic Canonicalization**: Canonicalize the private payload using `ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION` Version 2.0.0:
+   - **Encoding**: UTF-8 without byte-order mark (BOM);
+   - **Unicode Normalization**: Unicode Normalization Form C (NFC) applied to all strings and object keys (`unicodedata.normalize("NFC", text)`);
+   - **Key Sorting**: Object keys sorted lexicographically at all nesting levels by Unicode code point;
+   - **Case Sorting**: Cases sorted strictly by `case_id` in ascending NFC Unicode scalar lexicographic order (e.g., `CASE-1`, `CASE-10`, `CASE-11`, `CASE-2`);
+   - **Array Sorting**: Field-specific sequence sorting for set-like collections (`case_roles`, `scenario_tags`, `silver_limitation_codes` sorted ascending), while preserving sequence order for semantic vectors;
+   - **Number Semantics**: RFC 8259 finite JSON numbers only; IEEE-754 non-finite values (`NaN`, `Infinity`, `-Infinity`) are strictly prohibited and rejected;
+   - **Duplicate Keys**: Duplicate object keys are strictly prohibited and rejected during JSON parsing/intake;
+   - **Whitespace**: Compact JSON separators (`','`, `':'`) with zero extraneous whitespace.
 5. **Nonce Generation**: Generate a 256-bit (32 bytes) cryptographically secure random nonce (`secrets.token_bytes(32)`).
 6. **Commitment Computation**:
    Compute:
