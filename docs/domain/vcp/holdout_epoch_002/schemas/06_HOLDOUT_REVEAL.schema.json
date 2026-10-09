@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Holdout Reveal Artifact Schema",
+  "description": "Artifact revealing holdout secret nonce and full canonical payload for fail-closed recomputation.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "commitment_artifact_hash",
+    "candidate_freeze_artifact_hash",
+    "revealed_at",
+    "commitment_scheme",
+    "reveal_nonce",
+    "full_canonical_payload",
+    "recomputed_commitment",
+    "commitment_matches",
+    "membership_matches_commitment",
+    "expectations_match_commitment",
+    "authority_state_matches_commitment",
+    "scope_matches_commitment",
+    "adjudication_hashes_match_commitment",
+    "reveal_artifact_hash"
+  ],
+  "properties": {
+    "epoch_id": { "type": "string", "enum": ["ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"] },
+    "commitment_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "candidate_freeze_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "revealed_at": { "type": "string", "format": "date-time" },
+    "commitment_scheme": { "type": "string", "enum": ["SHA256_NONCE_CANONICAL_PAYLOAD_V1"] },
+    "reveal_nonce": { "type": "string", "pattern": "^[0-9a-f]{64,}$" },
+    "full_canonical_payload": { "type": "object" },
+    "recomputed_commitment": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "commitment_matches": { "type": "boolean", "const": true },
+    "membership_matches_commitment": { "type": "boolean", "const": true },
+    "expectations_match_commitment": { "type": "boolean", "const": true },
+    "authority_state_matches_commitment": { "type": "boolean", "const": true },
+    "scope_matches_commitment": { "type": "boolean", "const": true },
+    "adjudication_hashes_match_commitment": { "type": "boolean", "const": true },
+    "reveal_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": false
+}

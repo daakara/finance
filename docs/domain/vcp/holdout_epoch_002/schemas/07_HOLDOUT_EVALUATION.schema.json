@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Holdout Evaluation Artifact Schema",
+  "description": "Evaluation results of frozen candidate against precommitted holdout expectations.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "candidate_functional_sha",
+    "candidate_freeze_artifact_hash",
+    "commitment_artifact_hash",
+    "reveal_artifact_hash",
+    "evaluation_run_id",
+    "evaluation_started_at",
+    "evaluation_completed_at",
+    "per_case_results",
+    "aggregate_denominators",
+    "evaluation_artifact_hash"
+  ],
+  "properties": {
+    "epoch_id": { "type": "string", "enum": ["ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"] },
+    "candidate_functional_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidate_freeze_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "commitment_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "reveal_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "evaluation_run_id": { "type": "string" },
+    "evaluation_started_at": { "type": "string", "format": "date-time" },
+    "evaluation_completed_at": { "type": "string", "format": "date-time" },
+    "per_case_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "committed_authority_class",
+          "expected_predicate_vector_hash",
+          "actual_predicate_vector_hash",
+          "predicate_match",
+          "expected_final_classification",
+          "actual_final_classification",
+          "classification_match",
+          "reason_codes"
+        ],
+        "properties": {
+          "case_id": { "type": "string" },
+          "committed_authority_class": { "type": "string", "enum": ["GOLD", "SILVER", "INTERNAL_REFERENCE", "NONE"] },
+          "expected_predicate_vector_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "actual_predicate_vector_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "predicate_match": { "type": "boolean" },
+          "expected_final_classification": { "type": "string" },
+          "actual_final_classification": { "type": "string" },
+          "classification_match": { "type": "boolean" },
+          "reason_codes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "aggregate_denominators": { "type": "object" },
+    "evaluation_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": false
+}

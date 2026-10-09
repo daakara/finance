@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Candidate Freeze Artifact Schema",
+  "description": "Defines frozen state of candidate functional implementation prior to holdout reveal.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "candidate_functional_sha",
+    "candidate_freeze_commit_sha",
+    "candidate_frozen_at",
+    "runtime_config_hash",
+    "dependency_lock_hash",
+    "domain_contract_hash",
+    "authority_model_hash",
+    "predicate_registry_hash",
+    "numeric_contract_hash",
+    "temporal_contract_hash",
+    "holdout_commitment_hash",
+    "holdout_commitment_commit_sha",
+    "commitment_is_ancestor_of_candidate",
+    "candidate_freeze_artifact_hash"
+  ],
+  "properties": {
+    "epoch_id": { "type": "string", "enum": ["ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"] },
+    "candidate_functional_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidate_freeze_commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidate_frozen_at": { "type": "string", "format": "date-time" },
+    "runtime_config_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dependency_lock_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "domain_contract_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "authority_model_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "predicate_registry_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "numeric_contract_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "temporal_contract_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "holdout_commitment_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "holdout_commitment_commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "commitment_is_ancestor_of_candidate": { "type": "boolean", "const": true },
+    "candidate_freeze_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": false
+}

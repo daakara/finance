@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Ordering Proof Artifact Schema",
+  "description": "Cryptographic and repository ancestry proof demonstrating Policy < Commitment < Candidate < Reveal.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "policy_commit_sha",
+    "commitment_commit_sha",
+    "candidate_functional_sha",
+    "candidate_freeze_artifact_hash",
+    "reveal_artifact_hash",
+    "policy_precedes_commitment",
+    "commitment_precedes_candidate",
+    "candidate_precedes_reveal",
+    "git_ancestry_verified",
+    "signature_status",
+    "timestamp_status",
+    "ordering_proof_hash"
+  ],
+  "properties": {
+    "epoch_id": { "type": "string", "enum": ["ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"] },
+    "policy_commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "commitment_commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidate_functional_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "candidate_freeze_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "reveal_artifact_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "policy_precedes_commitment": { "type": "boolean", "const": true },
+    "commitment_precedes_candidate": { "type": "boolean", "const": true },
+    "candidate_precedes_reveal": { "type": "boolean", "const": true },
+    "git_ancestry_verified": { "type": "boolean", "const": true },
+    "signature_status": { "type": "string" },
+    "timestamp_status": { "type": "string" },
+    "ordering_proof_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "additionalProperties": false
+}
