@@ -1,0 +1,8 @@
+cloudflare_deployment:
+  deployment_id: ef378562-0fee-4529-a94f-e4d95a803cc5
+  project: arx-frontend
+  environment: production
+  deployed_sha: d97801e783620294454d1989164c907534ed4358
+  release_anchor_sha: 5a90b918b0975151b74e936b3fbfa536b575edd7
+  status: SUCCESS
+  verified_timestamp: 2026-10-09T18:03:52Z

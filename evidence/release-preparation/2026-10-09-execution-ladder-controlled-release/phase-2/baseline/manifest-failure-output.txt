@@ -1,0 +1,4 @@
+FAILED tests/test_arx_step2_passive_capture_certification.py::test_stage2_production_deployment_identity - AssertionError: assert 'CORRUPTED' == 'VERIFIED'
+optimal_execution sha256: f21ac3c24aa8b8c1b9cbdd9cc80ab56d61069d6f78c0d7b1d049b3162bea06e4 (expected 8976f80cc141ad0917492406e9f159629d97cf33808a15f731c32a3c21d9ac37)
+decision_hierarchy sha256: 823f37f81c7f601885213d968934c1118285fbf6c875b2993e091984e9b8ebe3 (expected 41b92e394206b9eee8a64cd3cfa7325e3a69eade5ed4e5a9779149d3a105492c)
+Exit code: 1

@@ -1,0 +1,3 @@
+FROZEN_ENGINE_MANIFEST.json sha256: 6c2d31fbbe67bfbc3cfca7773b21385493acc5affba56d423718ae13168dd36a
+Candidate git diff against baseline: 0 bytes.
+Verification: FROZEN MANIFEST HAS NOT BEEN REWRITTEN OR ALTERED.

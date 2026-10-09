@@ -1,0 +1,8 @@
+railway_deployment:
+  deployment_id: 0685134c-134c-4cce-8e0a-850299e18c34
+  project_id: arx-backend-production
+  environment: production
+  deployed_sha: d97801e783620294454d1989164c907534ed4358
+  release_anchor_sha: 5a90b918b0975151b74e936b3fbfa536b575edd7
+  status: SUCCESS
+  verified_timestamp: 2026-10-09T18:03:52Z

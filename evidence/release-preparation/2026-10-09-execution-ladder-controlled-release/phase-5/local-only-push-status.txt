@@ -1,0 +1,4 @@
+PUSH_STATUS = NOT_AUTHORIZED
+LOCAL_ONLY = YES
+Commit exists strictly in local Git repository.
+Zero network pushes to origin/main or any remote branch.
