@@ -1,8 +1,9 @@
 """ARX VCP Normalized Authority Model, Oracle Class Derivation & Transition Ledger.
 
-Sprint 2B Authority-Grade + Adjudication-Resolution Reconciliation Gate.
-Decouples authority origin, evidence sufficiency, adjudication status, and authority status
-into orthogonal dimensions. Derives oracle classes deterministically via policy.
+Sprint 2B Terminal Semantics Correction + Internal Freeze Gate.
+Decouples domain source authority, case adjudication independence, evidence sufficiency,
+adjudication status, and authority status into orthogonal dimensions.
+Strictly requires EXTERNAL_INDEPENDENT case adjudication for Gold and Silver.
 """
 
 from __future__ import annotations
@@ -14,10 +15,21 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 
+class DomainSourceAuthority(str, Enum):
+    """Answers: What kind of authority supports the methodology/rule? (Not case adjudication)."""
+    PRIMARY = "PRIMARY"
+    REFERENCE = "REFERENCE"
+    SUPPORTING = "SUPPORTING"
+    INTERNAL = "INTERNAL"
+    NONE = "NONE"
+
+
 class AuthorityOrigin(str, Enum):
-    """Identifies the institutional or synthetic origin of the adjudication."""
+    """Identifies the institutional or synthetic origin of the case adjudication."""
     EXTERNAL_INDEPENDENT = "EXTERNAL_INDEPENDENT"
-    INTERNAL_GOVERNED = "INTERNAL_GOVERNED"
+    EXTERNAL_PRIMARY = "EXTERNAL_PRIMARY"
+    INTERNAL_REVIEWER = "INTERNAL_REVIEWER"
+    INTERNAL_GOVERNED = "INTERNAL_REVIEWER"  # Compatibility alias
     SYNTHETIC_FORMAL = "SYNTHETIC_FORMAL"
     NONE = "NONE"
 
@@ -138,6 +150,12 @@ INTERNAL_REFERENCE_COUNTS_AS_ENGINEERING_REFERENCE: bool = True
 SILVER_HARD_ORACLE_ELIGIBLE: bool = False
 SILVER_SOFT_CONFORMANCE_ELIGIBLE: bool = True
 
+# Terminal Semantics Corrections:
+PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_GOLD: bool = False
+PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_SILVER: bool = False
+GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION: int = 0
+SILVER_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION: int = 0
+
 
 @dataclass(frozen=True)
 class OracleAuthorityTransition:
@@ -164,10 +182,13 @@ def derive_oracle_class(
     material_disagreements_count: int = 0,
     normative_predicates_resolved: bool = True,
     final_classification_resolved: bool = True,
+    domain_source_authority: DomainSourceAuthority = DomainSourceAuthority.NONE,
 ) -> DerivedOracleClass:
     """Deterministically derives the authority class for a case under frozen policy rules.
 
-    Never permits manual assignment or heuristic promotion without qualifying criteria.
+    Strictly enforces that ONLY EXTERNAL_INDEPENDENT case adjudication origin can produce
+    GOLD or SILVER. Neither EXTERNAL_PRIMARY nor DomainSourceAuthority.PRIMARY alone can
+    confer Gold or Silver eligibility.
     """
     # Rule 1: Any unresolved adjudication derives NONE
     if adjudication_status != AdjudicationStatus.RESOLVED:
@@ -177,7 +198,12 @@ def derive_oracle_class(
     if authority_status != AuthorityStatus.ACTIVE:
         return DerivedOracleClass.NONE
 
-    # Rule 3: GOLD derivation criteria (Strict fail-closed external independence)
+    # Rule 3: Insufficient evidence derives NONE
+    if evidence_sufficiency == EvidenceSufficiency.INSUFFICIENT:
+        return DerivedOracleClass.NONE
+
+    # Rule 4: GOLD derivation criteria (Strict fail-closed external independence)
+    # Requires EXTERNAL_INDEPENDENT authority_origin. EXTERNAL_PRIMARY cannot produce Gold.
     if (
         authority_origin == AuthorityOrigin.EXTERNAL_INDEPENDENT
         and evidence_sufficiency == EvidenceSufficiency.COMPLETE
@@ -189,7 +215,9 @@ def derive_oracle_class(
     ):
         return DerivedOracleClass.GOLD
 
-    # Rule 4: SILVER derivation criteria (External independent with governed limitations)
+    # Rule 5: SILVER derivation criteria (External independent with governed limitations)
+    # Requires EXTERNAL_INDEPENDENT authority_origin. EXTERNAL_PRIMARY cannot produce Silver.
+    # Also strictly requires len(silver_limitations) > 0; without limitation codes, fails closed to NONE.
     if (
         authority_origin == AuthorityOrigin.EXTERNAL_INDEPENDENT
         and evidence_sufficiency == EvidenceSufficiency.LIMITED
@@ -202,11 +230,20 @@ def derive_oracle_class(
     ):
         return DerivedOracleClass.SILVER
 
-    # Rule 5: INTERNAL REFERENCE criteria (Internally governed or synthetic formal resolution)
+    # Rule 6: INTERNAL REFERENCE criteria (Internally governed, synthetic formal, or primary methodology reference)
     if (
-        authority_origin in (AuthorityOrigin.INTERNAL_GOVERNED, AuthorityOrigin.SYNTHETIC_FORMAL)
+        authority_origin in (
+            AuthorityOrigin.INTERNAL_GOVERNED,
+            AuthorityOrigin.INTERNAL_REVIEWER,
+            AuthorityOrigin.SYNTHETIC_FORMAL,
+            AuthorityOrigin.EXTERNAL_PRIMARY,
+        )
         and evidence_sufficiency in (EvidenceSufficiency.COMPLETE, EvidenceSufficiency.LIMITED)
-        and adjudication_source in (AdjudicationSource.SYNTHETIC_FIXTURE, AdjudicationSource.INTERNAL_HUMAN, AdjudicationSource.FORMAL_POLICY_EVALUATOR)
+        and adjudication_source in (
+            AdjudicationSource.SYNTHETIC_FIXTURE,
+            AdjudicationSource.INTERNAL_HUMAN,
+            AdjudicationSource.FORMAL_POLICY_EVALUATOR,
+        )
         and normative_predicates_resolved
         and final_classification_resolved
     ):
@@ -226,7 +263,8 @@ def compute_authority_model_hash() -> str:
         "model_id": AUTHORITY_MODEL_ID,
         "version": AUTHORITY_MODEL_VERSION,
         "classes": [c.value for c in DerivedOracleClass],
-        "origins": [o.value for o in AuthorityOrigin],
+        "domain_source_authorities": [dsa.value for dsa in DomainSourceAuthority],
+        "origins": sorted(list(set(o.value for o in AuthorityOrigin))),
         "sufficiencies": [s.value for s in EvidenceSufficiency],
         "statuses": [st.value for st in AuthorityStatus],
         "sources": [src.value for src in AdjudicationSource],
@@ -236,5 +274,7 @@ def compute_authority_model_hash() -> str:
         "gold_requires_external": GOLD_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
         "silver_requires_external": SILVER_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
         "internal_reference_requires_external": INTERNAL_REFERENCE_REQUIRES_EXTERNAL_ADJUDICATION,
+        "primary_source_alone_can_produce_gold": PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_GOLD,
+        "primary_source_alone_can_produce_silver": PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_SILVER,
     }
     return hashlib.sha256(json.dumps(spec, sort_keys=True).encode("utf-8")).hexdigest()

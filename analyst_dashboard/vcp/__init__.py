@@ -1,10 +1,11 @@
 """ARX VCP Domain Authority & Conformance Package.
 
-Sprint 2B Domain-Authority Resolution.
+Sprint 2B Terminal Semantics Correction + Internal Freeze Gate.
 """
 
 from analyst_dashboard.vcp.authority_model import (
     AuthorityOrigin,
+    DomainSourceAuthority,
     EvidenceSufficiency,
     AuthorityStatus,
     DerivedOracleClass,
@@ -29,6 +30,10 @@ from analyst_dashboard.vcp.authority_model import (
     INTERNAL_REFERENCE_COUNTS_AS_ENGINEERING_REFERENCE,
     SILVER_HARD_ORACLE_ELIGIBLE,
     SILVER_SOFT_CONFORMANCE_ELIGIBLE,
+    PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_GOLD,
+    PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_SILVER,
+    GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION,
+    SILVER_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION,
 )
 from analyst_dashboard.vcp.disagreement_resolution import (
     DisagreementLayer,
@@ -54,8 +59,6 @@ from analyst_dashboard.vcp.composite_methodology import (
     PRODUCT_LABEL_AUTHORIZATIONS,
     DomainRuleProvenance,
     ProductLabelAuthorization,
-    ProductUseStatus,
-    SemanticSupport,
     SupportType,
     VCPCompositeMethodology,
 )
@@ -97,9 +100,33 @@ from analyst_dashboard.vcp.domain_source_registry import (
     VCPDomainSourceRegistry,
 )
 from analyst_dashboard.vcp.label_authorization import (
-    LABEL_AUTHORIZATION_CATALOG,
+    DomainSemanticSupport,
+    ProductUseStatus,
+    LegalReviewStatus,
+    LEGACY_LABEL_AUTHORIZED_FIELD_DEPRECATED,
+    LEGAL_CONCLUSION_WITHOUT_AUTHORITY,
+    LEGAL_STATUS_INFERRED_FROM_DOMAIN_SOURCE,
+    DOMAIN_SEMANTIC_SUPPORT_REPORTED_AS_LEGAL_AUTHORIZATION,
+    PRODUCT_POLICY_REPORTED_AS_LEGAL_OPINION,
     LabelAuthorizationRecord,
+    LABEL_AUTHORIZATION_CATALOG,
     VCPLabelAuthorizationMatrix,
+)
+from analyst_dashboard.vcp.holdout_policy import (
+    ProofMechanism,
+    HOLDOUT_PRECOMMITMENT_POLICY_ID,
+    HOLDOUT_PRECOMMITMENT_POLICY_VERSION,
+    CURRENT_CANDIDATE_HOLDOUT_PRECOMMITMENT,
+    CURRENT_CANDIDATE_PRECOMMITMENT_DEFECT,
+    RETROACTIVE_TIMESTAMP_CAN_ESTABLISH_PRECOMMITMENT,
+    HOLDOUT_PRECOMMITMENT_REPAIR_FOR_CURRENT_CANDIDATE,
+    CURRENT_HOLDOUT_ENGINEERING_UTILITY,
+    CURRENT_HOLDOUT_PRECOMMITTED_PROSPECTIVE_AUTHORITY,
+    PRECOMMITMENT_PROOF_REQUIRES_CAUSAL_PRECEDENCE,
+    PRECOMMITMENT_EPOCH_PROTOCOL_STEPS,
+    verify_precommitment_ordering,
+    audit_candidate_precommitment,
+    compute_holdout_precommitment_policy_hash,
 )
 from analyst_dashboard.vcp.mutation_harness import (
     MutationTestResult,
@@ -184,11 +211,18 @@ __all__ = [
     "ProductLabelAuthorization",
     "SupportType",
     "ProductUseStatus",
-    "SemanticSupport",
+    "DomainSemanticSupport",
+    "LegalReviewStatus",
+    "LEGACY_LABEL_AUTHORIZED_FIELD_DEPRECATED",
+    "LEGAL_CONCLUSION_WITHOUT_AUTHORITY",
+    "LEGAL_STATUS_INFERRED_FROM_DOMAIN_SOURCE",
+    "DOMAIN_SEMANTIC_SUPPORT_REPORTED_AS_LEGAL_AUTHORIZATION",
+    "PRODUCT_POLICY_REPORTED_AS_LEGAL_OPINION",
     "DOMAIN_RULE_PROVENANCE_CATALOG",
     "PRODUCT_LABEL_AUTHORIZATIONS",
-    # Normalized Authority Model (Sprint 2B Reconciliation Gate)
+    # Normalized Authority Model
     "AuthorityOrigin",
+    "DomainSourceAuthority",
     "EvidenceSufficiency",
     "AuthorityStatus",
     "DerivedOracleClass",
@@ -213,6 +247,10 @@ __all__ = [
     "INTERNAL_REFERENCE_COUNTS_AS_ENGINEERING_REFERENCE",
     "SILVER_HARD_ORACLE_ELIGIBLE",
     "SILVER_SOFT_CONFORMANCE_ELIGIBLE",
+    "PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_GOLD",
+    "PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_SILVER",
+    "GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION",
+    "SILVER_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION",
     # Cause-First Disagreement Resolution Engine
     "DisagreementLayer",
     "DisagreementRootClass",
@@ -225,4 +263,19 @@ __all__ = [
     "ADJUDICATION_RESOLUTION_SCHEMA_VERSION",
     "DISAGREEMENT_POLICY_ID",
     "DISAGREEMENT_POLICY_VERSION",
+    # Holdout Precommitment Policy
+    "ProofMechanism",
+    "HOLDOUT_PRECOMMITMENT_POLICY_ID",
+    "HOLDOUT_PRECOMMITMENT_POLICY_VERSION",
+    "CURRENT_CANDIDATE_HOLDOUT_PRECOMMITMENT",
+    "CURRENT_CANDIDATE_PRECOMMITMENT_DEFECT",
+    "RETROACTIVE_TIMESTAMP_CAN_ESTABLISH_PRECOMMITMENT",
+    "HOLDOUT_PRECOMMITMENT_REPAIR_FOR_CURRENT_CANDIDATE",
+    "CURRENT_HOLDOUT_ENGINEERING_UTILITY",
+    "CURRENT_HOLDOUT_PRECOMMITTED_PROSPECTIVE_AUTHORITY",
+    "PRECOMMITMENT_PROOF_REQUIRES_CAUSAL_PRECEDENCE",
+    "PRECOMMITMENT_EPOCH_PROTOCOL_STEPS",
+    "verify_precommitment_ordering",
+    "audit_candidate_precommitment",
+    "compute_holdout_precommitment_policy_hash",
 ]
