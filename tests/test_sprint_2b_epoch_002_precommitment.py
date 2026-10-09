@@ -387,6 +387,47 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     TRACKED_PRIVATE_PAYLOAD_FINDINGS,
     run_tracked_repository_secret_audit,
     evaluate_custodian_provenance_and_authorization_gate,
+    FAILED_CUSTODIAN_ID,
+    FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+    FAILED_CUSTODIAN_KEY_REVOCATION_STATUS,
+    FAILED_CUSTODIAN_REGISTRATION_OUTCOME,
+    FAILED_CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS,
+    KEY_PROOF_OUTCOME,
+    ACCEPTANCE_ATTESTATION_OUTCOME,
+    FAILED_EVIDENCE_MUTATED_RETROACTIVELY,
+    CUSTODIAN_REVOCATION_ARTIFACT_HASH,
+    FAILED_KEY_PRIVATE_BYTES_COMMITTED_TO_GIT,
+    FAILED_KEY_PRIVATE_BYTES_PRINTED_TO_TRANSCRIPT,
+    FAILED_KEY_DISPOSITION_STATUS,
+    REPLACEMENT_CUSTODIAN_ID,
+    REPLACEMENT_CUSTODIAN_TYPE,
+    REPLACEMENT_CUSTODIAN_STATUS,
+    REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE_HASH,
+    REPLACEMENT_CUSTODIAN_PRIVATE_KEY_MUST_BE_GENERATED_OUTSIDE_ARX_DEV,
+    REPLACEMENT_PRIVATE_KEY_ORIGIN,
+    REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS,
+    REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS,
+    REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS,
+    REPLACEMENT_CUSTODIAN_CONFLICT_DECLARATION_STATUS,
+    REPLACEMENT_CUSTODIAN_CONFLICT_VERIFICATION_STATUS,
+    REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS,
+    REPLACEMENT_CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+    REPLACEMENT_KEY_DIFFERENT_FROM_REVOKED_KEY,
+    REPLACEMENT_KEY_PROOF_CHALLENGE_ID,
+    REPLACEMENT_KEY_PROOF_SIGNATURE_VALID,
+    REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID,
+    REPLACEMENT_ACCEPTANCE_KEY_MATCH,
+    REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX,
+    REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX,
+    REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX,
+    REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED,
+    get_custodian_revocation_record_path,
+    get_custodian_revocation_record,
+    verify_custodian_revocation_record,
+    get_replacement_custodian_onboarding_package_path,
+    get_replacement_custodian_onboarding_package,
+    verify_replacement_custodian_onboarding_package,
+    evaluate_replacement_custodian_onboarding_gate,
 )
 
 
@@ -2045,7 +2086,7 @@ def test_proof_of_possession_and_acceptance_gate_evaluation():
     assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "NO"
     assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "NO"
     assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
-    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_CASE_ASSEMBLY_AND_ADJUDICATION"
     assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
 
     # External domain authority unestablished
@@ -2086,6 +2127,84 @@ def test_custodian_provenance_and_key_origin_gate_evaluation():
     assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "NO"
     assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "NO"
     assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
-    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_CASE_ASSEMBLY_AND_ADJUDICATION"
+    assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
+
+
+def test_failed_custodian_preservation_and_revocation_record():
+    """[GATE 12 / SECTIONS 1-4] Verifies failed custodian preservation, non-mutation, and append-only revocation record."""
+    # Historical artifacts preserved unmodified
+    assert FAILED_CUSTODIAN_ID == "CUSTODIAN-ARX-EPOCH-002-EXT-01"
+    assert FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT == "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
+    assert FAILED_CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS == "FAIL"
+    assert FAILED_CUSTODIAN_KEY_REVOCATION_STATUS == "REVOKED_FOR_EPOCH_002_EXTERNAL_CUSTODY"
+    assert FAILED_CUSTODIAN_REGISTRATION_OUTCOME == "FAILED_EXTERNAL_PROVENANCE"
+    assert KEY_PROOF_OUTCOME == "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT"
+    assert ACCEPTANCE_ATTESTATION_OUTCOME == "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT"
+    assert FAILED_EVIDENCE_MUTATED_RETROACTIVELY == 0
+    assert FAILED_KEY_PRIVATE_BYTES_COMMITTED_TO_GIT == "NO"
+    assert FAILED_KEY_PRIVATE_BYTES_PRINTED_TO_TRANSCRIPT == "NO"
+    assert FAILED_KEY_DISPOSITION_STATUS == "QUARANTINED_AND_REVOKED"
+
+    # Revocation record artifact verification
+    assert verify_custodian_revocation_record() is True
+    rev = get_custodian_revocation_record()
+    assert rev["revocation_id"] == "REVOCATION-ARX-EPOCH-002-CUST-001"
+    assert rev["custodian_id"] == FAILED_CUSTODIAN_ID
+    assert rev["revoked_public_key_fingerprint"] == FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT
+    assert rev["revocation_reason"] == "PRIVATE_KEY_GENERATED_AND_CONTROLLED_IN_ARX_DEVELOPMENT_ENVIRONMENT"
+    assert rev["revocation_scope"] == "EPOCH_002_EXTERNAL_CUSTODY"
+    assert rev["external_custody_evidentiary_validity"] == "INVALID"
+    assert rev["revocation_artifact_hash"] == CUSTODIAN_REVOCATION_ARTIFACT_HASH
+
+
+def test_replacement_custodian_onboarding_package_and_gate_evaluation():
+    """[GATE 12 / SECTIONS 5-22] Verifies replacement custodian onboarding package and fail-closed authorization gate."""
+    # Onboarding package artifact verification
+    assert verify_replacement_custodian_onboarding_package() is True
+    pkg = get_replacement_custodian_onboarding_package()
+    assert pkg["package_id"] == "ARX_VCP_EPOCH_002_REPLACEMENT_CUSTODIAN_ONBOARDING"
+    assert pkg["package_artifact_hash"] == REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE_HASH
+    assert REPLACEMENT_CUSTODIAN_PRIVATE_KEY_MUST_BE_GENERATED_OUTSIDE_ARX_DEV == "YES"
+    assert REPLACEMENT_PRIVATE_KEY_ORIGIN == "EXTERNAL_OR_SEPARATED_ENVIRONMENT"
+
+    # Evaluates gate
+    gate_eval = evaluate_replacement_custodian_onboarding_gate()
+
+    # Pre-conditions
+    assert gate_eval["FAILED_CUSTODIAN_ID"] == FAILED_CUSTODIAN_ID
+    assert gate_eval["FAILED_CUSTODIAN_KEY_REVOCATION_STATUS"] == "REVOKED_FOR_EPOCH_002_EXTERNAL_CUSTODY"
+    assert gate_eval["FAILED_CUSTODIAN_REGISTRATION_OUTCOME"] == "FAILED_EXTERNAL_PROVENANCE"
+    assert gate_eval["FAILED_KEY_DISPOSITION_STATUS"] == "QUARANTINED_AND_REVOKED"
+
+    # Replacement status awaiting external actor
+    assert gate_eval["REPLACEMENT_CUSTODIAN_ID"] == "AWAITING_EXTERNAL_ACTOR"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_TYPE"] == "EXTERNAL_CUSTODIAN"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_STATUS"] == "AWAITING_EXTERNAL_ACTOR"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_CONFLICT_DECLARATION_STATUS"] == "NOT_RECEIVED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_CONFLICT_VERIFICATION_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS"] == "NOT_RECEIVED"
+    assert gate_eval["REPLACEMENT_CUSTODIAN_PUBLIC_KEY_FINGERPRINT"] == "NONE_NOT_RECEIVED"
+    assert gate_eval["REPLACEMENT_KEY_DIFFERENT_FROM_REVOKED_KEY"] == "NOT_APPLICABLE_NO_REPLACEMENT_KEY"
+    assert gate_eval["REPLACEMENT_KEY_PROOF_CHALLENGE_ID"] == "CHALLENGE-ARX-EPOCH-002-POP-002"
+    assert gate_eval["REPLACEMENT_KEY_PROOF_SIGNATURE_VALID"] == "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+    assert gate_eval["REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID"] == "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+    assert gate_eval["REPLACEMENT_ACCEPTANCE_KEY_MATCH"] == "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+
+    # Key origin invariants preserved
+    assert gate_eval["REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX"] == "NO"
+    assert gate_eval["REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX"] == "NO"
+    assert gate_eval["REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX"] == "NO"
+    assert gate_eval["REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED"] == "NO"
+
+    # Gate outcome
+    assert gate_eval["ALL_REPLACEMENT_CRITERIA_MET"] is False
+    assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "NO"
+    assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "NO"
+    assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
+    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_CASE_ASSEMBLY_AND_ADJUDICATION"
     assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
 

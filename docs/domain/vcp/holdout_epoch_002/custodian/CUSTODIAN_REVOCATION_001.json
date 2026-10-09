@@ -1,0 +1,30 @@
+{
+  "revocation_id": "REVOCATION-ARX-EPOCH-002-CUST-001",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "custodian_id": "CUSTODIAN-ARX-EPOCH-002-EXT-01",
+  "revoked_public_key": "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1",
+  "revoked_public_key_fingerprint": "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02",
+  "revocation_reason": "PRIVATE_KEY_GENERATED_AND_CONTROLLED_IN_ARX_DEVELOPMENT_ENVIRONMENT",
+  "revocation_scope": "EPOCH_002_EXTERNAL_CUSTODY",
+  "revocation_effect": [
+    "NOT_ELIGIBLE_FOR_PRIVATE_CASE_SELECTION",
+    "NOT_ELIGIBLE_FOR_HOLDOUT_SEALING",
+    "NOT_ELIGIBLE_FOR_PUBLIC_COMMITMENT_SIGNATURE"
+  ],
+  "historical_signature_validity": "CRYPTOGRAPHICALLY_VALID",
+  "external_custody_evidentiary_validity": "INVALID",
+  "historical_artifacts_status": {
+    "CUSTODIAN_REGISTRATION.json": "FAILED_EXTERNAL_PROVENANCE",
+    "CUSTODIAN_KEY_PROOF_CHALLENGE.json": "HISTORICAL_RECORD_INTACT",
+    "CUSTODIAN_KEY_PROOF_RESPONSE.json": "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT",
+    "CUSTODIAN_ACCEPTANCE_ATTESTATION.json": "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT"
+  },
+  "key_compromise_metadata": {
+    "path_category": "LOCAL_DEVELOPER_MACHINE_EXTERNAL_DIRECTORY",
+    "key_fingerprint": "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02",
+    "compromise_classification": "PRIVATE_KEY_CO_LOCATED_IN_DEV_ENVIRONMENT",
+    "disposition_status": "QUARANTINED_AND_REVOKED"
+  },
+  "revoked_at": "2026-10-09T19:30:00Z",
+  "revocation_artifact_hash": "854a8dc269f46d59eed8e1301a2e82321bcc0d841dec9af2ed979dcad76bd98c"
+}

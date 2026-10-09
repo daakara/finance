@@ -1,0 +1,59 @@
+{
+  "package_id": "ARX_VCP_EPOCH_002_REPLACEMENT_CUSTODIAN_ONBOARDING",
+  "version": "1.0.0",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "final_custodian_handoff_commit_sha": "a7232ccedb162ed68b7b74e78738737709c4d135",
+  "effective_epoch_policy_hash": "a465abc06805e8299129eedf97091ef2a0178eab63d00439d30dd44d17eb2337",
+  "effective_cryptographic_contract_hash": "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44",
+  "custodian_handoff_bundle_hash": "e0dbc3e257db95076d22117ab345031ac5569de86df704a0b4ef8c3a5a373811",
+  "operational_readiness_bundle_hash": "77c7acbc6e3845f84e90bf40bbd01503a7df49d8258ed1a6e0745161f24d25a2",
+  "signature_envelope_specification": {
+    "signature_domain_separator": "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002",
+    "key_fingerprint_binding": "SHA256_HEX_PUBLIC_KEY",
+    "signature_algorithm": "ED25519",
+    "signature_encoding": "HEX_LOWERCASE"
+  },
+  "custodian_role_description": "Independent external custody of Epoch 002 holdout cases, private adjudication intake, secret commitment nonce, and sealed payload generation prior to candidate freeze.",
+  "information_boundary_requirements": {
+    "external_key_generation_mandatory": true,
+    "forbidden_generation_environments": [
+      "Antigravity",
+      "ARX CI",
+      "ARX developer machine",
+      "ARX development shell",
+      "ARX repo scripts",
+      "ARX scratch",
+      "ARX test fixtures"
+    ],
+    "no_candidate_output_to_custodian": true,
+    "no_developer_access_to_private_key": true,
+    "no_holdout_content_to_developers": true
+  },
+  "compromise_and_revocation_policy": {
+    "governing_policy": "docs/domain/vcp/holdout_epoch_002/custodian/OPERATIONAL_GOVERNANCE_POLICIES.json",
+    "prior_revocation_reference": "docs/domain/vcp/holdout_epoch_002/custodian/CUSTODIAN_REVOCATION_001.json",
+    "unauthorized_private_key_access": "SECURITY_INCIDENT_COMMITMENT_GENERATION_BLOCKED"
+  },
+  "public_key_registration_instructions": {
+    "required_algorithm": "ED25519",
+    "required_fields": [
+      "algorithm",
+      "custodian_id",
+      "public_key",
+      "public_key_fingerprint",
+      "valid_from"
+    ],
+    "submission_channel": "GOVERNED_EXTERNAL_TRANSMISSION"
+  },
+  "proof_of_possession_challenge_procedure": {
+    "challenge_template_id": "CHALLENGE-ARX-EPOCH-002-POP-002",
+    "domain_separator": "ARX_VCP_EPOCH_002_CUSTODIAN_KEY_PROOF",
+    "procedure": "ARX issues unique challenge with public nonce upon public key receipt; custodian signs canonically formatted challenge projection using external private key."
+  },
+  "acceptance_attestation_procedure": {
+    "domain_separator": "ARX_VCP_EPOCH_002_CUSTODIAN_HANDOFF_ACCEPTANCE",
+    "procedure": "Custodian verifies handoff bundle, signs canonical acceptance projection binding bundle hashes and non-conflict declarations."
+  },
+  "created_at": "2026-10-09T19:30:00Z",
+  "package_artifact_hash": "62e09009dc491977cf79bcdc79b2b7057bf805bcf6dc6427178eb34747207e8d"
+}

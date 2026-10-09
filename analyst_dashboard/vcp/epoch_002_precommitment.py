@@ -1543,10 +1543,12 @@ def get_custodian_handoff_bundle_manifest() -> Dict[str, str]:
 # ======================================================================
 # 9. CUSTODIAN OPERATIONAL ACTIVATION & SIGNATURE ENVELOPE (GATE 9)
 # ======================================================================
-# 9. CUSTODIAN OPERATIONAL ACTIVATION, PROOF-OF-POSSESSION & PROVENANCE (GATES 9-11)
+# 9. FAILED CUSTODIAN REVOCATION, HISTORICAL EVIDENCE & REPLACEMENT ONBOARDING (GATES 9-12)
 # ======================================================================
 
+# Historical Failed Custodian Record (Gate 11 & Gate 12)
 CUSTODIAN_ID: str = "CUSTODIAN-ARX-EPOCH-002-EXT-01"
+FAILED_CUSTODIAN_ID: str = "CUSTODIAN-ARX-EPOCH-002-EXT-01"
 CUSTODIAN_TYPE: str = "EXTERNAL_CUSTODIAN"
 CUSTODIAN_IDENTITY_STATUS: str = "VERIFIED_IN_SCHEMA_ONLY"
 CUSTODIAN_REAL_WORLD_IDENTITY_STATUS: str = "NOT_ESTABLISHED"
@@ -1562,19 +1564,55 @@ CUSTODIAN_SIGNATURE_ALGORITHM: str = "ED25519"
 CUSTODIAN_SIGNATURE_KEY_STATUS: str = "REGISTERED / VERIFIED"
 CUSTODIAN_PUBLIC_KEY: str = "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1"
 CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
+FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
 PRIOR_REPORTED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "170fc9b7e4a0ae1976201839c141cd4cd1977342919ffdae1bb5e39cfcd9e27a"
 CUSTODIAN_KEY_HISTORY_CLASSIFICATION: str = "PRIOR_REPORTING_DEFECT"
 CUSTODIAN_PUBLIC_KEY_REGISTRATION_STATUS: str = "REGISTERED"
 
-# Private Key Origin & Leakage Audit (Gate 11 / Sections 3, 12)
+# Failed Key Origin & Revocation (Gate 12 / Sections 2, 3, 4)
 REGISTERED_CUSTODIAN_PRIVATE_KEY_GENERATED_IN_DEV_ENVIRONMENT: str = "YES"
 REGISTERED_CUSTODIAN_PRIVATE_KEY_SERIALIZED_IN_DEV_ENVIRONMENT: str = "YES"
 REGISTERED_CUSTODIAN_PRIVATE_KEY_USED_TO_SIGN_IN_DEV_ENVIRONMENT: str = "YES"
 CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS: str = "FAIL"
+FAILED_CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS: str = "FAIL"
 CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT: str = "YES"
 CUSTODIAN_PRIVATE_KEY_LEAKAGE_DETECTED: str = "YES"
 CUSTODIAN_KEY_STATUS: str = "COMPROMISED"
 CUSTODIAN_OPERATIONAL_ACTIVATION_GATE: str = "PASS"
+
+FAILED_CUSTODIAN_KEY_REVOCATION_STATUS: str = "REVOKED_FOR_EPOCH_002_EXTERNAL_CUSTODY"
+FAILED_CUSTODIAN_REGISTRATION_OUTCOME: str = "FAILED_EXTERNAL_PROVENANCE"
+KEY_PROOF_OUTCOME: str = "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT"
+ACCEPTANCE_ATTESTATION_OUTCOME: str = "CRYPTOGRAPHICALLY_VALID_BUT_NOT_EXTERNALLY_INDEPENDENT"
+FAILED_EVIDENCE_MUTATED_RETROACTIVELY: int = 0
+CUSTODIAN_REVOCATION_ARTIFACT_HASH: str = "854a8dc269f46d59eed8e1301a2e82321bcc0d841dec9af2ed979dcad76bd98c"
+FAILED_KEY_PRIVATE_BYTES_COMMITTED_TO_GIT: str = "NO"
+FAILED_KEY_PRIVATE_BYTES_PRINTED_TO_TRANSCRIPT: str = "NO"
+FAILED_KEY_DISPOSITION_STATUS: str = "QUARANTINED_AND_REVOKED"
+
+# Genuine External Custodian Onboarding (Gate 12 / Sections 5-16)
+REPLACEMENT_CUSTODIAN_ID: str = "AWAITING_EXTERNAL_ACTOR"
+REPLACEMENT_CUSTODIAN_TYPE: str = "EXTERNAL_CUSTODIAN"
+REPLACEMENT_CUSTODIAN_STATUS: str = "AWAITING_EXTERNAL_ACTOR"
+REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE_HASH: str = "62e09009dc491977cf79bcdc79b2b7057bf805bcf6dc6427178eb34747207e8d"
+REPLACEMENT_CUSTODIAN_PRIVATE_KEY_MUST_BE_GENERATED_OUTSIDE_ARX_DEV: str = "YES"
+REPLACEMENT_PRIVATE_KEY_ORIGIN: str = "EXTERNAL_OR_SEPARATED_ENVIRONMENT"
+REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS: str = "NOT_ESTABLISHED"
+REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS: str = "NOT_ESTABLISHED"
+REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS: str = "NOT_ESTABLISHED"
+REPLACEMENT_CUSTODIAN_CONFLICT_DECLARATION_STATUS: str = "NOT_RECEIVED"
+REPLACEMENT_CUSTODIAN_CONFLICT_VERIFICATION_STATUS: str = "NOT_ESTABLISHED"
+REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS: str = "NOT_RECEIVED"
+REPLACEMENT_CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "NONE_NOT_RECEIVED"
+REPLACEMENT_KEY_DIFFERENT_FROM_REVOKED_KEY: str = "NOT_APPLICABLE_NO_REPLACEMENT_KEY"
+REPLACEMENT_KEY_PROOF_CHALLENGE_ID: str = "CHALLENGE-ARX-EPOCH-002-POP-002"
+REPLACEMENT_KEY_PROOF_SIGNATURE_VALID: str = "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID: str = "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+REPLACEMENT_ACCEPTANCE_KEY_MATCH: str = "NOT_APPLICABLE_NO_KEY_OR_SIGNATURE"
+REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX: str = "NO"
+REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX: str = "NO"
+REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX: str = "NO"
+REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED: str = "NO"
 
 # Operational Readiness Bundle & Lineage Identity
 OPERATIONAL_READINESS_DOCS_COMMIT_SHA: str = "488549acd8c2c11b42219f1d0ddff3b535c66b0f"
@@ -1619,7 +1657,7 @@ VERIFICATION_PROCEDURE: str = (
 SIGNATURE_ENVELOPE_AMBIGUITY: int = 0
 
 # Secret Custody & Operational Policies
-AUTHORIZED_SECRET_CUSTODIANS: Sequence[str] = ("CUSTODIAN-ARX-EPOCH-002-EXT-01",)
+AUTHORIZED_SECRET_CUSTODIANS: Sequence[str] = ()  # Revoked pending replacement onboarding
 
 SECRET_RECOVERY_POLICY_STATUS: str = "FROZEN"
 COMPROMISE_POLICY_STATUS: str = "FROZEN"
@@ -1632,7 +1670,7 @@ DISAGREEMENT_PROTOCOL_STATUS: str = "FROZEN"
 PUBLIC_DISCLOSURE_POLICY_STATUS: str = "FROZEN"
 EPOCH_ABORT_POLICY_STATUS: str = "FROZEN"
 
-# Causal Ordering & Two-Tier Authorization Separation (Section 7, 8, Gate 11)
+# Causal Ordering & Two-Tier Authorization Separation (Section 7, 8, Gate 11, Gate 12)
 CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION: str = "SATISFIED_SO_FAR"
 CUSTODIAN_HANDOFF_DISTRIBUTION_AUTHORIZED: str = "YES"
 PRIVATE_CASE_SELECTION_AUTHORIZED: str = "YES"
@@ -1642,7 +1680,7 @@ COMMITMENT_GENERATION_AUTHORIZED: str = "YES"
 PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED: str = "NO"
 EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED: str = "NO"
 COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED: str = "YES"
-COMMITMENT_GENERATION_EXECUTION_AUTHORIZED: str = "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+COMMITMENT_GENERATION_EXECUTION_AUTHORIZED: str = "NO / PENDING_PRIVATE_CASE_ASSEMBLY_AND_ADJUDICATION"
 PUBLIC_COMMITMENT_EXPORT_AUTHORIZED: str = "NO"
 
 # External Domain Authority Boundaries (Section 9)
@@ -2213,8 +2251,8 @@ def evaluate_proof_of_possession_and_acceptance_gate() -> Dict[str, Any]:
         "CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION": "SATISFIED_SO_FAR",
         "PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED": PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED,
         "EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED": EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED,
-        "COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED": "YES",
-        "COMMITMENT_GENERATION_EXECUTION_AUTHORIZED": "NO / PENDING_PRIVATE_PROCESS_COMPLETION",
+        "COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED": COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED,
+        "COMMITMENT_GENERATION_EXECUTION_AUTHORIZED": COMMITMENT_GENERATION_EXECUTION_AUTHORIZED,
         "PUBLIC_COMMITMENT_EXPORT_AUTHORIZED": "NO",
         "GOLD_EXTERNAL_DOMAIN_AUTHORITY_STATUS": "NOT_ESTABLISHED",
         "SILVER_EXTERNAL_DOMAIN_AUTHORITY_STATUS": "NOT_ESTABLISHED",
@@ -2284,6 +2322,150 @@ def evaluate_custodian_provenance_and_authorization_gate() -> Dict[str, Any]:
         "CUSTODIAN_PRIVATE_KEY_LEAKAGE_DETECTED": CUSTODIAN_PRIVATE_KEY_LEAKAGE_DETECTED,
         "CUSTODIAN_KEY_STATUS": CUSTODIAN_KEY_STATUS,
         "ALL_PROVENANCE_CRITERIA_MET": all_authorized,
+        "PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED": "YES" if all_authorized else "NO",
+        "EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED": "YES" if all_authorized else "NO",
+        "COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED": COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED,
+        "COMMITMENT_GENERATION_EXECUTION_AUTHORIZED": COMMITMENT_GENERATION_EXECUTION_AUTHORIZED,
+        "PUBLIC_COMMITMENT_EXPORT_AUTHORIZED": PUBLIC_COMMITMENT_EXPORT_AUTHORIZED,
+    }
+
+
+def get_custodian_revocation_record_path() -> Path:
+    """Returns absolute path to CUSTODIAN_REVOCATION_001.json."""
+    return (
+        Path(__file__).resolve().parent.parent.parent
+        / "docs"
+        / "domain"
+        / "vcp"
+        / "holdout_epoch_002"
+        / "custodian"
+        / "CUSTODIAN_REVOCATION_001.json"
+    )
+
+
+def get_custodian_revocation_record() -> Dict[str, Any]:
+    """Loads the append-only revocation record for the failed custodian."""
+    path = get_custodian_revocation_record_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_custodian_revocation_record(rev_dict: Optional[Dict[str, Any]] = None) -> bool:
+    """Verifies that the compromised custodian registration was properly revoked."""
+    data = rev_dict if rev_dict is not None else get_custodian_revocation_record()
+    if data.get("revocation_id") != "REVOCATION-ARX-EPOCH-002-CUST-001":
+        raise ValueError(f"Invalid revocation_id: {data.get('revocation_id')}")
+    if data.get("custodian_id") != FAILED_CUSTODIAN_ID:
+        raise ValueError(f"Invalid custodian_id: {data.get('custodian_id')}")
+    if data.get("revoked_public_key_fingerprint") != FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT:
+        raise ValueError(f"Invalid revoked_public_key_fingerprint: {data.get('revoked_public_key_fingerprint')}")
+    if data.get("revocation_reason") != "PRIVATE_KEY_GENERATED_AND_CONTROLLED_IN_ARX_DEVELOPMENT_ENVIRONMENT":
+        raise ValueError("Invalid revocation reason")
+    if data.get("revocation_scope") != "EPOCH_002_EXTERNAL_CUSTODY":
+        raise ValueError("Invalid revocation scope")
+    if data.get("external_custody_evidentiary_validity") != "INVALID":
+        raise ValueError("External custody evidentiary validity must be INVALID")
+
+    proj = {k: v for k, v in data.items() if k != "revocation_artifact_hash"}
+    canon = json.dumps(proj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    expected_hash = hashlib.sha256(canon).hexdigest()
+    if data.get("revocation_artifact_hash") != expected_hash:
+        raise ValueError("Revocation artifact hash mismatch")
+    return True
+
+
+def get_replacement_custodian_onboarding_package_path() -> Path:
+    """Returns absolute path to REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE.json."""
+    return (
+        Path(__file__).resolve().parent.parent.parent
+        / "docs"
+        / "domain"
+        / "vcp"
+        / "holdout_epoch_002"
+        / "custodian"
+        / "REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE.json"
+    )
+
+
+def get_replacement_custodian_onboarding_package() -> Dict[str, Any]:
+    """Loads the public replacement custodian onboarding package."""
+    path = get_replacement_custodian_onboarding_package_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_replacement_custodian_onboarding_package(pkg_dict: Optional[Dict[str, Any]] = None) -> bool:
+    """Verifies integrity and required public contracts of the replacement custodian onboarding package."""
+    data = pkg_dict if pkg_dict is not None else get_replacement_custodian_onboarding_package()
+    if data.get("package_id") != "ARX_VCP_EPOCH_002_REPLACEMENT_CUSTODIAN_ONBOARDING":
+        raise ValueError("Invalid package_id")
+    if data.get("final_custodian_handoff_commit_sha") != FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA:
+        raise ValueError("Mismatched final_custodian_handoff_commit_sha")
+    if data.get("custodian_handoff_bundle_hash") != CUSTODIAN_HANDOFF_BUNDLE_HASH:
+        raise ValueError("Mismatched custodian_handoff_bundle_hash")
+    if data.get("operational_readiness_bundle_hash") != OPERATIONAL_READINESS_BUNDLE_HASH:
+        raise ValueError("Mismatched operational_readiness_bundle_hash")
+    if data.get("effective_epoch_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+        raise ValueError("Mismatched effective_epoch_policy_hash")
+    if data.get("effective_cryptographic_contract_hash") != EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH:
+        raise ValueError("Mismatched effective_cryptographic_contract_hash")
+
+    proj = {k: v for k, v in data.items() if k != "package_artifact_hash"}
+    canon = json.dumps(proj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    expected_hash = hashlib.sha256(canon).hexdigest()
+    if data.get("package_artifact_hash") != expected_hash:
+        raise ValueError("Package artifact hash mismatch")
+    return True
+
+
+def evaluate_replacement_custodian_onboarding_gate() -> Dict[str, Any]:
+    """Evaluates the 11 authorization conditions for replacement custodian onboarding (Gate 12 / Sections 1-18)."""
+    rev_ok = verify_custodian_revocation_record()
+    pkg_ok = verify_replacement_custodian_onboarding_package()
+
+    c1 = (FAILED_CUSTODIAN_KEY_REVOCATION_STATUS == "REVOKED_FOR_EPOCH_002_EXTERNAL_CUSTODY" and rev_ok)
+    c2 = (REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS == "VERIFIED")
+    c3 = (REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS == "ESTABLISHED")
+    c4 = (REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS == "VERIFIED")
+    c5 = (REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS == "REGISTERED")
+    c6 = (REPLACEMENT_KEY_PROOF_SIGNATURE_VALID == "YES")
+    c7 = (REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID == "YES")
+    c8 = (REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX == "NO")
+    c9 = (REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX == "NO")
+    c10 = (REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX == "NO")
+    c11 = (REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED == "NO")
+
+    all_authorized = c1 and c2 and c3 and c4 and c5 and c6 and c7 and c8 and c9 and c10 and c11
+
+    return {
+        "FAILED_CUSTODIAN_ID": FAILED_CUSTODIAN_ID,
+        "FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT": FAILED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+        "FAILED_CUSTODIAN_KEY_REVOCATION_STATUS": FAILED_CUSTODIAN_KEY_REVOCATION_STATUS,
+        "FAILED_CUSTODIAN_REGISTRATION_OUTCOME": FAILED_CUSTODIAN_REGISTRATION_OUTCOME,
+        "FAILED_KEY_PRIVATE_BYTES_COMMITTED_TO_GIT": FAILED_KEY_PRIVATE_BYTES_COMMITTED_TO_GIT,
+        "FAILED_KEY_PRIVATE_BYTES_PRINTED_TO_TRANSCRIPT": FAILED_KEY_PRIVATE_BYTES_PRINTED_TO_TRANSCRIPT,
+        "FAILED_KEY_DISPOSITION_STATUS": FAILED_KEY_DISPOSITION_STATUS,
+        "REPLACEMENT_CUSTODIAN_ID": REPLACEMENT_CUSTODIAN_ID,
+        "REPLACEMENT_CUSTODIAN_TYPE": REPLACEMENT_CUSTODIAN_TYPE,
+        "REPLACEMENT_CUSTODIAN_STATUS": REPLACEMENT_CUSTODIAN_STATUS,
+        "REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE_HASH": REPLACEMENT_CUSTODIAN_ONBOARDING_PACKAGE_HASH,
+        "REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS": REPLACEMENT_CUSTODIAN_REAL_WORLD_IDENTITY_STATUS,
+        "REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS": REPLACEMENT_CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS,
+        "REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS": REPLACEMENT_CUSTODIAN_INFORMATION_BOUNDARY_STATUS,
+        "REPLACEMENT_CUSTODIAN_CONFLICT_DECLARATION_STATUS": REPLACEMENT_CUSTODIAN_CONFLICT_DECLARATION_STATUS,
+        "REPLACEMENT_CUSTODIAN_CONFLICT_VERIFICATION_STATUS": REPLACEMENT_CUSTODIAN_CONFLICT_VERIFICATION_STATUS,
+        "REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS": REPLACEMENT_CUSTODIAN_PUBLIC_KEY_STATUS,
+        "REPLACEMENT_CUSTODIAN_PUBLIC_KEY_FINGERPRINT": REPLACEMENT_CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+        "REPLACEMENT_KEY_DIFFERENT_FROM_REVOKED_KEY": REPLACEMENT_KEY_DIFFERENT_FROM_REVOKED_KEY,
+        "REPLACEMENT_KEY_PROOF_CHALLENGE_ID": REPLACEMENT_KEY_PROOF_CHALLENGE_ID,
+        "REPLACEMENT_KEY_PROOF_SIGNATURE_VALID": REPLACEMENT_KEY_PROOF_SIGNATURE_VALID,
+        "REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID": REPLACEMENT_ACCEPTANCE_SIGNATURE_VALID,
+        "REPLACEMENT_ACCEPTANCE_KEY_MATCH": REPLACEMENT_ACCEPTANCE_KEY_MATCH,
+        "REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX": REPLACEMENT_PRIVATE_KEY_GENERATED_IN_ARX,
+        "REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX": REPLACEMENT_PRIVATE_KEY_SERIALIZED_IN_ARX,
+        "REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX": REPLACEMENT_PRIVATE_KEY_USED_TO_SIGN_IN_ARX,
+        "REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED": REPLACEMENT_PRIVATE_KEY_LEAKAGE_DETECTED,
+        "ALL_REPLACEMENT_CRITERIA_MET": all_authorized,
         "PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED": "YES" if all_authorized else "NO",
         "EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED": "YES" if all_authorized else "NO",
         "COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED": COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED,
