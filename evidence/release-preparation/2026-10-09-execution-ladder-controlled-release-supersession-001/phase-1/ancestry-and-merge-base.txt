@@ -1,0 +1,10 @@
+HEAD: 74baf306cfe2b2b53da8269990e6f7363c2fe42d
+origin/main: 5a90b918b0975151b74e936b3fbfa536b575edd7
+merge-base: 5a90b918b0975151b74e936b3fbfa536b575edd7
+is-ancestor origin/main HEAD: True
+is-ancestor 37a665c HEAD: True
+is-ancestor 74baf30 HEAD: True
+Linear ancestry verified:
+* 74baf30 fix(governance): enforce 11-field equivalence and atomic admission in execution ladder capture
+* 37a665c fix(governance): remediate execution ladder timestamp normalization and identity compatibility
+* 5a90b91 (origin/main) docs(release): record price authority semantic remediation release

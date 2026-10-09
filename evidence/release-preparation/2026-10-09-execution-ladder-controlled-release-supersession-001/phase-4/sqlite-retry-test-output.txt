@@ -1,0 +1,3 @@
+Execution result: SUCCESS_AFTER_RETRY
+Retry backoff successfully waited and acquired lock.
+SQLITE_RETRY_TEST = VERIFIED

@@ -1,0 +1,11 @@
+railway_deployment:
+  railway_superseded_deployment_id: 0685134c-134c-4cce-8e0a-850299e18c34
+  railway_superseded_deployed_commit_sha1: d97801e783620294454d1989164c907534ed4358
+  railway_current_deployment_id: 66617940-e0a7-45a9-8394-fda0529367cb
+  railway_current_deployed_commit_sha1: 5a90b918b0975151b74e936b3fbfa536b575edd7
+  railway_current_deployment_status: SUCCESS
+  railway_project_id: a339a92a-7236-4ac0-9a3a-d7ad440f9690
+  railway_project_name: tranquil-radiance
+  railway_environment_id: 11cad5e1-358e-430e-84fc-189953cff48a
+  railway_environment_name: production
+  railway_provider_query_at_utc: 2026-10-09T20:36:49Z

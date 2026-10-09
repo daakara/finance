@@ -1,0 +1,17 @@
+release_id: 2026-10-09-execution-ladder-controlled-release
+ownership_matrix:
+  repository_verification:
+    role: Production Release Manager
+    name: Production Release Manager
+  exception_documentation:
+    role: Governance Auditor
+    name: Independent Governance Auditor
+  operational_checks:
+    role: Operations Lead
+    name: Operations Lead
+  final_review:
+    role: Independent Reviewer
+    name: Governance Auditor
+  exception_risk_acceptance:
+    role: Product Owner
+    status: PENDING_PRODUCT_OWNER_APPROVAL

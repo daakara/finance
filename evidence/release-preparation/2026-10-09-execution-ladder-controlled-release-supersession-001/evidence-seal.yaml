@@ -1,0 +1,12 @@
+supersedes:
+  commit_sha1: 4b5206228b7f6762e10125b5b1e4943f4c2d5a86
+evidence_index:
+  path: evidence-index.yaml
+  sha256: 44b09974a1eff1dacc36ef57af974cd543c4e93b24c89658d06fcb527a436baa
+repository:
+  certified_implementation_commit_sha1: 74baf306cfe2b2b53da8269990e6f7363c2fe42d
+  sealed_commit_sha1: 4b5206228b7f6762e10125b5b1e4943f4c2d5a86
+  sealed_tree_sha1: e3dd2e63d75a231b678aa1c182729c5d7ace14bf
+created_at_utc: '2026-10-09T20:36:49Z'
+executor: Independent Evidence Remediation Auditor
+reviewer: Release Governance Engineer

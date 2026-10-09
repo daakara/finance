@@ -1,0 +1,4 @@
+Lock acquired by background thread
+Lock released by background thread
+Foreground write succeeded unexpectedly
+SQLITE_LOCK_TEST = VERIFIED

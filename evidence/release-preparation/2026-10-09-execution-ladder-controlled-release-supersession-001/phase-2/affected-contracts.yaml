@@ -1,0 +1,13 @@
+affected_contracts:
+  EXC-001:
+    contract_file: FROZEN_ENGINE_MANIFEST.json
+    audit_function: ExperimentLedger.verify_frozen_engine_manifest()
+    affected_components:
+      - analyst_dashboard/analyzers/optimal_execution.py
+      - analyst_dashboard/analyzers/decision_hierarchy.py
+    classification: PRE_EXISTING_UNRELATED
+  EXC-002:
+    test_file: tests/test_qa_escape_invariants.py
+    test_function: test_prospective_extended_asset_never_emits_target_reached
+    tested_class: OptimalExecutionEngine._enforce_execution_invariants
+    classification: PRE_EXISTING_UNRELATED

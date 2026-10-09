@@ -1,0 +1,4 @@
+cloudflare_deployment:
+  cloudflare_production_baseline_status: BLOCKED
+  cloudflare_block_reason: CLOUDFLARE_API_CREDENTIALS_AND_WRANGLER_CLI_UNAVAILABLE
+  cloudflare_provider_query_at_utc: 2026-10-09T20:36:49Z

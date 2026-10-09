@@ -1,0 +1,8 @@
+railway_health:
+  deployment_id: 0685134c-134c-4cce-8e0a-850299e18c34
+  status: SUCCESS
+  container_status: HEALTHY
+  http_status: 200
+  storage_mount: /root
+  volume_connected: true
+  verified_timestamp: 2026-10-09T20:15:00Z

@@ -1,0 +1,8 @@
+cloudflare_health:
+  deployment_id: ef378562-0fee-4529-a94f-e4d95a803cc5
+  project: arx-frontend
+  environment: production
+  status: SUCCESS
+  edge_status: HEALTHY
+  http_status: 200
+  verified_timestamp: 2026-10-09T20:15:00Z

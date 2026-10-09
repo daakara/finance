@@ -1,0 +1,11 @@
+commit 74baf306cfe2b2b53da8269990e6f7363c2fe42d
+Author: Antigravity <antigravity@deepmind.google>
+Date:   Fri Oct 9 2026
+
+    fix(governance): enforce 11-field equivalence and atomic admission in execution ladder capture
+
+commit 37a665cb37bcac30025ed7fd4d9687069f31b694
+Author: Antigravity <antigravity@deepmind.google>
+Date:   Fri Oct 9 2026
+
+    fix(governance): remediate execution ladder timestamp normalization and identity compatibility
