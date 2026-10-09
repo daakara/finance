@@ -255,6 +255,26 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_GATE,
     EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_STATUS,
     parse_canonical_json,
+    FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA,
+    SOURCE_HANDOFF_COMMIT_SHA,
+    CURRENT_HARDENING_SHA,
+    UNICODE_NFC_EXPLICIT_AT_SOURCE_HANDOFF,
+    DUPLICATE_KEY_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF,
+    UNKNOWN_FIELD_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF,
+    NUMBER_SEMANTICS_EXPLICIT_AT_SOURCE_HANDOFF,
+    CASE_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF,
+    FIELD_SPECIFIC_ARRAY_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF,
+    CUSTODIAN_HANDOFF_SEMANTIC_PARITY_AT_SOURCE,
+    CANONICALIZATION_SEMANTIC_DELTA_AFTER_HANDOFF_FREEZE,
+    SEMANTIC_CHANGE_WITH_UNCHANGED_SEMANTIC_HASH,
+    CUSTODIAN_HANDOFF_SEMANTIC_PARITY,
+    CANONICALIZATION_SUCCESSOR_REQUIRED,
+    CRYPTOGRAPHIC_CONTRACT_SUCCESSOR_REQUIRED,
+    HANDOFF_SPEC_SUCCESSOR_REQUIRED,
+    EFFECTIVE_CUSTODIAN_HANDOFF_SPEC_VERSION,
+    EFFECTIVE_CUSTODIAN_HANDOFF_SPEC_HASH,
+    CUSTODIAN_INSTRUCTIONS_HASH,
+    get_adversarial_test_vectors,
 )
 
 
@@ -264,9 +284,9 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
 
 def test_epoch_002_identity_and_claims():
     assert HOLDOUT_EPOCH_ID == "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
-    assert HOLDOUT_EPOCH_VERSION == "1.0.0"
+    assert HOLDOUT_EPOCH_VERSION == "2.0.0"
     assert HOLDOUT_EPOCH_POLICY_ID == "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY"
-    assert HOLDOUT_EPOCH_POLICY_VERSION == "1.0.0"
+    assert HOLDOUT_EPOCH_POLICY_VERSION == "2.0.0"
     assert EPOCH_PURPOSE == "PROSPECTIVE_PRECOMMITTED_CONFORMANCE"
     assert CLAIM_TYPE == "PROSPECTIVE_PRECOMMITTED_HOLDOUT_CONFORMANCE"
     assert EMPIRICAL_SCANNER_QUALITY == "INSUFFICIENT_EVIDENCE"
@@ -934,26 +954,27 @@ def test_negative_gate_16_attempt_to_compute_composite_authority_score():
 
 def test_cryptographic_contract_and_canonicalization_invariants():
     assert CRYPTOGRAPHIC_CONTRACT_ID == "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT"
-    assert CRYPTOGRAPHIC_CONTRACT_VERSION == "1.0.0"
+    assert CRYPTOGRAPHIC_CONTRACT_VERSION == "2.0.0"
     assert EFFECTIVE_COMMITMENT_BYTE_FRAMING == "UTF8(domain_separator) || b'::' || nonce_bytes || b'::' || canonical_payload_bytes"
     assert EFFECTIVE_CANONICALIZATION_ID == "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
     assert CANONICALIZATION_COMPATIBILITY_ALIASES == ("ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION_V1",)
     assert CANONICALIZATION_ALIAS_CHANGES_SEMANTICS is False
     assert ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION is True
     assert ONE_SCHEME_ID_VERSION_MAPS_TO_EXACTLY_ONE_BYTE_FRAMING is True
-    assert CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED is False
-    assert POLICY_SUCCESSOR_REQUIRED is False
-    assert EFFECTIVE_EPOCH_002_POLICY_HASH == PREDECESSOR_EPOCH_002_POLICY_HASH
+    assert CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED is True
+    assert POLICY_SUCCESSOR_REQUIRED is True
+    assert EFFECTIVE_EPOCH_002_POLICY_HASH != PREDECESSOR_EPOCH_002_POLICY_HASH
+    assert EFFECTIVE_EPOCH_002_POLICY_HASH == "a465abc06805e8299129eedf97091ef2a0178eab63d00439d30dd44d17eb2337"
     contract_dict = get_cryptographic_contract_dict()
     assert contract_dict["cryptographic_contract_hash"] == CRYPTOGRAPHIC_CONTRACT_HASH
-    assert CRYPTOGRAPHIC_CONTRACT_HASH == "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e"
-    assert TEST_VECTOR_SET_HASH == "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
+    assert CRYPTOGRAPHIC_CONTRACT_HASH == "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44"
+    assert TEST_VECTOR_SET_HASH == "5f22c4ac62a604777ffeb98e0c7e31ccc355026fce676e96f1b35a07030c647a"
 
 
 def test_synthetic_cryptographic_test_vectors_and_reference_parity():
     vectors = get_public_test_vectors()
-    assert len(vectors) == 3
-    assert CRYPTOGRAPHIC_TEST_VECTOR_COUNT == 3
+    assert len(vectors) == 6
+    assert CRYPTOGRAPHIC_TEST_VECTOR_COUNT == 6
 
     for v in vectors:
         payload = v["input_payload"]
@@ -1085,7 +1106,7 @@ def test_custodian_handoff_bundle_artifacts_and_hashes():
     assert os.path.exists(readme_path)
     with open(readme_path, "rb") as f:
         readme_bytes = f.read().replace(b"\r\n", b"\n")
-    assert hashlib.sha256(readme_bytes).hexdigest() == "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed"
+    assert hashlib.sha256(readme_bytes).hexdigest() == "f863bc9f2f3a1c2358d959c48e20ca56d0ab2aae84773cefdf65e9d217e56db5"
 
     manifest = get_custodian_handoff_bundle_manifest()
     bundle_manifest_bytes = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -1350,7 +1371,7 @@ def test_committed_tree_bundle_verification_from_exact_sha():
 
     # Verify README
     raw_readme = get_committed_bytes(f"{base_dir}/CUSTODIAN_HANDOFF_README.md").replace(b"\r\n", b"\n")
-    assert hashlib.sha256(raw_readme).hexdigest() == "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed"
+    assert hashlib.sha256(raw_readme).hexdigest() == "f863bc9f2f3a1c2358d959c48e20ca56d0ab2aae84773cefdf65e9d217e56db5"
 
     assert COMMITTED_TREE_HANDOFF_HASH_PARITY == "PASS"
     assert CUSTODIAN_BUNDLE_SOURCE == "COMMITTED_GIT_TREE_ONLY"
@@ -1371,3 +1392,74 @@ def test_external_custodian_execution_gate_verdicts():
     assert EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_GATE == "PASS"
     assert EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_STATUS == "AUTHORIZED"
     assert PRIVATE_CASE_ASSEMBLY_AUTHORIZED == "AUTHORIZED_FOR_EXTERNAL_CUSTODIAN_ONLY"
+
+
+def test_adversarial_synthetic_vectors():
+    adv_vectors = get_adversarial_test_vectors()
+    assert len(adv_vectors) == 4
+
+    for v in adv_vectors:
+        vid = v["vector_id"]
+        assert v["expected_behavior"] == "REJECT"
+        if vid == "ADV_VECTOR_001":
+            with pytest.raises(ValueError, match="DUPLICATE_JSON_KEY"):
+                parse_canonical_json(v["raw_json_input"])
+        elif vid in ("ADV_VECTOR_002", "ADV_VECTOR_003"):
+            with pytest.raises(ValueError, match="NONFINITE_NUMBERS_PROHIBITED"):
+                canonicalize_sealed_payload(v["raw_payload"])
+        elif vid == "ADV_VECTOR_004":
+            base_dir = os.path.join("docs", "domain", "vcp", "holdout_epoch_002", "custodian")
+            with open(os.path.join(base_dir, "PRIVATE_HOLDOUT_PAYLOAD.schema.json"), "r", encoding="utf-8") as f:
+                schema = json.load(f)
+            assert schema.get("additionalProperties") is False
+
+
+def test_case_ordering_frozen_unicode_scalar_lexicographic():
+    input_cases = [
+        {"case_id": "CASE-2"},
+        {"case_id": "CASE-10"},
+        {"case_id": "CASE-1"},
+        {"case_id": "CASE-11"},
+    ]
+    payload = {"epoch_id": HOLDOUT_EPOCH_ID, "cases": input_cases}
+    can_bytes = canonicalize_sealed_payload(payload)
+    parsed = json.loads(can_bytes.decode("utf-8"))
+    ordered_ids = [c["case_id"] for c in parsed["cases"]]
+    assert ordered_ids == ["CASE-1", "CASE-10", "CASE-11", "CASE-2"]
+
+
+def test_composed_vs_decomposed_unicode_equivalence():
+    decomposed_str = "Mu\u0308ller & Bo\u0308hm"
+    composed_str = "Müller & Böhm"
+    p_decomposed = {"epoch_id": HOLDOUT_EPOCH_ID, "cases": [{"case_id": "SYN-TEST-NFC-001", "note": decomposed_str, "expected": "QUALIFIED"}]}
+    p_composed = {"epoch_id": HOLDOUT_EPOCH_ID, "cases": [{"case_id": "SYN-TEST-NFC-001", "note": composed_str, "expected": "QUALIFIED"}]}
+
+    can_decomposed = canonicalize_sealed_payload(p_decomposed)
+    can_composed = canonicalize_sealed_payload(p_composed)
+    assert can_decomposed == can_composed
+
+    nonce = bytes.fromhex("04" * 32)
+    digest_decomposed = compute_sealed_payload_commitment(HOLDOUT_EPOCH_ID, nonce, can_decomposed)
+    digest_composed = compute_sealed_payload_commitment(HOLDOUT_EPOCH_ID, nonce, can_composed)
+    assert digest_decomposed == digest_composed
+
+
+def test_semantic_parity_matrix_and_successor_gates():
+    assert UNICODE_NFC_EXPLICIT_AT_SOURCE_HANDOFF is False
+    assert DUPLICATE_KEY_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF is False
+    assert UNKNOWN_FIELD_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF is True
+    assert NUMBER_SEMANTICS_EXPLICIT_AT_SOURCE_HANDOFF is False
+    assert CASE_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF is False
+    assert FIELD_SPECIFIC_ARRAY_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF is False
+    assert CUSTODIAN_HANDOFF_SEMANTIC_PARITY_AT_SOURCE == "FAIL"
+    assert CANONICALIZATION_SEMANTIC_DELTA_AFTER_HANDOFF_FREEZE == "YES"
+    assert SEMANTIC_CHANGE_WITH_UNCHANGED_SEMANTIC_HASH == 0
+    assert POLICY_SUCCESSOR_REQUIRED is True
+    assert CANONICALIZATION_SUCCESSOR_REQUIRED is True
+    assert CRYPTOGRAPHIC_CONTRACT_SUCCESSOR_REQUIRED is True
+    assert HANDOFF_SPEC_SUCCESSOR_REQUIRED is True
+    assert CUSTODIAN_HANDOFF_SEMANTIC_PARITY == "PASS"
+    assert FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA == "a7232ccedb162ed68b7b74e78738737709c4d135"
+    assert CUSTODIAN_BUNDLE_COMMIT_SHA == FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA
+    assert SOURCE_HANDOFF_COMMIT_SHA == "f050ab5a013307d57b16491ab034201552d46c47"
+    assert CURRENT_HARDENING_SHA == "60739a42093ec2a6cbd80691e5b78541302abc4a"

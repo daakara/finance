@@ -23,9 +23,9 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 # ======================================================================
 
 HOLDOUT_EPOCH_ID: str = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
-HOLDOUT_EPOCH_VERSION: str = "1.0.0"
+HOLDOUT_EPOCH_VERSION: str = "2.0.0"
 HOLDOUT_EPOCH_POLICY_ID: str = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY"
-HOLDOUT_EPOCH_POLICY_VERSION: str = "1.0.0"
+HOLDOUT_EPOCH_POLICY_VERSION: str = "2.0.0"
 EPOCH_PURPOSE: str = "PROSPECTIVE_PRECOMMITTED_CONFORMANCE"
 CLAIM_TYPE: str = "PROSPECTIVE_PRECOMMITTED_HOLDOUT_CONFORMANCE"
 
@@ -192,7 +192,7 @@ EPOCH_POLICY_FROZEN_BEFORE_COMMITMENT: bool = True
 # ======================================================================
 
 SEALED_PAYLOAD_CANONICALIZATION_ID: str = "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
-SEALED_PAYLOAD_CANONICALIZATION_VERSION: str = "1.0.0"
+SEALED_PAYLOAD_CANONICALIZATION_VERSION: str = "2.0.0"
 CANONICALIZATION_COMPATIBILITY_ALIASES: Tuple[str, ...] = ("ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION_V1",)
 CANONICALIZATION_ALIAS_CHANGES_SEMANTICS: bool = False
 ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION: bool = True
@@ -221,8 +221,17 @@ def compute_sealed_payload_canonicalization_hash() -> str:
         "canonicalization_id": SEALED_PAYLOAD_CANONICALIZATION_ID,
         "version": SEALED_PAYLOAD_CANONICALIZATION_VERSION,
         "encoding": "UTF-8",
+        "unicode_normalization": "NFC",
         "key_ordering": "LEXICOGRAPHICAL_SORT",
-        "case_ordering": "CASE_ID_ASCENDING",
+        "case_ordering": "NFC_UNICODE_SCALAR_LEXICOGRAPHIC_ASCENDING",
+        "case_roles_ordering": "LEXICOGRAPHICAL_ASCENDING",
+        "scenario_tag_ordering": "LEXICOGRAPHICAL_ASCENDING",
+        "silver_limitation_code_ordering": "LEXICOGRAPHICAL_ASCENDING",
+        "predicate_vector_ordering": "SEMANTIC_SEQUENCE_PRESERVED",
+        "array_ordering": "FIELD_SPECIFIC",
+        "number_semantics": "FINITE_NUMBERS_ONLY_NO_NAN_NO_INFINITY",
+        "duplicate_key_policy": "REJECT",
+        "unknown_field_policy": "REJECT",
         "enum_serialization": "STRING_VALUE",
         "timestamp_format": "ISO_8601_UTC",
         "separators": [",", ":"],
@@ -342,13 +351,16 @@ HASH_ALGORITHM: str = "SHA-256"
 ONE_SCHEME_ID_VERSION_MAPS_TO_EXACTLY_ONE_BYTE_FRAMING: bool = True
 
 # Cryptographic Policy Semantics & Predecessor Closure (Section 5, 27)
-CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED: bool = False
-POLICY_SUCCESSOR_REQUIRED: bool = False
+CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED: bool = True
+POLICY_SUCCESSOR_REQUIRED: bool = True
 POLICY_SUCCESSOR_CREATED_ONLY_IF_SEMANTICS_CHANGED: bool = True
+CANONICALIZATION_SUCCESSOR_REQUIRED: bool = True
+CRYPTOGRAPHIC_CONTRACT_SUCCESSOR_REQUIRED: bool = True
+HANDOFF_SPEC_SUCCESSOR_REQUIRED: bool = True
 PREDECESSOR_EPOCH_002_POLICY_HASH: str = "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514"
 EFFECTIVE_EPOCH_002_POLICY_ID: str = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY"
-EFFECTIVE_EPOCH_002_POLICY_VERSION: str = "1.0.0"
-EFFECTIVE_EPOCH_002_POLICY_HASH: str = "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514"
+EFFECTIVE_EPOCH_002_POLICY_VERSION: str = "2.0.0"
+EFFECTIVE_EPOCH_002_POLICY_HASH: str = "a465abc06805e8299129eedf97091ef2a0178eab63d00439d30dd44d17eb2337"
 EFFECTIVE_EPOCH_002_POLICY_COMMIT_SHA: str = "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
 
 # Effective Cryptographic Contract Identity (Section 11, 28)
@@ -356,13 +368,15 @@ EFFECTIVE_COMMITMENT_SCHEME_ID: str = "SHA256_NONCE_CANONICAL_PAYLOAD_V1"
 EFFECTIVE_COMMITMENT_SCHEME_VERSION: str = "1.0.0"
 EFFECTIVE_COMMITMENT_BYTE_FRAMING: str = "UTF8(domain_separator) || b'::' || nonce_bytes || b'::' || canonical_payload_bytes"
 EFFECTIVE_CANONICALIZATION_ID: str = "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
-EFFECTIVE_CANONICALIZATION_VERSION: str = "1.0.0"
-EFFECTIVE_CANONICALIZATION_HASH: str = "2666b0cc03c6988538709450d34bb0ee54104d04929eb0573941513f232a6b44"
+EFFECTIVE_CANONICALIZATION_VERSION: str = "2.0.0"
+EFFECTIVE_CANONICALIZATION_HASH: str = "66975a4a1f8831bccedacc77d981129d34d727d353656bac5b4166b40d2a5ffa"
 CRYPTOGRAPHIC_CONTRACT_ID: str = "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT"
-CRYPTOGRAPHIC_CONTRACT_VERSION: str = "1.0.0"
-CRYPTOGRAPHIC_CONTRACT_HASH: str = "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e"
-TEST_VECTOR_SET_HASH: str = "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
-CRYPTOGRAPHIC_TEST_VECTOR_COUNT: int = 3
+CRYPTOGRAPHIC_CONTRACT_VERSION: str = "2.0.0"
+CRYPTOGRAPHIC_CONTRACT_HASH: str = "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44"
+EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_VERSION: str = "2.0.0"
+EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH: str = "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44"
+TEST_VECTOR_SET_HASH: str = "5f22c4ac62a604777ffeb98e0c7e31ccc355026fce676e96f1b35a07030c647a"
+CRYPTOGRAPHIC_TEST_VECTOR_COUNT: int = 6
 CRYPTOGRAPHIC_TEST_VECTORS_ARE_SYNTHETIC: bool = True
 CRYPTOGRAPHIC_TEST_VECTORS_HAVE_HOLDOUT_AUTHORITY: bool = False
 COMMITMENT_REFERENCE_IMPLEMENTATION_PARITY: str = "PASS"
@@ -373,14 +387,17 @@ COMMITMENT_FRAMING_DISCRIMINATION_TEST: str = "PASS"
 
 # Custodian Handoff Specification & Schemas (Section 14-22)
 CUSTODIAN_HANDOFF_SPEC_ID: str = "ARX_VCP_EPOCH_002_CUSTODIAN_HANDOFF_SPEC"
-CUSTODIAN_HANDOFF_SPEC_VERSION: str = "1.0.0"
-CUSTODIAN_HANDOFF_SPEC_HASH: str = "afedbe95b3635be2f495e3ee779d1daf8a22f673c5b674a96991d78100b777a9"
+CUSTODIAN_HANDOFF_SPEC_VERSION: str = "2.0.0"
+CUSTODIAN_HANDOFF_SPEC_HASH: str = "316008044ad6ddeb64539200a2acabcf65a33e61dde2d523ea3061f43b9d5ccf"
+EFFECTIVE_CUSTODIAN_HANDOFF_SPEC_VERSION: str = "2.0.0"
+EFFECTIVE_CUSTODIAN_HANDOFF_SPEC_HASH: str = "316008044ad6ddeb64539200a2acabcf65a33e61dde2d523ea3061f43b9d5ccf"
 PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH: str = "22b25371c2d4bfa60f8164d8d5646db714958f29050ca4957ddc82a49b8216a7"
 PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH: str = "581f77623baa0df40588350f24a5cd419dd206ed3bb89063275a4d3582f7f9d6"
 CUSTODIAN_ATTESTATION_SCHEMA_HASH: str = "0a936311e64eac3833986b8b8592c4056fde8745534a8fd2c15ff47726d5e1c4"
 EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH: str = "f1f5b7eceb3d3cada14df170c22af7b10ba944daeabf236d1e3c4cb60238e1af"
 ADJUDICATION_RECORD_SCHEMA_HASH: str = "bde634517f4edee60032e6d528a66984f9f86738cff9b12b87179dca94ad3bf5"
-CUSTODIAN_HANDOFF_BUNDLE_HASH: str = "6b68fbd9d2db75147b6d538b63b74349a5b6a139ca5bcc426d5a086959d608ae"
+CUSTODIAN_INSTRUCTIONS_HASH: str = "f863bc9f2f3a1c2358d959c48e20ca56d0ab2aae84773cefdf65e9d217e56db5"
+CUSTODIAN_HANDOFF_BUNDLE_HASH: str = "e0dbc3e257db95076d22117ab345031ac5569de86df704a0b4ef8c3a5a373811"
 CUSTODIAN_SIGNATURE_PROFILE_STATUS: str = "GOVERNED"
 CUSTODIAN_SIGNATURE_KEY_STATUS: str = "NOT_REGISTERED"
 PUBLIC_SIGNATURE_VERIFICATION_STATUS: str = "NOT_APPLICABLE_NO_EXPORT"
@@ -413,14 +430,29 @@ HISTORICAL_REPORTING_DEFECT: str = "INCORRECT_FULL_SHA_RENDERING"
 # Ancestry & Tree boundary gates
 LINEAGE_ANCESTRY_GATE: str = "PASS"
 SHA_IDENTITY_RECONCILIATION_GATE: str = "PASS"
+SOURCE_HANDOFF_COMMIT_SHA: str = "f050ab5a013307d57b16491ab034201552d46c47"
+CURRENT_HARDENING_SHA: str = "60739a42093ec2a6cbd80691e5b78541302abc4a"
+FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA: str = "a7232ccedb162ed68b7b74e78738737709c4d135"
 CUSTODIAN_BUNDLE_SOURCE: str = "COMMITTED_GIT_TREE_ONLY"
-CUSTODIAN_BUNDLE_COMMIT_SHA: str = "f050ab5a013307d57b16491ab034201552d46c47"
+CUSTODIAN_BUNDLE_COMMIT_SHA: str = "a7232ccedb162ed68b7b74e78738737709c4d135"
 LIVE_WORKTREE_UNTRACKED_CONTENT_CAN_AFFECT_HANDOFF_BUNDLE: bool = False
 COMMITTED_TREE_HANDOFF_HASH_PARITY: str = "PASS"
 HANDOFF_BUNDLE_UNBOUND_REQUIRED_ARTIFACTS: int = 0
-PUBLIC_TEST_VECTOR_SET_HASH: str = "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
+PUBLIC_TEST_VECTOR_SET_HASH: str = "5f22c4ac62a604777ffeb98e0c7e31ccc355026fce676e96f1b35a07030c647a"
 REFERENCE_IMPLEMENTATION_DOES_NOT_CALL_PRODUCTION_COMMITMENT_FUNCTION: bool = True
 PRODUCTION_REFERENCE_VECTOR_PARITY: str = "PASS"
+
+# Source handoff semantic parity audit flags
+UNICODE_NFC_EXPLICIT_AT_SOURCE_HANDOFF: bool = False
+DUPLICATE_KEY_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF: bool = False
+UNKNOWN_FIELD_REJECTION_EXPLICIT_AT_SOURCE_HANDOFF: bool = True
+NUMBER_SEMANTICS_EXPLICIT_AT_SOURCE_HANDOFF: bool = False
+CASE_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF: bool = False
+FIELD_SPECIFIC_ARRAY_ORDERING_EXPLICIT_AT_SOURCE_HANDOFF: bool = False
+CUSTODIAN_HANDOFF_SEMANTIC_PARITY_AT_SOURCE: str = "FAIL"
+CANONICALIZATION_SEMANTIC_DELTA_AFTER_HANDOFF_FREEZE: str = "YES"
+SEMANTIC_CHANGE_WITH_UNCHANGED_SEMANTIC_HASH: int = 0
+CUSTODIAN_HANDOFF_SEMANTIC_PARITY: str = "PASS"
 
 # Adjudication expertise separation from domain authority
 PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_GOLD: bool = False
@@ -1241,65 +1273,226 @@ def validate_custodian_export_schema(export_dict: Dict[str, Any]) -> bool:
 
 
 def get_public_test_vectors() -> List[Dict[str, Any]]:
-    """Returns the 3 frozen synthetic test vectors (Section 8)."""
+    """Returns the 6 frozen synthetic test vectors for Canonicalization v2.0.0 (Section 5)."""
     return [
         {
-            "vector_id": "TEST_VECTOR_001",
-            "description": "Single dummy case with boundary role",
-            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
-            "scheme_version": "1.0.0",
-            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
-            "canonicalization_version": "1.0.0",
-            "synthetic_nonce_hex": ("01" * 32),
-            "input_payload": {
-                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-                "cases": [
-                    {"case_id": "SYN-TEST-001", "case_roles": ["BOUNDARY"], "expected": "QUALIFIED"}
-                ],
-            },
-            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22424f554e44415259225d2c226578706563746564223a225155414c4946494544227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
-            "expected_commitment_digest": "e265adeee14d1bda538591a2f42db710768539ab15bc0c324fa5676637eb7fff",
+                "vector_id": "TEST_VECTOR_001",
+                "description": "Single dummy case with boundary role",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0101010101010101010101010101010101010101010101010101010101010101",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "SYN-TEST-001",
+                                        "case_roles": [
+                                                "BOUNDARY"
+                                        ],
+                                        "expected": "QUALIFIED"
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22424f554e44415259225d2c226578706563746564223a225155414c4946494544227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "e265adeee14d1bda538591a2f42db710768539ab15bc0c324fa5676637eb7fff"
         },
         {
-            "vector_id": "TEST_VECTOR_002",
-            "description": "Multiple dummy cases supplied intentionally out of order",
-            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
-            "scheme_version": "1.0.0",
-            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
-            "canonicalization_version": "1.0.0",
-            "synthetic_nonce_hex": ("02" * 32),
-            "input_payload": {
-                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-                "cases": [
-                    {"case_id": "SYN-TEST-003", "case_roles": ["NEGATIVE_CONTROL"], "scenario_tags": ["STAGE_3"]},
-                    {"case_id": "SYN-TEST-001", "case_roles": ["CORE"], "scenario_tags": ["STAGE_2", "PIVOT"]},
-                    {"case_id": "SYN-TEST-002", "case_roles": ["BOUNDARY"], "scenario_tags": ["VOLUME_DRYUP"]},
-                ],
-            },
-            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a332c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22434f5245225d2c227363656e6172696f5f74616773223a5b225049564f54222c2253544147455f32225d7d2c7b22636173655f6964223a2253594e2d544553542d303032222c22636173655f726f6c6573223a5b22424f554e44415259225d2c227363656e6172696f5f74616773223a5b22564f4c554d455f4452595550225d7d2c7b22636173655f6964223a2253594e2d544553542d303033222c22636173655f726f6c6573223a5b224e454741544956455f434f4e54524f4c225d2c227363656e6172696f5f74616773223a5b2253544147455f33225d7d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
-            "expected_commitment_digest": "554b6f42ca4c366ac87dd9efdb68da40610d617ecb3bdbc9b24f1216f94c31af",
+                "vector_id": "TEST_VECTOR_002",
+                "description": "Multiple dummy cases supplied intentionally out of order",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0202020202020202020202020202020202020202020202020202020202020202",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "SYN-TEST-003",
+                                        "case_roles": [
+                                                "NEGATIVE_CONTROL"
+                                        ],
+                                        "scenario_tags": [
+                                                "STAGE_3"
+                                        ]
+                                },
+                                {
+                                        "case_id": "SYN-TEST-001",
+                                        "case_roles": [
+                                                "CORE"
+                                        ],
+                                        "scenario_tags": [
+                                                "STAGE_2",
+                                                "PIVOT"
+                                        ]
+                                },
+                                {
+                                        "case_id": "SYN-TEST-002",
+                                        "case_roles": [
+                                                "BOUNDARY"
+                                        ],
+                                        "scenario_tags": [
+                                                "VOLUME_DRYUP"
+                                        ]
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a332c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22434f5245225d2c227363656e6172696f5f74616773223a5b225049564f54222c2253544147455f32225d7d2c7b22636173655f6964223a2253594e2d544553542d303032222c22636173655f726f6c6573223a5b22424f554e44415259225d2c227363656e6172696f5f74616773223a5b22564f4c554d455f4452595550225d7d2c7b22636173655f6964223a2253594e2d544553542d303033222c22636173655f726f6c6573223a5b224e454741544956455f434f4e54524f4c225d2c227363656e6172696f5f74616773223a5b2253544147455f33225d7d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "554b6f42ca4c366ac87dd9efdb68da40610d617ecb3bdbc9b24f1216f94c31af"
         },
         {
-            "vector_id": "TEST_VECTOR_003",
-            "description": "Unicode string edge case with German characters and mathematical arrows",
-            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
-            "scheme_version": "1.0.0",
-            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
-            "canonicalization_version": "1.0.0",
-            "synthetic_nonce_hex": ("03" * 32),
-            "input_payload": {
-                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
-                "cases": [
-                    {"case_id": "SYN-TEST-UNICODE-001", "note": "VCP Contraction & Volume Dry-up: 50% → 12% — Müller & Böhm", "expected": "QUALIFIED"}
-                ],
-            },
-            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d554e49434f44452d303031222c226578706563746564223a225155414c4946494544222c226e6f7465223a2256435020436f6e7472616374696f6e202620566f6c756d65204472792d75703a2035302520e286922031322520e28094204dc3bc6c6c657220262042c3b6686d227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
-            "expected_commitment_digest": "dcac9606c10629de4be153cedf75a4f7540c23fc5f13096933a9d7c8407573ce",
+                "vector_id": "TEST_VECTOR_003",
+                "description": "Unicode string edge case with German characters and mathematical arrows",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0303030303030303030303030303030303030303030303030303030303030303",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "SYN-TEST-UNICODE-001",
+                                        "note": "VCP Contraction & Volume Dry-up: 50% \u2192 12% \u2014 M\u00fcller & B\u00f6hm",
+                                        "expected": "QUALIFIED"
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d554e49434f44452d303031222c226578706563746564223a225155414c4946494544222c226e6f7465223a2256435020436f6e7472616374696f6e202620566f6c756d65204472792d75703a2035302520e286922031322520e28094204dc3bc6c6c657220262042c3b6686d227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "dcac9606c10629de4be153cedf75a4f7540c23fc5f13096933a9d7c8407573ce"
+        },
+        {
+                "vector_id": "TEST_VECTOR_004",
+                "description": "Unicode canonical equivalence (composed NFC vs decomposed NFD canonical payload and commitment match)",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0404040404040404040404040404040404040404040404040404040404040404",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "SYN-TEST-NFC-001",
+                                        "note": "Mu\u0308ller & Bo\u0308hm",
+                                        "expected": "QUALIFIED"
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d4e46432d303031222c226578706563746564223a225155414c4946494544222c226e6f7465223a224dc3bc6c6c657220262042c3b6686d227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "7f57068537c7199ac8a9cb993b23c091c48b12cb8c11c5e953fa537c7a2301c9"
+        },
+        {
+                "vector_id": "TEST_VECTOR_005",
+                "description": "Unicode scalar lexicographical case ordering (CASE-1, CASE-10, CASE-11, CASE-2)",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0505050505050505050505050505050505050505050505050505050505050505",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "CASE-2",
+                                        "expected": "NON_QUALIFIED"
+                                },
+                                {
+                                        "case_id": "CASE-10",
+                                        "expected": "QUALIFIED"
+                                },
+                                {
+                                        "case_id": "CASE-1",
+                                        "expected": "QUALIFIED"
+                                },
+                                {
+                                        "case_id": "CASE-11",
+                                        "expected": "NON_QUALIFIED"
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a342c226361736573223a5b7b22636173655f6964223a22434153452d31222c226578706563746564223a225155414c4946494544227d2c7b22636173655f6964223a22434153452d3130222c226578706563746564223a225155414c4946494544227d2c7b22636173655f6964223a22434153452d3131222c226578706563746564223a224e4f4e5f5155414c4946494544227d2c7b22636173655f6964223a22434153452d32222c226578706563746564223a224e4f4e5f5155414c4946494544227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "decd6d426f2237be4aef2ec55ce74a75963f92cc8c2eef6baf73837760a90ddc"
+        },
+        {
+                "vector_id": "TEST_VECTOR_006",
+                "description": "Field-specific array ordering (case_roles, scenario_tags, silver_limitation_codes sorted; predicate vectors preserved)",
+                "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+                "scheme_version": "1.0.0",
+                "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+                "canonicalization_version": "2.0.0",
+                "synthetic_nonce_hex": "0606060606060606060606060606060606060606060606060606060606060606",
+                "input_payload": {
+                        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                        "cases": [
+                                {
+                                        "case_id": "SYN-TEST-ORDER-001",
+                                        "case_roles": [
+                                                "CORE",
+                                                "BOUNDARY"
+                                        ],
+                                        "scenario_tags": [
+                                                "STAGE_2",
+                                                "PIVOT"
+                                        ],
+                                        "silver_limitation_codes": [
+                                                "L3",
+                                                "L1"
+                                        ],
+                                        "expected_predicate_vector": [
+                                                "P_VOLUME_DRYUP",
+                                                "P_TIGHT_CONSOLIDATION"
+                                        ]
+                                }
+                        ]
+                },
+                "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d4f524445522d303031222c22636173655f726f6c6573223a5b22424f554e44415259222c22434f5245225d2c2265787065637465645f7072656469636174655f766563746f72223a5b22505f564f4c554d455f4452595550222c22505f54494748545f434f4e534f4c49444154494f4e225d2c227363656e6172696f5f74616773223a5b225049564f54222c2253544147455f32225d2c2273696c7665725f6c696d69746174696f6e5f636f646573223a5b224c31222c224c33225d7d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+                "expected_commitment_digest": "2cffead6ebdfef980edfd8e0259b3b4aa08745714f8046cd0c8201d2b17917b0"
+        }
+]
+
+
+def get_adversarial_test_vectors() -> List[Dict[str, Any]]:
+    """Returns the synthetic adversarial test vectors (Section 5)."""
+    return [
+        {
+            "vector_id": "ADV_VECTOR_001",
+            "description": "Adversarial duplicate key rejection",
+            "raw_json_input": '{"case_id":"CASE-001","case_id":"CASE-002"}',
+            "expected_behavior": "REJECT",
+            "rejection_reason": "DUPLICATE_JSON_KEY",
+        },
+        {
+            "vector_id": "ADV_VECTOR_002",
+            "description": "Adversarial NaN nonfinite number rejection",
+            "raw_payload": {"epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002", "val": float("nan")},
+            "expected_behavior": "REJECT",
+            "rejection_reason": "NONFINITE_NUMBERS_PROHIBITED",
+        },
+        {
+            "vector_id": "ADV_VECTOR_003",
+            "description": "Adversarial Infinity nonfinite number rejection",
+            "raw_payload": {"epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002", "val": float("inf")},
+            "expected_behavior": "REJECT",
+            "rejection_reason": "NONFINITE_NUMBERS_PROHIBITED",
+        },
+        {
+            "vector_id": "ADV_VECTOR_004",
+            "description": "Adversarial unknown field rejection in schema validation",
+            "raw_payload": {"epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002", "unknown_forbidden_field": True, "cases": []},
+            "expected_behavior": "REJECT",
+            "rejection_reason": "UNKNOWN_FIELD_REJECTION",
         },
     ]
+
 
 
 def get_cryptographic_contract_dict() -> Dict[str, Any]:
@@ -1338,6 +1531,6 @@ def get_custodian_handoff_bundle_manifest() -> Dict[str, str]:
         "sampling_policy_hash": SAMPLING_POLICY_HASH,
         "disagreement_policy_hash": DISAGREEMENT_POLICY_HASH,
         "test_vector_set_hash": TEST_VECTOR_SET_HASH,
-        "custodian_instructions_hash": "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed",
+        "custodian_instructions_hash": CUSTODIAN_INSTRUCTIONS_HASH,
     }
 
