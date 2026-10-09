@@ -27,27 +27,73 @@ HOLDOUT_EPOCH_POLICY_VERSION: str = "1.0.0"
 EPOCH_PURPOSE: str = "PROSPECTIVE_PRECOMMITTED_CONFORMANCE"
 CLAIM_TYPE: str = "PROSPECTIVE_PRECOMMITTED_HOLDOUT_CONFORMANCE"
 
-# Disclaimed Claims (Section 4, Section 41)
-EMPIRICAL_SCANNER_QUALITY: str = "DISCLAIMED_NOT_EVALUATED"
+# Disclaimed Claims & Global Empirical State (Section 4, Section 35, Section 41)
+EMPIRICAL_SCANNER_QUALITY: str = "INSUFFICIENT_EVIDENCE"
 LIVE_PRODUCTION_QUALITY: str = "DISCLAIMED_NOT_EVALUATED"
 ECONOMIC_ALPHA: str = "DISCLAIMED_NOT_EVALUATED"
-MODEL_TUNING: str = "NONE_APPLIED"
-LEARNING_CLAIM: str = "NONE_PERMITTED"
+MODEL_TUNING: str = "FROZEN"
+LEARNING_CLAIM: str = "NOT_AUTHORIZED"
+EPOCH_002_EMPIRICAL_EVALUATION_STATUS: str = "NOT_EVALUATED"
+SPRINT_3_ENTRY_STATUS: str = "BLOCKED"
 
-# Gate & Status Enums / Invariants (Section 38 Outcome A, Section 41)
+# Gate & Status Enums / Invariants (Section 1, Section 38 Outcome A, Section 41)
 HOLDOUT_EPOCH_002_INFRASTRUCTURE_GATE: str = "PASS"
 HOLDOUT_EPOCH_002_POLICY_STATUS: str = "FROZEN"
 HOLDOUT_EPOCH_002_COMMITMENT_STATUS: str = "NOT_CREATED"
+HOLDOUT_COMMITMENT_STATUS: str = "NOT_CREATED"
 PRECOMMITMENT_READINESS: str = "READY_FOR_CASE_CONSTRUCTION / ADJUDICATION"
+PRECOMMITMENT_INTEGRITY_GATE: str = "PRECOMMITMENT_READY / WAITING_FOR_PRIVATE_ASSEMBLY"
+SUCCESSOR_CANDIDATE_DEVELOPMENT_AUTHORIZED: bool = False
 SUCCESSOR_CANDIDATE_FREEZE: str = "NOT_AUTHORIZED"
 SUCCESSOR_CANDIDATE_FREEZE_AUTHORIZED: bool = False
 SUCCESSOR_CANDIDATE_FUNCTIONAL_SHA: str = "NOT_CREATED / NOT_FROZEN"
 SUCCESSOR_CANDIDATE_FREEZE_STATUS: str = "NOT_STARTED / NOT_FROZEN"
+SUCCESSOR_CANDIDATE_SPECIFIC_SEMANTIC_WORK_BEFORE_COMMITMENT: int = 0
 HOLDOUT_REVEAL_STATUS: str = "NOT_AUTHORIZED"
 HOLDOUT_EVALUATION_STATUS: str = "NOT_AUTHORIZED"
-PRECOMMITMENT_INTEGRITY_GATE: str = "PRECOMMITMENT_READY"
 PUSH_STATUS: str = "LOCAL_ONLY / NOT_PUSHED"
 DEPLOY_STATUS: str = "NOT_AUTHORIZED"
+
+# Corrected Evidence State (Section 1)
+POLICY_IS_ANCESTOR_OF_COMMITMENT: str = "NOT_APPLICABLE"
+POLICY_TO_COMMITMENT_ORDERING_STATUS: str = "PENDING_COMMITMENT_CREATION"
+POLICY_PRECEDES_COMMITMENT: str = "PENDING_COMMITMENT_CREATION"
+COMMITMENT_INSTANCE_VERIFICATION_STATUS: str = "NOT_APPLICABLE"
+HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
+HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
+HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
+SECRET_CUSTODY_DESIGN_STATUS: str = "VERIFIED_IN_INFRASTRUCTURE"
+SECRET_CUSTODY_OPERATIONAL_STATUS: str = "NOT_STARTED"
+SECRET_PAYLOAD_EXISTS: str = "NO"
+COMMITMENT_NONCE_EXISTS: str = "NO"
+EPOCH_002_CASE_ASSEMBLY_STATUS: str = "INCOMPLETE / EXTERNAL_PROCESS_REQUIRED"
+EPOCH_002_EXTERNAL_ADJUDICATION_STATUS: str = "INCOMPLETE"
+COMMITMENT_PUBLIC_IDENTITY_VERIFIED: str = "NOT_APPLICABLE_NO_COMMITMENT"
+COMMITMENT_PRIVATE_PAYLOAD_RECOMPUTATION: str = "NOT_AUTHORIZED_PRE_REVEAL"
+
+# Committed Case Accounting (Section 26 & 41)
+TOTAL_COMMITTED_CASE_COUNT: int = 0
+GOLD_COMMITTED_CASE_COUNT: int = 0
+SILVER_COMMITTED_CASE_COUNT: int = 0
+INTERNAL_REFERENCE_COMMITTED_CASE_COUNT: int = 0
+NONE_COMMITTED_CASE_COUNT: int = 0
+PUBLIC_COMMITMENT_ARTIFACT_HASH: str = "NOT_CREATED"
+CUSTODIAN_ATTESTATION_HASH: str = "NOT_CREATED"
+HOLDOUT_COMMITMENT_COMMIT_SHA: str = "NOT_CREATED"
+EPOCH_002_POLICY_COMMIT_SHA: str = "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
+
+# Transcript Blindness (Section 29)
+THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_SECRET_PAYLOAD: str = "YES"
+THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_NONCE: str = "YES"
+THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_HIDDEN_EXPECTATIONS: str = "YES"
+CANDIDATE_DEVELOPERS_HAVE_SECRET_ACCESS: bool = False
+CANDIDATE_DEVELOPERS_HAVE_HIDDEN_CASE_MEMBERSHIP_ACCESS: bool = False
+CANDIDATE_DEVELOPERS_HAVE_EXPECTATION_ACCESS: bool = False
+
+# Authority Reporting Controls (Section 27)
+COMPOSITE_AUTHORITY_SCORE_ALLOWED: bool = False
+AUTHORITY_WEIGHTED_SCORE_ALLOWED: bool = False
+AUTHORITY_CLASSES_REPORTED_IN_PARALLEL: bool = True
 
 # Predecessor & Baseline Hashes Bound to Epoch 002 Policy
 DOMAIN_CONTRACT_HASH: str = "17fad3208eaebb9e31d3ea7ada974069741e1bc3cdf5acdbd45bd6542a084770"
@@ -92,8 +138,12 @@ CURRENT_HOLDOUT_CASES_ALLOWED_AS_NEW_UNSEEN_CASES: bool = False
 SECRET_CUSTODY_MECHANISM: str = "AIR_GAPPED_OR_ISOLATED_SECRET_STORE"
 SECRET_ACCESS_POLICY: str = "AUTHORIZED_EPOCH_CUSTODIANS_ONLY"
 AUTHORIZED_HOLDOUT_CUSTODIANS: Tuple[str, ...] = ("INDEPENDENT_GOVERNANCE_AUDITOR",)
-CANDIDATE_DEVELOPERS_HAVE_SECRET_ACCESS: bool = False
 PRE_REVEAL_SECRET_LEAKS: int = 0
+SECRET_PAYLOAD_IN_GIT: int = 0
+SECRET_NONCE_IN_GIT: int = 0
+HIDDEN_EXPECTATIONS_IN_PUBLIC_ARTIFACTS: int = 0
+GOLD_CASES_WITH_UNVERIFIED_INDEPENDENCE: int = 0
+SILVER_CASES_WITH_UNVERIFIED_INDEPENDENCE: int = 0
 SECRET_PAYLOAD_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL: bool = False
 COMMITMENT_NONCE_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL: bool = False
 
@@ -106,10 +156,6 @@ COMMITMENT_PRECEDES_CANDIDATE_FREEZE: str = "TO_BE_VERIFIED_AT_FUTURE_CANDIDATE_
 
 # Causal Ordering Invariants (Section 20)
 EPOCH_POLICY_FROZEN_BEFORE_COMMITMENT: bool = True
-HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE: bool = True
-HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE: bool = True
-HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE: bool = True
-POLICY_IS_ANCESTOR_OF_COMMITMENT: bool = True
 
 
 # ======================================================================
@@ -770,3 +816,125 @@ def audit_tracked_repository_for_secrets(
             if secret and len(secret) >= 16 and secret in content:
                 leaks += 1
     return leaks
+
+
+# ======================================================================
+# 10. PUBLIC COMMITMENT PACKAGE VALIDATOR (SECTIONS 19, 20, 37)
+# ======================================================================
+
+def validate_public_commitment_package(package_dict: Dict[str, Any]) -> bool:
+    """Validates public commitment package from independent custodian.
+
+    Enforces negative validation gates (Section 37):
+    - Wrong epoch ID -> ValueError("WRONG_EPOCH_ID")
+    - Wrong policy hash -> ValueError("WRONG_POLICY_HASH")
+    - Wrong canonicalization hash -> ValueError("WRONG_CANONICALIZATION_HASH")
+    - Unsupported commitment scheme -> ValueError("UNSUPPORTED_COMMITMENT_SCHEME")
+    - Invalid custodian signature -> ValueError("INVALID_CUSTODIAN_SIGNATURE")
+    - Missing custodian attestation -> ValueError("MISSING_CUSTODIAN_ATTESTATION")
+    - Authority totals not summing to case count -> ValueError("AUTHORITY_TOTAL_MISMATCH")
+    - Gold count without external-independent authority attestation -> ValueError("GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ATTESTATION")
+    - Silver count without limitation evidence -> ValueError("SILVER_WITHOUT_LIMITATION_EVIDENCE")
+    - Secret leakage (nonce, secret payload, hidden labels) -> ValueError("SECRET_LEAKAGE_IN_PUBLIC_ARTIFACT")
+    """
+    if not isinstance(package_dict, dict):
+        raise TypeError("Package must be a dict")
+
+    # 1. Epoch ID check
+    if package_dict.get("epoch_id") != HOLDOUT_EPOCH_ID:
+        raise ValueError(f"WRONG_EPOCH_ID: Expected {HOLDOUT_EPOCH_ID}, got {package_dict.get('epoch_id')}")
+
+    # 2. Policy hash check
+    if package_dict.get("policy_hash") != HOLDOUT_EPOCH_POLICY_HASH:
+        raise ValueError(f"WRONG_POLICY_HASH: Expected {HOLDOUT_EPOCH_POLICY_HASH}, got {package_dict.get('policy_hash')}")
+
+    # 3. Canonicalization hash check
+    if package_dict.get("canonicalization_hash") != SEALED_PAYLOAD_CANONICALIZATION_HASH:
+        raise ValueError(f"WRONG_CANONICALIZATION_HASH: Expected {SEALED_PAYLOAD_CANONICALIZATION_HASH}, got {package_dict.get('canonicalization_hash')}")
+
+    # 4. Commitment scheme check
+    if package_dict.get("commitment_scheme_id") != COMMITMENT_SCHEME_ID:
+        raise ValueError(f"UNSUPPORTED_COMMITMENT_SCHEME: Expected {COMMITMENT_SCHEME_ID}, got {package_dict.get('commitment_scheme_id')}")
+
+    # 5. Custodian signature status check
+    if package_dict.get("custodian_signature_status") != "VERIFIED":
+        raise ValueError(f"INVALID_CUSTODIAN_SIGNATURE: Custodian signature status must be VERIFIED, got {package_dict.get('custodian_signature_status')}")
+
+    # 6. Missing custodian attestation check
+    if not package_dict.get("custodian_attestation_id") or not package_dict.get("custodian_attestation_hash"):
+        raise ValueError("MISSING_CUSTODIAN_ATTESTATION: Custodian attestation ID and hash are required")
+
+    # 7. Secret leakage in public package check
+    forbidden_keys = {
+        "nonce",
+        "secret_nonce",
+        "payload",
+        "secret_payload",
+        "cases",
+        "expected_predicates",
+        "expected_labels",
+        "expected_final_classification",
+        "hidden_labels",
+    }
+    for k in package_dict:
+        if k in forbidden_keys:
+            raise ValueError(f"SECRET_LEAKAGE_IN_PUBLIC_ARTIFACT: Forbidden key '{k}' detected in public commitment package")
+
+    # 8. Authority totals check
+    case_count = package_dict.get("case_count", 0)
+    auth_counts = package_dict.get("authority_counts", {})
+    gold_c = auth_counts.get("GOLD", 0)
+    silver_c = auth_counts.get("SILVER", 0)
+    int_ref_c = auth_counts.get("INTERNAL_REFERENCE", 0)
+    none_c = auth_counts.get("NONE", 0)
+
+    if (gold_c + silver_c + int_ref_c + none_c) != case_count:
+        raise ValueError(f"AUTHORITY_TOTAL_MISMATCH: Authority counts ({gold_c} + {silver_c} + {int_ref_c} + {none_c}) do not sum to case count ({case_count})")
+
+    # 9. Gold qualification check
+    if gold_c > 0 and not package_dict.get("external_independent_gold_attested"):
+        raise ValueError("GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ATTESTATION: Gold cases require external independent human adjudication attestation")
+
+    # 10. Silver limitation evidence check
+    if silver_c > 0 and not package_dict.get("silver_limitations_attested"):
+        raise ValueError("SILVER_WITHOUT_LIMITATION_EVIDENCE: Silver cases require verified limitation evidence codes")
+
+    return True
+
+
+def compute_composite_authority_score(scores: Dict[str, float]) -> float:
+    """Prohibits blending authority classes into a single score (Section 27, 37)."""
+    raise ValueError(
+        "COMPOSITE_AUTHORITY_SCORE_PROHIBITED: Blending Gold, Silver, and Internal Reference "
+        "into a composite or weighted score is strictly forbidden. All authority classes must be evaluated and reported in parallel."
+    )
+
+
+def verify_candidate_commit_postdates_commitment(
+    candidate_commit_ts: str,
+    commitment_commit_ts: Optional[str] = None,
+) -> bool:
+    """Verifies that candidate semantic commits do not predate public commitment creation (Section 24, 37)."""
+    if commitment_commit_ts is None:
+        raise ValueError("CANDIDATE_PREDATES_COMMITMENT: Cannot commit candidate implementation before holdout commitment is sealed.")
+    if candidate_commit_ts <= commitment_commit_ts:
+        raise ValueError(
+            f"CANDIDATE_PREDATES_COMMITMENT: Candidate commit timestamp ({candidate_commit_ts}) "
+            f"predates or equals commitment timestamp ({commitment_commit_ts})."
+        )
+    return True
+
+
+def attempt_reveal_before_candidate_freeze(candidate_frozen: bool) -> bool:
+    """Prohibits reveal before candidate freeze (Section 37)."""
+    if not candidate_frozen:
+        raise ValueError("REVEAL_BEFORE_CANDIDATE_FREEZE_PROHIBITED: Cannot reveal holdout before candidate implementation is frozen.")
+    return True
+
+
+def attempt_evaluation_before_reveal(holdout_revealed: bool) -> bool:
+    """Prohibits evaluation before holdout reveal (Section 37)."""
+    if not holdout_revealed:
+        raise ValueError("EVALUATION_BEFORE_REVEAL_PROHIBITED: Cannot evaluate candidate before holdout is revealed and recomputed.")
+    return True
+

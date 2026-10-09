@@ -33,16 +33,56 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     HOLDOUT_EPOCH_002_INFRASTRUCTURE_GATE,
     HOLDOUT_EPOCH_002_POLICY_STATUS,
     HOLDOUT_EPOCH_002_COMMITMENT_STATUS,
+    HOLDOUT_COMMITMENT_STATUS,
     PRECOMMITMENT_READINESS,
+    SUCCESSOR_CANDIDATE_DEVELOPMENT_AUTHORIZED,
     SUCCESSOR_CANDIDATE_FREEZE,
     SUCCESSOR_CANDIDATE_FREEZE_AUTHORIZED,
     SUCCESSOR_CANDIDATE_FUNCTIONAL_SHA,
     SUCCESSOR_CANDIDATE_FREEZE_STATUS,
+    SUCCESSOR_CANDIDATE_SPECIFIC_SEMANTIC_WORK_BEFORE_COMMITMENT,
     HOLDOUT_REVEAL_STATUS,
     HOLDOUT_EVALUATION_STATUS,
     PRECOMMITMENT_INTEGRITY_GATE,
     PUSH_STATUS,
     DEPLOY_STATUS,
+    POLICY_IS_ANCESTOR_OF_COMMITMENT,
+    POLICY_TO_COMMITMENT_ORDERING_STATUS,
+    POLICY_PRECEDES_COMMITMENT,
+    COMMITMENT_INSTANCE_VERIFICATION_STATUS,
+    HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE,
+    HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE,
+    HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE,
+    SECRET_CUSTODY_DESIGN_STATUS,
+    SECRET_CUSTODY_OPERATIONAL_STATUS,
+    SECRET_PAYLOAD_EXISTS,
+    COMMITMENT_NONCE_EXISTS,
+    EPOCH_002_CASE_ASSEMBLY_STATUS,
+    EPOCH_002_EXTERNAL_ADJUDICATION_STATUS,
+    COMMITMENT_PUBLIC_IDENTITY_VERIFIED,
+    COMMITMENT_PRIVATE_PAYLOAD_RECOMPUTATION,
+    TOTAL_COMMITTED_CASE_COUNT,
+    GOLD_COMMITTED_CASE_COUNT,
+    SILVER_COMMITTED_CASE_COUNT,
+    INTERNAL_REFERENCE_COMMITTED_CASE_COUNT,
+    NONE_COMMITTED_CASE_COUNT,
+    PUBLIC_COMMITMENT_ARTIFACT_HASH,
+    CUSTODIAN_ATTESTATION_HASH,
+    HOLDOUT_COMMITMENT_COMMIT_SHA,
+    EPOCH_002_POLICY_COMMIT_SHA,
+    THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_SECRET_PAYLOAD,
+    THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_NONCE,
+    THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_HIDDEN_EXPECTATIONS,
+    SECRET_PAYLOAD_IN_GIT,
+    SECRET_NONCE_IN_GIT,
+    HIDDEN_EXPECTATIONS_IN_PUBLIC_ARTIFACTS,
+    GOLD_CASES_WITH_UNVERIFIED_INDEPENDENCE,
+    SILVER_CASES_WITH_UNVERIFIED_INDEPENDENCE,
+    SPRINT_3_ENTRY_STATUS,
+    EPOCH_002_EMPIRICAL_EVALUATION_STATUS,
+    COMPOSITE_AUTHORITY_SCORE_ALLOWED,
+    AUTHORITY_WEIGHTED_SCORE_ALLOWED,
+    AUTHORITY_CLASSES_REPORTED_IN_PARALLEL,
     SEALED_PAYLOAD_CANONICALIZATION_ID,
     SEALED_PAYLOAD_CANONICALIZATION_VERSION,
     SEALED_PAYLOAD_CANONICALIZATION_HASH,
@@ -78,6 +118,8 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     SECRET_ACCESS_POLICY,
     AUTHORIZED_HOLDOUT_CUSTODIANS,
     CANDIDATE_DEVELOPERS_HAVE_SECRET_ACCESS,
+    CANDIDATE_DEVELOPERS_HAVE_HIDDEN_CASE_MEMBERSHIP_ACCESS,
+    CANDIDATE_DEVELOPERS_HAVE_EXPECTATION_ACCESS,
     PRE_REVEAL_SECRET_LEAKS,
     SECRET_PAYLOAD_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL,
     COMMITMENT_NONCE_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL,
@@ -87,10 +129,6 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     RETROACTIVE_CREATION_DETECTABLE,
     COMMITMENT_PRECEDES_CANDIDATE_FREEZE,
     EPOCH_POLICY_FROZEN_BEFORE_COMMITMENT,
-    HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE,
-    HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE,
-    HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE,
-    POLICY_IS_ANCESTOR_OF_COMMITMENT,
     canonicalize_sealed_payload,
     generate_commitment_nonce,
     compute_sealed_payload_commitment,
@@ -100,6 +138,11 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     validate_ordering_proof_artifact,
     validate_holdout_reveal_artifact,
     validate_holdout_evaluation_artifact,
+    validate_public_commitment_package,
+    compute_composite_authority_score,
+    verify_candidate_commit_postdates_commitment,
+    attempt_reveal_before_candidate_freeze,
+    attempt_evaluation_before_reveal,
     evaluate_epoch_002_conformance,
     audit_tracked_repository_for_secrets,
     get_epoch_002_policy_dict,
@@ -118,11 +161,13 @@ def test_epoch_002_identity_and_claims():
     assert HOLDOUT_EPOCH_POLICY_VERSION == "1.0.0"
     assert EPOCH_PURPOSE == "PROSPECTIVE_PRECOMMITTED_CONFORMANCE"
     assert CLAIM_TYPE == "PROSPECTIVE_PRECOMMITTED_HOLDOUT_CONFORMANCE"
-    assert EMPIRICAL_SCANNER_QUALITY == "DISCLAIMED_NOT_EVALUATED"
+    assert EMPIRICAL_SCANNER_QUALITY == "INSUFFICIENT_EVIDENCE"
     assert LIVE_PRODUCTION_QUALITY == "DISCLAIMED_NOT_EVALUATED"
     assert ECONOMIC_ALPHA == "DISCLAIMED_NOT_EVALUATED"
-    assert MODEL_TUNING == "NONE_APPLIED"
-    assert LEARNING_CLAIM == "NONE_PERMITTED"
+    assert MODEL_TUNING == "FROZEN"
+    assert LEARNING_CLAIM == "NOT_AUTHORIZED"
+    assert EPOCH_002_EMPIRICAL_EVALUATION_STATUS == "NOT_EVALUATED"
+    assert SPRINT_3_ENTRY_STATUS == "BLOCKED"
 
 
 def test_epoch_002_outcome_a_invariants():
@@ -130,16 +175,61 @@ def test_epoch_002_outcome_a_invariants():
     assert HOLDOUT_EPOCH_002_INFRASTRUCTURE_GATE == "PASS"
     assert HOLDOUT_EPOCH_002_POLICY_STATUS == "FROZEN"
     assert HOLDOUT_EPOCH_002_COMMITMENT_STATUS == "NOT_CREATED"
+    assert HOLDOUT_COMMITMENT_STATUS == "NOT_CREATED"
     assert PRECOMMITMENT_READINESS == "READY_FOR_CASE_CONSTRUCTION / ADJUDICATION"
+    assert SUCCESSOR_CANDIDATE_DEVELOPMENT_AUTHORIZED is False
     assert SUCCESSOR_CANDIDATE_FREEZE == "NOT_AUTHORIZED"
     assert SUCCESSOR_CANDIDATE_FREEZE_AUTHORIZED is False
     assert SUCCESSOR_CANDIDATE_FUNCTIONAL_SHA == "NOT_CREATED / NOT_FROZEN"
     assert SUCCESSOR_CANDIDATE_FREEZE_STATUS == "NOT_STARTED / NOT_FROZEN"
+    assert SUCCESSOR_CANDIDATE_SPECIFIC_SEMANTIC_WORK_BEFORE_COMMITMENT == 0
     assert HOLDOUT_REVEAL_STATUS == "NOT_AUTHORIZED"
     assert HOLDOUT_EVALUATION_STATUS == "NOT_AUTHORIZED"
-    assert PRECOMMITMENT_INTEGRITY_GATE == "PRECOMMITMENT_READY"
+    assert PRECOMMITMENT_INTEGRITY_GATE == "PRECOMMITMENT_READY / WAITING_FOR_PRIVATE_ASSEMBLY"
     assert PUSH_STATUS == "LOCAL_ONLY / NOT_PUSHED"
     assert DEPLOY_STATUS == "NOT_AUTHORIZED"
+
+
+def test_corrected_pre_gate_evidence_state():
+    """[SECTION 1] Verifies corrected pre-gate evidence state."""
+    assert POLICY_IS_ANCESTOR_OF_COMMITMENT == "NOT_APPLICABLE"
+    assert POLICY_TO_COMMITMENT_ORDERING_STATUS == "PENDING_COMMITMENT_CREATION"
+    assert POLICY_PRECEDES_COMMITMENT == "PENDING_COMMITMENT_CREATION"
+    assert COMMITMENT_INSTANCE_VERIFICATION_STATUS == "NOT_APPLICABLE"
+    assert HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE == "NOT_ESTABLISHED"
+    assert HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE == "NOT_ESTABLISHED"
+    assert HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE == "NOT_ESTABLISHED"
+    assert SECRET_CUSTODY_DESIGN_STATUS == "VERIFIED_IN_INFRASTRUCTURE"
+    assert SECRET_CUSTODY_OPERATIONAL_STATUS == "NOT_STARTED"
+    assert SECRET_PAYLOAD_EXISTS == "NO"
+    assert COMMITMENT_NONCE_EXISTS == "NO"
+    assert EPOCH_002_CASE_ASSEMBLY_STATUS == "INCOMPLETE / EXTERNAL_PROCESS_REQUIRED"
+    assert EPOCH_002_EXTERNAL_ADJUDICATION_STATUS == "INCOMPLETE"
+    assert COMMITMENT_PUBLIC_IDENTITY_VERIFIED == "NOT_APPLICABLE_NO_COMMITMENT"
+    assert COMMITMENT_PRIVATE_PAYLOAD_RECOMPUTATION == "NOT_AUTHORIZED_PRE_REVEAL"
+    assert TOTAL_COMMITTED_CASE_COUNT == 0
+    assert GOLD_COMMITTED_CASE_COUNT == 0
+    assert SILVER_COMMITTED_CASE_COUNT == 0
+    assert INTERNAL_REFERENCE_COMMITTED_CASE_COUNT == 0
+    assert NONE_COMMITTED_CASE_COUNT == 0
+    assert PUBLIC_COMMITMENT_ARTIFACT_HASH == "NOT_CREATED"
+    assert CUSTODIAN_ATTESTATION_HASH == "NOT_CREATED"
+    assert HOLDOUT_COMMITMENT_COMMIT_SHA == "NOT_CREATED"
+    assert EPOCH_002_POLICY_COMMIT_SHA == "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
+    assert THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_SECRET_PAYLOAD == "YES"
+    assert THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_NONCE == "YES"
+    assert THIS_DEVELOPMENT_AGENT_DID_NOT_RECEIVE_HIDDEN_EXPECTATIONS == "YES"
+    assert CANDIDATE_DEVELOPERS_HAVE_SECRET_ACCESS is False
+    assert CANDIDATE_DEVELOPERS_HAVE_HIDDEN_CASE_MEMBERSHIP_ACCESS is False
+    assert CANDIDATE_DEVELOPERS_HAVE_EXPECTATION_ACCESS is False
+    assert COMPOSITE_AUTHORITY_SCORE_ALLOWED is False
+    assert AUTHORITY_WEIGHTED_SCORE_ALLOWED is False
+    assert AUTHORITY_CLASSES_REPORTED_IN_PARALLEL is True
+    assert SECRET_PAYLOAD_IN_GIT == 0
+    assert SECRET_NONCE_IN_GIT == 0
+    assert HIDDEN_EXPECTATIONS_IN_PUBLIC_ARTIFACTS == 0
+    assert GOLD_CASES_WITH_UNVERIFIED_INDEPENDENCE == 0
+    assert SILVER_CASES_WITH_UNVERIFIED_INDEPENDENCE == 0
 
 
 def test_case_accounting_and_reuse_prohibitions():
@@ -587,3 +677,144 @@ def test_tracked_git_repository_has_zero_secret_leaks():
 
     assert leaks == 0
     assert PRE_REVEAL_SECRET_LEAKS == 0
+
+
+# ======================================================================
+# 8. SECTION 37 NEGATIVE VALIDATION TESTS (16 NEGATIVE GATES)
+# ======================================================================
+
+@pytest.fixture
+def base_valid_public_package():
+    return {
+        "epoch_id": HOLDOUT_EPOCH_ID,
+        "policy_hash": HOLDOUT_EPOCH_POLICY_HASH,
+        "canonicalization_hash": SEALED_PAYLOAD_CANONICALIZATION_HASH,
+        "commitment_scheme_id": COMMITMENT_SCHEME_ID,
+        "custodian_signature_status": "VERIFIED",
+        "custodian_attestation_id": "ATTEST-001",
+        "custodian_attestation_hash": "a" * 64,
+        "commitment_hash": "b" * 64,
+        "case_count": 2,
+        "authority_counts": {
+            "GOLD": 0,
+            "SILVER": 1,
+            "INTERNAL_REFERENCE": 1,
+            "NONE": 0,
+        },
+        "silver_limitations_attested": True,
+    }
+
+
+def test_negative_gate_01_wrong_epoch_id(base_valid_public_package):
+    pkg = dict(base_valid_public_package, epoch_id="ARX_VCP_WRONG_EPOCH_003")
+    with pytest.raises(ValueError, match="WRONG_EPOCH_ID"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_02_wrong_policy_hash(base_valid_public_package):
+    pkg = dict(base_valid_public_package, policy_hash="0" * 64)
+    with pytest.raises(ValueError, match="WRONG_POLICY_HASH"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_03_wrong_canonicalization_hash(base_valid_public_package):
+    pkg = dict(base_valid_public_package, canonicalization_hash="0" * 64)
+    with pytest.raises(ValueError, match="WRONG_CANONICALIZATION_HASH"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_04_unsupported_commitment_scheme(base_valid_public_package):
+    pkg = dict(base_valid_public_package, commitment_scheme_id="MD5_RAW_SCHEME")
+    with pytest.raises(ValueError, match="UNSUPPORTED_COMMITMENT_SCHEME"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_05_invalid_custodian_signature(base_valid_public_package):
+    pkg = dict(base_valid_public_package, custodian_signature_status="INVALID")
+    with pytest.raises(ValueError, match="INVALID_CUSTODIAN_SIGNATURE"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_06_missing_custodian_attestation(base_valid_public_package):
+    pkg1 = dict(base_valid_public_package, custodian_attestation_id="")
+    with pytest.raises(ValueError, match="MISSING_CUSTODIAN_ATTESTATION"):
+        validate_public_commitment_package(pkg1)
+
+    pkg2 = dict(base_valid_public_package, custodian_attestation_hash="")
+    with pytest.raises(ValueError, match="MISSING_CUSTODIAN_ATTESTATION"):
+        validate_public_commitment_package(pkg2)
+
+
+def test_negative_gate_07_candidate_semantic_commit_predating_commitment():
+    # Without commitment created
+    with pytest.raises(ValueError, match="CANDIDATE_PREDATES_COMMITMENT"):
+        verify_candidate_commit_postdates_commitment("2026-10-09T14:00:00Z", None)
+
+    # Candidate commit timestamp earlier than commitment
+    with pytest.raises(ValueError, match="CANDIDATE_PREDATES_COMMITMENT"):
+        verify_candidate_commit_postdates_commitment("2026-10-09T14:00:00Z", "2026-10-09T15:00:00Z")
+
+
+def test_negative_gate_08_hidden_expected_label_in_public_artifact(base_valid_public_package):
+    pkg = dict(base_valid_public_package, expected_labels={"HLD-001": "QUALIFIED"})
+    with pytest.raises(ValueError, match="SECRET_LEAKAGE_IN_PUBLIC_ARTIFACT"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_09_nonce_in_public_artifact(base_valid_public_package):
+    pkg = dict(base_valid_public_package, nonce="a" * 64)
+    with pytest.raises(ValueError, match="SECRET_LEAKAGE_IN_PUBLIC_ARTIFACT"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_10_secret_payload_in_tracked_git():
+    mock_leaked = {"repo_file.py": "EPOCH_002_SEALED_SECRET_PAYLOAD = {'cases': [...]}"}
+    leaks = audit_tracked_repository_for_secrets(mock_leaked, ["EPOCH_002_SEALED_SECRET_PAYLOAD"])
+    assert leaks == 1
+
+
+def test_negative_gate_11_gold_count_without_external_independent_attestation(base_valid_public_package):
+    pkg = dict(
+        base_valid_public_package,
+        case_count=2,
+        authority_counts={"GOLD": 1, "SILVER": 1, "INTERNAL_REFERENCE": 0, "NONE": 0},
+        external_independent_gold_attested=False,
+    )
+    with pytest.raises(ValueError, match="GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ATTESTATION"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_12_silver_count_without_limitation_evidence(base_valid_public_package):
+    pkg = dict(
+        base_valid_public_package,
+        case_count=2,
+        authority_counts={"GOLD": 0, "SILVER": 2, "INTERNAL_REFERENCE": 0, "NONE": 0},
+        silver_limitations_attested=False,
+    )
+    with pytest.raises(ValueError, match="SILVER_WITHOUT_LIMITATION_EVIDENCE"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_13_authority_totals_not_summing_to_case_count(base_valid_public_package):
+    pkg = dict(
+        base_valid_public_package,
+        case_count=5,  # Mismatch: authority sum is 2
+        authority_counts={"GOLD": 0, "SILVER": 1, "INTERNAL_REFERENCE": 1, "NONE": 0},
+    )
+    with pytest.raises(ValueError, match="AUTHORITY_TOTAL_MISMATCH"):
+        validate_public_commitment_package(pkg)
+
+
+def test_negative_gate_14_attempt_to_reveal_before_candidate_freeze():
+    with pytest.raises(ValueError, match="REVEAL_BEFORE_CANDIDATE_FREEZE_PROHIBITED"):
+        attempt_reveal_before_candidate_freeze(candidate_frozen=False)
+
+
+def test_negative_gate_15_attempt_to_evaluate_before_reveal():
+    with pytest.raises(ValueError, match="EVALUATION_BEFORE_REVEAL_PROHIBITED"):
+        attempt_evaluation_before_reveal(holdout_revealed=False)
+
+
+def test_negative_gate_16_attempt_to_compute_composite_authority_score():
+    with pytest.raises(ValueError, match="COMPOSITE_AUTHORITY_SCORE_PROHIBITED"):
+        compute_composite_authority_score({"GOLD": 1.0, "SILVER": 0.5})
