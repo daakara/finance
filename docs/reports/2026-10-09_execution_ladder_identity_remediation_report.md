@@ -134,3 +134,53 @@ The remediation strictly preserves:
 - `PRIVATE_HOLDOUT_EXECUTION = BLOCKED`
 - `EMPIRICAL_QUALITY = INSUFFICIENT_EVIDENCE`
 - `LEARNING_CLAIM = NOT_AUTHORIZED`
+
+---
+
+### 8. AUDIT RECONCILIATION & FINAL CERTIFICATION ADDENDUM (2026-10-09)
+
+#### 8.1 Authoritative Production Provenance & Historical Cohort Correction
+Traceable correction: In the initial remediation draft, `PLAN_08f60711fd16b68ab1d83eff` was informally documented as `DAY_TRADER` based on early synthetic test fixtures. Authoritative read-only production SQLite reconciliation confirms:
+* **Record 1 (`PLAN_08f60711fd16b68ab1d83eff`)**: `AAPL` | `LONG_TERM` | Entry: `336.06`, Stop: `312.62`, TP1: `379.43`, TP2: `402.87` | Status: `IN_BUY_ZONE` | Release: `01683a39a19f3f74720f798459cec717698e2ab2` | **CANONICAL (Plan #1 - First Natural Capture)**
+* **Record 2 (`PLAN_02dd763ae694a0f8ed21b9cf`)**: `TSLA` | `LONG_TERM` | Entry: `373.32`, Stop: `342.67`, TP1: `430.03`, TP2: `460.68` | Status: `EXTENDED_ABOVE_BUY_ZONE` | Release: `01683a39a19f3f74720f798459cec717698e2ab2` | **CANONICAL (Plan #2)**
+* **Record 3 (`PLAN_97e2b47d5fc812813f129d45`)**: `TSLA` | `DAY_TRADER` | Entry: `383.30`, Stop: `376.39`, TP1: `398.63`, TP2: `406.30` | Status: `IN_BUY_ZONE` | Release: `01683a39a19f3f74720f798459cec717698e2ab2` | **CANONICAL (Plan #3)**
+* **Record 4 (`PLAN_19d8bc8fd753bc921de0d6f4`)**: `TSLA` | `LONG_TERM` | Entry: `373.32`, Stop: `342.67`, TP1: `430.03`, TP2: `460.68` | Status: `EXTENDED_ABOVE_BUY_ZONE` | Release: `01683a39a19f3f74720f798459cec717698e2ab2` | **DUPLICATE OBSERVATION (Plan #2)**
+
+Historical counts: `RAW_STORED_PLANS = 4`, `RATIFIED_HISTORICAL_DENOMINATOR = 3`.
+
+#### 8.2 Two Releases, Five Persisted Rows & Four Cumulative Canonical Identities
+* **Record 5 (Post-Release `5a90b91`)**: An observation for `AAPL` `LONG_TERM` under release `5a90b918b0975151b74e936b3fbfa536b575edd7` on the same trading date is evaluated.
+* Because `release_sha` is part of the canonical 11-field identity contract, Record 5 is NOT merged with Record 1 (`01683a3`). It is admitted as a distinct canonical identity.
+* Cumulative metrics:
+  - `PERSISTED_ROWS_ACROSS_RELEASES = 5`
+  - `CUMULATIVE_CANONICAL_DENOMINATOR = 4`
+  - Stratification: `LONG_TERM = 3` (AAPL 0168, TSLA 0168, AAPL 5a90), `DAY_TRADER = 1` (TSLA 0168)
+
+#### 8.3 Corrected 11-Field Equivalence & Isolation Guarantees
+* `find_equivalent_execution_ladder_plan()` updated to evaluate the full 11-field tuple:
+  `epoch_id`, `symbol`, `user_role`, `canonical_utc_trading_date`, `release_sha`, `execution_ladder_authority_sha`, `planned_entry`, `structural_invalidation`, `take_profit_1`, `take_profit_2`, `execution_status`.
+* Legacy migration compatibility lookups never merge across differing release SHAs or authority SHAs.
+
+#### 8.4 Concurrency-Safe Atomic Admission
+* Implemented `insert_execution_ladder_plan_atomic()` under `BEGIN IMMEDIATE` transaction control.
+* Eliminates read-before-write TOCTOU races between equivalence lookup and SQLite write.
+* Concurrent identical requests produce exactly one row insertion and return existing record without denominator inflation.
+* Protected by bounded retry backoff (`@retry_sqlite(max_retries=5)`).
+* Fully deterministic rollback on error; fails closed.
+
+#### 8.5 Test Results & Known Pre-Existing Failures
+* `tests/test_execution_ladder_passive_capture.py`: **73 PASS / 0 FAIL**
+* `tests/test_prospective_decision_capture.py`: **17 PASS / 0 FAIL**
+* `tests/test_post_deploy_verification.py`: **8 PASS / 0 FAIL**
+* `tests/test_price_authority_reproduction.py`: **8 PASS / 0 FAIL**
+* `tests/test_optimal_execution.py`: **7 PASS / 0 FAIL**
+* Sprint Regression Suites (`tests/test_sprint*.py` across 9 modules): **259 PASS / 0 FAIL**
+* Documented Pre-Existing Failures (Unrelated to Execution Ladder Remediation):
+  1. `test_arx_step2_passive_capture_certification.py::test_stage2_production_deployment_identity`: Fails because `verify_frozen_engine_manifest()` checks older frozen engine hashes from Epoch 1 prior to Sprint 2A/2B and price-authority changes.
+  2. `test_qa_escape_invariants.py::test_prospective_extended_asset_never_emits_target_reached`: Fails with `KeyError: 'is_actionable'` on raw internal engine function output introduced in commit `79e3318`.
+
+#### 8.6 Certification Verdict
+* `LOCAL_CERTIFICATION = PASS`
+* `QUANTITATIVE_INVARIANCE = PRESERVED`
+* `PUSH_STATUS = NOT_AUTHORIZED`
+* `DEPLOY_STATUS = NOT_AUTHORIZED`

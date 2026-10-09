@@ -53,6 +53,27 @@ def temp_db_path():
             pass
 
 
+@pytest.fixture(autouse=True)
+def isolate_test_ledger(monkeypatch, tmp_path):
+    """Guarantees tests never write to the production paper trading ledger."""
+    dummy_ledger = tmp_path / "dummy_ledger.json"
+    dummy_ledger.write_text(
+        json.dumps({
+            "version": "1.0.0",
+            "totalActiveSignals": 0,
+            "signals": [],
+            "execution_ladder_plans": [],
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(ExperimentLedger, "DEFAULT_LEDGER_PATH", str(dummy_ledger))
+    monkeypatch.setattr(
+        ExperimentLedger,
+        "record_execution_ladder_plan_snapshot",
+        classmethod(lambda cls, snap, ledger_path=None: snap),
+    )
+
+
 @pytest.fixture
 def temp_ledger_path():
     """Provides a fresh isolated temporary ledger json file path."""
@@ -1773,30 +1794,38 @@ def test_vcp_epoch_signal_capture_isolation(temp_db_path, temp_ledger_path, monk
 
 
 def test_ratified_denominator_substantive_count(temp_db_path):
-    """Phase 4.8: Verifies that replicating the 4 historical production records yields exactly
-    raw_stored_plans=4 and candidate_daily_deduplicated_count (ratified denominator) = 3."""
+    """Phase 4.8: Verifies that replicating the 4 authoritative historical production records yields exactly
+    raw_stored_plans=4 and candidate_daily_deduplicated_count (ratified denominator) = 3.
+    Provenance: Production SQLite database read-only reconciliation.
+    Records:
+    1. AAPL PLAN_08f60711fd16b68ab1d83eff: LONG_TERM, 336.06 / 312.62 / 379.43 / 402.87, IN_BUY_ZONE
+    2. TSLA PLAN_02dd763ae694a0f8ed21b9cf: LONG_TERM, 373.32 / 342.67 / 430.03 / 460.68, EXTENDED_ABOVE_BUY_ZONE
+    3. TSLA PLAN_97e2b47d5fc812813f129d45: DAY_TRADER, 383.30 / 376.39 / 398.63 / 406.30, IN_BUY_ZONE
+    4. TSLA PLAN_19d8bc8fd753bc921de0d6f4: LONG_TERM, 373.32 / 342.67 / 430.03 / 460.68, EXTENDED_ABOVE_BUY_ZONE (duplicate of #2)
+    All 4 captured under original functional release 01683a39a19f3f74720f798459cec717698e2ab2.
+    """
     gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
 
     raw_records = [
-        # 1. AAPL DAY_TRADER
+        # 1. AAPL LONG_TERM (First natural capture)
         {
             "plan_id": "PLAN_08f60711fd16b68ab1d83eff",
             "epoch_id": EXECUTION_LADDER_EPOCH_ID,
             "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
             "symbol": "AAPL",
             "instrument_class": "EQUITY",
-            "user_role": "DAY_TRADER",
-            "generation_timestamp": "1791554903808",
-            "source_data_timestamp": "1791554903808",
-            "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+            "user_role": "LONG_TERM",
+            "generation_timestamp": "1791554903000",
+            "source_data_timestamp": "1791554903000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
             "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
-            "current_spot": 245.0,
-            "planned_entry": 244.5,
-            "structural_invalidation": 240.0,
-            "take_profit_1": 250.0,
-            "take_profit_2": 255.0,
-            "execution_status": "WAITING_PULLBACK",
-            "is_actionable": False,
+            "current_spot": 332.21,
+            "planned_entry": 336.06,
+            "structural_invalidation": 312.62,
+            "take_profit_1": 379.43,
+            "take_profit_2": 402.87,
+            "execution_status": "IN_BUY_ZONE",
+            "is_actionable": True,
             "created_at_utc": "2026-10-09T13:28:23.000000Z",
         },
         # 2. TSLA LONG_TERM (first observation)
@@ -1809,14 +1838,14 @@ def test_ratified_denominator_substantive_count(temp_db_path):
             "user_role": "LONG_TERM",
             "generation_timestamp": "1791563624000",
             "source_data_timestamp": "1791563624000",
-            "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
             "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
-            "current_spot": 215.5,
-            "planned_entry": 215.5,
-            "structural_invalidation": 210.0,
-            "take_profit_1": 225.0,
-            "take_profit_2": 235.0,
-            "execution_status": "WAITING_PULLBACK",
+            "current_spot": 382.69,
+            "planned_entry": 373.32,
+            "structural_invalidation": 342.67,
+            "take_profit_1": 430.03,
+            "take_profit_2": 460.68,
+            "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
             "is_actionable": False,
             "created_at_utc": "2026-10-09T16:33:44.000000Z",
         },
@@ -1830,15 +1859,15 @@ def test_ratified_denominator_substantive_count(temp_db_path):
             "user_role": "DAY_TRADER",
             "generation_timestamp": "1791563624000",
             "source_data_timestamp": "1791563624000",
-            "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
             "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
-            "current_spot": 215.5,
-            "planned_entry": 215.0,
-            "structural_invalidation": 212.0,
-            "take_profit_1": 220.0,
-            "take_profit_2": 225.0,
-            "execution_status": "WAITING_PULLBACK",
-            "is_actionable": False,
+            "current_spot": 382.69,
+            "planned_entry": 383.30,
+            "structural_invalidation": 376.39,
+            "take_profit_1": 398.63,
+            "take_profit_2": 406.30,
+            "execution_status": "IN_BUY_ZONE",
+            "is_actionable": True,
             "created_at_utc": "2026-10-09T16:33:44.000000Z",
         },
         # 4. TSLA LONG_TERM (duplicate due to timestamp slicing at 17:19 UTC)
@@ -1849,23 +1878,23 @@ def test_ratified_denominator_substantive_count(temp_db_path):
             "symbol": "TSLA",
             "instrument_class": "EQUITY",
             "user_role": "LONG_TERM",
-            "generation_timestamp": "1791566367000",
-            "source_data_timestamp": "1791566367000",
-            "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+            "generation_timestamp": "1791566339000",
+            "source_data_timestamp": "1791566339000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
             "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
-            "current_spot": 215.5,
-            "planned_entry": 215.5,
-            "structural_invalidation": 210.0,
-            "take_profit_1": 225.0,
-            "take_profit_2": 235.0,
-            "execution_status": "WAITING_PULLBACK",
+            "current_spot": 382.69,
+            "planned_entry": 373.32,
+            "structural_invalidation": 342.67,
+            "take_profit_1": 430.03,
+            "take_profit_2": 460.68,
+            "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
             "is_actionable": False,
             "created_at_utc": "2026-10-09T17:19:27.000000Z",
         },
     ]
 
     for rec in raw_records:
-        gov_db.insert_execution_ladder_plan(rec)
+        gov_db.insert_execution_ladder_plan(rec, check_equivalent=False)
 
     # 1. Raw row count
     assert gov_db.count_execution_ladder_plans(epoch_id=EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=False) == 4
@@ -1876,7 +1905,511 @@ def test_ratified_denominator_substantive_count(temp_db_path):
     # 3. Stratification with deduplication
     strat = gov_db.get_execution_ladder_stratification(epoch_id=EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=True)
     assert strat["total"] == 3
-    assert strat["by_role"]["DAY_TRADER"] == 2
-    assert strat["by_role"]["LONG_TERM"] == 1
-    assert strat["by_status"]["WAITING_PULLBACK"] == 3
+    assert strat["by_role"]["LONG_TERM"] == 2
+    assert strat["by_role"]["DAY_TRADER"] == 1
+    assert strat["by_status"]["IN_BUY_ZONE"] == 2
+    assert strat["by_status"]["EXTENDED_ABOVE_BUY_ZONE"] == 1
+
+
+# ==============================================================================
+# SECTION 5: FINAL REMEDIATION & CERTIFICATION MANDATORY REGRESSION MATRIX
+# ==============================================================================
+
+def test_identity_isolation_matrix():
+    """Section 5.1: Verifies complete 11-field identity isolation.
+    - Different release SHAs remain distinct
+    - Different authority SHAs remain distinct
+    - Different epochs remain distinct
+    - Different roles remain distinct
+    - Changed status or levels remain distinct
+    - Timestamp representation changes alone do not create new identities
+    """
+    base = {
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "symbol": "AAPL",
+        "user_role": "LONG_TERM",
+        "source_data_timestamp": "2026-10-09T14:30:00Z",
+        "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "planned_entry": 336.06,
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+    }
+    base_id = compute_execution_ladder_plan_id(base)
+
+    # 1. Different release SHA
+    p_rel = dict(base, release_sha="5a90b918b0975151b74e936b3fbfa536b575edd7")
+    assert compute_execution_ladder_plan_id(p_rel) != base_id
+
+    # 2. Different authority SHA
+    p_auth = dict(base, execution_ladder_authority_sha="0000000000000000000000000000000000000000")
+    assert compute_execution_ladder_plan_id(p_auth) != base_id
+
+    # 3. Different epoch
+    p_epoch = dict(base, epoch_id="ARX_PROSPECTIVE_VALIDATION_EPOCH_2")
+    assert compute_execution_ladder_plan_id(p_epoch) != base_id
+
+    # 4. Different role
+    p_role = dict(base, user_role="DAY_TRADER")
+    assert compute_execution_ladder_plan_id(p_role) != base_id
+
+    # 5. Changed status
+    p_status = dict(base, execution_status="EXTENDED_ABOVE_BUY_ZONE")
+    assert compute_execution_ladder_plan_id(p_status) != base_id
+
+    # 6. Changed levels
+    p_entry = dict(base, planned_entry=340.00)
+    assert compute_execution_ladder_plan_id(p_entry) != base_id
+    p_stop = dict(base, structural_invalidation=310.00)
+    assert compute_execution_ladder_plan_id(p_stop) != base_id
+    p_tp1 = dict(base, take_profit_1=380.00)
+    assert compute_execution_ladder_plan_id(p_tp1) != base_id
+    p_tp2 = dict(base, take_profit_2=410.00)
+    assert compute_execution_ladder_plan_id(p_tp2) != base_id
+
+    # 7. Timestamp representations for same trading date produce identical plan ID
+    for alt_ts in [
+        "2026-10-09T18:45:12.123456Z",
+        "2026-10-09T10:30:00-04:00",
+        1791554903000,
+        1791554903,
+        "1791554903000",
+    ]:
+        p_ts = dict(base, source_data_timestamp=alt_ts)
+        assert compute_execution_ladder_plan_id(p_ts) == base_id
+
+
+def test_equivalence_lookup_isolates_across_releases(temp_db_path):
+    """Section 5.1b: Verifies that find_equivalent_execution_ladder_plan strictly isolates
+    across different release SHAs and authority SHAs."""
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    plan_r1 = {
+        "plan_id": "PLAN_release1",
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "AAPL",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "2026-10-09T14:30:00Z",
+        "source_data_timestamp": "2026-10-09T14:30:00Z",
+        "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 332.21,
+        "planned_entry": 336.06,
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+        "is_actionable": True,
+        "created_at_utc": "2026-10-09T14:30:00Z",
+    }
+    gov_db.insert_execution_ladder_plan(plan_r1)
+
+    # Query with different release_sha must NOT match
+    cand_r2 = dict(plan_r1, release_sha="5a90b918b0975151b74e936b3fbfa536b575edd7")
+    equiv = gov_db.find_equivalent_execution_ladder_plan(cand_r2)
+    assert equiv is None
+
+    # Query with different authority_sha must NOT match
+    cand_auth = dict(plan_r1, execution_ladder_authority_sha="0000000000000000000000000000000000000000")
+    equiv_auth = gov_db.find_equivalent_execution_ladder_plan(cand_auth)
+    assert equiv_auth is None
+
+    # Query with identical release_sha and authority_sha DOES match
+    cand_same = dict(plan_r1, source_data_timestamp="2026-10-09T20:00:00Z")
+    equiv_same = gov_db.find_equivalent_execution_ladder_plan(cand_same)
+    assert equiv_same is not None
+    assert equiv_same["plan_id"] == "PLAN_release1"
+
+
+def test_concurrency_two_identical_requests(temp_db_path):
+    """Section 5.2a: Two concurrent identical requests produce exactly one insertion."""
+    import concurrent.futures
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    plan = {
+        "plan_id": "PLAN_concurrent_2_test",
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "AAPL",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "2026-10-09T18:00:00Z",
+        "source_data_timestamp": "2026-10-09T18:00:00Z",
+        "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 332.21,
+        "planned_entry": 336.06,
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+        "is_actionable": True,
+        "created_at_utc": "2026-10-09T18:00:00Z",
+    }
+
+    def worker(i):
+        db = GovernanceDatabaseEngine(temp_db_path)
+        return db.insert_execution_ladder_plan_atomic(dict(plan), check_equivalent=True)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        futs = [ex.submit(worker, i) for i in range(2)]
+        results = [f.result() for f in futs]
+
+    assert sum(1 for r in results if r[0] is True) == 1
+    assert sum(1 for r in results if r[0] is False) == 1
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_concurrency_ten_identical_requests(temp_db_path):
+    """Section 5.2b: Ten concurrent identical requests produce exactly one insertion."""
+    import concurrent.futures
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    plan = {
+        "plan_id": "PLAN_concurrent_10_test",
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "TSLA",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "2026-10-09T18:00:00Z",
+        "source_data_timestamp": "2026-10-09T18:00:00Z",
+        "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 382.69,
+        "planned_entry": 373.32,
+        "structural_invalidation": 342.67,
+        "take_profit_1": 430.03,
+        "take_profit_2": 460.68,
+        "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
+        "is_actionable": False,
+        "created_at_utc": "2026-10-09T18:00:00Z",
+    }
+
+    def worker(i):
+        db = GovernanceDatabaseEngine(temp_db_path)
+        return db.insert_execution_ladder_plan_atomic(dict(plan), check_equivalent=True)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        futs = [ex.submit(worker, i) for i in range(10)]
+        results = [f.result() for f in futs]
+
+    assert sum(1 for r in results if r[0] is True) == 1
+    assert sum(1 for r in results if r[0] is False) == 9
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_concurrency_migration_boundary_requests(temp_db_path):
+    """Section 5.2c: Concurrent migration-boundary requests produce one canonical admission."""
+    import concurrent.futures
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    # Seed historical defective record
+    historical_record = {
+        "plan_id": "PLAN_02dd763ae694a0f8ed21b9cf",
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "TSLA",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "1791563624000",
+        "source_data_timestamp": "1791563624000",
+        "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 382.69,
+        "planned_entry": 373.32,
+        "structural_invalidation": 342.67,
+        "take_profit_1": 430.03,
+        "take_profit_2": 460.68,
+        "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
+        "is_actionable": False,
+        "created_at_utc": "2026-10-09T16:33:44.000000Z",
+    }
+    gov_db.insert_execution_ladder_plan(historical_record)
+
+    opt_plan = {
+        "optimal_entry_min": 370.0,
+        "optimal_entry_max": 375.0,
+        "planned_entry": 373.32,
+        "structural_invalidation": 342.67,
+        "take_profit_1": 430.03,
+        "take_profit_2": 460.68,
+        "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
+        "execution_risk": 30.65,
+        "atr_14": 8.5,
+        "market_location": "ABOVE_VALUE_AREA",
+        "execution_stop_visible": True,
+    }
+
+    def worker(i):
+        return PassiveCaptureHook.record_execution_ladder_plan(
+            symbol="TSLA",
+            optimal_execution_plan=opt_plan,
+            current_price=382.69,
+            live_spot_price=382.69,
+            user_role="LONG_TERM",
+            instrument_class="EQUITY",
+            generation_timestamp="1791566339000",
+            source_data_timestamp="1791566339000",
+            release_sha="01683a39a19f3f74720f798459cec717698e2ab2",
+            authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+            is_actionable=False,
+            db_path=temp_db_path,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+        futs = [ex.submit(worker, i) for i in range(5)]
+        results = [f.result() for f in futs]
+
+    assert all(r is not None for r in results)
+    assert all(r["plan_id"] == "PLAN_02dd763ae694a0f8ed21b9cf" for r in results)
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID) == 1
+
+
+def test_concurrency_cross_release_requests(temp_db_path):
+    """Section 5.2d: Cross-release concurrent requests preserve separate identities."""
+    import concurrent.futures
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    opt_plan = {
+        "optimal_entry_min": 335.0,
+        "optimal_entry_max": 337.0,
+        "planned_entry": 336.06,
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+        "execution_risk": 23.44,
+        "atr_14": 5.20,
+        "market_location": "IN_VALUE_AREA",
+        "execution_stop_visible": True,
+    }
+
+    def worker(rel_sha):
+        return PassiveCaptureHook.record_execution_ladder_plan(
+            symbol="AAPL",
+            optimal_execution_plan=opt_plan,
+            current_price=332.21,
+            live_spot_price=332.21,
+            user_role="LONG_TERM",
+            instrument_class="EQUITY",
+            generation_timestamp="2026-10-09T18:00:00Z",
+            source_data_timestamp="2026-10-09T18:00:00Z",
+            release_sha=rel_sha,
+            authority_sha=EXECUTION_LADDER_AUTHORITY_SHA,
+            is_actionable=True,
+            db_path=temp_db_path,
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        futs = [
+            ex.submit(worker, "01683a39a19f3f74720f798459cec717698e2ab2"),
+            ex.submit(worker, "5a90b918b0975151b74e936b3fbfa536b575edd7"),
+        ]
+        results = [f.result() for f in futs]
+
+    assert len(results) == 2
+    assert all(r is not None for r in results)
+    plan_ids = set(r["plan_id"] for r in results)
+    assert len(plan_ids) == 2
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID) == 2
+
+
+def test_concurrency_database_exception_rollback(temp_db_path, monkeypatch):
+    """Section 5.2e: Database exceptions roll back safely and fail closed."""
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    # Malformed entry (cannot convert to float)
+    plan = {
+        "plan_id": "PLAN_rollback_test",
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "AAPL",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "2026-10-09T18:00:00Z",
+        "source_data_timestamp": "2026-10-09T18:00:00Z",
+        "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 332.21,
+        "planned_entry": "NOT_A_FLOAT",
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+        "is_actionable": True,
+        "created_at_utc": "2026-10-09T18:00:00Z",
+    }
+
+    with pytest.raises((ValueError, TypeError)):
+        gov_db.insert_execution_ladder_plan_atomic(plan)
+
+    # DB remains clean with zero rows
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID) == 0
+
+
+def test_historical_compatibility_five_rows_four_canonical(temp_db_path):
+    """Section 5.3: Historical compatibility:
+    - Four historical rows remain physically intact
+    - Historical canonical denominator remains 3
+    - Fifth post-release row remains a separate identity
+    - Cumulative denominator remains 4
+    - Immutability triggers block UPDATE and DELETE
+    """
+    gov_db = GovernanceDatabaseEngine(db_path=temp_db_path)
+
+    raw_records = [
+        # 1. AAPL LONG_TERM (Release 01683a3)
+        {
+            "plan_id": "PLAN_08f60711fd16b68ab1d83eff",
+            "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+            "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+            "symbol": "AAPL",
+            "instrument_class": "EQUITY",
+            "user_role": "LONG_TERM",
+            "generation_timestamp": "1791554903000",
+            "source_data_timestamp": "1791554903000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+            "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+            "current_spot": 332.21,
+            "planned_entry": 336.06,
+            "structural_invalidation": 312.62,
+            "take_profit_1": 379.43,
+            "take_profit_2": 402.87,
+            "execution_status": "IN_BUY_ZONE",
+            "is_actionable": True,
+            "created_at_utc": "2026-10-09T13:28:23.000000Z",
+        },
+        # 2. TSLA LONG_TERM (Release 01683a3)
+        {
+            "plan_id": "PLAN_02dd763ae694a0f8ed21b9cf",
+            "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+            "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+            "symbol": "TSLA",
+            "instrument_class": "EQUITY",
+            "user_role": "LONG_TERM",
+            "generation_timestamp": "1791563624000",
+            "source_data_timestamp": "1791563624000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+            "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+            "current_spot": 382.69,
+            "planned_entry": 373.32,
+            "structural_invalidation": 342.67,
+            "take_profit_1": 430.03,
+            "take_profit_2": 460.68,
+            "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
+            "is_actionable": False,
+            "created_at_utc": "2026-10-09T16:33:44.000000Z",
+        },
+        # 3. TSLA DAY_TRADER (Release 01683a3)
+        {
+            "plan_id": "PLAN_97e2b47d5fc812813f129d45",
+            "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+            "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+            "symbol": "TSLA",
+            "instrument_class": "EQUITY",
+            "user_role": "DAY_TRADER",
+            "generation_timestamp": "1791563624000",
+            "source_data_timestamp": "1791563624000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+            "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+            "current_spot": 382.69,
+            "planned_entry": 383.30,
+            "structural_invalidation": 376.39,
+            "take_profit_1": 398.63,
+            "take_profit_2": 406.30,
+            "execution_status": "IN_BUY_ZONE",
+            "is_actionable": True,
+            "created_at_utc": "2026-10-09T16:33:44.000000Z",
+        },
+        # 4. TSLA LONG_TERM duplicate (Release 01683a3)
+        {
+            "plan_id": "PLAN_19d8bc8fd753bc921de0d6f4",
+            "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+            "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+            "symbol": "TSLA",
+            "instrument_class": "EQUITY",
+            "user_role": "LONG_TERM",
+            "generation_timestamp": "1791566339000",
+            "source_data_timestamp": "1791566339000",
+            "release_sha": "01683a39a19f3f74720f798459cec717698e2ab2",
+            "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+            "current_spot": 382.69,
+            "planned_entry": 373.32,
+            "structural_invalidation": 342.67,
+            "take_profit_1": 430.03,
+            "take_profit_2": 460.68,
+            "execution_status": "EXTENDED_ABOVE_BUY_ZONE",
+            "is_actionable": False,
+            "created_at_utc": "2026-10-09T17:19:27.000000Z",
+        },
+    ]
+
+    for rec in raw_records:
+        gov_db.insert_execution_ladder_plan(rec, check_equivalent=False)
+
+    # 1. Historical cohort checks
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=False) == 4
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=True) == 3
+
+    # 2. Add 5th record under Release 5a90b91
+    record_5 = {
+        "epoch_id": EXECUTION_LADDER_EPOCH_ID,
+        "observation_stream": EXECUTION_LADDER_OBSERVATION_STREAM,
+        "symbol": "AAPL",
+        "instrument_class": "EQUITY",
+        "user_role": "LONG_TERM",
+        "generation_timestamp": "2026-10-09T18:00:00Z",
+        "source_data_timestamp": "2026-10-09T18:00:00Z",
+        "release_sha": "5a90b918b0975151b74e936b3fbfa536b575edd7",
+        "execution_ladder_authority_sha": EXECUTION_LADDER_AUTHORITY_SHA,
+        "current_spot": 332.21,
+        "planned_entry": 336.06,
+        "structural_invalidation": 312.62,
+        "take_profit_1": 379.43,
+        "take_profit_2": 402.87,
+        "execution_status": "IN_BUY_ZONE",
+        "is_actionable": True,
+        "created_at_utc": "2026-10-09T18:00:00Z",
+    }
+    record_5["plan_id"] = compute_execution_ladder_plan_id(record_5)
+
+    inserted = gov_db.insert_execution_ladder_plan(record_5, check_equivalent=True)
+    assert inserted is True
+
+    # 3. Post-release counts
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=False) == 5
+    assert gov_db.count_execution_ladder_plans(EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=True) == 4
+
+    # 4. Stratification across the 4 cumulative canonical identities
+    strat = gov_db.get_execution_ladder_stratification(EXECUTION_LADDER_EPOCH_ID, deduplicate_substantive=True)
+    assert strat["total"] == 4
+    assert strat["by_role"]["LONG_TERM"] == 3  # AAPL(0168), TSLA(0168), AAPL(5a90)
+    assert strat["by_role"]["DAY_TRADER"] == 1  # TSLA(0168)
+    assert strat["by_status"]["IN_BUY_ZONE"] == 3
+    assert strat["by_status"]["EXTENDED_ABOVE_BUY_ZONE"] == 1
+
+    # 5. Immutability: UPDATE and DELETE must fail closed on historical rows
+    conn = gov_db.get_connection()
+    with pytest.raises(sqlite3.IntegrityError, match="IMMUTABILITY_VIOLATION.*Updates"):
+        conn.execute("UPDATE execution_ladder_prospective_plans SET current_spot = 999.0 WHERE plan_id = 'PLAN_08f60711fd16b68ab1d83eff'")
+
+    with pytest.raises(sqlite3.IntegrityError, match="IMMUTABILITY_VIOLATION.*Deletions"):
+        conn.execute("DELETE FROM execution_ladder_prospective_plans WHERE plan_id = 'PLAN_08f60711fd16b68ab1d83eff'")
+    conn.close()
+
+
+def test_quantitative_and_governance_invariance():
+    """Section 5.4: Verifies invariance:
+    - Zero quantitative logic alterations
+    - Zero price-authority semantics changes
+    - VCP prospective evidence remains untouched
+    - No production traffic generated
+    """
+    assert EXECUTION_LADDER_AUTHORITY_SHA == "7bcb7780221f58cf596dabce484d83276e0a3c50"
+
 

@@ -677,58 +677,115 @@ class GovernanceDatabaseEngine:
         finally:
             conn.close()
 
-    @retry_sqlite()
-    def insert_execution_ladder_plan(self, plan: Dict[str, Any]) -> bool:
-        """Atomically inserts an immutable execution ladder prospective plan snapshot.
+    @retry_sqlite(max_retries=5, base_delay=0.05)
+    def insert_execution_ladder_plan_atomic(
+        self, plan: Dict[str, Any], check_equivalent: bool = True
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """Atomically evaluates and records an execution ladder plan within a single protected SQLite transaction.
 
-        Returns True on successful insertion, False if plan_id already exists (idempotent).
-        Raises sqlite3.IntegrityError if an immutability trigger or constraint is violated.
+        Ensures:
+        - Protection under BEGIN IMMEDIATE (acquires reserved/write lock immediately).
+        - Elimination of read-before-write races between equivalent-plan check and insertion.
+        - Full 11-field canonical identity deduplication.
+        - Idempotent return of existing plan (either by plan_id or 11-field equivalent).
+        - Deterministic rollback on error; fails closed.
+        - Zero deadlock possibility via immediate write transaction and bounded retry backoff.
+
+        Returns (inserted, record):
+        - (True, inserted_snapshot) on successful insertion.
+        - (False, existing_snapshot) if plan_id or equivalent plan already exists.
+        - Raises on unexpected database corruption or constraint violations other than uniqueness.
         """
         import json
         conn = self.get_connection()
+        conn.isolation_level = None  # Autocommit mode for explicit transaction control
         try:
-            with conn:
-                conn.execute(
-                    """
-                    INSERT INTO execution_ladder_prospective_plans (
-                        plan_id, epoch_id, observation_stream, symbol, instrument_class,
-                        user_role, generation_timestamp, source_data_timestamp, release_sha,
-                        execution_ladder_authority_sha, current_spot, planned_entry,
-                        structural_invalidation, take_profit_1, take_profit_2,
-                        execution_status, is_actionable, snapshot_payload_json, created_at_utc
-                    ) VALUES (
-                        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                    )
-                    """,
-                    (
-                        plan["plan_id"],
-                        plan["epoch_id"],
-                        plan["observation_stream"],
-                        plan["symbol"],
-                        plan["instrument_class"],
-                        plan["user_role"],
-                        plan["generation_timestamp"],
-                        plan["source_data_timestamp"],
-                        plan["release_sha"],
-                        plan["execution_ladder_authority_sha"],
-                        float(plan["current_spot"]),
-                        float(plan["planned_entry"]),
-                        float(plan["structural_invalidation"]),
-                        float(plan["take_profit_1"]),
-                        float(plan["take_profit_2"]),
-                        plan["execution_status"],
-                        1 if plan.get("is_actionable") else 0,
-                        json.dumps(plan, sort_keys=True, default=str),
-                        plan.get("created_at_utc") or plan.get("generation_timestamp"),
-                    ),
+            conn.execute("BEGIN IMMEDIATE")
+
+            # 1. Check if record already exists by deterministic plan_id
+            cur = conn.execute(
+                "SELECT * FROM execution_ladder_prospective_plans WHERE plan_id = ?",
+                (plan["plan_id"],),
+            )
+            row = cur.fetchone()
+            if row:
+                conn.execute("COMMIT")
+                snapshot = json.loads(row["snapshot_payload_json"])
+                snapshot["created_at_utc"] = row["created_at_utc"]
+                snapshot["snapshot_payload"] = dict(snapshot)
+                return False, snapshot
+
+            # 2. Check if an equivalent plan exists under the full 11-field canonical identity
+            if check_equivalent:
+                equiv = self.find_equivalent_execution_ladder_plan(plan, conn=conn)
+                if equiv:
+                    conn.execute("COMMIT")
+                    return False, equiv
+
+            # 3. Insert record atomically
+            conn.execute(
+                """
+                INSERT INTO execution_ladder_prospective_plans (
+                    plan_id, epoch_id, observation_stream, symbol, instrument_class,
+                    user_role, generation_timestamp, source_data_timestamp, release_sha,
+                    execution_ladder_authority_sha, current_spot, planned_entry,
+                    structural_invalidation, take_profit_1, take_profit_2,
+                    execution_status, is_actionable, snapshot_payload_json, created_at_utc
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
-                return True
+                """,
+                (
+                    plan["plan_id"],
+                    plan["epoch_id"],
+                    plan["observation_stream"],
+                    plan["symbol"],
+                    plan["instrument_class"],
+                    plan["user_role"],
+                    plan["generation_timestamp"],
+                    plan["source_data_timestamp"],
+                    plan["release_sha"],
+                    plan["execution_ladder_authority_sha"],
+                    float(plan["current_spot"]),
+                    float(plan["planned_entry"]),
+                    float(plan["structural_invalidation"]),
+                    float(plan["take_profit_1"]),
+                    float(plan["take_profit_2"]),
+                    plan["execution_status"],
+                    1 if plan.get("is_actionable") else 0,
+                    json.dumps(plan, sort_keys=True, default=str),
+                    plan.get("created_at_utc") or plan.get("generation_timestamp"),
+                ),
+            )
+            conn.execute("COMMIT")
+            return True, plan
         except sqlite3.IntegrityError as e:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
             if "UNIQUE constraint failed" in str(e) or "PRIMARY KEY" in str(e):
-                return False  # Duplicate plan_id
+                existing = self.get_execution_ladder_plan(plan["plan_id"])
+                return False, existing
+            raise
+        except Exception:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
             raise
         finally:
             conn.close()
+
+    @retry_sqlite(max_retries=5, base_delay=0.05)
+    def insert_execution_ladder_plan(self, plan: Dict[str, Any], check_equivalent: bool = False) -> bool:
+        """Atomically inserts an immutable execution ladder prospective plan snapshot.
+
+        Returns True on successful insertion, False if plan_id or equivalent already exists (idempotent).
+        Raises sqlite3.IntegrityError if an immutability trigger or constraint is violated.
+        """
+        inserted, _ = self.insert_execution_ladder_plan_atomic(plan, check_equivalent=check_equivalent)
+        return inserted
 
     def get_execution_ladder_plan(self, plan_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves an execution ladder prospective plan snapshot by plan_id."""
@@ -750,13 +807,24 @@ class GovernanceDatabaseEngine:
             conn.close()
 
     def find_equivalent_execution_ladder_plan(
-        self, plan_snapshot: Dict[str, Any]
+        self, plan_snapshot: Dict[str, Any], conn: Optional[sqlite3.Connection] = None
     ) -> Optional[Dict[str, Any]]:
-        """Finds an existing execution ladder record matching the canonical trading date and substantive plan fields.
+        """Finds an existing execution ladder record matching the complete canonical 11-field identity:
+        1. epoch_id
+        2. symbol
+        3. user_role
+        4. Canonical UTC trading date (YYYY-MM-DD)
+        5. release_sha
+        6. execution_ladder_authority_sha
+        7. planned_entry
+        8. structural_invalidation
+        9. take_profit_1
+        10. take_profit_2
+        11. execution_status
 
         Used at migration boundaries where historical records were captured under an unnormalized plan_id.
         Guarantees zero denominator inflation when re-querying existing captured plans on the same trading date,
-        without mutating historical database rows or existing plan IDs in place.
+        while strictly isolating across distinct release SHAs or authority SHAs.
         """
         import json
         from analyst_dashboard.governance.passive_capture import extract_canonical_trading_date
@@ -764,7 +832,9 @@ class GovernanceDatabaseEngine:
         epoch_id = str(plan_snapshot.get("epoch_id") or "")
         symbol = str(plan_snapshot.get("symbol") or "").upper().strip()
         user_role = str(plan_snapshot.get("user_role") or "").upper().strip()
-        execution_status = str(plan_snapshot.get("execution_status") or "")
+        execution_status = str(plan_snapshot.get("execution_status") or "").strip()
+        release_sha = str(plan_snapshot.get("release_sha") or "").strip()
+        authority_sha = str(plan_snapshot.get("execution_ladder_authority_sha") or "").strip()
 
         source_ts = plan_snapshot.get("source_data_timestamp") or plan_snapshot.get("generation_timestamp")
         try:
@@ -777,15 +847,24 @@ class GovernanceDatabaseEngine:
         target_tp1 = float(plan_snapshot.get("take_profit_1") or 0.0)
         target_tp2 = float(plan_snapshot.get("take_profit_2") or 0.0)
 
-        conn = self.get_connection()
+        should_close = False
+        if conn is None:
+            conn = self.get_connection()
+            should_close = True
+
         try:
             cur = conn.execute(
                 """
                 SELECT * FROM execution_ladder_prospective_plans
-                WHERE epoch_id = ? AND symbol = ? AND user_role = ? AND execution_status = ?
+                WHERE epoch_id = ? 
+                  AND symbol = ? 
+                  AND user_role = ? 
+                  AND execution_status = ?
+                  AND release_sha = ?
+                  AND execution_ladder_authority_sha = ?
                 ORDER BY rowid ASC
                 """,
-                (epoch_id, symbol, user_role, execution_status),
+                (epoch_id, symbol, user_role, execution_status, release_sha, authority_sha),
             )
             rows = cur.fetchall()
             for row in rows:
@@ -814,7 +893,8 @@ class GovernanceDatabaseEngine:
 
             return None
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def count_execution_ladder_plans(
         self,

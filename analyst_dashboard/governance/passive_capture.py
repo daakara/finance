@@ -896,10 +896,10 @@ class PassiveCaptureHook:
             snapshot = admission["snapshot"]
             from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
             gov_db = GovernanceDatabaseEngine(db_path=db_path)
-            inserted = gov_db.insert_execution_ladder_plan(snapshot)
+            inserted, record = gov_db.insert_execution_ladder_plan_atomic(snapshot, check_equivalent=True)
             if not inserted:
-                # Concurrent or existing insertion
-                return gov_db.get_execution_ladder_plan(snapshot["plan_id"])
+                # Concurrent or equivalent plan already recorded
+                return record or gov_db.get_execution_ladder_plan(snapshot["plan_id"])
 
             try:
                 ExperimentLedger.record_execution_ladder_plan_snapshot(snapshot, ledger_path=ledger_path)
