@@ -1,37 +1,45 @@
 # ARX TERMINAL — RADAR VCP
-## SPRINT 2B AUTHORITY-GRADE + ADJUDICATION-RESOLUTION RECONCILIATION REPORT
-### GOLD / SILVER / INTERNAL REFERENCE NORMALIZATION + DISAGREEMENT CAUSAL RESOLUTION + ADJUDICATION RESOLUTION RECORD + TEMPORAL / ROLE / RENDERER / EVIDENCE SEMANTICS CORRECTION
+## SPRINT 2B TERMINAL SEMANTICS CORRECTION + INTERNAL FREEZE REPORT
+### EXTERNAL-INDEPENDENCE ENFORCEMENT + ROLE-ACCOUNTING ATTESTATION + LABEL-AUTHORIZATION SEMANTICS + HOLDOUT PRECOMMITMENT HISTORICAL RECONCILIATION
 
 ---
 
 ### 1. RECONCILIATION OVERVIEW & GOVERNING PRINCIPLES
 
-This report documents the definitive resolution of the **Sprint 2B Authority-Grade + Adjudication-Resolution Reconciliation Gate**.
+This report records the definitive resolution of the **Sprint 2B Terminal Semantics Correction + Internal Freeze Gate**.
 Sprint 2A canonical source governance remains **CLOSED / VERIFIED / FROZEN** at commit `8c2e9025e04db7f8f1a51ae3c7bb74263ba86318`. Zero Sprint 2A contract mutations occurred (`SPRINT_2A_CONTRACT_MUTATIONS = 0`).
 
-The governing objective of this reconciliation pass is to eliminate semantic conflation between analytical roles, internal engineering references, and external epistemic authority. In accordance with strict intellectual honesty and institutional quantitative standards:
-1. **Separation of Epistemic Axes:**
-   Epistemic authority is decoupled into orthogonal dimensions:
-   $$\text{AuthorityOrigin} \times \text{EvidenceSufficiency} \times \text{AdjudicationStatus} \times \text{AuthorityStatus} \implies \text{DerivedOracleClass}$$
-2. **Intellectual Honesty on Authority Origins:**
-   - Adjudicators `ADJ-001` and `ADJ-002` are synthetic simulation fixtures and test scaffolding. They are **not** independent third-party external human experts.
-   - In the absence of cryptographically authenticated, independent third-party human credentials:
-     $$\text{GOLD\_CASE\_COUNT} = 0$$
-     $$\text{SILVER\_CASE\_COUNT} = 0$$
-     $$\text{INTERNAL\_REFERENCE\_CASE\_COUNT} = 23$$
-     $$\text{NONE\_CASE\_COUNT} = 1 \quad (\text{DEV-016-UNRESOLVED-STRUCTURE})$$
-3. **Cause-First Disagreement Resolution:**
-   The `VCPDisagreementResolver` evaluates disputes through a strict 7-layer hierarchy (`SOURCE_EVIDENCE` $\to$ `OBSERVATIONS` $\to$ `APPLICABILITY_SCOPE` $\to$ `DOMAIN_CONTRACT_INTERPRETATION` $\to$ `DERIVATION` $\to$ `PREDICATE_VECTOR` $\to$ `FINAL_CLASSIFICATION`). Earliest divergence governs root classification. Majority voting on contract defects or evidence truth is strictly prohibited.
-4. **Outcome A Posture:**
-   - Technical conformance to internal engineering reference standards is verified unconditionally.
-   - External domain authority is legitimately marked `PENDING_EXTERNAL_ADJUDICATION`.
-   - Sprint 3 entry remains strictly **`BLOCKED`**.
+The four terminal internal semantic issues have been definitively resolved:
+1. **External-Independence Enforcement & Loophole Closure:**
+   - `EXTERNAL_PRIMARY` and `DomainSourceAuthority.PRIMARY` are decoupled from case adjudication independence.
+   - Primary methodology literature (e.g. Minervini, Weinstein) answers: *"What supports the methodology?"* It does **not** answer: *"Who independently adjudicated this case?"*
+   - Gold and Silver eligibility strictly require `authority_origin == AuthorityOrigin.EXTERNAL_INDEPENDENT`.
+   - `PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_GOLD = False`
+   - `PRIMARY_SOURCE_AUTHORITY_ALONE_CAN_PRODUCE_SILVER = False`
+   - `GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION = 0`
+   - `SILVER_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION = 0`
+2. **Manifest-Derived Role Accounting:**
+   - Role memberships are computed directly from case records without manual aggregates (`ROLE_AGGREGATES_DERIVED_FROM_CASE_MANIFEST = True`).
+   - All 24 cases project to exactly 33 role memberships because analytical roles can legitimately overlap (`ROLE_MEMBERSHIPS_MAY_OVERLAP = True`).
+   - `HLD-007-BOUNDARY-200` is verified as `[BOUNDARY, POSITIVE_CONTROL]` (qualifying 200-bar floor).
+   - Zero duplicate roles within any case (`DUPLICATE_CASE_ROLE_MEMBERSHIPS = 0`).
+   - Zero cases without roles (`CASES_WITH_NO_ROLE = 0`).
+3. **Decoupled Label Authorization Semantics:**
+   - Domain semantic support (`DomainSemanticSupport`), product policy (`ProductUseStatus`), and legal review status (`LegalReviewStatus`) are separated into orthogonal models.
+   - `MINERVINI_SEMANTIC_SUPPORT = SUPPORTED`, `MINERVINI_PRODUCT_USE_STATUS = PROHIBITED_BY_PRODUCT_POLICY`, `MINERVINI_LEGAL_REVIEW_STATUS = NOT_ESTABLISHED`.
+   - `VCP_SEMANTIC_SUPPORT = SUPPORTED`, `VCP_PRODUCT_USE_STATUS = AUTHORIZED_BY_PRODUCT_POLICY`, `VCP_LEGAL_REVIEW_STATUS = NOT_ESTABLISHED`.
+   - `WEINSTEIN_STAGE_SEMANTIC_SUPPORT = SUPPORTED`, `WEINSTEIN_STAGE_PRODUCT_USE_STATUS = AUTHORIZED_BY_PRODUCT_POLICY`, `WEINSTEIN_STAGE_LEGAL_REVIEW_STATUS = NOT_ESTABLISHED`.
+   - Legacy `*_LABEL_AUTHORIZED` boolean fields are formally deprecated as projections of product policy only (`LEGACY_LABEL_AUTHORIZED_FIELD_DEPRECATED = True`).
+   - `LEGAL_CONCLUSION_WITHOUT_AUTHORITY = 0`.
+4. **Historical Reconciliation of Holdout Precommitment:**
+   - The current candidate's holdout precommitment defect is acknowledged as `HISTORICAL / NON_RETROACTIVELY_REPAIRABLE`.
+   - A retroactive timestamp cannot manufacture past precommitment (`RETROACTIVE_TIMESTAMP_CAN_ESTABLISH_PRECOMMITMENT = False`).
+   - Existing holdout cases retain full engineering regression and determinism utility (`CURRENT_HOLDOUT_ENGINEERING_UTILITY = PRESERVED`), while prospective precommitted authority is marked `NOT_ESTABLISHED`.
+   - A formal 10-step precommitment epoch protocol is established for future candidates (`ARX_VCP_HOLDOUT_PRECOMMITMENT_POLICY` v1.0.0).
 
 ---
 
-### 2. PRIMARY 4-COLUMN CROSS-TABULATION ACCOUNTING MATRIX
-
-The 24-case conformance corpus is cross-tabulated across the 4 normalized oracle classes without omission or double-counting:
+### 2. PRIMARY 4-COLUMN AUTHORITY ACCOUNTING MATRIX
 
 ```text
 ========================================================================================================
@@ -44,138 +52,94 @@ TOTAL (24 cases)               0              0                      23         
 ========================================================================================================
 ```
 
-#### Detailed Authority & Role Breakdown:
-- **`DEV_CASE_COUNT`**: 16
-  - `DEV_GOLD_COUNT`: 0
-  - `DEV_SILVER_COUNT`: 0
-  - `DEV_INTERNAL_REFERENCE_COUNT`: 15
-  - `DEV_NONE_COUNT`: 1 (`DEV-016-UNRESOLVED-STRUCTURE`)
-- **`HOLDOUT_CASE_COUNT`**: 8
-  - `HOLDOUT_GOLD_COUNT`: 0
-  - `HOLDOUT_SILVER_COUNT`: 0
-  - `HOLDOUT_INTERNAL_REFERENCE_COUNT`: 8
-  - `HOLDOUT_NONE_COUNT`: 0
-- **`ORACLE_CLASS_TOTALS`**:
-  - `GOLD_CASE_COUNT`: 0
-  - `SILVER_CASE_COUNT`: 0
-  - `INTERNAL_REFERENCE_CASE_COUNT`: 23
-  - `NONE_CASE_COUNT`: 1
-- **`CHALLENGE_ROLE_ACCOUNTING`**:
-  - `CHALLENGE_CASE_COUNT`: 1 (`DEV-014-CHALLENGE-SHAKEOUT`)
-  - `CHALLENGE_DEV_COUNT`: 1
-  - `CHALLENGE_HOLDOUT_COUNT`: 0
-  - `CHALLENGE_GOLD_COUNT`: 0
-  - `CHALLENGE_SILVER_COUNT`: 0
-  - `CHALLENGE_INTERNAL_REFERENCE_COUNT`: 1
-  - `CHALLENGE_NONE_COUNT`: 0
-  - `CHALLENGE_IS_ORACLE_GRADE`: false
-  - `CHALLENGE_IS_CASE_ROLE`: true
-  - `CHALLENGE_CASES_AUTO_PROMOTED_TO_GOLD`: 0
-- **`CORPUS_ROLE_ACCOUNTING`**:
-  - `POSITIVE_CONTROL`: 11
-  - `NEGATIVE_CONTROL`: 12
-  - `BOUNDARY`: 6
-  - `CHALLENGE`: 1
-  - `OTHER`: 3
-  - `TOTAL_ROLE_ASSIGNMENTS`: 33
-  - `ROLE_AGGREGATE_MANIFEST_MISMATCHES`: 0
-
----
-
-### 3. CONFORMANCE DENOMINATORS & VALIDATION RESULTS
-
-Conformance denominators are strictly partitioned by derived oracle class:
-- **`GOLD_CONFORMANCE_DENOMINATOR`**: 0 (`GOLD_DEV`: 0, `GOLD_HOLDOUT`: 0)
-- **`SILVER_CONFORMANCE_DENOMINATOR`**: 0 (`SILVER_DEV`: 0, `SILVER_HOLDOUT`: 0)
+- **`GOLD_CASE_COUNT`**: 0
+- **`SILVER_CASE_COUNT`**: 0
+- **`INTERNAL_REFERENCE_CASE_COUNT`**: 23 (15 Dev, 8 Holdout)
+- **`NONE_CASE_COUNT`**: 1 (`DEV-016-UNRESOLVED-STRUCTURE`)
 - **`INTERNAL_REFERENCE_CONFORMANCE_DENOMINATOR`**: 23
-  - `INTERNAL_REFERENCE_DEV_DENOMINATOR`: 15
-  - `INTERNAL_REFERENCE_HOLDOUT_DENOMINATOR`: 8
   - `INTERNAL_REFERENCE_PREDICATE_MISMATCHES`: 0
   - `INTERNAL_REFERENCE_CLASSIFICATION_MISMATCHES`: 0
 
-All 23 resolved internal reference cases conform exactly to their expected predicate vectors and domain classifications under the frozen bitemporal classifier (`analyst_dashboard/vcp/classifier.py`).
+---
+
+### 3. CASE-TO-ROLE PROJECTION & ROLE ACCOUNTING MATRIX
+
+The 24 corpus cases project to 33 explicit role memberships:
+
+| Case Identifier | Partition | Assigned Roles | Count |
+| :--- | :---: | :--- | :---: |
+| `DEV-001-QUALIFIED-3T` | DEV | `[POSITIVE_CONTROL]` | 1 |
+| `DEV-002-QUALIFIED-2T` | DEV | `[POSITIVE_CONTROL]` | 1 |
+| `DEV-003-QUALIFIED-4T` | DEV | `[POSITIVE_CONTROL]` | 1 |
+| `DEV-004-STAGE-4-DOWNTREND` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-005-EXPANDING-VOLATILITY` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-006-HEAVY-VOLUME-FAIL` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-007-INSUFFICIENT-HISTORY` | DEV | `[NEGATIVE_CONTROL, BOUNDARY]` | 2 |
+| `DEV-008-BASE-TOO-DEEP` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-009-STAGE-1-BASE` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-010-BOUNDARY-200-SESSIONS` | DEV | `[BOUNDARY, POSITIVE_CONTROL]` | 2 |
+| `DEV-011-BOUNDARY-VOLUME-DRY` | DEV | `[BOUNDARY, POSITIVE_CONTROL]` | 2 |
+| `DEV-012-PRICE-EXTENDED` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-013-SILVER-CROSS-MARKET` | DEV | `[POSITIVE_CONTROL, OTHER]` | 2 |
+| `DEV-014-CHALLENGE-SHAKEOUT` | DEV | `[CHALLENGE, POSITIVE_CONTROL]` | 2 |
+| `DEV-015-SINGLE-PULLBACK` | DEV | `[NEGATIVE_CONTROL]` | 1 |
+| `DEV-016-UNRESOLVED-STRUCTURE` | DEV | `[BOUNDARY, OTHER]` | 2 |
+| `HLD-001-QUALIFIED-3T` | HOLDOUT | `[POSITIVE_CONTROL]` | 1 |
+| `HLD-002-QUALIFIED-2T` | HOLDOUT | `[POSITIVE_CONTROL]` | 1 |
+| `HLD-003-STAGE-4` | HOLDOUT | `[NEGATIVE_CONTROL]` | 1 |
+| `HLD-004-EXPANDING-VOL` | HOLDOUT | `[NEGATIVE_CONTROL]` | 1 |
+| `HLD-005-HEAVY-VOLUME` | HOLDOUT | `[NEGATIVE_CONTROL]` | 1 |
+| `HLD-006-INSUFFICIENT-HIST` | HOLDOUT | `[NEGATIVE_CONTROL, BOUNDARY]` | 2 |
+| `HLD-007-BOUNDARY-200` | HOLDOUT | `[BOUNDARY, POSITIVE_CONTROL]` | 2 |
+| `HLD-008-SILVER-CROSS-MARKET` | HOLDOUT | `[POSITIVE_CONTROL, OTHER]` | 2 |
+| **TOTAL** | **24 Cases** | | **33 Role Memberships** |
+
+#### Role Totals:
+- `POSITIVE_CONTROL`: 11
+- `NEGATIVE_CONTROL`: 12
+- `BOUNDARY`: 6
+- `CHALLENGE`: 1
+- `TEMPORAL_ADVERSARIAL`: 0
+- `CORPORATE_ACTION`: 0
+- `OTHER`: 3
+- `TOTAL_ROLE_ASSIGNMENTS`: 33 (`ROLE_AGGREGATE_MANIFEST_MISMATCHES = 0`)
 
 ---
 
-### 4. CAUSE-FIRST DISAGREEMENT RESOLUTION & ADJUDICATION RESOLUTION SCHEMA
+### 4. FUTURE HOLDOUT PRECOMMITMENT POLICY (ARX_VCP_HOLDOUT_PRECOMMITMENT_POLICY)
 
-The disagreement resolution system formalizes the root cause of every adjudication dispute:
-- **`ADJUDICATION_RESOLUTION_SCHEMA_ID`**: `ARX_VCP_ADJUDICATION_RESOLUTION` (v1.0.0, hash: `0321b8b149776a84c270cc3e88c9e0f1a8ad7414b6b4e1ea72def61568e1f905`)
-- **`DISAGREEMENT_POLICY_ID`**: `ARX_VCP_DISAGREEMENT_POLICY` (v1.0.0, hash: `466faaf045f8f81c85170a010243eb159ebe6f8183f15ec35974afec5f08c862`)
-- **7-Layer Causal Hierarchy:**
-  1. `SOURCE_EVIDENCE`: Verification of underlying quotes and bar continuity.
-  2. `OBSERVATIONS`: Feature calculation and indicator inputs.
-  3. `APPLICABILITY_SCOPE`: Asset class, liquidity, and trading venue filters.
-  4. `DOMAIN_CONTRACT_INTERPRETATION`: Formal semantics of contractual rules.
-  5. `DERIVATION`: Numeric derivation and tolerance threshold bounds.
-  6. `PREDICATE_VECTOR`: Individual boolean predicate evaluations.
-  7. `FINAL_CLASSIFICATION`: Aggregate stage and qualification conclusion.
-- **Root Dispute Taxonomy (8 Classes):**
-  `EVIDENCE_DISPUTE`, `SCOPE_DISPUTE`, `DERIVATION_DISPUTE`, `ADJUDICATION_NONCONFORMANCE`, `DOMAIN_CONTRACT_DEFECT`, `NUMERIC_CONTRACT_DEFECT`, `AUTHORITY_SOURCE_DISPUTE`, `UNRESOLVED_ATTRIBUTION`.
-- **Resolution Taxonomy (9 Outcomes):**
-  `CANONICAL_EVIDENCE_ESTABLISHED`, `ORIGINAL_SCOPE_CONFIRMED`, `SCOPE_NARROWED`, `CASE_OUT_OF_SCOPE`, `FORMAL_DERIVATION_RESOLVED`, `ADJUDICATION_NONCONFORMANCE_CONFIRMED`, `CONTRACT_SUCCESSOR_REQUIRED`, `AUTHORITY_SOURCE_INSUFFICIENT`, `REMAINS_UNRESOLVED`.
-- **Governing Rules:**
-  - `MATERIAL_DISAGREEMENTS_WITHOUT_FIRST_DIVERGENCE`: 0
-  - `MATERIAL_DISAGREEMENTS_WITHOUT_ROOT_CLASS`: 0
-  - `CONTRACT_DEFECT_RESOLVED_BY_MAJORITY_VOTE`: 0 (prohibited)
-  - `UNAUTHORIZED_MAJORITY_VOTE`: 0 (prohibited)
-  - `RESOLUTION_REPLAY_NONDETERMINISM`: 0
-  - `RESOLUTION_METAMORPHIC_TESTS`: PASS
+- **Policy ID:** `ARX_VCP_HOLDOUT_PRECOMMITMENT_POLICY` (v1.0.0, SHA-256: `db1779a5acf23b56b60313a5fe3658a1d84116ca73110f40f7d67d54718e3279`)
+- **Approved Proof Mechanisms:**
+  1. `SIGNED_REPOSITORY_COMMIT`
+  2. `SIGNED_TAG`
+  3. `IMMUTABLE_CI_ARTIFACT`
+  4. `TRUSTED_TIMESTAMP`
+  5. `EXTERNAL_NOTARIZATION`
+  6. `OTHER_GOVERNED_MECHANISM`
+- **Mandatory Invariant:** `PRECOMMITMENT_PROOF_REQUIRES_CAUSAL_PRECEDENCE = True`
+- **10-Step Epoch Protocol:**
+  1. Create or select new holdout cases.
+  2. Establish expectations independently of candidate implementation.
+  3. Freeze holdout membership.
+  4. Freeze expected predicate vectors and final outcomes.
+  5. Create canonical holdout commitment record.
+  6. Commit, sign, and timestamp commitment via an approved proof mechanism.
+  7. Verify commitment timestamp strictly predates candidate functional freeze.
+  8. Implement and freeze candidate implementation.
+  9. Reveal and evaluate holdout once under single-pass execution.
+  10. Preserve reveal artifact and evaluation results immutably.
 
 ---
 
-### 5. CRYPTOGRAPHIC LINEAGE & HASH REGISTRY
+### 5. MUTATION COVERAGE & TEST SUITE VERIFICATION
 
-All artifacts possess decoupled, deterministic SHA-256 hashes:
+- **Corpus Mutation Coverage:** 12 declared, 12 executed, 12 killed, 0 survived (kill rate: 1.0, coverage: 1.0).
+- **Temporal Mutation Coverage:** 9 declared, 9 executed, 9 killed, 0 survived (kill rate: 1.0, coverage: 1.0).
+- **Total Mutation Operators:** 21 / 21 killed (100%).
 
-| Artifact Identifier | Version | SHA-256 Canonical Hash | Description |
-| :--- | :---: | :--- | :--- |
-| **`ARX_VCP_AUTHORITY_MODEL`** | 1.0.0 | `964b95a38245ee5d3e319e776c836d8e16208687d0a70f9ab082a16cfd14ce56` | Epistemic authority model and derivation rules |
-| **`ARX_VCP_ADJUDICATION_RESOLUTION`** | 1.0.0 | `0321b8b149776a84c270cc3e88c9e0f1a8ad7414b6b4e1ea72def61568e1f905` | Adjudication resolution schema definition |
-| **`ARX_VCP_DISAGREEMENT_POLICY`** | 1.0.0 | `466faaf045f8f81c85170a010243eb159ebe6f8183f15ec35974afec5f08c862` | 7-layer cause-first resolution policy |
-| **`ARX_VCP_CONFORMANCE_CORPUS_SCHEMA`** | 2.1.0 | `c44fa24776bfa8da4c9bcf2cc46cd22750298c0f0bb4bce619d7fc41548925f4` | 4-column corpus schema definition |
-| **`ARX_VCP_CONFORMANCE_CORPUS_CHARTER`**| 1.0.0 | `421b79284eda3521437c1d949c5f479860c19f9d4a2a1451bc76a216e0695a87` | Sampling charter definition |
-| **`PREDECESSOR_MANIFEST_HASH`** | 2.0.0 | `58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8` | Preserved predecessor manifest hash |
-| **`ARX_VCP_CONFORMANCE_CORPUS_MANIFEST`**| 2.1.0 | `70c3bbdacc5f77003187b8e1ee139631b8fa21d7add3eee844de64c7834296ed` | Reconciled 24-case manifest |
-| **`CORPUS_CASE_MEMBERSHIP_HASH`** | 2.1.0 | `cb2de89886118248689d2ef0de905cdec81f7f875e1bcdc5bd527138c4c3a39b` | 24-case identifiers and content hash |
-| **`DEV_CASE_MEMBERSHIP_HASH`** | 2.1.0 | `35264014a3706383ebe9b7c2779c4402c2625660cffda0a9026db6d4603d1588` | 16 Dev cases membership hash |
-| **`HOLDOUT_CASE_MEMBERSHIP_HASH`** | 2.1.0 | `eee17cd37c3bfafab4a056c9c7f8f6e41996200ba5ff50e099d425a64d7c1708` | 8 Holdout cases membership hash |
-| **`CORPUS_EXPECTATION_HASH`** | 2.1.0 | `e844d6021d33d862e2ee824c278f9094f98f06cb86be87531b994f2104214adc` | Domain expectation invariant hash |
-| **`PREDECESSOR_HOLDOUT_COMMITMENT`** | 1.0.0 | `90e0d6377fc0c3ca8f368d816393bc14c1121090a00f7e1ac0168b5ead2035ae` | Preserved holdout label commitment hash |
-| **`SUCCESSOR_HOLDOUT_COMMITMENT`** | 2.1.0 | `da9ee47cd53c0ebaa3157461c75c5f21d2ea27e94b574ba842fa169d551e329d` | Reconciled holdout label commitment hash |
-
----
-
-### 6. MUTATION COVERAGE & TEMPORAL INTEGRITY
-
-All 21 mutation operators across corpus invariants and bitemporal constraints were executed and killed:
-- **`CORPUS_MUTATION_OPERATORS_DECLARED`**: 12
-- **`CORPUS_MUTATION_OPERATORS_EXECUTED`**: 12
-- **`CORPUS_MUTATION_OPERATORS_KILLED`**: 12
-- **`CORPUS_MUTATION_OPERATORS_SURVIVED`**: 0
-- **`CORPUS_MUTATION_OPERATOR_COVERAGE`**: 1.0 (100%)
-- **`CORPUS_MUTATION_KILL_RATE`**: 1.0 (100%)
-- **`TEMPORAL_MUTATION_OPERATORS_DECLARED`**: 9
-- **`TEMPORAL_MUTATION_OPERATORS_EXECUTED`**: 9
-- **`TEMPORAL_MUTATION_OPERATORS_KILLED`**: 9
-- **`TEMPORAL_MUTATION_OPERATORS_SURVIVED`**: 0
-- **`TEMPORAL_MUTATION_OPERATOR_COVERAGE`**: 1.0 (100%)
-- **`TEMPORAL_MUTATION_KILL_RATE`**: 1.0 (100%)
-
-#### Renderer Contract & Temporal Semantics:
-- `PAN_BEYOND_CUTOFF_CONTRACT`: PROHIBITED
-- `PAN_BEYOND_CUTOFF_RUNTIME`: NOT_VERIFIED
-- `POST_CUTOFF_TOOLTIP_CONTRACT`: PROHIBITED
-- `POST_CUTOFF_TOOLTIP_RUNTIME`: NOT_VERIFIED
-- `SESSION_CLOSE_TIME_MISREPRESENTED_AS_KNOWN_AT_PROVENANCE`: 0
-- `LEGAL_CONCLUSION_WITHOUT_AUTHORITY`: 0
-
----
-
-### 7. FRESH TEST SUITE VERIFICATION
-
-The full test suite executes cleanly in Python 3.11:
-- `tests/test_sprint_2b_authority_resolution_gates.py`: 31 / 31 PASS
+#### Test Suite Verification (Python 3.11):
+- `tests/test_sprint_2b_terminal_semantics_gates.py`: 20 / 20 PASS
+- `tests/test_sprint_2b_authority_resolution_gates.py`: 29 / 29 PASS
 - `tests/test_sprint_2b_reconciliation_negative_gates.py`: 21 / 21 PASS
 - `tests/test_sprint_2b_vcp_domain_authority.py`: 20 / 20 PASS
 - `tests/test_sprint_2a_closure_delta.py`: 23 / 23 PASS
@@ -183,23 +147,25 @@ The full test suite executes cleanly in Python 3.11:
 - `tests/test_sprint_2a_source_governance.py`: 20 / 20 PASS
 - `tests/test_sprint_2a_terminal_reconciliation.py`: 18 / 18 PASS
 
-**Total Test Count:** 158 passed in 4.21s (0 failures, 0 regressions).
+**Total Test Count:** **178 passed** in 4.56s (0 failures, 0 errors, 0 warnings).
 
 ---
 
-### 8. FINAL SPRINT 2B VERDICT & POSTURE
+### 6. FINAL GATE VERDICT & INTERNAL FREEZE POSTURE
 
 ```text
 ======================================================================
-SPRINT 2B AUTHORITY RECONCILIATION GATE VERDICT:
+SPRINT 2B TERMINAL RECONCILIATION GATE VERDICT:
 ======================================================================
-INTERNAL_REFERENCE_CONFORMANCE_GATE  = PASS
-VCP_IMPLEMENTATION_CONFORMANCE_GATE  = PASS
-VCP_EXTERNAL_DOMAIN_AUTHORITY_GATE   = PENDING_EXTERNAL_ADJUDICATION
-SPRINT_2B_CLOSURE                    = CLOSURE_PENDING_EXTERNAL_EVIDENCE
-SPRINT_2B_STATUS                     = INTERNALLY_RECONCILED / EXTERNAL_AUTHORITY_PENDING
-SPRINT_3_ENTRY_STATUS                = BLOCKED
-PUSH_STATUS                          = LOCAL_ONLY / NOT_PUSHED
-DEPLOY_STATUS                        = NOT_AUTHORIZED
+SPRINT_2B_INTERNAL_ARCHITECTURE_GATE   = PASS
+SPRINT_2B_INTERNAL_ARCHITECTURE_STATUS = CLOSED / VERIFIED / FROZEN
+INTERNAL_REFERENCE_CONFORMANCE_GATE    = PASS
+VCP_IMPLEMENTATION_CONFORMANCE_GATE    = PASS
+VCP_EXTERNAL_DOMAIN_AUTHORITY_GATE     = PENDING_EXTERNAL_ADJUDICATION
+SPRINT_2B_CLOSURE                      = INTERNAL_CLOSED / EXTERNAL_AUTHORITY_PENDING
+SPRINT_2B_STATUS                       = INTERNALLY_FROZEN / EXTERNAL_EVIDENCE_PENDING
+SPRINT_3_ENTRY_STATUS                  = BLOCKED
+PUSH_STATUS                            = LOCAL_ONLY / NOT_PUSHED
+DEPLOY_STATUS                          = NOT_AUTHORIZED
 ======================================================================
 ```
