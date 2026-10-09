@@ -48,6 +48,10 @@ from .source_governance_models import (
     PointInTimeStatus,
     HistoricalUniverseQueryResult,
     HistoricalMembershipUnavailableError,
+    EnrichmentAccountingSummary,
+    REASON_CODE_TAXONOMY_ID,
+    REASON_CODE_TAXONOMY_VERSION,
+    REASON_CODE_TAXONOMY_HASH,
 )
 from .source_governance_policy import (
     FieldAuthorityPolicyRegistry,
@@ -63,6 +67,17 @@ from .source_resolver import (
     GenerationLifecycleManager,
     StaleCanonicalPromotionError,
     ReconciliationIntegrityError,
+)
+from .required_field_registry import (
+    GovernanceBindingType,
+    AuthorityState,
+    GovernedScope,
+    GovernanceBinding,
+    RequiredFieldEntry,
+    RegistryValidationError,
+    RegistryValidationResult,
+    RequiredFieldAuthorityRegistry,
+    MINIMUM_REQUIRED_FIELD_CATALOG,
 )
 
 __all__ = [
@@ -121,5 +136,18 @@ __all__ = [
     "GenerationLifecycleManager",
     "StaleCanonicalPromotionError",
     "ReconciliationIntegrityError",
+    "EnrichmentAccountingSummary",
+    "REASON_CODE_TAXONOMY_ID",
+    "REASON_CODE_TAXONOMY_VERSION",
+    "REASON_CODE_TAXONOMY_HASH",
+    "GovernanceBindingType",
+    "AuthorityState",
+    "GovernedScope",
+    "GovernanceBinding",
+    "RequiredFieldEntry",
+    "RegistryValidationError",
+    "RegistryValidationResult",
+    "RequiredFieldAuthorityRegistry",
+    "MINIMUM_REQUIRED_FIELD_CATALOG",
 ]
 

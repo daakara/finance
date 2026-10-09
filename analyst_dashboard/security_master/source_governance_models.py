@@ -191,6 +191,11 @@ class ReasonCode(str, Enum):
     MANUALLY_ADJUDICATED = "MANUALLY_ADJUDICATED"
 
 
+REASON_CODE_TAXONOMY_ID: str = "ARX_REASON_CODE_TAXONOMY"
+REASON_CODE_TAXONOMY_VERSION: str = "1.0.0"
+REASON_CODE_TAXONOMY_HASH: str = "23abacf8c8afed2e6fbb6ad02dcff479c9abe78fca7c8e36b6ed47c50ce978a1"
+
+
 # =====================================================================
 # Layer 1: Raw Source Evidence Models
 # =====================================================================
@@ -484,6 +489,38 @@ class EnrichmentGenerationRecord(BaseModel):
     unresolved_count: int = 0
 
     model_config = ConfigDict(frozen=True)
+
+
+class EnrichmentAccountingSummary(BaseModel):
+    """
+    Mutually exclusive enrichment accounting lifecycle partition (Sprint 2A Delta Section 15).
+    
+    Invariant:
+    enrichment_requested_count == (
+        enrichment_resolved_count
+        + enrichment_unresolved_count
+        + enrichment_failed_count
+        + enrichment_pending_count
+    )
+    enrichment_silently_dropped_count == 0
+    """
+    enrichment_requested_count: int
+    enrichment_resolved_count: int
+    enrichment_unresolved_count: int
+    enrichment_failed_count: int = 0
+    enrichment_pending_count: int = 0
+    enrichment_silently_dropped_count: int = 0
+
+    model_config = ConfigDict(frozen=True)
+
+    def validate_closure(self) -> bool:
+        accounted = (
+            self.enrichment_resolved_count
+            + self.enrichment_unresolved_count
+            + self.enrichment_failed_count
+            + self.enrichment_pending_count
+        )
+        return self.enrichment_requested_count == accounted and self.enrichment_silently_dropped_count == 0
 
 
 # =====================================================================

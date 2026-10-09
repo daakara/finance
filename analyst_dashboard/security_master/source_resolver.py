@@ -45,6 +45,7 @@ from .source_governance_models import (
     HistoricalMembershipAuthority,
     HistoricalUniverseQueryResult,
     HistoricalMembershipUnavailableError,
+    EnrichmentAccountingSummary,
 )
 from .source_governance_policy import (
     FieldAuthorityPolicyRegistry,
@@ -451,6 +452,20 @@ class SourceReconciliationEngine:
                 f"unresolved={unresolved_count}, quarantined={quarantined_count}, unaccounted={unaccounted}"
             )
 
+        # Section 15: Enrichment Accounting Closure
+        # Admissible records proceed to reference enrichment; quarantined records fail at admissibility
+        enrichment_requested = resolved_count + unresolved_count
+        enrichment_acc = EnrichmentAccountingSummary(
+            enrichment_requested_count=enrichment_requested,
+            enrichment_resolved_count=resolved_count,
+            enrichment_unresolved_count=unresolved_count,
+            enrichment_failed_count=0,
+            enrichment_pending_count=0,
+            enrichment_silently_dropped_count=0,
+        )
+        if not enrichment_acc.validate_closure():
+            raise ReconciliationIntegrityError(f"ENRICHMENT ACCOUNTING CLOSURE FAILURE: {enrichment_acc}")
+
         accounting = {
             "raw_source_record_count": raw_count,
             "resolved_record_count": resolved_count,
@@ -459,6 +474,10 @@ class SourceReconciliationEngine:
             "unaccounted_raw_records": 0,
             "canonical_security_count": len(reconciled_securities),
             "canonical_listing_count": len(reconciled_listings),
+            "enrichment_requested_count": enrichment_acc.enrichment_requested_count,
+            "enrichment_resolved_count": enrichment_acc.enrichment_resolved_count,
+            "enrichment_unresolved_count": enrichment_acc.enrichment_unresolved_count,
+            "enrichment_silently_dropped_count": 0,
         }
 
         # Build candidate generation (starts as CANDIDATE, never active before validation)
@@ -485,25 +504,47 @@ class SourceReconciliationEngine:
     def query_point_in_time_universe(
         self,
         requested_as_of: str,
-        historical_authority_coverage_start: str = "2026-10-09T00:00:00Z",
+        technical_snapshot_coverage_start: str = "2026-10-09T00:00:00Z",
+        authoritative_historical_coverage_start: Optional[str] = None,
+        historical_authority_coverage_start: Optional[str] = None,
         active_generation: Optional[CanonicalGeneration] = None,
         fail_closed: bool = False,
     ) -> HistoricalUniverseQueryResult:
         """
-        Queries point-in-time universe under Sprint 2A Section 8 invariants.
+        Queries point-in-time universe under Sprint 2A Delta Sections 8 & 14 invariants.
         
-        Hard Invariant (Sprint 2A Section 8):
+        Hard Invariant:
         UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION
-        - If requested_as_of < historical_authority_coverage_start:
+        - Distinguishes TECHNICAL_SNAPSHOT_COVERAGE_START from AUTHORITATIVE_HISTORICAL_COVERAGE_START.
+        - Because source authority is APPROVAL_REQUIRED, AUTHORITATIVE_HISTORICAL_COVERAGE_START is NOT_ESTABLISHED by default.
+        - When authoritative coverage is unestablished or requested_as_of < coverage_start:
           returns point_in_time_status = NOT_AVAILABLE with
           authoritative_denominator = None (never 0) and listings = None (never []).
         - If fail_closed is True, raises HistoricalMembershipUnavailableError.
         """
-        if requested_as_of < historical_authority_coverage_start:
+        effective_historical_start = authoritative_historical_coverage_start or historical_authority_coverage_start
+
+        # Section 14 check: Authoritative coverage start
+        if effective_historical_start is None:
+            if fail_closed:
+                raise HistoricalMembershipUnavailableError(
+                    f"HISTORICAL_MEMBERSHIP_UNAVAILABLE: AUTHORITATIVE_HISTORICAL_COVERAGE_START is "
+                    f"NOT_ESTABLISHED (approval required). UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION."
+                )
+            return HistoricalUniverseQueryResult(
+                requested_as_of=requested_as_of,
+                historical_membership_authority=HistoricalMembershipAuthority.CURRENT_ONLY,
+                point_in_time_status=PointInTimeStatus.NOT_AVAILABLE,
+                authoritative_denominator=None,
+                listings=None,
+                reason="AUTHORITATIVE_HISTORICAL_COVERAGE_START is NOT_ESTABLISHED. UNKNOWN != EMPTY.",
+            )
+
+        if requested_as_of < effective_historical_start:
             if fail_closed:
                 raise HistoricalMembershipUnavailableError(
                     f"HISTORICAL_MEMBERSHIP_UNAVAILABLE: requested_as_of '{requested_as_of}' "
-                    f"precedes historical authority coverage start '{historical_authority_coverage_start}'. "
+                    f"precedes authoritative historical coverage start '{effective_historical_start}'. "
                     f"UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION."
                 )
             return HistoricalUniverseQueryResult(
