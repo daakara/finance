@@ -136,6 +136,16 @@ class HistoricalMembershipAuthority(str, Enum):
     UNRESOLVED = "UNRESOLVED"
 
 
+class PointInTimeStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    NOT_AVAILABLE = "NOT_AVAILABLE"
+
+
+class HistoricalMembershipUnavailableError(RuntimeError):
+    """Raised when point-in-time membership is queried for an as_of before coverage start."""
+    pass
+
+
 class QuarantineScope(str, Enum):
     RECORD_QUARANTINE = "RECORD_QUARANTINE"
     LISTING_QUARANTINE = "LISTING_QUARANTINE"
@@ -250,10 +260,19 @@ class CanonicalIssuer(BaseModel):
 
 
 class CanonicalSecurity(BaseModel):
-    """Specific financial security of an issuer (1 Security -> N Market Listings)."""
+    """
+    Specific financial security of an issuer (1 Security -> N Market Listings).
+    
+    Invariants:
+    - provider_asset_class (e.g. US_EQUITY) NEVER leaks into canonical security_type.
+    - security_type='UNKNOWN' explicitly represents unresolved canonical subtype,
+      NEVER inferred common equity.
+    """
     canonical_security_id: str
     canonical_issuer_id: Optional[str] = None
     security_type: str = "UNKNOWN"
+    provider_asset_class: Optional[str] = None
+    enrichment_status: str = "AWAITING_ENRICHMENT"
     share_class: Optional[str] = None
     share_class_figi: Optional[str] = None
     is_voting: Optional[bool] = None
@@ -267,6 +286,8 @@ class CanonicalSecurity(BaseModel):
                 "security_id": self.canonical_security_id,
                 "issuer_id": self.canonical_issuer_id,
                 "security_type": self.security_type,
+                "provider_asset_class": self.provider_asset_class,
+                "enrichment_status": self.enrichment_status,
                 "share_class": self.share_class,
                 "share_class_figi": self.share_class_figi,
             })
@@ -420,6 +441,26 @@ class BitemporalCorrectionRecord(BaseModel):
     new_evidence_hash: str
     correction_reason: str
     observed_at: str
+
+    model_config = ConfigDict(frozen=True)
+
+
+class HistoricalUniverseQueryResult(BaseModel):
+    """
+    Typed result for historical point-in-time universe queries.
+    
+    Hard Invariant (Sprint 2A Section 8):
+    UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION
+    When point_in_time_status == NOT_AVAILABLE:
+    - authoritative_denominator MUST be None (never 0)
+    - listings MUST be None (never [])
+    """
+    requested_as_of: str
+    historical_membership_authority: HistoricalMembershipAuthority
+    point_in_time_status: PointInTimeStatus
+    authoritative_denominator: Optional[int] = None
+    listings: Optional[List[CanonicalListing]] = None
+    reason: str
 
     model_config = ConfigDict(frozen=True)
 

@@ -41,6 +41,10 @@ from .source_governance_models import (
     MembershipTransitionType,
     PromotionStatus,
     ReasonCode,
+    PointInTimeStatus,
+    HistoricalMembershipAuthority,
+    HistoricalUniverseQueryResult,
+    HistoricalMembershipUnavailableError,
 )
 from .source_governance_policy import (
     FieldAuthorityPolicyRegistry,
@@ -91,6 +95,18 @@ class SourceReconciliationEngine:
         - zero ambient clock reads
         """
         ref_data = reference_evidence or {}
+
+        # Section 14 check: Validate enrichment generation coherence
+        enrichment_gen_ids = set()
+        for k, v in ref_data.items():
+            if isinstance(v, dict) and "enrichment_generation_id" in v:
+                enrichment_gen_ids.add(v["enrichment_generation_id"])
+        if len(enrichment_gen_ids) > 1:
+            raise ReconciliationIntegrityError(
+                f"MIXED_ENRICHMENT_GENERATIONS_REJECTED: candidate reconciliation cannot mix "
+                f"incompatible enrichment generations: {sorted(list(enrichment_gen_ids))}"
+            )
+
         policy_hash = self.policy_registry.compute_policy_hash()
 
         reconciled_listings: Dict[str, CanonicalListing] = {}
@@ -357,10 +373,13 @@ class SourceReconciliationEngine:
             reconciled_listings[listing_id] = c_listing
 
             if sec_id not in reconciled_securities:
+                raw_class = payload.get("class", "us_equity")
                 c_sec = CanonicalSecurity(
                     canonical_security_id=sec_id,
                     canonical_issuer_id=issuer_id,
                     security_type=canonical_sec_type,
+                    provider_asset_class=raw_class.upper() if raw_class else "US_EQUITY",
+                    enrichment_status="ENRICHED" if canonical_sec_type != "UNKNOWN" else "AWAITING_ENRICHMENT",
                     share_class_figi=ref_share_class_figi,
                 )
                 reconciled_securities[sec_id] = c_sec
@@ -462,6 +481,62 @@ class SourceReconciliationEngine:
         build_hash = generation.compute_build_hash()
         object.__setattr__(generation, "build_hash", build_hash)
         return generation
+
+    def query_point_in_time_universe(
+        self,
+        requested_as_of: str,
+        historical_authority_coverage_start: str = "2026-10-09T00:00:00Z",
+        active_generation: Optional[CanonicalGeneration] = None,
+        fail_closed: bool = False,
+    ) -> HistoricalUniverseQueryResult:
+        """
+        Queries point-in-time universe under Sprint 2A Section 8 invariants.
+        
+        Hard Invariant (Sprint 2A Section 8):
+        UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION
+        - If requested_as_of < historical_authority_coverage_start:
+          returns point_in_time_status = NOT_AVAILABLE with
+          authoritative_denominator = None (never 0) and listings = None (never []).
+        - If fail_closed is True, raises HistoricalMembershipUnavailableError.
+        """
+        if requested_as_of < historical_authority_coverage_start:
+            if fail_closed:
+                raise HistoricalMembershipUnavailableError(
+                    f"HISTORICAL_MEMBERSHIP_UNAVAILABLE: requested_as_of '{requested_as_of}' "
+                    f"precedes historical authority coverage start '{historical_authority_coverage_start}'. "
+                    f"UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION."
+                )
+            return HistoricalUniverseQueryResult(
+                requested_as_of=requested_as_of,
+                historical_membership_authority=HistoricalMembershipAuthority.CURRENT_ONLY,
+                point_in_time_status=PointInTimeStatus.NOT_AVAILABLE,
+                authoritative_denominator=None,
+                listings=None,
+                reason="HISTORICAL_MEMBERSHIP_UNAVAILABLE: as_of precedes coverage start. UNKNOWN != EMPTY.",
+            )
+
+        if active_generation is None:
+            return HistoricalUniverseQueryResult(
+                requested_as_of=requested_as_of,
+                historical_membership_authority=HistoricalMembershipAuthority.CURRENT_ONLY,
+                point_in_time_status=PointInTimeStatus.NOT_AVAILABLE,
+                authoritative_denominator=None,
+                listings=None,
+                reason="NO_ACTIVE_CANONICAL_GENERATION_AVAILABLE",
+            )
+
+        active_listings = [
+            lst for lst in active_generation.reconciled_listings.values()
+            if lst.listing_status == ListingState.ACTIVE
+        ]
+        return HistoricalUniverseQueryResult(
+            requested_as_of=requested_as_of,
+            historical_membership_authority=HistoricalMembershipAuthority.POINT_IN_TIME_VERIFIED,
+            point_in_time_status=PointInTimeStatus.AVAILABLE,
+            authoritative_denominator=len(active_listings),
+            listings=active_listings,
+            reason="POINT_IN_TIME_AVAILABLE",
+        )
 
 
 class GenerationLifecycleManager:

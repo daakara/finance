@@ -102,6 +102,9 @@ Every canonical field is governed by a versioned policy (`ARX_SOURCE_GOV_POLICY`
 - **Backdating Prohibition**: $\text{FIRST\_SEEN\_AT} \neq \text{EFFECTIVE\_FROM}$.
 - **Disappearance Semantics**: A listing disappearing from a subsequent provider snapshot does **not** imply delisting. It is classified as `UNRESOLVED_REMOVAL` until corroborated by delisting authority.
 - **Survivorship Rule**: $\text{CURRENT\_ALPACA\_LIST}$ is strictly forbidden from being substituted as a historical backtest or point-in-time universe.
+- **Historical Unknown != Empty Population**: Querying historical point-in-time universe for dates before coverage start returns `PointInTimeStatus.NOT_AVAILABLE` with `authoritative_denominator = None` (never 0) and `listings = None` (never `[]`), or raises `HistoricalMembershipUnavailableError`. $\text{UNKNOWN\_HISTORICAL\_POPULATION} \neq \text{EMPTY\_HISTORICAL\_POPULATION}$.
+- **Subtype Separation**: `provider_asset_class = US_EQUITY` is strictly decoupled from `canonical_security_type = UNKNOWN` with `enrichment_status = AWAITING_ENRICHMENT`. Provider broad class never leaks into canonical subtype, and common stock is never inferred.
+- **Enrichment Coherence**: Candidate reconciliation rejects mixing multiple incompatible enrichment generations (`MIXED_ENRICHMENT_GENERATIONS_REJECTED`).
 - **Data Readiness Separation**: Active market membership is independent of OHLCV candle availability. Missing candles represent data-readiness coverage loss, not membership exclusion.
 
 ---
@@ -121,15 +124,15 @@ Every canonical field is governed by a versioned policy (`ARX_SOURCE_GOV_POLICY`
 ### 7. VERIFICATION & REGRESSION SUMMARY
 
 - **Sprint 2A Targeted Test Matrix**: `tests/test_sprint_2a_source_governance.py`
-  - 17 passed in 1.69s.
-  - Covers Suites A through R (raw ingestion, accounting closure, identity, normalization, field authority, admissibility, S0–S4, temporal membership, survivorship, partial enrichment, determinism, manual adjudication, promotion lifecycle).
+  - 20 passed in 1.17s.
+  - Covers Suites A through R (raw ingestion, accounting closure, identity, normalization, field authority, admissibility, S0–S4, temporal membership, survivorship, point-in-time unknown!=empty, subtype leak prevention, mixed enrichment rejection, partial enrichment, determinism, manual adjudication, promotion lifecycle).
 - **Core Security Master & Radar Regression**:
   - `tests/test_security_master_contract.py`: 15 passed
   - `tests/test_canonical_security_master.py`: 17 passed
+  - `tests/test_sprint_2a_source_governance.py`: 20 passed
   - `tests/test_radar_distributed_coordination.py`: 16 passed
   - `tests/test_radar_domain_invariance.py`: 5 passed
   - `tests/test_radar_scanner_pipeline.py`: 9 passed
   - `tests/test_radar_taxonomy_remediation.py`: 7 passed
   - `tests/test_radar_universe_market_wide.py`: 13 passed
-  - `tests/test_sprint_2a_source_governance.py`: 17 passed
-  - **Total**: **99 passed, 0 failed, 1 warning in 10.38s**.
+  - **Total**: **102 passed, 0 failed, 1 warning in 10.24s**.

@@ -35,6 +35,9 @@ from analyst_dashboard.security_master import (
     QuarantineScope,
     PromotionStatus,
     ReasonCode,
+    PointInTimeStatus,
+    HistoricalUniverseQueryResult,
+    HistoricalMembershipUnavailableError,
     FieldAuthorityPolicyRegistry,
     SourceConflictClassifier,
     AuthorityGraphValidationError,
@@ -408,8 +411,37 @@ def test_suite_i_current_population_rejected_as_historical_universe():
     assert snap.population_temporal_scope != "POINT_IN_TIME_HISTORICAL"
 
 
+def test_suite_i_historical_unknown_is_not_empty_population():
+    """
+    Sprint 2A Section 8 Invariant:
+    UNKNOWN_HISTORICAL_POPULATION != EMPTY_HISTORICAL_POPULATION.
+    Querying historical universe before coverage start MUST NOT return [] or denominator 0.
+    Must return NOT_AVAILABLE with denominator=None and listings=None, or fail closed.
+    """
+    engine = SourceReconciliationEngine()
+    result = engine.query_point_in_time_universe(
+        requested_as_of="2020-01-01T00:00:00Z",
+        historical_authority_coverage_start="2026-10-09T00:00:00Z",
+        fail_closed=False,
+    )
+    assert result.point_in_time_status == PointInTimeStatus.NOT_AVAILABLE
+    assert result.authoritative_denominator is None
+    assert result.authoritative_denominator != 0
+    assert result.listings is None
+    assert result.listings != []
+    assert result.historical_membership_authority == HistoricalMembershipAuthority.CURRENT_ONLY
+
+    # Under fail_closed=True, must raise HistoricalMembershipUnavailableError
+    with pytest.raises(HistoricalMembershipUnavailableError):
+        engine.query_point_in_time_universe(
+            requested_as_of="2020-01-01T00:00:00Z",
+            historical_authority_coverage_start="2026-10-09T00:00:00Z",
+            fail_closed=True,
+        )
+
+
 # =====================================================================
-# Suite J: Partial Enrichment Accounting
+# Suite J: Partial Enrichment Accounting & Subtype Leak Prevention
 # =====================================================================
 
 def test_suite_j_partial_enrichment_unknown_subtype_retained():
@@ -428,6 +460,50 @@ def test_suite_j_partial_enrichment_unknown_subtype_retained():
     assert gen.accounting_summary["unresolved_record_count"] == 1
     assert gen.accounting_summary["resolved_record_count"] == 1
     assert gen.accounting_summary["raw_source_record_count"] == 2
+
+
+def test_suite_j_provider_broad_class_does_not_leak_into_canonical_subtype():
+    """
+    Sprint 2A Section 9 Invariant:
+    provider broad class (e.g. us_equity) MUST NOT leak into canonical security subtype.
+    When OpenFIGI has not enriched a record, provider_asset_class = 'US_EQUITY',
+    canonical_security_type = 'UNKNOWN', enrichment_status = 'AWAITING_ENRICHMENT'.
+    Common equity MUST NEVER be inferred from provider broad class.
+    """
+    r1 = make_sample_raw_record("id-1", "NEWT", asset_class="us_equity")
+    snapshot = make_sample_snapshot([r1])
+
+    engine = SourceReconciliationEngine()
+    gen = engine.reconcile(snapshot, reference_evidence={})  # No OpenFIGI ref
+
+    sec = gen.reconciled_securities["SEC_NEWT"]
+    assert sec.provider_asset_class == "US_EQUITY"
+    assert sec.security_type == "UNKNOWN"
+    assert sec.security_type != "COMMON_STOCK"
+    assert sec.enrichment_status == "AWAITING_ENRICHMENT"
+
+
+# =====================================================================
+# Suite K: Determinism, Idempotency & Enrichment Coherence
+# =====================================================================
+
+def test_suite_k_mixed_enrichment_generations_rejected():
+    """
+    Sprint 2A Section 14 Invariant:
+    Candidate reconciliation cannot silently mix incompatible enrichment generations.
+    """
+    r1 = make_sample_raw_record("id-1", "AAPL")
+    r2 = make_sample_raw_record("id-2", "MSFT")
+    snapshot = make_sample_snapshot([r1, r2])
+
+    mixed_ref = {
+        "AAPL": {"security_type": "COMMON_STOCK", "enrichment_generation_id": "ENRICH_GEN_001"},
+        "MSFT": {"security_type": "COMMON_STOCK", "enrichment_generation_id": "ENRICH_GEN_002"},  # Different!
+    }
+
+    engine = SourceReconciliationEngine()
+    with pytest.raises(ReconciliationIntegrityError, match="MIXED_ENRICHMENT_GENERATIONS_REJECTED"):
+        engine.reconcile(snapshot, reference_evidence=mixed_ref)
 
 
 # =====================================================================

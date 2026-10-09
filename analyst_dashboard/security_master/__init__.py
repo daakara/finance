@@ -45,6 +45,9 @@ from .source_governance_models import (
     QuarantineScope,
     PromotionStatus,
     ReasonCode,
+    PointInTimeStatus,
+    HistoricalUniverseQueryResult,
+    HistoricalMembershipUnavailableError,
 )
 from .source_governance_policy import (
     FieldAuthorityPolicyRegistry,
@@ -101,6 +104,9 @@ __all__ = [
     "MembershipTransitionType",
     "SurvivorshipStatus",
     "HistoricalMembershipAuthority",
+    "PointInTimeStatus",
+    "HistoricalUniverseQueryResult",
+    "HistoricalMembershipUnavailableError",
     "QuarantineScope",
     "PromotionStatus",
     "ReasonCode",

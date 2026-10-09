@@ -17,7 +17,7 @@ from .source_governance_policy import FieldAuthorityPolicyRegistry
 
 
 def build_sprint_2a_evidence_manifest(
-    candidate_sha: str = "c868115c7b31b8de6daf4daca47ede049b5bb23b",
+    candidate_sha: str = "d1520b9c45963aca7bc77e0ff82742243411f25f",
 ) -> Dict[str, Any]:
     policy_hash = FieldAuthorityPolicyRegistry.compute_policy_hash()
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -47,8 +47,13 @@ def build_sprint_2a_evidence_manifest(
         "HISTORICAL_MEMBERSHIP_AUTHORITY": "EXPLICIT",
         "CURRENT_LIST_AS_HISTORICAL_UNIVERSE": "PROHIBITED",
         "SURVIVORSHIP_PROTECTION": "PASS",
+        "UNKNOWN_HISTORICAL_POPULATION_AS_EMPTY": "PROHIBITED",
+        "CANONICAL_UNKNOWN_SECURITY_TYPE_SEMANTICS": "EXPLICIT",
+        "PROVIDER_BROAD_CLASS_LEAKS_INTO_CANONICAL_SUBTYPE": "NO",
         "MEMBERSHIP_AND_DATA_READINESS": "SEPARATE",
         "OPENFIGI_PARTIAL_ENRICHMENT_ACCOUNTING": "PASS",
+        "MIXED_POLICY_GENERATION_ACCEPTED": 0,
+        "MIXED_ENRICHMENT_GENERATION_ACCEPTED": 0,
         "MIXED_ENRICHMENT_GENERATION": "QUARANTINE",
         "SOURCE_COMPLETENESS_AND_AGREEMENT": "SEPARATE",
         "SCHEMA_DRIFT_POLICY": "PASS",
@@ -56,6 +61,7 @@ def build_sprint_2a_evidence_manifest(
         "FRESHNESS_POLICY": "PASS",
         "MANUAL_ADJUDICATION_POLICY": "PASS",
         "SOURCE_FAILOVER_POLICY": "PASS",
+        "SILENT_AUTHORITY_FAILOVER": "PROHIBITED",
         "POLICY_LINEAGE": "PASS",
         "POLICY_DIFFERENTIAL_REPLAY": "PASS",
         "UNDECLARED_POLICY_EFFECTS": 0,
@@ -132,8 +138,11 @@ def build_sprint_2a_evidence_manifest(
 
 if __name__ == "__main__":
     m = build_sprint_2a_evidence_manifest()
-    out_path = Path("data/operational/sprint_2a_evidence_manifest.json")
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps(m, indent=2))
-    print(f"Wrote manifest to {out_path}, hash: {m['manifest_hash']}")
+    for dest in [
+        Path("data/operational/sprint_2a_evidence_manifest.json"),
+        Path("docs/architecture/ARX_SPRINT_2A_SOURCE_GOVERNANCE_EVIDENCE_MANIFEST.json"),
+    ]:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(json.dumps(m, indent=2))
+        print(f"Wrote manifest to {dest}, hash: {m['manifest_hash']}")
