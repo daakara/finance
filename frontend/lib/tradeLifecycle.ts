@@ -233,19 +233,43 @@ export function calculateRealizedPnL(
 
 /**
  * Calculate R-multiple achieved on an exit leg.
- * Returns null if stopLoss is missing or equal to entryPrice.
+ * Supports side-aware risk geometry (LONG vs SHORT).
+ * Fails closed (returns null / UNAVAILABLE) if:
+ * - stopLoss is missing, null, undefined, or NaN
+ * - side is LONG and stopLoss >= entryPrice (riskPerShare <= 0, e.g. trailed stop into profit or breakeven)
+ * - side is SHORT and stopLoss <= entryPrice (riskPerShare <= 0)
+ * - initial risk per share is zero or negative
+ *
+ * Never uses a trailed stop to compute an inverted/negative risk denominator.
  */
 export function calculateRealizedR(
   entryPrice: number,
   exitPrice: number,
-  stopLoss?: number | null
+  stopLoss?: number | null,
+  side: "LONG" | "SHORT" = "LONG"
 ): number | null {
-  if (stopLoss === undefined || stopLoss === null || isNaN(stopLoss) || entryPrice === stopLoss) {
+  if (
+    stopLoss === undefined ||
+    stopLoss === null ||
+    isNaN(stopLoss) ||
+    isNaN(entryPrice) ||
+    isNaN(exitPrice) ||
+    entryPrice <= 0 ||
+    exitPrice <= 0
+  ) {
     return null;
   }
-  const riskPerShare = entryPrice - stopLoss;
-  if (riskPerShare === 0) return null;
-  return Number(((exitPrice - entryPrice) / riskPerShare).toFixed(2));
+
+  const isLong = side.toUpperCase() !== "SHORT";
+  if (isLong) {
+    const riskPerShare = entryPrice - stopLoss;
+    if (riskPerShare <= 0) return null;
+    return Number(((exitPrice - entryPrice) / riskPerShare).toFixed(2));
+  } else {
+    const riskPerShare = stopLoss - entryPrice;
+    if (riskPerShare <= 0) return null;
+    return Number(((entryPrice - exitPrice) / riskPerShare).toFixed(2));
+  }
 }
 
 /**

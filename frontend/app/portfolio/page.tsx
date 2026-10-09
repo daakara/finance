@@ -20,6 +20,7 @@ import {
   removePortfolioPosition,
   beginActivePortfolioEdit,
   endActivePortfolioEdit,
+  exitManualHoldingViaApi,
 } from "../../lib/portfolio";
 import { SHARED_FACTOR_SCORES } from "../../lib/constants";
 import { fetchAssetAnalytics, SpotPriceRegistry, recordTradeExit, recordTradeClose } from "../../lib/api";
@@ -351,7 +352,9 @@ export default function PortfolioPage() {
     exitTriggerRef.current = (document.activeElement as HTMLElement) || null;
     setExitTargetPosition(pos);
     setExitMode("FULL");
-    setExitShares(pos.shares.toString());
+    const isMixedPos = pos.holdingSource === "MIXED" || (Boolean(pos.hasOpenJournalTrade) && (pos.manualShares ?? 0) > 0);
+    const initialShares = isMixedPos ? (pos.manualShares ?? pos.shares) : pos.shares;
+    setExitShares(initialShares.toString());
     const defaultPrice = (pos.currentPrice && !isNaN(pos.currentPrice) && pos.currentPrice > 0)
       ? pos.currentPrice.toFixed(2)
       : pos.entryPrice.toFixed(2);
@@ -410,7 +413,9 @@ export default function PortfolioPage() {
 
   const handleQuickSharesFraction = (fraction: number) => {
     if (!exitTargetPosition) return;
-    const targetShares = Number((exitTargetPosition.shares * fraction).toFixed(6));
+    const isMixedPos = exitTargetPosition.holdingSource === "MIXED" || (Boolean(exitTargetPosition.hasOpenJournalTrade) && (exitTargetPosition.manualShares ?? 0) > 0);
+    const baseShares = isMixedPos ? (exitTargetPosition.manualShares ?? exitTargetPosition.shares) : exitTargetPosition.shares;
+    const targetShares = Number((baseShares * fraction).toFixed(6));
     setExitShares(targetShares.toString());
     if (fraction === 1) {
       setExitMode("FULL");
@@ -427,58 +432,118 @@ export default function PortfolioPage() {
     const sharesNum = parseFloat(exitShares);
     const priceNum = parseFloat(exitPrice);
 
-    const valResult = validateExitParams(exitTargetPosition.shares, sharesNum, priceNum);
+    const isMixedPos = exitTargetPosition.holdingSource === "MIXED" || (Boolean(exitTargetPosition.hasOpenJournalTrade) && (exitTargetPosition.manualShares ?? 0) > 0);
+    const maxAvailable = isMixedPos ? (exitTargetPosition.manualShares ?? exitTargetPosition.shares) : exitTargetPosition.shares;
+
+    const valResult = validateExitParams(maxAvailable, sharesNum, priceNum);
     if (!valResult.valid) {
       setExitError(valResult.error || "Invalid exit parameters.");
       return;
     }
 
     setExitSubmitting(true);
-    const isFull = Math.abs(sharesNum - exitTargetPosition.shares) < 1e-6 || exitMode === "FULL";
+    const isFull = Math.abs(sharesNum - maxAvailable) < 1e-6 || exitMode === "FULL";
     const idemKey = generateIdempotencyKey(isFull ? "close" : "exit", exitTargetPosition.symbol, anonId || "anon");
 
+    const isJournalBacked = Boolean(
+      exitTargetPosition.holdingSource === "JOURNAL" ||
+      (exitTargetPosition.hasOpenJournalTrade && (exitTargetPosition.manualShares ?? 0) <= 0)
+    );
+
+    let serverPnl: number | undefined;
+    let serverRetPct: number | undefined;
+
     try {
-      let res;
-      if (isFull) {
-        res = await recordTradeClose({
-          symbol: exitTargetPosition.symbol,
-          exitPrice: priceNum,
-          exitDate: exitDate || new Date().toISOString().slice(0, 10),
-          followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
-          idempotencyKey: idemKey,
-          notes: exitNotes.trim() || undefined,
-        }, anonId);
+      if (isJournalBacked) {
+        if (isFull) {
+          await recordTradeClose({
+            tradeId: exitTargetPosition.tradeId || undefined,
+            symbol: exitTargetPosition.symbol,
+            exitPrice: priceNum,
+            exitDate: exitDate || new Date().toISOString().slice(0, 10),
+            followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
+            idempotencyKey: idemKey,
+            notes: exitNotes.trim() || undefined,
+          }, anonId);
+          await removePortfolioPosition(exitTargetPosition.symbol);
+        } else {
+          await recordTradeExit({
+            tradeId: exitTargetPosition.tradeId || undefined,
+            symbol: exitTargetPosition.symbol,
+            shares: sharesNum,
+            exitPrice: priceNum,
+            exitDate: exitDate || new Date().toISOString().slice(0, 10),
+            followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
+            idempotencyKey: idemKey,
+            notes: exitNotes.trim() || undefined,
+          }, anonId);
+          const remaining = exitTargetPosition.shares - sharesNum;
+          await updatePortfolioPosition({
+            ...exitTargetPosition,
+            shares: Number(remaining.toFixed(6)),
+          });
+        }
       } else {
-        res = await recordTradeExit({
-          symbol: exitTargetPosition.symbol,
-          shares: sharesNum,
-          exitPrice: priceNum,
-          exitDate: exitDate || new Date().toISOString().slice(0, 10),
-          followedRules: exitFollowedRules === null ? undefined : exitFollowedRules,
-          idempotencyKey: idemKey,
-          notes: exitNotes.trim() || undefined,
-        }, anonId);
+        // Manual portfolio holding or mixed position: route through manual portfolio holding authority
+        if (exitTargetPosition.id) {
+          const manualRes = await exitManualHoldingViaApi(
+            exitTargetPosition.id,
+            {
+              exitType: isFull ? "FULL" : "PARTIAL",
+              shares: isFull ? null : sharesNum,
+              exitPrice: priceNum,
+              exitDate: exitDate || new Date().toISOString().slice(0, 10),
+              notes: exitNotes.trim() || undefined,
+              idempotencyKey: idemKey,
+            },
+            anonId
+          );
+          if (!manualRes.success) {
+            setExitError(manualRes.message || "Failed to record manual portfolio exit.");
+            setExitSubmitting(false);
+            return;
+          }
+          if (manualRes.data?.portfolioStatus === "CLOSED") {
+            await removePortfolioPosition(exitTargetPosition.symbol);
+          } else {
+            await updatePortfolioPosition({
+              ...exitTargetPosition,
+              shares: manualRes.data?.totalSharesRemaining ?? Number((exitTargetPosition.shares - sharesNum).toFixed(6)),
+              manualShares: manualRes.data?.manualSharesRemaining,
+            });
+          }
+          if (manualRes.data) {
+            serverPnl = manualRes.data.realizedPnl;
+            serverRetPct = manualRes.data.returnPct;
+          }
+        } else {
+          // Client fallback if position is unpersisted/mock
+          if (isFull) {
+            const remRes = await removePortfolioPosition(exitTargetPosition.symbol);
+            if (!remRes.success) {
+              setExitError(remRes.message || "Failed to remove manual portfolio holding.");
+              setExitSubmitting(false);
+              return;
+            }
+          } else {
+            const remaining = exitTargetPosition.shares - sharesNum;
+            const updRes = await updatePortfolioPosition({
+              ...exitTargetPosition,
+              shares: Number(remaining.toFixed(6)),
+            });
+            if (!updRes.success) {
+              setExitError(updRes.message || "Failed to update manual portfolio holding quantity.");
+              setExitSubmitting(false);
+              return;
+            }
+          }
+        }
       }
 
-      if (!res) {
-        setExitError("Failed to record exit. Server rejected or returned an error.");
-        setExitSubmitting(false);
-        return;
-      }
-
-      const pnl = calculateRealizedPnL(exitTargetPosition.entryPrice, priceNum, sharesNum);
-      const retPct = ((priceNum - exitTargetPosition.entryPrice) / exitTargetPosition.entryPrice) * 100;
-
-      // Update local storage portfolio to reflect change
-      if (isFull) {
-        await removePortfolioPosition(exitTargetPosition.symbol);
-      } else {
-        const remaining = exitTargetPosition.shares - sharesNum;
-        await updatePortfolioPosition({
-          ...exitTargetPosition,
-          shares: Number(remaining.toFixed(6)),
-        });
-      }
+      const pnl = serverPnl !== undefined ? serverPnl : calculateRealizedPnL(exitTargetPosition.entryPrice, priceNum, sharesNum);
+      const retPct = serverRetPct !== undefined ? serverRetPct : (exitTargetPosition.entryPrice > 0
+        ? ((priceNum - exitTargetPosition.entryPrice) / exitTargetPosition.entryPrice) * 100
+        : 0);
 
       const refreshed = loadPortfolioPositions();
       setPositions(refreshed);
@@ -488,7 +553,7 @@ export default function PortfolioPage() {
       setExitResultSummary({
         realizedPnL: pnl,
         returnPct: Number(retPct.toFixed(2)),
-        exitType: isFull ? "Full Close (100%)" : `Partial Scale-Out (${sharesNum} shares)`,
+        exitType: isFull ? (isMixedPos ? "Close Manual Portion (100%)" : "Full Close (100%)") : `Partial Scale-Out (${sharesNum} shares)`,
       });
 
       trackMatomoEvent(
@@ -1207,62 +1272,81 @@ export default function PortfolioPage() {
               ) : (
                 /* Exit Form */
                 <form onSubmit={handleSubmitExit} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
-                  {/* Mode Selector */}
-                  <div className="flex items-center gap-2 p-1 bg-[#090d14] border border-[#1b2434] rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExitMode("FULL");
-                        setExitShares(exitTargetPosition.shares.toString());
-                      }}
-                      className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
-                        exitMode === "FULL"
-                          ? "bg-cyan-600 text-white shadow-sm"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      Full Close (100%)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExitMode("PARTIAL");
-                        setExitShares((exitTargetPosition.shares * 0.5).toFixed(4));
-                      }}
-                      className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
-                        exitMode === "PARTIAL"
-                          ? "bg-cyan-600 text-white shadow-sm"
-                          : "text-slate-400 hover:text-slate-200"
-                      }`}
-                    >
-                      Partial Scale-Out
-                    </button>
-                  </div>
+                  {/* Mode Selector & Scope */}
+                  {(() => {
+                    const isTargetMixed = Boolean(
+                      exitTargetPosition.holdingSource === "MIXED" ||
+                      (exitTargetPosition.hasOpenJournalTrade && (exitTargetPosition.manualShares ?? 0) > 0)
+                    );
+                    const maxTargetShares = isTargetMixed
+                      ? (exitTargetPosition.manualShares ?? exitTargetPosition.shares)
+                      : exitTargetPosition.shares;
 
-                  {/* Quick Chips for Scale-Out */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] text-slate-400 font-bold">Quick Fraction:</span>
-                      <span className="text-[10px] text-slate-500">Max: {exitTargetPosition.shares} shares</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[
-                        { label: "25%", frac: 0.25 },
-                        { label: "50%", frac: 0.5 },
-                        { label: "75%", frac: 0.75 },
-                        { label: "100%", frac: 1.0 },
-                      ].map(({ label, frac }) => (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => handleQuickSharesFraction(frac)}
-                          className="focus-ring px-2 py-1 rounded bg-[#090d14] border border-[#1b2537] text-slate-300 hover:border-cyan-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                    return (
+                      <>
+                        {isTargetMixed && (
+                          <div className="p-2.5 rounded-lg bg-purple-950/60 border border-purple-800 text-[11px] text-purple-200">
+                            <span className="font-bold">Mixed Position Scope:</span> Exiting manual holding portion ({exitTargetPosition.manualShares ?? exitTargetPosition.shares} shares). Journal-backed open trades will remain open.
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 p-1 bg-[#090d14] border border-[#1b2434] rounded-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExitMode("FULL");
+                              setExitShares(maxTargetShares.toString());
+                            }}
+                            className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                              exitMode === "FULL"
+                                ? "bg-cyan-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            {isTargetMixed ? "Close Manual Portion" : "Full Close (100%)"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExitMode("PARTIAL");
+                              setExitShares((maxTargetShares * 0.5).toFixed(4));
+                            }}
+                            className={`focus-ring flex-1 py-1.5 rounded text-xs font-bold transition-all cursor-pointer ${
+                              exitMode === "PARTIAL"
+                                ? "bg-cyan-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            {isTargetMixed ? "Reduce Manual Portion" : "Partial Scale-Out"}
+                          </button>
+                        </div>
+
+                        {/* Quick Chips for Scale-Out */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] text-slate-400 font-bold">Quick Fraction:</span>
+                            <span className="text-[10px] text-slate-500">Max: {maxTargetShares} shares</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {[
+                              { label: "25%", frac: 0.25 },
+                              { label: "50%", frac: 0.5 },
+                              { label: "75%", frac: 0.75 },
+                              { label: isTargetMixed ? "100% Manual" : "100%", frac: 1.0 },
+                            ].map(({ label, frac }) => (
+                              <button
+                                key={label}
+                                type="button"
+                                onClick={() => handleQuickSharesFraction(frac)}
+                                className="focus-ring px-2 py-1 rounded bg-[#090d14] border border-[#1b2537] text-slate-300 hover:border-cyan-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* Quantity and Exit Price */}
                   <div className="grid grid-cols-2 gap-2.5">
@@ -1390,14 +1474,16 @@ export default function PortfolioPage() {
                             {pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`} ({retPct >= 0 ? `+${retPct.toFixed(2)}%` : `${retPct.toFixed(2)}%`})
                           </span>
                         </div>
-                        {rAchieved !== null && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-slate-400">Realized R-Multiple:</span>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400">Realized R-Multiple:</span>
+                          {rAchieved !== null ? (
                             <span className={`font-bold ${rAchieved >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                               {rAchieved >= 0 ? `+${rAchieved.toFixed(2)}R` : `${rAchieved.toFixed(2)}R`}
                             </span>
-                          </div>
-                        )}
+                          ) : (
+                            <span className="text-slate-500 font-mono">UNAVAILABLE</span>
+                          )}
+                        </div>
                         <div className="flex items-center justify-between text-[11px] text-slate-400">
                           <span>Remaining Shares:</span>
                           <span className="text-slate-200 font-bold">{Number(remaining.toFixed(6))}</span>
@@ -1428,7 +1514,11 @@ export default function PortfolioPage() {
                         exitSubmitting ? "opacity-60 cursor-not-allowed" : ""
                       }`}
                     >
-                      {exitSubmitting ? "Recording Exit..." : "Confirm Trade Exit"}
+                      {exitSubmitting
+                        ? "Recording Exit..."
+                        : (exitTargetPosition.holdingSource === "MIXED" || (exitTargetPosition.hasOpenJournalTrade && (exitTargetPosition.manualShares ?? 0) > 0))
+                        ? (exitMode === "FULL" ? "Close Manual Portion" : "Reduce Manual Portion")
+                        : (exitMode === "FULL" ? "Confirm Full Close" : "Confirm Trade Exit")}
                     </button>
                   </div>
                 </form>

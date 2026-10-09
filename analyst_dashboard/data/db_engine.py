@@ -3,6 +3,7 @@
 import sqlite3
 import os
 import json
+import re
 import time
 import functools
 import logging
@@ -11,8 +12,18 @@ from typing import Dict, Any, List, Optional
 
 from api.context.workspace_identity import derive_compatibility_workspace_id
 from database.workspace_migration import apply_workspace_tenancy_migration, backfill_workspace_tenancy
+from database.holding_exit_migration import apply_holding_exit_migration
 
 logger = logging.getLogger(__name__)
+
+class HoldingExitError(Exception):
+    """Domain exception for manual holding exit operations."""
+    def __init__(self, code: str, message: str, status_code: int = 400):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.status_code = status_code
+
 
 DATA_DIR = os.getenv("DATA_DIR", os.path.expanduser("~"))
 DB_PATH = os.path.join(DATA_DIR, ".finance_platform_history.db")
@@ -241,6 +252,9 @@ class HistoryDatabaseEngine:
             # Apply Phase 1G Workspace Tenancy Expand-Only Migration & Backfill
             apply_workspace_tenancy_migration(conn)
             backfill_workspace_tenancy(conn)
+
+            # Apply Phase 1H Manual Holding Exit Event Store Migration
+            apply_holding_exit_migration(conn)
         finally:
             conn.close()
 
@@ -347,7 +361,7 @@ class HistoryDatabaseEngine:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id
+                SELECT id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id, manual_shares, manual_entry_price
                 FROM portfolio_holdings
                 WHERE workspace_id = ?
                 ORDER BY updated_at DESC
@@ -358,7 +372,7 @@ class HistoryDatabaseEngine:
             if not rows and user_id:
                 cursor.execute(
                     """
-                    SELECT symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id
+                    SELECT id, symbol, name, shares, entry_price, current_price, target_price, stop_loss_price, added_at, asset_type, workspace_id, manual_shares, manual_entry_price
                     FROM portfolio_holdings
                     WHERE user_id = ? AND (workspace_id IS NULL OR workspace_id = ?)
                     ORDER BY updated_at DESC
@@ -367,8 +381,37 @@ class HistoryDatabaseEngine:
                 )
                 rows = cursor.fetchall()
 
-            return [
-                {
+            # Query active open journal trades to determine holding source authority
+            cursor.execute(
+                """
+                SELECT id, symbol, remaining_shares
+                FROM user_trade_journal
+                WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+                  AND status = 'OPEN' AND remaining_shares > 0
+                """,
+                (workspace_id, user_id or ""),
+            )
+            open_journal_trades = cursor.fetchall()
+            open_trades_by_sym = {t["symbol"].upper().strip(): t for t in open_journal_trades}
+
+            result = []
+            for row in rows:
+                sym = row["symbol"].upper().strip()
+                open_trade = open_trades_by_sym.get(sym)
+                has_journal = open_trade is not None
+                m_shares = float(row["manual_shares"]) if ("manual_shares" in row.keys() and row["manual_shares"] is not None) else (0.0 if has_journal else float(row["shares"]))
+                m_entry = float(row["manual_entry_price"]) if ("manual_entry_price" in row.keys() and row["manual_entry_price"] is not None) else float(row["entry_price"])
+                has_manual = m_shares > 1e-6
+
+                if has_manual and has_journal:
+                    holding_source = "MIXED"
+                elif has_journal:
+                    holding_source = "JOURNAL"
+                else:
+                    holding_source = "MANUAL"
+
+                result.append({
+                    "id": row["id"] if "id" in row.keys() else None,
                     "symbol": row["symbol"],
                     "name": row["name"],
                     "shares": float(row["shares"]),
@@ -379,9 +422,13 @@ class HistoryDatabaseEngine:
                     "addedAt": row["added_at"],
                     "assetType": row["asset_type"],
                     "workspaceId": row["workspace_id"] if "workspace_id" in row.keys() else workspace_id,
-                }
-                for row in rows
-            ]
+                    "holdingSource": holding_source,
+                    "hasOpenJournalTrade": has_journal,
+                    "tradeId": open_trade["id"] if open_trade else None,
+                    "manualShares": m_shares,
+                    "manualEntryPrice": m_entry,
+                })
+            return result
         finally:
             conn.close()
 
@@ -1147,9 +1194,12 @@ class HistoryDatabaseEngine:
 
                 stop_loss = float(parent["stop_loss"]) if parent["stop_loss"] is not None else None
                 r_achieved = None
-                if stop_loss is not None and entry_price != stop_loss:
+                if stop_loss is not None:
                     risk_per_share = entry_price - stop_loss
-                    r_achieved = round((exit_price - entry_price) / risk_per_share, 2)
+                    if risk_per_share > 0:
+                        r_achieved = round((exit_price - entry_price) / risk_per_share, 2)
+                    else:
+                        r_achieved = None
 
                 is_partial = (parent_remaining - exit_shares) > 1e-6
 
@@ -1165,7 +1215,7 @@ class HistoryDatabaseEngine:
                             workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                             r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                             parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'PARTIAL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         """,
                         (
                             workspace_id,
@@ -1213,7 +1263,7 @@ class HistoryDatabaseEngine:
                                 workspace_id, user_id, symbol, setup_name, entry_price, exit_price, shares, remaining_shares,
                                 r_achieved, followed_rules, confidence, pnl, status, entry_date, exit_date,
                                 parent_trade_id, execution_role, idempotency_key, exit_idempotency_key, notes, target1, stop_loss, created_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'CLOSED', ?, ?, ?, 'FULL_EXIT', NULL, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                             """,
                             (
                                 workspace_id,
@@ -1388,3 +1438,367 @@ class HistoryDatabaseEngine:
         """Derive authoritative behavioral risk telemetry directly from persistent trade journal and portfolio holdings (compatibility adapter)."""
         ws_id = derive_compatibility_workspace_id(user_id)
         return self.get_workspace_risk_telemetry(workspace_id=ws_id, user_id=user_id)
+
+    def _format_holding_exit_event(self, row: Any) -> Dict[str, Any]:
+        """Format a portfolio_holding_exit_events database row into an authoritative API response dict."""
+        m_remaining = float(row["manual_shares_remaining"])
+        j_remaining = float(row["journal_shares_after"])
+        total_remaining = round(m_remaining + j_remaining, 6)
+        m_before = float(row["manual_shares_before"])
+        j_before = float(row["journal_shares_before"])
+        shares_before = round(m_before + j_before, 6)
+
+        manual_status = "CLOSED" if row["exit_type"] == "FULL" or m_remaining <= 1e-6 else "OPEN"
+        portfolio_status = "CLOSED" if total_remaining <= 1e-6 else "OPEN"
+
+        return {
+            "ok": True,
+            "exitEventId": int(row["exit_event_id"]),
+            "holdingId": int(row["holding_id"]) if row["holding_id"] is not None else None,
+            "symbol": row["symbol"],
+            "source": row["source"],
+            "exitType": row["exit_type"],
+            "entryPrice": float(row["entry_price"]),
+            "exitPrice": float(row["exit_price"]),
+            "sharesBefore": shares_before,
+            "sharesExited": float(row["manual_shares_exited"]),
+            "sharesRemaining": total_remaining,
+            "manualSharesRemaining": m_remaining,
+            "journalSharesRemaining": j_remaining,
+            "totalSharesRemaining": total_remaining,
+            "realizedPnl": float(row["realized_pnl"]),
+            "returnPct": float(row["return_pct"]),
+            "realizedR": None if row["realized_r"] is None else float(row["realized_r"]),
+            "realizedRStatus": row["realized_r_status"],
+            "exitDate": row["exit_date"],
+            "notes": row["notes"],
+            "createdAtUtc": str(row["created_at_utc"]),
+            "manualHoldingStatus": manual_status,
+            "portfolioStatus": portfolio_status,
+        }
+
+    @retry_sqlite()
+    def record_manual_holding_exit(
+        self,
+        workspace_id: str,
+        user_id: str,
+        holding_id: int,
+        exit_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Record a server-authoritative manual portfolio holding exit event.
+        Guarantees:
+        1. Atomic transaction using BEGIN IMMEDIATE across event persistence, manual bucket update, and projection resync.
+        2. Idempotency-first checking (exact retry returns original event even after row deletion; conflicting key returns 409).
+        3. Strict workspace isolation.
+        4. Independent derivation of journal exposure (journal shares remain untouched).
+        5. Zero synthetic journal rows.
+        6. Append-only immutability.
+        """
+        if workspace_id == "ws_default":
+            raise PermissionError("Cannot perform private holding exits in 'ws_default' (INV-SAAS-07).")
+
+        idempotency_key = exit_data.get("idempotencyKey")
+        if not idempotency_key or not str(idempotency_key).strip():
+            raise HoldingExitError("INVALID_REQUEST", "idempotencyKey is required and cannot be empty.", status_code=400)
+        idempotency_key = str(idempotency_key).strip()
+
+        exit_type = exit_data.get("exitType")
+        if exit_type not in ("FULL", "PARTIAL"):
+            raise HoldingExitError("INVALID_EXIT_QUANTITY", "exitType must be FULL or PARTIAL.", status_code=400)
+
+        exit_price_raw = exit_data.get("exitPrice")
+        try:
+            exit_price = float(exit_price_raw)
+            if exit_price <= 0:
+                raise ValueError()
+        except (TypeError, ValueError):
+            raise HoldingExitError("INVALID_EXIT_PRICE", "exitPrice must be a positive number.", status_code=400)
+
+        exit_date = exit_data.get("exitDate") or datetime.utcnow().strftime("%Y-%m-%d")
+        if not isinstance(exit_date, str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", exit_date.strip()):
+            raise HoldingExitError("INVALID_EXIT_DATE", "exitDate must be in YYYY-MM-DD format.", status_code=400)
+        exit_date = exit_date.strip()
+
+        notes = (exit_data.get("notes") or "").strip() or None
+        shares_input = exit_data.get("shares")
+
+        if exit_type == "FULL":
+            if shares_input is not None:
+                raise HoldingExitError(
+                    "INVALID_EXIT_QUANTITY",
+                    "For FULL exit, shares must be omitted or null. Client numeric shares are not permitted.",
+                    status_code=400,
+                )
+        else:  # PARTIAL
+            if shares_input is None:
+                raise HoldingExitError(
+                    "INVALID_EXIT_QUANTITY",
+                    "shares quantity is required for PARTIAL exit.",
+                    status_code=400,
+                )
+            try:
+                requested_shares = float(shares_input)
+                if requested_shares <= 0:
+                    raise ValueError()
+            except (TypeError, ValueError):
+                raise HoldingExitError(
+                    "INVALID_EXIT_QUANTITY",
+                    "shares must be a positive number.",
+                    status_code=400,
+                )
+
+        conn = self._get_connection()
+        conn.isolation_level = None
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            cursor = conn.cursor()
+
+            # 1. IDEMPOTENCY FIRST: Check portfolio_holding_exit_events by (workspace_id, idempotency_key)
+            cursor.execute(
+                """
+                SELECT * FROM portfolio_holding_exit_events
+                WHERE workspace_id = ? AND idempotency_key = ?
+                """,
+                (workspace_id, idempotency_key),
+            )
+            existing_event = cursor.fetchone()
+            if existing_event:
+                # Validate fingerprint: holding_id, exit_type, requested_partial_shares, exit_price, exit_date, notes
+                same_holding = (int(existing_event["holding_id"]) == int(holding_id))
+                same_exit_type = (existing_event["exit_type"] == exit_type)
+                same_price = (abs(float(existing_event["exit_price"]) - exit_price) < 1e-4)
+                same_date = (str(existing_event["exit_date"]).strip() == exit_date)
+                same_notes = ((existing_event["notes"] or "").strip() == (notes or ""))
+
+                same_shares = False
+                if exit_type == "FULL":
+                    same_shares = (shares_input is None)
+                else:  # PARTIAL
+                    same_shares = (shares_input is not None and abs(float(shares_input) - float(existing_event["manual_shares_exited"])) < 1e-6)
+
+                if same_holding and same_exit_type and same_price and same_date and same_notes and same_shares:
+                    conn.execute("COMMIT")
+                    return self._format_holding_exit_event(existing_event)
+                else:
+                    conn.execute("ROLLBACK")
+                    raise HoldingExitError(
+                        "IDEMPOTENCY_CONFLICT",
+                        f"Idempotency key '{idempotency_key}' reused with conflicting request payload.",
+                        status_code=409,
+                    )
+
+            # 2. LOAD ACTIVE HOLDING WITH WORKSPACE ISOLATION
+            cursor.execute(
+                """
+                SELECT id, workspace_id, user_id, symbol, name, shares, entry_price, current_price,
+                       target_price, stop_loss_price, added_at, asset_type, manual_shares, manual_entry_price
+                FROM portfolio_holdings
+                WHERE id = ? AND (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+                """,
+                (holding_id, workspace_id, user_id),
+            )
+            holding = cursor.fetchone()
+            if not holding:
+                conn.execute("ROLLBACK")
+                raise HoldingExitError(
+                    "HOLDING_NOT_FOUND",
+                    f"Holding with ID '{holding_id}' not found in workspace '{workspace_id}'.",
+                    status_code=404,
+                )
+
+            symbol = holding["symbol"].upper().strip()
+            total_shares = float(holding["shares"] or 0.0)
+
+            manual_before = float(holding["manual_shares"]) if holding["manual_shares"] is not None else 0.0
+            manual_entry = float(holding["manual_entry_price"]) if holding["manual_entry_price"] is not None else float(holding["entry_price"])
+
+            if total_shares <= 1e-6:
+                conn.execute("ROLLBACK")
+                raise HoldingExitError("HOLDING_ALREADY_CLOSED", f"Holding #{holding_id} is already closed.", status_code=400)
+
+            if manual_before <= 1e-6:
+                conn.execute("ROLLBACK")
+                raise HoldingExitError("HOLDING_NOT_MANUAL", f"Holding #{holding_id} ({symbol}) has no manual shares available for exit.", status_code=400)
+
+            # Derive journal exposure independently
+            cursor.execute(
+                """
+                SELECT remaining_shares
+                FROM user_trade_journal
+                WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+                  AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+                """,
+                (workspace_id, user_id, symbol),
+            )
+            open_journal_trades = cursor.fetchall()
+            journal_before = sum(float(t["remaining_shares"]) for t in open_journal_trades) if open_journal_trades else 0.0
+            journal_after = journal_before
+
+            # 3. COMPUTE MANUAL SHARES EXITED AND REMAINING
+            if exit_type == "FULL":
+                manual_shares_exited = manual_before
+                manual_shares_remaining = 0.0
+            else:  # PARTIAL
+                if requested_shares > manual_before + 1e-6:
+                    conn.execute("ROLLBACK")
+                    raise HoldingExitError(
+                        "EXIT_QUANTITY_EXCEEDS_REMAINING",
+                        f"Requested exit shares ({requested_shares}) exceeds manual shares remaining ({manual_before}).",
+                        status_code=400,
+                    )
+                if abs(requested_shares - manual_before) <= 1e-6:
+                    conn.execute("ROLLBACK")
+                    raise HoldingExitError(
+                        "INVALID_EXIT_QUANTITY",
+                        "Partial exit cannot equal total manual shares; use FULL exit instead.",
+                        status_code=400,
+                    )
+
+                manual_shares_exited = round(requested_shares, 6)
+                manual_shares_remaining = round(manual_before - manual_shares_exited, 6)
+
+            # 4. SERVER-SIDE P&L
+            realized_pnl = round((exit_price - manual_entry) * manual_shares_exited, 2)
+            return_pct = round(((exit_price - manual_entry) / manual_entry) * 100, 2) if manual_entry > 0 else 0.0
+
+            # 5. INSERT INTO portfolio_holding_exit_events
+            cursor.execute(
+                """
+                INSERT INTO portfolio_holding_exit_events (
+                    workspace_id, user_id, holding_id, symbol, source,
+                    exit_type, position_side, entry_price, exit_price,
+                    manual_shares_before, manual_shares_exited, manual_shares_remaining,
+                    journal_shares_before, journal_shares_after,
+                    realized_pnl, return_pct, realized_r, realized_r_status,
+                    exit_date, notes, idempotency_key, created_at_utc
+                ) VALUES (
+                    ?, ?, ?, ?, 'MANUAL_HOLDING',
+                    ?, 'LONG', ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?, NULL, 'UNAVAILABLE_ORIGINAL_RISK_NOT_RECORDED',
+                    ?, ?, ?, CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    workspace_id,
+                    user_id,
+                    holding_id,
+                    symbol,
+                    exit_type,
+                    manual_entry,
+                    exit_price,
+                    manual_before,
+                    manual_shares_exited,
+                    manual_shares_remaining,
+                    journal_before,
+                    journal_after,
+                    realized_pnl,
+                    return_pct,
+                    exit_date,
+                    notes,
+                    idempotency_key,
+                ),
+            )
+            exit_event_id = cursor.lastrowid
+
+            # 6. MUTATE MANUAL BUCKET IN portfolio_holdings
+            if exit_type == "FULL":
+                cursor.execute(
+                    """
+                    UPDATE portfolio_holdings
+                    SET manual_shares = 0.0, manual_entry_price = 0.0, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (holding_id,),
+                )
+            else:
+                cursor.execute(
+                    """
+                    UPDATE portfolio_holdings
+                    SET manual_shares = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (manual_shares_remaining, holding_id),
+                )
+
+            # 7. RESYNC AGGREGATE PROJECTION (shares = manual_shares + journal_shares)
+            self._sync_portfolio_holding_for_symbol(cursor, user_id, symbol, workspace_id=workspace_id)
+
+            # 8. VERIFY JOURNAL QUANTITY UNCHANGED
+            cursor.execute(
+                """
+                SELECT SUM(remaining_shares) as s
+                FROM user_trade_journal
+                WHERE (workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))
+                  AND symbol = ? AND status = 'OPEN' AND remaining_shares > 0
+                """,
+                (workspace_id, user_id, symbol),
+            )
+            journal_after_check = float(cursor.fetchone()["s"] or 0.0)
+            if abs(journal_after_check - journal_before) > 1e-6:
+                conn.execute("ROLLBACK")
+                raise RuntimeError("Invariant violation: journal exposure changed during manual exit.")
+
+            conn.execute("COMMIT")
+
+            cursor.execute("SELECT * FROM portfolio_holding_exit_events WHERE exit_event_id = ?", (exit_event_id,))
+            saved_event = cursor.fetchone()
+            return self._format_holding_exit_event(saved_event)
+        except HoldingExitError:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
+            raise
+        except Exception as e:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
+            logger.error(f"Error in record_manual_holding_exit for holding {holding_id}: {e}", exc_info=True)
+            raise
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_workspace_holding_exits(
+        self,
+        workspace_id: str,
+        symbol: Optional[str] = None,
+        holding_id: Optional[int] = None,
+        limit: int = 50,
+        user_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Retrieve historical manual holding exit events for a workspace with optional symbol and holding filtering."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.cursor()
+            conditions = ["(workspace_id = ? OR (user_id = ? AND workspace_id IS NULL))"]
+            params: List[Any] = [workspace_id, user_id or ""]
+
+            if symbol:
+                conditions.append("symbol = ?")
+                params.append(symbol.upper().strip())
+
+            if holding_id:
+                conditions.append("holding_id = ?")
+                params.append(holding_id)
+
+            where_clause = " AND ".join(conditions)
+            params.append(max(1, min(limit, 200)))
+
+            cursor.execute(
+                f"""
+                SELECT * FROM portfolio_holding_exit_events
+                WHERE {where_clause}
+                ORDER BY created_at_utc DESC, exit_event_id DESC
+                LIMIT ?
+                """,
+                params,
+            )
+            rows = cursor.fetchall()
+            return [self._format_holding_exit_event(r) for r in rows]
+        finally:
+            conn.close()

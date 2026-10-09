@@ -261,3 +261,30 @@ class PortfolioApplicationService:
                 return int(self.db_engine.bulk_save_holdings(selector, items))
 
         return len(items)
+
+    def record_manual_holding_exit(
+        self,
+        context: RequestContext,
+        holding_id: int,
+        exit_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Record an authoritative manual holding exit event within workspace boundary.
+        Enforces workspace access, actor-bound workspace (INV-SAAS-07), and 'portfolio.manage' capability.
+        """
+        self._verify_workspace_access(context)
+        self._verify_actor_bound_workspace(context)
+
+        entitlements = self.entitlement_resolver.resolve(context)
+        if not entitlements.can("portfolio.manage"):
+            raise PermissionError("Workspace is not entitled to capability 'portfolio.manage'.")
+
+        if self.db_engine is None or not hasattr(self.db_engine, "record_manual_holding_exit"):
+            raise RuntimeError("Database engine does not support manual holding exits.")
+
+        return self.db_engine.record_manual_holding_exit(
+            workspace_id=context.workspace_id,
+            user_id=context.actor_id or "default_user",
+            holding_id=holding_id,
+            exit_data=exit_data,
+        )

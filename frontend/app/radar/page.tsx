@@ -127,6 +127,16 @@ function RadarContent() {
   } = usePortfolioContext();
 
   // Synchronize searchQuery when URL search params change while component remains mounted (clears when query is removed)
+  const handleOwnershipFilterSelect = (filter: OwnershipFilter, buttonId: string) => {
+    setOwnershipFilter(filter);
+    if (typeof document !== 'undefined') {
+      const btn = document.getElementById(buttonId);
+      if (btn && typeof btn.scrollIntoView === 'function') {
+        btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      }
+    }
+  };
+
   useEffect(() => {
     const q = (searchParams?.get('q') || searchParams?.get('symbol') || '').trim().toUpperCase();
     setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
@@ -822,60 +832,65 @@ function RadarContent() {
 
           {/* Secondary Row: Portfolio Ownership Filter Chips & Degraded Status */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/40">
-            <div className="flex items-center gap-1.5" role="group" aria-label="Portfolio Ownership Filter">
-              <span className="text-[10px] uppercase font-mono text-slate-500 mr-1">Portfolio:</span>
-              <button
-                type="button"
-                id="btn-ownership-filter-all"
-                aria-pressed={ownershipFilter === 'ALL'}
-                onClick={() => setOwnershipFilter('ALL')}
-                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  ownershipFilter === 'ALL'
-                    ? 'bg-slate-800 text-white font-bold border border-slate-600'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>All Candidates</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                  {ownershipCounts.total}
-                </span>
-              </button>
+            <div
+              className="w-full sm:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 sm:pb-0"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <div className="flex items-center gap-1.5 min-w-max" role="group" aria-label="Portfolio Ownership Filter">
+                <span className="text-[10px] uppercase font-mono text-slate-500 mr-1 shrink-0">Portfolio:</span>
+                <button
+                  type="button"
+                  id="btn-ownership-filter-all"
+                  aria-pressed={ownershipFilter === 'ALL'}
+                  onClick={() => handleOwnershipFilterSelect('ALL', 'btn-ownership-filter-all')}
+                  className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                    ownershipFilter === 'ALL'
+                      ? 'bg-slate-800 text-white font-bold border border-slate-600'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>All Candidates</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {ownershipCounts.total}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                id="btn-ownership-filter-new"
-                aria-pressed={ownershipFilter === 'NEW_OPPORTUNITIES'}
-                onClick={() => setOwnershipFilter('NEW_OPPORTUNITIES')}
-                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  ownershipFilter === 'NEW_OPPORTUNITIES'
-                    ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/70 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>New Opportunities</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                  {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  id="btn-ownership-filter-new"
+                  aria-pressed={ownershipFilter === 'NEW_OPPORTUNITIES'}
+                  onClick={() => handleOwnershipFilterSelect('NEW_OPPORTUNITIES', 'btn-ownership-filter-new')}
+                  className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                    ownershipFilter === 'NEW_OPPORTUNITIES'
+                      ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/70 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>New Opportunities</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {isPortfolioVerified ? ownershipCounts.notHeld : '—'}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                id="btn-ownership-filter-holdings"
-                aria-pressed={ownershipFilter === 'MY_HOLDINGS'}
-                onClick={() => setOwnershipFilter('MY_HOLDINGS')}
-                className={`focus-ring px-2.5 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
-                  ownershipFilter === 'MY_HOLDINGS'
-                    ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-700/70 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>My Holdings</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  ownershipCounts.held > 0 ? 'bg-indigo-900/60 text-indigo-200 font-bold' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {isPortfolioVerified ? ownershipCounts.held : '—'}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  id="btn-ownership-filter-holdings"
+                  aria-pressed={ownershipFilter === 'MY_HOLDINGS'}
+                  onClick={() => handleOwnershipFilterSelect('MY_HOLDINGS', 'btn-ownership-filter-holdings')}
+                  className={`focus-ring px-2.5 py-1 min-h-[44px] shrink-0 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
+                    ownershipFilter === 'MY_HOLDINGS'
+                      ? 'bg-indigo-950/80 text-indigo-300 font-bold border border-indigo-700/70 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>My Holdings</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    ownershipCounts.held > 0 ? 'bg-indigo-900/60 text-indigo-200 font-bold' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {isPortfolioVerified ? ownershipCounts.held : '—'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Degraded State Indicator */}

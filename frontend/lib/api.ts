@@ -3974,6 +3974,20 @@ export async function recordBrokerFill(
 }
 
 /**
+ * Safe error message extractor for API operations.
+ * Preserves safe 4xx validation detail while ensuring unknown 5xx errors retain a generic safe fallback.
+ */
+export function extractSafeApiError(status: number, errData: any): string {
+  if (status >= 400 && status < 500 && errData && typeof errData.detail === "string") {
+    const detail = errData.detail.trim();
+    if (detail && !detail.includes("Traceback") && !detail.includes("Internal") && detail.length <= 300) {
+      return detail;
+    }
+  }
+  return "Failed to record exit. Server rejected or returned an error.";
+}
+
+/**
  * Record a partial scale-out or complete exit on an active open trade.
  */
 export async function recordTradeExit(
@@ -3994,13 +4008,17 @@ export async function recordTradeExit(
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      console.warn("Failed to record trade exit:", errData.detail || res.statusText);
-      return null;
+      const safeMsg = extractSafeApiError(res.status, errData);
+      console.warn("Failed to record trade exit:", safeMsg);
+      throw new Error(safeMsg);
     }
     return await res.json();
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message && err.message !== "Failed to fetch") {
+      throw err;
+    }
     console.warn("Network error recording trade exit:", err);
-    return null;
+    throw new Error("Network error recording trade exit. Please try again.");
   }
 }
 
@@ -4025,13 +4043,17 @@ export async function recordTradeClose(
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      console.warn("Failed to close trade position:", errData.detail || res.statusText);
-      return null;
+      const safeMsg = extractSafeApiError(res.status, errData);
+      console.warn("Failed to close trade position:", safeMsg);
+      throw new Error(safeMsg);
     }
     return await res.json();
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message && err.message !== "Failed to fetch") {
+      throw err;
+    }
     console.warn("Network error closing trade position:", err);
-    return null;
+    throw new Error("Network error closing trade position. Please try again.");
   }
 }
 

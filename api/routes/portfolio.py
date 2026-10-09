@@ -5,11 +5,12 @@ Migrated to PortfolioApplicationService boundary in Phase 1F-B.
 
 import re
 import logging
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from fastapi import APIRouter, HTTPException, Query, Response, Header, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from analyst_dashboard.data.db_engine import HistoryDatabaseEngine
+from analyst_dashboard.data.db_engine import HistoryDatabaseEngine, HoldingExitError
 from api.context.request_context import RequestContext
 from api.context.resolver import resolve_request_context
 from api.services.portfolio_service import PortfolioApplicationService
@@ -244,3 +245,54 @@ def migrate_holdings(
         "totalSubmitted": total_submitted,
         "failedCount": total_submitted - saved_count,
     }
+
+
+class HoldingExitRequest(BaseModel):
+    exitType: str = Field(..., description="FULL or PARTIAL")
+    shares: Optional[float] = Field(None, description="Shares to exit. Required for PARTIAL, omitted/null for FULL")
+    exitPrice: float = Field(..., gt=0, description="Positive exit execution price")
+    exitDate: Optional[str] = Field(None, description="Exit date YYYY-MM-DD")
+    notes: Optional[str] = Field(None, description="Optional exit notes")
+    idempotencyKey: str = Field(..., min_length=1, description="Required non-empty idempotency key")
+
+
+@router.post("/holdings/{holding_id}/exit", status_code=200)
+def exit_manual_holding(
+    holding_id: int,
+    body: HoldingExitRequest,
+    response: Response = None,
+    x_user_id: Optional[str] = Header(None),
+    context: RequestContext = Depends(resolve_request_context),
+):
+    """Record an authoritative manual holding exit event and update position projection."""
+    _set_private_cache_headers(response)
+    try:
+        result = portfolio_service.record_manual_holding_exit(
+            context=context,
+            holding_id=holding_id,
+            exit_data=body.dict(),
+        )
+        return result
+    except HoldingExitError as he:
+        logger.warning(f"Manual holding exit rejected [{he.code}] for holding {holding_id}: {he.message}")
+        return JSONResponse(
+            status_code=he.status_code,
+            content={"ok": False, "code": he.code, "message": he.message},
+            headers=PRIVATE_CACHE_HEADERS,
+        )
+    except PermissionError as pe:
+        logger.warning(f"Permission denied for manual holding exit: {pe}")
+        return JSONResponse(
+            status_code=403,
+            content={"ok": False, "code": "FORBIDDEN", "message": str(pe)},
+            headers=PRIVATE_CACHE_HEADERS,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error recording manual exit for holding {holding_id}: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"ok": False, "code": "INTERNAL_ERROR", "message": "An unexpected error occurred while recording holding exit."},
+            headers=PRIVATE_CACHE_HEADERS,
+        )

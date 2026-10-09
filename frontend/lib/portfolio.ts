@@ -15,6 +15,7 @@
 import { trackPortfolioPositionAdded } from "./matomo";
 
 export interface PortfolioPosition {
+  id?: number;
   symbol: string;
   name: string;
   shares: number;
@@ -26,6 +27,46 @@ export interface PortfolioPosition {
   assetType: "Stock" | "ETF" | "Crypto";
   liveFreshness?: string;
   liveSource?: string;
+  holdingSource?: "MANUAL" | "JOURNAL" | "MIXED";
+  hasOpenJournalTrade?: boolean;
+  tradeId?: number | null;
+  manualShares?: number;
+  manualEntryPrice?: number;
+}
+
+export interface ManualHoldingExitRequest {
+  exitType: "FULL" | "PARTIAL";
+  shares?: number | null;
+  exitPrice: number;
+  exitDate?: string;
+  notes?: string;
+  idempotencyKey: string;
+}
+
+export interface ManualHoldingExitResponse {
+  ok: boolean;
+  exitEventId: number;
+  holdingId: number;
+  symbol: string;
+  source: string;
+  exitType: "FULL" | "PARTIAL";
+  entryPrice: number;
+  exitPrice: number;
+  sharesBefore: number;
+  sharesExited: number;
+  sharesRemaining: number;
+  manualSharesRemaining: number;
+  journalSharesRemaining: number;
+  totalSharesRemaining: number;
+  realizedPnl: number;
+  returnPct: number;
+  realizedR: number | null;
+  realizedRStatus: string;
+  exitDate: string;
+  notes?: string | null;
+  createdAtUtc: string;
+  manualHoldingStatus: "OPEN" | "CLOSED";
+  portfolioStatus: "OPEN" | "CLOSED";
 }
 
 export interface PortfolioSummary {
@@ -224,6 +265,7 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
         }
 
         const normalized: PortfolioPosition[] = apiHoldings.map((h: any) => ({
+          id: h.id !== undefined && h.id !== null ? Number(h.id) : undefined,
           symbol: (h.symbol || "").toUpperCase(),
           name: h.name || h.symbol,
           shares: Number(h.shares),
@@ -237,6 +279,11 @@ export async function syncPortfolioFromApi(): Promise<PortfolioPosition[]> {
           stopLossPrice: h.stopLossPrice ?? h.stop_loss,
           addedAt: h.addedAt || h.added_at || new Date().toISOString().split("T")[0],
           assetType: h.assetType || h.asset_type || "Stock",
+          holdingSource: h.holdingSource || (h.hasOpenJournalTrade ? "JOURNAL" : "MANUAL"),
+          hasOpenJournalTrade: Boolean(h.hasOpenJournalTrade),
+          tradeId: h.tradeId ?? null,
+          manualShares: h.manualShares !== undefined && h.manualShares !== null ? Number(h.manualShares) : undefined,
+          manualEntryPrice: h.manualEntryPrice !== undefined && h.manualEntryPrice !== null ? Number(h.manualEntryPrice) : undefined,
         }));
 
         // Final currency re-check before saving to cache or returning
@@ -310,6 +357,49 @@ export async function removeHoldingFromApi(symbol: string): Promise<{ success: b
   }
 }
 
+export async function exitManualHoldingViaApi(
+  holdingId: number,
+  exitData: ManualHoldingExitRequest,
+  anonymousUserId?: string
+): Promise<{ success: boolean; data?: ManualHoldingExitResponse; error?: { code: string; message: string }; message?: string }> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://web-production-e370b.up.railway.app/api/v1";
+    const anonId = anonymousUserId || getAnonymousUserId();
+    const res = await fetch(`${baseUrl}/portfolio/holdings/${encodeURIComponent(holdingId)}/exit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": anonId,
+      },
+      body: JSON.stringify(exitData),
+    });
+
+    const body = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const code = body?.code || (res.status === 409 ? "IDEMPOTENCY_CONFLICT" : "EXIT_FAILED");
+      const message = body?.message || `Failed to record manual exit (status ${res.status}).`;
+      return {
+        success: false,
+        error: { code, message },
+        message,
+      };
+    }
+
+    return {
+      success: true,
+      data: body as ManualHoldingExitResponse,
+    };
+  } catch (err: any) {
+    const msg = err?.message || "Network error recording manual exit.";
+    return {
+      success: false,
+      error: { code: "NETWORK_ERROR", message: msg },
+      message: msg,
+    };
+  }
+}
+
 export async function addPortfolioPosition(pos: {
   symbol: string;
   name?: string;
@@ -367,6 +457,9 @@ export async function addPortfolioPosition(pos: {
       stopLossPrice: pos.stopLossPrice,
       addedAt: new Date().toISOString().split("T")[0],
       assetType: pos.assetType || (symUpper.includes("-USD") || ["BTC", "ETH", "SOL"].includes(symUpper) ? "Crypto" : "Stock"),
+      holdingSource: "MANUAL",
+      hasOpenJournalTrade: false,
+      tradeId: null,
     };
 
     const persistRes = await persistHoldingToApi(newPos);
@@ -402,6 +495,8 @@ export async function updatePortfolioPosition(pos: {
   targetPrice?: number;
   stopLossPrice?: number;
   name?: string;
+  manualShares?: number;
+  manualEntryPrice?: number;
 }): Promise<{ success: boolean; message: string }> {
   if (typeof window === "undefined") return { success: false, message: "Window undefined" };
   try {
@@ -439,6 +534,8 @@ export async function updatePortfolioPosition(pos: {
       targetPrice: pos.targetPrice !== undefined ? pos.targetPrice : current.targetPrice,
       stopLossPrice: pos.stopLossPrice !== undefined ? pos.stopLossPrice : current.stopLossPrice,
       name: pos.name || current.name,
+      manualShares: pos.manualShares !== undefined ? pos.manualShares : current.manualShares,
+      manualEntryPrice: pos.manualEntryPrice !== undefined ? pos.manualEntryPrice : current.manualEntryPrice,
     };
 
     const persistRes = await persistHoldingToApi(updatedPos);
