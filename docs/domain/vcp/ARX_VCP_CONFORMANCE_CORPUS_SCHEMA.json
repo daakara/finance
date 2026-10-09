@@ -1,48 +1,165 @@
 {
   "schema_id": "ARX_VCP_CONFORMANCE_CORPUS_SCHEMA",
-  "version": "2.0.0",
-  "schema_hash": "c44fa24776bfa8da4c9bcf2cc46cd22750298c0f0bb4bce619d7fc41548925f4",
-  "migration_id": "MIG-SCHEMA-V1-TO-V2",
-  "migration_type": "NORMALIZE_ORACLE_GRADE_AND_CASE_ROLE_AXES",
-  "predecessor_schema_version": "1.0.0",
-  "successor_schema_version": "2.0.0",
-  "domain_expectation_changes_due_to_migration": 0,
-  "axes": {
-    "usage_partition": [
-      "DEV",
-      "HOLDOUT"
-    ],
-    "adjudication_status": [
-      "RESOLVED",
-      "UNRESOLVED"
-    ],
-    "oracle_grade": [
-      "GOLD",
-      "SILVER",
-      "NONE"
-    ],
-    "case_roles": [
-      "CHALLENGE",
-      "BOUNDARY",
-      "POSITIVE_CONTROL",
-      "NEGATIVE_CONTROL",
-      "TEMPORAL_ADVERSARIAL",
-      "CORPORATE_ACTION",
-      "OTHER"
-    ],
-    "expected_domain_result": [
-      "PASS",
-      "FAIL",
-      "INSUFFICIENT_DATA",
-      "NOT_APPLICABLE",
-      "UNRESOLVED"
-    ]
+  "version": "2.1.0",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "usage_partition": {
+      "type": "string",
+      "enum": [
+        "DEV",
+        "HOLDOUT"
+      ]
+    },
+    "adjudication_status": {
+      "type": "string",
+      "enum": [
+        "RESOLVED",
+        "UNRESOLVED"
+      ]
+    },
+    "oracle_grade": {
+      "type": "string",
+      "enum": [
+        "GOLD",
+        "SILVER",
+        "INTERNAL_REFERENCE",
+        "NONE"
+      ]
+    },
+    "derived_oracle_class": {
+      "type": "string",
+      "enum": [
+        "GOLD",
+        "SILVER",
+        "INTERNAL_REFERENCE",
+        "NONE"
+      ]
+    },
+    "authority_origin": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_INDEPENDENT",
+        "INTERNAL_GOVERNED",
+        "SYNTHETIC_FORMAL",
+        "NONE"
+      ]
+    },
+    "evidence_sufficiency": {
+      "type": "string",
+      "enum": [
+        "COMPLETE",
+        "LIMITED",
+        "INSUFFICIENT"
+      ]
+    },
+    "authority_status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "DISPUTED",
+        "SUPERSEDED",
+        "PENDING_REVIEW",
+        "RETIRED"
+      ]
+    },
+    "adjudication_source": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_INDEPENDENT_HUMAN",
+        "INTERNAL_HUMAN",
+        "FORMAL_POLICY_EVALUATOR",
+        "SYNTHETIC_FIXTURE",
+        "MIXED",
+        "NONE"
+      ]
+    },
+    "known_at_provenance": {
+      "type": "string",
+      "enum": [
+        "NATIVE_SOURCE_TIMESTAMP",
+        "IMMUTABLE_ARCHIVED_SNAPSHOT",
+        "GOVERNED_INGEST_TIMESTAMP",
+        "SYNTHETIC_FIXTURE",
+        "RECONSTRUCTED",
+        "NOT_ESTABLISHED"
+      ]
+    },
+    "case_roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "CHALLENGE",
+          "BOUNDARY",
+          "POSITIVE_CONTROL",
+          "NEGATIVE_CONTROL",
+          "TEMPORAL_ADVERSARIAL",
+          "CORPORATE_ACTION",
+          "OTHER"
+        ]
+      }
+    },
+    "scenario_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_domain_result": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "INSUFFICIENT_DATA",
+        "NOT_APPLICABLE",
+        "UNRESOLVED"
+      ]
+    },
+    "expected_domain_result_enum": {
+      "type": "string",
+      "enum": [
+        "QUALIFIED",
+        "NON_QUALIFIED",
+        "INSUFFICIENT_DATA",
+        "NOT_APPLICABLE",
+        "UNRESOLVED"
+      ]
+    },
+    "case_content_hash": {
+      "type": "string"
+    },
+    "adjudication_hash": {
+      "type": "string"
+    },
+    "authority_basis": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evaluation_as_of": {
+      "type": "string"
+    }
   },
-  "invariants": {
-    "CHALLENGE_IS_ORACLE_GRADE": false,
-    "CHALLENGE_IS_CASE_ROLE": true,
-    "UNRESOLVED_REQUIRES_NONE_GRADE": true,
-    "GOLD_OR_SILVER_REQUIRES_RESOLVED_STATUS": true,
-    "DEV_HOLDOUT_DISJOINT_AND_COMPLETE": true
-  }
+  "required": [
+    "case_id",
+    "usage_partition",
+    "adjudication_status",
+    "oracle_grade",
+    "derived_oracle_class",
+    "authority_origin",
+    "evidence_sufficiency",
+    "authority_status",
+    "adjudication_source",
+    "known_at_provenance",
+    "case_roles",
+    "scenario_tags",
+    "case_content_hash",
+    "adjudication_hash",
+    "authority_basis",
+    "evaluation_as_of"
+  ]
 }

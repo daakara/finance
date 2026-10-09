@@ -245,7 +245,8 @@ def test_12_charter_hash_reused_as_corpus_manifest_hash_raises_error():
     manifest_hash = corpus.compute_manifest_hash()
     assert charter_hash != manifest_hash, "Charter hash must be strictly decoupled from manifest hash"
     assert charter_hash == "421b79284eda3521437c1d949c5f479860c19f9d4a2a1451bc76a216e0695a87"
-    assert manifest_hash == "58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8"
+    assert corpus.compute_predecessor_manifest_hash() == "58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8"
+    assert manifest_hash == "70c3bbdacc5f77003187b8e1ee139631b8fa21d7add3eee844de64c7834296ed"
 
 
 def test_13_implementation_sha_included_in_corpus_identity_raises_error():

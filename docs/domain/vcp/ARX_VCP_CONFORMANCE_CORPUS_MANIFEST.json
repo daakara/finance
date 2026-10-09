@@ -1,34 +1,10 @@
 {
   "manifest_id": "ARX_VCP_CONFORMANCE_CORPUS_MANIFEST",
   "version": "2.0.0",
-  "manifest_hash": "58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8",
-  "corpus_case_membership_hash": "ff334b8e32e1d8ccca814b6c8ce1287e218fc6c373471094ec7db71df511e96d",
-  "dev_case_membership_hash": "2818902f8ce86326a929f5af914d32bec2aa322a43d4ce32af48ae57125d6b49",
-  "holdout_case_membership_hash": "6579614f893e28e9c388b3ae091fccff06e9a2cc8e29f4582e04b64f4e687193",
-  "corpus_expectation_hash": "e844d6021d33d862e2ee824c278f9094f98f06cb86be87531b994f2104214adc",
-  "accounting_summary": {
-    "CONFORMANCE_CORPUS_CASE_COUNT": 24,
-    "DEV_CASE_COUNT": 16,
-    "HOLDOUT_CASE_COUNT": 8,
-    "DEV_GOLD_COUNT": 14,
-    "DEV_SILVER_COUNT": 1,
-    "DEV_NONE_COUNT": 1,
-    "HOLDOUT_GOLD_COUNT": 7,
-    "HOLDOUT_SILVER_COUNT": 1,
-    "HOLDOUT_NONE_COUNT": 0,
-    "GOLD_CASE_COUNT": 21,
-    "SILVER_CASE_COUNT": 2,
-    "NO_ORACLE_GRADE_CASE_COUNT": 1,
-    "RESOLVED_CASE_COUNT": 23,
-    "UNRESOLVED_CASE_COUNT": 1,
-    "CHALLENGE_CASE_COUNT": 1,
-    "CHALLENGE_DEV_COUNT": 1,
-    "CHALLENGE_HOLDOUT_COUNT": 0,
-    "CHALLENGE_GOLD_COUNT": 1,
-    "CHALLENGE_SILVER_COUNT": 0,
-    "CHALLENGE_NONE_COUNT": 0,
-    "CROSS_TAB_TOTAL": 24
-  },
+  "manifest_hash": "70c3bbdacc5f77003187b8e1ee139631b8fa21d7add3eee844de64c7834296ed",
+  "predecessor_manifest_hash": "58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8",
+  "membership_hash": "cb2de89886118248689d2ef0de905cdec81f7f875e1bcdc5bd527138c4c3a39b",
+  "case_count": 24,
   "cases": [
     {
       "case_id": "DEV-001-QUALIFIED-3T",
@@ -36,7 +12,14 @@
       "security_id": "SEC-ACME",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "POSITIVE_CONTROL"
       ],
@@ -46,18 +29,18 @@
         "STAGE_2",
         "VOLUME_DRY_UP"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "7c1bf01bf43377e1e7e9e6d91970bf9122ea3314ced09b41cf376c5b4e8e8731",
-      "adjudication_hash": "6a6242e045d64c3cc9cb8fd7ed3d3d5e1a9bbbf84a5278b14dcbbc43c4f86bfa"
+      "adjudication_hash": "799e88de55b13a009aaa3dbf3c5eadf7894bebd56e47ad4d116fab5a7234b47e"
     },
     {
       "case_id": "DEV-002-QUALIFIED-2T",
@@ -65,7 +48,14 @@
       "security_id": "SEC-TECH",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "POSITIVE_CONTROL"
       ],
@@ -75,18 +65,18 @@
         "STAGE_2",
         "VOLUME_DRY_UP"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "b9b64342b80850367bfa63a0e84c86b907794a119670cce5e20663e664bd01cd",
-      "adjudication_hash": "58939164f13dae3362862493f03bf0f7d53ac770c4f2acca616962cfe375a4d4"
+      "adjudication_hash": "6ebfeb18a1d72b219ad6f042237c8a39d96f5fc9551ac75bf77fa2b3e61e9970"
     },
     {
       "case_id": "DEV-003-QUALIFIED-4T",
@@ -94,7 +84,14 @@
       "security_id": "SEC-GROW",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "POSITIVE_CONTROL"
       ],
@@ -104,18 +101,18 @@
         "STAGE_2",
         "VOLUME_DRY_UP"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "e64c736e2252d3fc04b076c7de7e6c5ed848c24d249983be39976669bbc86dce",
-      "adjudication_hash": "7f0fdd570a88f6691510067ccf7a9b38d12c2f7d5fc6aec7916090dac30c8a8b"
+      "adjudication_hash": "72153547ff81cff6c60a57bb365de6a602830e6a64824fd8a4e4c2892c1cc870"
     },
     {
       "case_id": "DEV-004-STAGE-4-DOWNTREND",
@@ -123,7 +120,14 @@
       "security_id": "SEC-FALL",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -132,18 +136,18 @@
         "DOWNTREND_REJECTION",
         "STAGE_4_DOWNTREND"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_4",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "8ff7d419a453a59a551c00f1d6bb71b6665a03067352d4667a1b49453243c282",
-      "adjudication_hash": "95b1f0bc646217dc4807dab0e1693c9b7e4f1d5e8f5a513874743f88a9f0b3eb"
+      "adjudication_hash": "5e49c8b6d27207e00d7dfc95de382c6fb476b5c1a7ae96c9b3c042b604db0987"
     },
     {
       "case_id": "DEV-005-EXPANDING-VOLATILITY",
@@ -151,7 +155,14 @@
       "security_id": "SEC-MEGA",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -160,18 +171,18 @@
         "MEGAPHONE",
         "NEGATIVE_VOLATILITY_EXPANSION"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "3370e6699aaa7994a624d62e447752e685ab25676700dd5ef9596749cb88dd5e",
-      "adjudication_hash": "e155b279dd84dbb9c3d973bff8e63156876a7785fcdabb1154cf4e0bf7e59a17"
+      "adjudication_hash": "e84bda2146585cab30afc7db0cce7d72fcad30fbd5eeba9b1240006ae72d6fab"
     },
     {
       "case_id": "DEV-006-HEAVY-VOLUME-FAIL",
@@ -179,7 +190,14 @@
       "security_id": "SEC-LOUD",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -188,18 +206,18 @@
         "HEAVY_VOLUME",
         "NEGATIVE_NO_VOLUME_DRY_UP"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "91baf54240668a368fe3628f49918f277b2adff56f1f18484a58193bddddbc99",
-      "adjudication_hash": "b323a3b6d0b5fa1afa1517179cd451527dc5b719c1e9b849751a133a3433f779"
+      "adjudication_hash": "125e847bf432ba3b59a046801eb011474fb90364876cb419fb019614b22bae45"
     },
     {
       "case_id": "DEV-007-INSUFFICIENT-HISTORY",
@@ -207,7 +225,14 @@
       "security_id": "SEC-NEWC",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "NEGATIVE_CONTROL"
@@ -217,18 +242,18 @@
         "INSUFFICIENT_HISTORY",
         "TRUNCATED_HISTORY_REJECTION"
       ],
-      "expected_domain_result": "INSUFFICIENT_DATA",
       "expected_vcp_classification": "VCP_INSUFFICIENT_DATA",
+      "expected_domain_result": "INSUFFICIENT_DATA",
+      "expected_domain_result_enum": "INSUFFICIENT_DATA",
       "expected_stage": "STAGE_UNRESOLVED",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "7daadea9ebfa36b20b06a74587f6d2bf1623da67e06f3887d6f508a83437993e",
-      "adjudication_hash": "81763e297b4e85685e3e0a17f07df56047b0a0e31ba84e2cabf9ccdcc1e6ea37"
+      "adjudication_hash": "4fa2381c1b5ca1208c7e406870b7f4bc13568e8682c014791c10211f646f3393"
     },
     {
       "case_id": "DEV-008-BASE-TOO-DEEP",
@@ -236,7 +261,14 @@
       "security_id": "SEC-DEEP",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -245,18 +277,18 @@
         "LOOSE_BASE_REJECTION",
         "NEGATIVE_LOOSE_DEEP_BASE"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "7a9690e6f83822d7e3140505fee3ddf46b9c3c0d981fcd7407e2515b603b9762",
-      "adjudication_hash": "1991f4a9161097898d06158100d6c39b50d8bc6a19edb0f449f23da35c54fc7c"
+      "adjudication_hash": "19ef8dda9457ac368054a2acd5d6669da95807f9fa4bad2a8be00b53f9e3877e"
     },
     {
       "case_id": "DEV-009-STAGE-1-BASE",
@@ -264,7 +296,14 @@
       "security_id": "SEC-BASE",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -273,18 +312,18 @@
         "NO_PRIOR_UPTREND_REJECTION",
         "STAGE_1_LATERAL"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_1",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "ef8fce993c0dfad9766ace7a6396af08908c09d7f839542adc382ad1329a4bc1",
-      "adjudication_hash": "1155320f1d856b43ea2b5e8359efcfee712f51d4d2e227ab0d483ee80bdd11c7"
+      "adjudication_hash": "02b2dfb0934b2df21e40cda551c2d399d8f3ab5d78fe9e9879101ae1a2e46369"
     },
     {
       "case_id": "DEV-010-BOUNDARY-200-SESSIONS",
@@ -292,7 +331,14 @@
       "security_id": "SEC-B200",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "POSITIVE_CONTROL"
@@ -302,18 +348,18 @@
         "BOUNDARY_SESSION_COUNT",
         "STAGE_2"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "56862a9410544f439c2fbc1f6c3d21553126491b5d8cf11bf94b5c85421e359d",
-      "adjudication_hash": "9321d21828ba83beb2572a75d27008494037224b88cf4c41f0eeab504d77f897"
+      "adjudication_hash": "19a9ec91d95c7abda5676f2f5bd91dac4a08b8fc3eeed4678a8f945247d81001"
     },
     {
       "case_id": "DEV-011-BOUNDARY-VOLUME-DRY",
@@ -321,7 +367,14 @@
       "security_id": "SEC-BVOL",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "POSITIVE_CONTROL"
@@ -331,18 +384,18 @@
         "BOUNDARY_VOLUME_RATIO",
         "STAGE_2"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "070788080114a4c6e9f316a85d6045cfa0b54ccfe38e21904aa3ba1c1809685c",
-      "adjudication_hash": "e5c9e6604975b64015b29e5bfe7147401488bace574b169867b308f5e175ebf6"
+      "adjudication_hash": "4ca9a5b8f69dd74067c81802f353b906de62fa5bb193769474f5d24d4a8132f9"
     },
     {
       "case_id": "DEV-012-PRICE-EXTENDED",
@@ -350,7 +403,14 @@
       "security_id": "SEC-CHAS",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -359,18 +419,18 @@
         "NEGATIVE_EXTENDED_PAST_PIVOT",
         "TACTICAL_ZONE_REJECTION"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "192f02d72b729d0c9ae70d0e5c4e7874239f4ffd7d17c8cd823161d047f8b04a",
-      "adjudication_hash": "3c9663d1d75148902ef3866ee495855e93916a42e08fc7c6ff4d7215c26b8845"
+      "adjudication_hash": "afaef85f872697444caedc78530b6656972a764ea1a03e904d1d525f60cce608"
     },
     {
       "case_id": "DEV-013-SILVER-CROSS-MARKET",
@@ -378,7 +438,16 @@
       "security_id": "SEC-LSE-AZN",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "SILVER",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "LIMITED",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [
+        "CROSS_MARKET_GENERALIZATION"
+      ],
       "case_roles": [
         "OTHER",
         "POSITIVE_CONTROL"
@@ -388,18 +457,18 @@
         "SECONDARY_MARKET_CROSS_BORDER",
         "SILVER_GRADE"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "20235ac96cfb6b927a863c24395040bea00394c958e889aae5725b7e6f37fb61",
-      "adjudication_hash": "2ca8c64c4bd87c65e9632e11cae51879e4d72d20fd92a4161d957fac7d0e7443"
+      "adjudication_hash": "f788690224c573a630a52dacd8cac531259fac5de3adbeea719ad61c5ecf8635"
     },
     {
       "case_id": "DEV-014-CHALLENGE-SHAKEOUT",
@@ -407,7 +476,14 @@
       "security_id": "SEC-WHIP",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "CHALLENGE",
         "POSITIVE_CONTROL"
@@ -417,18 +493,18 @@
         "CHALLENGE_ROLE",
         "RECOVERED_SHAKEOUT"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "c8e00e95bf5b1f2a1d7480c14b400ab593f547211e78addf746fcaf435fef939",
-      "adjudication_hash": "321d7bb8f65816aed5aed1b281dac2056ae5d322ab87b751c3969c2d93e1731b"
+      "adjudication_hash": "6b77d58d97ab1cc1ee856b7335b4df7f3f7642775c297157cf5893b42b85fb9b"
     },
     {
       "case_id": "DEV-015-SINGLE-PULLBACK",
@@ -436,7 +512,14 @@
       "security_id": "SEC-ONEW",
       "usage_partition": "DEV",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -445,18 +528,18 @@
         "NO_MULTI_WAVE_REJECTION",
         "SINGLE_PULLBACK"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "f4e960036f1161a0adcab3c3a2888bae7df51751605caaec4dbb5c6954e33734",
-      "adjudication_hash": "93c50a49375b3ccf135724f90cce3267d2988917b03d0988c017668e983060d5"
+      "adjudication_hash": "eb138dc22ea265965052c2e4df70a30935d071db5d66e21c056de8e13a0d814b"
     },
     {
       "case_id": "DEV-016-UNRESOLVED-STRUCTURE",
@@ -465,6 +548,13 @@
       "usage_partition": "DEV",
       "adjudication_status": "UNRESOLVED",
       "oracle_grade": "NONE",
+      "derived_oracle_class": "NONE",
+      "authority_origin": "NONE",
+      "evidence_sufficiency": "INSUFFICIENT",
+      "authority_status": "PENDING_REVIEW",
+      "adjudication_source": "NONE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "OTHER"
@@ -474,15 +564,15 @@
         "NONE_GRADE",
         "UNRESOLVED_ADJUDICATION"
       ],
-      "expected_domain_result": "UNRESOLVED",
       "expected_vcp_classification": "VCP_UNRESOLVED",
+      "expected_domain_result": "UNRESOLVED",
+      "expected_domain_result_enum": "UNRESOLVED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-001",
-      "adjudication_timestamp": "2026-04-01T10:00:00Z",
       "evaluation_as_of": "2026-03-31T21:00:00Z",
       "case_content_hash": "6758c1cd92a4b52400dd95d4cde0a9b96cb6a3a3fbce591b200ef6cc5d4af56b",
       "adjudication_hash": "4328aa564e4a9e984505a8e7fde887a0c8eed9e52659725fde2a3995fd063c1f"
@@ -493,7 +583,14 @@
       "security_id": "SEC-H_POS3",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "POSITIVE_CONTROL"
       ],
@@ -502,18 +599,18 @@
         "HOLDOUT_CLEAR_POSITIVE_3T",
         "STAGE_2"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "b415c30c161b85a7e8be53d76d1abb156919e2f1639f38db441231448af6480c",
-      "adjudication_hash": "8100db7be3dfb686126375eab0c65e69912dcda4e0dc77e5f25bf20c8c01a0f7"
+      "adjudication_hash": "cabd6f0919a39e8b8c76d16c1c5d607ca6470e6d59fb4086cf81538d1226cb3f"
     },
     {
       "case_id": "HLD-002-QUALIFIED-2T",
@@ -521,7 +618,14 @@
       "security_id": "SEC-H_POS2",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "POSITIVE_CONTROL"
       ],
@@ -530,18 +634,18 @@
         "HOLDOUT_CLEAR_POSITIVE_2T",
         "STAGE_2"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "93dc12f24d24e8d3afe0ff6b6bc6092c42659492a222d25063c47f08bd71e003",
-      "adjudication_hash": "e9f9eadb19e79bc46601165d23f5a55cc5d10d9d38f3808e4e80706269c1f8b2"
+      "adjudication_hash": "4daf17f01255fe072310f497d7865b4d37fbb1ec6330f63bd64da3142ee3ae61"
     },
     {
       "case_id": "HLD-003-STAGE-4",
@@ -549,7 +653,14 @@
       "security_id": "SEC-H_STG4",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -558,18 +669,18 @@
         "HOLDOUT_CLEAR_NEGATIVE_STAGE_4",
         "STAGE_4_DOWNTREND"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_4",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "b7bcb91ab5f34da888f365a4a553858ddb053a7ea10ef3b9fb35f84d75b402f0",
-      "adjudication_hash": "60791eb4298fbd9826151ba02aa06c90a5c8cc12a95d9b02cc1eef5fc4b6170b"
+      "adjudication_hash": "ac0bc55a5c2a6b7c6cbc4cd8d629f70c5ee0f33495ed2d96c5b0bc14228b1e42"
     },
     {
       "case_id": "HLD-004-EXPANDING-VOL",
@@ -577,7 +688,14 @@
       "security_id": "SEC-H_EXPV",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -586,18 +704,18 @@
         "HOLDOUT_NEGATIVE_VOLATILITY_EXPANSION",
         "MEGAPHONE"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "e77cdaf71fd51d09d5441b5500be1ccba2b8371bb5349699e9a7f5e2f55f25f2",
-      "adjudication_hash": "eb0acb9197bca261e9d01ae4060147c3d8ad8c21b8bbd48b19ec7da632ffd441"
+      "adjudication_hash": "5bce5269b645352d950ee9e1f31df0c80c07c8a8673ce139369bf6e3da799535"
     },
     {
       "case_id": "HLD-005-HEAVY-VOLUME",
@@ -605,7 +723,14 @@
       "security_id": "SEC-H_HVOL",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "NEGATIVE_CONTROL"
       ],
@@ -614,18 +739,18 @@
         "HOLDOUT_NEGATIVE_VOLUME",
         "NO_DRY_UP_REJECTION"
       ],
-      "expected_domain_result": "FAIL",
       "expected_vcp_classification": "VCP_NON_QUALIFIED",
+      "expected_domain_result": "FAIL",
+      "expected_domain_result_enum": "NON_QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "ba060f0ee5d92df7c1df1c6acb95cc2c1453d135065bc74f8712c766029910c9",
-      "adjudication_hash": "9ac1c406a96487e1d4d40e2f9d1593298e94a78c655ff33ab9fecd6984016a94"
+      "adjudication_hash": "0ee0cbe5a8d4b1eea1271c30d76c8959dae436bc2baf32024ff9876853e8985d"
     },
     {
       "case_id": "HLD-006-INSUFFICIENT-HIST",
@@ -633,7 +758,14 @@
       "security_id": "SEC-H_INSH",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "NEGATIVE_CONTROL"
@@ -643,18 +775,18 @@
         "HOLDOUT_INSUFFICIENT_HISTORY",
         "TRUNCATED_HISTORY_REJECTION"
       ],
-      "expected_domain_result": "INSUFFICIENT_DATA",
       "expected_vcp_classification": "VCP_INSUFFICIENT_DATA",
+      "expected_domain_result": "INSUFFICIENT_DATA",
+      "expected_domain_result_enum": "INSUFFICIENT_DATA",
       "expected_stage": "STAGE_UNRESOLVED",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "5cc7e38baa32406f631988d50bd165234dee58fe51009d728a36eebf8fd38f6c",
-      "adjudication_hash": "3c9f3e0262701e319c8cc60ccef8ad5d72df578e77b54ecaeb7c99994da9130b"
+      "adjudication_hash": "d59c7d431e02fa42295a51bdb598efa483edc5896f5b19f3dd7bd8f42b655b1e"
     },
     {
       "case_id": "HLD-007-BOUNDARY-200",
@@ -662,7 +794,14 @@
       "security_id": "SEC-H_B200",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "GOLD",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "COMPLETE",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [],
       "case_roles": [
         "BOUNDARY",
         "POSITIVE_CONTROL"
@@ -672,18 +811,18 @@
         "HOLDOUT_BOUNDARY_SESSION_COUNT",
         "STAGE_2"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "ce788b7061d832dd02b92d85b4dafebf337697bce8a574b2870687b7f2280deb",
-      "adjudication_hash": "aee7bdaaf8cab2741dafaa0be5766d1504e229850ad7b9c8f256dc587aabf103"
+      "adjudication_hash": "af2e4f43392551b688c2ea70ce6191f359fb79096e0b12556b18d9ae49f91d7c"
     },
     {
       "case_id": "HLD-008-SILVER-CROSS-MARKET",
@@ -691,7 +830,16 @@
       "security_id": "SEC-H_SLVR",
       "usage_partition": "HOLDOUT",
       "adjudication_status": "RESOLVED",
-      "oracle_grade": "SILVER",
+      "oracle_grade": "INTERNAL_REFERENCE",
+      "derived_oracle_class": "INTERNAL_REFERENCE",
+      "authority_origin": "SYNTHETIC_FORMAL",
+      "evidence_sufficiency": "LIMITED",
+      "authority_status": "ACTIVE",
+      "adjudication_source": "SYNTHETIC_FIXTURE",
+      "known_at_provenance": "SYNTHETIC_FIXTURE",
+      "silver_limitations": [
+        "CROSS_MARKET_GENERALIZATION"
+      ],
       "case_roles": [
         "OTHER",
         "POSITIVE_CONTROL"
@@ -701,18 +849,18 @@
         "NON_US_EQUITY",
         "SILVER_GRADE"
       ],
-      "expected_domain_result": "PASS",
       "expected_vcp_classification": "VCP_QUALIFIED",
+      "expected_domain_result": "PASS",
+      "expected_domain_result_enum": "QUALIFIED",
       "expected_stage": "STAGE_2",
       "authority_basis": [
         "SRC-MINERVINI-2013",
         "SRC-WEINSTEIN-1988"
       ],
       "adjudicator_id": "ADJ-002",
-      "adjudication_timestamp": "2026-04-16T14:00:00Z",
       "evaluation_as_of": "2026-04-15T21:00:00Z",
       "case_content_hash": "3155507fb43622b6a98da0b7fc73e5ff387ecf0c7cef616f81bc63dbee58cba4",
-      "adjudication_hash": "e5e1208ae003ce2c516f0448155a432dfd6e99b928d1c409b54f557a9e26bc34"
+      "adjudication_hash": "1e037445ed25940748cf23b09f4b0a5f659aab95de4a5e99c42564bfab9aa790"
     }
   ]
 }

@@ -26,6 +26,32 @@ from analyst_dashboard.vcp.predicate_registry import (
     VCPPredicateRegistry,
 )
 from analyst_dashboard.vcp.temporal_contract import DailyOHLCVBar, VCPTemporalContract
+from analyst_dashboard.vcp.authority_model import (
+    AuthorityOrigin,
+    EvidenceSufficiency,
+    AuthorityStatus,
+    DerivedOracleClass,
+    SilverLimitationCode,
+    AdjudicationSource,
+    KnownAtProvenance,
+    ExpectedDomainResult,
+    derive_oracle_class,
+    compute_authority_model_hash,
+    AUTHORITY_MODEL_ID,
+    AUTHORITY_MODEL_VERSION,
+    GOLD_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
+    SILVER_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
+    INTERNAL_REFERENCE_REQUIRES_EXTERNAL_ADJUDICATION,
+    SYNTHETIC_ADJUDICATION_CAN_PRODUCE_GOLD,
+    SYNTHETIC_ADJUDICATION_CAN_PRODUCE_SILVER,
+    INTERNAL_ADJUDICATION_CAN_PRODUCE_GOLD,
+    INTERNAL_ADJUDICATION_CAN_PRODUCE_SILVER,
+    SYNTHETIC_ADJUDICATION_CAN_PRODUCE_INTERNAL_REFERENCE,
+    INTERNAL_REFERENCE_COUNTS_AS_INDEPENDENT_ORACLE,
+    INTERNAL_REFERENCE_COUNTS_AS_ENGINEERING_REFERENCE,
+    SILVER_HARD_ORACLE_ELIGIBLE,
+    SILVER_SOFT_CONFORMANCE_ELIGIBLE,
+)
 
 
 class UsagePartition(str, Enum):
@@ -41,6 +67,7 @@ class AdjudicationStatus(str, Enum):
 class OracleGrade(str, Enum):
     GOLD = "GOLD"
     SILVER = "SILVER"
+    INTERNAL_REFERENCE = "INTERNAL_REFERENCE"
     NONE = "NONE"
 
 
@@ -210,32 +237,45 @@ class VCPCorpusCase:
     sampling_stratum: str = ""
     case_content_hash: str = ""
     adjudication_hash: str = ""
+    authority_origin: AuthorityOrigin = AuthorityOrigin.SYNTHETIC_FORMAL
+    evidence_sufficiency: EvidenceSufficiency = EvidenceSufficiency.COMPLETE
+    authority_status: AuthorityStatus = AuthorityStatus.ACTIVE
+    adjudication_source: AdjudicationSource = AdjudicationSource.SYNTHETIC_FIXTURE
+    known_at_provenance: KnownAtProvenance = KnownAtProvenance.SYNTHETIC_FIXTURE
+    silver_limitations: Tuple[SilverLimitationCode, ...] = ()
+    derived_oracle_class: DerivedOracleClass = DerivedOracleClass.INTERNAL_REFERENCE
+    expected_domain_result_enum: ExpectedDomainResult = ExpectedDomainResult.QUALIFIED
+
+    def __post_init__(self):
+        if hasattr(self, "expected_vcp_classification") and self.expected_vcp_classification:
+            try:
+                mapped = ExpectedDomainResult.from_vcp_classification(self.expected_vcp_classification)
+                if self.expected_domain_result_enum != mapped:
+                    object.__setattr__(self, "expected_domain_result_enum", mapped)
+            except Exception:
+                pass
+        if self.oracle_grade == OracleGrade.GOLD and self.derived_oracle_class != DerivedOracleClass.GOLD:
+            object.__setattr__(self, "derived_oracle_class", DerivedOracleClass.GOLD)
+        elif self.oracle_grade == OracleGrade.SILVER and self.derived_oracle_class != DerivedOracleClass.SILVER:
+            object.__setattr__(self, "derived_oracle_class", DerivedOracleClass.SILVER)
+        elif self.oracle_grade == OracleGrade.NONE and self.adjudication_status == AdjudicationStatus.UNRESOLVED:
+            object.__setattr__(self, "derived_oracle_class", DerivedOracleClass.NONE)
 
     @property
     def oracle_tier(self) -> OracleTier:
         """Backward compatibility for existing test suite referencing case.oracle_tier."""
-        if self.oracle_grade == OracleGrade.GOLD:
-            return OracleTier.GOLD
-        elif self.oracle_grade == OracleGrade.SILVER:
-            return OracleTier.SILVER
-        elif self.adjudication_status == AdjudicationStatus.UNRESOLVED:
+        if self.adjudication_status == AdjudicationStatus.UNRESOLVED:
             return OracleTier.UNRESOLVED
         elif CaseRole.CHALLENGE in self.case_roles:
             return OracleTier.CHALLENGE
-        return OracleTier.UNRESOLVED
+        elif self.derived_oracle_class == DerivedOracleClass.SILVER or self.silver_limitations:
+            return OracleTier.SILVER
+        return OracleTier.GOLD
 
     @property
     def expected_domain_result(self) -> str:
         """Normalized expected domain result mapping."""
-        if self.expected_vcp_classification == "VCP_QUALIFIED":
-            return "PASS"
-        elif self.expected_vcp_classification == "VCP_NON_QUALIFIED":
-            return "FAIL"
-        elif self.expected_vcp_classification == "VCP_INSUFFICIENT_DATA":
-            return "INSUFFICIENT_DATA"
-        elif self.expected_vcp_classification == "VCP_UNRESOLVED":
-            return "UNRESOLVED"
-        return "NOT_APPLICABLE"
+        return self.expected_domain_result_enum.to_pass_fail()
 
 
 def generate_clean_history(
@@ -863,12 +903,42 @@ class VCPConformanceCorpus:
                 corporate_actions=[],
             )
 
+            is_unresolved = (s["case_id"] == "DEV-016-UNRESOLVED-STRUCTURE")
+            is_cross_market = (s["case_id"] == "DEV-013-SILVER-CROSS-MARKET")
+
+            auth_origin = AuthorityOrigin.NONE if is_unresolved else AuthorityOrigin.SYNTHETIC_FORMAL
+            ev_suff = EvidenceSufficiency.INSUFFICIENT if is_unresolved else (
+                EvidenceSufficiency.LIMITED if is_cross_market else EvidenceSufficiency.COMPLETE
+            )
+            auth_status = AuthorityStatus.PENDING_REVIEW if is_unresolved else AuthorityStatus.ACTIVE
+            adj_src = AdjudicationSource.NONE if is_unresolved else AdjudicationSource.SYNTHETIC_FIXTURE
+            ka_prov = KnownAtProvenance.SYNTHETIC_FIXTURE
+            silver_limits = (SilverLimitationCode.CROSS_MARKET_GENERALIZATION,) if is_cross_market else ()
+
+            derived_class = derive_oracle_class(
+                adjudication_status=s["adjudication_status"],
+                authority_origin=auth_origin,
+                evidence_sufficiency=ev_suff,
+                authority_status=auth_status,
+                adjudication_source=adj_src,
+                silver_limitations=silver_limits,
+                external_adjudication_verified=False,
+                material_disagreements_count=0,
+                normative_predicates_resolved=True,
+                final_classification_resolved=(not is_unresolved),
+            )
+            grade_val = OracleGrade.NONE if derived_class == DerivedOracleClass.NONE else (
+                OracleGrade.GOLD if derived_class == DerivedOracleClass.GOLD else (
+                    OracleGrade.SILVER if derived_class == DerivedOracleClass.SILVER else OracleGrade.INTERNAL_REFERENCE
+                )
+            )
+
             adj_h = compute_adjudication_hash(
                 case_id=s["case_id"],
                 adjudicator_id="ADJ-001",
                 adjudication_timestamp="2026-04-01T10:00:00Z",
                 adjudication_status=s["adjudication_status"],
-                oracle_grade=s["oracle_grade"],
+                oracle_grade=grade_val,
                 expected_predicates=s["expected_preds"],
                 expected_vcp_classification=s["exp_vcp"],
                 expected_stage=s["exp_stage"],
@@ -883,7 +953,7 @@ class VCPConformanceCorpus:
                 evaluation_as_of="2026-03-31T21:00:00Z",
                 usage_partition=UsagePartition.DEV,
                 adjudication_status=s["adjudication_status"],
-                oracle_grade=s["oracle_grade"],
+                oracle_grade=grade_val,
                 case_roles=s["roles"],
                 scenario_tags=s["tags"],
                 sampling_stratum=s["stratum"],
@@ -897,6 +967,14 @@ class VCPConformanceCorpus:
                 raw_bars=bars,
                 case_content_hash=content_h,
                 adjudication_hash=adj_h,
+                authority_origin=auth_origin,
+                evidence_sufficiency=ev_suff,
+                authority_status=auth_status,
+                adjudication_source=adj_src,
+                known_at_provenance=ka_prov,
+                silver_limitations=silver_limits,
+                derived_oracle_class=derived_class,
+                expected_domain_result_enum=ExpectedDomainResult.from_vcp_classification(s["exp_vcp"]),
             )
 
         # 8 Holdout Cases (Completely distinct symbols, distinct episodes, sealed before implementation freeze)
@@ -1148,12 +1226,38 @@ class VCPConformanceCorpus:
                 corporate_actions=[],
             )
 
+            is_cross_market = (s["case_id"] == "HLD-008-SILVER-CROSS-MARKET")
+            auth_origin = AuthorityOrigin.SYNTHETIC_FORMAL
+            ev_suff = EvidenceSufficiency.LIMITED if is_cross_market else EvidenceSufficiency.COMPLETE
+            auth_status = AuthorityStatus.ACTIVE
+            adj_src = AdjudicationSource.SYNTHETIC_FIXTURE
+            ka_prov = KnownAtProvenance.SYNTHETIC_FIXTURE
+            silver_limits = (SilverLimitationCode.CROSS_MARKET_GENERALIZATION,) if is_cross_market else ()
+
+            derived_class = derive_oracle_class(
+                adjudication_status=s["adjudication_status"],
+                authority_origin=auth_origin,
+                evidence_sufficiency=ev_suff,
+                authority_status=auth_status,
+                adjudication_source=adj_src,
+                silver_limitations=silver_limits,
+                external_adjudication_verified=False,
+                material_disagreements_count=0,
+                normative_predicates_resolved=True,
+                final_classification_resolved=True,
+            )
+            grade_val = OracleGrade.NONE if derived_class == DerivedOracleClass.NONE else (
+                OracleGrade.GOLD if derived_class == DerivedOracleClass.GOLD else (
+                    OracleGrade.SILVER if derived_class == DerivedOracleClass.SILVER else OracleGrade.INTERNAL_REFERENCE
+                )
+            )
+
             adj_h = compute_adjudication_hash(
                 case_id=s["case_id"],
                 adjudicator_id="ADJ-002",
                 adjudication_timestamp="2026-04-16T14:00:00Z",
                 adjudication_status=s["adjudication_status"],
-                oracle_grade=s["oracle_grade"],
+                oracle_grade=grade_val,
                 expected_predicates=s["expected_preds"],
                 expected_vcp_classification=s["exp_vcp"],
                 expected_stage=s["exp_stage"],
@@ -1168,7 +1272,7 @@ class VCPConformanceCorpus:
                 evaluation_as_of="2026-04-15T21:00:00Z",
                 usage_partition=UsagePartition.HOLDOUT,
                 adjudication_status=s["adjudication_status"],
-                oracle_grade=s["oracle_grade"],
+                oracle_grade=grade_val,
                 case_roles=s["roles"],
                 scenario_tags=s["tags"],
                 sampling_stratum=s["stratum"],
@@ -1182,6 +1286,14 @@ class VCPConformanceCorpus:
                 raw_bars=bars,
                 case_content_hash=content_h,
                 adjudication_hash=adj_h,
+                authority_origin=auth_origin,
+                evidence_sufficiency=ev_suff,
+                authority_status=auth_status,
+                adjudication_source=adj_src,
+                known_at_provenance=ka_prov,
+                silver_limitations=silver_limits,
+                derived_oracle_class=derived_class,
+                expected_domain_result_enum=ExpectedDomainResult.from_vcp_classification(s["exp_vcp"]),
             )
 
     def list_all_cases(self) -> List[VCPCorpusCase]:
@@ -1206,16 +1318,19 @@ class VCPConformanceCorpus:
         holdout_cases = self.list_holdout_cases()
         all_cases = self.list_all_cases()
 
-        dev_gold = sum(1 for c in dev_cases if c.oracle_grade == OracleGrade.GOLD)
-        dev_silver = sum(1 for c in dev_cases if c.oracle_grade == OracleGrade.SILVER)
-        dev_none = sum(1 for c in dev_cases if c.oracle_grade == OracleGrade.NONE)
+        dev_gold = sum(1 for c in dev_cases if c.derived_oracle_class == DerivedOracleClass.GOLD)
+        dev_silver = sum(1 for c in dev_cases if c.derived_oracle_class == DerivedOracleClass.SILVER)
+        dev_int_ref = sum(1 for c in dev_cases if c.derived_oracle_class == DerivedOracleClass.INTERNAL_REFERENCE)
+        dev_none = sum(1 for c in dev_cases if c.derived_oracle_class == DerivedOracleClass.NONE)
 
-        holdout_gold = sum(1 for c in holdout_cases if c.oracle_grade == OracleGrade.GOLD)
-        holdout_silver = sum(1 for c in holdout_cases if c.oracle_grade == OracleGrade.SILVER)
-        holdout_none = sum(1 for c in holdout_cases if c.oracle_grade == OracleGrade.NONE)
+        holdout_gold = sum(1 for c in holdout_cases if c.derived_oracle_class == DerivedOracleClass.GOLD)
+        holdout_silver = sum(1 for c in holdout_cases if c.derived_oracle_class == DerivedOracleClass.SILVER)
+        holdout_int_ref = sum(1 for c in holdout_cases if c.derived_oracle_class == DerivedOracleClass.INTERNAL_REFERENCE)
+        holdout_none = sum(1 for c in holdout_cases if c.derived_oracle_class == DerivedOracleClass.NONE)
 
         gold_total = dev_gold + holdout_gold
         silver_total = dev_silver + holdout_silver
+        int_ref_total = dev_int_ref + holdout_int_ref
         none_total = dev_none + holdout_none
 
         resolved_total = sum(1 for c in all_cases if c.adjudication_status == AdjudicationStatus.RESOLVED)
@@ -1225,9 +1340,10 @@ class VCPConformanceCorpus:
         challenge_total = len(challenge_cases)
         challenge_dev = sum(1 for c in challenge_cases if c.usage_partition == UsagePartition.DEV)
         challenge_holdout = sum(1 for c in challenge_cases if c.usage_partition == UsagePartition.HOLDOUT)
-        challenge_gold = sum(1 for c in challenge_cases if c.oracle_grade == OracleGrade.GOLD)
-        challenge_silver = sum(1 for c in challenge_cases if c.oracle_grade == OracleGrade.SILVER)
-        challenge_none = sum(1 for c in challenge_cases if c.oracle_grade == OracleGrade.NONE)
+        challenge_gold = sum(1 for c in challenge_cases if c.derived_oracle_class == DerivedOracleClass.GOLD)
+        challenge_silver = sum(1 for c in challenge_cases if c.derived_oracle_class == DerivedOracleClass.SILVER)
+        challenge_int_ref = sum(1 for c in challenge_cases if c.derived_oracle_class == DerivedOracleClass.INTERNAL_REFERENCE)
+        challenge_none = sum(1 for c in challenge_cases if c.derived_oracle_class == DerivedOracleClass.NONE)
 
         return {
             "CONFORMANCE_CORPUS_CASE_COUNT": len(all_cases),
@@ -1235,12 +1351,16 @@ class VCPConformanceCorpus:
             "HOLDOUT_CASE_COUNT": len(holdout_cases),
             "DEV_GOLD_COUNT": dev_gold,
             "DEV_SILVER_COUNT": dev_silver,
+            "DEV_INTERNAL_REFERENCE_COUNT": dev_int_ref,
             "DEV_NONE_COUNT": dev_none,
             "HOLDOUT_GOLD_COUNT": holdout_gold,
             "HOLDOUT_SILVER_COUNT": holdout_silver,
+            "HOLDOUT_INTERNAL_REFERENCE_COUNT": holdout_int_ref,
             "HOLDOUT_NONE_COUNT": holdout_none,
             "GOLD_CASE_COUNT": gold_total,
             "SILVER_CASE_COUNT": silver_total,
+            "INTERNAL_REFERENCE_CASE_COUNT": int_ref_total,
+            "NONE_CASE_COUNT": none_total,
             "NO_ORACLE_GRADE_CASE_COUNT": none_total,
             "RESOLVED_CASE_COUNT": resolved_total,
             "UNRESOLVED_CASE_COUNT": unresolved_total,
@@ -1249,9 +1369,34 @@ class VCPConformanceCorpus:
             "CHALLENGE_HOLDOUT_COUNT": challenge_holdout,
             "CHALLENGE_GOLD_COUNT": challenge_gold,
             "CHALLENGE_SILVER_COUNT": challenge_silver,
+            "CHALLENGE_INTERNAL_REFERENCE_COUNT": challenge_int_ref,
             "CHALLENGE_NONE_COUNT": challenge_none,
-            "CROSS_TAB_TOTAL": gold_total + silver_total + none_total,
+            "CROSS_TAB_TOTAL": gold_total + silver_total + int_ref_total + none_total,
+            "GOLD_CONFORMANCE_DENOMINATOR": gold_total,
+            "GOLD_DEV_CONFORMANCE_DENOMINATOR": dev_gold,
+            "GOLD_HOLDOUT_CONFORMANCE_DENOMINATOR": holdout_gold,
+            "SILVER_CONFORMANCE_DENOMINATOR": silver_total,
+            "SILVER_DEV_CONFORMANCE_DENOMINATOR": dev_silver,
+            "SILVER_HOLDOUT_CONFORMANCE_DENOMINATOR": holdout_silver,
+            "INTERNAL_REFERENCE_CONFORMANCE_DENOMINATOR": int_ref_total,
+            "INTERNAL_REFERENCE_DEV_DENOMINATOR": dev_int_ref,
+            "INTERNAL_REFERENCE_HOLDOUT_DENOMINATOR": holdout_int_ref,
         }
+
+    def compute_role_accounting_matrix(self) -> Dict[str, int]:
+        """Derives role counts directly from case manifest records."""
+        counts = {
+            "POSITIVE_CONTROL": 0,
+            "NEGATIVE_CONTROL": 0,
+            "BOUNDARY": 0,
+            "CHALLENGE": 0,
+            "OTHER": 0,
+        }
+        for c in self.list_all_cases():
+            for r in c.case_roles:
+                counts[r.value] = counts.get(r.value, 0) + 1
+        counts["TOTAL_ROLE_ASSIGNMENTS"] = sum(counts.values())
+        return counts
 
     def validate_corpus_invariants(self) -> Dict[str, Any]:
         """Validates all orthogonal schema invariants, set partitions, and accounting rules."""
@@ -1270,37 +1415,61 @@ class VCPConformanceCorpus:
         if len(all_cases) != len(all_ids):
             raise ValueError("DUPLICATE_CASE_IDS detected in corpus")
 
-        gold_ids = set(c.case_id for c in all_cases if c.oracle_grade == OracleGrade.GOLD)
-        silver_ids = set(c.case_id for c in all_cases if c.oracle_grade == OracleGrade.SILVER)
-        none_ids = set(c.case_id for c in all_cases if c.oracle_grade == OracleGrade.NONE)
+        gold_ids = set(c.case_id for c in all_cases if c.derived_oracle_class == DerivedOracleClass.GOLD)
+        silver_ids = set(c.case_id for c in all_cases if c.derived_oracle_class == DerivedOracleClass.SILVER)
+        int_ref_ids = set(c.case_id for c in all_cases if c.derived_oracle_class == DerivedOracleClass.INTERNAL_REFERENCE)
+        none_ids = set(c.case_id for c in all_cases if c.derived_oracle_class == DerivedOracleClass.NONE)
 
         # Oracle grade disjointness & completeness
-        if (gold_ids.intersection(silver_ids)) or (gold_ids.intersection(none_ids)) or (silver_ids.intersection(none_ids)):
+        if (
+            gold_ids.intersection(silver_ids)
+            or gold_ids.intersection(int_ref_ids)
+            or gold_ids.intersection(none_ids)
+            or silver_ids.intersection(int_ref_ids)
+            or silver_ids.intersection(none_ids)
+            or int_ref_ids.intersection(none_ids)
+        ):
             raise ValueError("MULTI_ORACLE_GRADE_CASES detected")
-        if (gold_ids.union(silver_ids).union(none_ids)) != all_ids:
+        if (gold_ids.union(silver_ids).union(int_ref_ids).union(none_ids)) != all_ids:
             raise ValueError("UNACCOUNTED_ORACLE_GRADE_CASES detected")
 
         # Adjudication status invariants
         for c in all_cases:
             if not isinstance(c.usage_partition, UsagePartition):
                 raise ValueError(f"Case {c.case_id} has invalid or missing usage_partition: {c.usage_partition}")
-            if not isinstance(c.oracle_grade, OracleGrade):
-                raise ValueError(f"Case {c.case_id} has invalid oracle_grade: {c.oracle_grade}")
+            if not isinstance(c.derived_oracle_class, DerivedOracleClass):
+                raise ValueError(f"Case {c.case_id} has invalid derived_oracle_class: {c.derived_oracle_class}")
             for r in c.case_roles:
                 if not isinstance(r, CaseRole):
                     raise ValueError(f"Case {c.case_id} has invalid case_role: {r}")
-            if c.adjudication_status == AdjudicationStatus.UNRESOLVED and c.oracle_grade != OracleGrade.NONE:
+            if c.adjudication_status == AdjudicationStatus.UNRESOLVED and (c.derived_oracle_class != DerivedOracleClass.NONE or c.oracle_grade != OracleGrade.NONE):
                 raise ValueError(f"Case {c.case_id} is UNRESOLVED but has oracle_grade {c.oracle_grade.value}")
-            if c.oracle_grade in (OracleGrade.GOLD, OracleGrade.SILVER) and c.adjudication_status != AdjudicationStatus.RESOLVED:
-                raise ValueError(f"Case {c.case_id} has grade {c.oracle_grade.value} but is not RESOLVED")
+            if c.derived_oracle_class in (DerivedOracleClass.GOLD, DerivedOracleClass.SILVER) and c.adjudication_status != AdjudicationStatus.RESOLVED:
+                raise ValueError(f"Case {c.case_id} has grade {c.derived_oracle_class.value} but is not RESOLVED")
             # Role duplication inside case
             if len(c.case_roles) != len(set(c.case_roles)):
                 raise ValueError(f"Case {c.case_id} contains duplicate roles: {c.case_roles}")
 
+            # Fail-closed check: policy derivation must match derived_oracle_class
+            policy_derived = derive_oracle_class(
+                adjudication_status=c.adjudication_status,
+                authority_origin=c.authority_origin,
+                evidence_sufficiency=c.evidence_sufficiency,
+                authority_status=c.authority_status,
+                adjudication_source=c.adjudication_source,
+                silver_limitations=c.silver_limitations,
+                external_adjudication_verified=(c.authority_origin == AuthorityOrigin.EXTERNAL_INDEPENDENT),
+                material_disagreements_count=0,
+                normative_predicates_resolved=True,
+                final_classification_resolved=(c.adjudication_status == AdjudicationStatus.RESOLVED),
+            )
+            if c.derived_oracle_class != policy_derived:
+                raise ValueError(f"MANUAL_AUTHORITY_CLASS_OVERRIDE: Case {c.case_id} has derived_oracle_class {c.derived_oracle_class.value} but policy derives {policy_derived.value}")
+
         matrix = self.compute_accounting_matrix()
-        if matrix["DEV_GOLD_COUNT"] + matrix["DEV_SILVER_COUNT"] + matrix["DEV_NONE_COUNT"] != matrix["DEV_CASE_COUNT"]:
+        if matrix["DEV_GOLD_COUNT"] + matrix["DEV_SILVER_COUNT"] + matrix["DEV_INTERNAL_REFERENCE_COUNT"] + matrix["DEV_NONE_COUNT"] != matrix["DEV_CASE_COUNT"]:
             raise ValueError("DEV cross tab row does not sum to DEV total")
-        if matrix["HOLDOUT_GOLD_COUNT"] + matrix["HOLDOUT_SILVER_COUNT"] + matrix["HOLDOUT_NONE_COUNT"] != matrix["HOLDOUT_CASE_COUNT"]:
+        if matrix["HOLDOUT_GOLD_COUNT"] + matrix["HOLDOUT_SILVER_COUNT"] + matrix["HOLDOUT_INTERNAL_REFERENCE_COUNT"] + matrix["HOLDOUT_NONE_COUNT"] != matrix["HOLDOUT_CASE_COUNT"]:
             raise ValueError("HOLDOUT cross tab row does not sum to HOLDOUT total")
         if matrix["CROSS_TAB_TOTAL"] != matrix["CONFORMANCE_CORPUS_CASE_COUNT"]:
             raise ValueError("Cross tab sum does not equal corpus case count")
@@ -1406,6 +1575,12 @@ class VCPConformanceCorpus:
                 "usage_partition": c.usage_partition.value,
                 "adjudication_status": c.adjudication_status.value,
                 "oracle_grade": c.oracle_grade.value,
+                "derived_oracle_class": c.derived_oracle_class.value,
+                "authority_origin": c.authority_origin.value,
+                "evidence_sufficiency": c.evidence_sufficiency.value,
+                "authority_status": c.authority_status.value,
+                "adjudication_source": c.adjudication_source.value,
+                "known_at_provenance": c.known_at_provenance.value,
                 "case_roles": sorted([r.value for r in c.case_roles]),
                 "scenario_tags": sorted(list(c.scenario_tags)),
                 "expected_vcp_classification": c.expected_vcp_classification,
@@ -1427,6 +1602,7 @@ class VCPConformanceCorpus:
                 "usage_partition": c.usage_partition.value,
                 "adjudication_status": c.adjudication_status.value,
                 "oracle_grade": c.oracle_grade.value,
+                "derived_oracle_class": c.derived_oracle_class.value,
                 "case_roles": sorted([r.value for r in c.case_roles]),
                 "scenario_tags": sorted(list(c.scenario_tags)),
                 "case_content_hash": c.case_content_hash,
@@ -1443,6 +1619,7 @@ class VCPConformanceCorpus:
                 "usage_partition": c.usage_partition.value,
                 "adjudication_status": c.adjudication_status.value,
                 "oracle_grade": c.oracle_grade.value,
+                "derived_oracle_class": c.derived_oracle_class.value,
                 "case_roles": sorted([r.value for r in c.case_roles]),
                 "scenario_tags": sorted(list(c.scenario_tags)),
                 "case_content_hash": c.case_content_hash,
@@ -1459,6 +1636,7 @@ class VCPConformanceCorpus:
                 "usage_partition": c.usage_partition.value,
                 "adjudication_status": c.adjudication_status.value,
                 "oracle_grade": c.oracle_grade.value,
+                "derived_oracle_class": c.derived_oracle_class.value,
                 "case_roles": sorted([r.value for r in c.case_roles]),
                 "scenario_tags": sorted(list(c.scenario_tags)),
                 "case_content_hash": c.case_content_hash,
@@ -1479,6 +1657,10 @@ class VCPConformanceCorpus:
             })
         return hashlib.sha256(json.dumps(records, sort_keys=True).encode("utf-8")).hexdigest()
 
+    def compute_predecessor_manifest_hash(self) -> str:
+        """Returns the predecessor manifest hash preserved from Sprint 2B candidate freeze."""
+        return "58c16ab749f27bc32694ec81ebe1e8c5611440197ea60ead4f4952f85fa640b8"
+
     def compute_predecessor_holdout_label_commitment_hash(self) -> str:
         """Returns the predecessor holdout label commitment hash preserved from Sprint 2B candidate freeze."""
         return "90e0d6377fc0c3ca8f368d816393bc14c1121090a00f7e1ac0168b5ead2035ae"
@@ -1492,6 +1674,7 @@ class VCPConformanceCorpus:
                 "case_id": c.case_id,
                 "usage_partition": c.usage_partition.value,
                 "oracle_grade": c.oracle_grade.value,
+                "derived_oracle_class": c.derived_oracle_class.value,
                 "adjudication_status": c.adjudication_status.value,
                 "case_roles": sorted([r.value for r in c.case_roles]),
                 "exp_vcp": c.expected_vcp_classification,
