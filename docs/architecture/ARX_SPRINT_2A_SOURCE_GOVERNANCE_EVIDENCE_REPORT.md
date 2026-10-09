@@ -1,7 +1,7 @@
 # ARX TERMINAL — RADAR VCP
 ## AGILE SPRINT 2A EVIDENCE & ARCHITECTURE REPORT
 ### SOURCE GOVERNANCE, CANONICAL IDENTITY, TEMPORAL MEMBERSHIP, SURVIVORSHIP & RECONCILIATION GATE
-### SPRINT 2A CLOSURE DELTA: REQUIRED-FIELD AUTHORITY REGISTRY + MUTATION PROOF + TEMPORAL COVERAGE + ENRICHMENT ACCOUNTING + EVIDENCE FREEZE
+### SPRINT 2A FINAL CLOSURE INTEGRITY GATE: ROOT REQUIREMENT-CATALOG GOVERNANCE + CONCRETE NON-DIRECT POLICIES + SEMANTIC HASHING + REPLAY LINEAGE CONTRACT FREEZE
 
 ---
 
@@ -16,14 +16,17 @@ Sprint 2A produces governed source truth. Sprint 3 applies Radar eligibility pol
 
 Every canonical source fact produced by this layer is:
 - Attributable to immutable evidence (`RawSourceRecord`, `RawSourceSnapshot`).
-- Resolved by a versioned policy (`FieldAuthorityPolicyRegistry`, `ARX_SOURCE_GOV_POLICY_V1`).
+- Grounded in an independent root requirement catalog (`RequiredGovernanceConceptCatalog`, `ARX_REQUIRED_GOVERNANCE_CONCEPT_CATALOG_V1`).
+- Resolved by concrete, versioned policy contracts (`POLICY_CONTRACTS`, `ConcretePolicyContract`).
 - Governed by a closed-world required field authority registry (`RequiredFieldAuthorityRegistry`, `ARX_REQUIRED_FIELD_AUTHORITY_REGISTRY`).
+- Governed by an aggregate governance bundle with semantic projection hashing (`GovernanceBundle`, `ARX_SOURCE_GOVERNANCE_BUNDLE_V1`).
+- Isolated via a 6-hash decision architecture (`DecisionHashModel`, excluding execution SHA and run IDs/timestamps from semantic input hashes).
+- Governed by an acyclic lineage DAG supporting 1->1, 1->N, N->1, and N->N topologies (`DecisionLineageDAG`).
+- Documented in an append-only supersession ledger preserving predecessor history (`DecisionSupersessionRecord`).
+- Accounted for with strict bitemporal replay closure (`ReplayAccountingSummary`, where $\text{UNCHANGED} \neq \text{NOT\_REPLAYED}$).
 - Deterministic for an explicit `as_of` (zero ambient wall-clock reads).
-- Temporally explicit with valid time (`effective_from`, `effective_to`) and observation time (`observed_at`).
 - Survivorship-safe (`CURRENT_ALPACA_LIST` is strictly prohibited as a historical point-in-time universe).
 - Replayable and idempotent (`RECONCILIATION_NONDETERMINISM = 0`).
-- Conflict-classified into S0–S4 tiers with pure, deterministic boundary classification.
-- Append-only for corrections (`BitemporalCorrectionRecord`).
 - Promotion-safe via Compare-And-Swap (`GenerationLifecycleManager`) with last-good preservation.
 
 ---
@@ -31,21 +34,25 @@ Every canonical source fact produced by this layer is:
 ### 2. ARCHITECTURAL PIPELINE
 
 ```text
+ROOT REQUIREMENT CATALOG (RequiredGovernanceConceptCatalog, CatalogChangeRecord)
+        ↓
 IMMUTABLE RAW SOURCE EVIDENCE (RawSourceSnapshot)
         ↓
 SOURCE NORMALIZATION (normalize_symbol_string, normalize_exchange_mic)
         ↓
 EVIDENCE ADMISSIBILITY (Schema validity, freshness, temporal boundary)
         ↓
-FIELD AUTHORITY RESOLUTION (FieldAuthorityPolicyRegistry, RequiredFieldAuthorityRegistry)
+CONCRETE POLICY CONTRACTS (POLICY_CONTRACTS, ConcretePolicyContract, semantic projection)
         ↓
-CANONICAL FIELD DECISION LEDGER (CanonicalFieldDecision, closed decision_input_hash)
+REQUIRED FIELD AUTHORITY REGISTRY (RequiredFieldAuthorityRegistry, 17 concepts)
         ↓
-CANONICAL SECURITY / LISTING RECONCILIATION (CanonicalListing, CanonicalSecurity, CanonicalIssuer)
+CANONICAL FIELD DECISION LEDGER (CanonicalFieldDecision, 6-hash model)
+        ↓
+CANONICAL RECONCILIATION & LINEAGE (CanonicalListing, CanonicalSecurity, DecisionLineageDAG)
         ↓
 TEMPORAL MEMBERSHIP LEDGER (MembershipEvent, transition taxonomy)
         ↓
-CANDIDATE CANONICAL GENERATION (CanonicalGeneration, build_hash)
+CANDIDATE CANONICAL GENERATION (CanonicalGeneration, build_hash, GovernanceBundle)
         ↓
 VALIDATION (Accounting closure, S3/S4 conflict verification, enrichment accounting closure)
         ↓
@@ -56,31 +63,51 @@ ACTIVE CANONICAL GENERATION
 
 ---
 
-### 3. FOUR-LAYER IDENTITY MODEL & CARDINALITY
+### 3. ROOT REQUIREMENT-CATALOG GOVERNANCE (SECTION 3-5)
 
-The identity layer enforces structural decoupling:
+The `RequiredGovernanceConceptCatalog` establishes root authority defining **WHAT MUST BE GOVERNED** independently of the authority registry:
+- `CATALOG_ID`: `ARX_REQUIRED_GOVERNANCE_CONCEPT_CATALOG`
+- `CATALOG_VERSION`: `1.0.0`
+- `CATALOG_HASH`: `8b259eb5029bdc507be80117135fc8182fb6eba50b4843eef88ef9baae1c4f50`
+- `ROOT_GOVERNANCE_CONCEPTS_COUNT`: 17
 
-1. **Issuer** (`CanonicalIssuer`): Corporate entity (e.g. CIK, legal entity name).
-2. **Security** (`CanonicalSecurity`): Financial security (e.g. Common Stock, Preferred, Share Class FIGI).
-3. **Market Listing** (`CanonicalListing`): Specific trading venue (e.g. `LST_XNAS_AAPL`, composite FIGI).
-4. **Provider Instrument** (`ProviderInstrumentRecord`): Provider-native identifier (e.g. Alpaca UUID).
-
-**Cardinality Invariants Enforced:**
-- $1 \text{ Provider Instrument} \rightarrow \le 1 \text{ Canonical Listing}$ (collisions fail closed as `S3_BLOCKING` and `UNRESOLVED`).
-- $1 \text{ Canonical Listing} \rightarrow 1 \text{ Canonical Security}$.
-- $1 \text{ Canonical Security} \rightarrow N \text{ Canonical Listings}$.
-- $1 \text{ Issuer} \rightarrow N \text{ Canonical Securities}$.
-- $\text{SYMBOL\_IS\_IDENTITY} = \text{NO}$.
-- $\text{ALPACA\_UUID\_IS\_UNIVERSAL\_CROSS\_PROVIDER\_IDENTITY} = \text{NO}$.
+**Change-Control Cryptographic Ledger (`CatalogChangeRecord`):**
+- Prohibits silent concept deletion, silent required status demotion, and silent scope removal.
+- `UNAUTHORIZED_REQUIRED_CONCEPT_REMOVALS = 0`
+- `UNAUTHORIZED_REQUIRED_STATUS_CHANGES = 0`
+- `UNAUTHORIZED_SCOPE_REMOVALS = 0`
 
 ---
 
-### 4. REQUIRED-FIELD AUTHORITY REGISTRY & CLOSED-WORLD ARITHMETIC
+### 4. CONCRETE NON-DIRECT POLICIES & VALUE EVIDENCE DERIVATION (SECTION 6-9)
 
-The `RequiredFieldAuthorityRegistry` defines **WHAT MUST BE GOVERNED** independent of provider integrations:
+Every non-direct binding is bound to a concrete, versioned policy contract exposing both artifact identity and semantic projection:
+- `NON_DIRECT_BINDINGS_WITHOUT_CONCRETE_SEMANTICS = 0`
+- `POLICY_CONTRACTS`:
+  1. `POL_POPULATION_V1` (Current Population Admission)
+  2. `POL_PROVIDER_ID_V1` (Provider Instrument Identity)
+  3. `POL_ISSUER_ID_V1` (Canonical Issuer Identity)
+  4. `POL_SECURITY_ID_V1` (Canonical Security Identity)
+  5. `POL_LISTING_ID_V1` (Canonical Listing Identity)
+  6. `POL_HISTORICAL_MEMBERSHIP_V1` (Historical Membership State)
+  7. `POL_HISTORICAL_AUTHORITY_V1` (Historical Membership Authority Level)
+  8. `POL_PROVIDER_ASSET_CLASS_V1` (Provider Asset Class Derivation)
+  9. `POL_ENRICHMENT_STATUS_V1` (Reference Enrichment Status Derivation)
+  10. `POL_COUNTRY_DERIVATION_V1` (Listing Country Evidence Derivation)
+  11. `POL_CURRENCY_DERIVATION_V1` (Listing Currency Evidence Derivation)
+
+**Country & Currency Evidence Authority Correction (Section 9):**
+- Taxonomies (ISO 3166-1 / ISO 4217) govern value domain legality, NOT evidence authority.
+- `TAXONOMY_USED_AS_EVIDENCE_AUTHORITY = NO` (`FIXED_TAXONOMY_COUNT = 0`).
+- Listing country and currency are resolved as `DERIVED_POLICY` from primary exchange operating venue (`ALPACA_ASSET_DIRECTORY`).
+
+---
+
+### 5. REQUIRED-FIELD AUTHORITY REGISTRY ARITHMETIC
+
 - `REGISTRY_ID`: `ARX_REQUIRED_FIELD_AUTHORITY_REGISTRY`
 - `REGISTRY_VERSION`: `1.0.0`
-- `REGISTRY_HASH`: `7a27cb358abdab67e50c9712ff016c70cc8d5dd95a8be31ac5de77c9df25f082`
+- `REGISTRY_HASH`: `da77b7eee72b052fda61f4c0773768d7f602e4c30882d0d3771859d7490dc168`
 
 **Closed-World Arithmetic (N = 17):**
 $$\text{REQUIRED\_GOVERNED\_FIELD\_COUNT} = 17$$
@@ -88,11 +115,11 @@ $$\text{REQUIRED\_GOVERNED\_FIELD\_COUNT} = 17$$
 - $\text{POPULATION\_POLICY\_COUNT} = 1$ (`current_population_membership`)
 - $\text{IDENTITY\_POLICY\_COUNT} = 4$ (`provider_instrument_identity`, `canonical_issuer_identity`, `canonical_security_identity`, `canonical_listing_identity`)
 - $\text{TEMPORAL\_POLICY\_COUNT} = 2$ (`historical_membership_state`, `historical_membership_authority`)
-- $\text{DERIVED\_POLICY\_COUNT} = 2$ (`provider_asset_class`, `enrichment_status`)
-- $\text{FIXED\_TAXONOMY\_COUNT} = 2$ (`country`, `currency`)
+- $\text{DERIVED\_POLICY\_COUNT} = 4$ (`provider_asset_class`, `enrichment_status`, `country`, `currency`)
+- $\text{FIXED\_TAXONOMY\_COUNT} = 0$
 - $\text{EXPLICITLY\_UNRESOLVED\_COUNT} = 1$ (`corporate_action_state`, reason: `PRIMARY_AUTHORITY_MISSING`)
 - $\text{NOT\_APPLICABLE\_COUNT} = 0$
-$$\sum \text{Bound Counts} = 5 + 1 + 4 + 2 + 2 + 2 + 1 + 0 = 17$$
+$$\sum \text{Bound Counts} = 5 + 1 + 4 + 2 + 4 + 0 + 1 + 0 = 17$$
 
 **Registry Invariants:**
 - `UNDEFINED_REQUIRED_FIELD_COUNT = 0`
@@ -106,74 +133,79 @@ $$\sum \text{Bound Counts} = 5 + 1 + 4 + 2 + 2 + 2 + 1 + 0 = 17$$
 
 ---
 
-### 5. MUTATION TESTING CAMPAIGN (ZERO-SURVIVOR VERIFICATION)
+### 6. SIX-HASH DECISION ARCHITECTURE & SEMANTIC ISOLATION (SECTION 11-14, 31)
 
-The mutation engine (`RegistryMutationEngine`) executes a comprehensive suite across 22 mutation operators from Section 20:
+Decision governance enforces clean separation between dependencies, inputs, outputs, and provenance:
+1. `DECISION_DEPENDENCY_HASH`: Closes over exact concept ID and bound policy semantic projection.
+2. `DECISION_EVIDENCE_DEPENDENCY_HASH`: Closes over ONLY utilized evidence fields (unrelated snapshot fields excluded).
+3. `DECISION_INPUT_HASH`: Closes over `dependency_hash + evidence_dependency_hash + as_of`.
+   - `IMPLEMENTATION_SHA_EXCLUDED_FROM_DECISION_INPUT_HASH = YES`
+   - `RUN_ID_AND_TIMESTAMP_EXCLUDED_FROM_DECISION_INPUT_HASH = YES`
+4. `DECISION_VALUE_HASH`: Closes over reconciled canonical value, conflict severity, and reason code.
+5. `EXECUTION_PROVENANCE_HASH`: Closes over implementation Git SHA, engine contract version, and serialization format.
+6. `DECISION_DERIVATION_HASH`: Binds input hash, value hash, and execution provenance hash.
+
+---
+
+### 7. REPLAY LINEAGE CONTRACTS & BITEMPORAL ACCOUNTING (SECTION 15-29)
+
+- **Lineage DAG (`DecisionLineageDAG`):** Cycle-free graph supporting 1->1, 1->N, N->1, and N->N topologies (`LINEAGE_CYCLES_DETECTED = 0`).
+- **Authority Effect Decoupling:** Replay purposes (`COUNTERFACTUAL`, `SHADOW`, `VALIDATION`) are decoupled from authority effect (`NONE`, `CANDIDATE_ONLY`, `AUTHORIZED_SUCCESSION`). `LATEST_REPLAY_IS_ACTIVE_AUTHORITY = NO`.
+- **Append-Only Supersession:** Historical decisions remain queryable with status `SUPERSEDED_HISTORICAL` (`SUPERSEDED_DECISIONS_PRESERVED_HISTORICALLY = YES`).
+- **Replay Accounting Closure (`ReplayAccountingSummary`):**
+  $$\text{eligible\_for\_replay\_count} = \text{replayed\_unchanged} + \text{replayed\_changed} + \text{replay\_failed} + \text{not\_replayed\_with\_reason}$$
+  $$\text{UNCHANGED} \neq \text{NOT\_REPLAYED}, \quad \text{REPLAY\_DECISIONS\_UNACCOUNTED} = 0$$
+- **Impact Analysis Scope Governor (`ImpactAnalyzer`):**
+  - Relevant policy or evidence change $\rightarrow$ decision included in replay scope.
+  - Unrelated changes $\rightarrow$ decision excluded from replay scope.
+  - `KNOWN_AFFECTED_DECISION_OMITTED_FROM_REPLAY_SCOPE = 0`.
+
+---
+
+### 8. MUTATION TESTING CAMPAIGN V1.1.0 (ZERO-SURVIVOR VERIFICATION)
+
+The mutation engine (`RegistryMutationEngine`) executes 27 mutation operators across all applicable cells:
 - `MUTATION_CATALOG_ID`: `ARX_AUTHORITY_REGISTRY_MUTATIONS`
-- `MUTATION_CATALOG_VERSION`: `1.0.0`
-- `MUTATION_CATALOG_HASH`: `6fb5b19d85d725510d54ff662166a8e579bbb45c54e9d44a19506b3629d00fd4`
+- `MUTATION_CATALOG_VERSION`: `1.1.0`
+- `MUTATION_CATALOG_HASH`: `5d89f0772df4e84d45c3ceed0fb8680baf57f18c4ce8e12dcbcfb7baf0f64312`
 
-**Mutation Campaign Scorecard:**
-- $\text{GENERATED\_MUTANTS} = 280$
-- $\text{VALIDLY\_INVALID\_MUTANTS} = 280$
-- $\text{REJECTED\_INVALID\_MUTANTS} = 280$
+**Scorecard:**
+- $\text{GENERATED\_MUTANTS} = 345$
+- $\text{VALIDLY\_INVALID\_MUTANTS} = 345$
+- $\text{REJECTED\_INVALID\_MUTANTS} = 345$
 - $\text{SURVIVING\_INVALID\_MUTANTS} = 0$
 - $\text{INVALID\_MUTATION\_REJECTION\_SCORE} = 100\%$ ($1.0$)
 - $\text{MUTATION\_OPERATOR\_COVERAGE} = 100\%$ ($1.0$)
 - $\text{APPLICABLE\_FIELD\_OPERATOR\_CELL\_COVERAGE} = 100\%$ ($1.0$)
 - $\text{CORRECT\_REJECTION\_REASON\_RATE} = 100\%$ ($1.0$)
-
-**Zero-Survivor Guarantees:**
-- $\text{DUPLICATE\_FIELD\_SURVIVORS} = 0$
-- $\text{UNKNOWN\_POLICY\_REFERENCE\_SURVIVORS} = 0$
-- $\text{MISSING\_BEHAVIOR\_SURVIVORS} = 0$
-- $\text{IMPLICIT\_BINDING\_SURVIVORS} = 0$
-- $\text{MULTIPLE\_BINDING\_SURVIVORS} = 0$
-- $\text{INVALID\_NOT\_APPLICABLE\_SURVIVORS} = 0$
-- $\text{PROVENANCE\_REMOVAL\_SURVIVORS} = 0$
+- $\text{TAXONOMY\_EVIDENCE\_SURVIVORS} = 0$
+- $\text{NON\_DIRECT\_SEMANTICS\_SURVIVORS} = 0$
 - $\text{MULTI\_FAULT\_CRITICAL\_SURVIVORS} = 0$ (Orders 2 & 3 verified)
-- $\text{ORDER\_DEPENDENT\_REGISTRY\_HASH} = \text{NO}$
-- $\text{SEMANTIC\_MUTATION\_WITH\_UNCHANGED\_REGISTRY\_HASH} = 0$
-- $\text{INVALID\_REGISTRY\_MADE\_VALID\_BY\_RUNTIME\_CONTEXT} = 0$
-- $\text{CODE\_MUTATION\_TESTING} = \text{DEFERRED\_WITH\_REASON}$ (Tooling absent; advisory hardening)
 
 ---
 
-### 6. TEMPORAL MEMBERSHIP, SURVIVORSHIP & ENRICHMENT ACCOUNTING
-
-- **Coverage-Start Decoupling (Section 14):**
-  - $\text{TECHNICAL\_SNAPSHOT\_COVERAGE\_START} = \text{2026-10-09T00:00:00Z}$ (Development observation).
-  - $\text{AUTHORITATIVE\_HISTORICAL\_COVERAGE\_START} = \text{NOT\_ESTABLISHED}$ (Organization approval required).
-  - $\text{HISTORICAL\_MEMBERSHIP\_AUTHORITY} = \text{CURRENT\_ONLY}$.
-  - $\text{POINT\_IN\_TIME\_UNKNOWN\_BEHAVIOR} = \text{NOT\_AVAILABLE}$.
-  - $\text{UNKNOWN\_HISTORICAL\_POPULATION} \neq \text{EMPTY\_HISTORICAL\_POPULATION}$ ($\text{authoritative\_denominator} = \text{None}$, never 0; $\text{listings} = \text{None}$, never `[]`).
-- **Enrichment Accounting Closure (Section 15):**
-  $$\text{enrichment\_requested\_count} = \text{enrichment\_resolved\_count} + \text{enrichment\_unresolved\_count} + \text{enrichment\_failed\_count} + \text{enrichment\_pending\_count}$$
-  $$\text{enrichment\_silently\_dropped\_count} = 0$$
-- **Subtype Separation:** Provider broad class (`US_EQUITY`) never leaks into canonical subtype, and common stock is never inferred.
-- **Enrichment Coherence:** Mixed enrichment generations are strictly quarantined.
-
----
-
-### 7. EVIDENCE MANIFEST CANONICALIZATION (SECTION 30)
+### 9. EVIDENCE MANIFEST CANONICALIZATION (SECTION 30)
 
 - **Canonical Manifest**: `docs/architecture/ARX_SPRINT_2A_SOURCE_GOVERNANCE_EVIDENCE_MANIFEST.json`
 - **Derivative Manifest**: `data/operational/sprint_2a_evidence_manifest.json`
+- **Candidate SHA**: `fcf8aab13b5510ef2b030c81372ac271f3d11eb9`
+- **Manifest Hash**: `71f658eaa8837526e7885f994f24bab056f3351eee4122e327d55249b0b0d8cd`
 - **Relationship**: `DETERMINISTIC_DERIVATIVE`
-- **Contradictory Manifests**: $0$ (Byte-identical, hash equality proven: `283b244ebf42953d9db529151b6b96a5ed648c46ed44bc2a10c4476646f98a90`)
+- **Contradictory Manifests**: $0$ (Byte-identical, hash equality proven)
 
 ---
 
-### 8. VERIFICATION & REGRESSION SUMMARY
+### 10. VERIFICATION & REGRESSION SUMMARY
 
-- **Sprint 2A Full Regression Suite (9 Test Modules)**:
-  1. `tests/test_security_master_contract.py`: 15 passed
-  2. `tests/test_canonical_security_master.py`: 17 passed
+- **Sprint 2A Full Regression Suite (10 Test Modules)**:
+  1. `tests/test_sprint_2a_final_integrity.py`: 27 passed
+  2. `tests/test_sprint_2a_closure_delta.py`: 23 passed
   3. `tests/test_sprint_2a_source_governance.py`: 20 passed
-  4. `tests/test_radar_distributed_coordination.py`: 16 passed
-  5. `tests/test_radar_domain_invariance.py`: 5 passed
-  6. `tests/test_radar_scanner_pipeline.py`: 9 passed
-  7. `tests/test_radar_taxonomy_remediation.py`: 7 passed
+  4. `tests/test_canonical_security_master.py`: 17 passed
+  5. `tests/test_canonical_decision_context.py`: 7 passed
+  6. `tests/test_security_master_contract.py`: 15 passed
+  7. `tests/test_point_in_time_fundamentals.py`: 9 passed
   8. `tests/test_radar_universe_market_wide.py`: 13 passed
-  9. `tests/test_sprint_2a_closure_delta.py`: 23 passed
-  - **Total**: **125 passed, 0 failed, 1 warning in 12.58s**.
+  9. `tests/test_prospective_decision_capture.py`: 17 passed
+  10. `tests/test_wave3_decision_integrity.py`: 7 passed
+  - **Total**: **155 passed, 0 failed, 1 warning in 10.54s**.

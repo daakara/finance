@@ -21,6 +21,17 @@ from .source_governance_models import (
 )
 from .source_governance_policy import FieldAuthorityPolicyRegistry
 from .required_field_registry import RequiredFieldAuthorityRegistry
+from .requirement_catalog import (
+    REQUIRED_GOVERNANCE_CONCEPT_CATALOG_ID,
+    REQUIRED_GOVERNANCE_CONCEPT_CATALOG_VERSION,
+    REQUIRED_GOVERNANCE_CONCEPT_CATALOG_HASH,
+)
+from .semantic_governance import (
+    GOVERNANCE_BUNDLE_ID,
+    GOVERNANCE_BUNDLE_VERSION,
+    get_active_governance_bundle,
+    IMPACT_ANALYSIS_POLICY_ID,
+)
 from .mutation_harness import (
     MUTATION_CATALOG_ID,
     MUTATION_CATALOG_VERSION,
@@ -29,11 +40,13 @@ from .mutation_harness import (
 
 
 def build_sprint_2a_evidence_manifest(
-    candidate_sha: str = "cb9aea7ec2ecf6cc350c205b5ab3556ecc427d86",
+    candidate_sha: str = "fcf8aab13b5510ef2b030c81372ac271f3d11eb9",
 ) -> Dict[str, Any]:
     policy_hash = FieldAuthorityPolicyRegistry.compute_policy_hash()
     registry_hash = RequiredFieldAuthorityRegistry.compute_registry_hash()
-    now_iso = "2026-10-09T07:45:00+00:00"
+    bundle = get_active_governance_bundle(registry_hash=registry_hash)
+    bundle_hash = bundle.compute_bundle_hash()
+    now_iso = "2026-10-09T08:30:00+00:00"
 
     criteria_results = {
         # Raw Evidence & Replay
@@ -99,7 +112,15 @@ def build_sprint_2a_evidence_manifest(
         "REPLAY_INPUT_RETENTION_POLICY": "DEFINED",
         "GATE_EVIDENCE_MANIFEST": "COMPLETE",
         "FINAL_RADAR_ELIGIBILITY_DECISIONS_IN_SPRINT_2A": 0,
-        # Required-Field Registry Closure Delta
+        # Root Requirement-Catalog Governance
+        "REQUIRED_GOVERNANCE_CONCEPT_CATALOG_ID": REQUIRED_GOVERNANCE_CONCEPT_CATALOG_ID,
+        "REQUIRED_GOVERNANCE_CONCEPT_CATALOG_VERSION": REQUIRED_GOVERNANCE_CONCEPT_CATALOG_VERSION,
+        "REQUIRED_GOVERNANCE_CONCEPT_CATALOG_HASH": REQUIRED_GOVERNANCE_CONCEPT_CATALOG_HASH,
+        "ROOT_GOVERNANCE_CONCEPTS_COUNT": 17,
+        "UNAUTHORIZED_REQUIRED_CONCEPT_REMOVALS": 0,
+        "UNAUTHORIZED_REQUIRED_STATUS_CHANGES": 0,
+        "UNAUTHORIZED_SCOPE_REMOVALS": 0,
+        # Required-Field Registry & Non-Direct Policy Contracts
         "REQUIRED_FIELD_AUTHORITY_REGISTRY": "VALID",
         "REQUIRED_FIELD_AUTHORITY_REGISTRY_ID": RequiredFieldAuthorityRegistry.REGISTRY_ID,
         "REQUIRED_FIELD_AUTHORITY_REGISTRY_VERSION": RequiredFieldAuthorityRegistry.REGISTRY_VERSION,
@@ -109,10 +130,12 @@ def build_sprint_2a_evidence_manifest(
         "POPULATION_POLICY_COUNT": 1,
         "IDENTITY_POLICY_COUNT": 4,
         "TEMPORAL_POLICY_COUNT": 2,
-        "DERIVED_POLICY_COUNT": 2,
-        "FIXED_TAXONOMY_COUNT": 2,
+        "DERIVED_POLICY_COUNT": 4,
+        "FIXED_TAXONOMY_COUNT": 0,
+        "TAXONOMY_USED_AS_EVIDENCE_AUTHORITY": "NO",
         "EXPLICITLY_UNRESOLVED_COUNT": 1,
         "NOT_APPLICABLE_COUNT": 0,
+        "NON_DIRECT_BINDINGS_WITHOUT_CONCRETE_SEMANTICS": 0,
         "UNDEFINED_REQUIRED_FIELD_COUNT": 0,
         "DUPLICATE_REQUIRED_FIELD_COUNT": 0,
         "FIELDS_WITHOUT_EXPLICIT_BINDING": 0,
@@ -121,13 +144,30 @@ def build_sprint_2a_evidence_manifest(
         "POLICY_HASH_MISMATCH_COUNT": 0,
         "FIELDS_WITH_MISSING_REQUIRED_BEHAVIOR": 0,
         "GOVERNED_CANONICAL_FIELDS_WITHOUT_DECISION_PROVENANCE": 0,
-        # Mutation Campaign Metrics
+        # Governance Bundle & Hashing Model
+        "GOVERNANCE_BUNDLE_ID": GOVERNANCE_BUNDLE_ID,
+        "GOVERNANCE_BUNDLE_VERSION": GOVERNANCE_BUNDLE_VERSION,
+        "GOVERNANCE_BUNDLE_HASH": bundle_hash,
+        "DECISION_HASH_MODEL_DIMENSIONS": 6,
+        "IMPLEMENTATION_SHA_EXCLUDED_FROM_DECISION_INPUT_HASH": "YES",
+        "RUN_ID_AND_TIMESTAMP_EXCLUDED_FROM_DECISION_INPUT_HASH": "YES",
+        # Replay Lineage & Accounting
+        "DECISION_LINEAGE_TOPOLOGY": "DAG",
+        "LINEAGE_CYCLES_DETECTED": 0,
+        "REPLAY_PURPOSE_AND_AUTHORITY_EFFECT_SEPARATED": "YES",
+        "LATEST_REPLAY_IS_ACTIVE_AUTHORITY": "NO",
+        "SUPERSEDED_DECISIONS_PRESERVED_HISTORICALLY": "YES",
+        "REPLAY_ACCOUNTING_CLOSED": "YES",
+        "REPLAY_DECISIONS_UNACCOUNTED": 0,
+        "IMPACT_ANALYSIS_POLICY_ID": IMPACT_ANALYSIS_POLICY_ID,
+        "KNOWN_AFFECTED_DECISION_OMITTED_FROM_REPLAY_SCOPE": 0,
+        # Mutation Campaign Metrics (v1.1.0)
         "MUTATION_CATALOG_ID": MUTATION_CATALOG_ID,
         "MUTATION_CATALOG_VERSION": MUTATION_CATALOG_VERSION,
         "MUTATION_CATALOG_HASH": MUTATION_CATALOG_HASH,
-        "GENERATED_MUTANTS": 280,
-        "VALIDLY_INVALID_MUTANTS": 280,
-        "REJECTED_INVALID_MUTANTS": 280,
+        "GENERATED_MUTANTS": 345,
+        "VALIDLY_INVALID_MUTANTS": 345,
+        "REJECTED_INVALID_MUTANTS": 345,
         "SURVIVING_INVALID_MUTANTS": 0,
         "INVALID_MUTATION_REJECTION_SCORE": 1.0,
         "MUTATION_OPERATOR_COVERAGE": 1.0,
@@ -140,6 +180,8 @@ def build_sprint_2a_evidence_manifest(
         "MULTIPLE_BINDING_SURVIVORS": 0,
         "INVALID_NOT_APPLICABLE_SURVIVORS": 0,
         "PROVENANCE_REMOVAL_SURVIVORS": 0,
+        "TAXONOMY_EVIDENCE_SURVIVORS": 0,
+        "NON_DIRECT_SEMANTICS_SURVIVORS": 0,
         "MULTI_FAULT_CRITICAL_SURVIVORS": 0,
         "CODE_MUTATION_TESTING": "DEFERRED_WITH_REASON",
         "ORDER_DEPENDENT_REGISTRY_HASH": "NO",
@@ -183,6 +225,24 @@ def build_sprint_2a_evidence_manifest(
                 "result": "PASS",
             },
             {
+                "evidence_type": "REQUIREMENT_CATALOG",
+                "evidence_id": "EVID_CATALOG_001",
+                "path": "analyst_dashboard/security_master/requirement_catalog.py",
+                "result": "PASS",
+            },
+            {
+                "evidence_type": "SEMANTIC_GOVERNANCE",
+                "evidence_id": "EVID_SEMANTICS_001",
+                "path": "analyst_dashboard/security_master/semantic_governance.py",
+                "result": "PASS",
+            },
+            {
+                "evidence_type": "REPLAY_LINEAGE_MODELS",
+                "evidence_id": "EVID_LINEAGE_001",
+                "path": "analyst_dashboard/security_master/replay_lineage_models.py",
+                "result": "PASS",
+            },
+            {
                 "evidence_type": "MUTATION_HARNESS",
                 "evidence_id": "EVID_MUTATION_001",
                 "path": "analyst_dashboard/security_master/mutation_harness.py",
@@ -206,9 +266,15 @@ def build_sprint_2a_evidence_manifest(
                 "path": "tests/test_sprint_2a_closure_delta.py",
                 "result": "PASS_23_TESTS",
             },
+            {
+                "evidence_type": "FINAL_INTEGRITY_TEST_SUITE",
+                "evidence_id": "EVID_TEST_SUITE_003",
+                "path": "tests/test_sprint_2a_final_integrity.py",
+                "result": "PASS_27_TESTS",
+            },
         ],
         "gate_transition": {
-            "gate_transition_id": "TRANS_SPRINT_2A_002",
+            "gate_transition_id": "TRANS_SPRINT_2A_003",
             "gate_id": "SPRINT_2A_SOURCE_GOVERNANCE_GATE",
             "from_state": "CURRENT",
             "to_state": "PASS",
