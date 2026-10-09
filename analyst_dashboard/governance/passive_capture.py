@@ -89,6 +89,77 @@ def resolve_release_sha(override_sha: Optional[str] = None) -> Optional[str]:
     return None
 
 
+def extract_canonical_trading_date(ts_val: Any) -> str:
+    """Extracts canonical UTC calendar trading date (YYYY-MM-DD) fail-closed.
+
+    Acceptable inputs:
+      - ISO 8601 strings with explicit timezone awareness (e.g. '...Z', '+00:00', '-04:00')
+      - Timezone-aware datetime objects
+      - Numeric epoch seconds (int, float, or numeric string)
+      - Numeric epoch milliseconds (int, float, or numeric string)
+
+    Fail-closed rejection:
+      - None, empty, whitespace-only, booleans
+      - Non-finite numbers (NaN, Inf, -Inf)
+      - Out-of-range dates (< 2000-01-01 or > 2100-01-01)
+      - Timezone-ambiguous naive datetime objects or naive ISO strings without timezone offset
+      - Unparseable string formats
+    """
+    if ts_val is None:
+        raise ValueError("Missing timestamp: None provided")
+    if isinstance(ts_val, bool):
+        raise ValueError("Boolean value is not a valid timestamp")
+
+    if isinstance(ts_val, (int, float)):
+        if math.isnan(ts_val) or math.isinf(ts_val):
+            raise ValueError(f"Non-finite numeric timestamp: {ts_val}")
+        if ts_val < 0:
+            raise ValueError(f"Negative epoch timestamp: {ts_val}")
+        sec = ts_val / 1000.0 if ts_val >= 1e11 else float(ts_val)
+        if sec < 946684800.0 or sec > 4102444800.0:
+            raise ValueError(f"Epoch timestamp out of range (< 2000 or > 2100): {ts_val}")
+        dt = datetime.fromtimestamp(sec, tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d")
+
+    if isinstance(ts_val, datetime):
+        if ts_val.tzinfo is None or ts_val.tzinfo.utcoffset(ts_val) is None:
+            raise ValueError("Timezone-ambiguous naive datetime object rejected: must be timezone-aware")
+        dt_utc = ts_val.astimezone(timezone.utc)
+        if dt_utc.year < 2000 or dt_utc.year > 2100:
+            raise ValueError(f"Datetime out of range (< 2000 or > 2100): {dt_utc.year}")
+        return dt_utc.strftime("%Y-%m-%d")
+
+    if isinstance(ts_val, str):
+        s = ts_val.strip()
+        if not s:
+            raise ValueError("Empty timestamp string provided")
+        if s.lower() in ("nan", "inf", "-inf", "+inf", "infinity", "-infinity"):
+            raise ValueError(f"Non-finite numeric timestamp string: {s}")
+        try:
+            num_val = float(s)
+            return extract_canonical_trading_date(num_val)
+        except ValueError:
+            pass
+
+        # Normalize lowercase 'z' to 'Z' for fromisoformat compatibility
+        if s.endswith("z"):
+            s = s[:-1] + "Z"
+
+        try:
+            dt = datetime.fromisoformat(s)
+        except Exception as e:
+            raise ValueError(f"Unparseable ISO 8601 timestamp string: '{s}': {e}") from e
+
+        if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+            raise ValueError(f"Timezone-ambiguous naive timestamp string rejected: '{s}' (missing explicit timezone offset or Z)")
+        dt_utc = dt.astimezone(timezone.utc)
+        if dt_utc.year < 2000 or dt_utc.year > 2100:
+            raise ValueError(f"Datetime out of range (< 2000 or > 2100): {dt_utc.year}")
+        return dt_utc.strftime("%Y-%m-%d")
+
+    raise ValueError(f"Unsupported timestamp type: {type(ts_val)}")
+
+
 def compute_execution_ladder_plan_id(snapshot: Dict[str, Any]) -> str:
     """Computes deterministic 24-character hex plan_id for an immutable execution ladder snapshot.
 
@@ -96,8 +167,11 @@ def compute_execution_ladder_plan_id(snapshot: Dict[str, Any]) -> str:
     by hashing canonical plan levels, symbol, role, epoch, release, authority, and source trading date.
     Volatile subsecond request timestamps are excluded from the hash preimage.
     """
-    source_ts = str(snapshot.get("source_data_timestamp") or snapshot.get("generation_timestamp") or "")
-    date_bucket = source_ts[:10]  # Canonical trading date (YYYY-MM-DD)
+    source_ts = snapshot.get("source_data_timestamp")
+    if source_ts is None or (isinstance(source_ts, str) and not source_ts.strip()):
+        source_ts = snapshot.get("generation_timestamp")
+
+    date_bucket = extract_canonical_trading_date(source_ts)  # Canonical trading date (YYYY-MM-DD) in UTC
     elements = [
         str(snapshot.get("epoch_id") or ""),
         str(snapshot.get("symbol") or "").upper().strip(),
@@ -157,11 +231,19 @@ def build_execution_ladder_snapshot(
     gts = s_dict.get("generation_timestamp") if "generation_timestamp" in s_dict else generation_timestamp
     if not gts or not str(gts).strip():
         return None, "MISSING_GENERATION_TIMESTAMP"
+    try:
+        extract_canonical_trading_date(gts)
+    except Exception:
+        return None, "INVALID_GENERATION_TIMESTAMP"
 
     # 5. source_data_timestamp
     sdts = s_dict.get("source_data_timestamp") if "source_data_timestamp" in s_dict else source_data_timestamp
     if not sdts or not str(sdts).strip():
         return None, "MISSING_SOURCE_DATA_TIMESTAMP"
+    try:
+        extract_canonical_trading_date(sdts)
+    except Exception:
+        return None, "INVALID_SOURCE_DATA_TIMESTAMP"
 
     # 6. release_sha
     rsha = s_dict.get("release_sha") if "release_sha" in s_dict else resolve_release_sha(release_sha)
@@ -321,7 +403,10 @@ def build_execution_ladder_snapshot(
         "is_actionable": bool(act),
         "execution_stop_visible": bool(esv),
     }
-    plan_id = compute_execution_ladder_plan_id(constructed)
+    try:
+        plan_id = compute_execution_ladder_plan_id(constructed)
+    except Exception:
+        return None, "INVALID_TIMESTAMP"
     constructed["plan_id"] = plan_id
     return constructed, None
 
@@ -519,15 +604,17 @@ class PassiveCaptureHook:
                 }
 
             # 4. RATIFIED STATUS & SNAPSHOT COMPLETENESS
-            now_iso = datetime.now(timezone.utc).isoformat()
+            gts_val = generation_timestamp if generation_timestamp is not None else (snapshot_dict or {}).get("generation_timestamp")
+            sdts_val = source_data_timestamp if source_data_timestamp is not None else ((snapshot_dict or {}).get("source_data_timestamp") or (market_price_state or {}).get("liveObservedAt"))
+
             plan_snapshot, missing_reason = build_execution_ladder_snapshot(
                 symbol=symbol,
                 optimal_execution_plan=optimal_execution_plan,
                 current_price=current_price,
                 user_role=user_role or opt_plan.get("user_role") or (snapshot_dict or {}).get("user_role") or "LONG_TERM",
                 instrument_class=instrument_class or (snapshot_dict or {}).get("instrument_class") or "EQUITY",
-                generation_timestamp=generation_timestamp or (snapshot_dict or {}).get("generation_timestamp") or now_iso,
-                source_data_timestamp=source_data_timestamp or (snapshot_dict or {}).get("source_data_timestamp") or (market_price_state or {}).get("liveObservedAt") or now_iso,
+                generation_timestamp=gts_val,
+                source_data_timestamp=sdts_val,
                 release_sha=rel_sha,
                 authority_sha=auth_sha,
                 live_spot_price=live_spot_price if live_spot_price is not None else (snapshot_dict or {}).get("current_spot"),
@@ -545,6 +632,8 @@ class PassiveCaptureHook:
             from analyst_dashboard.governance.governance_db import GovernanceDatabaseEngine
             gov_db = GovernanceDatabaseEngine(db_path=db_path)
             existing = gov_db.get_execution_ladder_plan(plan_id)
+            if not existing:
+                existing = gov_db.find_equivalent_execution_ladder_plan(plan_snapshot)
             if existing:
                 return {
                     "prospectiveCaptureEligible": False,

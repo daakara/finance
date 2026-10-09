@@ -749,49 +749,200 @@ class GovernanceDatabaseEngine:
         finally:
             conn.close()
 
+    def find_equivalent_execution_ladder_plan(
+        self, plan_snapshot: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Finds an existing execution ladder record matching the canonical trading date and substantive plan fields.
+
+        Used at migration boundaries where historical records were captured under an unnormalized plan_id.
+        Guarantees zero denominator inflation when re-querying existing captured plans on the same trading date,
+        without mutating historical database rows or existing plan IDs in place.
+        """
+        import json
+        from analyst_dashboard.governance.passive_capture import extract_canonical_trading_date
+
+        epoch_id = str(plan_snapshot.get("epoch_id") or "")
+        symbol = str(plan_snapshot.get("symbol") or "").upper().strip()
+        user_role = str(plan_snapshot.get("user_role") or "").upper().strip()
+        execution_status = str(plan_snapshot.get("execution_status") or "")
+
+        source_ts = plan_snapshot.get("source_data_timestamp") or plan_snapshot.get("generation_timestamp")
+        try:
+            target_date = extract_canonical_trading_date(source_ts)
+        except Exception:
+            return None
+
+        target_pe = float(plan_snapshot.get("planned_entry") or 0.0)
+        target_si = float(plan_snapshot.get("structural_invalidation") or 0.0)
+        target_tp1 = float(plan_snapshot.get("take_profit_1") or 0.0)
+        target_tp2 = float(plan_snapshot.get("take_profit_2") or 0.0)
+
+        conn = self.get_connection()
+        try:
+            cur = conn.execute(
+                """
+                SELECT * FROM execution_ladder_prospective_plans
+                WHERE epoch_id = ? AND symbol = ? AND user_role = ? AND execution_status = ?
+                ORDER BY rowid ASC
+                """,
+                (epoch_id, symbol, user_role, execution_status),
+            )
+            rows = cur.fetchall()
+            for row in rows:
+                cand_ts = row["source_data_timestamp"] or row["generation_timestamp"] or row["created_at_utc"]
+                try:
+                    cand_date = extract_canonical_trading_date(cand_ts)
+                except Exception:
+                    cand_date = str(cand_ts)[:10]
+
+                if cand_date != target_date:
+                    continue
+
+                if abs(float(row["planned_entry"]) - target_pe) > 1e-4:
+                    continue
+                if abs(float(row["structural_invalidation"]) - target_si) > 1e-4:
+                    continue
+                if abs(float(row["take_profit_1"]) - target_tp1) > 1e-4:
+                    continue
+                if abs(float(row["take_profit_2"]) - target_tp2) > 1e-4:
+                    continue
+
+                snapshot = json.loads(row["snapshot_payload_json"])
+                snapshot["created_at_utc"] = row["created_at_utc"]
+                snapshot["snapshot_payload"] = dict(snapshot)
+                return snapshot
+
+            return None
+        finally:
+            conn.close()
+
     def count_execution_ladder_plans(
         self,
         epoch_id: str = "EXECUTION_LADDER_PROSPECTIVE_EPOCH_001",
         user_role: Optional[str] = None,
+        deduplicate_substantive: bool = False,
     ) -> int:
-        """Counts recorded execution ladder plans for a given epoch, optionally filtered by user_role."""
+        """Counts recorded execution ladder plans for a given epoch, optionally filtered by user_role.
+        When deduplicate_substantive=True, counts unique substantive daily plans (resolving historical duplicate inflation).
+        """
         conn = self.get_connection()
         try:
+            if not deduplicate_substantive:
+                if user_role:
+                    cur = conn.execute(
+                        "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
+                        (epoch_id, user_role),
+                    )
+                else:
+                    cur = conn.execute(
+                        "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ?",
+                        (epoch_id,),
+                    )
+                return cur.fetchone()[0]
+
+            from analyst_dashboard.governance.passive_capture import extract_canonical_trading_date
+            query = "SELECT * FROM execution_ladder_prospective_plans WHERE epoch_id = ?"
+            params = [epoch_id]
             if user_role:
-                cur = conn.execute(
-                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
-                    (epoch_id, user_role),
+                query += " AND user_role = ?"
+                params.append(user_role)
+            cur = conn.execute(query, params)
+            rows = cur.fetchall()
+            distinct_keys = set()
+            for r in rows:
+                cand_ts = r["source_data_timestamp"] or r["generation_timestamp"] or r["created_at_utc"]
+                try:
+                    date_bucket = extract_canonical_trading_date(cand_ts)
+                except Exception:
+                    date_bucket = str(cand_ts)[:10]
+                key = (
+                    r["epoch_id"],
+                    r["symbol"],
+                    r["user_role"],
+                    date_bucket,
+                    r["release_sha"],
+                    r["execution_ladder_authority_sha"],
+                    round(float(r["planned_entry"]), 4),
+                    round(float(r["structural_invalidation"]), 4),
+                    round(float(r["take_profit_1"]), 4),
+                    round(float(r["take_profit_2"]), 4),
+                    r["execution_status"],
                 )
-            else:
-                cur = conn.execute(
-                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ?",
-                    (epoch_id,),
-                )
-            return cur.fetchone()[0]
+                distinct_keys.add(key)
+            return len(distinct_keys)
         finally:
             conn.close()
 
     def get_execution_ladder_stratification(
         self,
         epoch_id: str = "EXECUTION_LADDER_PROSPECTIVE_EPOCH_001",
+        deduplicate_substantive: bool = False,
     ) -> Dict[str, Any]:
         """Returns stratification breakdown by user_role and execution_status."""
         conn = self.get_connection()
         try:
-            total = self.count_execution_ladder_plans(epoch_id=epoch_id)
-            by_role = {}
-            for r in ("DAY_TRADER", "LONG_TERM"):
-                cur = conn.execute(
-                    "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
-                    (epoch_id, r),
-                )
-                by_role[r] = cur.fetchone()[0]
+            if not deduplicate_substantive:
+                total = self.count_execution_ladder_plans(epoch_id=epoch_id)
+                by_role = {}
+                for r in ("DAY_TRADER", "LONG_TERM"):
+                    cur = conn.execute(
+                        "SELECT COUNT(*) FROM execution_ladder_prospective_plans WHERE epoch_id = ? AND user_role = ?",
+                        (epoch_id, r),
+                    )
+                    by_role[r] = cur.fetchone()[0]
 
+                cur = conn.execute(
+                    "SELECT execution_status, COUNT(*) as cnt FROM execution_ladder_prospective_plans WHERE epoch_id = ? GROUP BY execution_status",
+                    (epoch_id,),
+                )
+                by_status = {row["execution_status"]: row["cnt"] for row in cur.fetchall()}
+
+                return {
+                    "total": total,
+                    "by_role": by_role,
+                    "by_status": by_status,
+                }
+
+            from analyst_dashboard.governance.passive_capture import extract_canonical_trading_date
             cur = conn.execute(
-                "SELECT execution_status, COUNT(*) as cnt FROM execution_ladder_prospective_plans WHERE epoch_id = ? GROUP BY execution_status",
+                "SELECT * FROM execution_ladder_prospective_plans WHERE epoch_id = ?",
                 (epoch_id,),
             )
-            by_status = {row["execution_status"]: row["cnt"] for row in cur.fetchall()}
+            rows = cur.fetchall()
+            distinct_records = {}
+            for r in rows:
+                cand_ts = r["source_data_timestamp"] or r["generation_timestamp"] or r["created_at_utc"]
+                try:
+                    date_bucket = extract_canonical_trading_date(cand_ts)
+                except Exception:
+                    date_bucket = str(cand_ts)[:10]
+                key = (
+                    r["epoch_id"],
+                    r["symbol"],
+                    r["user_role"],
+                    date_bucket,
+                    r["release_sha"],
+                    r["execution_ladder_authority_sha"],
+                    round(float(r["planned_entry"]), 4),
+                    round(float(r["structural_invalidation"]), 4),
+                    round(float(r["take_profit_1"]), 4),
+                    round(float(r["take_profit_2"]), 4),
+                    r["execution_status"],
+                )
+                if key not in distinct_records:
+                    distinct_records[key] = r
+
+            total = len(distinct_records)
+            by_role = {"DAY_TRADER": 0, "LONG_TERM": 0}
+            by_status = {}
+            for rec in distinct_records.values():
+                r_role = rec["user_role"]
+                if r_role in by_role:
+                    by_role[r_role] += 1
+                else:
+                    by_role[r_role] = 1
+                r_status = rec["execution_status"]
+                by_status[r_status] = by_status.get(r_status, 0) + 1
 
             return {
                 "total": total,
