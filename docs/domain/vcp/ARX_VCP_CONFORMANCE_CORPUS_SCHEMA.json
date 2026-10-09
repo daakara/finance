@@ -1,0 +1,48 @@
+{
+  "schema_id": "ARX_VCP_CONFORMANCE_CORPUS_SCHEMA",
+  "version": "2.0.0",
+  "schema_hash": "c44fa24776bfa8da4c9bcf2cc46cd22750298c0f0bb4bce619d7fc41548925f4",
+  "migration_id": "MIG-SCHEMA-V1-TO-V2",
+  "migration_type": "NORMALIZE_ORACLE_GRADE_AND_CASE_ROLE_AXES",
+  "predecessor_schema_version": "1.0.0",
+  "successor_schema_version": "2.0.0",
+  "domain_expectation_changes_due_to_migration": 0,
+  "axes": {
+    "usage_partition": [
+      "DEV",
+      "HOLDOUT"
+    ],
+    "adjudication_status": [
+      "RESOLVED",
+      "UNRESOLVED"
+    ],
+    "oracle_grade": [
+      "GOLD",
+      "SILVER",
+      "NONE"
+    ],
+    "case_roles": [
+      "CHALLENGE",
+      "BOUNDARY",
+      "POSITIVE_CONTROL",
+      "NEGATIVE_CONTROL",
+      "TEMPORAL_ADVERSARIAL",
+      "CORPORATE_ACTION",
+      "OTHER"
+    ],
+    "expected_domain_result": [
+      "PASS",
+      "FAIL",
+      "INSUFFICIENT_DATA",
+      "NOT_APPLICABLE",
+      "UNRESOLVED"
+    ]
+  },
+  "invariants": {
+    "CHALLENGE_IS_ORACLE_GRADE": false,
+    "CHALLENGE_IS_CASE_ROLE": true,
+    "UNRESOLVED_REQUIRES_NONE_GRADE": true,
+    "GOLD_OR_SILVER_REQUIRES_RESOLVED_STATUS": true,
+    "DEV_HOLDOUT_DISJOINT_AND_COMPLETE": true
+  }
+}

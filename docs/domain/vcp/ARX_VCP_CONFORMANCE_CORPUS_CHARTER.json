@@ -1,17 +1,13 @@
 {
   "charter_id": "ARX_VCP_CONFORMANCE_CORPUS_CHARTER",
   "version": "1.0.0",
-  "corpus_hash": "a1c4c23518c30d4c8ec2b5b8222f97c30c07708a1a319398915dec3cade5685e",
+  "charter_hash": "421b79284eda3521437c1d949c5f479860c19f9d4a2a1451bc76a216e0695a87",
   "sampling_frame": "Stratified across clear positives, clear negatives, boundary cases, insufficient data",
-  "dev_case_count": 16,
-  "holdout_case_count": 8,
-  "gold_case_count": 20,
-  "silver_case_count": 2,
-  "challenge_case_count": 1,
-  "unresolved_case_count": 1,
-  "holdout_membership_hash": "f6dc63a4c21b9ff995f7f77882a569b783c76ee13438b16a10a7c4198a5d3f9b",
-  "holdout_label_commitment_hash": "90e0d6377fc0c3ca8f368d816393bc14c1121090a00f7e1ac0168b5ead2035ae",
+  "dev_case_target": 16,
+  "holdout_case_target": 8,
+  "total_case_target": 24,
   "adjudicator_count": 2,
+  "isolation_standard": "TECHNICALLY_ENFORCED_ARX_BLINDING",
   "adjudicators": [
     {
       "adjudicator_id": "ADJ-001",
@@ -19,7 +15,8 @@
       "credentials": "Senior Quantitative Market Technician & Classical Pattern Specialist",
       "domain_experience_years": 18,
       "conflict_of_interest_declared": false,
-      "isolation_level": "TECHNICALLY_ENFORCED"
+      "isolation_level": "TECHNICALLY_ENFORCED",
+      "attestation_status": "SYNTHETIC_REFERENCE_FIXTURE"
     },
     {
       "adjudicator_id": "ADJ-002",
@@ -27,7 +24,8 @@
       "credentials": "Institutional Equity Analyst & Minervini Methodology Auditor",
       "domain_experience_years": 14,
       "conflict_of_interest_declared": false,
-      "isolation_level": "TECHNICALLY_ENFORCED"
+      "isolation_level": "TECHNICALLY_ENFORCED",
+      "attestation_status": "SYNTHETIC_REFERENCE_FIXTURE"
     }
   ]
 }
