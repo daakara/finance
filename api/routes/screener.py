@@ -1,6 +1,5 @@
-"""FastAPI Router for Hidden Gems Screener with Peter Lynch, Joel Greenblatt & Disruptive Innovation Models."""
-
-from fastapi import APIRouter, Response
+import os
+from fastapi import APIRouter, Response, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import time
@@ -24,8 +23,10 @@ from analyst_dashboard.data.market_evidence import (
     AdjustmentState,
     StructuralQuality,
 )
-from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
+from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE, RADAR_SCOPE_LABEL
 from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
+
+OPERATOR_TOKEN: str = os.getenv("ARX_OPERATOR_TOKEN", "arx-operator-secret-v1")
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -545,9 +546,28 @@ def get_smart_money_snapshot():
 
 
 @router.post("/vcp/scan")
-def trigger_vcp_scan():
-    """On-demand or scheduled trigger for Minervini VCP market-wide scan (Section 19)."""
-    return vcp_scanner_runner.execute_market_wide_scan()
+def trigger_vcp_scan(
+    x_operator_token: Optional[str] = Header(None, alias="X-Operator-Token"),
+    universe_build_id: Optional[str] = None,
+):
+    """
+    Operator-only trigger for Minervini VCP market-wide scan (Section 16).
+    Rejects public unauthenticated requests.
+    """
+    if not x_operator_token or x_operator_token != OPERATOR_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
+        )
+    try:
+        return vcp_scanner_runner.execute_market_wide_scan(universe_build_id=universe_build_id)
+    except RuntimeError as e:
+        if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
 
 
 

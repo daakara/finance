@@ -69,19 +69,15 @@ SMART_MONEY_DATA_PROVENANCE_VERSION = "1.0.0"
 SMART_MONEY_UNIVERSE_VERSION = "1.0.0"
 SMART_MONEY_FRESHNESS_POLICY_VERSION = "1.0.0"
 
-# Canonical Universe Definition for Minervini VCP Scanning (Section 12)
-CANONICAL_VCP_UNIVERSE = [
-    # MedTech & Biotech Monopolies
-    "LNTH", "CPRX", "MEDP", "TMDX", "ISRG", "VRTX", "LLY", "NVO", "DXCM", "PODD",
-    # High-Moat Semiconductors & SiC Ion Implantation
-    "ACLS", "POWI", "ON", "MPWR", "KLAC", "LRCX", "ASML", "AVGO",
-    # Peter Lynch GARP & Organic Consumer Compounders
-    "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
-    # Clean Tech, Power Infrastructure & Industrials
-    "VRT", "ETN", "PWR", "GEV", "FIX", "EME",
-    # Disruptive Cloud, EdTech & EDA Infrastructure
-    "DUOL", "ANET", "NOW", "SNPS", "CDNS",
-]
+# Canonical Scope Label for Radar (Section 19)
+RADAR_SCOPE_LABEL = "ARX-eligible US equities"
+
+# Canonical Universe Definition for Minervini VCP Scanning (Demoted to historical regression fixture)
+from analyst_dashboard.universe.fixtures import HISTORICAL_VCP_35_REGRESSION_FIXTURE
+
+# Demoted to historical fixture only; not authoritative for market-wide production scanning
+HISTORICAL_VCP_35_FIXTURE = HISTORICAL_VCP_35_REGRESSION_FIXTURE
+CANONICAL_VCP_UNIVERSE = HISTORICAL_VCP_35_REGRESSION_FIXTURE
 
 
 
@@ -165,10 +161,12 @@ class ImmutableScannerSnapshot:
     provenance: Dict[str, Any]
     freshness: Dict[str, Any]
     publication_decision: PublicationDecision = PublicationDecision.PUBLISH
+    universe_metadata: Dict[str, Any] = field(default_factory=dict)
+    coverage_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_envelope(self) -> Dict[str, Any]:
-        """Convert into Shared Radar API Envelope (Section 9)."""
-        return {
+        """Convert into Shared Radar API Envelope (Section 9, 18, 19)."""
+        env = {
             "scanner_id": self.scanner_id,
             "api_contract_version": self.version_tuple.api_contract_version,
             "status": self.status_at_publication.value,
@@ -198,5 +196,27 @@ class ImmutableScannerSnapshot:
                 "semantic_fingerprint": self.semantic_fingerprint,
                 "publication_decision": self.publication_decision.value if hasattr(self.publication_decision, "value") else str(self.publication_decision),
             },
+            "universe": {
+                "scope_class": self.universe_metadata.get("scope_class", "US_EQUITIES"),
+                "display_name": self.universe_metadata.get("display_name", RADAR_SCOPE_LABEL),
+                "source_population_count": self.universe_metadata.get("source_population_count", self.universe_size),
+                "eligible_universe_count": self.universe_metadata.get("eligible_universe_count", self.universe_size),
+                "universe_version": self.version_tuple.universe_version,
+                "universe_build_id": self.universe_metadata.get("universe_build_id"),
+                "membership_hash": self.universe_metadata.get("membership_hash"),
+                "construction_status": self.universe_metadata.get("construction_status", "COMPLETE"),
+            },
+            "coverage": {
+                "coverage_status": self.coverage_metadata.get("coverage_status", "COMPLETE"),
+                "data_complete_count": self.coverage_metadata.get("data_complete_count", self.universe_size),
+                "scanned_successfully_count": self.coverage_metadata.get("scanned_successfully_count", self.universe_size),
+                "matched_count": self.matched_count,
+                "unavailable_symbol_count": self.coverage_metadata.get("unavailable_symbol_count", 0),
+                "unresolved_symbol_count": self.coverage_metadata.get("unresolved_symbol_count", 0),
+                "data_completeness_pct": self.coverage_metadata.get("data_completeness_pct", 100.0),
+                "scan_coverage_pct": self.coverage_metadata.get("scan_coverage_pct", 100.0),
+                "unavailable_reasons": self.coverage_metadata.get("unavailable_reasons", {}),
+            },
             "results": self.results,
         }
+        return env

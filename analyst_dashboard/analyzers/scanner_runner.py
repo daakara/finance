@@ -9,6 +9,7 @@ Implements deterministic market-wide universe execution for:
 import time
 import uuid
 import logging
+import threading
 from typing import Dict, Any, List, Optional
 import pandas as pd
 
@@ -19,6 +20,7 @@ from analyst_dashboard.analyzers.scanner_contract import (
     ScannerVersionTuple,
     ScannerCandidateResult,
     ImmutableScannerSnapshot,
+    RADAR_SCOPE_LABEL,
     VCP_API_CONTRACT_VERSION,
     VCP_RULESET_VERSION,
     VCP_EVIDENCE_SCHEMA_VERSION,
@@ -48,11 +50,13 @@ from analyst_dashboard.data.scanner_store import ScannerSnapshotStore
 from analyst_dashboard.data.market_db import MarketDatabaseEngine
 from analyst_dashboard.analyzers.optimal_execution import OptimalExecutionEngine
 from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
+from analyst_dashboard.universe.store import UniverseStore
+from analyst_dashboard.universe.contracts import UNIVERSE_ID, UNIVERSE_VERSION
 
 logger = logging.getLogger(__name__)
 
 # Current implementation release identity
-CURRENT_IMPLEMENTATION_RELEASE_SHA = "01683a39a19f3f74720f798459cec717698e2ab2"
+CURRENT_IMPLEMENTATION_RELEASE_SHA = "ed04de51160e0f2c3e82bd43d989897a4fd77f89"
 
 # Canonical Universe Definition for VCP Market-Wide Scanning
 from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
@@ -66,11 +70,14 @@ class VCPScannerRunner:
         market_db: Optional[MarketDatabaseEngine] = None,
         snapshot_store: Optional[ScannerSnapshotStore] = None,
         confluence_engine: Optional[ConfluenceEngine] = None,
+        universe_store: Optional[UniverseStore] = None,
     ):
         self.market_db = market_db or MarketDatabaseEngine()
         self.snapshot_store = snapshot_store or ScannerSnapshotStore()
         self.confluence_engine = confluence_engine or ConfluenceEngine()
+        self.universe_store = universe_store or UniverseStore()
         self._cached_active_snapshot: Optional[Dict[str, Any]] = None
+        self._scan_lock = threading.Lock()
 
     def get_version_tuple(self) -> ScannerVersionTuple:
         return ScannerVersionTuple(
@@ -85,170 +92,249 @@ class VCPScannerRunner:
             implementation_release_sha=CURRENT_IMPLEMENTATION_RELEASE_SHA,
         )
 
-    def execute_market_wide_scan(self, universe_override: Optional[List[str]] = None) -> Dict[str, Any]:
+    def execute_market_wide_scan(
+        self,
+        universe_override: Optional[List[str]] = None,
+        universe_build_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
-        1. Resolve versioned universe
-        2. Load canonical input data
-        3. Execute OptimalExecutionEngine
-        4. Collect and score candidates
-        5. Verify publication integrity
-        6. Persist immutable snapshot if verified
+        1. Resolve versioned universe (from universe_build_id or universe_store)
+        2. Prevent overlapping executions via non-blocking lock
+        3. Load canonical input data and compute coverage statistics
+        4. Execute OptimalExecutionEngine
+        5. Collect and score candidates
+        6. Verify publication integrity
+        7. Persist immutable snapshot if verified
         """
-        run_id = f"vcp-run-{int(time.time())}-{uuid.uuid4().hex[:8]}"
-        generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        universe = universe_override if universe_override is not None else list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
-        universe_size = len(universe)
+        # Overlapping scan guard (Section 16: OVERLAPPING_VCP_SCANS = PROHIBITED)
+        acquired = self._scan_lock.acquire(blocking=False)
+        if not acquired:
+            raise RuntimeError("OVERLAPPING_VCP_SCANS_PROHIBITED: A market-wide VCP scan is already in progress.")
 
-        qualified_candidates: List[Dict[str, Any]] = []
+        try:
+            run_id = f"vcp-run-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+            generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-        for sym in universe:
-            clean_sym = sym.strip().upper()
-            latest = self.market_db.get_latest_price(clean_sym)
-            if not latest or not latest.get("currentPrice") or latest["currentPrice"] <= 0:
-                continue
+            # Resolve scannable membership and universe metadata
+            target_build_id = universe_build_id
+            build_attestation = None
+            if target_build_id:
+                scannable_symbols = self.universe_store.get_scannable_membership(target_build_id)
+            else:
+                latest_build = self.universe_store.get_latest_published_universe(UNIVERSE_ID)
+                if latest_build:
+                    target_build_id = latest_build["universe_build_id"]
+                    scannable_symbols = self.universe_store.get_scannable_membership(target_build_id)
+                    build_attestation = latest_build
+                else:
+                    scannable_symbols = []
 
-            current_price = latest["currentPrice"]
-            db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
-            if not db_candles or len(db_candles) < 50:
-                continue
+            if universe_override is not None:
+                universe = universe_override
+                eligible_count = len(universe)
+                scannable_count = len(universe)
+                unavailable_count = 0
+            elif scannable_symbols:
+                universe = scannable_symbols
+                eligible_count = build_attestation["eligible_count"] if build_attestation else len(universe)
+                scannable_count = len(scannable_symbols)
+                unavailable_count = build_attestation["data_unavailable_count"] if build_attestation else 0
+            else:
+                # Historical regression fixture fallback
+                universe = list(dict.fromkeys(CANONICAL_VCP_UNIVERSE))
+                eligible_count = len(universe)
+                scannable_count = len(universe)
+                unavailable_count = 0
 
-            df = pd.DataFrame([{
-                "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
-            } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+            universe_size = len(universe)
+            scanned_successfully_count = 0
+            unavailable_reasons: Dict[str, int] = {}
+            qualified_candidates: List[Dict[str, Any]] = []
 
-            exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
+            for sym in universe:
+                clean_sym = sym.strip().upper()
+                latest = self.market_db.get_latest_price(clean_sym)
+                if not latest or not latest.get("currentPrice") or latest["currentPrice"] <= 0:
+                    unavailable_reasons["MISSING_PRICE_DATA"] = unavailable_reasons.get("MISSING_PRICE_DATA", 0) + 1
+                    continue
 
-            # Qualification ruleset: Must be confirmed VCP in Stage 2 Advancing Growth Phase
-            is_vcp = exec_res.get("vcp_contraction_status") == "VCP 3-Stage Compression Confirmed"
-            is_stage_2 = exec_res.get("stage_phase") == "Stage 2 Advancing Growth Phase"
+                current_price = latest["currentPrice"]
+                db_candles = self.market_db.get_daily_candles(clean_sym, limit=60)
+                if not db_candles or len(db_candles) < 50:
+                    unavailable_reasons["INSUFFICIENT_HISTORY"] = unavailable_reasons.get("INSUFFICIENT_HISTORY", 0) + 1
+                    continue
 
-            if is_vcp and is_stage_2:
-                # Calculate multi-factor confluence conviction score
-                conf_res = self.confluence_engine.calculate_confluence(
-                    symbol=clean_sym,
-                    technical_data={
-                        "executionStatus": exec_res["execution_status"],
-                        "riskRewardRatio": exec_res["risk_reward_ratio"],
-                        "setup_pattern": exec_res["setup_pattern"],
-                        "stage_phase": exec_res["stage_phase"],
-                        "rsi_14": exec_res.get("rsi_14"),
-                        "stop_loss": exec_res["stop_loss"],
+                scanned_successfully_count += 1
+                df = pd.DataFrame([{
+                    "Open": c["open"], "High": c["high"], "Low": c["low"], "Close": c["close"], "Volume": c["volume"]
+                } for c in db_candles], index=pd.to_datetime([c["time"] for c in db_candles]))
+
+                exec_res = OptimalExecutionEngine.calculate_trade_levels(df, current_price, user_role="LONG_TERM")
+
+                # Qualification ruleset: Must be confirmed VCP in Stage 2 Advancing Growth Phase
+                is_vcp = exec_res.get("vcp_contraction_status") == "VCP 3-Stage Compression Confirmed"
+                is_stage_2 = exec_res.get("stage_phase") == "Stage 2 Advancing Growth Phase"
+
+                if is_vcp and is_stage_2:
+                    # Calculate multi-factor confluence conviction score
+                    conf_res = self.confluence_engine.calculate_confluence(
+                        symbol=clean_sym,
+                        technical_data={
+                            "executionStatus": exec_res["execution_status"],
+                            "riskRewardRatio": exec_res["risk_reward_ratio"],
+                            "setup_pattern": exec_res["setup_pattern"],
+                            "stage_phase": exec_res["stage_phase"],
+                            "rsi_14": exec_res.get("rsi_14"),
+                            "stop_loss": exec_res["stop_loss"],
+                            "current_price": current_price,
+                        },
+                    )
+                    score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
+
+                    scanner_evidence = {
+                        "vcp_stage": exec_res.get("vcp_contraction_status"),
+                        "setup_pattern": exec_res.get("setup_pattern"),
+                        "stage_phase": exec_res.get("stage_phase"),
+                        "sma_50": exec_res.get("breakout_pivot"),
+                        "ema_20": exec_res.get("optimal_entry_min"),
+                        "atr_14": exec_res.get("atr_14"),
+                        "breakout_pivot": exec_res.get("breakout_pivot"),
+                        "optimal_entry_min": exec_res.get("optimal_entry_min"),
+                        "optimal_entry_max": exec_res.get("optimal_entry_max"),
+                        "stop_loss": exec_res.get("stop_loss"),
+                        "take_profit_1": exec_res.get("take_profit_1"),
+                        "take_profit_2": exec_res.get("take_profit_2"),
+                        "risk_reward_ratio": exec_res.get("risk_reward_ratio"),
+                        "execution_status": exec_res.get("execution_status"),
+                        "confluence_score": score,
+                    }
+
+                    qualified_candidates.append({
+                        "symbol": clean_sym,
+                        "score": score,
                         "current_price": current_price,
-                    },
-                )
-                score = round(float(conf_res.get("confluenceScore", 75.0)), 1)
+                        "scanner_evidence": scanner_evidence,
+                    })
 
-                scanner_evidence = {
-                    "vcp_stage": exec_res.get("vcp_contraction_status"),
-                    "setup_pattern": exec_res.get("setup_pattern"),
-                    "stage_phase": exec_res.get("stage_phase"),
-                    "sma_50": exec_res.get("breakout_pivot"),
-                    "ema_20": exec_res.get("optimal_entry_min"),
-                    "atr_14": exec_res.get("atr_14"),
-                    "breakout_pivot": exec_res.get("breakout_pivot"),
-                    "optimal_entry_min": exec_res.get("optimal_entry_min"),
-                    "optimal_entry_max": exec_res.get("optimal_entry_max"),
-                    "stop_loss": exec_res.get("stop_loss"),
-                    "take_profit_1": exec_res.get("take_profit_1"),
-                    "take_profit_2": exec_res.get("take_profit_2"),
-                    "risk_reward_ratio": exec_res.get("risk_reward_ratio"),
-                    "execution_status": exec_res.get("execution_status"),
-                    "confluence_score": score,
-                }
+            # Deterministic ranking: score descending, symbol ascending
+            qualified_candidates.sort(key=lambda c: (-c["score"], c["symbol"]))
+            for rank_idx, cand in enumerate(qualified_candidates, start=1):
+                cand["rank"] = rank_idx
 
-                qualified_candidates.append({
-                    "symbol": clean_sym,
-                    "score": score,
-                    "current_price": current_price,
-                    "scanner_evidence": scanner_evidence,
-                })
+            matched_count = len(qualified_candidates)
+            data_as_of = time.strftime("%Y-%m-%d", time.gmtime())
 
-        # Deterministic ranking: score descending, symbol ascending
-        qualified_candidates.sort(key=lambda c: (-c["score"], c["symbol"]))
-        for rank_idx, cand in enumerate(qualified_candidates, start=1):
-            cand["rank"] = rank_idx
+            version_tuple = self.get_version_tuple()
+            semantic_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
 
-        matched_count = len(qualified_candidates)
-        data_as_of = time.strftime("%Y-%m-%d", time.gmtime())
+            # Coverage statistics
+            data_completeness_pct = round((scannable_count / max(1, eligible_count)) * 100, 1)
+            scan_coverage_pct = round((scanned_successfully_count / max(1, eligible_count)) * 100, 1)
+            coverage_status = "COMPLETE" if scan_coverage_pct >= 99.9 else "PARTIAL"
 
-        version_tuple = self.get_version_tuple()
-        semantic_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
+            universe_metadata = {
+                "scope_class": "US_EQUITIES",
+                "display_name": RADAR_SCOPE_LABEL,
+                "source_population_count": build_attestation["source_population_count"] if build_attestation else eligible_count,
+                "eligible_universe_count": eligible_count,
+                "universe_version": version_tuple.universe_version,
+                "universe_build_id": target_build_id,
+                "membership_hash": build_attestation["eligible_membership_hash"] if build_attestation else None,
+                "construction_status": build_attestation["construction_status"] if build_attestation else "COMPLETE",
+            }
+            coverage_metadata = {
+                "coverage_status": coverage_status,
+                "data_complete_count": scannable_count,
+                "scanned_successfully_count": scanned_successfully_count,
+                "matched_count": matched_count,
+                "unavailable_symbol_count": unavailable_count + (scannable_count - scanned_successfully_count),
+                "unresolved_symbol_count": 0,
+                "data_completeness_pct": data_completeness_pct,
+                "scan_coverage_pct": scan_coverage_pct,
+                "unavailable_reasons": unavailable_reasons,
+            }
 
-        # Publication Integrity Gate
-        eval_report = ScannerPublicationIntegrityEngine.evaluate_candidate_publication(
-            scanner_id="MINERVINI_VCP",
-            version_tuple=version_tuple,
-            ruleset_hash=CANONICAL_VCP_RULESET_HASH,
-            evidence_schema_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
-            score_model_hash=CANONICAL_VCP_SCORE_MODEL_HASH,
-            data_provenance_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
-            universe_hash=CANONICAL_VCP_UNIVERSE_HASH,
-            freshness_policy_hash=CANONICAL_VCP_FRESHNESS_HASH,
-        )
+            # Publication Integrity Gate
+            eval_report = ScannerPublicationIntegrityEngine.evaluate_candidate_publication(
+                scanner_id="MINERVINI_VCP",
+                version_tuple=version_tuple,
+                ruleset_hash=CANONICAL_VCP_RULESET_HASH,
+                evidence_schema_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+                score_model_hash=CANONICAL_VCP_SCORE_MODEL_HASH,
+                data_provenance_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+                universe_hash=CANONICAL_VCP_UNIVERSE_HASH,
+                freshness_policy_hash=CANONICAL_VCP_FRESHNESS_HASH,
+            )
 
-        snapshot_id = f"vcp-snap-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+            snapshot_id = f"vcp-snap-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
-        snapshot_record = {
-            "snapshot_id": snapshot_id,
-            "scanner_id": "MINERVINI_VCP",
-            "run_id": run_id,
-            "api_contract_version": version_tuple.api_contract_version,
-            "ruleset_version": version_tuple.ruleset_version,
-            "evidence_schema_version": version_tuple.evidence_schema_version,
-            "score_model_version": version_tuple.score_model_version,
-            "data_provenance_version": version_tuple.data_provenance_version,
-            "universe_version": version_tuple.universe_version,
-            "freshness_policy_version": version_tuple.freshness_policy_version,
-            "implementation_release_sha": version_tuple.implementation_release_sha,
-            "semantic_fingerprint": semantic_fingerprint,
-            "generated_at": generated_at,
-            "data_as_of": data_as_of,
-            "status_at_publication": ScannerStatus.AVAILABLE.value if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR.value,
-            "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
-            "universe_size": universe_size,
-            "matched_count": matched_count,
-            "results": qualified_candidates,
-            "provenance": {
-                "role": "PRICE_VOLUME_HISTORY",
-                "source": "LOCAL_MARKET_DB_SQLITE",
-                "source_contract_version": "1.0.0",
-                "data_as_of": data_as_of,
-            },
-            "freshness": {
-                "policy_version": version_tuple.freshness_policy_version,
+            snapshot_record = {
+                "snapshot_id": snapshot_id,
+                "scanner_id": "MINERVINI_VCP",
+                "run_id": run_id,
+                "api_contract_version": version_tuple.api_contract_version,
+                "ruleset_version": version_tuple.ruleset_version,
+                "evidence_schema_version": version_tuple.evidence_schema_version,
+                "score_model_version": version_tuple.score_model_version,
+                "data_provenance_version": version_tuple.data_provenance_version,
+                "universe_version": version_tuple.universe_version,
+                "freshness_policy_version": version_tuple.freshness_policy_version,
+                "implementation_release_sha": version_tuple.implementation_release_sha,
+                "semantic_fingerprint": semantic_fingerprint,
                 "generated_at": generated_at,
                 "data_as_of": data_as_of,
-                "evaluated_at": generated_at,
-                "status": FreshnessStatus.LIVE.value,
-            },
-            "publication_decision": eval_report.decision.value,
-        }
+                "status_at_publication": ScannerStatus.AVAILABLE.value if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR.value,
+                "universe_id": "ARX_CANONICAL_LONG_TERM_V1",
+                "universe_size": universe_size,
+                "matched_count": matched_count,
+                "results": qualified_candidates,
+                "provenance": {
+                    "role": "PRICE_VOLUME_HISTORY",
+                    "source": "LOCAL_MARKET_DB_SQLITE",
+                    "source_contract_version": "1.0.0",
+                    "data_as_of": data_as_of,
+                },
+                "freshness": {
+                    "policy_version": version_tuple.freshness_policy_version,
+                    "generated_at": generated_at,
+                    "data_as_of": data_as_of,
+                    "evaluated_at": generated_at,
+                    "status": FreshnessStatus.LIVE.value,
+                },
+                "publication_decision": eval_report.decision.value,
+                "universe_metadata": universe_metadata,
+                "coverage_metadata": coverage_metadata,
+            }
 
-        if eval_report.decision == PublicationDecision.PUBLISH:
-            self.snapshot_store.save_snapshot(snapshot_record)
-            self._cached_active_snapshot = snapshot_record
-            logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with {matched_count} matches.")
-        else:
-            logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations}")
+            if eval_report.decision == PublicationDecision.PUBLISH:
+                self.snapshot_store.save_snapshot(snapshot_record)
+                self._cached_active_snapshot = snapshot_record
+                logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with {matched_count} matches.")
+            else:
+                logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations}")
 
-        return ImmutableScannerSnapshot(
-            scanner_id="MINERVINI_VCP",
-            run_id=run_id,
-            snapshot_id=snapshot_id,
-            version_tuple=version_tuple,
-            semantic_fingerprint=semantic_fingerprint,
-            generated_at=generated_at,
-            data_as_of=data_as_of,
-            status_at_publication=ScannerStatus.AVAILABLE if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR,
-            universe_id="ARX_CANONICAL_LONG_TERM_V1",
-            universe_size=universe_size,
-            matched_count=matched_count,
-            results=qualified_candidates,
-            provenance=snapshot_record["provenance"],
-            freshness=snapshot_record["freshness"],
-            publication_decision=eval_report.decision,
-        ).to_envelope()
+            return ImmutableScannerSnapshot(
+                scanner_id="MINERVINI_VCP",
+                run_id=run_id,
+                snapshot_id=snapshot_id,
+                version_tuple=version_tuple,
+                semantic_fingerprint=semantic_fingerprint,
+                generated_at=generated_at,
+                data_as_of=data_as_of,
+                status_at_publication=ScannerStatus.AVAILABLE if eval_report.decision == PublicationDecision.PUBLISH else ScannerStatus.ERROR,
+                universe_id="ARX_CANONICAL_LONG_TERM_V1",
+                universe_size=universe_size,
+                matched_count=matched_count,
+                results=qualified_candidates,
+                provenance=snapshot_record["provenance"],
+                freshness=snapshot_record["freshness"],
+                publication_decision=eval_report.decision,
+                universe_metadata=universe_metadata,
+                coverage_metadata=coverage_metadata,
+            ).to_envelope()
+        finally:
+            self._scan_lock.release()
 
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
         """Retrieve active in-memory snapshot or load latest from store, executing initial scan if store is empty."""
@@ -257,13 +343,17 @@ class VCPScannerRunner:
 
         persisted = self.snapshot_store.get_latest_active_snapshot("MINERVINI_VCP")
         if persisted is not None:
-            self._cached_active_snapshot = persisted
-            return self._to_envelope(persisted)
+            if persisted.get("implementation_release_sha") == CURRENT_IMPLEMENTATION_RELEASE_SHA:
+                self._cached_active_snapshot = persisted
+                return self._to_envelope(persisted)
 
-        # First run on initial deployment: execute canonical market-wide scan
+        # First run or new release candidate: execute canonical market-wide scan
         return self.execute_market_wide_scan()
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
+        u_meta = rec.get("universe_metadata", {})
+        c_meta = rec.get("coverage_metadata", {})
+        u_size = rec.get("universe_size", 0)
         return {
             "scanner_id": rec["scanner_id"],
             "api_contract_version": rec["api_contract_version"],
@@ -289,9 +379,30 @@ class VCPScannerRunner:
             "snapshot": {
                 "run_id": rec["run_id"],
                 "snapshot_id": rec["snapshot_id"],
-                "universe_size": rec["universe_size"],
+                "universe_size": u_size,
                 "matched_count": rec["matched_count"],
                 "semantic_fingerprint": rec["semantic_fingerprint"],
+            },
+            "universe": {
+                "scope_class": u_meta.get("scope_class", "US_EQUITIES"),
+                "display_name": u_meta.get("display_name", RADAR_SCOPE_LABEL),
+                "source_population_count": u_meta.get("source_population_count", u_size),
+                "eligible_universe_count": u_meta.get("eligible_universe_count", u_size),
+                "universe_version": rec["universe_version"],
+                "universe_build_id": u_meta.get("universe_build_id"),
+                "membership_hash": u_meta.get("membership_hash"),
+                "construction_status": u_meta.get("construction_status", "COMPLETE"),
+            },
+            "coverage": {
+                "coverage_status": c_meta.get("coverage_status", "COMPLETE"),
+                "data_complete_count": c_meta.get("data_complete_count", u_size),
+                "scanned_successfully_count": c_meta.get("scanned_successfully_count", u_size),
+                "matched_count": rec["matched_count"],
+                "unavailable_symbol_count": c_meta.get("unavailable_symbol_count", 0),
+                "unresolved_symbol_count": c_meta.get("unresolved_symbol_count", 0),
+                "data_completeness_pct": c_meta.get("data_completeness_pct", 100.0),
+                "scan_coverage_pct": c_meta.get("scan_coverage_pct", 100.0),
+                "unavailable_reasons": c_meta.get("unavailable_reasons", {}),
             },
             "results": rec.get("results", []),
         }

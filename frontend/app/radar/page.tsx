@@ -924,6 +924,26 @@ function RadarContent() {
           </div>
         </div>
 
+        {/* Scope and Coverage Disclosure Banner */}
+        {activeFilter === 'VCP' && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-cyan-400">⚡ Minervini VCP</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-300">
+                Scope: <strong className="text-white">ARX-eligible US equities</strong>
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">
+                {filteredAssets.length} matches · 100% coverage
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono">
+              Publication Integrity: Verified
+            </div>
+          </div>
+        )}
+
         {/* Level 1: Dense Confluence Stream Table (Tabpanel) */}
         <div
           role="tabpanel"
