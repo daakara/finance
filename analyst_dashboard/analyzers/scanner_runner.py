@@ -53,6 +53,19 @@ from analyst_dashboard.analyzers.confluence_engine import ConfluenceEngine
 from analyst_dashboard.universe.store import UniverseStore
 from analyst_dashboard.universe.contracts import UNIVERSE_ID, UNIVERSE_VERSION
 
+from analyst_dashboard.coordination import (
+    DurableRunCoordinator,
+    FencedPublisher,
+    CoordinationStore,
+    TriggerType,
+    AcquisitionStatus,
+    CurrentLease,
+    LeasePolicy,
+    PRODUCTION_LEASE_POLICY,
+    RESOURCE_KEY_VCP_PIPELINE,
+    StaleLeasePublicationError,
+)
+
 logger = logging.getLogger(__name__)
 
 # Current implementation release identity
@@ -71,11 +84,31 @@ class VCPScannerRunner:
         snapshot_store: Optional[ScannerSnapshotStore] = None,
         confluence_engine: Optional[ConfluenceEngine] = None,
         universe_store: Optional[UniverseStore] = None,
+        coordinator: Optional[DurableRunCoordinator] = None,
+        fenced_publisher: Optional[FencedPublisher] = None,
+        coordination_store: Optional[CoordinationStore] = None,
+        lease_policy: Optional[LeasePolicy] = None,
     ):
         self.market_db = market_db or MarketDatabaseEngine()
         self.snapshot_store = snapshot_store or ScannerSnapshotStore()
         self.confluence_engine = confluence_engine or ConfluenceEngine()
         self.universe_store = universe_store or UniverseStore()
+        self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
+
+        coord_db_path = getattr(self.snapshot_store, "db_path", None)
+        if coordination_store:
+            self.coordination_store = coordination_store
+        elif coord_db_path:
+            self.coordination_store = CoordinationStore(db_path=coord_db_path)
+        else:
+            self.coordination_store = CoordinationStore()
+
+        self.coordinator = coordinator or DurableRunCoordinator(
+            resource_key=RESOURCE_KEY_VCP_PIPELINE,
+            db_path=self.coordination_store.db_path,
+            policy=self.lease_policy,
+        )
+        self.fenced_publisher = fenced_publisher or FencedPublisher(self.coordination_store)
         self._cached_active_snapshot: Optional[Dict[str, Any]] = None
         self._scan_lock = threading.Lock()
 
@@ -96,24 +129,62 @@ class VCPScannerRunner:
         self,
         universe_override: Optional[List[str]] = None,
         universe_build_id: Optional[str] = None,
+        logical_job_key: Optional[str] = None,
+        trigger_type: TriggerType = TriggerType.OPERATOR,
+        scheduled_for: Optional[str] = None,
+        operator_request_id: Optional[str] = None,
+        owner_instance_id: Optional[str] = None,
+        bypass_thread_lock: bool = False,
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
         1. Resolve versioned universe (from universe_build_id or universe_store)
-        2. Prevent overlapping executions via non-blocking lock
+        2. Prevent overlapping executions via non-blocking lock & durable distributed lease
         3. Load canonical input data and compute coverage statistics
         4. Execute OptimalExecutionEngine
         5. Collect and score candidates
         6. Verify publication integrity
-        7. Persist immutable snapshot if verified
+        7. Persist immutable snapshot via atomic fenced publication
         """
-        # Overlapping scan guard (Section 16: OVERLAPPING_VCP_SCANS = PROHIBITED)
-        acquired = self._scan_lock.acquire(blocking=False)
-        if not acquired:
-            raise RuntimeError("OVERLAPPING_VCP_SCANS_PROHIBITED: A market-wide VCP scan is already in progress.")
+        # 1. Local Thread Lock (Non-authoritative fast optimization)
+        acquired_thread_lock = False
+        if not bypass_thread_lock:
+            acquired_thread_lock = self._scan_lock.acquire(blocking=False)
+            if not acquired_thread_lock:
+                raise RuntimeError("OVERLAPPING_VCP_SCANS_PROHIBITED: A market-wide VCP scan is already in progress.")
+
+        # 2. Durable Distributed Coordination (Authoritative mutual exclusion & idempotency)
+        effective_instance_id = owner_instance_id or f"inst-{uuid.uuid4().hex[:8]}"
+        effective_job_key = logical_job_key or (
+            f"vcp:operator:{operator_request_id}" if operator_request_id else
+            (f"vcp:scheduled:{scheduled_for}" if scheduled_for else f"vcp:run:{int(time.time())}:{uuid.uuid4().hex[:8]}")
+        )
+
+        acq_result = self.coordinator.acquire(
+            logical_job_key=effective_job_key,
+            trigger_type=trigger_type,
+            owner_instance_id=effective_instance_id,
+            implementation_release_sha=CURRENT_IMPLEMENTATION_RELEASE_SHA,
+            scheduled_for=scheduled_for,
+            operator_request_id=operator_request_id,
+        )
+
+        if acq_result.status == AcquisitionStatus.JOB_ALREADY_SUCCEEDED:
+            if acquired_thread_lock:
+                self._scan_lock.release()
+            logger.info(f"Logical job {effective_job_key} already succeeded. Returning active snapshot.")
+            return self.get_active_or_latest_snapshot()
+
+        if acq_result.status == AcquisitionStatus.ALREADY_RUNNING:
+            if acquired_thread_lock:
+                self._scan_lock.release()
+            raise RuntimeError(f"OVERLAPPING_VCP_SCANS_PROHIBITED: {acq_result.message}")
+
+        lease = acq_result.lease
+        lease_released_by_publisher = False
 
         try:
-            run_id = f"vcp-run-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+            run_id = lease.run_id if lease else f"vcp-run-{int(time.time())}-{uuid.uuid4().hex[:8]}"
             generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
             # Resolve scannable membership and universe metadata
@@ -269,6 +340,17 @@ class VCPScannerRunner:
 
             snapshot_id = f"vcp-snap-{int(time.time())}-{uuid.uuid4().hex[:8]}"
 
+            provenance_dict: Dict[str, Any] = {
+                "role": "PRICE_VOLUME_HISTORY",
+                "source": "LOCAL_MARKET_DB_SQLITE",
+                "source_contract_version": "1.0.0",
+                "data_as_of": data_as_of,
+            }
+            if lease:
+                provenance_dict["coordination"] = lease.to_provenance()
+            else:
+                provenance_dict["coordination"] = "NOT_APPLICABLE_PRE_COORDINATION"
+
             snapshot_record = {
                 "snapshot_id": snapshot_id,
                 "scanner_id": "MINERVINI_VCP",
@@ -289,12 +371,7 @@ class VCPScannerRunner:
                 "universe_size": universe_size,
                 "matched_count": matched_count,
                 "results": qualified_candidates,
-                "provenance": {
-                    "role": "PRICE_VOLUME_HISTORY",
-                    "source": "LOCAL_MARKET_DB_SQLITE",
-                    "source_contract_version": "1.0.0",
-                    "data_as_of": data_as_of,
-                },
+                "provenance": provenance_dict,
                 "freshness": {
                     "policy_version": version_tuple.freshness_policy_version,
                     "generated_at": generated_at,
@@ -308,10 +385,23 @@ class VCPScannerRunner:
             }
 
             if eval_report.decision == PublicationDecision.PUBLISH:
-                self.snapshot_store.save_snapshot(snapshot_record)
+                if lease is not None:
+                    # Transactional Fenced Publication (Atomic authority check + publication)
+                    self.fenced_publisher.publish_snapshot_fenced(
+                        lease=lease,
+                        snapshot_data=snapshot_record,
+                        universe_build_id=target_build_id,
+                        policy=self.lease_policy,
+                    )
+                    lease_released_by_publisher = True
+                else:
+                    self.snapshot_store.save_snapshot(snapshot_record)
                 self._cached_active_snapshot = snapshot_record
                 logger.info(f"VCP Scanner snapshot {snapshot_id} published successfully with {matched_count} matches.")
             else:
+                if lease is not None:
+                    self.coordinator.release(lease)
+                    lease_released_by_publisher = True
                 logger.warning(f"VCP Scanner snapshot {snapshot_id} quarantined due to violations: {eval_report.violations}")
 
             return ImmutableScannerSnapshot(
@@ -334,7 +424,10 @@ class VCPScannerRunner:
                 coverage_metadata=coverage_metadata,
             ).to_envelope()
         finally:
-            self._scan_lock.release()
+            if lease is not None and not lease_released_by_publisher:
+                self.coordinator.release(lease)
+            if acquired_thread_lock:
+                self._scan_lock.release()
 
     def get_active_or_latest_snapshot(self) -> Dict[str, Any]:
         """Retrieve active in-memory snapshot or load latest from store, executing initial scan if store is empty."""

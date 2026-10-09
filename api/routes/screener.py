@@ -548,11 +548,13 @@ def get_smart_money_snapshot():
 @router.post("/vcp/scan")
 def trigger_vcp_scan(
     x_operator_token: Optional[str] = Header(None, alias="X-Operator-Token"),
+    x_operator_request_id: Optional[str] = Header(None, alias="X-Operator-Request-Id"),
     universe_build_id: Optional[str] = None,
+    logical_job_key: Optional[str] = None,
 ):
     """
     Operator-only trigger for Minervini VCP market-wide scan (Section 16).
-    Rejects public unauthenticated requests.
+    Rejects public unauthenticated requests. Enforces distributed lease & idempotency.
     """
     if not x_operator_token or x_operator_token != OPERATOR_TOKEN:
         raise HTTPException(
@@ -560,7 +562,11 @@ def trigger_vcp_scan(
             detail="PUBLIC_MARKET_WIDE_SCAN_FORBIDDEN: Operator authorization required to trigger market-wide scanner.",
         )
     try:
-        return vcp_scanner_runner.execute_market_wide_scan(universe_build_id=universe_build_id)
+        return vcp_scanner_runner.execute_market_wide_scan(
+            universe_build_id=universe_build_id,
+            operator_request_id=x_operator_request_id,
+            logical_job_key=logical_job_key,
+        )
     except RuntimeError as e:
         if "OVERLAPPING_VCP_SCANS_PROHIBITED" in str(e):
             raise HTTPException(
@@ -568,6 +574,26 @@ def trigger_vcp_scan(
                 detail=str(e),
             )
         raise
+    except Exception as e:
+        if "FENCED_REJECTED" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e),
+            )
+        raise
+
+
+@router.get("/vcp/coordination")
+def get_vcp_coordination_status():
+    """Retrieve non-sensitive run coordination status, active lease, and recent lifecycle events (Section 25)."""
+    res_key = vcp_scanner_runner.coordinator.resource_key
+    active_lease = vcp_scanner_runner.coordinator.active_lease
+    return {
+        "resource_key": res_key,
+        "coordination_epoch": vcp_scanner_runner.coordinator.store.get_current_epoch(res_key),
+        "active_lease": active_lease.to_provenance() if active_lease else None,
+        "recent_events": vcp_scanner_runner.coordinator.store.get_lease_events(res_key, limit=10),
+    }
 
 
 
