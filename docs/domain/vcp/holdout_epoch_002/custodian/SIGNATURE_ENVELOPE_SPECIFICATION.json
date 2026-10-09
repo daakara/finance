@@ -1,0 +1,10 @@
+{
+  "domain_separator": "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002",
+  "signed_artifact_type": "PUBLIC_CUSTODIAN_EXPORT",
+  "signed_projection": "canonical_public_export_excluding_signature_object",
+  "signature_algorithm": "ED25519",
+  "signature_encoding": "HEX_LOWERCASE",
+  "key_fingerprint_binding": "SHA256_HEX_PUBLIC_KEY",
+  "verification_procedure": "Verify Ed25519 signature of SHA256(UTF8(signature_domain_separator) || b'::' || canonical_signed_projection) using registered public_key",
+  "signature_envelope_ambiguity": 0
+}

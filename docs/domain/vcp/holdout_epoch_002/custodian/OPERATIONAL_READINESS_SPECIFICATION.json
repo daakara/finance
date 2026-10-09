@@ -1,0 +1,71 @@
+{
+  "spec_id": "ARX_VCP_EPOCH_002_OPERATIONAL_READINESS_SPEC",
+  "spec_version": "1.0.0",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "final_custodian_handoff_commit_sha": "a7232ccedb162ed68b7b74e78738737709c4d135",
+  "effective_epoch_policy_hash": "a465abc06805e8299129eedf97091ef2a0178eab63d00439d30dd44d17eb2337",
+  "effective_cryptographic_contract_hash": "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44",
+  "custodian_handoff_bundle_hash": "e0dbc3e257db95076d22117ab345031ac5569de86df704a0b4ef8c3a5a373811",
+  "bundle_manifest": {
+    "custodian_registration_hash": "f7ada65bd8ce275d12ce701417c57a934fc13bd44735165cf1a551acfb3848ca",
+    "private_case_selection_provenance_schema_hash": "a91bb0d5d54b568897b2d1b360054bba99b6562ff978d00fc9789db21f284fb1",
+    "historical_exclusion_registry_hash": "3b897ffc96b65ee14f6828b898c0ff0a80618423ef90579a5f50e8c86dc7882e",
+    "temporal_evidence_package_schema_hash": "ca0c8e14d259462672ce928d9994fc9b9a119a1feec8be12fd7bc24c549ec062",
+    "external_adjudicator_qualification_schema_hash": "809c00dd3afea0fd9e16f6e4149a8ef753756a695269b95906adb8d07eb4127a",
+    "operational_governance_policies_hash": "3a3cc5e254995f077435f1bd18d62db0bf62522da3a1dbc8260ad75cf52bcde3",
+    "signature_envelope_specification_hash": "bef8d935138e04e6874d8ee2d86137ad197cd9a8fbbaf41b56173c091af7cb63"
+  },
+  "operational_readiness_artifacts": [
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_CUSTODIAN_REGISTRATION",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/CUSTODIAN_REGISTRATION.json",
+      "version": "1.0.0",
+      "canonical_hash": "f7ada65bd8ce275d12ce701417c57a934fc13bd44735165cf1a551acfb3848ca",
+      "governance_role": "CUSTODIAN_IDENTITY_AND_KEY_REGISTRATION"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_PRIVATE_CASE_SELECTION_PROVENANCE_SCHEMA",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/PRIVATE_CASE_SELECTION_PROVENANCE.schema.json",
+      "version": "1.0.0",
+      "canonical_hash": "a91bb0d5d54b568897b2d1b360054bba99b6562ff978d00fc9789db21f284fb1",
+      "governance_role": "CASE_SELECTION_PROVENANCE_AUDIT"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_HISTORICAL_EXCLUSION_REGISTRY",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/HISTORICAL_EXCLUSION_REGISTRY.json",
+      "version": "1.0.0",
+      "canonical_hash": "3b897ffc96b65ee14f6828b898c0ff0a80618423ef90579a5f50e8c86dc7882e",
+      "governance_role": "HISTORICAL_CASE_COLLISION_PREVENTION"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_TEMPORAL_EVIDENCE_PACKAGE_SCHEMA",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/TEMPORAL_EVIDENCE_PACKAGE.schema.json",
+      "version": "1.0.0",
+      "canonical_hash": "ca0c8e14d259462672ce928d9994fc9b9a119a1feec8be12fd7bc24c549ec062",
+      "governance_role": "POINT_IN_TIME_OHLCV_CLOSURE"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_EXTERNAL_ADJUDICATOR_QUALIFICATION_SCHEMA",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/EXTERNAL_ADJUDICATOR_QUALIFICATION.schema.json",
+      "version": "1.0.0",
+      "canonical_hash": "809c00dd3afea0fd9e16f6e4149a8ef753756a695269b95906adb8d07eb4127a",
+      "governance_role": "EXTERNAL_INDEPENDENCE_AND_QUALIFICATION"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_OPERATIONAL_GOVERNANCE_POLICIES",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/OPERATIONAL_GOVERNANCE_POLICIES.json",
+      "version": "1.0.0",
+      "canonical_hash": "3a3cc5e254995f077435f1bd18d62db0bf62522da3a1dbc8260ad75cf52bcde3",
+      "governance_role": "POST_HANDOFF_OPERATIONAL_GOVERNANCE"
+    },
+    {
+      "artifact_id": "ARX_VCP_EPOCH_002_SIGNATURE_ENVELOPE_SPEC",
+      "path": "docs/domain/vcp/holdout_epoch_002/custodian/SIGNATURE_ENVELOPE_SPECIFICATION.json",
+      "version": "1.0.0",
+      "canonical_hash": "bef8d935138e04e6874d8ee2d86137ad197cd9a8fbbaf41b56173c091af7cb63",
+      "governance_role": "DETACHED_ED25519_EXPORT_SIGNATURE"
+    }
+  ],
+  "operational_readiness_bundle_hash": "77c7acbc6e3845f84e90bf40bbd01503a7df49d8258ed1a6e0745161f24d25a2",
+  "operational_readiness_unbound_artifacts": 0
+}

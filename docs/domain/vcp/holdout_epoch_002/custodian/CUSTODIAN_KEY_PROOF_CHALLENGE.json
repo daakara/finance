@@ -1,0 +1,14 @@
+{
+  "challenge_id": "CHALLENGE-ARX-EPOCH-002-POP-001",
+  "domain_separator": "ARX_VCP_EPOCH_002_CUSTODIAN_KEY_PROOF",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "custodian_id": "CUSTODIAN-ARX-EPOCH-002-EXT-01",
+  "custodian_public_key_fingerprint": "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02",
+  "challenge_nonce": "8f3b2a1c9e7d4f5a6b0c2e4d8a1f3c5e7b9d0a2f4c6e8b1d3f5a7c9e0b2d4f6a",
+  "final_custodian_handoff_commit_sha": "a7232ccedb162ed68b7b74e78738737709c4d135",
+  "custodian_handoff_bundle_hash": "e0dbc3e257db95076d22117ab345031ac5569de86df704a0b4ef8c3a5a373811",
+  "operational_readiness_bundle_hash": "77c7acbc6e3845f84e90bf40bbd01503a7df49d8258ed1a6e0745161f24d25a2",
+  "effective_policy_hash": "a465abc06805e8299129eedf97091ef2a0178eab63d00439d30dd44d17eb2337",
+  "effective_cryptographic_contract_hash": "f04203f75b878912a369f7a7d0b90d30791effc84477dc58680259262f09da44",
+  "issued_at": "2026-10-09T18:30:00Z"
+}
