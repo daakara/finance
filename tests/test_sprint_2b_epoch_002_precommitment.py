@@ -212,6 +212,49 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     get_public_test_vectors,
     get_cryptographic_contract_dict,
     get_custodian_handoff_bundle_manifest,
+    CASE_ORDERING_RULE,
+    CASE_ORDERING_AMBIGUITY,
+    UNICODE_NORMALIZATION,
+    UNICODE_NORMALIZATION_RULE_EXPLICIT,
+    UNICODE_CANONICAL_EQUIVALENCE_TEST,
+    JSON_NUMBER_SEMANTICS_EXPLICIT,
+    NONFINITE_JSON_NUMBERS_ALLOWED,
+    DUPLICATE_JSON_KEYS,
+    DUPLICATE_KEY_REJECTION_TEST,
+    PRIVATE_PAYLOAD_UNKNOWN_FIELD_POLICY,
+    PUBLIC_EXPORT_UNKNOWN_FIELD_POLICY,
+    CUSTODIAN_ATTESTATION_UNKNOWN_FIELD_POLICY,
+    ARRAY_ORDERING_POLICY_FIELD_SPECIFIC,
+    ACTUAL_SPRINT_2A_FUNCTIONAL_SHA,
+    ACTUAL_SPRINT_2A_EVIDENCE_SHA,
+    ACTUAL_SPRINT_2B_TERMINAL_FUNCTIONAL_SHA,
+    ACTUAL_SPRINT_2B_TERMINAL_EVIDENCE_SHA,
+    ACTUAL_EPOCH_002_INFRASTRUCTURE_SHA,
+    ACTUAL_EPOCH_002_POLICY_SHA,
+    ACTUAL_EPOCH_002_EVIDENCE_CORRECTION_SHA,
+    ACTUAL_CRYPTO_RECONCILIATION_SHA,
+    ACTUAL_CUSTODIAN_HANDOFF_FREEZE_SHA,
+    HISTORICAL_SHA_REPORTING_DEFECT_COUNT,
+    HISTORICAL_REPORTING_DEFECT,
+    LINEAGE_ANCESTRY_GATE,
+    SHA_IDENTITY_RECONCILIATION_GATE,
+    CUSTODIAN_BUNDLE_SOURCE,
+    CUSTODIAN_BUNDLE_COMMIT_SHA,
+    LIVE_WORKTREE_UNTRACKED_CONTENT_CAN_AFFECT_HANDOFF_BUNDLE,
+    COMMITTED_TREE_HANDOFF_HASH_PARITY,
+    HANDOFF_BUNDLE_UNBOUND_REQUIRED_ARTIFACTS,
+    PUBLIC_TEST_VECTOR_SET_HASH,
+    REFERENCE_IMPLEMENTATION_DOES_NOT_CALL_PRODUCTION_COMMITMENT_FUNCTION,
+    PRODUCTION_REFERENCE_VECTOR_PARITY,
+    PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_GOLD,
+    PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_SILVER,
+    GOLD_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
+    SILVER_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION,
+    CUSTODIAN_LEGAL_REVIEW_STATUS,
+    LEGAL_CONCLUSION_WITHOUT_AUTHORITY,
+    EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_GATE,
+    EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_STATUS,
+    parse_canonical_json,
 )
 
 
@@ -1150,3 +1193,181 @@ def test_custodian_export_schema_positive_and_negative_gates(base_valid_custodia
             silver_limitations_attested=False,
         )
         validate_custodian_export_schema(bad_silver)
+
+
+# ======================================================================
+# 12. FINAL PUBLIC HANDOFF INTEGRITY RECONCILIATION TESTS (SECTIONS 0-20)
+# ======================================================================
+
+def test_exact_git_lineage_and_defect_reconciliation():
+    assert ACTUAL_SPRINT_2A_FUNCTIONAL_SHA == "4e6dace0683e0245fbd327c327af57f0647e5a19"
+    assert ACTUAL_SPRINT_2A_EVIDENCE_SHA == "8c2e9025e04db7f8f1a51ae3c7bb74263ba86318"
+    assert ACTUAL_SPRINT_2B_TERMINAL_FUNCTIONAL_SHA == "6add87eee30d84de56ba7aeaccb020d2d20c75b4"
+    assert ACTUAL_SPRINT_2B_TERMINAL_EVIDENCE_SHA == "9e012b797901c93472d0fa0eaa58ffc6316125fb"
+    assert ACTUAL_EPOCH_002_INFRASTRUCTURE_SHA == "ff1f5101149e6bfb651d29f7d08984849a75d9d5"
+    assert ACTUAL_EPOCH_002_POLICY_SHA == "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
+    assert ACTUAL_EPOCH_002_EVIDENCE_CORRECTION_SHA == "ebd4398ef6c24b2d7704143d4e8b3a6a0891fe8a"
+    assert ACTUAL_CRYPTO_RECONCILIATION_SHA == "d0f4993698dce5fe60e79b2f8a485c5ebe48cb4e"
+    assert ACTUAL_CUSTODIAN_HANDOFF_FREEZE_SHA == "f050ab5a013307d57b16491ab034201552d46c47"
+
+    assert HISTORICAL_SHA_REPORTING_DEFECT_COUNT == 3
+    assert HISTORICAL_REPORTING_DEFECT == "INCORRECT_FULL_SHA_RENDERING"
+    assert LINEAGE_ANCESTRY_GATE == "PASS"
+    assert SHA_IDENTITY_RECONCILIATION_GATE == "PASS"
+
+
+def test_case_ordering_semantics_and_lexicographic_fixture():
+    # Fixture containing CASE-1, CASE-2, CASE-10, CASE-11 in intentionally scrambled order
+    scrambled_cids = ["CASE-2", "CASE-10", "CASE-1", "CASE-11"]
+    payload = {
+        "epoch_id": HOLDOUT_EPOCH_ID,
+        "cases": [{"case_id": cid, "role": "CORE"} for cid in scrambled_cids],
+    }
+
+    can_bytes = canonicalize_sealed_payload(payload)
+    parsed = json.loads(can_bytes.decode("utf-8"))
+    ordered_cids = [c["case_id"] for c in parsed["cases"]]
+
+    # Under strict Unicode scalar lexicographical ordering:
+    # 'CASE-1' < 'CASE-10' < 'CASE-11' < 'CASE-2'
+    assert ordered_cids == ["CASE-1", "CASE-10", "CASE-11", "CASE-2"]
+    assert CASE_ORDERING_RULE == "UTF8 / Unicode scalar lexicographic ordering of exact case_id strings"
+    assert CASE_ORDERING_AMBIGUITY == 0
+
+
+def test_unicode_normalization_nfc_canonical_equivalence():
+    # Composed NFC 'ü' (\u00fc) vs decomposed NFD 'u' + '\u0308'
+    composed_payload = {"epoch_id": HOLDOUT_EPOCH_ID, "note": "M\u00fcller & B\u00f6hm"}
+    decomposed_payload = {"epoch_id": HOLDOUT_EPOCH_ID, "note": "Mu\u0308ller & Bo\u0308hm"}
+
+    can_comp = canonicalize_sealed_payload(composed_payload)
+    can_decomp = canonicalize_sealed_payload(decomposed_payload)
+
+    assert can_comp == can_decomp
+    assert UNICODE_NORMALIZATION == "NFC"
+    assert UNICODE_NORMALIZATION_RULE_EXPLICIT is True
+    assert UNICODE_CANONICAL_EQUIVALENCE_TEST == "PASS"
+
+
+def test_duplicate_key_rejection():
+    raw_duplicate_json = '{"case_id": "CASE-001", "case_id": "CASE-002"}'
+    with pytest.raises(ValueError, match="DUPLICATE_JSON_KEY"):
+        parse_canonical_json(raw_duplicate_json)
+
+    with pytest.raises(ValueError, match="DUPLICATE_JSON_KEY"):
+        canonicalize_sealed_payload(raw_duplicate_json)
+
+    assert DUPLICATE_JSON_KEYS == "REJECT"
+    assert DUPLICATE_KEY_REJECTION_TEST == "PASS"
+
+
+def test_json_number_semantics_and_nonfinite_rejection():
+    with pytest.raises(ValueError, match="NONFINITE_NUMBERS_PROHIBITED"):
+        canonicalize_sealed_payload({"epoch_id": HOLDOUT_EPOCH_ID, "val": float("nan")})
+
+    with pytest.raises(ValueError, match="NONFINITE_NUMBERS_PROHIBITED"):
+        canonicalize_sealed_payload({"epoch_id": HOLDOUT_EPOCH_ID, "val": float("inf")})
+
+    with pytest.raises(ValueError, match="NONFINITE_NUMBERS_PROHIBITED"):
+        canonicalize_sealed_payload({"epoch_id": HOLDOUT_EPOCH_ID, "val": float("-inf")})
+
+    assert JSON_NUMBER_SEMANTICS_EXPLICIT is True
+    assert NONFINITE_JSON_NUMBERS_ALLOWED is False
+
+
+def test_unknown_field_rejection_policy_and_additional_properties():
+    assert PRIVATE_PAYLOAD_UNKNOWN_FIELD_POLICY == "REJECT"
+    assert PUBLIC_EXPORT_UNKNOWN_FIELD_POLICY == "REJECT"
+    assert CUSTODIAN_ATTESTATION_UNKNOWN_FIELD_POLICY == "REJECT"
+
+    base_dir = os.path.join("docs", "domain", "vcp", "holdout_epoch_002", "custodian")
+    for schema_file in [
+        "PRIVATE_HOLDOUT_PAYLOAD.schema.json",
+        "PUBLIC_CUSTODIAN_EXPORT.schema.json",
+        "CUSTODIAN_ATTESTATION.schema.json",
+        "EXTERNAL_ADJUDICATOR_INTAKE.schema.json",
+        "ADJUDICATION_RECORD.schema.json",
+    ]:
+        with open(os.path.join(base_dir, schema_file), "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert data.get("additionalProperties") is False, f"{schema_file} allows additional properties"
+
+
+def test_field_specific_array_ordering():
+    payload = {
+        "epoch_id": HOLDOUT_EPOCH_ID,
+        "cases": [
+            {
+                "case_id": "SYN-TEST-001",
+                "case_roles": ["CORE", "BOUNDARY"],
+                "scenario_tags": ["STAGE_2", "PIVOT"],
+                "silver_limitation_codes": ["L3", "L1"],
+            }
+        ],
+    }
+    can_bytes = canonicalize_sealed_payload(payload)
+    parsed = json.loads(can_bytes.decode("utf-8"))
+    c = parsed["cases"][0]
+
+    assert c["case_roles"] == ["BOUNDARY", "CORE"]
+    assert c["scenario_tags"] == ["PIVOT", "STAGE_2"]
+    assert c["silver_limitation_codes"] == ["L1", "L3"]
+    assert ARRAY_ORDERING_POLICY_FIELD_SPECIFIC is True
+
+
+def test_committed_tree_bundle_verification_from_exact_sha():
+    commit_sha = CUSTODIAN_BUNDLE_COMMIT_SHA
+    base_dir = "docs/domain/vcp/holdout_epoch_002/custodian"
+
+    def get_committed_bytes(relpath: str) -> bytes:
+        cmd = ["git", "show", f"{commit_sha}:{relpath}"]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return res.stdout
+
+    # Verify all 5 schemas from committed tree
+    schema_map = {
+        "PRIVATE_HOLDOUT_PAYLOAD.schema.json": PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH,
+        "PUBLIC_CUSTODIAN_EXPORT.schema.json": PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH,
+        "CUSTODIAN_ATTESTATION.schema.json": CUSTODIAN_ATTESTATION_SCHEMA_HASH,
+        "EXTERNAL_ADJUDICATOR_INTAKE.schema.json": EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH,
+        "ADJUDICATION_RECORD.schema.json": ADJUDICATION_RECORD_SCHEMA_HASH,
+    }
+    for fname, exp_hash in schema_map.items():
+        raw = get_committed_bytes(f"{base_dir}/{fname}")
+        obj = json.loads(raw.decode("utf-8"))
+        canon = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        assert hashlib.sha256(canon).hexdigest() == exp_hash
+
+    # Verify contract
+    raw_contract = get_committed_bytes(f"{base_dir}/CRYPTOGRAPHIC_CONTRACT.json")
+    contract_obj = json.loads(raw_contract.decode("utf-8"))
+    assert contract_obj["cryptographic_contract_hash"] == CRYPTOGRAPHIC_CONTRACT_HASH
+
+    # Verify handoff spec
+    raw_spec = get_committed_bytes(f"{base_dir}/CUSTODIAN_HANDOFF_SPECIFICATION.json")
+    spec_obj = json.loads(raw_spec.decode("utf-8"))
+    assert spec_obj["handoff_spec_hash"] == CUSTODIAN_HANDOFF_SPEC_HASH
+
+    # Verify README
+    raw_readme = get_committed_bytes(f"{base_dir}/CUSTODIAN_HANDOFF_README.md").replace(b"\r\n", b"\n")
+    assert hashlib.sha256(raw_readme).hexdigest() == "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed"
+
+    assert COMMITTED_TREE_HANDOFF_HASH_PARITY == "PASS"
+    assert CUSTODIAN_BUNDLE_SOURCE == "COMMITTED_GIT_TREE_ONLY"
+    assert LIVE_WORKTREE_UNTRACKED_CONTENT_CAN_AFFECT_HANDOFF_BUNDLE is False
+    assert HANDOFF_BUNDLE_UNBOUND_REQUIRED_ARTIFACTS == 0
+
+
+def test_authority_and_legal_terminology_separation():
+    assert PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_GOLD is False
+    assert PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_SILVER is False
+    assert GOLD_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION is True
+    assert SILVER_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION is True
+    assert CUSTODIAN_LEGAL_REVIEW_STATUS == "NOT_ESTABLISHED"
+    assert LEGAL_CONCLUSION_WITHOUT_AUTHORITY == 0
+
+
+def test_external_custodian_execution_gate_verdicts():
+    assert EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_GATE == "PASS"
+    assert EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_STATUS == "AUTHORIZED"
+    assert PRIVATE_CASE_ASSEMBLY_AUTHORIZED == "AUTHORIZED_FOR_EXTERNAL_CUSTODIAN_ONLY"

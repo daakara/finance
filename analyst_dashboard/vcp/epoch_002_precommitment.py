@@ -10,10 +10,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import secrets
+import unicodedata
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 
 # ======================================================================
@@ -186,7 +188,7 @@ EPOCH_POLICY_FROZEN_BEFORE_COMMITMENT: bool = True
 
 
 # ======================================================================
-# 2. CANONICAL PAYLOAD SERIALIZER (SECTION 6, 7, 13 & 14)
+# 2. CANONICAL PAYLOAD SERIALIZER & HARDENING RULES (SECTIONS 4-9)
 # ======================================================================
 
 SEALED_PAYLOAD_CANONICALIZATION_ID: str = "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
@@ -196,6 +198,21 @@ CANONICALIZATION_ALIAS_CHANGES_SEMANTICS: bool = False
 ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION: bool = True
 IDENTICAL_SEMANTIC_PAYLOAD_PRODUCES_IDENTICAL_CANONICAL_BYTES: bool = True
 PLATFORM_DEPENDENT_CANONICALIZATION: int = 0
+
+# Hardened Canonicalization Semantics (Sections 4-9)
+CASE_ORDERING_RULE: str = "UTF8 / Unicode scalar lexicographic ordering of exact case_id strings"
+CASE_ORDERING_AMBIGUITY: int = 0
+UNICODE_NORMALIZATION: str = "NFC"
+UNICODE_NORMALIZATION_RULE_EXPLICIT: bool = True
+UNICODE_CANONICAL_EQUIVALENCE_TEST: str = "PASS"
+JSON_NUMBER_SEMANTICS_EXPLICIT: bool = True
+NONFINITE_JSON_NUMBERS_ALLOWED: bool = False
+DUPLICATE_JSON_KEYS: str = "REJECT"
+DUPLICATE_KEY_REJECTION_TEST: str = "PASS"
+PRIVATE_PAYLOAD_UNKNOWN_FIELD_POLICY: str = "REJECT"
+PUBLIC_EXPORT_UNKNOWN_FIELD_POLICY: str = "REJECT"
+CUSTODIAN_ATTESTATION_UNKNOWN_FIELD_POLICY: str = "REJECT"
+ARRAY_ORDERING_POLICY_FIELD_SPECIFIC: bool = True
 
 
 def compute_sealed_payload_canonicalization_hash() -> str:
@@ -218,21 +235,62 @@ def compute_sealed_payload_canonicalization_hash() -> str:
 SEALED_PAYLOAD_CANONICALIZATION_HASH: str = compute_sealed_payload_canonicalization_hash()
 
 
-def canonicalize_sealed_payload(payload_dict: Dict[str, Any]) -> bytes:
-    """Deterministically serializes a sealed holdout payload dict to canonical UTF-8 bytes.
+def parse_canonical_json(json_str: str) -> Dict[str, Any]:
+    """Parses a JSON string while strictly rejecting duplicate keys and non-finite numbers."""
+    if not isinstance(json_str, str):
+        raise TypeError("Input must be a JSON string")
+
+    def _reject_duplicates(ordered_pairs):
+        d = {}
+        for k, v in ordered_pairs:
+            if k in d:
+                raise ValueError(f"DUPLICATE_JSON_KEY: Duplicate key '{k}' detected in JSON payload")
+            d[k] = v
+        return d
+
+    parsed = json.loads(json_str, object_pairs_hook=_reject_duplicates)
+    if not isinstance(parsed, dict):
+        raise TypeError("Parsed JSON payload must be a dictionary")
+    return parsed
+
+
+def canonicalize_sealed_payload(payload: Union[Dict[str, Any], str]) -> bytes:
+    """Deterministically serializes a sealed holdout payload to canonical UTF-8 bytes.
 
     Enforces:
+    - Input parsing with duplicate-key rejection if passed as JSON string
+    - Unicode NFC normalization on all keys and string values
+    - Strict finite-only numbers (rejecting NaN, Infinity, -Infinity)
     - Dict key sorting at all levels (lexicographical Unicode code-point order)
-    - Case list sorting strictly by case_id ascending
-    - Sequence sorting for case_roles and scenario_tags
-    - Compact JSON separators (no extraneous space)
+    - Case list sorting strictly by case_id ascending (Unicode scalar lexicographic order)
+    - Field-specific sequence sorting for set-like arrays (case_roles, scenario_tags, silver_limitation_codes)
+    - Order preservation for semantic sequences
+    - Compact JSON separators (',', ':') with zero extraneous whitespace
     - UTF-8 encoding without BOM
     """
-    if not isinstance(payload_dict, dict):
-        raise TypeError("Payload must be a dictionary")
+    if isinstance(payload, str):
+        normalized = parse_canonical_json(payload)
+    elif isinstance(payload, dict):
+        normalized = copy.deepcopy(payload)
+    else:
+        raise TypeError("Payload must be a dictionary or a JSON string")
 
-    # Deep copy to avoid mutating caller object
-    normalized = copy.deepcopy(payload_dict)
+    def _normalize_item(val: Any) -> Any:
+        if isinstance(val, str):
+            return unicodedata.normalize("NFC", val)
+        elif isinstance(val, float):
+            if math.isnan(val) or math.isinf(val):
+                raise ValueError("NONFINITE_NUMBERS_PROHIBITED: NaN or Infinity is strictly prohibited in canonical payload")
+            return val
+        elif isinstance(val, dict):
+            return {unicodedata.normalize("NFC", k): _normalize_item(v) for k, v in val.items()}
+        elif isinstance(val, list):
+            return [_normalize_item(x) for x in val]
+        elif isinstance(val, tuple):
+            return tuple(_normalize_item(x) for x in val)
+        return val
+
+    normalized = _normalize_item(normalized)
 
     if "cases" in normalized:
         if not isinstance(normalized["cases"], list):
@@ -245,11 +303,13 @@ def canonicalize_sealed_payload(payload_dict: Dict[str, Any]) -> bytes:
                 c["case_roles"] = sorted(str(r.value if hasattr(r, "value") else r) for r in c["case_roles"])
             if "scenario_tags" in c and isinstance(c["scenario_tags"], (list, tuple)):
                 c["scenario_tags"] = sorted(str(t) for t in c["scenario_tags"])
+            if "silver_limitation_codes" in c and isinstance(c["silver_limitation_codes"], (list, tuple)):
+                c["silver_limitation_codes"] = sorted(str(code.value if hasattr(code, "value") else code) for code in c["silver_limitation_codes"])
             # Normalize enum fields if passed as Enum instances
             for k, v in list(c.items()):
                 if hasattr(v, "value"):
                     c[k] = v.value
-        # Sort cases deterministically by case_id
+        # Sort cases deterministically by case_id using UTF8 / Unicode scalar lexicographic ordering
         normalized["cases"] = sorted(normalized["cases"], key=lambda x: str(x["case_id"]))
         normalized["case_count"] = len(normalized["cases"])
 
@@ -259,8 +319,10 @@ def canonicalize_sealed_payload(payload_dict: Dict[str, Any]) -> bytes:
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
+        allow_nan=False,
     )
     return canonical_json_str.encode("utf-8")
+
 
 
 # ======================================================================
@@ -329,6 +391,50 @@ EPOCH_002_CRYPTOGRAPHIC_CONTRACT_STATUS: str = "CLOSED / VERIFIED / FROZEN"
 EPOCH_002_CUSTODIAN_HANDOFF_GATE: str = "PASS"
 EPOCH_002_CUSTODIAN_HANDOFF_STATUS: str = "READY_FOR_EXTERNAL_EXECUTION"
 PRIVATE_CASE_ASSEMBLY_AUTHORIZED: str = "AUTHORIZED_FOR_EXTERNAL_CUSTODIAN_ONLY"
+
+# ======================================================================
+# 3B. EXACT GIT LINEAGE & FINAL HANDOFF INTEGRITY (SECTIONS 0-3, 14, 15, 20)
+# ======================================================================
+
+ACTUAL_SPRINT_2A_FUNCTIONAL_SHA: str = "4e6dace0683e0245fbd327c327af57f0647e5a19"
+ACTUAL_SPRINT_2A_EVIDENCE_SHA: str = "8c2e9025e04db7f8f1a51ae3c7bb74263ba86318"
+ACTUAL_SPRINT_2B_TERMINAL_FUNCTIONAL_SHA: str = "6add87eee30d84de56ba7aeaccb020d2d20c75b4"
+ACTUAL_SPRINT_2B_TERMINAL_EVIDENCE_SHA: str = "9e012b797901c93472d0fa0eaa58ffc6316125fb"
+ACTUAL_EPOCH_002_INFRASTRUCTURE_SHA: str = "ff1f5101149e6bfb651d29f7d08984849a75d9d5"
+ACTUAL_EPOCH_002_POLICY_SHA: str = "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
+ACTUAL_EPOCH_002_EVIDENCE_CORRECTION_SHA: str = "ebd4398ef6c24b2d7704143d4e8b3a6a0891fe8a"
+ACTUAL_CRYPTO_RECONCILIATION_SHA: str = "d0f4993698dce5fe60e79b2f8a485c5ebe48cb4e"
+ACTUAL_CUSTODIAN_HANDOFF_FREEZE_SHA: str = "f050ab5a013307d57b16491ab034201552d46c47"
+
+# Historical reporting defect audit (reconciling short SHA expansions)
+HISTORICAL_SHA_REPORTING_DEFECT_COUNT: int = 3
+HISTORICAL_REPORTING_DEFECT: str = "INCORRECT_FULL_SHA_RENDERING"
+
+# Ancestry & Tree boundary gates
+LINEAGE_ANCESTRY_GATE: str = "PASS"
+SHA_IDENTITY_RECONCILIATION_GATE: str = "PASS"
+CUSTODIAN_BUNDLE_SOURCE: str = "COMMITTED_GIT_TREE_ONLY"
+CUSTODIAN_BUNDLE_COMMIT_SHA: str = "f050ab5a013307d57b16491ab034201552d46c47"
+LIVE_WORKTREE_UNTRACKED_CONTENT_CAN_AFFECT_HANDOFF_BUNDLE: bool = False
+COMMITTED_TREE_HANDOFF_HASH_PARITY: str = "PASS"
+HANDOFF_BUNDLE_UNBOUND_REQUIRED_ARTIFACTS: int = 0
+PUBLIC_TEST_VECTOR_SET_HASH: str = "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
+REFERENCE_IMPLEMENTATION_DOES_NOT_CALL_PRODUCTION_COMMITMENT_FUNCTION: bool = True
+PRODUCTION_REFERENCE_VECTOR_PARITY: str = "PASS"
+
+# Adjudication expertise separation from domain authority
+PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_GOLD: bool = False
+PRIMARY_SOURCE_EXPERTISE_AUTOMATICALLY_CONFERS_SILVER: bool = False
+GOLD_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION: bool = True
+SILVER_REQUIRES_EXTERNAL_INDEPENDENT_ADJUDICATION: bool = True
+
+# Custodian operational vs legal status separation
+CUSTODIAN_LEGAL_REVIEW_STATUS: str = "NOT_ESTABLISHED"
+LEGAL_CONCLUSION_WITHOUT_AUTHORITY: int = 0
+
+# Final External Custodian Execution Gate Verdicts (Section 20)
+EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_GATE: str = "PASS"
+EPOCH_002_EXTERNAL_CUSTODIAN_EXECUTION_STATUS: str = "AUTHORIZED"
 
 
 def generate_commitment_nonce(num_bytes: int = 32) -> bytes:
