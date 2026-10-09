@@ -78,3 +78,43 @@ Neither defect is treated as an acceptable release exception. The release gate r
 - `LOCAL_RELEASE_READINESS = PASS`
 - `PUSH_STATUS = NOT_AUTHORIZED`
 - `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
+
+---
+
+## 5. Epoch 4 Manifest Compliance Blocker Resolution (2026-10-10)
+
+- **Release Blocker**: `tests/test_live_dual_price_contract.py::test_epoch4_governance_manifest_compliance` failed during candidate certification of `cd0922471767775636957df74406a2d5efb8f519`.
+- **Candidate Independence**: Verified reproducible at `origin/main` (`5a90b91`), previous candidate (`74baf30`), and current candidate (`cd09224`). Not candidate-introduced.
+- **Manifest Scope & Lineage**: `EPOCH_4_MANIFEST_V3.json` (`v3.0.0`, hash `7fc5ece9...`) certifies active production observation runtime boundary introduced in commit `b26163f275b54052a6e8757c46748fcb8119f69c`.
+- **Divergence Attribution**:
+  - `api/routes/screener.py` diverged in `ed04de5` (`RADAR_SPRINT_2A`)
+  - `api/routes/analytics.py` diverged in `d97801e` (`PRICE_AUTHORITY`)
+  - `analyst_dashboard/governance/passive_capture.py` diverged in `37a665c` (`EXECUTION_LADDER`)
+  - `analyst_dashboard/governance/governance_db.py` diverged in `37a665c` (`EXECUTION_LADDER`)
+  - Overall Workstream: `MIXED` / `EPOCH4_DEFECT_RADAR_RELATED = PARTIAL`.
+- **Remediation Model**: Model B — Current-authority manifest with missing succession.
+  - Activated successor manifest `EPOCH_4_MANIFEST_V4.json` (`v4.0.0`, hash `95a9c4313ffe026dc63b1962c490259c57e78697497e8649081832005687d689`).
+  - `SUPERSEDES_MANIFEST = EPOCH_4_MANIFEST_V3.json`
+  - `CERTIFIED_COMMIT_SHA1 = cd0922471767775636957df74406a2d5efb8f519`
+  - `AUTHORITY_SCOPE = CURRENT_PRODUCTION_AUTHORITY`
+  - `CREATED_AT_UTC = 2026-10-10T00:50:00Z`
+  - Historical manifests V2 and V3 preserved 100% byte-for-byte untouched.
+- **Targeted Verification**:
+  - `tests/test_live_dual_price_contract.py`: **22 PASS / 0 FAIL**
+  - `tests/test_price_authority_reproduction.py`: **8 PASS / 0 FAIL**
+  - `tests/test_post_deploy_verification.py`: **8 PASS / 0 FAIL**
+  - `tests/test_arx_step2_passive_capture_certification.py`: **16 PASS / 0 FAIL**
+  - `tests/test_qa_escape_invariants.py`: **18 PASS / 0 FAIL**
+  - `tests/test_optimal_execution.py`: **7 PASS / 0 FAIL**
+  - `tests/test_analytics_nan_incident_epoch2.py`: **21 PASS / 0 FAIL**
+  - `tests/test_execution_ladder_passive_capture.py`: **73 PASS / 0 FAIL**
+  - Sprint 2A & 2B Suites (9 modules): **259 PASS / 0 FAIL**
+  - Screener Suites (3 modules): **22 PASS / 0 FAIL**
+  - **Total Targeted Tests**: **454 PASS / 0 FAIL**
+  - `TARGETED_FAILED_TESTS = 0`
+  - `KNOWN_FAILURES = 0`
+  - `UNEXPLAINED_FAILURES = 0`
+  - `EPOCH4_STATUS = RESOLVED`
+  - `RELEASE_BLOCKERS_REMAIN = NO`
+  - `LOCAL_RELEASE_READINESS = PASS`
+

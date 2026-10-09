@@ -237,3 +237,99 @@ Neither defect is treated as an acceptable exception. Both have been formally at
 * `PUSH_STATUS = NOT_AUTHORIZED`
 * `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
 
+---
+
+### 10. EPOCH 4 MANIFEST COMPLIANCE RELEASE BLOCKER ROOT-CAUSE ATTRIBUTION & SUCCESSION REMEDIATION (2026-10-10)
+
+#### 10.1 Discovery and Blocker State
+During the final candidate re-certification gate of candidate commit `cd0922471767775636957df74406a2d5efb8f519`, test node:
+`tests/test_live_dual_price_contract.py::test_epoch4_governance_manifest_compliance`
+failed with status `CORRUPTED` because four executable governance files diverged from historical `EPOCH_4_MANIFEST_V3.json`. Under strict Product Owner governance, `PRE_EXISTING` defects are not acceptable release exceptions; therefore, the release remained blocked until root causes were attributed and remediated.
+
+#### 10.2 Candidate Independence Reproduction
+The failing test was independently executed across isolated worktrees in identical test environments:
+* **origin/main** (`5a90b918b0975151b74e936b3fbfa536b575edd7`): **FAILED** (`status: CORRUPTED`, Exit Code: 1)
+* **Previous Certified Candidate** (`74baf306cfe2b2b53da8269990e6f7363c2fe42d`): **FAILED** (`status: CORRUPTED`, Exit Code: 1)
+* **Current Candidate** (`cd0922471767775636957df74406a2d5efb8f519`): **FAILED** (`status: CORRUPTED`, Exit Code: 1)
+* **Reproduction Results**:
+  - `FAILS_AT_ORIGIN_MAIN = YES`
+  - `FAILS_AT_74BAF30 = YES`
+  - `FAILS_AT_CD092247 = YES`
+  - `CANDIDATE_INTRODUCED_DEFECT = NO`
+
+#### 10.3 Epoch 4 Manifest Authority & Scope
+* **Scope Classification**: `EPOCH4_MANIFEST_SCOPE = CURRENT_PRODUCTION_AUTHORITY` (Active production observation runtime boundary).
+* **Lineage & Freeze**:
+  - Introduced in commit `b26163f275b54052a6e8757c46748fcb8119f69c` (2026-10-08T21:15:00Z) as `EPOCH_4_MANIFEST_V3.json` (`v3.0.0`), superseding `EPOCH_4_MANIFEST.json` (`v2.0.0`).
+  - Frozen manifest hash: `7fc5ece99d67510807593d1c7f4d1efe7a7295d41934385a3b958765b5535dd8`.
+  - Intended validity: Production runtime observation boundary.
+
+#### 10.4 Forensic Divergence Attribution
+Four of the ten manifest files diverged due to subsequent authorized mainline functional evolution where manifest succession was omitted:
+1. `api/routes/screener.py`:
+   - Last matching: `b26163f275b54052a6e8757c46748fcb8119f69c`
+   - First divergence: `ed04de55e5d32d431d1ec15ffcefeef29d068db2` (`feat(radar): activate minervini vcp scanner and stage 2 trend template backend`)
+   - Workstream: `RADAR_SPRINT_2A`
+2. `api/routes/analytics.py`:
+   - Last matching: `b26163f275b54052a6e8757c46748fcb8119f69c`
+   - First divergence: `d97801ef36691c94d03da24806aeb85381aa99c4` (`fix(arx): separate live spot from setup reference in execution ladder`)
+   - Workstream: `PRICE_AUTHORITY`
+3. `analyst_dashboard/governance/passive_capture.py`:
+   - Last matching: `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`
+   - First divergence: `37a665cb37bcac30025ed7fd4d9687069f31b694` (`fix(governance): normalize timestamp to utc calendar date in execution ladder plan identity`)
+   - Workstream: `EXECUTION_LADDER`
+4. `analyst_dashboard/governance/governance_db.py`:
+   - Last matching: `5dcfeb41d75bb3ae02f25cb3599ab86c0cb03950`
+   - First divergence: `37a665cb37bcac30025ed7fd4d9687069f31b694` (prospective plan equivalence and query enhancements)
+   - Workstream: `EXECUTION_LADDER`
+
+* **Overall Workstream**: `EPOCH4_DEFECT_WORKSTREAM = MIXED`
+* **Radar Attribution**: `EPOCH4_DEFECT_RADAR_RELATED = PARTIAL` (screener changed in Radar Sprint 2A; analytics in Price Authority; passive_capture/governance_db in Execution Ladder).
+* **Investigation of Claimed Commit 1328547**:
+  - `COMMIT_1328547_FULL_SHA1 = 1328547e6f7d347c57f11ad6e22a0ae5309e1abb`
+  - `COMMIT_1328547_WORKSTREAM = OTHER_ARX_WORKSTREAM` (`fix(portfolio): add durable manual exits and mobile radar remediation`)
+  - `COMMIT_1328547_MANIFEST_IMPACT = NONE` (Diffstat confirmed commit 1328547 touched 0 of the 10 manifest files; prior claim was factually mistaken).
+
+#### 10.5 Remediation Model & Implementation
+* **Selected Model**: **Model B — Current-authority manifest with missing succession**.
+* **Successor Manifest Creation**: Created `EPOCH_4_MANIFEST_V4.json` (`v4.0.0`):
+  - `SUPERSEDES_MANIFEST = EPOCH_4_MANIFEST_V3.json`
+  - `CERTIFIED_COMMIT_SHA1 = cd0922471767775636957df74406a2d5efb8f519`
+  - `AUTHORITY_SCOPE = CURRENT_PRODUCTION_AUTHORITY`
+  - `CREATED_AT_UTC = 2026-10-10T00:50:00Z`
+  - `observationGovernanceManifestHash = 95a9c4313ffe026dc63b1962c490259c57e78697497e8649081832005687d689`
+* **Code Updates**:
+  - `analyst_dashboard/governance/experiment_ledger.py`: Added `get_epoch4_v4_manifest()`, updated `verify_epoch4_manifest()` and `verify_observation_governance_manifest()` fallback chains to check V4, and added `verify_epoch4_v3_manifest()` to assert V3 historical immutability.
+  - `tests/test_live_dual_price_contract.py`: Added `test_epoch4_v3_manifest_byte_for_byte_untouched()` asserting V3 freeze hash `7fc5ece9...` remains untouched, added `test_epoch4_v4_malformed_fails_closed_no_fallback()`, and ensured fail-closed behavior on corruption.
+* **Immutability Invariant**: Historical manifests `EPOCH_4_MANIFEST_V3.json` (`7fc5ece9...`), `EPOCH_4_MANIFEST.json` (`2e550089...`), `EPOCH_3_MANIFEST.json`, and `EPOCH_2_MANIFEST.json` remain 100% byte-for-byte untouched.
+
+#### 10.6 Verification Evidence & Invariants
+* `tests/test_live_dual_price_contract.py`: **22 PASS / 0 FAIL**
+* `tests/test_price_authority_reproduction.py`: **8 PASS / 0 FAIL**
+* `tests/test_post_deploy_verification.py`: **8 PASS / 0 FAIL**
+* `tests/test_arx_step2_passive_capture_certification.py`: **16 PASS / 0 FAIL**
+* `tests/test_qa_escape_invariants.py`: **18 PASS / 0 FAIL**
+* `tests/test_optimal_execution.py`: **7 PASS / 0 FAIL**
+* `tests/test_analytics_nan_incident_epoch2.py`: **21 PASS / 0 FAIL**
+* `tests/test_execution_ladder_passive_capture.py`: **73 PASS / 0 FAIL**
+* Sprint 2A Suites (4 modules): **105 PASS / 0 FAIL**
+* Sprint 2B Suites (5 modules): **154 PASS / 0 FAIL**
+* Screener Suites (3 modules): **22 PASS / 0 FAIL**
+* **Total Targeted Tests**: **454 PASS / 0 FAIL**
+* `TARGETED_FAILED_TESTS = 0`
+* `KNOWN_FAILURES = 0`
+* `UNEXPLAINED_FAILURES = 0`
+* `QUANTITATIVE_BEHAVIOR_CHANGED = NO`
+* `HISTORICAL_EVIDENCE_MUTATED = NO`
+* `PRODUCTION_DATA_MUTATED = NO`
+* `SYNTHETIC_PROSPECTIVE_TRAFFIC = NO`
+* `VCP_EPOCH_002_STATUS = PAUSED_PENDING_EXTERNAL_CUSTODIAN`
+* `GATE_12_STATUS = NOT_SATISFIED`
+* `MODEL_TUNING_STATUS = FROZEN`
+* `RADAR_SPRINT_3_AUTHORIZED = NO`
+* `RELEASE_BLOCKERS_REMAIN = NO`
+* `LOCAL_RELEASE_READINESS = PASS`
+* `PUSH_STATUS = NOT_AUTHORIZED`
+* `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
+
+
