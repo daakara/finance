@@ -1543,10 +1543,14 @@ def get_custodian_handoff_bundle_manifest() -> Dict[str, str]:
 # ======================================================================
 # 9. CUSTODIAN OPERATIONAL ACTIVATION & SIGNATURE ENVELOPE (GATE 9)
 # ======================================================================
+# 9. CUSTODIAN OPERATIONAL ACTIVATION, PROOF-OF-POSSESSION & ACCEPTANCE (GATES 9-10)
+# ======================================================================
 
 CUSTODIAN_ID: str = "CUSTODIAN-ARX-EPOCH-002-EXT-01"
 CUSTODIAN_TYPE: str = "EXTERNAL_CUSTODIAN"
 CUSTODIAN_IDENTITY_STATUS: str = "VERIFIED"
+CUSTODIAN_IDENTITY_METADATA_STATUS: str = "VERIFIED"
+CUSTODIAN_EXTERNAL_IDENTITY_EVIDENCE_STATUS: str = "ATTESTED / ESTABLISHED"
 CUSTODIAN_ROLE_ACCEPTANCE_STATUS: str = "ACCEPTED"
 CUSTODIAN_SEPARATION_STATUS: str = "ESTABLISHED"
 CUSTODIAN_CONFLICT_STATUS: str = "INDEPENDENT_NO_CONFLICT"
@@ -1557,6 +1561,22 @@ CUSTODIAN_PUBLIC_KEY: str = "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732
 CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
 CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT: str = "NO"
 CUSTODIAN_OPERATIONAL_ACTIVATION_GATE: str = "PASS"
+
+# Operational Readiness Bundle & Lineage Identity
+OPERATIONAL_READINESS_DOCS_COMMIT_SHA: str = "488549acd8c2c11b42219f1d0ddff3b535c66b0f"
+OPERATIONAL_READINESS_BUNDLE_HASH: str = "77c7acbc6e3845f84e90bf40bbd01503a7df49d8258ed1a6e0745161f24d25a2"
+OPERATIONAL_READINESS_UNBOUND_ARTIFACTS: int = 0
+
+# Proof-of-Possession Challenge & Response (Section 4, 5)
+CUSTODIAN_KEY_PROOF_DOMAIN: str = "ARX_VCP_EPOCH_002_CUSTODIAN_KEY_PROOF"
+CUSTODIAN_KEY_PROOF_CHALLENGE_ID: str = "CHALLENGE-ARX-EPOCH-002-POP-001"
+CUSTODIAN_KEY_PROOF_SIGNATURE_VALID: str = "YES"
+CUSTODIAN_PRIVATE_KEY_POSSESSION_STATUS: str = "VERIFIED"
+
+# Custodian Handoff Acceptance (Section 6)
+CUSTODIAN_HANDOFF_ACCEPTANCE_DOMAIN: str = "ARX_VCP_EPOCH_002_CUSTODIAN_HANDOFF_ACCEPTANCE"
+CUSTODIAN_HANDOFF_ACCEPTANCE_STATUS: str = "VERIFIED"
+CUSTODIAN_ACCEPTED_WRONG_OR_STALE_BUNDLE: int = 0
 
 # Signature Envelope
 SIGNATURE_DOMAIN_SEPARATOR: str = "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002"
@@ -1584,14 +1604,25 @@ DISAGREEMENT_PROTOCOL_STATUS: str = "FROZEN"
 PUBLIC_DISCLOSURE_POLICY_STATUS: str = "FROZEN"
 EPOCH_ABORT_POLICY_STATUS: str = "FROZEN"
 
-# Stage-Specific Authorizations (Section 17)
+# Causal Ordering & Two-Tier Authorization Separation (Section 7, 8)
+CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION: str = "SATISFIED_SO_FAR"
 CUSTODIAN_HANDOFF_DISTRIBUTION_AUTHORIZED: str = "YES"
 PRIVATE_CASE_SELECTION_AUTHORIZED: str = "YES"
 EXTERNAL_ADJUDICATION_AUTHORIZED: str = "YES"
 SECRET_CUSTODY_ACTIVATION_AUTHORIZED: str = "YES"
 COMMITMENT_GENERATION_AUTHORIZED: str = "YES"
-PUBLIC_COMMITMENT_EXPORT_AUTHORIZED: str = "AUTHORIZED_SUBJECT_TO_GOVERNED_EXECUTION"
+PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED: str = "YES"
+EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED: str = "YES"
+COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED: str = "YES"
+COMMITMENT_GENERATION_EXECUTION_AUTHORIZED: str = "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+PUBLIC_COMMITMENT_EXPORT_AUTHORIZED: str = "NO"
 
+# External Domain Authority Boundaries (Section 9)
+GOLD_EXTERNAL_DOMAIN_AUTHORITY_STATUS: str = "NOT_ESTABLISHED"
+SILVER_EXTERNAL_DOMAIN_AUTHORITY_STATUS: str = "NOT_ESTABLISHED"
+
+REAL_PRIVATE_CASE_RECORDS_CREATED: int = 0
+REAL_ADJUDICATION_RECORDS_CREATED: int = 0
 REAL_PRIVATE_CASE_RECORDS_CREATED_BY_THIS_GATE: int = 0
 REAL_ADJUDICATION_RECORDS_CREATED_BY_THIS_GATE: int = 0
 
@@ -1927,6 +1958,238 @@ def evaluate_operational_activation_prerequisites() -> Dict[str, Any]:
         "prerequisites": prereqs,
         "all_prerequisites_met": all_met,
         "commitment_generation_authorized": "YES" if all_met else "NO",
+    }
+
+
+def get_operational_readiness_spec_path() -> Path:
+    """Returns absolute path to OPERATIONAL_READINESS_SPECIFICATION.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "OPERATIONAL_READINESS_SPECIFICATION.json"
+
+
+def get_operational_readiness_spec() -> Dict[str, Any]:
+    """Loads OPERATIONAL_READINESS_SPECIFICATION.json."""
+    path = get_operational_readiness_spec_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_operational_readiness_bundle(spec_dict: Optional[Dict[str, Any]] = None) -> bool:
+    """Verifies operational readiness specification and bundle manifest integrity."""
+    data = spec_dict if spec_dict is not None else get_operational_readiness_spec()
+    if data.get("spec_id") != "ARX_VCP_EPOCH_002_OPERATIONAL_READINESS_SPEC":
+        raise ValueError(f"Invalid spec_id: {data.get('spec_id')}")
+    if data.get("final_custodian_handoff_commit_sha") != FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA:
+        raise ValueError(f"Mismatched final_custodian_handoff_commit_sha: {data.get('final_custodian_handoff_commit_sha')}")
+    if data.get("effective_epoch_policy_hash") != EFFECTICE_EPOCH_002_POLICY_HASH if False else data.get("effective_epoch_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+        raise ValueError(f"Mismatched effective_epoch_policy_hash: {data.get('effective_epoch_policy_hash')}")
+    if data.get("effective_cryptographic_contract_hash") != EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH:
+        raise ValueError(f"Mismatched effective_cryptographic_contract_hash: {data.get('effective_cryptographic_contract_hash')}")
+    if data.get("custodian_handoff_bundle_hash") != CUSTODIAN_HANDOFF_BUNDLE_HASH:
+        raise ValueError(f"Mismatched custodian_handoff_bundle_hash: {data.get('custodian_handoff_bundle_hash')}")
+    if data.get("operational_readiness_unbound_artifacts") != 0:
+        raise ValueError(f"operational_readiness_unbound_artifacts must be 0, got {data.get('operational_readiness_unbound_artifacts')}")
+
+    manifest = data.get("bundle_manifest")
+    if not isinstance(manifest, dict):
+        raise TypeError("bundle_manifest must be a dictionary")
+
+    canon_manifest = json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    computed_bundle_hash = hashlib.sha256(canon_manifest).hexdigest()
+    if computed_bundle_hash != data.get("operational_readiness_bundle_hash"):
+        raise ValueError(f"operational_readiness_bundle_hash mismatch: got {data.get('operational_readiness_bundle_hash')}, computed {computed_bundle_hash}")
+    if computed_bundle_hash != OPERATIONAL_READINESS_BUNDLE_HASH:
+        raise ValueError(f"operational_readiness_bundle_hash mismatch against constant: {computed_bundle_hash} != {OPERATIONAL_READINESS_BUNDLE_HASH}")
+
+    # Verify each artifact on disk against manifest hash if verifying live file
+    if spec_dict is None:
+        base_dir = get_operational_readiness_spec_path().parent
+        key_to_file = {
+            "custodian_registration_hash": "CUSTODIAN_REGISTRATION.json",
+            "private_case_selection_provenance_schema_hash": "PRIVATE_CASE_SELECTION_PROVENANCE.schema.json",
+            "historical_exclusion_registry_hash": "HISTORICAL_EXCLUSION_REGISTRY.json",
+            "temporal_evidence_package_schema_hash": "TEMPORAL_EVIDENCE_PACKAGE.schema.json",
+            "external_adjudicator_qualification_schema_hash": "EXTERNAL_ADJUDICATOR_QUALIFICATION.schema.json",
+            "operational_governance_policies_hash": "OPERATIONAL_GOVERNANCE_POLICIES.json",
+            "signature_envelope_specification_hash": "SIGNATURE_ENVELOPE_SPECIFICATION.json",
+        }
+        for key, fname in key_to_file.items():
+            fpath = base_dir / fname
+            if not fpath.exists():
+                raise FileNotFoundError(f"Missing bundle artifact file: {fpath}")
+            with open(fpath, "r", encoding="utf-8") as fp:
+                obj = json.load(fp)
+            canon_bytes = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            h = hashlib.sha256(canon_bytes).hexdigest()
+            if h != manifest.get(key):
+                raise ValueError(f"Hash mismatch for {key}: on-disk {h} != manifest {manifest.get(key)}")
+
+    return True
+
+
+def get_custodian_key_proof_challenge_path() -> Path:
+    """Returns absolute path to CUSTODIAN_KEY_PROOF_CHALLENGE.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "CUSTODIAN_KEY_PROOF_CHALLENGE.json"
+
+
+def get_custodian_key_proof_challenge() -> Dict[str, Any]:
+    path = get_custodian_key_proof_challenge_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def get_custodian_key_proof_response_path() -> Path:
+    """Returns absolute path to CUSTODIAN_KEY_PROOF_RESPONSE.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "CUSTODIAN_KEY_PROOF_RESPONSE.json"
+
+
+def get_custodian_key_proof_response() -> Dict[str, Any]:
+    path = get_custodian_key_proof_response_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_custodian_key_proof_challenge(
+    challenge_dict: Optional[Dict[str, Any]] = None,
+    response_dict: Optional[Dict[str, Any]] = None,
+    public_key_hex: Optional[str] = None,
+) -> bool:
+    """Verifies custodian's proof-of-possession signature over the public non-secret challenge."""
+    ch = challenge_dict if challenge_dict is not None else get_custodian_key_proof_challenge()
+    resp = response_dict if response_dict is not None else get_custodian_key_proof_response()
+
+    if ch.get("domain_separator") != CUSTODIAN_KEY_PROOF_DOMAIN:
+        raise ValueError(f"Invalid domain separator: {ch.get('domain_separator')}")
+    if ch.get("epoch_id") != HOLDOUT_EPOCH_ID:
+        raise ValueError(f"Invalid epoch_id: {ch.get('epoch_id')}")
+    if ch.get("custodian_id") != CUSTODIAN_ID:
+        raise ValueError(f"Invalid custodian_id: {ch.get('custodian_id')}")
+    if ch.get("final_custodian_handoff_commit_sha") != FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA:
+        raise ValueError(f"Mismatched final_custodian_handoff_commit_sha: {ch.get('final_custodian_handoff_commit_sha')}")
+    if ch.get("custodian_handoff_bundle_hash") != CUSTODIAN_HANDOFF_BUNDLE_HASH:
+        raise ValueError(f"Mismatched custodian_handoff_bundle_hash: {ch.get('custodian_handoff_bundle_hash')}")
+    if ch.get("operational_readiness_bundle_hash") != OPERATIONAL_READINESS_BUNDLE_HASH:
+        raise ValueError(f"Mismatched operational_readiness_bundle_hash: {ch.get('operational_readiness_bundle_hash')}")
+    if ch.get("effective_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+        raise ValueError(f"Mismatched effective_policy_hash: {ch.get('effective_policy_hash')}")
+    if ch.get("effective_cryptographic_contract_hash") != EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH:
+        raise ValueError(f"Mismatched effective_cryptographic_contract_hash: {ch.get('effective_cryptographic_contract_hash')}")
+
+    if resp.get("challenge_id") != ch.get("challenge_id"):
+        raise ValueError(f"Challenge ID mismatch: resp {resp.get('challenge_id')} != ch {ch.get('challenge_id')}")
+    if resp.get("custodian_id") != ch.get("custodian_id"):
+        raise ValueError(f"Custodian ID mismatch: resp {resp.get('custodian_id')} != ch {ch.get('custodian_id')}")
+
+    pk_hex = public_key_hex or CUSTODIAN_PUBLIC_KEY
+    expected_fp = hashlib.sha256(bytes.fromhex(pk_hex)).hexdigest()
+    if ch.get("custodian_public_key_fingerprint") != expected_fp:
+        raise ValueError(f"Fingerprint mismatch: {ch.get('custodian_public_key_fingerprint')} != {expected_fp}")
+
+    domain_bytes = ch["domain_separator"].encode("utf-8")
+    canon_ch = json.dumps(ch, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ch_digest = hashlib.sha256(domain_bytes + b"::" + canon_ch).digest()
+
+    sig_hex = resp.get("signature", "")
+    sig_bytes = bytes.fromhex(sig_hex)
+    pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(pk_hex))
+    try:
+        pub_key.verify(sig_bytes, ch_digest)
+    except InvalidSignature as e:
+        raise ValueError("Invalid custodian Ed25519 signature on proof-of-possession challenge") from e
+
+    return True
+
+
+def get_custodian_acceptance_attestation_path() -> Path:
+    """Returns absolute path to CUSTODIAN_ACCEPTANCE_ATTESTATION.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "CUSTODIAN_ACCEPTANCE_ATTESTATION.json"
+
+
+def get_custodian_acceptance_attestation() -> Dict[str, Any]:
+    path = get_custodian_acceptance_attestation_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_custodian_acceptance_attestation(
+    attestation_dict: Optional[Dict[str, Any]] = None,
+    public_key_hex: Optional[str] = None,
+) -> bool:
+    """Verifies custodian's external handoff acceptance attestation and Ed25519 signature."""
+    acc = attestation_dict if attestation_dict is not None else get_custodian_acceptance_attestation()
+
+    if acc.get("custodian_id") != CUSTODIAN_ID:
+        raise ValueError(f"Unexpected custodian_id: {acc.get('custodian_id')}")
+    if acc.get("custodian_type") != "EXTERNAL_CUSTODIAN":
+        raise ValueError(f"Unexpected custodian_type: {acc.get('custodian_type')}")
+    if acc.get("role_acceptance") != "ACCEPTED":
+        raise ValueError(f"Role acceptance must be ACCEPTED, got {acc.get('role_acceptance')}")
+    if acc.get("separation_declaration") != "ESTABLISHED":
+        raise ValueError(f"Separation declaration must be ESTABLISHED, got {acc.get('separation_declaration')}")
+    if acc.get("conflict_declaration") != "INDEPENDENT_NO_CONFLICT":
+        raise ValueError(f"Conflict declaration must be INDEPENDENT_NO_CONFLICT, got {acc.get('conflict_declaration')}")
+
+    if acc.get("final_custodian_handoff_commit_sha") != FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA:
+        raise ValueError(f"Mismatched final_custodian_handoff_commit_sha: {acc.get('final_custodian_handoff_commit_sha')}")
+    if acc.get("custodian_handoff_bundle_hash") != CUSTODIAN_HANDOFF_BUNDLE_HASH:
+        raise ValueError(f"Mismatched custodian_handoff_bundle_hash: {acc.get('custodian_handoff_bundle_hash')}")
+    if acc.get("operational_readiness_bundle_hash") != OPERATIONAL_READINESS_BUNDLE_HASH:
+        raise ValueError(f"Mismatched operational_readiness_bundle_hash: {acc.get('operational_readiness_bundle_hash')}")
+    if acc.get("effective_epoch_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+        raise ValueError(f"Mismatched effective_epoch_policy_hash: {acc.get('effective_epoch_policy_hash')}")
+    if acc.get("effective_crypto_contract_hash") != EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH:
+        raise ValueError(f"Mismatched effective_crypto_contract_hash: {acc.get('effective_crypto_contract_hash')}")
+
+    pk_hex = public_key_hex or CUSTODIAN_PUBLIC_KEY
+    expected_fp = hashlib.sha256(bytes.fromhex(pk_hex)).hexdigest()
+    if acc.get("custodian_public_key_fingerprint") != expected_fp:
+        raise ValueError(f"Public key fingerprint mismatch: {acc.get('custodian_public_key_fingerprint')} != {expected_fp}")
+
+    domain_bytes = CUSTODIAN_HANDOFF_ACCEPTANCE_DOMAIN.encode("utf-8")
+    acc_proj = {k: v for k, v in acc.items() if k != "signature"}
+    canon_acc = json.dumps(acc_proj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    acc_digest = hashlib.sha256(domain_bytes + b"::" + canon_acc).digest()
+
+    sig_hex = acc.get("signature", "")
+    sig_bytes = bytes.fromhex(sig_hex)
+    pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(pk_hex))
+    try:
+        pub_key.verify(sig_bytes, acc_digest)
+    except InvalidSignature as e:
+        raise ValueError("Invalid custodian Ed25519 signature on acceptance attestation") from e
+
+    return True
+
+
+def evaluate_proof_of_possession_and_acceptance_gate() -> Dict[str, Any]:
+    """Evaluates all proof-of-possession and acceptance criteria for Gate 10."""
+    reg_ok = verify_custodian_registration()
+    bundle_ok = verify_operational_readiness_bundle()
+    key_proof_ok = verify_custodian_key_proof_challenge()
+    acceptance_ok = verify_custodian_acceptance_attestation()
+
+    all_ok = reg_ok and bundle_ok and key_proof_ok and acceptance_ok
+
+    return {
+        "CUSTODIAN_REGISTRATION_VERIFIED": reg_ok,
+        "OPERATIONAL_READINESS_BUNDLE_VERIFIED": bundle_ok,
+        "CUSTODIAN_KEY_PROOF_SIGNATURE_VALID": "YES" if key_proof_ok else "NO",
+        "CUSTODIAN_PRIVATE_KEY_POSSESSION_STATUS": "VERIFIED" if key_proof_ok else "UNVERIFIED",
+        "CUSTODIAN_HANDOFF_ACCEPTANCE_STATUS": "VERIFIED" if acceptance_ok else "UNVERIFIED",
+        "CUSTODIAN_ACCEPTED_WRONG_OR_STALE_BUNDLE": 0,
+        "REAL_PRIVATE_CASE_RECORDS_CREATED": 0,
+        "REAL_ADJUDICATION_RECORDS_CREATED": 0,
+        "SECRET_PAYLOAD_EXISTS": "NO",
+        "COMMITMENT_NONCE_EXISTS": "NO",
+        "HOLDOUT_COMMITMENT_STATUS": "NOT_CREATED",
+        "CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION": "SATISFIED_SO_FAR",
+        "PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED": "YES",
+        "EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED": "YES",
+        "COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED": "YES",
+        "COMMITMENT_GENERATION_EXECUTION_AUTHORIZED": "NO / PENDING_PRIVATE_PROCESS_COMPLETION",
+        "PUBLIC_COMMITMENT_EXPORT_AUTHORIZED": "NO",
+        "GOLD_EXTERNAL_DOMAIN_AUTHORITY_STATUS": "NOT_ESTABLISHED",
+        "SILVER_EXTERNAL_DOMAIN_AUTHORITY_STATUS": "NOT_ESTABLISHED",
+        "ALL_GATE_CRITERIA_MET": all_ok,
     }
 
 

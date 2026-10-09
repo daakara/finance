@@ -327,6 +327,40 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     validate_temporal_evidence_package,
     validate_adjudicator_qualification,
     evaluate_operational_activation_prerequisites,
+    EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH,
+    CUSTODIAN_IDENTITY_METADATA_STATUS,
+    CUSTODIAN_EXTERNAL_IDENTITY_EVIDENCE_STATUS,
+    OPERATIONAL_READINESS_DOCS_COMMIT_SHA,
+    OPERATIONAL_READINESS_BUNDLE_HASH,
+    OPERATIONAL_READINESS_UNBOUND_ARTIFACTS,
+    CUSTODIAN_KEY_PROOF_DOMAIN,
+    CUSTODIAN_KEY_PROOF_CHALLENGE_ID,
+    CUSTODIAN_KEY_PROOF_SIGNATURE_VALID,
+    CUSTODIAN_PRIVATE_KEY_POSSESSION_STATUS,
+    CUSTODIAN_HANDOFF_ACCEPTANCE_DOMAIN,
+    CUSTODIAN_HANDOFF_ACCEPTANCE_STATUS,
+    CUSTODIAN_ACCEPTED_WRONG_OR_STALE_BUNDLE,
+    CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION,
+    PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED,
+    EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED,
+    COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED,
+    COMMITMENT_GENERATION_EXECUTION_AUTHORIZED,
+    GOLD_EXTERNAL_DOMAIN_AUTHORITY_STATUS,
+    SILVER_EXTERNAL_DOMAIN_AUTHORITY_STATUS,
+    REAL_PRIVATE_CASE_RECORDS_CREATED,
+    REAL_ADJUDICATION_RECORDS_CREATED,
+    get_operational_readiness_spec_path,
+    get_operational_readiness_spec,
+    verify_operational_readiness_bundle,
+    get_custodian_key_proof_challenge_path,
+    get_custodian_key_proof_challenge,
+    get_custodian_key_proof_response_path,
+    get_custodian_key_proof_response,
+    verify_custodian_key_proof_challenge,
+    get_custodian_acceptance_attestation_path,
+    get_custodian_acceptance_attestation,
+    verify_custodian_acceptance_attestation,
+    evaluate_proof_of_possession_and_acceptance_gate,
 )
 
 
@@ -1797,7 +1831,7 @@ def test_stage_specific_authorizations_and_negative_gates():
     assert EXTERNAL_ADJUDICATION_AUTHORIZED == "YES"
     assert SECRET_CUSTODY_ACTIVATION_AUTHORIZED == "YES"
     assert COMMITMENT_GENERATION_AUTHORIZED == "YES"
-    assert PUBLIC_COMMITMENT_EXPORT_AUTHORIZED == "AUTHORIZED_SUBJECT_TO_GOVERNED_EXECUTION"
+    assert PUBLIC_COMMITMENT_EXPORT_AUTHORIZED == "NO"
 
     # Negative gates
     assert TOTAL_COMMITTED_CASE_COUNT == 0
@@ -1843,4 +1877,149 @@ def test_prerequisites_evaluation_and_verdict():
     assert prereqs["DISAGREEMENT_PROTOCOL_STATUS"] == "FROZEN"
     assert prereqs["PUBLIC_DISCLOSURE_POLICY_STATUS"] == "FROZEN"
     assert prereqs["EPOCH_ABORT_POLICY_STATUS"] == "FROZEN"
+
+
+def test_operational_readiness_bundle_verification_and_tamper_rejection():
+    """[GATE 10 / SECTION 2] Verifies operational readiness bundle specification and anti-tamper protections."""
+    assert verify_operational_readiness_bundle() is True
+
+    spec = get_operational_readiness_spec()
+    assert spec["spec_id"] == "ARX_VCP_EPOCH_002_OPERATIONAL_READINESS_SPEC"
+    assert spec["final_custodian_handoff_commit_sha"] == "a7232ccedb162ed68b7b74e78738737709c4d135"
+    assert spec["operational_readiness_bundle_hash"] == OPERATIONAL_READINESS_BUNDLE_HASH
+    assert spec["operational_readiness_unbound_artifacts"] == 0
+
+    # Tamper detection 1: wrong artifact hash in manifest
+    tampered_manifest = copy.deepcopy(spec)
+    tampered_manifest["bundle_manifest"]["custodian_registration_hash"] = "0" * 64
+    with pytest.raises(ValueError, match="operational_readiness_bundle_hash mismatch"):
+        verify_operational_readiness_bundle(tampered_manifest)
+
+    # Tamper detection 2: wrong bundle hash claimed
+    tampered_bundle_hash = copy.deepcopy(spec)
+    tampered_bundle_hash["operational_readiness_bundle_hash"] = "f" * 64
+    with pytest.raises(ValueError, match="operational_readiness_bundle_hash mismatch"):
+        verify_operational_readiness_bundle(tampered_bundle_hash)
+
+    # Tamper detection 3: stale handoff commit SHA
+    tampered_sha = copy.deepcopy(spec)
+    tampered_sha["final_custodian_handoff_commit_sha"] = "0" * 40
+    with pytest.raises(ValueError, match="Mismatched final_custodian_handoff_commit_sha"):
+        verify_operational_readiness_bundle(tampered_sha)
+
+    # Tamper detection 4: unbound artifacts > 0
+    tampered_unbound = copy.deepcopy(spec)
+    tampered_unbound["operational_readiness_unbound_artifacts"] = 1
+    with pytest.raises(ValueError, match="operational_readiness_unbound_artifacts must be 0"):
+        verify_operational_readiness_bundle(tampered_unbound)
+
+
+def test_custodian_key_proof_of_possession_verification_and_tamper_rejection():
+    """[GATE 10 / SECTION 4-5] Verifies custodian proof-of-possession challenge & Ed25519 signature."""
+    assert verify_custodian_key_proof_challenge() is True
+
+    ch = get_custodian_key_proof_challenge()
+    resp = get_custodian_key_proof_response()
+
+    assert ch["challenge_id"] == CUSTODIAN_KEY_PROOF_CHALLENGE_ID
+    assert ch["domain_separator"] == CUSTODIAN_KEY_PROOF_DOMAIN
+    assert ch["custodian_id"] == CUSTODIAN_ID
+    assert ch["custodian_public_key_fingerprint"] == CUSTODIAN_PUBLIC_KEY_FINGERPRINT
+    assert resp["custodian_id"] == CUSTODIAN_ID
+    assert resp["challenge_id"] == CUSTODIAN_KEY_PROOF_CHALLENGE_ID
+
+    # Tamper detection 1: corrupted signature
+    tampered_resp = copy.deepcopy(resp)
+    bad_char = '0' if tampered_resp["signature"][0] != '0' else '1'
+    tampered_resp["signature"] = bad_char + tampered_resp["signature"][1:]
+    with pytest.raises(ValueError, match="Invalid custodian Ed25519 signature"):
+        verify_custodian_key_proof_challenge(ch, tampered_resp)
+
+    # Tamper detection 2: tampered challenge nonce
+    tampered_ch = copy.deepcopy(ch)
+    tampered_ch["challenge_nonce"] = "0" * 64
+    with pytest.raises(ValueError, match="Invalid custodian Ed25519 signature"):
+        verify_custodian_key_proof_challenge(tampered_ch, resp)
+
+    # Tamper detection 3: wrong domain separator
+    bad_domain_ch = copy.deepcopy(ch)
+    bad_domain_ch["domain_separator"] = "WRONG_DOMAIN"
+    with pytest.raises(ValueError, match="Invalid domain separator"):
+        verify_custodian_key_proof_challenge(bad_domain_ch, resp)
+
+    # Tamper detection 4: challenge ID mismatch
+    bad_id_resp = copy.deepcopy(resp)
+    bad_id_resp["challenge_id"] = "CHALLENGE-WRONG-ID"
+    with pytest.raises(ValueError, match="Challenge ID mismatch"):
+        verify_custodian_key_proof_challenge(ch, bad_id_resp)
+
+
+def test_custodian_acceptance_attestation_verification_and_tamper_rejection():
+    """[GATE 10 / SECTION 3, 6] Verifies external custodian handoff acceptance attestation and signature."""
+    assert verify_custodian_acceptance_attestation() is True
+
+    acc = get_custodian_acceptance_attestation()
+    assert acc["custodian_id"] == CUSTODIAN_ID
+    assert acc["custodian_type"] == "EXTERNAL_CUSTODIAN"
+    assert acc["role_acceptance"] == "ACCEPTED"
+    assert acc["separation_declaration"] == "ESTABLISHED"
+    assert acc["conflict_declaration"] == "INDEPENDENT_NO_CONFLICT"
+    assert acc["final_custodian_handoff_commit_sha"] == FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA
+    assert acc["custodian_handoff_bundle_hash"] == CUSTODIAN_HANDOFF_BUNDLE_HASH
+    assert acc["operational_readiness_bundle_hash"] == OPERATIONAL_READINESS_BUNDLE_HASH
+    assert acc["effective_epoch_policy_hash"] == EFFECTIVE_EPOCH_002_POLICY_HASH
+    assert acc["effective_crypto_contract_hash"] == EFFECTIVE_CRYPTOGRAPHIC_CONTRACT_HASH
+
+    # Tamper detection 1: corrupted signature
+    tampered_acc = copy.deepcopy(acc)
+    bad_char = '0' if tampered_acc["signature"][0] != '0' else '1'
+    tampered_acc["signature"] = bad_char + tampered_acc["signature"][1:]
+    with pytest.raises(ValueError, match="Invalid custodian Ed25519 signature"):
+        verify_custodian_acceptance_attestation(tampered_acc)
+
+    # Tamper detection 2: stale handoff commit SHA
+    stale_sha_acc = copy.deepcopy(acc)
+    stale_sha_acc["final_custodian_handoff_commit_sha"] = "0" * 40
+    with pytest.raises(ValueError, match="Mismatched final_custodian_handoff_commit_sha"):
+        verify_custodian_acceptance_attestation(stale_sha_acc)
+
+    # Tamper detection 3: unaccepted role
+    unaccepted_acc = copy.deepcopy(acc)
+    unaccepted_acc["role_acceptance"] = "REJECTED"
+    with pytest.raises(ValueError, match="Role acceptance must be ACCEPTED"):
+        verify_custodian_acceptance_attestation(unaccepted_acc)
+
+
+def test_proof_of_possession_and_acceptance_gate_evaluation():
+    """[GATE 10 / SECTIONS 7-10] Verifies causal ordering, two-tier authorization separation, and negative gates."""
+    gate_eval = evaluate_proof_of_possession_and_acceptance_gate()
+    assert gate_eval["ALL_GATE_CRITERIA_MET"] is True
+    assert gate_eval["CUSTODIAN_REGISTRATION_VERIFIED"] is True
+    assert gate_eval["OPERATIONAL_READINESS_BUNDLE_VERIFIED"] is True
+    assert gate_eval["CUSTODIAN_KEY_PROOF_SIGNATURE_VALID"] == "YES"
+    assert gate_eval["CUSTODIAN_PRIVATE_KEY_POSSESSION_STATUS"] == "VERIFIED"
+    assert gate_eval["CUSTODIAN_HANDOFF_ACCEPTANCE_STATUS"] == "VERIFIED"
+    assert gate_eval["CUSTODIAN_ACCEPTED_WRONG_OR_STALE_BUNDLE"] == 0
+
+    # Causal ordering before private case work
+    assert gate_eval["REAL_PRIVATE_CASE_RECORDS_CREATED"] == 0
+    assert gate_eval["REAL_ADJUDICATION_RECORDS_CREATED"] == 0
+    assert gate_eval["SECRET_PAYLOAD_EXISTS"] == "NO"
+    assert gate_eval["COMMITMENT_NONCE_EXISTS"] == "NO"
+    assert gate_eval["HOLDOUT_COMMITMENT_STATUS"] == "NOT_CREATED"
+    assert gate_eval["CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION"] == "SATISFIED_SO_FAR"
+
+    # Two-tier authorization separation: Protocol vs. Execution
+    assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "YES"
+    assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "YES"
+    assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
+    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+    assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
+
+    # External domain authority unestablished
+    assert gate_eval["GOLD_EXTERNAL_DOMAIN_AUTHORITY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["SILVER_EXTERNAL_DOMAIN_AUTHORITY_STATUS"] == "NOT_ESTABLISHED"
+    assert GOLD_COMMITTED_CASE_COUNT == 0
+    assert SILVER_COMMITTED_CASE_COUNT == 0
+    assert INTERNAL_REFERENCE_COMMITTED_CASE_COUNT == 0
 
