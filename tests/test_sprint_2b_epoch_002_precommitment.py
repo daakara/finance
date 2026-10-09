@@ -361,6 +361,32 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     get_custodian_acceptance_attestation,
     verify_custodian_acceptance_attestation,
     evaluate_proof_of_possession_and_acceptance_gate,
+    CUSTODIAN_REAL_WORLD_IDENTITY_STATUS,
+    CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS,
+    CUSTODIAN_INFORMATION_BOUNDARY_STATUS,
+    PRIOR_REPORTED_CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+    CUSTODIAN_KEY_HISTORY_CLASSIFICATION,
+    CUSTODIAN_PUBLIC_KEY_REGISTRATION_STATUS,
+    REGISTERED_CUSTODIAN_PRIVATE_KEY_GENERATED_IN_DEV_ENVIRONMENT,
+    REGISTERED_CUSTODIAN_PRIVATE_KEY_SERIALIZED_IN_DEV_ENVIRONMENT,
+    REGISTERED_CUSTODIAN_PRIVATE_KEY_USED_TO_SIGN_IN_DEV_ENVIRONMENT,
+    CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS,
+    CUSTODIAN_PRIVATE_KEY_LEAKAGE_DETECTED,
+    CUSTODIAN_KEY_STATUS,
+    OPERATIONAL_READINESS_BUNDLE_HASH_PARITY,
+    CUSTODIAN_KEY_PROOF_CHALLENGE_MATCH,
+    CUSTODIAN_KEY_PROOF_REGISTERED_KEY_MATCH,
+    CUSTODIAN_ACCEPTANCE_SIGNATURE_VALID,
+    CUSTODIAN_ACCEPTANCE_SIGNED_PROJECTION_MATCH,
+    CUSTODIAN_ACCEPTANCE_KEY_FINGERPRINT_MATCH,
+    CUSTODIAN_ACCEPTED_EFFECTIVE_OPERATIONAL_BUNDLE,
+    KEY_PROOF_PRECEDES_ACCEPTANCE,
+    TRACKED_REPOSITORY_SECRET_AUDIT_STATUS,
+    TRACKED_PRIVATE_KEY_FINDINGS,
+    TRACKED_HOLDOUT_NONCE_FINDINGS,
+    TRACKED_PRIVATE_PAYLOAD_FINDINGS,
+    run_tracked_repository_secret_audit,
+    evaluate_custodian_provenance_and_authorization_gate,
 )
 
 
@@ -1556,12 +1582,16 @@ def test_semantic_parity_matrix_and_successor_gates():
 # ======================================================================
 
 def test_custodian_identity_and_separation_status():
-    """[GATE 9 / SECTIONS 2, 3] Verifies custodian identity, separation, and registration artifact."""
+    """[GATE 9 & 11 / SECTIONS 2, 3] Verifies custodian identity, separation, and registration artifact."""
     assert CUSTODIAN_ID == "CUSTODIAN-ARX-EPOCH-002-EXT-01"
     assert CUSTODIAN_TYPE == "EXTERNAL_CUSTODIAN"
-    assert CUSTODIAN_IDENTITY_STATUS == "VERIFIED"
+    assert CUSTODIAN_IDENTITY_STATUS == "VERIFIED_IN_SCHEMA_ONLY"
     assert CUSTODIAN_ROLE_ACCEPTANCE_STATUS == "ACCEPTED"
-    assert CUSTODIAN_SEPARATION_STATUS == "ESTABLISHED"
+    assert CUSTODIAN_SEPARATION_STATUS == "NOT_ESTABLISHED"
+    assert CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS == "FAIL"
+    assert CUSTODIAN_REAL_WORLD_IDENTITY_STATUS == "NOT_ESTABLISHED"
+    assert CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS == "NOT_ESTABLISHED"
+    assert CUSTODIAN_INFORMATION_BOUNDARY_STATUS == "NOT_ESTABLISHED"
     assert CUSTODIAN_CONFLICT_STATUS == "INDEPENDENT_NO_CONFLICT"
     assert CUSTODIAN_OPERATIONAL_ACTIVATION_GATE == "PASS"
 
@@ -1573,6 +1603,8 @@ def test_custodian_identity_and_separation_status():
     assert reg["public_key"] == CUSTODIAN_PUBLIC_KEY
     assert reg["public_key_fingerprint"] == CUSTODIAN_PUBLIC_KEY_FINGERPRINT
     assert reg["revocation_status"] == "ACTIVE"
+    assert reg["custodian_identity_verification_status"] == "VERIFIED"
+    assert reg["custody_separation_status"] == "ESTABLISHED"
 
     # Tampered registration raises ValueError
     bad_reg = dict(reg)
@@ -1599,7 +1631,7 @@ def test_custodian_signing_key_and_signature_envelope():
     assert CUSTODIAN_SIGNATURE_KEY_STATUS == "REGISTERED / VERIFIED"
     assert CUSTODIAN_PUBLIC_KEY == "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1"
     assert CUSTODIAN_PUBLIC_KEY_FINGERPRINT == "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
-    assert CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT == "NO"
+    assert CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT == "YES"
 
     assert SIGNATURE_DOMAIN_SEPARATOR == "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002"
     assert SIGNED_ARTIFACT_TYPE == "PUBLIC_CUSTODIAN_EXPORT"
@@ -2010,8 +2042,8 @@ def test_proof_of_possession_and_acceptance_gate_evaluation():
     assert gate_eval["CUSTODIAN_ACCEPTANCE_PRECEDES_PRIVATE_CASE_SELECTION"] == "SATISFIED_SO_FAR"
 
     # Two-tier authorization separation: Protocol vs. Execution
-    assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "YES"
-    assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "YES"
+    assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "NO"
+    assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "NO"
     assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
     assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
     assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
@@ -2022,4 +2054,38 @@ def test_proof_of_possession_and_acceptance_gate_evaluation():
     assert GOLD_COMMITTED_CASE_COUNT == 0
     assert SILVER_COMMITTED_CASE_COUNT == 0
     assert INTERNAL_REFERENCE_COMMITTED_CASE_COUNT == 0
+
+
+def test_custodian_provenance_and_key_origin_gate_evaluation():
+    """[GATE 11 / SECTIONS 1-15] Verifies custodian provenance, key-origin audit, and fail-closed blocking of execution."""
+    gate_eval = evaluate_custodian_provenance_and_authorization_gate()
+
+    # Verified cryptographic properties
+    assert gate_eval["CUSTODIAN_KEY_HISTORY_CLASSIFICATION"] == "PRIOR_REPORTING_DEFECT"
+    assert gate_eval["CUSTODIAN_PRIVATE_KEY_POSSESSION_STATUS"] == "VERIFIED"
+    assert gate_eval["CUSTODIAN_ACCEPTANCE_SIGNATURE_VALID"] == "YES"
+    assert gate_eval["CUSTODIAN_ACCEPTANCE_SIGNED_PROJECTION_MATCH"] == "YES"
+    assert gate_eval["CUSTODIAN_ACCEPTANCE_KEY_FINGERPRINT_MATCH"] == "YES"
+    assert gate_eval["OPERATIONAL_READINESS_BUNDLE_HASH_PARITY"] == "PASS"
+    assert gate_eval["CUSTODIAN_ACCEPTED_EFFECTIVE_OPERATIONAL_BUNDLE"] == "YES"
+    assert gate_eval["TRACKED_REPOSITORY_SECRET_AUDIT_STATUS"] == "PASS"
+    assert gate_eval["TRACKED_PRIVATE_KEY_FINDINGS"] == 0
+    assert gate_eval["TRACKED_HOLDOUT_NONCE_FINDINGS"] == 0
+    assert gate_eval["TRACKED_PRIVATE_PAYLOAD_FINDINGS"] == 0
+
+    # Substantive provenance failures detected
+    assert gate_eval["CUSTODIAN_EXTERNAL_KEY_ORIGIN_STATUS"] == "FAIL"
+    assert gate_eval["CUSTODIAN_REAL_WORLD_IDENTITY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["CUSTODIAN_ORGANIZATIONAL_EXTERNALITY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["CUSTODIAN_INFORMATION_BOUNDARY_STATUS"] == "NOT_ESTABLISHED"
+    assert gate_eval["CUSTODIAN_PRIVATE_KEY_LEAKAGE_DETECTED"] == "YES"
+    assert gate_eval["CUSTODIAN_KEY_STATUS"] == "COMPROMISED"
+    assert gate_eval["ALL_PROVENANCE_CRITERIA_MET"] is False
+
+    # Fail-closed execution blocking
+    assert gate_eval["PRIVATE_CASE_SELECTION_EXECUTION_AUTHORIZED"] == "NO"
+    assert gate_eval["EXTERNAL_ADJUDICATION_EXECUTION_AUTHORIZED"] == "NO"
+    assert gate_eval["COMMITMENT_GENERATION_PROTOCOL_AUTHORIZED"] == "YES"
+    assert gate_eval["COMMITMENT_GENERATION_EXECUTION_AUTHORIZED"] == "NO / PENDING_PRIVATE_PROCESS_COMPLETION"
+    assert gate_eval["PUBLIC_COMMITMENT_EXPORT_AUTHORIZED"] == "NO"
 
