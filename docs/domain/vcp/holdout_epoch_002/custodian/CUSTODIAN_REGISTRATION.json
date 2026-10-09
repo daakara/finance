@@ -1,0 +1,15 @@
+{
+  "custodian_id": "CUSTODIAN-ARX-EPOCH-002-EXT-01",
+  "custodian_type": "EXTERNAL_CUSTODIAN",
+  "custodian_identity_verification_status": "VERIFIED",
+  "custodian_role_acceptance_status": "ACCEPTED",
+  "custodian_conflict_status": "INDEPENDENT_NO_CONFLICT",
+  "custody_separation_status": "ESTABLISHED",
+  "algorithm": "ED25519",
+  "public_key": "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1",
+  "public_key_fingerprint": "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02",
+  "valid_from": "2026-10-09T18:00:00Z",
+  "revocation_status": "ACTIVE",
+  "registered_at": "2026-10-09T18:00:00Z",
+  "registration_artifact_hash": "f21e85d5401d1506ec78cf0041c5a1de8b126afc55d03692cebb8bfddfb46917"
+}

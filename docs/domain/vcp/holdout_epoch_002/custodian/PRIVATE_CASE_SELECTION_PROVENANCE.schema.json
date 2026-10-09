@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Private Case Selection Provenance Schema",
+  "description": "Cryptographic and methodological provenance contract proving Epoch 002 holdout cases were assembled without knowledge of candidate output or future outcomes.",
+  "type": "object",
+  "required": [
+    "selection_epoch_id",
+    "eligible_source_population_id",
+    "eligible_source_population_hash",
+    "source_snapshot_as_of",
+    "sampling_policy_hash",
+    "scope_policy_hash",
+    "selection_method",
+    "stratification_dimensions",
+    "selection_seed_commitment",
+    "candidate_output_use",
+    "future_outcome_use",
+    "selected_case_content_hashes",
+    "selected_group_hashes",
+    "exclusion_reason_counts",
+    "historical_collision_check_hash",
+    "selection_manifest_hash"
+  ],
+  "properties": {
+    "selection_epoch_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
+      ]
+    },
+    "eligible_source_population_id": {
+      "type": "string"
+    },
+    "eligible_source_population_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_snapshot_as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sampling_policy_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "scope_policy_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "selection_method": {
+      "type": "string",
+      "enum": [
+        "STRATIFIED_DETERMINISTIC_SAMPLE",
+        "PSEUDORANDOM_SEED_COMMITTED_SAMPLE",
+        "EXHAUSTIVE_POPULATION_SELECTION"
+      ]
+    },
+    "stratification_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "selection_seed_commitment": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "candidate_output_use": {
+      "type": "string",
+      "enum": [
+        "PROHIBITED"
+      ]
+    },
+    "future_outcome_use": {
+      "type": "string",
+      "enum": [
+        "PROHIBITED"
+      ]
+    },
+    "selected_case_content_hashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "selected_group_hashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "exclusion_reason_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "historical_collision_check_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "selection_manifest_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

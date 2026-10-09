@@ -1,0 +1,150 @@
+{
+  "registry_id": "ARX_VCP_HISTORICAL_EXCLUSION_REGISTRY_EPOCH_002",
+  "registry_version": "1.0.0",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "created_at": "2026-10-09T18:00:00Z",
+  "status": "READY",
+  "total_historical_cases": 24,
+  "historical_dev_case_count": 16,
+  "historical_holdout_case_count": 8,
+  "historical_dev_cases": [
+    {
+      "case_id": "DEV-001-QUALIFIED-3T",
+      "partition": "DEV",
+      "content_hash": "7c1bf01bf43377e1e7e9e6d91970bf9122ea3314ced09b41cf376c5b4e8e8731"
+    },
+    {
+      "case_id": "DEV-002-QUALIFIED-2T",
+      "partition": "DEV",
+      "content_hash": "b9b64342b80850367bfa63a0e84c86b907794a119670cce5e20663e664bd01cd"
+    },
+    {
+      "case_id": "DEV-003-QUALIFIED-4T",
+      "partition": "DEV",
+      "content_hash": "e64c736e2252d3fc04b076c7de7e6c5ed848c24d249983be39976669bbc86dce"
+    },
+    {
+      "case_id": "DEV-004-STAGE-4-DOWNTREND",
+      "partition": "DEV",
+      "content_hash": "8ff7d419a453a59a551c00f1d6bb71b6665a03067352d4667a1b49453243c282"
+    },
+    {
+      "case_id": "DEV-005-EXPANDING-VOLATILITY",
+      "partition": "DEV",
+      "content_hash": "3370e6699aaa7994a624d62e447752e685ab25676700dd5ef9596749cb88dd5e"
+    },
+    {
+      "case_id": "DEV-006-HEAVY-VOLUME-FAIL",
+      "partition": "DEV",
+      "content_hash": "91baf54240668a368fe3628f49918f277b2adff56f1f18484a58193bddddbc99"
+    },
+    {
+      "case_id": "DEV-007-INSUFFICIENT-HISTORY",
+      "partition": "DEV",
+      "content_hash": "7daadea9ebfa36b20b06a74587f6d2bf1623da67e06f3887d6f508a83437993e"
+    },
+    {
+      "case_id": "DEV-008-BASE-TOO-DEEP",
+      "partition": "DEV",
+      "content_hash": "7a9690e6f83822d7e3140505fee3ddf46b9c3c0d981fcd7407e2515b603b9762"
+    },
+    {
+      "case_id": "DEV-009-STAGE-1-BASE",
+      "partition": "DEV",
+      "content_hash": "ef8fce993c0dfad9766ace7a6396af08908c09d7f839542adc382ad1329a4bc1"
+    },
+    {
+      "case_id": "DEV-010-BOUNDARY-200-SESSIONS",
+      "partition": "DEV",
+      "content_hash": "56862a9410544f439c2fbc1f6c3d21553126491b5d8cf11bf94b5c85421e359d"
+    },
+    {
+      "case_id": "DEV-011-BOUNDARY-VOLUME-DRY",
+      "partition": "DEV",
+      "content_hash": "070788080114a4c6e9f316a85d6045cfa0b54ccfe38e21904aa3ba1c1809685c"
+    },
+    {
+      "case_id": "DEV-012-PRICE-EXTENDED",
+      "partition": "DEV",
+      "content_hash": "192f02d72b729d0c9ae70d0e5c4e7874239f4ffd7d17c8cd823161d047f8b04a"
+    },
+    {
+      "case_id": "DEV-013-SILVER-CROSS-MARKET",
+      "partition": "DEV",
+      "content_hash": "20235ac96cfb6b927a863c24395040bea00394c958e889aae5725b7e6f37fb61"
+    },
+    {
+      "case_id": "DEV-014-CHALLENGE-SHAKEOUT",
+      "partition": "DEV",
+      "content_hash": "c8e00e95bf5b1f2a1d7480c14b400ab593f547211e78addf746fcaf435fef939"
+    },
+    {
+      "case_id": "DEV-015-SINGLE-PULLBACK",
+      "partition": "DEV",
+      "content_hash": "f4e960036f1161a0adcab3c3a2888bae7df51751605caaec4dbb5c6954e33734"
+    },
+    {
+      "case_id": "DEV-016-UNRESOLVED-STRUCTURE",
+      "partition": "DEV",
+      "content_hash": "6758c1cd92a4b52400dd95d4cde0a9b96cb6a3a3fbce591b200ef6cc5d4af56b"
+    }
+  ],
+  "historical_holdout_cases": [
+    {
+      "case_id": "HLD-001-QUALIFIED-3T",
+      "partition": "HOLDOUT",
+      "content_hash": "b415c30c161b85a7e8be53d76d1abb156919e2f1639f38db441231448af6480c"
+    },
+    {
+      "case_id": "HLD-002-QUALIFIED-2T",
+      "partition": "HOLDOUT",
+      "content_hash": "93dc12f24d24e8d3afe0ff6b6bc6092c42659492a222d25063c47f08bd71e003"
+    },
+    {
+      "case_id": "HLD-003-STAGE-4",
+      "partition": "HOLDOUT",
+      "content_hash": "b7bcb91ab5f34da888f365a4a553858ddb053a7ea10ef3b9fb35f84d75b402f0"
+    },
+    {
+      "case_id": "HLD-004-EXPANDING-VOL",
+      "partition": "HOLDOUT",
+      "content_hash": "e77cdaf71fd51d09d5441b5500be1ccba2b8371bb5349699e9a7f5e2f55f25f2"
+    },
+    {
+      "case_id": "HLD-005-HEAVY-VOLUME",
+      "partition": "HOLDOUT",
+      "content_hash": "ba060f0ee5d92df7c1df1c6acb95cc2c1453d135065bc74f8712c766029910c9"
+    },
+    {
+      "case_id": "HLD-006-INSUFFICIENT-HIST",
+      "partition": "HOLDOUT",
+      "content_hash": "5cc7e38baa32406f631988d50bd165234dee58fe51009d728a36eebf8fd38f6c"
+    },
+    {
+      "case_id": "HLD-007-BOUNDARY-200",
+      "partition": "HOLDOUT",
+      "content_hash": "ce788b7061d832dd02b92d85b4dafebf337697bce8a574b2870687b7f2280deb"
+    },
+    {
+      "case_id": "HLD-008-SILVER-CROSS-MARKET",
+      "partition": "HOLDOUT",
+      "content_hash": "3155507fb43622b6a98da0b7fc73e5ff387ecf0c7cef616f81bc63dbee58cba4"
+    }
+  ],
+  "previously_revealed_prospective_cases": [],
+  "previous_setup_groups": [
+    {
+      "group_id": "EPISODE-EPOCH-001-DEV-CANONICAL",
+      "group_hash": "a332d04c2d9b93dc73c091aed63fef9545be89cce70ff1c24e08b813a9555e2c"
+    },
+    {
+      "group_id": "EPISODE-EPOCH-001-HOLDOUT-CANONICAL",
+      "group_hash": "f5285c1a45906c9db5a024fb7ee342af62cca89a009e6af1f8524f0ccd30d927"
+    }
+  ],
+  "collision_invariants": {
+    "PREVIOUS_CASE_CONTENT_COLLISIONS": 0,
+    "PREVIOUS_GROUP_COLLISIONS": 0
+  },
+  "registry_hash": "8453f1425b5b496ee37b5ceb8837c1f1e5be484adbb03da3a7afe670c745f124"
+}

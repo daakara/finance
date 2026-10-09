@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Temporal Evidence Package Schema",
+  "description": "Immutable as-of evidence package ensuring zero lookahead, strict temporal closure, and independence from candidate outputs.",
+  "type": "object",
+  "required": [
+    "case_token",
+    "evaluation_as_of",
+    "security_identity",
+    "market_session_identity",
+    "source_snapshot_ids",
+    "ohlcv_evidence_hashes",
+    "valid_time_maximum",
+    "known_at_maximum",
+    "corporate_action_state_provenance",
+    "provider_identity",
+    "data_readiness_status",
+    "temporal_closure_hash",
+    "domain_evidence_references",
+    "post_t_price_data_included",
+    "post_t_volume_data_included",
+    "future_corporate_action_knowledge_included",
+    "future_outcome_used_as_domain_truth"
+  ],
+  "properties": {
+    "case_token": {
+      "type": "string"
+    },
+    "evaluation_as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "security_identity": {
+      "type": "string"
+    },
+    "market_session_identity": {
+      "type": "string"
+    },
+    "source_snapshot_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "ohlcv_evidence_hashes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "minItems": 1
+    },
+    "valid_time_maximum": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "known_at_maximum": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "corporate_action_state_provenance": {
+      "type": "object",
+      "required": [
+        "as_of_adjustment_status",
+        "future_events_excluded"
+      ],
+      "properties": {
+        "as_of_adjustment_status": {
+          "type": "string",
+          "enum": [
+            "APPLIED_UP_TO_T",
+            "UNADJUSTED_RAW"
+          ]
+        },
+        "future_events_excluded": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "provider_identity": {
+      "type": "string"
+    },
+    "data_readiness_status": {
+      "type": "string",
+      "enum": [
+        "VERIFIED_COMPLETE",
+        "READY_FOR_ADJUDICATION"
+      ]
+    },
+    "temporal_closure_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "domain_evidence_references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "post_t_price_data_included": {
+      "type": "boolean",
+      "const": false
+    },
+    "post_t_volume_data_included": {
+      "type": "boolean",
+      "const": false
+    },
+    "future_corporate_action_knowledge_included": {
+      "type": "boolean",
+      "const": false
+    },
+    "future_outcome_used_as_domain_truth": {
+      "type": "boolean",
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

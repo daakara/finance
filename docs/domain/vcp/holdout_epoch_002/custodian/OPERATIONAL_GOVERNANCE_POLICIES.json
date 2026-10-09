@@ -1,0 +1,105 @@
+{
+  "policy_package_id": "ARX_VCP_EPOCH_002_OPERATIONAL_GOVERNANCE_POLICIES",
+  "policy_package_version": "1.0.0",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "status": "FROZEN",
+  "created_at": "2026-10-09T18:00:00Z",
+  "secret_recovery_policy": {
+    "status": "FROZEN",
+    "private_payload_backup_policy": "AIR_GAPPED_ENCRYPTED_BACKUP_ON_ISOLATED_SECURE_MEDIA",
+    "nonce_backup_policy": "AIR_GAPPED_ENCRYPTED_BACKUP_ON_SEPARATE_ISOLATED_MEDIA",
+    "private_key_backup_policy": "FIPS_140_2_LEVEL_3_HSM_OR_SPLIT_ENCRYPTED_KEYSTORE",
+    "storage_redundancy": "2_LOCATIONS_OFFLINE",
+    "encryption_at_rest": "AES_256_GCM_WITH_UNIQUE_EPHEMERAL_KEY",
+    "access_control": "M_OF_N_AUTHENTICATION_NO_DEVELOPER_ACCESS",
+    "integrity_check": "PRECOMMIT_SHA256_VERIFICATION_ON_READ",
+    "fail_closed_rules": {
+      "SECRET_PAYLOAD_LOST": "EPOCH_INVALID",
+      "COMMITMENT_NONCE_LOST": "EPOCH_INVALID",
+      "SECRET_PAYLOAD_CORRUPTED": "EPOCH_INVALID_UNLESS_PRECOMMIT_VERIFIABLE_BACKUP_EXISTS",
+      "PRE_FREEZE_SECRET_DISCLOSURE_TO_CANDIDATE_TEAM": "EPOCH_INVALID",
+      "HIDDEN_EXPECTATION_DISCLOSURE_TO_CANDIDATE_TEAM": "EPOCH_INVALID",
+      "UNAUTHORIZED_PRIVATE_KEY_ACCESS": "SECURITY_INCIDENT_COMMITMENT_GENERATION_BLOCKED"
+    }
+  },
+  "compromise_and_revocation_policy": {
+    "status": "FROZEN",
+    "conditions": {
+      "CUSTODIAN_KEY_COMPROMISE_BEFORE_COMMITMENT": "REKEY_BEFORE_COMMITMENT",
+      "CUSTODIAN_KEY_COMPROMISE_AFTER_COMMITMENT_BEFORE_REVEAL": "EPOCH_INVALID",
+      "CUSTODIAN_IDENTITY_REVOCATION": "BLOCK",
+      "CUSTODIAN_SEPARATION_BREACH": "EPOCH_INVALID",
+      "PREMATURE_SECRET_DISCLOSURE": "EPOCH_INVALID",
+      "INVALID_PUBLIC_SIGNATURE": "BLOCK"
+    }
+  },
+  "adjudicator_independence_protocol": {
+    "status": "FROZEN",
+    "allowed_intake_artifacts": [
+      "SEALED_AS_OF_EVIDENCE_PACKAGE",
+      "FROZEN_DOMAIN_METHODOLOGY_SOURCE_PACKAGE",
+      "GOVERNED_ADJUDICATION_FORM"
+    ],
+    "prohibited_intake_artifacts": [
+      "ARX_CLASSIFIER_OUTPUT",
+      "SUCCESSOR_CANDIDATE_OUTPUT",
+      "PEER_INITIAL_ANSWER_BEFORE_SUBMISSION",
+      "FUTURE_OUTCOME_INFORMATION",
+      "DESIRED_CORPUS_AUTHORITY_COMPOSITION"
+    ],
+    "invariants": {
+      "ARX_OUTPUT_VISIBLE_TO_EXTERNAL_ADJUDICATOR": "NO",
+      "PEER_INITIAL_ADJUDICATION_VISIBLE": "NO",
+      "FUTURE_OUTCOME_VISIBLE": "NO"
+    }
+  },
+  "disagreement_protocol": {
+    "status": "FROZEN",
+    "number_of_independent_initial_reviewers": 2,
+    "independent_submission_requirement": "BLIND_UNTIL_ALL_INITIAL_SUBMISSIONS_RECORDED",
+    "material_disagreement_threshold": "ANY_PREDICATE_OR_CLASSIFICATION_DIVERGENCE",
+    "first_divergence_recording": "RECORD_EXACT_FIRST_DIVERGENCE_TIMESTAMP_AND_PREDICATE",
+    "root_cause_taxonomy": [
+      "DOMAIN_TAXONOMY_AMBIGUITY",
+      "DATA_INTERPRETATION_DIFFERENCE",
+      "THRESHOLD_EDGE_CASE",
+      "OUT_OF_SCOPE_OBSERVATION",
+      "CONTRACT_DEFECT"
+    ],
+    "third_reviewer_escalation_trigger": "MANDATORY_UPON_UNRESOLVED_INITIAL_DISAGREEMENT",
+    "contract_defect_handling": "HALT_AND_FLAG_CONTRACT_DEFECT",
+    "unresolved_handling": "DERIVED_ORACLE_CLASS_NONE",
+    "unresolved_derived_oracle_class": "NONE",
+    "majority_voting_over_source_truth_permitted": false,
+    "majority_voting_over_contract_ambiguity_permitted": false,
+    "majority_voting_over_domain_contract_defects_permitted": false
+  },
+  "public_disclosure_policy": {
+    "status": "FROZEN",
+    "disclosure_tiers": {
+      "TOTAL_CASE_COUNT": "PUBLIC",
+      "GOLD_COUNT": "PUBLIC",
+      "SILVER_COUNT": "PUBLIC",
+      "INTERNAL_REFERENCE_COUNT": "PUBLIC",
+      "NONE_COUNT": "PUBLIC",
+      "SCOPE_COMPOSITION": "PRIVATE_UNTIL_REVEAL",
+      "REVIEWER_COUNT": "PRIVATE_UNTIL_REVEAL"
+    }
+  },
+  "epoch_abort_policy": {
+    "status": "FROZEN",
+    "abort_matrix": {
+      "PRE_COMMIT_CANDIDATE_CONTAMINATION": "BLOCK_BEFORE_COMMITMENT",
+      "PRE_FREEZE_SECRET_DISCLOSURE": "EPOCH_INVALID",
+      "INVALID_CUSTODIAN_SIGNATURE": "BLOCK",
+      "LOST_NONCE": "EPOCH_INVALID",
+      "LOST_PRIVATE_PAYLOAD": "EPOCH_INVALID",
+      "UNRESOLVED_CUSTODIAN_COMPROMISE": "EPOCH_INVALID",
+      "POST_COMMIT_CASE_MUTATION": "EPOCH_INVALID",
+      "POST_COMMIT_EXPECTATION_MUTATION": "EPOCH_INVALID",
+      "TEMPORAL_EVIDENCE_LEAKAGE": "EPOCH_INVALID",
+      "UNVERIFIED_GOLD_SILVER_INDEPENDENCE": "BLOCK",
+      "FAILED_REVEAL_RECOMPUTATION": "EPOCH_INVALID"
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP External Adjudicator Qualification Schema",
+  "description": "Governed intake and qualification record establishing independent domain reviewer authority, conflict independence, and signature binding.",
+  "type": "object",
+  "required": [
+    "adjudicator_id",
+    "qualification_evidence",
+    "qualification_verification",
+    "independence_declaration",
+    "conflict_declaration",
+    "relationship_to_arx",
+    "authority_origin",
+    "allowed_scope",
+    "signature_identity"
+  ],
+  "properties": {
+    "adjudicator_id": {
+      "type": "string"
+    },
+    "qualification_evidence": {
+      "type": "object",
+      "required": [
+        "domain_experience_years",
+        "methodology_credentials",
+        "documented_track_record"
+      ],
+      "properties": {
+        "domain_experience_years": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "methodology_credentials": {
+          "type": "string"
+        },
+        "documented_track_record": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "qualification_verification": {
+      "type": "object",
+      "required": [
+        "verified_by_custodian",
+        "verification_status",
+        "verification_timestamp"
+      ],
+      "properties": {
+        "verified_by_custodian": {
+          "type": "boolean",
+          "const": true
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "VERIFIED_QUALIFIED"
+          ]
+        },
+        "verification_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "independence_declaration": {
+      "type": "object",
+      "required": [
+        "no_candidate_development_involvement",
+        "no_prior_access_to_unfrozen_models",
+        "independent_status_affirmed"
+      ],
+      "properties": {
+        "no_candidate_development_involvement": {
+          "type": "boolean",
+          "const": true
+        },
+        "no_prior_access_to_unfrozen_models": {
+          "type": "boolean",
+          "const": true
+        },
+        "independent_status_affirmed": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "conflict_declaration": {
+      "type": "string",
+      "enum": [
+        "CERTIFIED_CONFLICT_FREE",
+        "INDEPENDENT_NO_MATERIAL_CONFLICT"
+      ]
+    },
+    "relationship_to_arx": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_THIRD_PARTY",
+        "INDEPENDENT_RESEARCH_INSTITUTION",
+        "DISINTERESTED_DOMAIN_EXPERT"
+      ]
+    },
+    "authority_origin": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_INDEPENDENT"
+      ]
+    },
+    "allowed_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "signature_identity": {
+      "type": "object",
+      "required": [
+        "mechanism",
+        "public_key_or_identifier"
+      ],
+      "properties": {
+        "mechanism": {
+          "type": "string"
+        },
+        "public_key_or_identifier": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
