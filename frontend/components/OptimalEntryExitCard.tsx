@@ -15,6 +15,12 @@ import DecisionReadinessCard from "./DecisionReadinessCard";
 interface OptimalEntryExitCardProps {
   symbol: string;
   executionPlan?: OptimalExecutionPlan;
+  currentPrice?: number | null;
+  liveSpotPrice?: number | null;
+  analysisReferencePrice?: number | null;
+  marketPriceState?: any;
+  liveFreshness?: "REALTIME" | "DELAYED" | "UNAVAILABLE" | "STALE" | string;
+  marketSession?: string;
   userRole?: "DAY_TRADER" | "LONG_TERM";
   smartMoney?: any;
   macroRegime?: any;
@@ -28,6 +34,12 @@ interface OptimalEntryExitCardProps {
 export default function OptimalEntryExitCard({
   symbol,
   executionPlan,
+  currentPrice,
+  liveSpotPrice,
+  analysisReferencePrice,
+  marketPriceState,
+  liveFreshness,
+  marketSession,
   userRole = "LONG_TERM",
   smartMoney,
   macroRegime,
@@ -114,6 +126,54 @@ export default function OptimalEntryExitCard({
     return undefined;
   })();
 
+  // ── Price Authority Resolution (INV-PRICE-001 through INV-PRICE-010) ────────
+  // Canonical Live Spot Price (streamed market observation during active session)
+  const canonicalLiveSpot = typeof liveSpotPrice === "number" && Number.isFinite(liveSpotPrice) && liveSpotPrice > 0
+    ? liveSpotPrice
+    : (typeof executionPlan?.live_spot_price === "number" && Number.isFinite(executionPlan.live_spot_price) && executionPlan.live_spot_price > 0
+        ? executionPlan.live_spot_price
+        : null);
+
+  // Canonical Analysis Reference Price (completed session close used to anchor technical models & targets)
+  const canonicalAnalysisRef = typeof analysisReferencePrice === "number" && Number.isFinite(analysisReferencePrice) && analysisReferencePrice > 0
+    ? analysisReferencePrice
+    : (typeof executionPlan?.analysis_reference_price === "number" && Number.isFinite(executionPlan.analysis_reference_price) && executionPlan.analysis_reference_price > 0
+        ? executionPlan.analysis_reference_price
+        : (typeof current_price === "number" && Number.isFinite(current_price) && current_price > 0 ? current_price : null));
+
+  // Resolved Live Freshness status
+  const resolvedLiveFreshness = liveFreshness || marketPriceState?.liveFreshness || executionPlan?.live_freshness || (canonicalLiveSpot ? "REALTIME" : "UNAVAILABLE");
+
+  // Canonical Actionability Evaluation Price (mirrors backend OptimalExecutionEngine eval_price)
+  const evalPrice = typeof executionPlan?.eval_price === "number" && Number.isFinite(executionPlan.eval_price) && executionPlan.eval_price > 0
+    ? executionPlan.eval_price
+    : (canonicalLiveSpot !== null
+        ? canonicalLiveSpot
+        : (canonicalAnalysisRef !== null ? canonicalAnalysisRef : current_price));
+
+  const hasLiveSpot = canonicalLiveSpot !== null;
+  const displayMarketPrice = hasLiveSpot ? canonicalLiveSpot : (canonicalAnalysisRef !== null ? canonicalAnalysisRef : current_price);
+
+  // Cost basis resolution (INV-PRICE-005: only asserted when actual position exists)
+  const hasUserPosition = typeof (executionPlan as any)?.user_cost_basis === "number" && (executionPlan as any).user_cost_basis > 0;
+  const userCostBasis = hasUserPosition ? (executionPlan as any).user_cost_basis : null;
+
+  const costBasisDescriptionPlain = userCostBasis
+    ? `your executed purchase price ($${userCostBasis.toFixed(2)})`
+    : `breakeven based on your filled entry price`;
+
+  const costBasisDescriptionQuant = userCostBasis
+    ? `actual cost basis ($${userCostBasis.toFixed(2)})`
+    : `filled cost basis upon execution`;
+
+  // Secondary dynamic live return percentages (optional secondary metrics)
+  const liveTakeProfit1Pct = hasLiveSpot && displayMarketPrice > 0 && typeof take_profit_1 === "number"
+    ? Number((((take_profit_1 - displayMarketPrice) / displayMarketPrice) * 100).toFixed(2))
+    : null;
+  const liveTakeProfit2Pct = hasLiveSpot && displayMarketPrice > 0 && typeof take_profit_2 === "number"
+    ? Number((((take_profit_2 - displayMarketPrice) / displayMarketPrice) * 100).toFixed(2))
+    : null;
+
   if (
     optimal_entry_min == null ||
     optimal_entry_max == null ||
@@ -124,7 +184,7 @@ export default function OptimalEntryExitCard({
     current_price <= 0
   ) {
     const unavailableReadiness = resolveDecisionReadiness({
-      currentPrice: current_price,
+      currentPrice: evalPrice,
       optimalEntryMin: optimal_entry_min,
       optimalEntryMax: optimal_entry_max,
       stagePhase: stage_phase,
@@ -173,9 +233,19 @@ export default function OptimalEntryExitCard({
 
   const entryMin = Math.min(optimal_entry_min, optimal_entry_max);
   const entryMax = Math.max(optimal_entry_min, optimal_entry_max);
-  const inZone = current_price >= entryMin && current_price <= entryMax;
+
+  // Authority for inZone: backend market_location / execution_status has priority
+  const isBackendInZone = executionPlan.market_location === "IN_BUY_ZONE" ||
+    executionPlan.execution_status === "IN_BUY_ZONE" ||
+    executionPlan.execution_status === "READY_TO_BUY";
+
+  // Presentation inZone uses evalPrice (live spot / eval_price), NEVER analysis reference price as live
+  const inZone = executionPlan.market_location !== undefined
+    ? isBackendInZone
+    : (evalPrice >= entryMin && evalPrice <= entryMax);
+
   const zoneWidth = Math.max(0.01, entryMax - entryMin);
-  const zonePositionPct = inZone ? ((current_price - entryMin) / zoneWidth) * 100 : 50;
+  const zonePositionPct = inZone ? ((evalPrice - entryMin) / zoneWidth) * 100 : 50;
   const isStopVisible = executionPlan.execution_stop_visible !== undefined && executionPlan.execution_stop_visible !== null
     ? Boolean(executionPlan.execution_stop_visible)
     : Boolean(isActionable || inZone);
@@ -186,13 +256,13 @@ export default function OptimalEntryExitCard({
     if (zonePositionPct > 65) {
       zoneTacticalHint = {
         label: "⚠️ Near Zone Ceiling",
-        advice: `Spot ($${current_price.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
+        advice: `Spot ($${evalPrice.toFixed(2)}) is near the upper bound of the buy zone. Scale in with 30% initial size or place limit orders near $${entryMin.toFixed(2)} to maximize asymmetric R:R.`,
         color: "text-amber-300 border-amber-900/60 bg-amber-950/40",
       };
     } else if (zonePositionPct < 35) {
       zoneTacticalHint = {
         label: "🎯 Near Support Floor",
-        advice: `Spot ($${current_price.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
+        advice: `Spot ($${evalPrice.toFixed(2)}) is at the bottom of the accumulation corridor. Favorable asymmetric entry with tight invalidation floor.`,
         color: "text-emerald-300 border-emerald-900/60 bg-emerald-950/40",
       };
     } else {
@@ -231,7 +301,7 @@ export default function OptimalEntryExitCard({
   const derivedIsDistributionTrap = undefined;
 
   const handleLogToPortfolio = async () => {
-    if (!current_price || isNaN(current_price) || current_price <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
+    if (!displayMarketPrice || isNaN(displayMarketPrice) || displayMarketPrice <= 0 || risk_reward_ratio == null || risk_reward_ratio <= 0) {
       setLogStatus("❌ Cannot log position: trade plan or spot price is unverified.");
       setTimeout(() => setLogStatus(null), 3000);
       return;
@@ -248,8 +318,8 @@ export default function OptimalEntryExitCard({
       symbol,
       name: symbol,
       shares: parsedShares,
-      entryPrice: current_price,
-      currentPrice: current_price,
+      entryPrice: displayMarketPrice,
+      currentPrice: displayMarketPrice,
       targetPrice: take_profit_1,
       stopLossPrice: stop_loss,
     });
@@ -262,7 +332,7 @@ export default function OptimalEntryExitCard({
     : (executionPlan.execution_status === "IN_BUY_ZONE" || executionPlan.execution_status === "READY_TO_BUY");
 
   const readinessResult = resolveDecisionReadiness({
-    currentPrice: current_price,
+    currentPrice: evalPrice,
     optimalEntryMin: optimal_entry_min,
     optimalEntryMax: optimal_entry_max,
     stagePhase: stage_phase,
@@ -498,7 +568,9 @@ export default function OptimalEntryExitCard({
       <div className="space-y-2 bg-[#090d14] p-3.5 rounded-xl border border-[#1e293b]">
         <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider flex items-center justify-between">
           <span>{isPlain ? "Recommended Price Ladder" : "Mathematical Execution Ladder"}</span>
-          <span className="text-slate-400">Current Spot: ${current_price.toFixed(2)}</span>
+          <span className="text-slate-400">
+            {hasLiveSpot ? `Live Spot: $${displayMarketPrice.toFixed(2)}` : `Reference Close: $${displayMarketPrice.toFixed(2)}`}
+          </span>
         </div>
 
         {/* Take Profit 2 */}
@@ -511,9 +583,16 @@ export default function OptimalEntryExitCard({
             <strong className="text-emerald-400 text-sm font-bold tabular-nums">
               ${take_profit_2.toFixed(2)}
             </strong>
-            <span className="text-[10px] text-emerald-500 ml-1.5 tabular-nums">
-              (+{take_profit_2_pct}%)
-            </span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5 justify-end">
+              <span className="text-[10px] text-emerald-400 font-mono tabular-nums font-semibold" title="Return relative to setup reference baseline">
+                +{take_profit_2_pct}% from Setup Ref
+              </span>
+              {hasLiveSpot && liveTakeProfit2Pct !== null && (
+                <span className="text-[10px] text-emerald-500/80 font-mono tabular-nums" title="Remaining upside return relative to live spot price">
+                  (+{liveTakeProfit2Pct}% from Live)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -527,24 +606,61 @@ export default function OptimalEntryExitCard({
             <strong className="text-emerald-400 text-sm font-bold tabular-nums">
               ${take_profit_1.toFixed(2)}
             </strong>
-            <span className="text-[10px] text-emerald-500 ml-1.5 tabular-nums">
-              (+{take_profit_1_pct}%)
-            </span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5 justify-end">
+              <span className="text-[10px] text-emerald-400 font-mono tabular-nums font-semibold" title="Return relative to setup reference baseline">
+                +{take_profit_1_pct}% from Setup Ref
+              </span>
+              {hasLiveSpot && liveTakeProfit1Pct !== null && (
+                <span className="text-[10px] text-emerald-500/80 font-mono tabular-nums" title="Remaining upside return relative to live spot price">
+                  (+{liveTakeProfit1Pct}% from Live)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* CURRENT SPOT BENCHMARK */}
+        {/* CURRENT MARKET PRICE BENCHMARK */}
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#162030] border border-cyan-500/50 text-xs shadow-inner">
           <div className="flex items-center space-x-2">
             <span className="text-cyan-300 font-extrabold flex items-center gap-1">
-              <span>⚡ CURRENT MARKET PRICE</span>
+              <span>{hasLiveSpot ? "⚡ CURRENT MARKET PRICE" : "🏛️ ANALYSIS REFERENCE PRICE"}</span>
             </span>
-            <span className="text-[10px] text-slate-400 hidden sm:inline">• Live Spot</span>
+            <span
+              className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                hasLiveSpot
+                  ? (resolvedLiveFreshness === "REALTIME"
+                      ? "bg-emerald-950/80 text-emerald-300 border-emerald-800"
+                      : "bg-amber-950/80 text-amber-300 border-amber-800")
+                  : "bg-slate-800 text-slate-300 border-slate-700"
+              }`}
+            >
+              {hasLiveSpot
+                ? (resolvedLiveFreshness === "REALTIME" ? "● LIVE SPOT" : "DELAYED SPOT")
+                : "PRIOR CLOSE (REF)"}
+            </span>
           </div>
           <strong className="text-white text-base font-bold tabular-nums">
-            ${current_price.toFixed(2)}
+            ${displayMarketPrice.toFixed(2)}
           </strong>
         </div>
+
+        {/* SETUP REFERENCE BASELINE (Preserves visibility of frozen setup anchor when live spot is shown) */}
+        {hasLiveSpot && canonicalAnalysisRef !== null && (
+          <div className="flex items-center justify-between p-2 rounded-lg bg-[#0e1626]/60 border border-slate-800 text-xs">
+            <div className="flex items-center space-x-2">
+              <span className="text-slate-400 font-semibold">🏛️ Setup Reference</span>
+              <span className="text-[10px] text-slate-500 hidden sm:inline">• Prior Close (Model Baseline)</span>
+            </div>
+            <div className="text-right">
+              <span className="text-slate-300 font-mono text-xs font-bold tabular-nums">
+                ${canonicalAnalysisRef.toFixed(2)}
+              </span>
+              <span className="text-[10px] text-slate-500 ml-1.5 font-mono">
+                (Prior Close)
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Optimal Entry / Prospective Base Range */}
         <div className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
@@ -586,8 +702,8 @@ export default function OptimalEntryExitCard({
           </div>
           <p className="text-xs text-slate-300 leading-relaxed font-sans">
             {isPlain
-              ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to purchase price ($${current_price.toFixed(2)}) for a protected trailing hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
-              : `Scale 0.50x tranche at TP1 ($${take_profit_1.toFixed(2)}). Immediately ratchet hard stop to cost basis ($${current_price.toFixed(2)}) to lock in net positive expectancy and allow remaining runner to compound to TP2 ($${take_profit_2.toFixed(2)}).`}
+              ? `When Profit Goal 1 ($${take_profit_1.toFixed(2)}) is reached, sell 50% to lock gains and move your Stop Loss to ${costBasisDescriptionPlain} for a protected trailing hold to Goal 2 ($${take_profit_2.toFixed(2)}).`
+              : `Scale 0.50x tranche at TP1 ($${take_profit_1.toFixed(2)}). Immediately ratchet hard stop to ${costBasisDescriptionQuant} to lock in net positive expectancy and allow remaining runner to compound to TP2 ($${take_profit_2.toFixed(2)}).`}
           </p>
         </div>
 

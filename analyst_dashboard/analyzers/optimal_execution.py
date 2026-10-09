@@ -430,11 +430,18 @@ class OptimalExecutionEngine:
         distance_to_stop = round(((eval_price - stop_loss) / eval_price) * 100, 2) if (stop_loss and eval_price > 0) else None
         distance_to_tp1 = round(((take_profit_1 - eval_price) / eval_price) * 100, 2) if (take_profit_1 and eval_price > 0) else None
 
+        tp1_ref_pct = round(((take_profit_1 - current_price) / current_price) * 100, 2)
+        tp2_ref_pct = round(((take_profit_2 - current_price) / current_price) * 100, 2)
+        tp1_live_pct = round(((take_profit_1 - live_spot_price) / live_spot_price) * 100, 2) if (live_spot_price and live_spot_price > 0) else None
+        tp2_live_pct = round(((take_profit_2 - live_spot_price) / live_spot_price) * 100, 2) if (live_spot_price and live_spot_price > 0) else None
+
         raw_plan = {
-            "current_price": current_price,
+            "current_price": current_price,  # Legacy alias: semantically represents analysis_reference_price
             "analysis_reference_price": current_price,
+            "analysis_reference_type": "COMPLETED_SESSION_CLOSE",
             "live_spot_price": live_spot_price,
             "eval_price": eval_price,
+            "target_percentage_basis": "ANALYSIS_REFERENCE_PRICE",
             "optimal_entry_min": entry_min,
             "optimal_entry_max": entry_max,
             "planned_entry": planned_entry,
@@ -443,9 +450,13 @@ class OptimalExecutionEngine:
             "stop_loss": stop_loss,
             "stop_loss_pct": stop_loss_pct,
             "take_profit_1": take_profit_1,
-            "take_profit_1_pct": round(((take_profit_1 - current_price) / current_price) * 100, 2),
+            "take_profit_1_pct": tp1_ref_pct,
             "take_profit_2": take_profit_2,
-            "take_profit_2_pct": round(((take_profit_2 - current_price) / current_price) * 100, 2),
+            "take_profit_2_pct": tp2_ref_pct,
+            "target_1_pct_from_reference": tp1_ref_pct,
+            "target_2_pct_from_reference": tp2_ref_pct,
+            "target_1_pct_from_live": tp1_live_pct,
+            "target_2_pct_from_live": tp2_live_pct,
             "distance_to_entry_pct": distance_to_entry,
             "distance_to_stop_pct": distance_to_stop,
             "distance_to_tp1_pct": distance_to_tp1,
@@ -781,14 +792,27 @@ class OptimalExecutionEngine:
             plan["execution_hazard"] = True
             plan["liquidity_warning"] = liq.get("pro_summary")
 
-        # 7. Actionability, buy zone, and execution stop visibility flags
-        plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-        plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
-        plan["is_actionable"] = bool(
-            plan.get("stop_loss") is not None
-            and plan.get("optimal_entry_max") is not None
-            and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
-        )
-        plan["user_role"] = user_role
+        # 8. Additive Price Authority fields (INV-PRICE-001 through INV-PRICE-010)
+        plan["analysis_reference_price"] = spot
+        plan["analysis_reference_type"] = "COMPLETED_SESSION_CLOSE"
+        plan["target_percentage_basis"] = "ANALYSIS_REFERENCE_PRICE"
+        if plan.get("take_profit_1") is not None and spot > 0:
+            plan["target_1_pct_from_reference"] = round(((plan["take_profit_1"] - spot) / spot) * 100, 2)
+        if plan.get("take_profit_2") is not None and spot > 0:
+            plan["target_2_pct_from_reference"] = round(((plan["take_profit_2"] - spot) / spot) * 100, 2)
+
+        live_p = plan.get("live_spot_price")
+        if live_p is not None and isinstance(live_p, (int, float)) and math.isfinite(live_p) and live_p > 0:
+            if plan.get("take_profit_1") is not None:
+                plan["target_1_pct_from_live"] = round(((plan["take_profit_1"] - live_p) / live_p) * 100, 2)
+            if plan.get("take_profit_2") is not None:
+                plan["target_2_pct_from_live"] = round(((plan["take_profit_2"] - live_p) / live_p) * 100, 2)
+        else:
+            plan["target_1_pct_from_live"] = None
+            plan["target_2_pct_from_live"] = None
+
+        # Synchronize is_in_buy_zone with execution_status
+        if "execution_status" in plan:
+            plan["is_in_buy_zone"] = plan["execution_status"] in ACTIONABLE_EXECUTION_STATUSES
 
         return plan

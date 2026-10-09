@@ -405,7 +405,21 @@ export interface LiquidityDefenseData {
 }
 
 export interface OptimalExecutionPlan {
-  current_price: number;
+  current_price: number; // Legacy alias: semantically represents analysis_reference_price
+  analysis_reference_price?: number;
+  analysis_reference_type?: string;
+  analysis_reference_as_of?: string | null;
+  live_spot_price?: number | null;
+  live_spot_as_of?: string | null;
+  live_freshness?: string | null;
+  market_session?: string | null;
+  eval_price?: number;
+  target_percentage_basis?: string;
+  target_1_pct_from_reference?: number | null;
+  target_2_pct_from_reference?: number | null;
+  target_1_pct_from_live?: number | null;
+  target_2_pct_from_live?: number | null;
+  user_cost_basis?: number | null;
   optimal_entry_min?: number | null;
   optimal_entry_max?: number | null;
   stop_loss?: number | null;

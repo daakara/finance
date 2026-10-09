@@ -1150,6 +1150,12 @@ def get_asset_analytics(
             live_spot_price=live_spot_price,
         )
 
+        if isinstance(optimal_execution_plan, dict):
+            optimal_execution_plan["analysis_reference_as_of"] = last_trade_date_str
+            optimal_execution_plan["live_spot_as_of"] = market_price_state.live_observed_at
+            optimal_execution_plan["live_freshness"] = market_price_state.live_freshness
+            optimal_execution_plan["market_session"] = market_price_state.market_session
+
         # Log recommendation into persistent History SQLite
         try:
             if optimal_execution_plan.get("stop_loss") is not None:

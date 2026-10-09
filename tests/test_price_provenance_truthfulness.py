@@ -184,8 +184,21 @@ def test_05_frozen_decision_inputs_numeric_parity():
     """Verifies that current_price numeric output and optimal execution calculations remain 100% unchanged."""
     df = _generate_clean_daily_bars(50, end_date="2026-09-23")
     expected_price = round(float(df["Close"].iloc[-1]), 2)
+    from analyst_dashboard.data.market_price_state import MarketPriceState
 
-    with patch("yfinance.Ticker") as mock_ticker:
+    mock_price_state = MarketPriceState(
+        symbol="AAPL",
+        live_spot_price=None,
+        live_observed_at=None,
+        live_source="NONE",
+        live_freshness="UNAVAILABLE",
+        analysis_reference_price=expected_price,
+        analysis_reference_date="2026-09-23",
+        analysis_reference_source="COMPLETED_SESSION",
+        market_session="CLOSED",
+    )
+
+    with patch("yfinance.Ticker") as mock_ticker, patch("api.routes.analytics.resolve_dual_price_state", return_value=mock_price_state):
         mock_inst = MagicMock()
         mock_inst.history.return_value = df
         mock_inst.history_metadata = {}

@@ -427,6 +427,12 @@ function TerminalContent() {
                   <OptimalEntryExitCard
                     symbol={selectedSymbol}
                     executionPlan={data?.optimalExecution}
+                    currentPrice={data?.currentPrice}
+                    liveSpotPrice={data?.liveSpotPrice}
+                    analysisReferencePrice={data?.analysisReferencePrice}
+                    marketPriceState={data?.marketPriceState}
+                    liveFreshness={data?.marketPriceState?.liveFreshness ?? data?.liveFreshness}
+                    marketSession={data?.marketPriceState?.marketSession ?? data?.marketSession}
                     userRole={userRole}
                     smartMoney={data?.smartMoney}
                     macroRegime={macroData}
