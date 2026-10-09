@@ -85,6 +85,70 @@ def test_prospective_extended_asset_never_emits_target_reached():
     assert plan["market_location"] == "BETWEEN_TP1_AND_TP2"
 
 
+@pytest.mark.parametrize("user_role", ["LONG_TERM", "DAY_TRADER"])
+@pytest.mark.parametrize("spot_offset_scenario", [
+    ("JUST_BELOW_TP1", -0.05),
+    ("EXACTLY_TP1", 0.0),
+    ("JUST_ABOVE_TP1", 0.05),
+    ("EXACTLY_TP2", "TP2_EXACT"),
+    ("ABOVE_TP2", "TP2_PLUS_1"),
+])
+def test_extended_prospective_asset_boundary_matrix(user_role, spot_offset_scenario):
+    """QA-ESC-005/B4: Comprehensive safety invariant across extended prospective boundaries.
+
+    Proves that for any un-entered asset where spot is extended to/beyond TP1/TP2:
+    1. execution_status NEVER emits TARGET_REACHED.
+    2. execution semantics evaluate strictly to non-actionable wait/pullback states.
+    3. actionability semantics independently evaluate is_actionable to False.
+    """
+    scenario_name, offset = spot_offset_scenario
+    base_entry_min = 100.0
+    base_entry_max = 105.0
+    base_stop = 95.0
+    base_atr = 4.0
+
+    # First determine corridor TP1/TP2 reference with spot at entry
+    ref_plan = OptimalExecutionEngine._enforce_execution_invariants({
+        "symbol": "BOUND",
+        "current_price": 102.0,
+        "optimal_entry_min": base_entry_min,
+        "optimal_entry_max": base_entry_max,
+        "stop_loss": base_stop,
+        "atr_14": base_atr,
+    }, user_role)
+    tp1 = ref_plan["take_profit_1"]
+    tp2 = ref_plan["take_profit_2"]
+
+    if offset == "TP2_EXACT":
+        test_spot = tp2
+    elif offset == "TP2_PLUS_1":
+        test_spot = tp2 + 2.0
+    else:
+        test_spot = tp1 + offset
+
+    test_plan = {
+        "symbol": "BOUND",
+        "current_price": test_spot,
+        "optimal_entry_min": base_entry_min,
+        "optimal_entry_max": base_entry_max,
+        "stop_loss": base_stop,
+        "atr_14": base_atr,
+    }
+    plan = OptimalExecutionEngine._enforce_execution_invariants(test_plan, user_role)
+
+    # 1. Execution Semantics
+    assert plan["execution_status"] != "TARGET_REACHED", (
+        f"CRITICAL ESCAPE: TARGET_REACHED emitted on un-entered plan for {scenario_name} ({user_role})"
+    )
+    assert plan["execution_status"] in ("WAITING_PULLBACK", "EXTENDED_ABOVE_BUY_ZONE", "APPROACHING_TARGET")
+
+    # 2. Actionability Semantics
+    assert plan["is_actionable"] is False, f"is_actionable must be False for {scenario_name} ({user_role})"
+    assert plan["execution_stop_visible"] is False
+    assert plan["is_in_buy_zone"] is False
+    assert plan["user_role"] == user_role
+
+
 def test_execution_ladder_target_ordering_invariant():
     """QA-ESC-005: Long equity targets must strictly satisfy Stop < Entry < TP1 < TP2."""
     raw_plan = {

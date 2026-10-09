@@ -811,8 +811,14 @@ class OptimalExecutionEngine:
             plan["target_1_pct_from_live"] = None
             plan["target_2_pct_from_live"] = None
 
-        # Synchronize is_in_buy_zone with execution_status
-        if "execution_status" in plan:
-            plan["is_in_buy_zone"] = plan["execution_status"] in ACTIONABLE_EXECUTION_STATUSES
+        # 7. Actionability, buy zone, and execution stop visibility flags
+        plan["is_in_buy_zone"] = plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        plan["execution_stop_visible"] = bool(plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES)
+        plan["is_actionable"] = bool(
+            plan.get("stop_loss") is not None
+            and plan.get("optimal_entry_max") is not None
+            and plan.get("execution_status") in ACTIONABLE_EXECUTION_STATUSES
+        )
+        plan["user_role"] = user_role
 
         return plan

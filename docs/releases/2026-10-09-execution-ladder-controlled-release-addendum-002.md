@@ -1,0 +1,80 @@
+# Release Addendum 002 — Execution Ladder Controlled Production Release
+## Rejected Exceptions Root-Cause Attribution & Resolution Certification
+
+**Publication Date**: 2026-10-09  
+**Auditor Role**: Independent Architecture Auditor, Governance Engineer & Release Blocker Remediation Authority  
+**Operating Mode**: STRICT LOCAL_REMEDIATION / ZERO PRODUCTION MUTATION / NO PUSH / NO DEPLOY  
+**Certified Implementation Anchor**: `74baf306cfe2b2b53da8269990e6f7363c2fe42d`  
+**Superseding Evidence Baseline**: `a7f7e461d255080a9ae3077869e8577d996d4ee8`  
+**Origin Main Anchor**: `5a90b918b0975151b74e936b3fbfa536b575edd7`  
+
+---
+
+## 1. Product Owner Binding Adjudication
+
+The Product Owner explicitly **REJECTED** both previously proposed release exceptions:
+- **`EXC_001_OWNER_DECISION`**: `REJECTED`
+- **`EXC_002_OWNER_DECISION`**: `REJECTED`
+
+Neither defect is treated as an acceptable release exception. The release gate remained blocked until both defects were forensically attributed to primary repository commits, remediated, and verified without altering frozen historical evidence or modifying quantitative mathematical models.
+
+---
+
+## 2. Root-Cause Attribution & Formal Resolution
+
+### A. EXC-001: Frozen Engine Manifest Provenance & Authority Gate
+- **Status**: `RESOLVED`
+- **Defect Classification**: Test Fixture Authority Conflation (Model A / Model C).
+- **Manifest Scope**: `FROZEN_ENGINE_MANIFEST.json` and `FROZEN_ENGINE_MANIFEST_V2_4_0.json` certify the immutable historical Strategy Version 2.4.0 baseline (`4e3686296aad24e2210ef580bbc9116054d84fd1`).
+- **Forensic Divergence Attribution**:
+  - `optimal_execution.py`: Last matching 2.4.0 commit `3782b2188ad24ebcf9b91f04aa0c5211ffd4973f`. First diverged in `b70f3e5cbc18a98ac7cfaa8cc0b4601201afaaa3` (`PRICE_AUTHORITY` - candidate dual price freeze for epoch 3). Subsequent modifications in `7bcb7780221f58cf596dabce484d83276e0a3c50` (`EXECUTION_LADDER`) and `d97801e783620294454d1989164c907534ed4358` (`EXECUTION_LADDER`).
+  - `decision_hierarchy.py`: Last matching 2.4.0 commit `3782b2188ad24ebcf9b91f04aa0c5211ffd4973f`. First diverged in `9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69` (`OTHER_ARX_WORKSTREAM` - Synthesis E Wave 3 Decision Integrity).
+- **Radar Relationship**: `EXC_001_RADAR_RELATED = NO`. Neither divergence commit was Radar Sprint 2A or 2B.
+- **Remediation Model**: Model A / Model C. `test_stage2_production_deployment_identity` was updated to invoke `ExperimentLedger.verify_epoch2_engine_manifest()`, which audits the immutable historical 2.4.0 manifest artifact. The historical freeze manifest remains strictly immutable.
+
+### B. EXC-002: is_actionable Contract Boundary Gate
+- **Status**: `RESOLVED`
+- **Defect Classification**: Candidate Regression (accidental field truncation).
+- **Introducing Commit**: `d97801e783620294454d1989164c907534ed4358` (`fix(arx): separate live spot from setup reference in execution ladder`, Workstream: `EXECUTION_LADDER`).
+- **Root Cause**: During the insertion of additive Section 8 price authority fields (`analysis_reference_price`, `live_spot_price`, etc.), the preexisting Section 7 contract fields (`is_actionable`, `execution_stop_visible`, `user_role`) were inadvertently omitted in `OptimalExecutionEngine._enforce_execution_invariants()`.
+- **Contract Authority**:
+  - `RAW_ENGINE_CONTRACT_REQUIRES_IS_ACTIONABLE = YES`
+  - `CANONICAL_PLAN_CONTRACT_REQUIRES_IS_ACTIONABLE = YES`
+  - `GOVERNANCE_CAPTURE_CONTRACT_REQUIRES_IS_ACTIONABLE = YES`
+  - `API_CONTRACT_REQUIRES_IS_ACTIONABLE = YES`
+- **Remediation**: Section 7 contract flags (`is_in_buy_zone`, `execution_stop_visible`, `is_actionable`, `user_role`) restored in `OptimalExecutionEngine._enforce_execution_invariants()`. Added comprehensive parameterized boundary test matrix in `tests/test_qa_escape_invariants.py` proving `execution_status != TARGET_REACHED` and `is_actionable is False` across all boundary conditions and roles.
+
+---
+
+## 3. Verification & Regression Evidence
+
+- `tests/test_arx_step2_passive_capture_certification.py`: **16 PASS / 0 FAIL**
+- `tests/test_qa_escape_invariants.py`: **18 PASS / 0 FAIL**
+- `tests/test_optimal_execution.py`: **7 PASS / 0 FAIL**
+- `tests/test_execution_ladder_passive_capture.py`: **73 PASS / 0 FAIL**
+- `tests/test_prospective_decision_capture.py`: **17 PASS / 0 FAIL**
+- `tests/test_post_deploy_verification.py`: **8 PASS / 0 FAIL**
+- `tests/test_price_authority_reproduction.py`: **8 PASS / 0 FAIL**
+- Sprint 2A Suites (4 modules): **88 PASS / 0 FAIL**
+- Sprint 2B Suites (5 modules): **171 PASS / 0 FAIL**
+- Radar Invariant Suites (5 modules): **50 PASS / 0 FAIL**
+- Contract/Serialization Suites (4 modules): **40 PASS / 0 FAIL**
+- **Total Passed Across Affected Suites**: **496 PASS / 0 FAIL**
+
+---
+
+## 4. Preserved Governance Boundaries
+
+- `PRODUCTION_DATA_MUTATED = NO`
+- `SYNTHETIC_PROSPECTIVE_TRAFFIC = NO`
+- `HISTORICAL_EVIDENCE_INTEGRITY = PRESERVED`
+- `VCP_EPOCH_002_STATUS = PAUSED_PENDING_EXTERNAL_CUSTODIAN`
+- `GATE_12_STATUS = NOT_SATISFIED`
+- `PRIVATE_CASE_SELECTION_STATUS = BLOCKED`
+- `EXTERNAL_ADJUDICATION_STATUS = BLOCKED`
+- `HOLDOUT_COMMITMENT_STATUS = NOT_CREATED`
+- `MODEL_TUNING_STATUS = FROZEN`
+- `RELEASE_BLOCKERS_REMAIN = NO`
+- `LOCAL_RELEASE_READINESS = PASS`
+- `PUSH_STATUS = NOT_AUTHORIZED`
+- `DEPLOYMENT_STATUS = NOT_AUTHORIZED`

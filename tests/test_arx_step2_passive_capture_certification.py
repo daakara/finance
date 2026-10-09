@@ -132,9 +132,13 @@ def test_stage1_temporal_gate_satisfied():
 
 
 def test_stage2_production_deployment_identity():
-    """Stage 2: Verify production deployment baseline identities and engine freeze."""
+    """Stage 2: Verify production deployment baseline identities and engine freeze.
+
+    Adjudicated under Model A / Model C: Verifies immutable historical Strategy 2.4.0
+    engine manifest integrity corresponding to baseline DECISION_ENGINE_SHA 7ad44595.
+    """
     assert ExperimentLedger.DECISION_ENGINE_SHA == "7ad44595826c147cc77f93cd676af520764c7442"
-    manifest_audit = ExperimentLedger.verify_frozen_engine_manifest()
+    manifest_audit = ExperimentLedger.verify_epoch2_engine_manifest()
     assert manifest_audit["status"] == "VERIFIED"
     assert manifest_audit["valid"] is True
     

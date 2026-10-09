@@ -184,3 +184,56 @@ Historical counts: `RAW_STORED_PLANS = 4`, `RATIFIED_HISTORICAL_DENOMINATOR = 3`
 * `QUANTITATIVE_INVARIANCE = PRESERVED`
 * `PUSH_STATUS = NOT_AUTHORIZED`
 * `DEPLOY_STATUS = NOT_AUTHORIZED`
+
+---
+
+### 9. REJECTED RELEASE EXCEPTIONS ROOT-CAUSE ATTRIBUTION & FORMAL REMEDIATION (2026-10-09)
+
+#### 9.1 Product Owner Adjudication
+The Product Owner explicitly **REJECTED** both previously proposed exceptions:
+* `EXC_001_OWNER_DECISION = REJECTED`
+* `EXC_002_OWNER_DECISION = REJECTED`
+
+Neither defect is treated as an acceptable exception. Both have been formally attributed to their primary commits, remediated, and verified without altering frozen historical evidence or modifying quantitative mathematical models.
+
+#### 9.2 EXC-001 Root-Cause Attribution & Provenance Gate
+* **Defect Classification**: Test Fixture Authority Conflation (Model A / Model C).
+* **Manifest Scope**: `FROZEN_ENGINE_MANIFEST.json` and `FROZEN_ENGINE_MANIFEST_V2_4_0.json` certify the immutable historical Strategy Version 2.4.0 baseline (`4e3686296aad24e2210ef580bbc9116054d84fd1`, updated in `e8b835fccbcd1c413cb6af3b324b7eb118ccd8c3`).
+* **Root Cause**: `test_stage2_production_deployment_identity` asserts `ExperimentLedger.DECISION_ENGINE_SHA == "7ad44595826c147cc77f93cd676af520764c7442"` (the historical Epoch 2 baseline), but invoked `verify_frozen_engine_manifest()` with no arguments. Because `ExperimentLedger.ARX_DECISION_ENGINE_VERSION` is `"2.5.0"`, this checked live working-tree disk files against `FROZEN_ENGINE_MANIFEST_V2_5_0.json` (which was a candidate freeze with `provenanceCommit: "PENDING_EPOCH_3_FREEZE"`).
+* **Forensic Divergence Attribution**:
+  - `optimal_execution.py`: Last matching 2.4.0 commit `3782b2188ad24ebcf9b91f04aa0c5211ffd4973f`. First diverged in `b70f3e5cbc18a98ac7cfaa8cc0b4601201afaaa3` (`PRICE_AUTHORITY` - candidate dual price freeze for epoch 3). Subsequent modifications in `7bcb7780221f58cf596dabce484d83276e0a3c50` (`EXECUTION_LADDER`) and `d97801e783620294454d1989164c907534ed4358` (`EXECUTION_LADDER`).
+  - `decision_hierarchy.py`: Last matching 2.4.0 commit `3782b2188ad24ebcf9b91f04aa0c5211ffd4973f`. First diverged in `9d5fc2bc9b5029f02177dbe2ab50e026fbfb5f69` (`OTHER_ARX_WORKSTREAM` - Synthesis E Wave 3 Decision Integrity).
+* **Radar Relationship**: `EXC_001_RADAR_RELATED = NO`. Neither divergence commit was Radar Sprint 2A or 2B.
+* **Remediation Model**: Model A / Model C. `test_stage2_production_deployment_identity` was updated to invoke `ExperimentLedger.verify_epoch2_engine_manifest()`, which audits the immutable historical 2.4.0 manifest artifact. The historical freeze manifest remains strictly immutable.
+* **Status**: `EXC_001_STATUS = RESOLVED`.
+
+#### 9.3 EXC-002 Root-Cause Attribution & Contract Boundary Gate
+* **Defect Classification**: Candidate Regression (accidental field truncation).
+* **Introducing Commit**: `d97801e783620294454d1989164c907534ed4358` (`fix(arx): separate live spot from setup reference in execution ladder`, Workstream: `EXECUTION_LADDER`).
+* **Root Cause**: During the insertion of additive Section 8 price authority fields (`analysis_reference_price`, `live_spot_price`, etc.), the preexisting Section 7 contract fields (`is_actionable`, `execution_stop_visible`, `user_role`) were inadvertently omitted in `OptimalExecutionEngine._enforce_execution_invariants()`.
+* **Contract Authority**:
+  - `RAW_ENGINE_CONTRACT_REQUIRES_IS_ACTIONABLE = YES` (Contract established in commit `0eac40278ce8` and tested in `test_recommendation_consistency.py`).
+  - `CANONICAL_PLAN_CONTRACT_REQUIRES_IS_ACTIONABLE = YES` (Required for canonical plan hashing and passive capture).
+  - `GOVERNANCE_CAPTURE_CONTRACT_REQUIRES_IS_ACTIONABLE = YES` (Table schema `execution_ladder_prospective_plans` requires `is_actionable INTEGER NOT NULL`).
+  - `API_CONTRACT_REQUIRES_IS_ACTIONABLE = YES` (Tactical setup serialization requires `isActionable`).
+* **Remediation**: Section 7 contract flags (`is_in_buy_zone`, `execution_stop_visible`, `is_actionable`, `user_role`) restored in `OptimalExecutionEngine._enforce_execution_invariants()`. Added comprehensive parameterized boundary test matrix in `tests/test_qa_escape_invariants.py` proving `execution_status != TARGET_REACHED` and `is_actionable is False` across all boundary conditions and roles.
+* **Status**: `EXC_002_STATUS = RESOLVED`.
+
+#### 9.4 Final Verification Summary
+* `tests/test_arx_step2_passive_capture_certification.py`: **16 PASS / 0 FAIL**
+* `tests/test_qa_escape_invariants.py`: **18 PASS / 0 FAIL**
+* `tests/test_optimal_execution.py`: **7 PASS / 0 FAIL**
+* `tests/test_execution_ladder_passive_capture.py`: **73 PASS / 0 FAIL**
+* `tests/test_prospective_decision_capture.py`: **17 PASS / 0 FAIL**
+* `tests/test_post_deploy_verification.py`: **8 PASS / 0 FAIL**
+* `tests/test_price_authority_reproduction.py`: **8 PASS / 0 FAIL**
+* Sprint 2A Suites (4 modules): **88 PASS / 0 FAIL**
+* Sprint 2B Suites (5 modules): **171 PASS / 0 FAIL**
+* Radar Invariant Suites (5 modules): **50 PASS / 0 FAIL**
+* Related Contract Suites (`test_recommendation_consistency`, `test_screener_actionability_boundary`, `test_write_boundary_governance`, `test_golden_universe`): **40 PASS / 0 FAIL**
+* **Total Passed Across Affected Suites**: **496 PASS / 0 FAIL**
+* `RELEASE_BLOCKERS_REMAIN = NO`
+* `LOCAL_RELEASE_READINESS = PASS`
+* `PUSH_STATUS = NOT_AUTHORIZED`
+* `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
+
