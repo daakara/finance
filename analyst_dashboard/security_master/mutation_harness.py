@@ -44,7 +44,7 @@ from .required_field_registry import (
 
 
 MUTATION_CATALOG_ID: str = "ARX_AUTHORITY_REGISTRY_MUTATIONS"
-MUTATION_CATALOG_VERSION: str = "1.0.0"
+MUTATION_CATALOG_VERSION: str = "1.1.0"
 
 OPERATOR_LIST: List[str] = [
     "DUPLICATE_FIELD_EXACT",
@@ -69,6 +69,11 @@ OPERATOR_LIST: List[str] = [
     "FIRST_NON_NULL_FALLBACK",
     "PROVIDER_ORDER_FALLBACK",
     "REMOVE_DECISION_PROVENANCE_REQUIREMENT",
+    "TAXONOMY_AS_EVIDENCE_AUTHORITY",
+    "NON_DIRECT_UNKNOWN_POLICY_ID",
+    "NON_DIRECT_MISSING_POLICY_VERSION",
+    "NON_DIRECT_MISSING_POLICY_HASH",
+    "ROOT_CATALOG_CONCEPT_DELETION",
 ]
 
 MUTATION_CATALOG_HASH: str = canonical_hash({
@@ -112,6 +117,8 @@ class MutationCampaignSummary(BaseModel):
     multiple_binding_survivors: int
     invalid_not_applicable_survivors: int
     provenance_removal_survivors: int
+    taxonomy_evidence_survivors: int = 0
+    non_direct_semantics_survivors: int = 0
     multi_fault_critical_survivors: int
 
     model_config = ConfigDict(frozen=True)
@@ -438,6 +445,88 @@ class RegistryMutationEngine:
                 None,
             ))
 
+        # 23. TAXONOMY_AS_EVIDENCE_AUTHORITY
+        for f in fields:
+            m = copy.deepcopy(base_entries)
+            entry_dict = m[f].model_dump()
+            entry_dict["governance_binding"] = {
+                "binding_type": GovernanceBindingType.FIXED_TAXONOMY,
+                "policy_id": "POL_TAXONOMY_ISO",
+                "policy_version": "1.0.0",
+                "policy_hash": "cc2acd303474823e519a87d5a41ce5b1daf44bff3740346d9fecc738d5830e91",
+            }
+            m[f] = RequiredFieldEntry.model_validate(entry_dict)
+            mutants.append((
+                "TAXONOMY_AS_EVIDENCE_AUTHORITY",
+                f,
+                "TAXONOMY_USED_AS_EVIDENCE_AUTHORITY",
+                m,
+                None,
+            ))
+
+        # 24. NON_DIRECT_UNKNOWN_POLICY_ID
+        non_direct_fields = [
+            f for f, e in base_entries.items()
+            if e.governance_binding.binding_type in (
+                GovernanceBindingType.POPULATION_POLICY,
+                GovernanceBindingType.IDENTITY_POLICY,
+                GovernanceBindingType.TEMPORAL_MEMBERSHIP_POLICY,
+                GovernanceBindingType.DERIVED_POLICY,
+            )
+        ]
+        for f in non_direct_fields:
+            m = copy.deepcopy(base_entries)
+            entry_dict = m[f].model_dump()
+            entry_dict["governance_binding"]["policy_id"] = "POL_NONEXISTENT_NON_DIRECT_999"
+            m[f] = RequiredFieldEntry.model_validate(entry_dict)
+            mutants.append((
+                "NON_DIRECT_UNKNOWN_POLICY_ID",
+                f,
+                "NON_DIRECT_BINDING_WITHOUT_CONCRETE_SEMANTICS",
+                m,
+                None,
+            ))
+
+        # 25. NON_DIRECT_MISSING_POLICY_VERSION
+        for f in non_direct_fields:
+            m = copy.deepcopy(base_entries)
+            entry_dict = m[f].model_dump()
+            entry_dict["governance_binding"]["policy_version"] = ""
+            m[f] = RequiredFieldEntry.model_validate(entry_dict)
+            mutants.append((
+                "NON_DIRECT_MISSING_POLICY_VERSION",
+                f,
+                "MISSING_POLICY_VERSION",
+                m,
+                None,
+            ))
+
+        # 26. NON_DIRECT_MISSING_POLICY_HASH
+        for f in non_direct_fields:
+            m = copy.deepcopy(base_entries)
+            entry_dict = m[f].model_dump()
+            entry_dict["governance_binding"]["policy_hash"] = ""
+            m[f] = RequiredFieldEntry.model_validate(entry_dict)
+            mutants.append((
+                "NON_DIRECT_MISSING_POLICY_HASH",
+                f,
+                "MISSING_POLICY_HASH",
+                m,
+                None,
+            ))
+
+        # 27. ROOT_CATALOG_CONCEPT_DELETION
+        for f in fields:
+            m = copy.deepcopy(base_entries)
+            del m[f]
+            mutants.append((
+                "ROOT_CATALOG_CONCEPT_DELETION",
+                f,
+                "MISSING_REQUIRED_FIELD",
+                m,
+                None,
+            ))
+
         return mutants
 
     def generate_multi_fault_mutants(self) -> List[Tuple[str, str, Dict[str, RequiredFieldEntry], Optional[List[str]]]]:
@@ -517,6 +606,8 @@ class RegistryMutationEngine:
         mult_binding_survivors = 0
         invalid_na_survivors = 0
         prov_removal_survivors = 0
+        taxonomy_evidence_survivors = 0
+        non_direct_semantics_survivors = 0
 
         for op, field_id, exp_code, entries, raw_list in single_mutants:
             tested_operators.add(op)
@@ -555,6 +646,10 @@ class RegistryMutationEngine:
                     invalid_na_survivors += 1
                 elif op == "REMOVE_DECISION_PROVENANCE_REQUIREMENT":
                     prov_removal_survivors += 1
+                elif op == "TAXONOMY_AS_EVIDENCE_AUTHORITY":
+                    taxonomy_evidence_survivors += 1
+                elif op.startswith("NON_DIRECT_"):
+                    non_direct_semantics_survivors += 1
 
         multi_survivors = 0
         for name, exp_code, entries, raw_list in multi_mutants:
@@ -599,6 +694,8 @@ class RegistryMutationEngine:
             multiple_binding_survivors=mult_binding_survivors,
             invalid_not_applicable_survivors=invalid_na_survivors,
             provenance_removal_survivors=prov_removal_survivors,
+            taxonomy_evidence_survivors=taxonomy_evidence_survivors,
+            non_direct_semantics_survivors=non_direct_semantics_survivors,
             multi_fault_critical_survivors=multi_survivors,
         )
 

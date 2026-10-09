@@ -340,8 +340,8 @@ class RequiredFieldAuthorityRegistry:
             field_id="country",
             required=True,
             governance_binding=GovernanceBinding(
-                binding_type=GovernanceBindingType.FIXED_TAXONOMY,
-                policy_id="TAXONOMY_ISO_3166_1",
+                binding_type=GovernanceBindingType.DERIVED_POLICY,
+                policy_id="POL_COUNTRY_DERIVATION_V1",
                 policy_version="1.0.0",
                 policy_hash="cc2acd303474823e519a87d5a41ce5b1daf44bff3740346d9fecc738d5830e91",
             ),
@@ -356,8 +356,8 @@ class RequiredFieldAuthorityRegistry:
             field_id="currency",
             required=True,
             governance_binding=GovernanceBinding(
-                binding_type=GovernanceBindingType.FIXED_TAXONOMY,
-                policy_id="TAXONOMY_ISO_4217",
+                binding_type=GovernanceBindingType.DERIVED_POLICY,
+                policy_id="POL_CURRENCY_DERIVATION_V1",
                 policy_version="1.0.0",
                 policy_hash="cc2acd303474823e519a87d5a41ce5b1daf44bff3740346d9fecc738d5830e91",
             ),
@@ -483,8 +483,14 @@ class RequiredFieldAuthorityRegistry:
                     ))
                 seen_raw.add(norm_rf)
 
-        # Check 2: Missing required field from minimum catalog
-        for req_id in MINIMUM_REQUIRED_FIELD_CATALOG:
+        # Check 2: Missing required field from root catalog and minimum catalog
+        try:
+            from .requirement_catalog import RequiredGovernanceConceptCatalog
+            catalog_concepts = set(RequiredGovernanceConceptCatalog.CONCEPTS.keys())
+        except Exception:
+            catalog_concepts = MINIMUM_REQUIRED_FIELD_CATALOG
+
+        for req_id in sorted(catalog_concepts | MINIMUM_REQUIRED_FIELD_CATALOG):
             if req_id not in target:
                 errors.append(RegistryValidationError(
                     error_code="MISSING_REQUIRED_FIELD",
@@ -532,6 +538,14 @@ class RequiredFieldAuthorityRegistry:
                         detail=f"Field '{field_id}' marked NOT_APPLICABLE but required for active scopes: {entry.required_for}.",
                     ))
 
+            # Check: FIXED_TAXONOMY prohibited as evidence authority
+            if b_type == GovernanceBindingType.FIXED_TAXONOMY or b_type == "FIXED_TAXONOMY":
+                errors.append(RegistryValidationError(
+                    error_code="TAXONOMY_USED_AS_EVIDENCE_AUTHORITY",
+                    field_id=field_id,
+                    detail=f"Field '{field_id}' uses FIXED_TAXONOMY as evidence authority, which is prohibited. Taxonomies govern value domain legality, not evidence authority.",
+                ))
+
             # Check: EXPLICITLY_UNRESOLVED must have reason_code and fail-closed missing/conflict behavior
             if b_type == GovernanceBindingType.EXPLICITLY_UNRESOLVED:
                 if entry.reason_code is None:
@@ -577,6 +591,42 @@ class RequiredFieldAuthorityRegistry:
                             field_id=field_id,
                             policy_id=binding.policy_id,
                             detail=f"Policy hash '{binding.policy_hash}' does not match registered hash '{expected_policy_hash}'.",
+                        ))
+
+            # Check: Non-direct binding concrete policy resolution
+            non_direct_types = (
+                GovernanceBindingType.POPULATION_POLICY,
+                GovernanceBindingType.IDENTITY_POLICY,
+                GovernanceBindingType.TEMPORAL_MEMBERSHIP_POLICY,
+                GovernanceBindingType.DERIVED_POLICY,
+            )
+            if b_type in non_direct_types or (isinstance(b_type, str) and b_type in [t.value for t in non_direct_types]):
+                try:
+                    from .semantic_governance import POLICY_CONTRACTS
+                except Exception:
+                    POLICY_CONTRACTS = {}
+
+                if not binding.policy_id or binding.policy_id not in POLICY_CONTRACTS:
+                    errors.append(RegistryValidationError(
+                        error_code="NON_DIRECT_BINDING_WITHOUT_CONCRETE_SEMANTICS",
+                        field_id=field_id,
+                        policy_id=binding.policy_id,
+                        detail=f"Non-direct binding '{b_type}' for field '{field_id}' references policy '{binding.policy_id}' which lacks a concrete policy contract in POLICY_CONTRACTS.",
+                    ))
+                else:
+                    if not binding.policy_version:
+                        errors.append(RegistryValidationError(
+                            error_code="MISSING_POLICY_VERSION",
+                            field_id=field_id,
+                            policy_id=binding.policy_id,
+                            detail=f"Policy reference '{binding.policy_id}' is missing policy_version.",
+                        ))
+                    if not binding.policy_hash:
+                        errors.append(RegistryValidationError(
+                            error_code="MISSING_POLICY_HASH",
+                            field_id=field_id,
+                            policy_id=binding.policy_id,
+                            detail=f"Policy reference '{binding.policy_id}' is missing policy_hash.",
                         ))
 
             # Behavior completeness checks (Section 9)
