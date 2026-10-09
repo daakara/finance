@@ -137,6 +137,16 @@ function RadarContent() {
     }
   };
 
+  const handleCategoryFilterSelect = (filter: CategoryFilter, buttonId: string) => {
+    setActiveFilter(filter);
+    if (typeof document !== 'undefined') {
+      const btn = document.getElementById(buttonId);
+      if (btn && typeof btn.scrollIntoView === 'function') {
+        btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      }
+    }
+  };
+
   useEffect(() => {
     const q = (searchParams?.get('q') || searchParams?.get('symbol') || '').trim().toUpperCase();
     setSearchQuery((prev) => (prev.trim().toUpperCase() !== q ? q : prev));
@@ -372,21 +382,27 @@ function RadarContent() {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
       const next = filters[(idx + 1) % filters.length];
-      setActiveFilter(next);
-      document.getElementById(`tab-radar-filter-${next.toLowerCase()}`)?.focus();
+      const buttonId = `tab-radar-filter-${next.toLowerCase()}`;
+      handleCategoryFilterSelect(next, buttonId);
+      document.getElementById(buttonId)?.focus();
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
       e.preventDefault();
       const prev = filters[(idx - 1 + filters.length) % filters.length];
-      setActiveFilter(prev);
-      document.getElementById(`tab-radar-filter-${prev.toLowerCase()}`)?.focus();
+      const buttonId = `tab-radar-filter-${prev.toLowerCase()}`;
+      handleCategoryFilterSelect(prev, buttonId);
+      document.getElementById(buttonId)?.focus();
     } else if (e.key === 'Home') {
       e.preventDefault();
-      setActiveFilter(filters[0]);
-      document.getElementById(`tab-radar-filter-${filters[0].toLowerCase()}`)?.focus();
+      const first = filters[0];
+      const buttonId = `tab-radar-filter-${first.toLowerCase()}`;
+      handleCategoryFilterSelect(first, buttonId);
+      document.getElementById(buttonId)?.focus();
     } else if (e.key === 'End') {
       e.preventDefault();
-      setActiveFilter(filters[filters.length - 1]);
-      document.getElementById(`tab-radar-filter-${filters[filters.length - 1].toLowerCase()}`)?.focus();
+      const last = filters[filters.length - 1];
+      const buttonId = `tab-radar-filter-${last.toLowerCase()}`;
+      handleCategoryFilterSelect(last, buttonId);
+      document.getElementById(buttonId)?.focus();
     }
   };
 
@@ -648,103 +664,108 @@ function RadarContent() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             {/* Category Filter Tabs (WAI-ARIA Tablist) */}
             <div
-              role="tablist"
-              aria-label="Radar Confluence Categories"
-              className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0"
+              className="w-full md:w-auto overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x pb-1 md:pb-0"
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
-              <button
-                type="button"
-                role="tab"
-                id="tab-radar-filter-all"
-                aria-selected={activeFilter === 'ALL'}
-                aria-controls="panel-radar-candidates"
-                tabIndex={activeFilter === 'ALL' ? 0 : -1}
-                onKeyDown={(e) => handleFilterKeyDown(e, 'ALL')}
-                onClick={() => setActiveFilter('ALL')}
-                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeFilter === 'ALL'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
+              <div
+                role="tablist"
+                aria-label="Radar Confluence Categories"
+                className="flex items-center gap-1.5 min-w-max"
               >
-                <span>All Confluences</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                  {categoryMeta.ALL.badge}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-radar-filter-all"
+                  aria-selected={activeFilter === 'ALL'}
+                  aria-controls="panel-radar-candidates"
+                  tabIndex={activeFilter === 'ALL' ? 0 : -1}
+                  onKeyDown={(e) => handleFilterKeyDown(e, 'ALL')}
+                  onClick={() => handleCategoryFilterSelect('ALL', 'tab-radar-filter-all')}
+                  className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter === 'ALL'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>All Confluences</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {categoryMeta.ALL.badge}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                role="tab"
-                id="tab-radar-filter-value_garp"
-                aria-selected={activeFilter === 'VALUE_GARP'}
-                aria-controls="panel-radar-candidates"
-                tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
-                onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
-                onClick={() => setActiveFilter('VALUE_GARP')}
-                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeFilter === 'VALUE_GARP'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>💎 Value / GARP</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
-                  {categoryMeta.VALUE_GARP.badge}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-radar-filter-value_garp"
+                  aria-selected={activeFilter === 'VALUE_GARP'}
+                  aria-controls="panel-radar-candidates"
+                  tabIndex={activeFilter === 'VALUE_GARP' ? 0 : -1}
+                  onKeyDown={(e) => handleFilterKeyDown(e, 'VALUE_GARP')}
+                  onClick={() => handleCategoryFilterSelect('VALUE_GARP', 'tab-radar-filter-value_garp')}
+                  className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter === 'VALUE_GARP'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>💎 Value / GARP</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {categoryMeta.VALUE_GARP.badge}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                role="tab"
-                id="tab-radar-filter-vcp"
-                aria-selected={activeFilter === 'VCP'}
-                aria-controls="panel-radar-candidates"
-                tabIndex={activeFilter === 'VCP' ? 0 : -1}
-                onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
-                onClick={() => setActiveFilter('VCP')}
-                title={categoryMeta.VCP.status === 'PIPELINE_PENDING' ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs." : undefined}
-                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeFilter === 'VCP'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>⚡ Minervini VCP</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  categoryMeta.VCP.status === 'PIPELINE_PENDING'
-                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                    : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {categoryMeta.VCP.badge}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-radar-filter-vcp"
+                  aria-selected={activeFilter === 'VCP'}
+                  aria-controls="panel-radar-candidates"
+                  tabIndex={activeFilter === 'VCP' ? 0 : -1}
+                  onKeyDown={(e) => handleFilterKeyDown(e, 'VCP')}
+                  onClick={() => handleCategoryFilterSelect('VCP', 'tab-radar-filter-vcp')}
+                  title={categoryMeta.VCP.status === 'PIPELINE_PENDING' ? "Automated market-wide volatility contraction screening is not active yet. Single-asset VCP geometry is still available in the Analysis (/) and Setups (/setups) hubs." : undefined}
+                  className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter === 'VCP'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>⚡ Minervini VCP</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                    categoryMeta.VCP.status === 'PIPELINE_PENDING'
+                      ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {categoryMeta.VCP.badge}
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                role="tab"
-                id="tab-radar-filter-smart_money"
-                aria-selected={activeFilter === 'SMART_MONEY'}
-                aria-controls="panel-radar-candidates"
-                tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
-                onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
-                onClick={() => setActiveFilter('SMART_MONEY')}
-                title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money." : undefined}
-                className={`focus-ring px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                  activeFilter === 'SMART_MONEY'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span>🐋 Smart Money</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
-                    ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                    : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {categoryMeta.SMART_MONEY.badge}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-radar-filter-smart_money"
+                  aria-selected={activeFilter === 'SMART_MONEY'}
+                  aria-controls="panel-radar-candidates"
+                  tabIndex={activeFilter === 'SMART_MONEY' ? 0 : -1}
+                  onKeyDown={(e) => handleFilterKeyDown(e, 'SMART_MONEY')}
+                  onClick={() => handleCategoryFilterSelect('SMART_MONEY', 'tab-radar-filter-smart_money')}
+                  title={categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING' ? "Automated market-wide institutional-flow screening is not active yet. Single-asset insider and congressional filing analysis is still available for individual symbols on /smart-money." : undefined}
+                  className={`focus-ring px-3.5 py-2 min-h-[44px] shrink-0 rounded-lg text-xs font-mono font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeFilter === 'SMART_MONEY'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
+                  }`}
+                >
+                  <span>🐋 Smart Money</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                    categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                      ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
+                      : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {categoryMeta.SMART_MONEY.badge}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Search Input & Sort Controls */}

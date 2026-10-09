@@ -33,8 +33,8 @@ def test_root_capability_contract():
     assert caps["VALUE_GARP"]["universeScreening"] == "AVAILABLE"
     assert caps["VALUE_GARP"]["singleAssetAnalysis"] == "AVAILABLE"
 
-    assert caps["VCP"]["status"] == "PIPELINE_PENDING"
-    assert caps["VCP"]["universeScreening"] == "PIPELINE_PENDING"
+    assert caps["VCP"]["status"] == "AVAILABLE"
+    assert caps["VCP"]["universeScreening"] == "AVAILABLE"
     assert caps["VCP"]["singleAssetAnalysis"] == "AVAILABLE"
 
     assert caps["SMART_MONEY"]["status"] == "PIPELINE_PENDING"

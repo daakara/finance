@@ -24,6 +24,8 @@ from analyst_dashboard.data.market_evidence import (
     AdjustmentState,
     StructuralQuality,
 )
+from analyst_dashboard.analyzers.scanner_contract import CANONICAL_VCP_UNIVERSE
+from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner, SmartMoneyScannerRunner
 
 router = APIRouter()
 screener = HiddenGemsScreener()
@@ -31,6 +33,9 @@ optimal_engine = OptimalExecutionEngine()
 confluence_engine = ConfluenceEngine()
 smart_money_engine = SmartMoneyEngine()
 market_db = MarketDatabaseEngine()
+vcp_scanner_runner = VCPScannerRunner(market_db=market_db, confluence_engine=confluence_engine)
+smart_money_scanner_runner = SmartMoneyScannerRunner()
+
 
 # Authentic Multi-Sector Dual-Horizon Universes (60 Total Quality Assets)
 DAY_TRADER_CANDIDATES = [
@@ -44,18 +49,7 @@ DAY_TRADER_CANDIDATES = [
     "DUOL", "CELH", "IONQ", "RKLB", "APP",
 ]
 
-LONG_TERM_CANDIDATES = [
-    # MedTech & Biotech Monopolies
-    "LNTH", "CPRX", "MEDP", "TMDX", "ISRG", "VRTX", "LLY", "NVO", "DXCM", "PODD",
-    # High-Moat Semiconductors & SiC Ion Implantation
-    "ACLS", "POWI", "ON", "MPWR", "KLAC", "LRCX", "ASML", "AVGO",
-    # Peter Lynch GARP & Organic Consumer Compounders
-    "ELF", "DECK", "LULU", "ONON", "MNST", "ULTA",
-    # Clean Tech, Power Infrastructure & Industrials
-    "VRT", "ETN", "PWR", "GEV", "FIX", "EME",
-    # Disruptive Cloud, EdTech & EDA Infrastructure
-    "DUOL", "ANET", "NOW", "SNPS", "CDNS",
-]
+LONG_TERM_CANDIDATES = CANONICAL_VCP_UNIVERSE
 
 DEFAULT_CANDIDATES = LONG_TERM_CANDIDATES
 
@@ -73,10 +67,10 @@ RADAR_CAPABILITY_CONTRACT = {
         "rationale": "Authentic multi-factor fundamental screening active across known candidate universe.",
     },
     "VCP": {
-        "status": "PIPELINE_PENDING",
-        "universeScreening": "PIPELINE_PENDING",
+        "status": "AVAILABLE",
+        "universeScreening": "AVAILABLE",
         "singleAssetAnalysis": "AVAILABLE",
-        "rationale": "Single-asset volatility contraction geometry active on /setups and /analytics; universe-level batch scanning pipeline is pending deployment.",
+        "rationale": "Authentic Minervini Volatility Contraction Pattern universe screening active with deterministic publication integrity.",
     },
     "SMART_MONEY": {
         "status": "PIPELINE_PENDING",
@@ -101,6 +95,7 @@ def derive_canonical_radar_categories(
     roic_pct: Optional[float],
     gross_margin_pct: Optional[float],
     symbol: str,
+    vcp_matched_symbols: Optional[set] = None,
 ) -> List[str]:
     """
     Authoritative deterministic classifier: analytical evidence -> explicit category.
@@ -114,7 +109,11 @@ def derive_canonical_radar_categories(
     elif peg_ratio is not None and 0.0 < peg_ratio <= 1.05 and roic_pct is not None and roic_pct >= 15.0:
         cats.append("VALUE_GARP")
 
-    # VCP & SMART_MONEY: Universe screening pipelines are currently PIPELINE_PENDING.
+    # VCP: Backed by deterministic market-wide scanner runner and verified snapshot
+    if vcp_matched_symbols is not None and symbol in vcp_matched_symbols:
+        cats.append("VCP")
+
+    # SMART_MONEY: Universe screening pipeline remains PIPELINE_PENDING.
     # No candidate-level category membership is manufactured or inferred.
 
     return cats
@@ -184,6 +183,10 @@ def run_screener_get(
     results = screener.evaluate_candidates(active_universe)
     shared_macro = get_shared_macro_snapshot()
     shared_macro_context_id = shared_macro.get("macroContextId")
+
+    # Retrieve active VCP scanner snapshot for authentic category qualification
+    vcp_snapshot = vcp_scanner_runner.get_active_or_latest_snapshot()
+    vcp_matched_symbols = {r["symbol"] for r in vcp_snapshot.get("results", []) if "symbol" in r}
 
     # Map candidate fields with live optimal execution levels
     mapped_candidates = []
@@ -377,6 +380,7 @@ def run_screener_get(
             roic_pct=roic_val,
             gross_margin_pct=margin_val,
             symbol=sym,
+            vcp_matched_symbols=vcp_matched_symbols,
         )
         cand_evidence = classify_candidate_category_evidence(cand_categories)
 
@@ -487,6 +491,10 @@ def run_screener_get(
         filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and (float(c["grossMargin"].replace("%", "")) >= 65.0 or (c["expertArchetype"] and ("Rule Breakers" in c["expertArchetype"] or "Disruptive" in c["expertArchetype"])))]
     elif filter_type == "value_garp":
         filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "VALUE_GARP" in c["categories"]]
+    elif filter_type == "vcp":
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "VCP" in c["categories"]]
+    elif filter_type == "smart_money":
+        filtered = [c for c in mapped_candidates if c["executionStatus"] != "UNVERIFIED_ASSET" and "SMART_MONEY" in c["categories"]]
     else:
         filtered = mapped_candidates
 
@@ -522,6 +530,25 @@ def run_screener_get(
         "results": results,
         "evidence": radar_evidence.to_dict(),
     }
+
+
+@router.get("/vcp/snapshot")
+def get_vcp_snapshot():
+    """Retrieve active immutable snapshot envelope for Minervini VCP scanner (Section 9 & 18)."""
+    return vcp_scanner_runner.get_active_or_latest_snapshot()
+
+
+@router.get("/smart-money/snapshot")
+def get_smart_money_snapshot():
+    """Retrieve status envelope for Smart Money scanner (Section 9 & 18; fail-closed PIPELINE_PENDING)."""
+    return smart_money_scanner_runner.get_status_envelope()
+
+
+@router.post("/vcp/scan")
+def trigger_vcp_scan():
+    """On-demand or scheduled trigger for Minervini VCP market-wide scan (Section 19)."""
+    return vcp_scanner_runner.execute_market_wide_scan()
+
 
 
 @router.get("/position-size")
