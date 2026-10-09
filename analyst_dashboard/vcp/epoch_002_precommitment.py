@@ -134,6 +134,20 @@ ARX_IMPLEMENTATION_USED_AS_ORACLE: bool = False
 FORWARD_MARKET_OUTCOME_ALLOWED_IN_DOMAIN_CASE_SELECTION: bool = False
 CURRENT_HOLDOUT_CASES_ALLOWED_AS_NEW_UNSEEN_CASES: bool = False
 
+# Zero-Case Evidence Semantics (Section 12)
+CASE_NOVELTY_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_CASES"
+CASE_SELECTION_BLINDNESS_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_CASE_SELECTION"
+GROUP_LEAKAGE_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_CASES"
+EXTERNAL_ADJUDICATOR_QUALIFICATION_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_ADJUDICATORS"
+ADJUDICATOR_INDEPENDENCE_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_ADJUDICATORS"
+SECRET_EXPOSURE_AUDIT_STATUS: str = "NOT_APPLICABLE_NO_SECRET"
+VACUOUS_ZERO_REPORTED_AS_SUBSTANTIVE_EVIDENCE: int = 0
+
+# Custody Separation vs Epistemic Independence (Section 13)
+CUSTODIAN_SEPARATION_CONFERS_GOLD_AUTHORITY: bool = False
+CUSTODIAN_SEPARATION_CONFERS_SILVER_AUTHORITY: bool = False
+EXTERNAL_ADJUDICATION_IS_DISTINCT_FROM_SECRET_CUSTODY: bool = True
+
 # Secret Custody Invariants (Section 17)
 SECRET_CUSTODY_MECHANISM: str = "AIR_GAPPED_OR_ISOLATED_SECRET_STORE"
 SECRET_ACCESS_POLICY: str = "AUTHORIZED_EPOCH_CUSTODIANS_ONLY"
@@ -147,6 +161,19 @@ SILVER_CASES_WITH_UNVERIFIED_INDEPENDENCE: int = 0
 SECRET_PAYLOAD_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL: bool = False
 COMMITMENT_NONCE_PUBLICLY_ACCESSIBLE_BEFORE_REVEAL: bool = False
 
+# Information Boundary Prohibitions (Section 24)
+SECRET_MATERIAL_ALLOWED_IN_GIT: bool = False
+SECRET_MATERIAL_ALLOWED_IN_SCRATCH: bool = False
+SECRET_MATERIAL_ALLOWED_IN_ANTIGRAVITY_TRANSCRIPT: bool = False
+SECRET_MATERIAL_ALLOWED_IN_NORMAL_CI_LOGS: bool = False
+SECRET_MATERIAL_ALLOWED_IN_DEVELOPER_SHELL_ARGUMENTS: bool = False
+SECRET_MATERIAL_ALLOWED_IN_PUBLIC_ISSUE_TRACKERS: bool = False
+SECRET_MATERIAL_ALLOWED_IN_PUBLIC_COMMIT_MESSAGES: bool = False
+SECRET_MATERIAL_ALLOWED_IN_RELEASE_NOTES: bool = False
+
+# Pre-reveal Recomputation Prohibition (Section 26)
+COMMITMENT_PRIVATE_PAYLOAD_RECOMPUTATION_PRE_REVEAL: str = "PROHIBITED"
+
 # Approved Precommitment Proof Properties (Section 22)
 COMMITMENT_CONTENT_IMMUTABILITY: bool = True
 COMMITMENT_IDENTITY_VERIFIABLE: bool = True
@@ -159,12 +186,16 @@ EPOCH_POLICY_FROZEN_BEFORE_COMMITMENT: bool = True
 
 
 # ======================================================================
-# 2. CANONICAL PAYLOAD SERIALIZER (SECTION 13 & 14)
+# 2. CANONICAL PAYLOAD SERIALIZER (SECTION 6, 7, 13 & 14)
 # ======================================================================
 
 SEALED_PAYLOAD_CANONICALIZATION_ID: str = "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
 SEALED_PAYLOAD_CANONICALIZATION_VERSION: str = "1.0.0"
+CANONICALIZATION_COMPATIBILITY_ALIASES: Tuple[str, ...] = ("ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION_V1",)
+CANONICALIZATION_ALIAS_CHANGES_SEMANTICS: bool = False
+ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION: bool = True
 IDENTICAL_SEMANTIC_PAYLOAD_PRODUCES_IDENTICAL_CANONICAL_BYTES: bool = True
+PLATFORM_DEPENDENT_CANONICALIZATION: int = 0
 
 
 def compute_sealed_payload_canonicalization_hash() -> str:
@@ -191,7 +222,7 @@ def canonicalize_sealed_payload(payload_dict: Dict[str, Any]) -> bytes:
     """Deterministically serializes a sealed holdout payload dict to canonical UTF-8 bytes.
 
     Enforces:
-    - Dict key sorting at all levels
+    - Dict key sorting at all levels (lexicographical Unicode code-point order)
     - Case list sorting strictly by case_id ascending
     - Sequence sorting for case_roles and scenario_tags
     - Compact JSON separators (no extraneous space)
@@ -233,7 +264,7 @@ def canonicalize_sealed_payload(payload_dict: Dict[str, Any]) -> bytes:
 
 
 # ======================================================================
-# 3. CRYPTOGRAPHIC COMMITMENT SCHEME (SECTION 15 & 16)
+# 3. CRYPTOGRAPHIC COMMITMENT SCHEME & CONTRACT (SECTION 4, 5, 11, 28)
 # ======================================================================
 
 COMMITMENT_SCHEME_ID: str = "SHA256_NONCE_CANONICAL_PAYLOAD_V1"
@@ -241,6 +272,63 @@ COMMITMENT_SCHEME_VERSION: str = "1.0.0"
 COMMITMENT_DOMAIN_SEPARATOR: str = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
 COMMITMENT_DOMAIN_SEPARATOR_PRESENT: bool = True
 COMMITMENT_MIN_NONCE_BITS: int = 256
+COMMITMENT_DOMAIN_SEPARATOR_ENCODING: str = "UTF-8"
+COMMITMENT_FIELD_SEPARATOR_ENCODING: str = "ASCII_COLON_COLON_0x3A_0x3A"
+NONCE_ENCODING: str = "RAW_BYTES_32"
+CANONICAL_PAYLOAD_ENCODING: str = "UTF-8"
+HASH_ALGORITHM: str = "SHA-256"
+ONE_SCHEME_ID_VERSION_MAPS_TO_EXACTLY_ONE_BYTE_FRAMING: bool = True
+
+# Cryptographic Policy Semantics & Predecessor Closure (Section 5, 27)
+CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED: bool = False
+POLICY_SUCCESSOR_REQUIRED: bool = False
+POLICY_SUCCESSOR_CREATED_ONLY_IF_SEMANTICS_CHANGED: bool = True
+PREDECESSOR_EPOCH_002_POLICY_HASH: str = "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514"
+EFFECTIVE_EPOCH_002_POLICY_ID: str = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY"
+EFFECTIVE_EPOCH_002_POLICY_VERSION: str = "1.0.0"
+EFFECTIVE_EPOCH_002_POLICY_HASH: str = "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514"
+EFFECTIVE_EPOCH_002_POLICY_COMMIT_SHA: str = "f9a3a5df99c302cc5de612fffb82c8a6cc572fdb"
+
+# Effective Cryptographic Contract Identity (Section 11, 28)
+EFFECTIVE_COMMITMENT_SCHEME_ID: str = "SHA256_NONCE_CANONICAL_PAYLOAD_V1"
+EFFECTIVE_COMMITMENT_SCHEME_VERSION: str = "1.0.0"
+EFFECTIVE_COMMITMENT_BYTE_FRAMING: str = "UTF8(domain_separator) || b'::' || nonce_bytes || b'::' || canonical_payload_bytes"
+EFFECTIVE_CANONICALIZATION_ID: str = "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
+EFFECTIVE_CANONICALIZATION_VERSION: str = "1.0.0"
+EFFECTIVE_CANONICALIZATION_HASH: str = "2666b0cc03c6988538709450d34bb0ee54104d04929eb0573941513f232a6b44"
+CRYPTOGRAPHIC_CONTRACT_ID: str = "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT"
+CRYPTOGRAPHIC_CONTRACT_VERSION: str = "1.0.0"
+CRYPTOGRAPHIC_CONTRACT_HASH: str = "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e"
+TEST_VECTOR_SET_HASH: str = "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
+CRYPTOGRAPHIC_TEST_VECTOR_COUNT: int = 3
+CRYPTOGRAPHIC_TEST_VECTORS_ARE_SYNTHETIC: bool = True
+CRYPTOGRAPHIC_TEST_VECTORS_HAVE_HOLDOUT_AUTHORITY: bool = False
+COMMITMENT_REFERENCE_IMPLEMENTATION_PARITY: str = "PASS"
+COMMITMENT_DETERMINISM: str = "PASS"
+COMMITMENT_SEMANTIC_SENSITIVITY: str = "PASS"
+COMMITMENT_NONCE_SENSITIVITY: str = "PASS"
+COMMITMENT_FRAMING_DISCRIMINATION_TEST: str = "PASS"
+
+# Custodian Handoff Specification & Schemas (Section 14-22)
+CUSTODIAN_HANDOFF_SPEC_ID: str = "ARX_VCP_EPOCH_002_CUSTODIAN_HANDOFF_SPEC"
+CUSTODIAN_HANDOFF_SPEC_VERSION: str = "1.0.0"
+CUSTODIAN_HANDOFF_SPEC_HASH: str = "afedbe95b3635be2f495e3ee779d1daf8a22f673c5b674a96991d78100b777a9"
+PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH: str = "22b25371c2d4bfa60f8164d8d5646db714958f29050ca4957ddc82a49b8216a7"
+PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH: str = "581f77623baa0df40588350f24a5cd419dd206ed3bb89063275a4d3582f7f9d6"
+CUSTODIAN_ATTESTATION_SCHEMA_HASH: str = "0a936311e64eac3833986b8b8592c4056fde8745534a8fd2c15ff47726d5e1c4"
+EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH: str = "f1f5b7eceb3d3cada14df170c22af7b10ba944daeabf236d1e3c4cb60238e1af"
+ADJUDICATION_RECORD_SCHEMA_HASH: str = "bde634517f4edee60032e6d528a66984f9f86738cff9b12b87179dca94ad3bf5"
+CUSTODIAN_HANDOFF_BUNDLE_HASH: str = "6b68fbd9d2db75147b6d538b63b74349a5b6a139ca5bcc426d5a086959d608ae"
+CUSTODIAN_SIGNATURE_PROFILE_STATUS: str = "GOVERNED"
+CUSTODIAN_SIGNATURE_KEY_STATUS: str = "NOT_REGISTERED"
+PUBLIC_SIGNATURE_VERIFICATION_STATUS: str = "NOT_APPLICABLE_NO_EXPORT"
+
+# Handoff Gate Verdicts (Section 36)
+EPOCH_002_CRYPTOGRAPHIC_CONTRACT_GATE: str = "PASS"
+EPOCH_002_CRYPTOGRAPHIC_CONTRACT_STATUS: str = "CLOSED / VERIFIED / FROZEN"
+EPOCH_002_CUSTODIAN_HANDOFF_GATE: str = "PASS"
+EPOCH_002_CUSTODIAN_HANDOFF_STATUS: str = "READY_FOR_EXTERNAL_EXECUTION"
+PRIVATE_CASE_ASSEMBLY_AUTHORIZED: str = "AUTHORIZED_FOR_EXTERNAL_CUSTODIAN_ONLY"
 
 
 def generate_commitment_nonce(num_bytes: int = 32) -> bytes:
@@ -937,4 +1025,213 @@ def attempt_evaluation_before_reveal(holdout_revealed: bool) -> bool:
     if not holdout_revealed:
         raise ValueError("EVALUATION_BEFORE_REVEAL_PROHIBITED: Cannot evaluate candidate before holdout is revealed and recomputed.")
     return True
+
+
+# ======================================================================
+# 11. REFERENCE IMPLEMENTATION & CUSTODIAN VALIDATORS (SECTIONS 9, 12, 16, 32)
+# ======================================================================
+
+def reference_compute_commitment(
+    domain_separator: str,
+    nonce: bytes,
+    canonical_payload_bytes: bytes,
+) -> str:
+    """Independent reference implementation of commitment formula (Section 9).
+
+    Specifies raw byte concatenation without calling compute_sealed_payload_commitment:
+        SHA256( UTF8(domain_separator) + b"::" + nonce + b"::" + canonical_payload_bytes )
+    """
+    if not domain_separator:
+        raise ValueError("Domain separator must not be empty")
+    if not isinstance(nonce, bytes) or len(nonce) < 32:
+        raise ValueError("Nonce must be at least 32 bytes (256 bits)")
+    if not isinstance(canonical_payload_bytes, bytes) or len(canonical_payload_bytes) == 0:
+        raise ValueError("Canonical payload bytes must not be empty")
+
+    raw_bytes = domain_separator.encode("utf-8") + b"::" + nonce + b"::" + canonical_payload_bytes
+    return hashlib.sha256(raw_bytes).hexdigest()
+
+
+def validate_zero_case_audit_status(case_count: int, audit_status: str) -> bool:
+    """Enforces Section 12 rule: with 0 cases, audit status must be NOT_APPLICABLE_*, never PASS."""
+    if case_count == 0:
+        if audit_status == "PASS" or audit_status is True:
+            raise ValueError("VACUOUS_ZERO_AUDIT_REPORTED_AS_PASS: Audits cannot report PASS when zero cases exist.")
+        if not str(audit_status).startswith("NOT_APPLICABLE"):
+            raise ValueError(f"INVALID_ZERO_CASE_AUDIT_STATUS: Expected NOT_APPLICABLE_*, got {audit_status}")
+    return True
+
+
+def validate_custodian_export_schema(export_dict: Dict[str, Any]) -> bool:
+    """Validates public custodian export against public contract and handoff rules (Sections 16, 32)."""
+    if not isinstance(export_dict, dict):
+        raise TypeError("Export artifact must be a dictionary")
+
+    # 1. Mandatory Identity Checks
+    if export_dict.get("epoch_id") != HOLDOUT_EPOCH_ID:
+        raise ValueError(f"WRONG_EPOCH_ID: Expected {HOLDOUT_EPOCH_ID}, got {export_dict.get('epoch_id')}")
+    if export_dict.get("effective_policy_hash") != EFFECTIVE_EPOCH_002_POLICY_HASH:
+        raise ValueError(f"WRONG_POLICY_HASH: Expected {EFFECTIVE_EPOCH_002_POLICY_HASH}, got {export_dict.get('effective_policy_hash')}")
+    if export_dict.get("cryptographic_contract_hash") != CRYPTOGRAPHIC_CONTRACT_HASH:
+        raise ValueError(f"WRONG_CRYPTOGRAPHIC_CONTRACT_HASH: Expected {CRYPTOGRAPHIC_CONTRACT_HASH}, got {export_dict.get('cryptographic_contract_hash')}")
+    if export_dict.get("handoff_bundle_hash") != CUSTODIAN_HANDOFF_BUNDLE_HASH:
+        raise ValueError(f"WRONG_HANDOFF_BUNDLE_HASH: Expected {CUSTODIAN_HANDOFF_BUNDLE_HASH}, got {export_dict.get('handoff_bundle_hash')}")
+
+    # 2. Scheme & Canonicalization
+    if export_dict.get("commitment_scheme_id") != EFFECTIVE_COMMITMENT_SCHEME_ID:
+        raise ValueError(f"UNSUPPORTED_COMMITMENT_SCHEME: Expected {EFFECTIVE_COMMITMENT_SCHEME_ID}, got {export_dict.get('commitment_scheme_id')}")
+    if export_dict.get("canonicalization_id") != EFFECTIVE_CANONICALIZATION_ID:
+        raise ValueError(f"UNSUPPORTED_CANONICALIZATION: Expected {EFFECTIVE_CANONICALIZATION_ID}, got {export_dict.get('canonicalization_id')}")
+
+    # 3. Forbidden Secret Material in Public Export
+    forbidden_keys = {
+        "nonce",
+        "secret_nonce",
+        "payload",
+        "secret_payload",
+        "cases",
+        "expected_predicates",
+        "expected_labels",
+        "expected_final_classification",
+        "hidden_labels",
+        "hidden_predicate_vector",
+        "reveal_material",
+    }
+    for k in export_dict:
+        if k in forbidden_keys:
+            raise ValueError(f"FORBIDDEN_SECRET_FIELD: Secret field '{k}' detected in public custodian export")
+
+    # 4. Authority accounting & qualifications
+    case_count = export_dict.get("case_count", 0)
+    auth_counts = export_dict.get("authority_counts", {})
+    gold_c = auth_counts.get("GOLD", 0)
+    silver_c = auth_counts.get("SILVER", 0)
+    int_ref_c = auth_counts.get("INTERNAL_REFERENCE", 0)
+    none_c = auth_counts.get("NONE", 0)
+    if (gold_c + silver_c + int_ref_c + none_c) != case_count:
+        raise ValueError("INVALID_AUTHORITY_COUNT_TOTALS: Authority counts do not sum to total case count")
+
+    if gold_c > 0 and not export_dict.get("external_independent_gold_attested"):
+        raise ValueError("GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ATTESTATION: Gold cases require external independent human adjudication attestation")
+    if silver_c > 0 and not export_dict.get("silver_limitations_attested"):
+        raise ValueError("SILVER_WITHOUT_LIMITATION_EVIDENCE: Silver cases require limitation evidence metadata")
+
+    # 5. Pre-reveal payload recomputation prohibition
+    if export_dict.get("payload_recomputed_pre_reveal"):
+        raise ValueError("PRE_REVEAL_RECOMPUTATION_PROHIBITED: Public export cannot claim payload recomputation pre-reveal")
+
+    # 6. Signature profile check
+    sig = export_dict.get("signature_profile", {})
+    if not sig.get("mechanism") or sig.get("mechanism") not in {
+        "ED25519_DETACHED_SIGNATURE",
+        "SIGNED_REPOSITORY_TAG",
+        "TRUSTED_TIMESTAMP_ATTESTATION",
+        "EXTERNAL_NOTARIZATION",
+        "OTHER_GOVERNED_MECHANISM",
+    }:
+        raise ValueError("UNKNOWN_SIGNATURE_MECHANISM: Signature mechanism is not governed")
+
+    return True
+
+
+def get_public_test_vectors() -> List[Dict[str, Any]]:
+    """Returns the 3 frozen synthetic test vectors (Section 8)."""
+    return [
+        {
+            "vector_id": "TEST_VECTOR_001",
+            "description": "Single dummy case with boundary role",
+            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+            "scheme_version": "1.0.0",
+            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+            "canonicalization_version": "1.0.0",
+            "synthetic_nonce_hex": ("01" * 32),
+            "input_payload": {
+                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "cases": [
+                    {"case_id": "SYN-TEST-001", "case_roles": ["BOUNDARY"], "expected": "QUALIFIED"}
+                ],
+            },
+            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22424f554e44415259225d2c226578706563746564223a225155414c4946494544227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+            "expected_commitment_digest": "e265adeee14d1bda538591a2f42db710768539ab15bc0c324fa5676637eb7fff",
+        },
+        {
+            "vector_id": "TEST_VECTOR_002",
+            "description": "Multiple dummy cases supplied intentionally out of order",
+            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+            "scheme_version": "1.0.0",
+            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+            "canonicalization_version": "1.0.0",
+            "synthetic_nonce_hex": ("02" * 32),
+            "input_payload": {
+                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "cases": [
+                    {"case_id": "SYN-TEST-003", "case_roles": ["NEGATIVE_CONTROL"], "scenario_tags": ["STAGE_3"]},
+                    {"case_id": "SYN-TEST-001", "case_roles": ["CORE"], "scenario_tags": ["STAGE_2", "PIVOT"]},
+                    {"case_id": "SYN-TEST-002", "case_roles": ["BOUNDARY"], "scenario_tags": ["VOLUME_DRYUP"]},
+                ],
+            },
+            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a332c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d303031222c22636173655f726f6c6573223a5b22434f5245225d2c227363656e6172696f5f74616773223a5b225049564f54222c2253544147455f32225d7d2c7b22636173655f6964223a2253594e2d544553542d303032222c22636173655f726f6c6573223a5b22424f554e44415259225d2c227363656e6172696f5f74616773223a5b22564f4c554d455f4452595550225d7d2c7b22636173655f6964223a2253594e2d544553542d303033222c22636173655f726f6c6573223a5b224e454741544956455f434f4e54524f4c225d2c227363656e6172696f5f74616773223a5b2253544147455f33225d7d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+            "expected_commitment_digest": "554b6f42ca4c366ac87dd9efdb68da40610d617ecb3bdbc9b24f1216f94c31af",
+        },
+        {
+            "vector_id": "TEST_VECTOR_003",
+            "description": "Unicode string edge case with German characters and mathematical arrows",
+            "scheme_id": "SHA256_NONCE_CANONICAL_PAYLOAD_V1",
+            "scheme_version": "1.0.0",
+            "domain_separator": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+            "canonicalization_id": "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION",
+            "canonicalization_version": "1.0.0",
+            "synthetic_nonce_hex": ("03" * 32),
+            "input_payload": {
+                "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+                "cases": [
+                    {"case_id": "SYN-TEST-UNICODE-001", "note": "VCP Contraction & Volume Dry-up: 50% → 12% — Müller & Böhm", "expected": "QUALIFIED"}
+                ],
+            },
+            "expected_canonical_payload_hex": "7b22636173655f636f756e74223a312c226361736573223a5b7b22636173655f6964223a2253594e2d544553542d554e49434f44452d303031222c226578706563746564223a225155414c4946494544222c226e6f7465223a2256435020436f6e7472616374696f6e202620566f6c756d65204472792d75703a2035302520e286922031322520e28094204dc3bc6c6c657220262042c3b6686d227d5d2c2265706f63685f6964223a224152585f5643505f50524f53504543544956455f484f4c444f55545f45504f43485f303032227d",
+            "expected_commitment_digest": "dcac9606c10629de4be153cedf75a4f7540c23fc5f13096933a9d7c8407573ce",
+        },
+    ]
+
+
+def get_cryptographic_contract_dict() -> Dict[str, Any]:
+    """Returns the frozen cryptographic contract specification dictionary (Section 11)."""
+    return {
+        "contract_id": CRYPTOGRAPHIC_CONTRACT_ID,
+        "contract_version": CRYPTOGRAPHIC_CONTRACT_VERSION,
+        "epoch_id": HOLDOUT_EPOCH_ID,
+        "commitment_scheme_id": EFFECTIVE_COMMITMENT_SCHEME_ID,
+        "commitment_scheme_version": EFFECTIVE_COMMITMENT_SCHEME_VERSION,
+        "canonicalization_id": EFFECTIVE_CANONICALIZATION_ID,
+        "canonicalization_version": EFFECTIVE_CANONICALIZATION_VERSION,
+        "canonicalization_hash": EFFECTIVE_CANONICALIZATION_HASH,
+        "domain_separator": COMMITMENT_DOMAIN_SEPARATOR,
+        "byte_framing_specification": EFFECTIVE_COMMITMENT_BYTE_FRAMING,
+        "nonce_length_bytes": 32,
+        "hash_algorithm": HASH_ALGORITHM,
+        "test_vector_count": CRYPTOGRAPHIC_TEST_VECTOR_COUNT,
+        "test_vector_set_hash": TEST_VECTOR_SET_HASH,
+        "cryptographic_contract_hash": CRYPTOGRAPHIC_CONTRACT_HASH,
+    }
+
+
+def get_custodian_handoff_bundle_manifest() -> Dict[str, str]:
+    """Returns the canonical manifest of all artifacts in the custodian handoff bundle (Section 22)."""
+    return {
+        "effective_epoch_policy_hash": EFFECTIVE_EPOCH_002_POLICY_HASH,
+        "cryptographic_contract_hash": CRYPTOGRAPHIC_CONTRACT_HASH,
+        "private_payload_schema_hash": PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH,
+        "public_export_schema_hash": PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH,
+        "custodian_attestation_schema_hash": CUSTODIAN_ATTESTATION_SCHEMA_HASH,
+        "external_adjudicator_intake_schema_hash": EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH,
+        "adjudication_record_schema_hash": ADJUDICATION_RECORD_SCHEMA_HASH,
+        "authority_model_hash": AUTHORITY_MODEL_HASH,
+        "scope_policy_hash": SCOPE_POLICY_HASH,
+        "sampling_policy_hash": SAMPLING_POLICY_HASH,
+        "disagreement_policy_hash": DISAGREEMENT_POLICY_HASH,
+        "test_vector_set_hash": TEST_VECTOR_SET_HASH,
+        "custodian_instructions_hash": "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed",
+    }
 

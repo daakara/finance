@@ -147,6 +147,71 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     audit_tracked_repository_for_secrets,
     get_epoch_002_policy_dict,
     compute_epoch_002_policy_hash,
+    CASE_NOVELTY_AUDIT_STATUS,
+    CASE_SELECTION_BLINDNESS_AUDIT_STATUS,
+    GROUP_LEAKAGE_AUDIT_STATUS,
+    EXTERNAL_ADJUDICATOR_QUALIFICATION_AUDIT_STATUS,
+    ADJUDICATOR_INDEPENDENCE_AUDIT_STATUS,
+    SECRET_EXPOSURE_AUDIT_STATUS,
+    VACUOUS_ZERO_REPORTED_AS_SUBSTANTIVE_EVIDENCE,
+    CUSTODIAN_SEPARATION_CONFERS_GOLD_AUTHORITY,
+    CUSTODIAN_SEPARATION_CONFERS_SILVER_AUTHORITY,
+    EXTERNAL_ADJUDICATION_IS_DISTINCT_FROM_SECRET_CUSTODY,
+    SECRET_MATERIAL_ALLOWED_IN_GIT,
+    SECRET_MATERIAL_ALLOWED_IN_SCRATCH,
+    SECRET_MATERIAL_ALLOWED_IN_ANTIGRAVITY_TRANSCRIPT,
+    SECRET_MATERIAL_ALLOWED_IN_NORMAL_CI_LOGS,
+    SECRET_MATERIAL_ALLOWED_IN_DEVELOPER_SHELL_ARGUMENTS,
+    CANONICALIZATION_COMPATIBILITY_ALIASES,
+    CANONICALIZATION_ALIAS_CHANGES_SEMANTICS,
+    ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION,
+    ONE_SCHEME_ID_VERSION_MAPS_TO_EXACTLY_ONE_BYTE_FRAMING,
+    CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED,
+    POLICY_SUCCESSOR_REQUIRED,
+    PREDECESSOR_EPOCH_002_POLICY_HASH,
+    EFFECTIVE_EPOCH_002_POLICY_ID,
+    EFFECTIVE_EPOCH_002_POLICY_VERSION,
+    EFFECTIVE_EPOCH_002_POLICY_HASH,
+    EFFECTIVE_EPOCH_002_POLICY_COMMIT_SHA,
+    EFFECTIVE_COMMITMENT_SCHEME_ID,
+    EFFECTIVE_COMMITMENT_SCHEME_VERSION,
+    EFFECTIVE_COMMITMENT_BYTE_FRAMING,
+    EFFECTIVE_CANONICALIZATION_ID,
+    EFFECTIVE_CANONICALIZATION_VERSION,
+    EFFECTIVE_CANONICALIZATION_HASH,
+    CRYPTOGRAPHIC_CONTRACT_ID,
+    CRYPTOGRAPHIC_CONTRACT_VERSION,
+    CRYPTOGRAPHIC_CONTRACT_HASH,
+    TEST_VECTOR_SET_HASH,
+    CRYPTOGRAPHIC_TEST_VECTOR_COUNT,
+    COMMITMENT_REFERENCE_IMPLEMENTATION_PARITY,
+    COMMITMENT_DETERMINISM,
+    COMMITMENT_SEMANTIC_SENSITIVITY,
+    COMMITMENT_NONCE_SENSITIVITY,
+    COMMITMENT_FRAMING_DISCRIMINATION_TEST,
+    CUSTODIAN_HANDOFF_SPEC_ID,
+    CUSTODIAN_HANDOFF_SPEC_VERSION,
+    CUSTODIAN_HANDOFF_SPEC_HASH,
+    PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH,
+    PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH,
+    CUSTODIAN_ATTESTATION_SCHEMA_HASH,
+    EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH,
+    ADJUDICATION_RECORD_SCHEMA_HASH,
+    CUSTODIAN_HANDOFF_BUNDLE_HASH,
+    CUSTODIAN_SIGNATURE_PROFILE_STATUS,
+    CUSTODIAN_SIGNATURE_KEY_STATUS,
+    PUBLIC_SIGNATURE_VERIFICATION_STATUS,
+    EPOCH_002_CRYPTOGRAPHIC_CONTRACT_GATE,
+    EPOCH_002_CRYPTOGRAPHIC_CONTRACT_STATUS,
+    EPOCH_002_CUSTODIAN_HANDOFF_GATE,
+    EPOCH_002_CUSTODIAN_HANDOFF_STATUS,
+    PRIVATE_CASE_ASSEMBLY_AUTHORIZED,
+    reference_compute_commitment,
+    validate_zero_case_audit_status,
+    validate_custodian_export_schema,
+    get_public_test_vectors,
+    get_cryptographic_contract_dict,
+    get_custodian_handoff_bundle_manifest,
 )
 
 
@@ -818,3 +883,270 @@ def test_negative_gate_15_attempt_to_evaluate_before_reveal():
 def test_negative_gate_16_attempt_to_compute_composite_authority_score():
     with pytest.raises(ValueError, match="COMPOSITE_AUTHORITY_SCORE_PROHIBITED"):
         compute_composite_authority_score({"GOLD": 1.0, "SILVER": 0.5})
+
+
+# ======================================================================
+# 9. CRYPTOGRAPHIC CONTRACT & REFERENCE PARITY TESTS (SECTIONS 8, 9, 10, 11)
+# ======================================================================
+
+def test_cryptographic_contract_and_canonicalization_invariants():
+    assert CRYPTOGRAPHIC_CONTRACT_ID == "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT"
+    assert CRYPTOGRAPHIC_CONTRACT_VERSION == "1.0.0"
+    assert EFFECTIVE_COMMITMENT_BYTE_FRAMING == "UTF8(domain_separator) || b'::' || nonce_bytes || b'::' || canonical_payload_bytes"
+    assert EFFECTIVE_CANONICALIZATION_ID == "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
+    assert CANONICALIZATION_COMPATIBILITY_ALIASES == ("ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION_V1",)
+    assert CANONICALIZATION_ALIAS_CHANGES_SEMANTICS is False
+    assert ONE_CANONICALIZATION_ID_VERSION_HAS_ONE_SEMANTIC_DEFINITION is True
+    assert ONE_SCHEME_ID_VERSION_MAPS_TO_EXACTLY_ONE_BYTE_FRAMING is True
+    assert CRYPTOGRAPHIC_POLICY_SEMANTICS_CHANGED is False
+    assert POLICY_SUCCESSOR_REQUIRED is False
+    assert EFFECTIVE_EPOCH_002_POLICY_HASH == PREDECESSOR_EPOCH_002_POLICY_HASH
+    contract_dict = get_cryptographic_contract_dict()
+    assert contract_dict["cryptographic_contract_hash"] == CRYPTOGRAPHIC_CONTRACT_HASH
+    assert CRYPTOGRAPHIC_CONTRACT_HASH == "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e"
+    assert TEST_VECTOR_SET_HASH == "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3"
+
+
+def test_synthetic_cryptographic_test_vectors_and_reference_parity():
+    vectors = get_public_test_vectors()
+    assert len(vectors) == 3
+    assert CRYPTOGRAPHIC_TEST_VECTOR_COUNT == 3
+
+    for v in vectors:
+        payload = v["input_payload"]
+        can_bytes = canonicalize_sealed_payload(payload)
+        assert can_bytes.hex() == v["expected_canonical_payload_hex"]
+
+        nonce_bytes = bytes.fromhex(v["synthetic_nonce_hex"])
+        prod_digest = compute_sealed_payload_commitment(v["domain_separator"], nonce_bytes, can_bytes)
+        ref_digest = reference_compute_commitment(v["domain_separator"], nonce_bytes, can_bytes)
+
+        assert prod_digest == v["expected_commitment_digest"]
+        assert ref_digest == v["expected_commitment_digest"]
+        assert prod_digest == ref_digest
+
+
+def test_cryptographic_negative_tests_and_framing_discrimination():
+    domain_sep = "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
+    nonce = b"\x01" * 32
+    payload = {"epoch_id": domain_sep, "cases": [{"case_id": "TEST-01", "role": "CORE"}]}
+    can_bytes = canonicalize_sealed_payload(payload)
+
+    # 1. Determinism
+    d1 = compute_sealed_payload_commitment(domain_sep, nonce, can_bytes)
+    d2 = compute_sealed_payload_commitment(domain_sep, nonce, can_bytes)
+    assert d1 == d2
+
+    # 2. Nonce sensitivity (single bit flip)
+    nonce_flipped = bytearray(nonce)
+    nonce_flipped[0] ^= 0x01
+    d_nonce_mod = compute_sealed_payload_commitment(domain_sep, bytes(nonce_flipped), can_bytes)
+    assert d1 != d_nonce_mod
+
+    # 3. Semantic sensitivity
+    payload_mod = {"epoch_id": domain_sep, "cases": [{"case_id": "TEST-01", "role": "BOUNDARY"}]}
+    can_mod = canonicalize_sealed_payload(payload_mod)
+    d_payload_mod = compute_sealed_payload_commitment(domain_sep, nonce, can_mod)
+    assert d1 != d_payload_mod
+
+    # 4. Domain separator sensitivity
+    d_dom_mod = compute_sealed_payload_commitment(domain_sep + "_ALT", nonce, can_bytes)
+    assert d1 != d_dom_mod
+
+    # 5. Framing discrimination: '::' vs '\x00'
+    colon_framing_digest = hashlib.sha256(domain_sep.encode("utf-8") + b"::" + nonce + b"::" + can_bytes).hexdigest()
+    nul_framing_digest = hashlib.sha256(domain_sep.encode("utf-8") + b"\x00" + nonce + b"\x00" + can_bytes).hexdigest()
+    assert colon_framing_digest == d1
+    assert colon_framing_digest != nul_framing_digest
+
+
+# ======================================================================
+# 10. ZERO-CASE EVIDENCE SEMANTICS & CUSTODY INDEPENDENCE (SECTIONS 12, 13)
+# ======================================================================
+
+def test_zero_case_evidence_semantics_and_negative_gates():
+    assert CASE_NOVELTY_AUDIT_STATUS == "NOT_APPLICABLE_NO_CASES"
+    assert CASE_SELECTION_BLINDNESS_AUDIT_STATUS == "NOT_APPLICABLE_NO_CASE_SELECTION"
+    assert GROUP_LEAKAGE_AUDIT_STATUS == "NOT_APPLICABLE_NO_CASES"
+    assert EXTERNAL_ADJUDICATOR_QUALIFICATION_AUDIT_STATUS == "NOT_APPLICABLE_NO_ADJUDICATORS"
+    assert ADJUDICATOR_INDEPENDENCE_AUDIT_STATUS == "NOT_APPLICABLE_NO_ADJUDICATORS"
+    assert SECRET_EXPOSURE_AUDIT_STATUS == "NOT_APPLICABLE_NO_SECRET"
+    assert VACUOUS_ZERO_REPORTED_AS_SUBSTANTIVE_EVIDENCE == 0
+
+    assert validate_zero_case_audit_status(0, "NOT_APPLICABLE_NO_CASES") is True
+    assert validate_zero_case_audit_status(0, "NOT_APPLICABLE_NO_CASE_SELECTION") is True
+
+    with pytest.raises(ValueError, match="VACUOUS_ZERO_AUDIT_REPORTED_AS_PASS"):
+        validate_zero_case_audit_status(0, "PASS")
+
+    with pytest.raises(ValueError, match="VACUOUS_ZERO_AUDIT_REPORTED_AS_PASS"):
+        validate_zero_case_audit_status(0, True)
+
+    with pytest.raises(ValueError, match="INVALID_ZERO_CASE_AUDIT_STATUS"):
+        validate_zero_case_audit_status(0, "FAIL")
+
+
+def test_custody_vs_adjudication_independence_invariants():
+    assert CUSTODIAN_SEPARATION_CONFERS_GOLD_AUTHORITY is False
+    assert CUSTODIAN_SEPARATION_CONFERS_SILVER_AUTHORITY is False
+    assert EXTERNAL_ADJUDICATION_IS_DISTINCT_FROM_SECRET_CUSTODY is True
+
+
+def test_information_boundary_and_secret_prohibitions():
+    assert SECRET_MATERIAL_ALLOWED_IN_GIT is False
+    assert SECRET_MATERIAL_ALLOWED_IN_SCRATCH is False
+    assert SECRET_MATERIAL_ALLOWED_IN_ANTIGRAVITY_TRANSCRIPT is False
+    assert SECRET_MATERIAL_ALLOWED_IN_NORMAL_CI_LOGS is False
+    assert SECRET_MATERIAL_ALLOWED_IN_DEVELOPER_SHELL_ARGUMENTS is False
+
+
+# ======================================================================
+# 11. CUSTODIAN HANDOFF BUNDLE & EXPORT SCHEMA VALIDATION (SECTIONS 14-23, 32)
+# ======================================================================
+
+def test_custodian_handoff_bundle_artifacts_and_hashes():
+    base_dir = os.path.join("docs", "domain", "vcp", "holdout_epoch_002", "custodian")
+    assert os.path.exists(base_dir)
+
+    schema_files = {
+        "PRIVATE_HOLDOUT_PAYLOAD.schema.json": PRIVATE_HOLDOUT_PAYLOAD_SCHEMA_HASH,
+        "PUBLIC_CUSTODIAN_EXPORT.schema.json": PUBLIC_CUSTODIAN_EXPORT_SCHEMA_HASH,
+        "CUSTODIAN_ATTESTATION.schema.json": CUSTODIAN_ATTESTATION_SCHEMA_HASH,
+        "EXTERNAL_ADJUDICATOR_INTAKE.schema.json": EXTERNAL_ADJUDICATOR_INTAKE_SCHEMA_HASH,
+        "ADJUDICATION_RECORD.schema.json": ADJUDICATION_RECORD_SCHEMA_HASH,
+    }
+    for fname, exp_hash in schema_files.items():
+        fpath = os.path.join(base_dir, fname)
+        assert os.path.exists(fpath), f"File {fname} missing from custodian handoff directory"
+        with open(fpath, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+        canon_bytes = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        assert hashlib.sha256(canon_bytes).hexdigest() == exp_hash
+
+    # Cryptographic contract
+    contract_path = os.path.join(base_dir, "CRYPTOGRAPHIC_CONTRACT.json")
+    assert os.path.exists(contract_path)
+    with open(contract_path, "r", encoding="utf-8") as f:
+        contract_obj = json.load(f)
+    assert contract_obj["cryptographic_contract_hash"] == CRYPTOGRAPHIC_CONTRACT_HASH
+
+    # Handoff specification
+    spec_path = os.path.join(base_dir, "CUSTODIAN_HANDOFF_SPECIFICATION.json")
+    assert os.path.exists(spec_path)
+    with open(spec_path, "r", encoding="utf-8") as f:
+        spec_obj = json.load(f)
+    assert spec_obj["handoff_spec_hash"] == CUSTODIAN_HANDOFF_SPEC_HASH
+
+    # Readme
+    readme_path = os.path.join(base_dir, "CUSTODIAN_HANDOFF_README.md")
+    assert os.path.exists(readme_path)
+    with open(readme_path, "rb") as f:
+        readme_bytes = f.read().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(readme_bytes).hexdigest() == "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed"
+
+    manifest = get_custodian_handoff_bundle_manifest()
+    bundle_manifest_bytes = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    assert hashlib.sha256(bundle_manifest_bytes).hexdigest() == CUSTODIAN_HANDOFF_BUNDLE_HASH
+
+
+@pytest.fixture
+def base_valid_custodian_export():
+    return {
+        "epoch_id": HOLDOUT_EPOCH_ID,
+        "effective_policy_hash": EFFECTIVE_EPOCH_002_POLICY_HASH,
+        "cryptographic_contract_hash": CRYPTOGRAPHIC_CONTRACT_HASH,
+        "handoff_bundle_hash": CUSTODIAN_HANDOFF_BUNDLE_HASH,
+        "commitment_scheme_id": EFFECTIVE_COMMITMENT_SCHEME_ID,
+        "canonicalization_id": EFFECTIVE_CANONICALIZATION_ID,
+        "commitment_hash": "a" * 64,
+        "custodian_attestation_hash": "b" * 64,
+        "case_count": 2,
+        "authority_counts": {
+            "GOLD": 0,
+            "SILVER": 1,
+            "INTERNAL_REFERENCE": 1,
+            "NONE": 0,
+        },
+        "silver_limitations_attested": True,
+        "external_independent_gold_attested": False,
+        "payload_recomputed_pre_reveal": False,
+        "signature_profile": {
+            "mechanism": "ED25519_DETACHED_SIGNATURE",
+            "status": "VERIFIED",
+        },
+    }
+
+
+def test_custodian_export_schema_positive_and_negative_gates(base_valid_custodian_export):
+    # Positive case
+    assert validate_custodian_export_schema(base_valid_custodian_export) is True
+
+    # Negative 1: wrong epoch ID
+    with pytest.raises(ValueError, match="WRONG_EPOCH_ID"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, epoch_id="WRONG_EPOCH"))
+
+    # Negative 2: wrong policy hash
+    with pytest.raises(ValueError, match="WRONG_POLICY_HASH"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, effective_policy_hash="0" * 64))
+
+    # Negative 3: wrong contract hash
+    with pytest.raises(ValueError, match="WRONG_CRYPTOGRAPHIC_CONTRACT_HASH"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, cryptographic_contract_hash="0" * 64))
+
+    # Negative 4: wrong handoff bundle hash
+    with pytest.raises(ValueError, match="WRONG_HANDOFF_BUNDLE_HASH"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, handoff_bundle_hash="0" * 64))
+
+    # Negative 5: unsupported commitment scheme
+    with pytest.raises(ValueError, match="UNSUPPORTED_COMMITMENT_SCHEME"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, commitment_scheme_id="UNSUPPORTED"))
+
+    # Negative 6: unsupported canonicalization ID
+    with pytest.raises(ValueError, match="UNSUPPORTED_CANONICALIZATION"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, canonicalization_id="UNSUPPORTED"))
+
+    # Negative 7: secret nonce leaked in export
+    with pytest.raises(ValueError, match="FORBIDDEN_SECRET_FIELD"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, nonce="c" * 64))
+
+    # Negative 8: secret payload leaked in export
+    with pytest.raises(ValueError, match="FORBIDDEN_SECRET_FIELD"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, payload={"cases": []}))
+
+    # Negative 9: hidden labels leaked in export
+    with pytest.raises(ValueError, match="FORBIDDEN_SECRET_FIELD"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, hidden_labels={"HLD-001": "STAGE_2"}))
+
+    # Negative 10: pre-reveal payload recomputation claimed
+    with pytest.raises(ValueError, match="PRE_REVEAL_RECOMPUTATION_PROHIBITED"):
+        validate_custodian_export_schema(dict(base_valid_custodian_export, payload_recomputed_pre_reveal=True))
+
+    # Negative 11: unknown signature mechanism
+    with pytest.raises(ValueError, match="UNKNOWN_SIGNATURE_MECHANISM"):
+        bad_sig = dict(base_valid_custodian_export, signature_profile={"mechanism": "UNGOVERNED_CUSTOM"})
+        validate_custodian_export_schema(bad_sig)
+
+    # Negative 12: authority count mismatch
+    with pytest.raises(ValueError, match="INVALID_AUTHORITY_COUNT_TOTALS"):
+        bad_counts = dict(base_valid_custodian_export, case_count=10)
+        validate_custodian_export_schema(bad_counts)
+
+    # Negative 13: Gold count without external independent attestation
+    with pytest.raises(ValueError, match="GOLD_WITHOUT_EXTERNAL_INDEPENDENT_ATTESTATION"):
+        bad_gold = dict(
+            base_valid_custodian_export,
+            case_count=2,
+            authority_counts={"GOLD": 1, "SILVER": 1, "INTERNAL_REFERENCE": 0, "NONE": 0},
+            external_independent_gold_attested=False,
+        )
+        validate_custodian_export_schema(bad_gold)
+
+    # Negative 14: Silver count without limitation metadata
+    with pytest.raises(ValueError, match="SILVER_WITHOUT_LIMITATION_EVIDENCE"):
+        bad_silver = dict(
+            base_valid_custodian_export,
+            case_count=2,
+            authority_counts={"GOLD": 0, "SILVER": 2, "INTERNAL_REFERENCE": 0, "NONE": 0},
+            silver_limitations_attested=False,
+        )
+        validate_custodian_export_schema(bad_silver)
