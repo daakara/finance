@@ -19,6 +19,7 @@ Enforces:
 from __future__ import annotations
 
 import copy
+from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -256,12 +257,62 @@ POLICY_CONTRACTS: Dict[str, ConcretePolicyContract] = {
 
 
 # =====================================================================
-# Governance Bundle Model (Section 10)
+# =====================================================================
+# Governance Bundle Model (Sections 10, 16, 17, 18 & 14)
 # =====================================================================
 
 GOVERNANCE_BUNDLE_ID: str = "ARX_SOURCE_GOVERNANCE_BUNDLE"
 GOVERNANCE_BUNDLE_VERSION: str = "1.0.0"
+
+POLICY_SEMANTIC_PROJECTION_ID: str = "ARX_POLICY_SEMANTIC_PROJECTION"
 POLICY_SEMANTIC_PROJECTION_VERSION: str = "1.0.0"
+
+POLICY_SEMANTIC_PROJECTION_RULES = {
+    "projection_id": POLICY_SEMANTIC_PROJECTION_ID,
+    "version": POLICY_SEMANTIC_PROJECTION_VERSION,
+    "semantic_attributes": [
+        "policy_id",
+        "policy_version",
+        "canonical_field",
+        "binding_type",
+        "authority_chain",
+        "resolution_mode",
+        "missing_behavior",
+        "conflict_behavior",
+        "derivation_inputs",
+        "effective_scopes",
+    ],
+    "non_semantic_attributes": [
+        "description",
+        "author",
+        "created_at",
+        "documentation_url",
+        "execution_notes",
+    ],
+}
+POLICY_SEMANTIC_PROJECTION_HASH: str = canonical_hash(POLICY_SEMANTIC_PROJECTION_RULES)
+
+# Reason Taxonomy Artifact vs Semantic Hash (Section 18)
+REASON_TAXONOMY_ARTIFACT_HASH: str = REASON_CODE_TAXONOMY_HASH
+REASON_TAXONOMY_SEMANTIC_HASH: str = canonical_hash({
+    "taxonomy_id": REASON_CODE_TAXONOMY_ID,
+    "semantic_version": REASON_CODE_TAXONOMY_VERSION,
+    "reason_codes": sorted([r.value for r in ReasonCode]),
+})
+
+# Country & Currency Canonical Semantics (Section 14)
+COUNTRY_FIELD_SEMANTICS: str = "LISTING_COUNTRY"
+CURRENCY_FIELD_SEMANTICS: str = "TRADING_CURRENCY"
+
+COUNTRY_SEMANTIC_DEFINITION: str = (
+    "Country associated with governed listing venue, "
+    "NOT issuer domicile/incorporation country."
+)
+
+CURRENCY_SEMANTIC_DEFINITION: str = (
+    "Trading/listing currency associated with governed listing venue, "
+    "NOT issuer reporting currency or domicile currency."
+)
 
 
 class GovernanceBundle(BaseModel):
@@ -327,21 +378,95 @@ def get_active_governance_bundle(
     )
 
 
+# Constant recorded active governance bundle hash
+GOVERNANCE_BUNDLE_HASH: str = "9aeed0c785d0b6737d0995192a4383ab198784d91d1525f0595d65a01a434bad"
+
+
 # =====================================================================
-# Decision Semantic Dependencies & Six Hash Model (Sections 11, 12 & 13)
+# Decision Semantic Dependencies & Value/Outcome Hashes (Sections 3, 4, 5)
 # =====================================================================
+
+DECISION_HASH_CONTRACT_VERSION: str = "2.0.0"
+DECISION_VALUE_HASH_INCLUDES_REASON_CODE: str = "NO"
+DECISION_VALUE_HASH_INCLUDES_SEVERITY: str = "NO"
+DECISION_OUTCOME_HASH_ESTABLISHED: str = "YES"
+SAME_VALUE_AUTOMATICALLY_IMPLIES_SEMANTIC_EQUIVALENCE: str = "NO"
+
+
+class DecisionEquivalenceClass(str, Enum):
+    VALUE_EQUIVALENT = "VALUE_EQUIVALENT"
+    SEMANTICALLY_EQUIVALENT = "SEMANTICALLY_EQUIVALENT"
+    CONFORMANT_CROSS_IMPLEMENTATION_EQUIVALENT = "CONFORMANT_CROSS_IMPLEMENTATION_EQUIVALENT"
+    VALUE_EQUIVALENT_ONLY = "VALUE_EQUIVALENT_ONLY"
+    NOT_EQUIVALENT = "NOT_EQUIVALENT"
+    UNRESOLVED_EQUIVALENCE = "UNRESOLVED_EQUIVALENCE"
+
+
+class DecisionEquivalenceEvaluator:
+    """
+    Evaluates equivalence relationships between two decisions (Section 4).
+    Rules:
+    - Same value_hash -> VALUE_EQUIVALENT
+    - Same value_hash + changed semantic dependency -> VALUE_EQUIVALENT_ONLY (SEMANTICALLY_EQUIVALENT is NO)
+    - Same semantic dependencies + same evidence + same value -> SEMANTICALLY_EQUIVALENT
+    - Same dependencies + evidence + value + different implementation + conformance passed -> CONFORMANT_CROSS_IMPLEMENTATION_EQUIVALENT
+    - Otherwise unresolved or not equivalent.
+    """
+    @staticmethod
+    def evaluate(
+        old_value_hash: str,
+        new_value_hash: str,
+        old_dependency_hash: str,
+        new_dependency_hash: str,
+        old_evidence_hash: str,
+        new_evidence_hash: str,
+        old_provenance_hash: Optional[str] = None,
+        new_provenance_hash: Optional[str] = None,
+        conformance_passed: bool = False,
+    ) -> Set[DecisionEquivalenceClass]:
+        classes: Set[DecisionEquivalenceClass] = set()
+        same_value = (old_value_hash == new_value_hash)
+        same_dep = (old_dependency_hash == new_dependency_hash)
+        same_ev = (old_evidence_hash == new_evidence_hash)
+        same_prov = (old_provenance_hash == new_provenance_hash) if (old_provenance_hash and new_provenance_hash) else True
+
+        if not same_value:
+            classes.add(DecisionEquivalenceClass.NOT_EQUIVALENT)
+            return classes
+
+        classes.add(DecisionEquivalenceClass.VALUE_EQUIVALENT)
+
+        if not same_dep or not same_ev:
+            classes.add(DecisionEquivalenceClass.VALUE_EQUIVALENT_ONLY)
+        else:
+            classes.add(DecisionEquivalenceClass.SEMANTICALLY_EQUIVALENT)
+            if not same_prov:
+                if conformance_passed:
+                    classes.add(DecisionEquivalenceClass.CONFORMANT_CROSS_IMPLEMENTATION_EQUIVALENT)
+                else:
+                    classes.add(DecisionEquivalenceClass.UNRESOLVED_EQUIVALENCE)
+
+        return classes
+
 
 class DecisionSemanticDependencies(BaseModel):
     """
     Granular, dependency-scoped semantic inputs for exactly one governed decision.
+    Contract v2.0.0 closes over all relevant semantic governance dimensions (Section 5).
     """
     concept_id: str
     requirement_catalog_entry_hash: str
+    required_scopes: List[str] = Field(default_factory=list)
+    required_status: bool = True
     authority_binding_hash: str
-    relevant_policy_semantic_hashes: Dict[str, str]
+    relevant_policy_semantic_hashes: Dict[str, str] = Field(default_factory=dict)
     normalization_contract_hash: Optional[str] = None
     temporal_policy_hash: Optional[str] = None
     reason_taxonomy_semantic_hash: Optional[str] = None
+    evidence_schema_semantic_hash: Optional[str] = None
+    value_domain_semantic_identity: Optional[str] = None
+    derivation_policy_semantic_hash: Optional[str] = None
+    identity_policy_semantic_hash: Optional[str] = None
 
     model_config = ConfigDict(frozen=True)
 
@@ -349,19 +474,28 @@ class DecisionSemanticDependencies(BaseModel):
         payload = {
             "concept_id": self.concept_id,
             "requirement_catalog_entry_hash": self.requirement_catalog_entry_hash,
+            "required_scopes": sorted(self.required_scopes),
+            "required_status": self.required_status,
             "authority_binding_hash": self.authority_binding_hash,
-            "relevant_policy_semantic_hashes": {k: self.relevant_policy_semantic_hashes[k] for k in sorted(self.relevant_policy_semantic_hashes.keys())},
+            "relevant_policy_semantic_hashes": {
+                k: self.relevant_policy_semantic_hashes[k]
+                for k in sorted(self.relevant_policy_semantic_hashes.keys())
+            },
             "normalization_contract_hash": self.normalization_contract_hash,
             "temporal_policy_hash": self.temporal_policy_hash,
             "reason_taxonomy_semantic_hash": self.reason_taxonomy_semantic_hash,
+            "evidence_schema_semantic_hash": self.evidence_schema_semantic_hash,
+            "value_domain_semantic_identity": self.value_domain_semantic_identity,
+            "derivation_policy_semantic_hash": self.derivation_policy_semantic_hash,
+            "identity_policy_semantic_hash": self.identity_policy_semantic_hash,
         }
         return canonical_hash(payload)
 
 
 class DecisionHashModel:
     """
-    Frozen six-hash architecture (Section 13).
-    Ensures clear separation of dependency, evidence, input, value, execution, and derivation.
+    Frozen hash architecture (Contract v2.0.0, Section 3).
+    Ensures strict separation of value, outcome, dependency, evidence, input, execution, and derivation.
     """
     @staticmethod
     def compute_evidence_dependency_hash(used_evidence: Dict[str, Any]) -> str:
@@ -394,14 +528,31 @@ class DecisionHashModel:
     @staticmethod
     def compute_decision_value_hash(
         canonical_value: Any,
-        severity: str,
-        reason_code: str,
+        severity: Optional[str] = None,
+        reason_code: Optional[str] = None,
     ) -> str:
-        """Closes over canonical reconciliation outcome only."""
+        """
+        Contract v2.0.0: Represents ONLY the canonical field value/result payload.
+        STRICTLY EXCLUDES conflict severity and reason code (Section 3).
+        """
         payload = {
             "canonical_value": canonical_value,
-            "severity": severity,
-            "reason_code": reason_code,
+        }
+        return canonical_hash(payload)
+
+    @staticmethod
+    def compute_decision_outcome_hash(
+        decision_value_hash: str,
+        conflict_severity: str,
+        reason_code: str,
+    ) -> str:
+        """
+        Contract v2.0.0: Closes over value hash + conflict severity + reason code semantic identity.
+        """
+        payload = {
+            "decision_value_hash": decision_value_hash,
+            "conflict_severity": str(conflict_severity),
+            "reason_code": str(reason_code),
         }
         return canonical_hash(payload)
 
@@ -422,43 +573,60 @@ class DecisionHashModel:
     @staticmethod
     def compute_decision_derivation_hash(
         decision_input_hash: str,
-        decision_value_hash: str,
+        decision_outcome_hash: str,
         execution_provenance_hash: str,
+        derivation_contract_version: str = "2.0.0",
     ) -> str:
         """
-        Complete derivation digest binding inputs, outputs, and execution provenance.
+        Contract v2.0.0: Complete derivation digest binding inputs, outcome (value+severity+reason),
+        and execution provenance.
         """
         payload = {
+            "derivation_contract_version": derivation_contract_version,
             "decision_input_hash": decision_input_hash,
-            "decision_value_hash": decision_value_hash,
+            "decision_outcome_hash": decision_outcome_hash,
             "execution_provenance_hash": execution_provenance_hash,
         }
         return canonical_hash(payload)
 
 
 # =====================================================================
-# Impact Analysis Policy & Replay Scope Governor (Section 29)
+# Impact Analysis Policy & Replay Scope Governor (Sections 10 & 11)
 # =====================================================================
 
 IMPACT_ANALYSIS_POLICY_ID: str = "ARX_IMPACT_ANALYSIS_POLICY"
-IMPACT_ANALYSIS_POLICY_VERSION: str = "1.0.0"
+IMPACT_ANALYSIS_POLICY_VERSION: str = "2.0.0"
 
-IMPACT_ANALYSIS_POLICY_HASH: str = canonical_hash({
+IMPACT_ANALYSIS_POLICY_RULES = {
     "policy_id": IMPACT_ANALYSIS_POLICY_ID,
     "version": IMPACT_ANALYSIS_POLICY_VERSION,
-    "scope_rule": "DECISION_DEPENDENCY_OR_EVIDENCE_HASH_MISMATCH",
-})
+    "semantic_dependency_scope_rule": "REPLAY_ON_DEPENDENCY_HASH_MISMATCH",
+    "evidence_dependency_scope_rule": "REPLAY_ON_EVIDENCE_HASH_MISMATCH",
+    "implementation_change_replay_rules": {
+        "NON_SEMANTIC_REFACTOR": "CONFORMANCE_VALIDATION_ONLY",
+        "CONFORMANCE_FIX": "AFFECTED_DECISIONS_ENTER_REPLAY_SCOPE",
+        "SEMANTIC_POLICY_CHANGE": "REPLAY_VIA_SEMANTIC_DEPENDENCY_CHANGE",
+        "MIGRATION_BEHAVIOR_CHANGE": "AFFECTED_PERSISTED_RECONSTRUCTED_DECISIONS_ENTER_REPLAY_SCOPE",
+        "UNKNOWN": "PROHIBIT_MATERIAL_AUTHORITY_ACTIVATION",
+    },
+    "migration_replay_rule": "REPLAY_IF_MIGRATION_CONTRACT_REQUIRES_REPLAY",
+    "explicit_validation_scope_rule": "REPLAY_IF_EXPLICIT_VALIDATION_SCOPE_REQUESTED",
+}
+
+IMPACT_ANALYSIS_POLICY_HASH: str = canonical_hash(IMPACT_ANALYSIS_POLICY_RULES)
 
 
 class ImpactAnalyzer:
     """
-    Evaluates whether a decision must be included in a replay scope.
+    Evaluates whether a decision must be included in a replay scope (Sections 10, 11 & 13).
     Invariants:
-    - Relevant policy change -> affected decision included.
-    - Unrelated policy change -> unaffected decision excluded.
-    - Relevant evidence change -> affected decision included.
-    - Unrelated evidence change -> unaffected decision excluded.
-    - KNOWN_AFFECTED_DECISION_OMITTED_FROM_REPLAY_SCOPE = 0.
+    - REPLAY_REQUIRED = semantic_dependency_changed
+                     OR evidence_dependency_changed
+                     OR implementation_change_requires_replay
+                     OR migration_contract_requires_replay
+                     OR explicit_validation_scope_requires_replay
+    - UNKNOWN material changes fail-closed for authority activation.
+    - IMPLEMENTATION_ONLY_AFFECTED_DECISION_OMITTED_FROM_REPLAY_SCOPE = 0.
     """
     @staticmethod
     def is_in_replay_scope(
@@ -466,7 +634,51 @@ class ImpactAnalyzer:
         current_dependency_hash: str,
         prior_evidence_hash: str,
         current_evidence_hash: str,
+        implementation_change_class: Optional[Any] = None,
+        is_affected_by_implementation: bool = False,
+        migration_contract_requires_replay: bool = False,
+        explicit_validation_scope: bool = False,
     ) -> bool:
         dependency_changed = prior_dependency_hash != current_dependency_hash
         evidence_changed = prior_evidence_hash != current_evidence_hash
-        return dependency_changed or evidence_changed
+
+        if dependency_changed or evidence_changed:
+            return True
+
+        if migration_contract_requires_replay:
+            return True
+
+        if explicit_validation_scope:
+            return True
+
+        if implementation_change_class:
+            c = getattr(implementation_change_class, "value", str(implementation_change_class))
+            if c == "CONFORMANCE_FIX" and is_affected_by_implementation:
+                return True
+            if c == "MIGRATION_BEHAVIOR_CHANGE" and is_affected_by_implementation:
+                return True
+            if c == "NON_SEMANTIC_REFACTOR":
+                return False
+            if c == "UNKNOWN":
+                return False
+
+        return False
+
+    @staticmethod
+    def can_activate_authority(
+        implementation_change_class: Any,
+        conformance_attribution: Optional[Any] = None,
+    ) -> bool:
+        """
+        Sections 9, 10 & 13:
+        UNKNOWN material changes fail closed for authority activation.
+        CONFORMANCE_FIX requires an independent conformance basis (not UNRESOLVED).
+        """
+        c = getattr(implementation_change_class, "value", str(implementation_change_class))
+        if c == "UNKNOWN":
+            return False
+        if c == "CONFORMANCE_FIX":
+            attr = getattr(conformance_attribution, "value", str(conformance_attribution)) if conformance_attribution else "UNRESOLVED"
+            if attr in ("UNRESOLVED", "None", ""):
+                return False
+        return True

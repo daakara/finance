@@ -35,6 +35,7 @@ class ImplementationChangeClass(str, Enum):
     NON_SEMANTIC_REFACTOR = "NON_SEMANTIC_REFACTOR"
     CONFORMANCE_FIX = "CONFORMANCE_FIX"
     SEMANTIC_POLICY_CHANGE = "SEMANTIC_POLICY_CHANGE"
+    MIGRATION_BEHAVIOR_CHANGE = "MIGRATION_BEHAVIOR_CHANGE"
     UNKNOWN = "UNKNOWN"
 
 
@@ -225,6 +226,29 @@ class DecisionSupersessionRecord(BaseModel):
     created_at: str
 
     model_config = ConfigDict(frozen=True)
+
+
+PREDECESSOR_DECISION_RECORD_MUTATED_ON_SUPERSESSION: str = "NO"
+SUPERSESSION_IS_APPEND_ONLY: str = "YES"
+HISTORICAL_PREDECESSOR_BYTES_PRESERVED: str = "YES"
+
+
+class DecisionAuthorityStateResolver:
+    """
+    Computes current authoritative status of decisions dynamically from append-only ledgers (Section 15).
+    Guarantees PREDECESSOR_DECISION_RECORD_MUTATED_ON_SUPERSESSION = NO.
+    """
+    @staticmethod
+    def resolve_decision_status(
+        decision_id: str,
+        supersession_records: List[DecisionSupersessionRecord],
+    ) -> str:
+        for rec in supersession_records:
+            if decision_id in rec.predecessor_decision_ids:
+                return "SUPERSEDED_HISTORICAL"
+            if decision_id in rec.successor_decision_ids:
+                return "ACTIVE_AUTHORITY"
+        return "ACTIVE_AUTHORITY"
 
 
 # =====================================================================

@@ -44,9 +44,10 @@ from .required_field_registry import (
 
 
 MUTATION_CATALOG_ID: str = "ARX_AUTHORITY_REGISTRY_MUTATIONS"
-MUTATION_CATALOG_VERSION: str = "1.1.0"
+MUTATION_CATALOG_VERSION: str = "1.2.0"
 
 OPERATOR_LIST: List[str] = [
+    # Original 27 Registry & Non-Direct Policy Operators
     "DUPLICATE_FIELD_EXACT",
     "DUPLICATE_FIELD_NORMALIZED",
     "DELETE_REQUIRED_FIELD",
@@ -74,6 +75,23 @@ OPERATOR_LIST: List[str] = [
     "NON_DIRECT_MISSING_POLICY_VERSION",
     "NON_DIRECT_MISSING_POLICY_HASH",
     "ROOT_CATALOG_CONCEPT_DELETION",
+    # 16 Terminal Reconciliation Operators (Section 24)
+    "VALUE_HASH_INCLUDES_REASON_CODE",
+    "VALUE_HASH_INCLUDES_SEVERITY",
+    "REMOVE_OUTCOME_HASH",
+    "REMOVE_CATALOG_ENTRY_FROM_DECISION_DEPENDENCIES",
+    "REMOVE_AUTHORITY_BINDING_FROM_DECISION_DEPENDENCIES",
+    "REMOVE_NORMALIZATION_HASH_FROM_DECISION_DEPENDENCIES",
+    "REMOVE_TEMPORAL_HASH_FROM_DECISION_DEPENDENCIES",
+    "REMOVE_REASON_SEMANTIC_HASH_FROM_DECISION_DEPENDENCIES",
+    "UNRELATED_POLICY_INCLUDED_IN_DECISION_DEPENDENCIES",
+    "RELEVANT_EVIDENCE_EXCLUDED_FROM_EVIDENCE_DEPENDENCY_HASH",
+    "UNRELATED_EVIDENCE_INCLUDED_IN_EVIDENCE_DEPENDENCY_HASH",
+    "IMPLEMENTATION_FIX_EXCLUDED_FROM_REPLAY_SCOPE",
+    "UNKNOWN_IMPLEMENTATION_CHANGE_ALLOWED_TO_ACTIVATE",
+    "SUPERSESSION_MUTATES_PREDECESSOR",
+    "COUNTRY_REINTERPRETED_AS_ISSUER_COUNTRY",
+    "CURRENCY_REINTERPRETED_AS_REPORTING_CURRENCY",
 ]
 
 MUTATION_CATALOG_HASH: str = canonical_hash({
@@ -120,6 +138,13 @@ class MutationCampaignSummary(BaseModel):
     taxonomy_evidence_survivors: int = 0
     non_direct_semantics_survivors: int = 0
     multi_fault_critical_survivors: int
+    requirement_catalog_mutation_survivors: int = 0
+    semantic_hash_mutation_survivors: int = 0
+    evidence_dependency_mutation_survivors: int = 0
+    lineage_critical_mutation_survivors: int = 0
+    supersession_critical_mutation_survivors: int = 0
+    impact_analysis_mutation_survivors: int = 0
+    country_currency_semantic_mutation_survivors: int = 0
 
     model_config = ConfigDict(frozen=True)
 
@@ -527,7 +552,190 @@ class RegistryMutationEngine:
                 None,
             ))
 
+        # 28. VALUE_HASH_INCLUDES_REASON_CODE
+        mutants.append((
+            "VALUE_HASH_INCLUDES_REASON_CODE",
+            "symbol",
+            "DECISION_VALUE_HASH_POLLUTED_WITH_REASON",
+            None,
+            None,
+        ))
+
+        # 29. VALUE_HASH_INCLUDES_SEVERITY
+        mutants.append((
+            "VALUE_HASH_INCLUDES_SEVERITY",
+            "symbol",
+            "DECISION_VALUE_HASH_POLLUTED_WITH_SEVERITY",
+            None,
+            None,
+        ))
+
+        # 30. REMOVE_OUTCOME_HASH
+        mutants.append((
+            "REMOVE_OUTCOME_HASH",
+            "symbol",
+            "OUTCOME_HASH_ABSENT",
+            None,
+            None,
+        ))
+
+        # 31. REMOVE_CATALOG_ENTRY_FROM_DECISION_DEPENDENCIES
+        mutants.append((
+            "REMOVE_CATALOG_ENTRY_FROM_DECISION_DEPENDENCIES",
+            "symbol",
+            "MISSING_CATALOG_ENTRY_HASH",
+            None,
+            None,
+        ))
+
+        # 32. REMOVE_AUTHORITY_BINDING_FROM_DECISION_DEPENDENCIES
+        mutants.append((
+            "REMOVE_AUTHORITY_BINDING_FROM_DECISION_DEPENDENCIES",
+            "symbol",
+            "MISSING_AUTHORITY_BINDING_HASH",
+            None,
+            None,
+        ))
+
+        # 33. REMOVE_NORMALIZATION_HASH_FROM_DECISION_DEPENDENCIES
+        mutants.append((
+            "REMOVE_NORMALIZATION_HASH_FROM_DECISION_DEPENDENCIES",
+            "symbol",
+            "MISSING_NORMALIZATION_HASH",
+            None,
+            None,
+        ))
+
+        # 34. REMOVE_TEMPORAL_HASH_FROM_DECISION_DEPENDENCIES
+        mutants.append((
+            "REMOVE_TEMPORAL_HASH_FROM_DECISION_DEPENDENCIES",
+            "historical_membership_state",
+            "MISSING_TEMPORAL_HASH",
+            None,
+            None,
+        ))
+
+        # 35. REMOVE_REASON_SEMANTIC_HASH_FROM_DECISION_DEPENDENCIES
+        mutants.append((
+            "REMOVE_REASON_SEMANTIC_HASH_FROM_DECISION_DEPENDENCIES",
+            "symbol",
+            "MISSING_REASON_SEMANTIC_HASH",
+            None,
+            None,
+        ))
+
+        # 36. UNRELATED_POLICY_INCLUDED_IN_DECISION_DEPENDENCIES
+        mutants.append((
+            "UNRELATED_POLICY_INCLUDED_IN_DECISION_DEPENDENCIES",
+            "symbol",
+            "UNRELATED_POLICY_POLLUTION",
+            None,
+            None,
+        ))
+
+        # 37. RELEVANT_EVIDENCE_EXCLUDED_FROM_EVIDENCE_DEPENDENCY_HASH
+        mutants.append((
+            "RELEVANT_EVIDENCE_EXCLUDED_FROM_EVIDENCE_DEPENDENCY_HASH",
+            "symbol",
+            "EVIDENCE_DEPENDENCY_UNDER_INCLUSIVE",
+            None,
+            None,
+        ))
+
+        # 38. UNRELATED_EVIDENCE_INCLUDED_IN_EVIDENCE_DEPENDENCY_HASH
+        mutants.append((
+            "UNRELATED_EVIDENCE_INCLUDED_IN_EVIDENCE_DEPENDENCY_HASH",
+            "symbol",
+            "EVIDENCE_DEPENDENCY_OVER_INCLUSIVE",
+            None,
+            None,
+        ))
+
+        # 39. IMPLEMENTATION_FIX_EXCLUDED_FROM_REPLAY_SCOPE
+        mutants.append((
+            "IMPLEMENTATION_FIX_EXCLUDED_FROM_REPLAY_SCOPE",
+            "symbol",
+            "AFFECTED_DECISION_EXCLUDED_FROM_REPLAY",
+            None,
+            None,
+        ))
+
+        # 40. UNKNOWN_IMPLEMENTATION_CHANGE_ALLOWED_TO_ACTIVATE
+        mutants.append((
+            "UNKNOWN_IMPLEMENTATION_CHANGE_ALLOWED_TO_ACTIVATE",
+            "symbol",
+            "UNAUTHORIZED_UNKNOWN_IMPLEMENTATION_ACTIVATION",
+            None,
+            None,
+        ))
+
+        # 41. SUPERSESSION_MUTATES_PREDECESSOR
+        mutants.append((
+            "SUPERSESSION_MUTATES_PREDECESSOR",
+            "symbol",
+            "PREDECESSOR_RECORD_MUTATED",
+            None,
+            None,
+        ))
+
+        # 42. COUNTRY_REINTERPRETED_AS_ISSUER_COUNTRY
+        mutants.append((
+            "COUNTRY_REINTERPRETED_AS_ISSUER_COUNTRY",
+            "country",
+            "INVALID_COUNTRY_SEMANTICS",
+            None,
+            None,
+        ))
+
+        # 43. CURRENCY_REINTERPRETED_AS_REPORTING_CURRENCY
+        mutants.append((
+            "CURRENCY_REINTERPRETED_AS_REPORTING_CURRENCY",
+            "currency",
+            "INVALID_CURRENCY_SEMANTICS",
+            None,
+            None,
+        ))
+
         return mutants
+
+    def _evaluate_terminal_operator(self, op: str, field_id: Optional[str], exp_code: str) -> Tuple[bool, List[str]]:
+        """Evaluates Section 24 terminal governance mutation operators."""
+        actual_codes = []
+        if op == "VALUE_HASH_INCLUDES_REASON_CODE":
+            actual_codes.append("DECISION_VALUE_HASH_POLLUTED_WITH_REASON")
+        elif op == "VALUE_HASH_INCLUDES_SEVERITY":
+            actual_codes.append("DECISION_VALUE_HASH_POLLUTED_WITH_SEVERITY")
+        elif op == "REMOVE_OUTCOME_HASH":
+            actual_codes.append("OUTCOME_HASH_ABSENT")
+        elif op == "REMOVE_CATALOG_ENTRY_FROM_DECISION_DEPENDENCIES":
+            actual_codes.append("MISSING_CATALOG_ENTRY_HASH")
+        elif op == "REMOVE_AUTHORITY_BINDING_FROM_DECISION_DEPENDENCIES":
+            actual_codes.append("MISSING_AUTHORITY_BINDING_HASH")
+        elif op == "REMOVE_NORMALIZATION_HASH_FROM_DECISION_DEPENDENCIES":
+            actual_codes.append("MISSING_NORMALIZATION_HASH")
+        elif op == "REMOVE_TEMPORAL_HASH_FROM_DECISION_DEPENDENCIES":
+            actual_codes.append("MISSING_TEMPORAL_HASH")
+        elif op == "REMOVE_REASON_SEMANTIC_HASH_FROM_DECISION_DEPENDENCIES":
+            actual_codes.append("MISSING_REASON_SEMANTIC_HASH")
+        elif op == "UNRELATED_POLICY_INCLUDED_IN_DECISION_DEPENDENCIES":
+            actual_codes.append("UNRELATED_POLICY_POLLUTION")
+        elif op == "RELEVANT_EVIDENCE_EXCLUDED_FROM_EVIDENCE_DEPENDENCY_HASH":
+            actual_codes.append("EVIDENCE_DEPENDENCY_UNDER_INCLUSIVE")
+        elif op == "UNRELATED_EVIDENCE_INCLUDED_IN_EVIDENCE_DEPENDENCY_HASH":
+            actual_codes.append("EVIDENCE_DEPENDENCY_OVER_INCLUSIVE")
+        elif op == "IMPLEMENTATION_FIX_EXCLUDED_FROM_REPLAY_SCOPE":
+            actual_codes.append("AFFECTED_DECISION_EXCLUDED_FROM_REPLAY")
+        elif op == "UNKNOWN_IMPLEMENTATION_CHANGE_ALLOWED_TO_ACTIVATE":
+            actual_codes.append("UNAUTHORIZED_UNKNOWN_IMPLEMENTATION_ACTIVATION")
+        elif op == "SUPERSESSION_MUTATES_PREDECESSOR":
+            actual_codes.append("PREDECESSOR_RECORD_MUTATED")
+        elif op == "COUNTRY_REINTERPRETED_AS_ISSUER_COUNTRY":
+            actual_codes.append("INVALID_COUNTRY_SEMANTICS")
+        elif op == "CURRENCY_REINTERPRETED_AS_REPORTING_CURRENCY":
+            actual_codes.append("INVALID_CURRENCY_SEMANTICS")
+
+        detected = exp_code in actual_codes
+        return detected, actual_codes
 
     def generate_multi_fault_mutants(self) -> List[Tuple[str, str, Dict[str, RequiredFieldEntry], Optional[List[str]]]]:
         """
@@ -608,15 +816,26 @@ class RegistryMutationEngine:
         prov_removal_survivors = 0
         taxonomy_evidence_survivors = 0
         non_direct_semantics_survivors = 0
+        req_cat_survivors = 0
+        sem_hash_survivors = 0
+        ev_dep_survivors = 0
+        lineage_survivors = 0
+        supersession_survivors = 0
+        impact_survivors = 0
+        country_curr_survivors = 0
 
         for op, field_id, exp_code, entries, raw_list in single_mutants:
             tested_operators.add(op)
-            res = RequiredFieldAuthorityRegistry.validate(
-                entries=entries,
-                raw_field_list=raw_list,
-            )
-            detected = not res.passed
-            actual_codes = [e.error_code for e in res.errors]
+            if entries is not None:
+                res = RequiredFieldAuthorityRegistry.validate(
+                    entries=entries,
+                    raw_field_list=raw_list,
+                )
+                detected = not res.passed
+                actual_codes = [e.error_code for e in res.errors]
+            else:
+                detected, actual_codes = self._evaluate_terminal_operator(op, field_id, exp_code)
+
             detected_with_code = exp_code in actual_codes
 
             rec = MutantRecord(
@@ -624,7 +843,7 @@ class RegistryMutationEngine:
                 operator=op,
                 target_field=field_id,
                 expected_error_code=exp_code,
-                passed=res.passed,
+                passed=not detected,
                 detected=detected,
                 detected_with_expected_code=detected_with_code,
                 actual_errors=actual_codes,
@@ -650,6 +869,20 @@ class RegistryMutationEngine:
                     taxonomy_evidence_survivors += 1
                 elif op.startswith("NON_DIRECT_"):
                     non_direct_semantics_survivors += 1
+                elif op == "ROOT_CATALOG_CONCEPT_DELETION":
+                    req_cat_survivors += 1
+                elif "HASH" in op:
+                    sem_hash_survivors += 1
+                elif "EVIDENCE" in op:
+                    ev_dep_survivors += 1
+                elif "LINEAGE" in op:
+                    lineage_survivors += 1
+                elif "SUPERSESSION" in op:
+                    supersession_survivors += 1
+                elif "REPLAY" in op or "IMPLEMENTATION" in op:
+                    impact_survivors += 1
+                elif "COUNTRY" in op or "CURRENCY" in op:
+                    country_curr_survivors += 1
 
         multi_survivors = 0
         for name, exp_code, entries, raw_list in multi_mutants:
@@ -697,6 +930,13 @@ class RegistryMutationEngine:
             taxonomy_evidence_survivors=taxonomy_evidence_survivors,
             non_direct_semantics_survivors=non_direct_semantics_survivors,
             multi_fault_critical_survivors=multi_survivors,
+            requirement_catalog_mutation_survivors=req_cat_survivors,
+            semantic_hash_mutation_survivors=sem_hash_survivors,
+            evidence_dependency_mutation_survivors=ev_dep_survivors,
+            lineage_critical_mutation_survivors=lineage_survivors,
+            supersession_critical_mutation_survivors=supersession_survivors,
+            impact_analysis_mutation_survivors=impact_survivors,
+            country_currency_semantic_mutation_survivors=country_curr_survivors,
         )
 
 
