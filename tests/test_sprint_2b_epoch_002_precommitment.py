@@ -275,6 +275,58 @@ from analyst_dashboard.vcp.epoch_002_precommitment import (
     EFFECTIVE_CUSTODIAN_HANDOFF_SPEC_HASH,
     CUSTODIAN_INSTRUCTIONS_HASH,
     get_adversarial_test_vectors,
+    CUSTODIAN_ID,
+    CUSTODIAN_TYPE,
+    CUSTODIAN_IDENTITY_STATUS,
+    CUSTODIAN_ROLE_ACCEPTANCE_STATUS,
+    CUSTODIAN_SEPARATION_STATUS,
+    CUSTODIAN_CONFLICT_STATUS,
+    CUSTODIAN_SIGNATURE_ALGORITHM,
+    CUSTODIAN_PUBLIC_KEY,
+    CUSTODIAN_PUBLIC_KEY_FINGERPRINT,
+    CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT,
+    CUSTODIAN_OPERATIONAL_ACTIVATION_GATE,
+    SIGNATURE_DOMAIN_SEPARATOR,
+    SIGNED_ARTIFACT_TYPE,
+    SIGNED_PROJECTION,
+    SIGNATURE_ENCODING,
+    KEY_FINGERPRINT_BINDING,
+    VERIFICATION_PROCEDURE,
+    SIGNATURE_ENVELOPE_AMBIGUITY,
+    AUTHORIZED_SECRET_CUSTODIANS,
+    SECRET_RECOVERY_POLICY_STATUS,
+    COMPROMISE_POLICY_STATUS,
+    CASE_SELECTION_PROVENANCE_CONTRACT_STATUS,
+    HISTORICAL_EXCLUSION_REGISTRY_STATUS,
+    TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS,
+    ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS,
+    ADJUDICATOR_INDEPENDENCE_PROTOCOL_STATUS,
+    DISAGREEMENT_PROTOCOL_STATUS,
+    PUBLIC_DISCLOSURE_POLICY_STATUS,
+    EPOCH_ABORT_POLICY_STATUS,
+    CUSTODIAN_HANDOFF_DISTRIBUTION_AUTHORIZED,
+    PRIVATE_CASE_SELECTION_AUTHORIZED,
+    EXTERNAL_ADJUDICATION_AUTHORIZED,
+    SECRET_CUSTODY_ACTIVATION_AUTHORIZED,
+    COMMITMENT_GENERATION_AUTHORIZED,
+    PUBLIC_COMMITMENT_EXPORT_AUTHORIZED,
+    REAL_PRIVATE_CASE_RECORDS_CREATED_BY_THIS_GATE,
+    REAL_ADJUDICATION_RECORDS_CREATED_BY_THIS_GATE,
+    get_custodian_registration_path,
+    get_custodian_registration,
+    verify_custodian_registration,
+    compute_signature_envelope_digest,
+    sign_public_export_for_testing,
+    verify_custodian_signature_envelope,
+    get_historical_exclusion_registry_path,
+    get_historical_exclusion_registry,
+    verify_historical_exclusion_registry,
+    get_operational_governance_policies_path,
+    get_operational_governance_policies,
+    validate_case_selection_provenance,
+    validate_temporal_evidence_package,
+    validate_adjudicator_qualification,
+    evaluate_operational_activation_prerequisites,
 )
 
 
@@ -328,7 +380,7 @@ def test_corrected_pre_gate_evidence_state():
     assert HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE == "NOT_ESTABLISHED"
     assert HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE == "NOT_ESTABLISHED"
     assert SECRET_CUSTODY_DESIGN_STATUS == "VERIFIED_IN_INFRASTRUCTURE"
-    assert SECRET_CUSTODY_OPERATIONAL_STATUS == "NOT_STARTED"
+    assert SECRET_CUSTODY_OPERATIONAL_STATUS == "ACTIVE"
     assert SECRET_PAYLOAD_EXISTS == "NO"
     assert COMMITMENT_NONCE_EXISTS == "NO"
     assert EPOCH_002_CASE_ASSEMBLY_STATUS == "INCOMPLETE / EXTERNAL_PROCESS_REQUIRED"
@@ -1463,3 +1515,332 @@ def test_semantic_parity_matrix_and_successor_gates():
     assert CUSTODIAN_BUNDLE_COMMIT_SHA == FINAL_CUSTODIAN_HANDOFF_COMMIT_SHA
     assert SOURCE_HANDOFF_COMMIT_SHA == "f050ab5a013307d57b16491ab034201552d46c47"
     assert CURRENT_HARDENING_SHA == "60739a42093ec2a6cbd80691e5b78541302abc4a"
+
+
+# ======================================================================
+# CUSTODIAN OPERATIONAL ACTIVATION TESTS (GATE 9)
+# ======================================================================
+
+def test_custodian_identity_and_separation_status():
+    """[GATE 9 / SECTIONS 2, 3] Verifies custodian identity, separation, and registration artifact."""
+    assert CUSTODIAN_ID == "CUSTODIAN-ARX-EPOCH-002-EXT-01"
+    assert CUSTODIAN_TYPE == "EXTERNAL_CUSTODIAN"
+    assert CUSTODIAN_IDENTITY_STATUS == "VERIFIED"
+    assert CUSTODIAN_ROLE_ACCEPTANCE_STATUS == "ACCEPTED"
+    assert CUSTODIAN_SEPARATION_STATUS == "ESTABLISHED"
+    assert CUSTODIAN_CONFLICT_STATUS == "INDEPENDENT_NO_CONFLICT"
+    assert CUSTODIAN_OPERATIONAL_ACTIVATION_GATE == "PASS"
+
+    # Verify registration artifact
+    assert verify_custodian_registration() is True
+    reg = get_custodian_registration()
+    assert reg["custodian_id"] == CUSTODIAN_ID
+    assert reg["algorithm"] == "ED25519"
+    assert reg["public_key"] == CUSTODIAN_PUBLIC_KEY
+    assert reg["public_key_fingerprint"] == CUSTODIAN_PUBLIC_KEY_FINGERPRINT
+    assert reg["revocation_status"] == "ACTIVE"
+
+    # Tampered registration raises ValueError
+    bad_reg = dict(reg)
+    bad_reg["custodian_id"] = "IMPOSTOR"
+    with pytest.raises(ValueError, match="Unexpected custodian_id"):
+        verify_custodian_registration(bad_reg)
+
+    bad_fp = dict(reg)
+    bad_fp["public_key_fingerprint"] = "0" * 64
+    with pytest.raises(ValueError, match="fingerprint mismatch"):
+        verify_custodian_registration(bad_fp)
+
+    bad_hash = dict(reg)
+    bad_hash["registration_artifact_hash"] = "f" * 64
+    with pytest.raises(ValueError, match="artifact hash mismatch"):
+        verify_custodian_registration(bad_hash)
+
+
+def test_custodian_signing_key_and_signature_envelope():
+    """[GATE 9 / SECTIONS 3, 4] Verifies Ed25519 signature envelope and cryptographic verification."""
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    assert CUSTODIAN_SIGNATURE_ALGORITHM == "ED25519"
+    assert CUSTODIAN_SIGNATURE_KEY_STATUS == "REGISTERED / VERIFIED"
+    assert CUSTODIAN_PUBLIC_KEY == "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1"
+    assert CUSTODIAN_PUBLIC_KEY_FINGERPRINT == "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
+    assert CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT == "NO"
+
+    assert SIGNATURE_DOMAIN_SEPARATOR == "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002"
+    assert SIGNED_ARTIFACT_TYPE == "PUBLIC_CUSTODIAN_EXPORT"
+    assert SIGNED_PROJECTION == "canonical_public_export_excluding_signature_object"
+    assert SIGNATURE_ENCODING == "HEX_LOWERCASE"
+    assert KEY_FINGERPRINT_BINDING == "SHA256_HEX_PUBLIC_KEY"
+    assert SIGNATURE_ENVELOPE_AMBIGUITY == 0
+
+    # Test ephemeral in-memory signing and verification
+    ephemeral_priv = ed25519.Ed25519PrivateKey.generate()
+    ephemeral_pub_bytes = ephemeral_priv.public_key().public_bytes_raw()
+    ephemeral_pub_hex = ephemeral_pub_bytes.hex()
+
+    test_export = {
+        "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+        "epoch_version": "1.0.0",
+        "case_count": 12,
+        "sealed_payload_commitment": "c0ffee" * 10 + "1234",
+        "custodian_id": CUSTODIAN_ID,
+    }
+
+    signed_export = sign_public_export_for_testing(test_export, ephemeral_priv)
+    assert verify_custodian_signature_envelope(signed_export, ephemeral_pub_hex) is True
+
+    # Tampered signature value fails
+    tampered_sig = copy.deepcopy(signed_export)
+    tampered_sig["signature_profile"]["signature_value"] = "00" * 64
+    with pytest.raises(ValueError, match="Invalid custodian Ed25519 signature"):
+        verify_custodian_signature_envelope(tampered_sig, ephemeral_pub_hex)
+
+    # Tampered signed payload projection fails
+    tampered_proj = copy.deepcopy(signed_export)
+    tampered_proj["case_count"] = 13
+    with pytest.raises(ValueError, match="Invalid custodian Ed25519 signature"):
+        verify_custodian_signature_envelope(tampered_proj, ephemeral_pub_hex)
+
+    # Tampered key fingerprint fails
+    tampered_fp = copy.deepcopy(signed_export)
+    tampered_fp["signature_profile"]["key_fingerprint"] = "a" * 64
+    with pytest.raises(ValueError, match="Key fingerprint mismatch"):
+        verify_custodian_signature_envelope(tampered_fp, ephemeral_pub_hex)
+
+    # Missing signature profile fails
+    export_no_sig = {k: v for k, v in test_export.items() if k != "signature_profile"}
+    with pytest.raises(ValueError, match="Missing signature_profile"):
+        verify_custodian_signature_envelope(export_no_sig, ephemeral_pub_hex)
+
+
+def test_historical_exclusion_registry_integrity():
+    """[GATE 9 / SECTION 9] Verifies historical exclusion registry bindings and zero-collision invariants."""
+    assert HISTORICAL_EXCLUSION_REGISTRY_STATUS == "READY"
+    assert verify_historical_exclusion_registry() is True
+
+    reg = get_historical_exclusion_registry()
+    assert reg["registry_id"] == "ARX_VCP_HISTORICAL_EXCLUSION_REGISTRY_EPOCH_002"
+    assert reg["status"] == "READY"
+    assert reg["total_historical_cases"] == 24
+    assert reg["historical_dev_case_count"] == 16
+    assert reg["historical_holdout_case_count"] == 8
+    assert reg["collision_invariants"]["PREVIOUS_CASE_CONTENT_COLLISIONS"] == 0
+    assert reg["collision_invariants"]["PREVIOUS_GROUP_COLLISIONS"] == 0
+    assert len(reg["previously_revealed_prospective_cases"]) == 0
+
+    # Tampered collision invariant raises ValueError
+    bad_reg = copy.deepcopy(reg)
+    bad_reg["collision_invariants"]["PREVIOUS_CASE_CONTENT_COLLISIONS"] = 1
+    with pytest.raises(ValueError, match="PREVIOUS_CASE_CONTENT_COLLISIONS must be 0"):
+        verify_historical_exclusion_registry(bad_reg)
+
+
+def test_temporal_evidence_package_validation():
+    """[GATE 9 / SECTION 10] Verifies temporal evidence package schema and zero-lookahead rules."""
+    assert TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS == "FROZEN"
+
+    valid_pkg = {
+        "case_token": "CASE-TOKEN-SYN-001",
+        "evaluation_as_of": "2026-10-09T18:00:00Z",
+        "security_identity": "SEC-TEST",
+        "market_session_identity": "REGULAR",
+        "source_snapshot_ids": ["SNAP-001"],
+        "ohlcv_evidence_hashes": ["1" * 64],
+        "valid_time_maximum": "2026-10-09T17:59:59Z",
+        "known_at_maximum": "2026-10-09T18:00:00Z",
+        "corporate_action_state_provenance": {
+            "as_of_adjustment_status": "APPLIED_UP_TO_T",
+            "future_events_excluded": True,
+        },
+        "provider_identity": "PROV-INDEPENDENT",
+        "data_readiness_status": "VERIFIED_COMPLETE",
+        "temporal_closure_hash": "2" * 64,
+        "domain_evidence_references": ["DOC-001"],
+        "post_t_price_data_included": False,
+        "post_t_volume_data_included": False,
+        "future_corporate_action_knowledge_included": False,
+        "future_outcome_used_as_domain_truth": False,
+    }
+    assert validate_temporal_evidence_package(valid_pkg) is True
+
+    # Lookahead violation: valid_time exceeds evaluation_as_of
+    bad_time = dict(valid_pkg, valid_time_maximum="2026-10-09T18:00:01Z")
+    with pytest.raises(ValueError, match="lookahead violation"):
+        validate_temporal_evidence_package(bad_time)
+
+    # Post-T price inclusion violation
+    bad_post_t = dict(valid_pkg, post_t_price_data_included=True)
+    with pytest.raises(ValueError, match="post_t_price_data_included must be False"):
+        validate_temporal_evidence_package(bad_post_t)
+
+    # Future outcome as truth violation
+    bad_outcome = dict(valid_pkg, future_outcome_used_as_domain_truth=True)
+    with pytest.raises(ValueError, match="future_outcome_used_as_domain_truth must be False"):
+        validate_temporal_evidence_package(bad_outcome)
+
+
+def test_case_selection_provenance_validation():
+    """[GATE 9 / SECTION 8] Verifies case selection provenance contract and anti-contamination rules."""
+    assert CASE_SELECTION_PROVENANCE_CONTRACT_STATUS == "FROZEN"
+
+    valid_prov = {
+        "selection_epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+        "eligible_source_population_id": "POP-001",
+        "eligible_source_population_hash": "3" * 64,
+        "source_snapshot_as_of": "2026-10-09T18:00:00Z",
+        "sampling_policy_hash": "4" * 64,
+        "scope_policy_hash": "5" * 64,
+        "selection_method": "STRATIFIED_DETERMINISTIC_SAMPLE",
+        "stratification_dimensions": ["SECTOR", "LIQUIDITY"],
+        "selection_seed_commitment": "6" * 64,
+        "candidate_output_use": "PROHIBITED",
+        "future_outcome_use": "PROHIBITED",
+        "selected_case_content_hashes": ["7" * 64],
+        "selected_group_hashes": ["8" * 64],
+        "exclusion_reason_counts": {"OUT_OF_SCOPE": 5},
+        "historical_collision_check_hash": "9" * 64,
+        "selection_manifest_hash": "a" * 64,
+    }
+    assert validate_case_selection_provenance(valid_prov) is True
+
+    # Candidate output use violation
+    bad_cand_use = dict(valid_prov, candidate_output_use="ALLOWED")
+    with pytest.raises(ValueError, match="candidate_output_use must be PROHIBITED"):
+        validate_case_selection_provenance(bad_cand_use)
+
+    # Future outcome use violation
+    bad_fut_use = dict(valid_prov, future_outcome_use="ALLOWED")
+    with pytest.raises(ValueError, match="future_outcome_use must be PROHIBITED"):
+        validate_case_selection_provenance(bad_fut_use)
+
+
+def test_adjudicator_qualification_validation():
+    """[GATE 9 / SECTION 12] Verifies adjudicator qualification and independence protocols."""
+    assert ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS == "FROZEN"
+    assert ADJUDICATOR_INDEPENDENCE_PROTOCOL_STATUS == "FROZEN"
+
+    valid_adj = {
+        "adjudicator_id": "ADJ-EXT-001",
+        "qualification_evidence": {
+            "domain_experience_years": 10,
+            "methodology_credentials": "CMT / VCP Specialist",
+            "documented_track_record": "Independent practitioner",
+        },
+        "qualification_verification": {
+            "verified_by_custodian": True,
+            "verification_status": "VERIFIED_QUALIFIED",
+            "verification_timestamp": "2026-10-09T18:00:00Z",
+        },
+        "independence_declaration": {
+            "no_candidate_development_involvement": True,
+            "no_prior_access_to_unfrozen_models": True,
+            "independent_status_affirmed": True,
+        },
+        "conflict_declaration": "CERTIFIED_CONFLICT_FREE",
+        "relationship_to_arx": "EXTERNAL_THIRD_PARTY",
+        "authority_origin": "EXTERNAL_INDEPENDENT",
+        "allowed_scope": ["VCP_STAGE_2"],
+        "signature_identity": {
+            "mechanism": "ED25519",
+            "public_key_or_identifier": "b" * 64,
+        },
+    }
+    assert validate_adjudicator_qualification(valid_adj) is True
+
+    # Non-independent authority origin fails
+    bad_auth = dict(valid_adj, authority_origin="INTERNAL_REFERENCE")
+    with pytest.raises(ValueError, match="authority_origin == EXTERNAL_INDEPENDENT"):
+        validate_adjudicator_qualification(bad_auth)
+
+    # Ineligible relationship fails
+    bad_rel = dict(valid_adj, relationship_to_arx="ARX_CORE_DEVELOPER")
+    with pytest.raises(ValueError, match="Invalid relationship_to_arx"):
+        validate_adjudicator_qualification(bad_rel)
+
+
+def test_operational_governance_policies_and_disagreement():
+    """[GATE 9 / SECTIONS 6, 7, 13, 15, 16] Verifies operational governance policy package and disagreement rules."""
+    assert SECRET_RECOVERY_POLICY_STATUS == "FROZEN"
+    assert COMPROMISE_POLICY_STATUS == "FROZEN"
+    assert DISAGREEMENT_PROTOCOL_STATUS == "FROZEN"
+    assert PUBLIC_DISCLOSURE_POLICY_STATUS == "FROZEN"
+    assert EPOCH_ABORT_POLICY_STATUS == "FROZEN"
+
+    pol = get_operational_governance_policies()
+    assert pol["status"] == "FROZEN"
+    assert pol["secret_recovery_policy"]["status"] == "FROZEN"
+    assert pol["compromise_and_revocation_policy"]["status"] == "FROZEN"
+    assert pol["disagreement_protocol"]["status"] == "FROZEN"
+    assert pol["public_disclosure_policy"]["status"] == "FROZEN"
+    assert pol["epoch_abort_policy"]["status"] == "FROZEN"
+
+    # Disagreement rules
+    diag = pol["disagreement_protocol"]
+    assert diag["number_of_independent_initial_reviewers"] == 2
+    assert diag["unresolved_derived_oracle_class"] == "NONE"
+    assert diag["majority_voting_over_source_truth_permitted"] is False
+    assert diag["majority_voting_over_contract_ambiguity_permitted"] is False
+    assert diag["majority_voting_over_domain_contract_defects_permitted"] is False
+
+    # Fail closed recovery states
+    rec = pol["secret_recovery_policy"]["fail_closed_rules"]
+    assert rec["SECRET_PAYLOAD_LOST"] == "EPOCH_INVALID"
+    assert rec["COMMITMENT_NONCE_LOST"] == "EPOCH_INVALID"
+    assert rec["PRE_FREEZE_SECRET_DISCLOSURE_TO_CANDIDATE_TEAM"] == "EPOCH_INVALID"
+
+
+def test_stage_specific_authorizations_and_negative_gates():
+    """[GATE 9 / SECTIONS 17-20] Verifies fine-grained stage authorizations and negative gates."""
+    assert CUSTODIAN_HANDOFF_DISTRIBUTION_AUTHORIZED == "YES"
+    assert PRIVATE_CASE_SELECTION_AUTHORIZED == "YES"
+    assert EXTERNAL_ADJUDICATION_AUTHORIZED == "YES"
+    assert SECRET_CUSTODY_ACTIVATION_AUTHORIZED == "YES"
+    assert COMMITMENT_GENERATION_AUTHORIZED == "YES"
+    assert PUBLIC_COMMITMENT_EXPORT_AUTHORIZED == "AUTHORIZED_SUBJECT_TO_GOVERNED_EXECUTION"
+
+    # Negative gates
+    assert TOTAL_COMMITTED_CASE_COUNT == 0
+    assert SECRET_PAYLOAD_EXISTS == "NO"
+    assert COMMITMENT_NONCE_EXISTS == "NO"
+    assert REAL_PRIVATE_CASE_RECORDS_CREATED_BY_THIS_GATE == 0
+    assert REAL_ADJUDICATION_RECORDS_CREATED_BY_THIS_GATE == 0
+    assert HOLDOUT_COMMITMENT_STATUS == "NOT_CREATED"
+    assert HOLDOUT_COMMITMENT_COMMIT_SHA == "NOT_CREATED"
+
+    assert SUCCESSOR_CANDIDATE_SPECIFIC_SEMANTIC_WORK_BEFORE_COMMITMENT == 0
+    assert SUCCESSOR_CANDIDATE_DEVELOPMENT_AUTHORIZED is False
+    assert SUCCESSOR_CANDIDATE_FREEZE_AUTHORIZED is False
+    assert HOLDOUT_REVEAL_STATUS == "NOT_AUTHORIZED"
+    assert HOLDOUT_EVALUATION_STATUS == "NOT_AUTHORIZED"
+    assert SPRINT_3_ENTRY_STATUS == "BLOCKED"
+
+    assert EMPIRICAL_SCANNER_QUALITY == "INSUFFICIENT_EVIDENCE"
+    assert MODEL_TUNING == "FROZEN"
+    assert LEARNING_CLAIM == "NOT_AUTHORIZED"
+    assert PUSH_STATUS == "LOCAL_ONLY / NOT_PUSHED"
+    assert DEPLOY_STATUS == "NOT_AUTHORIZED"
+
+
+def test_prerequisites_evaluation_and_verdict():
+    """[GATE 9 / SECTION 21] Evaluates all 14 prerequisites and confirms COMMITMENT_GENERATION_AUTHORIZED == YES."""
+    eval_res = evaluate_operational_activation_prerequisites()
+    assert eval_res["all_prerequisites_met"] is True
+    assert eval_res["commitment_generation_authorized"] == "YES"
+
+    prereqs = eval_res["prerequisites"]
+    assert prereqs["CUSTODIAN_IDENTITY_STATUS"] == "VERIFIED"
+    assert prereqs["CUSTODIAN_SEPARATION_STATUS"] == "ESTABLISHED"
+    assert prereqs["CUSTODIAN_SIGNATURE_KEY_STATUS"] == "REGISTERED / VERIFIED"
+    assert prereqs["SIGNATURE_ENVELOPE_AMBIGUITY"] == 0
+    assert prereqs["SECRET_CUSTODY_OPERATIONAL_STATUS"] == "ACTIVE"
+    assert prereqs["SECRET_RECOVERY_POLICY_STATUS"] == "FROZEN"
+    assert prereqs["COMPROMISE_POLICY_STATUS"] == "FROZEN"
+    assert prereqs["CASE_SELECTION_PROVENANCE_CONTRACT_STATUS"] == "FROZEN"
+    assert prereqs["HISTORICAL_EXCLUSION_REGISTRY_STATUS"] == "READY"
+    assert prereqs["TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS"] == "FROZEN"
+    assert prereqs["ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS"] == "FROZEN"
+    assert prereqs["DISAGREEMENT_PROTOCOL_STATUS"] == "FROZEN"
+    assert prereqs["PUBLIC_DISCLOSURE_POLICY_STATUS"] == "FROZEN"
+    assert prereqs["EPOCH_ABORT_POLICY_STATUS"] == "FROZEN"
+

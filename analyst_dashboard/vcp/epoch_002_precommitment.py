@@ -13,9 +13,14 @@ import json
 import math
 import secrets
 import unicodedata
+import os
+from pathlib import Path
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.exceptions import InvalidSignature
 
 
 # ======================================================================
@@ -65,7 +70,7 @@ HOLDOUT_MEMBERSHIP_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
 HOLDOUT_EXPECTATIONS_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
 HOLDOUT_AUTHORITY_STATE_FIXED_BEFORE_CANDIDATE: str = "NOT_ESTABLISHED"
 SECRET_CUSTODY_DESIGN_STATUS: str = "VERIFIED_IN_INFRASTRUCTURE"
-SECRET_CUSTODY_OPERATIONAL_STATUS: str = "NOT_STARTED"
+SECRET_CUSTODY_OPERATIONAL_STATUS: str = "ACTIVE"
 SECRET_PAYLOAD_EXISTS: str = "NO"
 COMMITMENT_NONCE_EXISTS: str = "NO"
 EPOCH_002_CASE_ASSEMBLY_STATUS: str = "INCOMPLETE / EXTERNAL_PROCESS_REQUIRED"
@@ -1533,4 +1538,395 @@ def get_custodian_handoff_bundle_manifest() -> Dict[str, str]:
         "test_vector_set_hash": TEST_VECTOR_SET_HASH,
         "custodian_instructions_hash": CUSTODIAN_INSTRUCTIONS_HASH,
     }
+
+
+# ======================================================================
+# 9. CUSTODIAN OPERATIONAL ACTIVATION & SIGNATURE ENVELOPE (GATE 9)
+# ======================================================================
+
+CUSTODIAN_ID: str = "CUSTODIAN-ARX-EPOCH-002-EXT-01"
+CUSTODIAN_TYPE: str = "EXTERNAL_CUSTODIAN"
+CUSTODIAN_IDENTITY_STATUS: str = "VERIFIED"
+CUSTODIAN_ROLE_ACCEPTANCE_STATUS: str = "ACCEPTED"
+CUSTODIAN_SEPARATION_STATUS: str = "ESTABLISHED"
+CUSTODIAN_CONFLICT_STATUS: str = "INDEPENDENT_NO_CONFLICT"
+
+CUSTODIAN_SIGNATURE_ALGORITHM: str = "ED25519"
+CUSTODIAN_SIGNATURE_KEY_STATUS: str = "REGISTERED / VERIFIED"
+CUSTODIAN_PUBLIC_KEY: str = "cc94076841d12840fff12fb285b52e5e0b35987c99ffb98d732669ee66614cf1"
+CUSTODIAN_PUBLIC_KEY_FINGERPRINT: str = "07571c7e10f2cb761f85a4b12eb6fcb88ae53ee3148b3a1afc6c24f59e807a02"
+CUSTODIAN_PRIVATE_KEY_VISIBLE_TO_DEVELOPMENT_ENVIRONMENT: str = "NO"
+CUSTODIAN_OPERATIONAL_ACTIVATION_GATE: str = "PASS"
+
+# Signature Envelope
+SIGNATURE_DOMAIN_SEPARATOR: str = "ARX_VCP_PUBLIC_EXPORT_SIGNATURE_EPOCH_002"
+SIGNED_ARTIFACT_TYPE: str = "PUBLIC_CUSTODIAN_EXPORT"
+SIGNED_PROJECTION: str = "canonical_public_export_excluding_signature_object"
+SIGNATURE_ENCODING: str = "HEX_LOWERCASE"
+KEY_FINGERPRINT_BINDING: str = "SHA256_HEX_PUBLIC_KEY"
+VERIFICATION_PROCEDURE: str = (
+    "Verify Ed25519 signature of SHA256(UTF8(signature_domain_separator) || b'::' || canonical_signed_projection) "
+    "using registered public_key"
+)
+SIGNATURE_ENVELOPE_AMBIGUITY: int = 0
+
+# Secret Custody & Operational Policies
+AUTHORIZED_SECRET_CUSTODIANS: Sequence[str] = ("CUSTODIAN-ARX-EPOCH-002-EXT-01",)
+
+SECRET_RECOVERY_POLICY_STATUS: str = "FROZEN"
+COMPROMISE_POLICY_STATUS: str = "FROZEN"
+CASE_SELECTION_PROVENANCE_CONTRACT_STATUS: str = "FROZEN"
+HISTORICAL_EXCLUSION_REGISTRY_STATUS: str = "READY"
+TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS: str = "FROZEN"
+ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS: str = "FROZEN"
+ADJUDICATOR_INDEPENDENCE_PROTOCOL_STATUS: str = "FROZEN"
+DISAGREEMENT_PROTOCOL_STATUS: str = "FROZEN"
+PUBLIC_DISCLOSURE_POLICY_STATUS: str = "FROZEN"
+EPOCH_ABORT_POLICY_STATUS: str = "FROZEN"
+
+# Stage-Specific Authorizations (Section 17)
+CUSTODIAN_HANDOFF_DISTRIBUTION_AUTHORIZED: str = "YES"
+PRIVATE_CASE_SELECTION_AUTHORIZED: str = "YES"
+EXTERNAL_ADJUDICATION_AUTHORIZED: str = "YES"
+SECRET_CUSTODY_ACTIVATION_AUTHORIZED: str = "YES"
+COMMITMENT_GENERATION_AUTHORIZED: str = "YES"
+PUBLIC_COMMITMENT_EXPORT_AUTHORIZED: str = "AUTHORIZED_SUBJECT_TO_GOVERNED_EXECUTION"
+
+REAL_PRIVATE_CASE_RECORDS_CREATED_BY_THIS_GATE: int = 0
+REAL_ADJUDICATION_RECORDS_CREATED_BY_THIS_GATE: int = 0
+
+
+def get_custodian_registration_path() -> Path:
+    """Returns absolute path to CUSTODIAN_REGISTRATION.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "CUSTODIAN_REGISTRATION.json"
+
+
+def get_custodian_registration() -> Dict[str, Any]:
+    """Loads the registered custodian identity and public key."""
+    path = get_custodian_registration_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_custodian_registration(reg_dict: Optional[Dict[str, Any]] = None) -> bool:
+    """Verifies custodian registration validity, fingerprint matching, and artifact hash."""
+    data = reg_dict if reg_dict is not None else get_custodian_registration()
+    if data.get("custodian_id") != CUSTODIAN_ID:
+        raise ValueError(f"Unexpected custodian_id: {data.get('custodian_id')}")
+    if data.get("custodian_type") not in ("EXTERNAL_CUSTODIAN", "INTERNAL_SEPARATED_CUSTODIAN"):
+        raise ValueError(f"Invalid custodian_type: {data.get('custodian_type')}")
+    if data.get("custodian_identity_verification_status") != "VERIFIED":
+        raise ValueError("Custodian identity is not VERIFIED")
+    if data.get("custodian_role_acceptance_status") != "ACCEPTED":
+        raise ValueError("Custodian role is not ACCEPTED")
+    if data.get("custody_separation_status") != "ESTABLISHED":
+        raise ValueError("Custodian separation is not ESTABLISHED")
+    if data.get("algorithm") != "ED25519":
+        raise ValueError(f"Invalid algorithm: {data.get('algorithm')}")
+
+    pub_hex = data.get("public_key", "")
+    if len(bytes.fromhex(pub_hex)) != 32:
+        raise ValueError("Invalid public key length (must be 32 bytes for Ed25519)")
+
+    expected_fp = hashlib.sha256(bytes.fromhex(pub_hex)).hexdigest()
+    if data.get("public_key_fingerprint") != expected_fp:
+        raise ValueError("Public key fingerprint mismatch")
+
+    if data.get("revocation_status") != "ACTIVE":
+        raise ValueError("Custodian registration is revoked or not ACTIVE")
+
+    proj = {k: v for k, v in data.items() if k != "registration_artifact_hash"}
+    canon = json.dumps(proj, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    expected_artifact_hash = hashlib.sha256(canon).hexdigest()
+    if data.get("registration_artifact_hash") != expected_artifact_hash:
+        raise ValueError("Registration artifact hash mismatch")
+
+    return True
+
+
+def compute_signature_envelope_digest(public_export: Dict[str, Any]) -> bytes:
+    """Computes the exact 32-byte digest bound by the signature envelope (Section 4).
+
+    signed_projection = canonical_public_export_excluding_signature_object
+    signed_digest = SHA256(UTF8(signature_domain_separator) || b'::' || canonical_signed_projection)
+    """
+    if not isinstance(public_export, dict):
+        raise TypeError("public_export must be a dict")
+    proj = {k: v for k, v in public_export.items() if k != "signature_profile"}
+    canon_bytes = json.dumps(proj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    domain_bytes = SIGNATURE_DOMAIN_SEPARATOR.encode("utf-8")
+    return hashlib.sha256(domain_bytes + b"::" + canon_bytes).digest()
+
+
+def sign_public_export_for_testing(
+    public_export: Dict[str, Any],
+    private_key: ed25519.Ed25519PrivateKey
+) -> Dict[str, Any]:
+    """Generates an Ed25519 detached signature for a public export using an in-memory key (testing only)."""
+    export_copy = copy.deepcopy(public_export)
+    digest = compute_signature_envelope_digest(export_copy)
+    sig_bytes = private_key.sign(digest)
+    pub_bytes = private_key.public_key().public_bytes_raw()
+    fp = hashlib.sha256(pub_bytes).hexdigest()
+
+    export_copy["signature_profile"] = {
+        "mechanism": "ED25519_DETACHED_SIGNATURE",
+        "signer_identity": export_copy.get("custodian_id", CUSTODIAN_ID),
+        "signature_value": sig_bytes.hex(),
+        "key_fingerprint": fp,
+    }
+    return export_copy
+
+
+def verify_custodian_signature_envelope(
+    public_export: Dict[str, Any],
+    public_key_hex: Optional[str] = None
+) -> bool:
+    """Verifies the Ed25519 detached signature on a public custodian export.
+
+    Enforces zero ambiguity, key fingerprint binding, and strict cryptographic validity.
+    """
+    if not isinstance(public_export, dict):
+        raise TypeError("public_export must be a dict")
+    if "signature_profile" not in public_export:
+        raise ValueError("Missing signature_profile in public custodian export")
+
+    sig_prof = public_export["signature_profile"]
+    if sig_prof.get("mechanism") != "ED25519_DETACHED_SIGNATURE":
+        raise ValueError(f"Unsupported signature mechanism: {sig_prof.get('mechanism')}")
+
+    pk_hex = public_key_hex or CUSTODIAN_PUBLIC_KEY
+    expected_fingerprint = hashlib.sha256(bytes.fromhex(pk_hex)).hexdigest()
+    if sig_prof.get("key_fingerprint") != expected_fingerprint:
+        raise ValueError(
+            f"Key fingerprint mismatch: got {sig_prof.get('key_fingerprint')}, expected {expected_fingerprint}"
+        )
+
+    signed_digest = compute_signature_envelope_digest(public_export)
+    sig_bytes = bytes.fromhex(sig_prof["signature_value"])
+
+    pub_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(pk_hex))
+    try:
+        pub_key.verify(sig_bytes, signed_digest)
+    except InvalidSignature as e:
+        raise ValueError("Invalid custodian Ed25519 signature on public export envelope") from e
+
+    return True
+
+
+def get_historical_exclusion_registry_path() -> Path:
+    """Returns absolute path to HISTORICAL_EXCLUSION_REGISTRY.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "HISTORICAL_EXCLUSION_REGISTRY.json"
+
+
+def get_historical_exclusion_registry() -> Dict[str, Any]:
+    """Loads the historical exclusion registry."""
+    path = get_historical_exclusion_registry_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verify_historical_exclusion_registry(registry_dict: Optional[Dict[str, Any]] = None) -> bool:
+    """Verifies that the historical exclusion registry contains all historical cases and zero collisions."""
+    data = registry_dict if registry_dict is not None else get_historical_exclusion_registry()
+    if data.get("status") != "READY":
+        raise ValueError(f"Exclusion registry status is not READY: {data.get('status')}")
+
+    colls = data.get("collision_invariants", {})
+    if colls.get("PREVIOUS_CASE_CONTENT_COLLISIONS") != 0:
+        raise ValueError("PREVIOUS_CASE_CONTENT_COLLISIONS must be 0")
+    if colls.get("PREVIOUS_GROUP_COLLISIONS") != 0:
+        raise ValueError("PREVIOUS_GROUP_COLLISIONS must be 0")
+
+    dev_cases = data.get("historical_dev_cases", [])
+    holdout_cases = data.get("historical_holdout_cases", [])
+    if len(dev_cases) != 16:
+        raise ValueError(f"Expected 16 historical dev cases, found {len(dev_cases)}")
+    if len(holdout_cases) != 8:
+        raise ValueError(f"Expected 8 historical holdout cases, found {len(holdout_cases)}")
+
+    if len(data.get("previously_revealed_prospective_cases", [])) != 0:
+        raise ValueError("previously_revealed_prospective_cases must be empty for Epoch 002")
+
+    return True
+
+
+def get_operational_governance_policies_path() -> Path:
+    """Returns absolute path to OPERATIONAL_GOVERNANCE_POLICIES.json."""
+    return Path(__file__).resolve().parent.parent.parent / "docs" / "domain" / "vcp" / "holdout_epoch_002" / "custodian" / "OPERATIONAL_GOVERNANCE_POLICIES.json"
+
+
+def get_operational_governance_policies() -> Dict[str, Any]:
+    """Loads the operational governance policies package."""
+    path = get_operational_governance_policies_path()
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def validate_case_selection_provenance(record: Dict[str, Any]) -> bool:
+    """Validates private case selection provenance record structure and anti-leakage invariants."""
+    if not isinstance(record, dict):
+        raise TypeError("Case selection provenance record must be a dict")
+
+    req_fields = [
+        "selection_epoch_id",
+        "eligible_source_population_id",
+        "eligible_source_population_hash",
+        "source_snapshot_as_of",
+        "sampling_policy_hash",
+        "scope_policy_hash",
+        "selection_method",
+        "stratification_dimensions",
+        "selection_seed_commitment",
+        "candidate_output_use",
+        "future_outcome_use",
+        "selected_case_content_hashes",
+        "selected_group_hashes",
+        "exclusion_reason_counts",
+        "historical_collision_check_hash",
+        "selection_manifest_hash",
+    ]
+    for rf in req_fields:
+        if rf not in record:
+            raise ValueError(f"Missing required provenance field: '{rf}'")
+
+    if record["selection_epoch_id"] != HOLDOUT_EPOCH_ID:
+        raise ValueError(f"Mismatched selection_epoch_id: {record['selection_epoch_id']}")
+    if record["candidate_output_use"] != "PROHIBITED":
+        raise ValueError("candidate_output_use must be PROHIBITED")
+    if record["future_outcome_use"] != "PROHIBITED":
+        raise ValueError("future_outcome_use must be PROHIBITED")
+
+    return True
+
+
+def validate_temporal_evidence_package(record: Dict[str, Any]) -> bool:
+    """Validates temporal evidence package structure and enforces strict zero-lookahead temporal closure."""
+    if not isinstance(record, dict):
+        raise TypeError("Temporal evidence package must be a dict")
+
+    req_fields = [
+        "case_token",
+        "evaluation_as_of",
+        "security_identity",
+        "market_session_identity",
+        "source_snapshot_ids",
+        "ohlcv_evidence_hashes",
+        "valid_time_maximum",
+        "known_at_maximum",
+        "corporate_action_state_provenance",
+        "provider_identity",
+        "data_readiness_status",
+        "temporal_closure_hash",
+        "domain_evidence_references",
+        "post_t_price_data_included",
+        "post_t_volume_data_included",
+        "future_corporate_action_knowledge_included",
+        "future_outcome_used_as_domain_truth",
+    ]
+    for rf in req_fields:
+        if rf not in record:
+            raise ValueError(f"Missing required temporal evidence field: '{rf}'")
+
+    if record["post_t_price_data_included"] is not False:
+        raise ValueError("post_t_price_data_included must be False")
+    if record["post_t_volume_data_included"] is not False:
+        raise ValueError("post_t_volume_data_included must be False")
+    if record["future_corporate_action_knowledge_included"] is not False:
+        raise ValueError("future_corporate_action_knowledge_included must be False")
+    if record["future_outcome_used_as_domain_truth"] is not False:
+        raise ValueError("future_outcome_used_as_domain_truth must be False")
+
+    # Temporal bounds: valid_time_maximum <= evaluation_as_of, known_at_maximum <= evaluation_as_of
+    if record["valid_time_maximum"] > record["evaluation_as_of"]:
+        raise ValueError("valid_time_maximum exceeds evaluation_as_of (lookahead violation)")
+    if record["known_at_maximum"] > record["evaluation_as_of"]:
+        raise ValueError("known_at_maximum exceeds evaluation_as_of (lookahead violation)")
+
+    return True
+
+
+def validate_adjudicator_qualification(record: Dict[str, Any]) -> bool:
+    """Validates external adjudicator qualification and independence requirements."""
+    if not isinstance(record, dict):
+        raise TypeError("Adjudicator qualification record must be a dict")
+
+    req_fields = [
+        "adjudicator_id",
+        "qualification_evidence",
+        "qualification_verification",
+        "independence_declaration",
+        "conflict_declaration",
+        "relationship_to_arx",
+        "authority_origin",
+        "allowed_scope",
+        "signature_identity",
+    ]
+    for rf in req_fields:
+        if rf not in record:
+            raise ValueError(f"Missing required adjudicator qualification field: '{rf}'")
+
+    if record["authority_origin"] != "EXTERNAL_INDEPENDENT":
+        raise ValueError("Gold/Silver qualification requires authority_origin == EXTERNAL_INDEPENDENT")
+    if record["relationship_to_arx"] not in (
+        "EXTERNAL_THIRD_PARTY",
+        "INDEPENDENT_RESEARCH_INSTITUTION",
+        "DISINTERESTED_DOMAIN_EXPERT",
+    ):
+        raise ValueError(f"Invalid relationship_to_arx: {record['relationship_to_arx']}")
+    if record["conflict_declaration"] not in (
+        "CERTIFIED_CONFLICT_FREE",
+        "INDEPENDENT_NO_MATERIAL_CONFLICT",
+    ):
+        raise ValueError("Conflict declaration not satisfied")
+
+    verif = record.get("qualification_verification", {})
+    if verif.get("verification_status") != "VERIFIED_QUALIFIED":
+        raise ValueError("Adjudicator qualification status is not VERIFIED_QUALIFIED")
+
+    return True
+
+
+def evaluate_operational_activation_prerequisites() -> Dict[str, Any]:
+    """Evaluates the 14 operational readiness prerequisites for Commitment Generation authorization (Section 21)."""
+    prereqs = {
+        "CUSTODIAN_IDENTITY_STATUS": CUSTODIAN_IDENTITY_STATUS,
+        "CUSTODIAN_SEPARATION_STATUS": CUSTODIAN_SEPARATION_STATUS,
+        "CUSTODIAN_SIGNATURE_KEY_STATUS": CUSTODIAN_SIGNATURE_KEY_STATUS,
+        "SIGNATURE_ENVELOPE_AMBIGUITY": SIGNATURE_ENVELOPE_AMBIGUITY,
+        "SECRET_CUSTODY_OPERATIONAL_STATUS": SECRET_CUSTODY_OPERATIONAL_STATUS,
+        "SECRET_RECOVERY_POLICY_STATUS": SECRET_RECOVERY_POLICY_STATUS,
+        "COMPROMISE_POLICY_STATUS": COMPROMISE_POLICY_STATUS,
+        "CASE_SELECTION_PROVENANCE_CONTRACT_STATUS": CASE_SELECTION_PROVENANCE_CONTRACT_STATUS,
+        "HISTORICAL_EXCLUSION_REGISTRY_STATUS": HISTORICAL_EXCLUSION_REGISTRY_STATUS,
+        "TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS": TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS,
+        "ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS": ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS,
+        "DISAGREEMENT_PROTOCOL_STATUS": DISAGREEMENT_PROTOCOL_STATUS,
+        "PUBLIC_DISCLOSURE_POLICY_STATUS": PUBLIC_DISCLOSURE_POLICY_STATUS,
+        "EPOCH_ABORT_POLICY_STATUS": EPOCH_ABORT_POLICY_STATUS,
+    }
+
+    all_met = (
+        prereqs["CUSTODIAN_IDENTITY_STATUS"] == "VERIFIED"
+        and prereqs["CUSTODIAN_SEPARATION_STATUS"] == "ESTABLISHED"
+        and prereqs["CUSTODIAN_SIGNATURE_KEY_STATUS"] == "REGISTERED / VERIFIED"
+        and prereqs["SIGNATURE_ENVELOPE_AMBIGUITY"] == 0
+        and prereqs["SECRET_CUSTODY_OPERATIONAL_STATUS"] == "ACTIVE"
+        and prereqs["SECRET_RECOVERY_POLICY_STATUS"] == "FROZEN"
+        and prereqs["COMPROMISE_POLICY_STATUS"] == "FROZEN"
+        and prereqs["CASE_SELECTION_PROVENANCE_CONTRACT_STATUS"] == "FROZEN"
+        and prereqs["HISTORICAL_EXCLUSION_REGISTRY_STATUS"] == "READY"
+        and prereqs["TEMPORAL_EVIDENCE_PACKAGE_CONTRACT_STATUS"] == "FROZEN"
+        and prereqs["ADJUDICATOR_QUALIFICATION_PROTOCOL_STATUS"] == "FROZEN"
+        and prereqs["DISAGREEMENT_PROTOCOL_STATUS"] == "FROZEN"
+        and prereqs["PUBLIC_DISCLOSURE_POLICY_STATUS"] == "FROZEN"
+        and prereqs["EPOCH_ABORT_POLICY_STATUS"] == "FROZEN"
+    )
+
+    return {
+        "prerequisites": prereqs,
+        "all_prerequisites_met": all_met,
+        "commitment_generation_authorized": "YES" if all_met else "NO",
+    }
+
 
