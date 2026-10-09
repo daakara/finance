@@ -1,0 +1,143 @@
+{
+  "matrix_id": "ARX_VCP_LABEL_AUTHORIZATION_MATRIX",
+  "version": "1.0.0",
+  "hash": "5d0e84255d96757571928e9e4988e87001c3a772d5344071811615cfdaf10410",
+  "minervini_label_authorized": "NO",
+  "labels": [
+    {
+      "label": "Minervini VCP",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-MINERVINI-2017"
+      ],
+      "predicate_derivation": "PRED_TREND_TEMPLATE + PRED_CONTRACTION_SEQUENCE_VALID + PRED_PROGRESSIVE_TIGHTENING",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": false,
+      "rationale": "Exact Mark Minervini execution parameters, proprietary weighting, and discretionary chart reading are not fully published as open deterministic algorithms. To avoid overclaiming authorship, direct attribution label 'Minervini VCP' is prohibited.",
+      "recommended_replacement": "VCP (Volatility Contraction Pattern)"
+    },
+    {
+      "label": "VCP",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-ARX-SPEC-2026"
+      ],
+      "predicate_derivation": "All 10 Normative Predicates in ARX_VCP_PREDICATE_REGISTRY",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Generic financial domain pattern concept with fully frozen mathematical predicates.",
+      "recommended_replacement": null
+    },
+    {
+      "label": "Stage 1",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "predicate_derivation": "PRED_STAGE_1 (Flat 200 SMA, post-downtrend basing channel)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Authoritative 4-stage market model per Stan Weinstein (1988).",
+      "recommended_replacement": null
+    },
+    {
+      "label": "Stage 2",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988",
+        "SRC-MINERVINI-2013"
+      ],
+      "predicate_derivation": "PRED_STAGE_2 (Price > rising 200 SMA)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Authoritative Stage 2 Advancing Growth Phase confirmed by trend and slope predicates.",
+      "recommended_replacement": null
+    },
+    {
+      "label": "Stage 3",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "predicate_derivation": "PRED_STAGE_3 (Flattening 200 SMA post-advance)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Authoritative Stage 3 Distribution Top per Stan Weinstein (1988).",
+      "recommended_replacement": null
+    },
+    {
+      "label": "Stage 4",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "predicate_derivation": "PRED_STAGE_4 (Price < declining 200 SMA)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Authoritative Stage 4 Markdown per Stan Weinstein (1988).",
+      "recommended_replacement": null
+    },
+    {
+      "label": "confirmed",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-ARX-SPEC-2026"
+      ],
+      "predicate_derivation": "Conjunction of all 10 normative domain predicates == PASS",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Mathematical confirmation that all frozen normative predicates are satisfied.",
+      "recommended_replacement": null
+    },
+    {
+      "label": "breakout-ready",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-MINERVINI-2017"
+      ],
+      "predicate_derivation": "PRED_PIVOT_DEFINED (PASS) and PRED_PRICE_POSITION_RELATIVE_TO_PIVOT (PASS)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Tactical state indicating price is consolidated within buyable proximity of pivot.",
+      "recommended_replacement": null
+    },
+    {
+      "label": "volume dry-up",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-ONEIL-2009"
+      ],
+      "predicate_derivation": "PRED_VOLUME_DRY_UP (Ratio <= 0.70 of 50-day SMA)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Objective measurement of supply exhaustion during base contraction.",
+      "recommended_replacement": null
+    },
+    {
+      "label": "contraction",
+      "domain_definition_frozen": true,
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "predicate_derivation": "PRED_CONTRACTION_EXISTS (Depth >= 2% from local swing high)",
+      "oracle_coverage": true,
+      "implementation_conformance": true,
+      "authorized": true,
+      "rationale": "Individual swing wave of consolidation within base.",
+      "recommended_replacement": null
+    }
+  ]
+}

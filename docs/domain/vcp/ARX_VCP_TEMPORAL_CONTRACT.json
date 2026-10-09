@@ -1,0 +1,9 @@
+{
+  "contract_id": "ARX_VCP_TEMPORAL_CONTRACT",
+  "version": "1.0.0",
+  "hash": "04da39aa54e969594b82bd06213c74c41ec0a985af76e9207c01b7584c625215",
+  "timezone": "America/New_York",
+  "session_open": "09:30:00",
+  "session_close": "16:00:00",
+  "bar_frequency": "1D"
+}

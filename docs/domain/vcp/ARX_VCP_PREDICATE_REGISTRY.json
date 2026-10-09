@@ -1,0 +1,326 @@
+{
+  "registry_id": "ARX_VCP_PREDICATE_REGISTRY",
+  "version": "1.0.0",
+  "hash": "17c267131f5c7c22121994bfd9b520255fc696ebbf7a2c336fb9aeb70b263755",
+  "predicates": [
+    {
+      "predicate_id": "PRED_CONTRACTION_EXISTS",
+      "predicate_version": "1.0.0",
+      "name": "Contraction Existence",
+      "semantic_definition": "At least 2 valid contraction waves are detected in the base.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "valid_contractions"
+      ],
+      "formula": "len(valid_contractions) >= 2",
+      "numeric_representation": "Integer wave count",
+      "boundary_behavior": "Count >= 2 PASS, Count < 2 FAIL",
+      "missing_data_behavior": "If base cannot be analyzed, returns INSUFFICIENT_DATA",
+      "temporal_semantics": "Wave search strictly bounded within base lookback",
+      "reason_codes": [
+        "CONTRACTION_EXISTS_PASS",
+        "INSUFFICIENT_CONTRACTIONS_FOUND"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_CONTRACTION_SEQUENCE_VALID",
+      "predicate_version": "1.0.0",
+      "name": "Valid Contraction Sequence & Bounds",
+      "semantic_definition": "Contraction count is between 2 and 4 (up to 6), and initial wave depth does not exceed 45%.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "contraction_count",
+        "contraction_depths"
+      ],
+      "formula": "2 <= contraction_count <= 6 and contraction_depths[0] <= 0.45",
+      "numeric_representation": "Wave count and initial depth ratio",
+      "boundary_behavior": "Depth > 45% fails as base is too loose / damaged",
+      "missing_data_behavior": "Returns NOT_APPLICABLE if no contractions found",
+      "temporal_semantics": "Chronological waves in base",
+      "reason_codes": [
+        "CONTRACTION_SEQUENCE_VALID",
+        "BASE_TOO_DEEP_LOOSE",
+        "CONTRACTION_COUNT_OUT_OF_BOUNDS"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_PIVOT_DEFINED",
+      "predicate_version": "1.0.0",
+      "name": "Pivot Price Level Defined",
+      "semantic_definition": "A concrete resistance pivot level is identified at the high of the final narrow contraction wave.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-MINERVINI-2017"
+      ],
+      "required_inputs": [
+        "pivot_price"
+      ],
+      "formula": "pivot_price is not None and pivot_price > 0",
+      "numeric_representation": "Positive price value",
+      "boundary_behavior": "PASS if numeric pivot defined; FAIL if undefined or zero",
+      "missing_data_behavior": "Returns FAIL if base has no identifiable pivot",
+      "temporal_semantics": "High of final contraction prior to evaluation_as_of",
+      "reason_codes": [
+        "PIVOT_DEFINED",
+        "PIVOT_UNDEFINED"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_PRICE_POSITION_RELATIVE_TO_PIVOT",
+      "predicate_version": "1.0.0",
+      "name": "Price Proximity to Pivot",
+      "semantic_definition": "Current price is in the buyable tactical zone: within -5% to +2% of the pivot level.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-MINERVINI-2017"
+      ],
+      "required_inputs": [
+        "pivot_distance_pct"
+      ],
+      "formula": "-0.05 <= pivot_distance_pct <= 0.02",
+      "numeric_representation": "Percentage distance from pivot",
+      "boundary_behavior": "PASS if inside [-0.05, +0.02]; FAIL if extended (> +2%) or lagging (< -5%)",
+      "missing_data_behavior": "Returns NOT_APPLICABLE if pivot is undefined",
+      "temporal_semantics": "Price as of evaluation_as_of session close relative to pivot",
+      "reason_codes": [
+        "PRICE_IN_PIVOT_ZONE",
+        "PRICE_EXTENDED_PAST_PIVOT",
+        "PRICE_LAGGING_BELOW_PIVOT"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_PRIOR_UPTREND",
+      "predicate_version": "1.0.0",
+      "name": "Prior Primary Uptrend Advance",
+      "semantic_definition": "Verifies that the base is preceded by a primary advance of at least +30% from a prior consolidation low.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "prior_uptrend_pct"
+      ],
+      "formula": "prior_uptrend_pct >= 0.30",
+      "numeric_representation": "Float ratio [0.0, +inf)",
+      "boundary_behavior": "prior_uptrend_pct >= 0.30 PASS, < 0.30 FAIL, None INSUFFICIENT_DATA",
+      "missing_data_behavior": "Returns INSUFFICIENT_DATA if prior history unavailable",
+      "temporal_semantics": "Calculated across lookback period prior to base formation start",
+      "reason_codes": [
+        "PRIOR_UPTREND_CONFIRMED",
+        "PRIOR_UPTREND_INSUFFICIENT_MAGNITUDE",
+        "PRIOR_UPTREND_DATA_MISSING"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_PROGRESSIVE_TIGHTENING",
+      "predicate_version": "1.0.0",
+      "name": "Progressive Contraction Tightening",
+      "semantic_definition": "Each successive contraction wave exhibits a strictly smaller percentage depth: Depth_k < Depth_{k-1}.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "contraction_depths"
+      ],
+      "formula": "all(contraction_depths[i] < contraction_depths[i-1] for i in range(1, len(contraction_depths)))",
+      "numeric_representation": "Strict monotonic decreasing sequence",
+      "boundary_behavior": "PASS if strictly decreasing; FAIL if any wave expands or equals preceding wave",
+      "missing_data_behavior": "Returns NOT_APPLICABLE if < 2 contractions",
+      "temporal_semantics": "Chronological progression",
+      "reason_codes": [
+        "PROGRESSIVE_TIGHTENING_CONFIRMED",
+        "VOLATILITY_EXPANSION_DETECTED",
+        "NON_TIGHTENING_SEQUENCE"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_STAGE_1",
+      "predicate_version": "1.0.0",
+      "name": "Stage 1 Basing Phase Diagnostic",
+      "semantic_definition": "Asset trades in a lateral channel with a flat 200 SMA following a prior decline.",
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "required_inputs": [
+        "sma_200_slope_22",
+        "close_price",
+        "sma_200"
+      ],
+      "formula": "abs(sma_200_slope_22) < 0.002 and abs(close_price - sma_200) / sma_200 < 0.15",
+      "numeric_representation": "Slope and channel tightness",
+      "boundary_behavior": "Supporting diagnostic",
+      "missing_data_behavior": "INSUFFICIENT_DATA if < 200 sessions",
+      "temporal_semantics": "As of evaluation_as_of",
+      "reason_codes": [
+        "STAGE_1_BASING_DETECTED",
+        "NOT_STAGE_1"
+      ],
+      "conformance_role": "SUPPORTING"
+    },
+    {
+      "predicate_id": "PRED_STAGE_2",
+      "predicate_version": "1.0.0",
+      "name": "Stage 2 Advancing Phase Confirmation",
+      "semantic_definition": "Asset trades in a structural Stage 2 advance with upward trending 200 SMA and higher highs/lows.",
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988",
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "close_price",
+        "sma_200",
+        "sma_200_slope_22"
+      ],
+      "formula": "close_price > sma_200 and sma_200_slope_22 > 0",
+      "numeric_representation": "Conjunction of level and slope",
+      "boundary_behavior": "PASS if above rising 200 SMA; FAIL if below or flat/declining",
+      "missing_data_behavior": "Returns INSUFFICIENT_DATA if < 200 sessions",
+      "temporal_semantics": "Evaluated as of current session close",
+      "reason_codes": [
+        "STAGE_2_CONFIRMED",
+        "STAGE_2_FAILED_BELOW_MA",
+        "STAGE_2_FAILED_SLOPE",
+        "STAGE_2_DATA_MISSING"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_STAGE_3",
+      "predicate_version": "1.0.0",
+      "name": "Stage 3 Topping Phase Diagnostic",
+      "semantic_definition": "Asset shows flattening 200 SMA after substantial advance with high churn.",
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "required_inputs": [
+        "sma_200_slope_22",
+        "prior_uptrend_pct"
+      ],
+      "formula": "sma_200_slope_22 <= 0 and (prior_uptrend_pct or 0) >= 0.50",
+      "numeric_representation": "Slope flattening post-runup",
+      "boundary_behavior": "Supporting diagnostic",
+      "missing_data_behavior": "INSUFFICIENT_DATA if data missing",
+      "temporal_semantics": "As of evaluation_as_of",
+      "reason_codes": [
+        "STAGE_3_TOPPING_DETECTED",
+        "NOT_STAGE_3"
+      ],
+      "conformance_role": "SUPPORTING"
+    },
+    {
+      "predicate_id": "PRED_STAGE_4",
+      "predicate_version": "1.0.0",
+      "name": "Stage 4 Declining Phase Diagnostic",
+      "semantic_definition": "Asset trades below a declining 200 SMA in a secular markdown.",
+      "authority_basis": [
+        "SRC-WEINSTEIN-1988"
+      ],
+      "required_inputs": [
+        "close_price",
+        "sma_200",
+        "sma_200_slope_22"
+      ],
+      "formula": "close_price < sma_200 and sma_200_slope_22 < -0.001",
+      "numeric_representation": "Price below declining average",
+      "boundary_behavior": "Supporting diagnostic",
+      "missing_data_behavior": "INSUFFICIENT_DATA if < 200 sessions",
+      "temporal_semantics": "As of evaluation_as_of",
+      "reason_codes": [
+        "STAGE_4_MARKDOWN_DETECTED",
+        "NOT_STAGE_4"
+      ],
+      "conformance_role": "SUPPORTING"
+    },
+    {
+      "predicate_id": "PRED_SUFFICIENT_HISTORY",
+      "predicate_version": "1.0.0",
+      "name": "Sufficient Historical Sessions",
+      "semantic_definition": "Ensures minimum 200 completed daily trading sessions exist prior to evaluation_as_of for 200 SMA calculation.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-WEINSTEIN-1988"
+      ],
+      "required_inputs": [
+        "session_count"
+      ],
+      "formula": "session_count >= 200",
+      "numeric_representation": "Integer session count",
+      "boundary_behavior": "Strict inequality; session_count < 200 returns INSUFFICIENT_DATA",
+      "missing_data_behavior": "Returns INSUFFICIENT_DATA, never coerced to FAIL",
+      "temporal_semantics": "Evaluated strictly on bars closed prior to or at evaluation_as_of",
+      "reason_codes": [
+        "SUFFICIENT_HISTORY_PASS",
+        "INSUFFICIENT_HISTORY_SESSIONS"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_TREND_TEMPLATE",
+      "predicate_version": "1.0.0",
+      "name": "Minervini 8-Point Trend Template",
+      "semantic_definition": "Verifies Stage 2 alignment: Price > 150 & 200 SMA; 150 SMA > 200 SMA; 200 SMA slope >= 0 (22 days); 50 SMA > 150 & 200 SMA; Price > 50 SMA; Price >= 30% above 52w low; Price within 25% of 52w high.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013"
+      ],
+      "required_inputs": [
+        "close_price",
+        "sma_50",
+        "sma_150",
+        "sma_200",
+        "sma_200_slope_22",
+        "high_52w",
+        "low_52w"
+      ],
+      "formula": "(close > sma_150 and close > sma_200) and (sma_150 > sma_200) and (sma_200_slope_22 >= 0) and (sma_50 > sma_150 and sma_50 > sma_200) and (close > sma_50) and (close >= low_52w * 1.30) and (close >= high_52w * 0.75)",
+      "numeric_representation": "Multi-condition boolean conjunction",
+      "boundary_behavior": "All 7 primary conditions must hold; any failure returns FAIL",
+      "missing_data_behavior": "If moving averages cannot be computed, returns INSUFFICIENT_DATA",
+      "temporal_semantics": "Moving averages and 52w highs/lows computed only over admissible bars",
+      "reason_codes": [
+        "TREND_TEMPLATE_SATISFIED",
+        "PRICE_BELOW_200_SMA",
+        "150_SMA_BELOW_200_SMA",
+        "200_SMA_DECLINING",
+        "50_SMA_BELOW_LONG_TERM_MA",
+        "PRICE_BELOW_50_SMA",
+        "PRICE_TOO_CLOSE_TO_52W_LOW",
+        "PRICE_TOO_FAR_FROM_52W_HIGH",
+        "TREND_TEMPLATE_DATA_INCOMPLETE"
+      ],
+      "conformance_role": "NORMATIVE"
+    },
+    {
+      "predicate_id": "PRED_VOLUME_DRY_UP",
+      "predicate_version": "1.0.0",
+      "name": "Volume Dry-Up on Final Contraction",
+      "semantic_definition": "Average volume during the final contraction wave drops below 70% of 50-day SMA volume.",
+      "authority_basis": [
+        "SRC-MINERVINI-2013",
+        "SRC-ONEIL-2009"
+      ],
+      "required_inputs": [
+        "final_wave_volume_ratio"
+      ],
+      "formula": "final_wave_volume_ratio <= 0.70",
+      "numeric_representation": "Ratio of final wave volume to 50 SMA volume",
+      "boundary_behavior": "ratio <= 0.70 PASS, > 0.70 FAIL",
+      "missing_data_behavior": "Returns INSUFFICIENT_DATA if volume history is missing or zero",
+      "temporal_semantics": "Evaluated across bars of final contraction wave",
+      "reason_codes": [
+        "VOLUME_DRY_UP_CONFIRMED",
+        "VOLUME_HEAVY_ON_PULLBACK",
+        "VOLUME_DATA_UNAVAILABLE"
+      ],
+      "conformance_role": "NORMATIVE"
+    }
+  ]
+}

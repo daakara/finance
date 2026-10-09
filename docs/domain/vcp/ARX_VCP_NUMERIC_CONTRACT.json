@@ -1,0 +1,61 @@
+{
+  "contract_id": "ARX_VCP_NUMERIC_CONTRACT",
+  "version": "1.0.0",
+  "hash": "0b0d567230c1691977a02bb4c19e9851a3a33db93fa283f20fe78ec029bc3c6d",
+  "specifications": [
+    {
+      "field_name": "price",
+      "representation": "IEEE 754 64-bit float / Decimal",
+      "precision_decimals": 4,
+      "min_value": 0.0001,
+      "max_value": 1000000.0,
+      "rounding_mode": "ROUND_HALF_UP_4_DECIMALS",
+      "description": "Daily OHLC prices rounded to 4 decimals."
+    },
+    {
+      "field_name": "volume",
+      "representation": "64-bit integer",
+      "precision_decimals": 0,
+      "min_value": 0.0,
+      "max_value": 100000000000.0,
+      "rounding_mode": "INTEGER_TRUNCATE",
+      "description": "Daily share volume as non-negative integer."
+    },
+    {
+      "field_name": "percentage_ratio",
+      "representation": "float ratio [0.0, 1.0]",
+      "precision_decimals": 4,
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rounding_mode": "ROUND_HALF_UP_4_DECIMALS",
+      "description": "Percentage values represented as fractional decimals (e.g., 0.1500 = 15.00%)."
+    },
+    {
+      "field_name": "moving_average",
+      "representation": "float",
+      "precision_decimals": 4,
+      "min_value": 0.0001,
+      "max_value": 1000000.0,
+      "rounding_mode": "ROUND_HALF_UP_4_DECIMALS",
+      "description": "Simple Moving Average over N closed daily sessions."
+    },
+    {
+      "field_name": "contraction_depth",
+      "representation": "float ratio (High - Low) / High",
+      "precision_decimals": 4,
+      "min_value": 0.0,
+      "max_value": 1.0,
+      "rounding_mode": "ROUND_HALF_UP_4_DECIMALS",
+      "description": "Percentage depth of contraction wave."
+    },
+    {
+      "field_name": "volume_dry_up_ratio",
+      "representation": "float ratio final_wave_avg_vol / sma_50_vol",
+      "precision_decimals": 4,
+      "min_value": 0.0,
+      "max_value": 100.0,
+      "rounding_mode": "ROUND_HALF_UP_4_DECIMALS",
+      "description": "Volume relative to 50-day SMA volume."
+    }
+  ]
+}

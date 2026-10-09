@@ -1,0 +1,12 @@
+{
+  "contract_id": "ARX_VCP_DOMAIN_AUTHORITY_CONTRACT",
+  "version": "1.0.0",
+  "source_registry_hash": "cbd78184e043932fba5cf8816a75dd409ccba98b37454916981c46e41b2438d5",
+  "glossary_hash": "0f1ae2dae87e13c0e7b484617f15da8bba2da4b1039eff704e2ff8a118cfb018",
+  "predicate_registry_hash": "17c267131f5c7c22121994bfd9b520255fc696ebbf7a2c336fb9aeb70b263755",
+  "numeric_contract_hash": "0b0d567230c1691977a02bb4c19e9851a3a33db93fa283f20fe78ec029bc3c6d",
+  "temporal_contract_hash": "04da39aa54e969594b82bd06213c74c41ec0a985af76e9207c01b7584c625215",
+  "label_matrix_hash": "5d0e84255d96757571928e9e4988e87001c3a772d5344071811615cfdaf10410",
+  "holdout_commitment_hash": "90e0d6377fc0c3ca8f368d816393bc14c1121090a00f7e1ac0168b5ead2035ae",
+  "contract_hash": "76b5fe39627139915466d5c36abda74fd966a97734025fffe1da2d5eafd26802"
+}
