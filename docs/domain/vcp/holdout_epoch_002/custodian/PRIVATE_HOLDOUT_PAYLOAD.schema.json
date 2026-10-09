@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Private Holdout Payload Schema",
+  "description": "Defines structure for private sealed holdout case membership and expectations. Strictly retained by independent custodian.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "cases",
+    "case_count"
+  ],
+  "properties": {
+    "epoch_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
+      ]
+    },
+    "case_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "case_content_hash",
+          "evaluation_as_of",
+          "holdout_group_id",
+          "scope_hash",
+          "evidence_set_hash",
+          "authority_origin",
+          "evidence_sufficiency",
+          "adjudication_status",
+          "authority_status",
+          "derived_oracle_class",
+          "case_roles",
+          "scenario_tags",
+          "expected_predicate_vector_hash",
+          "expected_final_classification_hash",
+          "adjudication_hash"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "case_content_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "evaluation_as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "holdout_group_id": {
+            "type": "string"
+          },
+          "scope_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "evidence_set_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "authority_origin": {
+            "type": "string",
+            "enum": [
+              "EXTERNAL_INDEPENDENT",
+              "EXTERNAL_DEPENDENT",
+              "INTERNAL_CONSENSUS"
+            ]
+          },
+          "evidence_sufficiency": {
+            "type": "string",
+            "enum": [
+              "SUFFICIENT",
+              "INSUFFICIENT"
+            ]
+          },
+          "adjudication_status": {
+            "type": "string",
+            "enum": [
+              "ADJUDICATED",
+              "PENDING"
+            ]
+          },
+          "authority_status": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ]
+          },
+          "derived_oracle_class": {
+            "type": "string",
+            "enum": [
+              "GOLD",
+              "SILVER",
+              "INTERNAL_REFERENCE",
+              "NONE"
+            ]
+          },
+          "case_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scenario_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_predicate_vector_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "expected_final_classification_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "adjudication_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "silver_limitation_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Private Adjudication Record Schema",
+  "description": "Schema for per-case adjudication judgments rendered by qualified adjudicators.",
+  "type": "object",
+  "required": [
+    "case_id",
+    "adjudicator_id",
+    "evaluation_as_of",
+    "scope",
+    "predicate_judgments",
+    "final_classification",
+    "evidence_references",
+    "uncertainty_limitation_codes",
+    "material_disagreement_flag",
+    "submitted_at",
+    "adjudication_signature",
+    "adjudication_record_hash"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string"
+    },
+    "adjudicator_id": {
+      "type": "string"
+    },
+    "evaluation_as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "predicate_judgments": {
+      "type": "object"
+    },
+    "final_classification": {
+      "type": "string",
+      "enum": [
+        "QUALIFIED",
+        "NON_QUALIFIED"
+      ]
+    },
+    "evidence_references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "uncertainty_limitation_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "material_disagreement_flag": {
+      "type": "boolean"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "adjudication_signature": {
+      "type": "string"
+    },
+    "adjudication_record_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

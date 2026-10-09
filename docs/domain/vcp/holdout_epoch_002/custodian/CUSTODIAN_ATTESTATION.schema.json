@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Custodian Attestation Schema",
+  "description": "Formal attestation by independent custodian confirming air-gapped custody, access denial to developers, and pre-commitment sealing.",
+  "type": "object",
+  "required": [
+    "custodian_id",
+    "custodian_type",
+    "custody_separation_status",
+    "handoff_bundle_hash_received",
+    "policy_hash_received",
+    "cryptographic_contract_hash_received",
+    "private_case_assembly_completed",
+    "private_adjudication_completed",
+    "expectations_fixed",
+    "authority_state_fixed",
+    "scope_fixed",
+    "commitment_generated",
+    "secret_payload_retained_privately",
+    "nonce_retained_privately",
+    "candidate_team_secret_access",
+    "development_agent_secret_access",
+    "normal_git_access",
+    "normal_ci_log_access",
+    "attested_at",
+    "signature_metadata",
+    "attestation_artifact_hash"
+  ],
+  "properties": {
+    "custodian_id": {
+      "type": "string"
+    },
+    "custodian_type": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_CUSTODIAN",
+        "INTERNAL_SEPARATED_CUSTODIAN"
+      ]
+    },
+    "custody_separation_status": {
+      "type": "string",
+      "enum": [
+        "AIR_GAPPED_VERIFIED",
+        "ISOLATED_SECRET_STORE"
+      ]
+    },
+    "handoff_bundle_hash_received": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_hash_received": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "cryptographic_contract_hash_received": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "private_case_assembly_completed": {
+      "type": "boolean",
+      "const": true
+    },
+    "private_adjudication_completed": {
+      "type": "boolean",
+      "const": true
+    },
+    "expectations_fixed": {
+      "type": "boolean",
+      "const": true
+    },
+    "authority_state_fixed": {
+      "type": "boolean",
+      "const": true
+    },
+    "scope_fixed": {
+      "type": "boolean",
+      "const": true
+    },
+    "commitment_generated": {
+      "type": "boolean",
+      "const": true
+    },
+    "secret_payload_retained_privately": {
+      "type": "boolean",
+      "const": true
+    },
+    "nonce_retained_privately": {
+      "type": "boolean",
+      "const": true
+    },
+    "candidate_team_secret_access": {
+      "type": "string",
+      "enum": [
+        "DENIED"
+      ]
+    },
+    "development_agent_secret_access": {
+      "type": "string",
+      "enum": [
+        "DENIED"
+      ]
+    },
+    "normal_git_access": {
+      "type": "string",
+      "enum": [
+        "DENIED"
+      ]
+    },
+    "normal_ci_log_access": {
+      "type": "string",
+      "enum": [
+        "DENIED"
+      ]
+    },
+    "attested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature_metadata": {
+      "type": "object",
+      "required": [
+        "mechanism",
+        "signer_identity",
+        "signature_value"
+      ],
+      "properties": {
+        "mechanism": {
+          "type": "string"
+        },
+        "signer_identity": {
+          "type": "string"
+        },
+        "signature_value": {
+          "type": "string"
+        },
+        "key_fingerprint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attestation_artifact_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

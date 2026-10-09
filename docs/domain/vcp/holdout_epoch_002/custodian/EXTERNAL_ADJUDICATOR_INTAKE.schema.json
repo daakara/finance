@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP External Adjudicator Intake Schema",
+  "description": "Blank intake schema for qualified external adjudicators. Prohibits conflict of interest and unblinded access.",
+  "type": "object",
+  "required": [
+    "adjudicator_id",
+    "qualification_status",
+    "qualification_evidence_id",
+    "qualification_evidence_hash",
+    "independence_status",
+    "independence_attestation_hash",
+    "conflict_of_interest_status",
+    "arx_relationship",
+    "candidate_output_visibility",
+    "peer_adjudication_visibility",
+    "future_outcome_visibility",
+    "allowed_scope",
+    "credential_verification_status",
+    "intake_artifact_hash"
+  ],
+  "properties": {
+    "adjudicator_id": {
+      "type": "string"
+    },
+    "qualification_status": {
+      "type": "string",
+      "enum": [
+        "QUALIFIED_EXTERNAL_EXPERT",
+        "UNQUALIFIED"
+      ]
+    },
+    "qualification_evidence_id": {
+      "type": "string"
+    },
+    "qualification_evidence_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "independence_status": {
+      "type": "string",
+      "enum": [
+        "EXTERNAL_INDEPENDENT",
+        "DEPENDENT_AFFILIATED"
+      ]
+    },
+    "independence_attestation_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "conflict_of_interest_status": {
+      "type": "string",
+      "enum": [
+        "NONE_DECLARED",
+        "CONFLICT_PRESENT"
+      ]
+    },
+    "arx_relationship": {
+      "type": "string",
+      "enum": [
+        "NONE_INDEPENDENT",
+        "EMPLOYEE",
+        "CONTRACTOR",
+        "ADVISOR"
+      ]
+    },
+    "candidate_output_visibility": {
+      "type": "string",
+      "enum": [
+        "DENIED_BLINDED"
+      ]
+    },
+    "peer_adjudication_visibility": {
+      "type": "string",
+      "enum": [
+        "DENIED_BLINDED"
+      ]
+    },
+    "future_outcome_visibility": {
+      "type": "string",
+      "enum": [
+        "DENIED_BLINDED"
+      ]
+    },
+    "allowed_scope": {
+      "type": "string"
+    },
+    "credential_verification_status": {
+      "type": "string",
+      "enum": [
+        "VERIFIED",
+        "PENDING"
+      ]
+    },
+    "signature_identity": {
+      "type": "string"
+    },
+    "intake_artifact_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

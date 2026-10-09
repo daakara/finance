@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ARX VCP Public Custodian Export Schema",
+  "description": "Public export schema provided by independent custodian to ARX repository. Absolutely contains no secret material.",
+  "type": "object",
+  "required": [
+    "epoch_id",
+    "epoch_version",
+    "effective_policy_id",
+    "effective_policy_version",
+    "effective_policy_hash",
+    "cryptographic_contract_id",
+    "cryptographic_contract_version",
+    "cryptographic_contract_hash",
+    "case_count",
+    "authority_counts",
+    "commitment_scheme_id",
+    "commitment_scheme_version",
+    "canonicalization_id",
+    "canonicalization_version",
+    "sealed_payload_commitment",
+    "commitment_created_at",
+    "custodian_id",
+    "custodian_attestation_hash",
+    "handoff_bundle_hash",
+    "signature_profile",
+    "export_artifact_hash"
+  ],
+  "properties": {
+    "epoch_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002"
+      ]
+    },
+    "epoch_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "effective_policy_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY"
+      ]
+    },
+    "effective_policy_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "effective_policy_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "cryptographic_contract_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT"
+      ]
+    },
+    "cryptographic_contract_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "cryptographic_contract_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "case_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "authority_counts": {
+      "type": "object",
+      "required": [
+        "GOLD",
+        "SILVER",
+        "INTERNAL_REFERENCE",
+        "NONE"
+      ],
+      "properties": {
+        "GOLD": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "SILVER": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "INTERNAL_REFERENCE": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "NONE": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "commitment_scheme_id": {
+      "type": "string",
+      "enum": [
+        "SHA256_NONCE_CANONICAL_PAYLOAD_V1"
+      ]
+    },
+    "commitment_scheme_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "canonicalization_id": {
+      "type": "string",
+      "enum": [
+        "ARX_VCP_SEALED_PAYLOAD_CANONICALIZATION"
+      ]
+    },
+    "canonicalization_version": {
+      "type": "string",
+      "enum": [
+        "1.0.0"
+      ]
+    },
+    "sealed_payload_commitment": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "commitment_created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "custodian_id": {
+      "type": "string"
+    },
+    "custodian_attestation_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "handoff_bundle_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "signature_profile": {
+      "type": "object",
+      "required": [
+        "mechanism",
+        "signer_identity",
+        "signature_value"
+      ],
+      "properties": {
+        "mechanism": {
+          "type": "string",
+          "enum": [
+            "ED25519_DETACHED_SIGNATURE",
+            "SIGNED_REPOSITORY_TAG",
+            "TRUSTED_TIMESTAMP_ATTESTATION",
+            "EXTERNAL_NOTARIZATION",
+            "OTHER_GOVERNED_MECHANISM"
+          ]
+        },
+        "signer_identity": {
+          "type": "string"
+        },
+        "signature_value": {
+          "type": "string"
+        },
+        "key_fingerprint": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "export_artifact_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "external_independent_gold_attested": {
+      "type": "boolean"
+    },
+    "silver_limitations_attested": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

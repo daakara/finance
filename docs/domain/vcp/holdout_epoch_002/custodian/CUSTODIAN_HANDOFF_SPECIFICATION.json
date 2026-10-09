@@ -1,0 +1,55 @@
+{
+  "spec_id": "ARX_VCP_EPOCH_002_CUSTODIAN_HANDOFF_SPEC",
+  "spec_version": "1.0.0",
+  "epoch_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002",
+  "effective_policy_id": "ARX_VCP_PROSPECTIVE_HOLDOUT_EPOCH_002_POLICY",
+  "effective_policy_version": "1.0.0",
+  "effective_policy_hash": "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514",
+  "cryptographic_contract_id": "ARX_VCP_EPOCH_002_CRYPTOGRAPHIC_CONTRACT",
+  "cryptographic_contract_version": "1.0.0",
+  "cryptographic_contract_hash": "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e",
+  "private_payload_schema_hash": "22b25371c2d4bfa60f8164d8d5646db714958f29050ca4957ddc82a49b8216a7",
+  "public_export_schema_hash": "581f77623baa0df40588350f24a5cd419dd206ed3bb89063275a4d3582f7f9d6",
+  "custodian_attestation_schema_hash": "0a936311e64eac3833986b8b8592c4056fde8745534a8fd2c15ff47726d5e1c4",
+  "external_adjudicator_intake_schema_hash": "f1f5b7eceb3d3cada14df170c22af7b10ba944daeabf236d1e3c4cb60238e1af",
+  "adjudication_record_schema_hash": "bde634517f4edee60032e6d528a66984f9f86738cff9b12b87179dca94ad3bf5",
+  "authority_model_hash": "7d2276f4f078c3eae1cf19b07a4c71c0cca82b3a16a49f71cd85790592b337c5",
+  "scope_policy_hash": "ce5be08c116ccae39a113dcf7dcf506a50d20acc5562f8e5766dcd3999c39590",
+  "sampling_policy_hash": "0f7d3d8fe7d8302185cf2a957050c0fa1a9f9030f499ab25751e6abb767e6371",
+  "disagreement_policy_hash": "466faaf045f8f81c85170a010243eb159ebe6f8183f15ec35974afec5f08c862",
+  "test_vector_set_hash": "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3",
+  "custodian_instructions_hash": "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed",
+  "required_custody_controls": [
+    "AIR_GAPPED_OR_ISOLATED_SECRET_STORE",
+    "ACCESS_DENIED_TO_DEVELOPERS",
+    "SECRETS_PROHIBITED_FROM_GIT_CI_LOGS"
+  ],
+  "required_public_outputs": [
+    "PUBLIC_CUSTODIAN_EXPORT.json",
+    "CUSTODIAN_ATTESTATION.json"
+  ],
+  "forbidden_outputs": [
+    "NONCE",
+    "SECRET_PAYLOAD",
+    "HIDDEN_LABELS",
+    "HIDDEN_CASE_IDS_IF_MEMBERSHIP_SECRET",
+    "REVEAL_MATERIAL"
+  ],
+  "bundle_manifest": {
+    "effective_epoch_policy_hash": "bd2106806c13487269f4cc3481a08139485368c5e6b708f831b1b9f0ab129514",
+    "cryptographic_contract_hash": "153bb7e3ad479565f6c3fd9f77c9100f13a522899126964edeeabeaa85b9da1e",
+    "private_payload_schema_hash": "22b25371c2d4bfa60f8164d8d5646db714958f29050ca4957ddc82a49b8216a7",
+    "public_export_schema_hash": "581f77623baa0df40588350f24a5cd419dd206ed3bb89063275a4d3582f7f9d6",
+    "custodian_attestation_schema_hash": "0a936311e64eac3833986b8b8592c4056fde8745534a8fd2c15ff47726d5e1c4",
+    "external_adjudicator_intake_schema_hash": "f1f5b7eceb3d3cada14df170c22af7b10ba944daeabf236d1e3c4cb60238e1af",
+    "adjudication_record_schema_hash": "bde634517f4edee60032e6d528a66984f9f86738cff9b12b87179dca94ad3bf5",
+    "authority_model_hash": "7d2276f4f078c3eae1cf19b07a4c71c0cca82b3a16a49f71cd85790592b337c5",
+    "scope_policy_hash": "ce5be08c116ccae39a113dcf7dcf506a50d20acc5562f8e5766dcd3999c39590",
+    "sampling_policy_hash": "0f7d3d8fe7d8302185cf2a957050c0fa1a9f9030f499ab25751e6abb767e6371",
+    "disagreement_policy_hash": "466faaf045f8f81c85170a010243eb159ebe6f8183f15ec35974afec5f08c862",
+    "test_vector_set_hash": "d77aeaee9aebca79cd8f00670adae59636acb9b536d44686dba08cd08c8e28b3",
+    "custodian_instructions_hash": "ed47685462540b91a2398ba2693115010511bc37918d91fc719ccd9dbe5624ed"
+  },
+  "handoff_bundle_hash": "6b68fbd9d2db75147b6d538b63b74349a5b6a139ca5bcc426d5a086959d608ae",
+  "handoff_spec_hash": "afedbe95b3635be2f495e3ee779d1daf8a22f673c5b674a96991d78100b777a9"
+}
