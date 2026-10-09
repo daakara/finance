@@ -17,7 +17,7 @@ from .source_governance_policy import FieldAuthorityPolicyRegistry
 
 
 def build_sprint_2a_evidence_manifest(
-    candidate_sha: str = "d1520b9c45963aca7bc77e0ff82742243411f25f",
+    candidate_sha: str = "d11c5b1df50b649e08c74bd75434f2ef8e04e80a",
 ) -> Dict[str, Any]:
     policy_hash = FieldAuthorityPolicyRegistry.compute_policy_hash()
     now_iso = datetime.now(timezone.utc).isoformat()

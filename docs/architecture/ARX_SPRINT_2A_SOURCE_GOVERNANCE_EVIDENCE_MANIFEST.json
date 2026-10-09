@@ -2,11 +2,11 @@
   "manifest_id": "SPRINT_2A_EVIDENCE_MANIFEST",
   "manifest_version": "1.0.0",
   "sprint_id": "RADAR_SPRINT_2A_SOURCE_GOVERNANCE",
-  "candidate_sha": "d1520b9c45963aca7bc77e0ff82742243411f25f",
+  "candidate_sha": "d11c5b1df50b649e08c74bd75434f2ef8e04e80a",
   "policy_id": "ARX_SOURCE_GOV_POLICY",
   "policy_version": "1.0.0",
   "policy_hash": "cc2acd303474823e519a87d5a41ce5b1daf44bff3740346d9fecc738d5830e91",
-  "captured_at": "2026-10-09T06:25:21.338410+00:00",
+  "captured_at": "2026-10-09T06:27:25.995528+00:00",
   "criteria_results": {
     "RAW_SOURCE_EVIDENCE_IMMUTABLE": "YES",
     "RAW_RECORD_ACCOUNTING_CLOSED": "YES",
@@ -96,12 +96,12 @@
     "from_state": "CURRENT",
     "to_state": "PASS",
     "rollout_plan_version": "2.0.0",
-    "candidate_sha": "d1520b9c45963aca7bc77e0ff82742243411f25f",
+    "candidate_sha": "d11c5b1df50b649e08c74bd75434f2ef8e04e80a",
     "policy_hash": "cc2acd303474823e519a87d5a41ce5b1daf44bff3740346d9fecc738d5830e91",
-    "decision_timestamp": "2026-10-09T06:25:21.338410+00:00",
+    "decision_timestamp": "2026-10-09T06:27:25.995528+00:00",
     "source_authority_approval": "APPROVAL_REQUIRED",
     "production_use_authorization": "NOT_VERIFIED",
     "sprint_3_entry_status": "BLOCKED"
   },
-  "manifest_hash": "3fe4834f96728a2d645035eca7593c91d1c7e9abaf5eb00168525733376f4ef3"
+  "manifest_hash": "c06eaa6e2ad83ecc696f6b1491b84a8c0068ff709e3f6f6b6e21c6c8a11bfb7b"
 }
