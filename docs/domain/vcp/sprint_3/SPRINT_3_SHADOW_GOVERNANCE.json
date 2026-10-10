@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_id": "SPRINT_3_SHADOW_GOVERNANCE",
+  "title": "ARX Terminal Radar Sprint 3 Production Shadow Governance & Contamination Control Charter",
+  "governance_freeze_timestamp_utc": "2026-10-10T07:46:00Z",
+  "external_validation_deferral_status": "AUTHORIZED",
+  "external_validation_status": "DEFERRED",
+  "vcp_external_domain_authority_gate": "DEFERRED / NOT_ESTABLISHED",
+  "gate_12_status": "DEFERRED / NOT_SATISFIED",
+  "vcp_epoch_002_status": "DEFERRED_BEFORE_PRIVATE_EXECUTION",
+  "private_case_selection_status": "NOT_AUTHORIZED_WHILE_DEFERRED",
+  "external_adjudication_status": "NOT_AUTHORIZED_WHILE_DEFERRED",
+  "holdout_commitment_status": "NOT_CREATED",
+  "total_committed_case_count": 0,
+  "secret_payload_exists": "NO",
+  "commitment_nonce_exists": "NO",
+  "sprint_3_engineering_entry_status": "AUTHORIZED",
+  "sprint_3_internal_reference_work": "AUTHORIZED",
+  "sprint_3_shadow_engineering": "AUTHORIZED",
+  "sprint_3_shadow_design_authorized": "YES",
+  "sprint_3_shadow_implementation_authorized": "YES",
+  "sprint_3_shadow_production_deployment_authorized": "NO / REQUIRES_SEPARATE_RELEASE_GATE",
+  "shadow_evidence_authority": "PRODUCTION_ENGINEERING_OBSERVATION",
+  "shadow_domain_authority": "INTERNAL_REFERENCE_ONLY",
+  "external_domain_authority": "NOT_ESTABLISHED",
+  "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+  "model_tuning_status": "FROZEN",
+  "learning_claim": "NOT_AUTHORIZED",
+  "claim_restrictions": {
+    "allowed_claims": [
+      "deterministic under observed inputs",
+      "engineering verified",
+      "fail-closed behavior verified",
+      "internal-reference conformance",
+      "point-in-time provenance captured",
+      "production shadow observed"
+    ],
+    "prohibited_claims": [
+      "Gold validated",
+      "Silver validated",
+      "alpha generating",
+      "empirically proven VCP",
+      "externally validated",
+      "improving from production",
+      "learning",
+      "profitable",
+      "validated against independent experts"
+    ],
+    "unauthorized_external_validation_claims_count": 0
+  },
+  "exposure_policy": {
+    "ledger": "ProductionExposureLedger",
+    "exposure_classification": "PRODUCTION_SHADOW_EXPOSURE",
+    "developer_visibility_revokes_holdout": true,
+    "unregistered_exposures_count": 0
+  },
+  "semantic_delta_policy": {
+    "ledger": "SemanticDeltaLedger",
+    "delta_classes": [
+      "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+      "SPRINT_3_POST_DEFERRAL_SEMANTIC_DELTA",
+      "NON_SEMANTIC_IMPLEMENTATION_CHANGE"
+    ],
+    "unledgered_semantic_deltas_count": 0
+  },
+  "outcome_access_policy": {
+    "stream_separation": true,
+    "developer_access": "DENIED_OR_GOVERNED_RESTRICTED_DURING_SHADOW_EPOCH",
+    "outcome_informed_domain_tuning": "PROHIBITED",
+    "future_outcome_used_as_vcp_domain_truth": "PROHIBITED",
+    "online_learning": "DISABLED",
+    "automatic_threshold_adjustment": "DISABLED"
+  },
+  "future_holdout_exclusion_rule": {
+    "registry": "HoldoutExclusionRegistry",
+    "exposed_case_reuse_as_unseen_holdout": "PROHIBITED",
+    "exposed_episode_reuse_as_unseen_holdout": "PROHIBITED",
+    "future_external_validation_requirement": "FRESH_PRECOMMITMENT_REQUIRED"
+  },
+  "internal_reference_authority": {
+    "internal_reference_to_gold_promotion": "PROHIBITED_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION",
+    "internal_reference_to_silver_promotion": "PROHIBITED_WITHOUT_EXTERNAL_INDEPENDENT_ADJUDICATION"
+  },
+  "candidate_generation_policy": {
+    "initial_generation": "CANDIDATE_GENERATION_001",
+    "binds_candidate_sha": true,
+    "binds_semantic_closure_hash": true,
+    "unknown_candidate_generations_count": 0
+  },
+  "ledger_identities": {
+    "production_exposure_ledger": "analyst_dashboard.vcp.sprint_3_shadow_governance.ProductionExposureLedger",
+    "holdout_exclusion_registry": "analyst_dashboard.vcp.sprint_3_shadow_governance.HoldoutExclusionRegistry",
+    "semantic_delta_ledger": "analyst_dashboard.vcp.sprint_3_shadow_governance.SemanticDeltaLedger",
+    "prospective_decision_ledger": "analyst_dashboard.vcp.sprint_3_shadow_governance.ProspectiveDecisionLedger",
+    "outcome_settlement_ledger": "analyst_dashboard.vcp.sprint_3_shadow_governance.OutcomeSettlementLedger"
+  },
+  "routing_guards": {
+    "shadow_user_order_execution": "DISABLED",
+    "shadow_portfolio_mutation": "DISABLED",
+    "shadow_broker_execution_hook": "DISABLED",
+    "shadow_primary_user_decision_override": "DISABLED"
+  },
+  "initial_denominator": {
+    "shadow_record_count": 0,
+    "natural_production_shadow_record_count": 0,
+    "synthetic_shadow_record_count": 0,
+    "replay_shadow_record_count": 0,
+    "admin_forced_shadow_record_count": 0
+  }
+}
