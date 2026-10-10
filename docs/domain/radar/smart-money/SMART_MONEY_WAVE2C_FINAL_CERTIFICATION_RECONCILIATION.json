@@ -1,0 +1,145 @@
+{
+  "accession_set_stability": {
+    "accession_set_stable_through_t": "PRE_HOLDBACK_STABLE_POST_HOLDBACK_PENDING",
+    "expected_accession_count": 289,
+    "expected_accession_set_hash": "59a30dc595d426fe69ba18c7709097bc1eea57f606f0b8da1fcfc441cd1b59e2",
+    "expected_minus_registered_count": 0,
+    "expected_minus_terminally_accounted_count": 0,
+    "new_accessions_discovered_at_or_before_t": 0,
+    "post_holdback_expected_accession_set_hash": "PENDING_NATURAL_MATURITY",
+    "pre_holdback_expected_accession_set_hash": "59a30dc595d426fe69ba18c7709097bc1eea57f606f0b8da1fcfc441cd1b59e2",
+    "registered_accession_count": 289,
+    "registered_accession_set_hash": "59a30dc595d426fe69ba18c7709097bc1eea57f606f0b8da1fcfc441cd1b59e2",
+    "registered_minus_expected_count": 0,
+    "removed_accessions_at_or_before_t": 0,
+    "terminal_accession_count": 289,
+    "terminal_accession_set_hash": "c18641495cc79d81c694fb4d564b1547fc93a41d53e757d6836d674bcd0e82f3"
+  },
+  "candidate_004_firewall": {
+    "candidate_004_interference": "NONE",
+    "changed_modules_reachable_from_candidate_004_runtime": 0,
+    "protected_files_changed": 0,
+    "shadow_evidence_db_writes": 0
+  },
+  "candidate_frontier": "2026-10-10T01:02:33.000Z",
+  "canonicalization": {
+    "canonicalization_standard": "SM_CERT_CANON_V1",
+    "canonicalization_vector_tests": "PASS"
+  },
+  "current_utc_time": "2026-10-10T22:13:30.000Z",
+  "discovery_authority": "BOUNDED_STABLE",
+  "discovery_authority_basis": "SEC EDGAR Company Submissions JSON API (https://data.sec.gov/submissions/CIK{cik}.json) with reverse-chronological pagination exhaustion over filings.recent and filings.files, 24-hour anti-entropy holdback re-enumeration, and CIK-partitioned accession indexing.",
+  "discovery_authority_limitations": "SEC EDGAR operates on asynchronous public dissemination without cryptographic append-only event receipts. Dissemination latency between acceptanceDateTime and public JSON indexing can introduce delayed filings. An interval with zero observed events proves only that zero events appeared in the fetched JSON, not that zero filings occurred upstream at SEC.",
+  "evidence_id": "EVID_SM_WAVE2C_FINAL_CERTIFICATION_RECONCILIATION_20261010",
+  "gap_and_amendment_state": {
+    "amendment_state_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "blocking_discovery_gaps_through_t": 0,
+    "blocking_processing_gaps_through_t": 0,
+    "gap_event_high_watermark": 0,
+    "gap_event_prefix_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "open_gap_set_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "source_integrity_gaps_through_t": 0,
+    "unresolved_amendment_gaps_through_t": 0
+  },
+  "generated_at": "2026-10-10T22:13:30.000Z",
+  "governance_verdict": {
+    "best_known_observed_through": "2026-10-10T01:02:33.000Z",
+    "certified_completeness_watermark_authority": "NOT_ESTABLISHED",
+    "outcome": "OUTCOME_B / SOURCE_AUTHORITY_BOUNDED_STABLE_AND_HOLDBACK_NOT_MATURED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "radar_production_status": "PIPELINE_PENDING",
+    "scoped_capability": "DATA_INCOMPLETE",
+    "smart_money_wave2c_status": "BLOCKED_ON_DISCOVERY_AUTHORITY / HOLD",
+    "wave2c_certification_closure": "BLOCKED_ON_DISCOVERY_AUTHORITY",
+    "wave2c_incremental_engineering": "VERIFIED_AND_FROZEN"
+  },
+  "holdback_maturity_time": "2026-10-11T01:02:33.000Z",
+  "holdback_required_seconds": 86400,
+  "holdback_status": "NOT_MATURED",
+  "independent_auditor": {
+    "auditor_database_mode": "SQLite Read-Only (mode=ro)",
+    "auditor_implementation": "IndependentCertificationAuditor (tools/audit_smart_money_wave2c_certification.py)",
+    "auditor_maximum_safe_frontier": "2026-10-10T01:02:33.000Z",
+    "auditor_proof_trace_sha256": "866edaeedb51f70e24f8a225af89882d99ca63f89374cb678b8c5304c585157b",
+    "auditor_receipt_certified_frontier": "2026-10-10T01:02:33.000Z",
+    "auditor_verdict": "PASS",
+    "certifier_and_auditor_shared_decision_logic": false,
+    "receipt_frontier_exceeds_auditor_safe_frontier": false
+  },
+  "partition_set_hash_parity": "PASS",
+  "policy_bundle": {
+    "policy_bundle_hash": "a8bd38d9377844aeb706e1b9eb4bf2242fa25e86822aa2aa479ede02eed6c9d8",
+    "policy_bundle_hash_parity": "PASS",
+    "recomputed_policy_bundle_hash": "a8bd38d9377844aeb706e1b9eb4bf2242fa25e86822aa2aa479ede02eed6c9d8"
+  },
+  "post_holdback_issuance": {
+    "certifier_functional_git_sha": "e0a9c568bf4c4083508470e9412165a9764af39c",
+    "global_max_safe_frontier": "2026-10-10T01:02:33.000Z",
+    "post_holdback_certification_receipt_id": "NOT_ISSUED_PRE_MATURITY",
+    "post_holdback_closure_proof_sha256": "NOT_ISSUED_PRE_MATURITY",
+    "post_holdback_receipt_sequence": "NOT_ADVANCED",
+    "post_holdback_receipt_sha256": "NOT_ISSUED_PRE_MATURITY"
+  },
+  "post_holdback_reenumeration": "HELD_PENDING_NATURAL_HOLDBACK_MATURITY",
+  "previous_receipt": {
+    "candidate_frontier": "2026-10-10T01:02:33.000Z",
+    "certified_frontier": "2026-10-10T01:02:33.000Z",
+    "created_at": "2026-10-10T21:07:51.000Z",
+    "functional_identity_binding": "FAIL",
+    "functional_sha_binding_class": "C",
+    "functional_sha_binding_detail": "symbolic placeholder: sha256:wave2c-certification-authority-hardened",
+    "historical_receipt_mutated": false,
+    "receipt_id": "RCPT-V2-000001-1faf4481f5e7",
+    "reliance_status": "SUPERSEDED_BY_POST_HOLDBACK_RECONCILIATION",
+    "temporal_status": "PROVISIONAL_PRE_HOLDBACK"
+  },
+  "real_elapsed_human": "21 hours, 10 minutes, 57 seconds",
+  "real_elapsed_seconds": 76257,
+  "real_holdback_matured": false,
+  "recomputed_required_partition_set_hash": "e8bfa161ef8ef747db32fb192ca45ee7eb373378fdb53a30a69bb8fdb118bc33",
+  "required_partition_count": 106,
+  "required_partition_set_hash": "e8bfa161ef8ef747db32fb192ca45ee7eb373378fdb53a30a69bb8fdb118bc33",
+  "schema_and_regression": {
+    "audit_scope_coverage_percent": 100,
+    "certification_hardening_migration_id": "SM_MIGRATE_V2_1_TO_V2_2_CERTIFICATION_HARDENING_20261010",
+    "frontend_tests_failed": 0,
+    "frontend_tests_passed": 22,
+    "frontend_tests_run": 22,
+    "post_hardening_schema_version": "2.2.0",
+    "python_tests_failed": 0,
+    "python_tests_passed": 94,
+    "python_tests_run": 94
+  },
+  "scope_kind": "GOVERNED_SUBSET",
+  "source_manifests": {
+    "enumeration_receipt_set_hash": "f40e1b6fea0a023e2dbe171a1553ae0996e559d0918a340a29203fce2fb01a15",
+    "partition_coverage_manifest_hash": "0fd59c1d1c4851bb651d3a7a8d0accef3b2a5db7a9980902b1d46c6e9d48e1c3",
+    "source_snapshot_manifest_hash": "95ba398ef20b81465ca5e6c2366cb46455d48a1e68b472909cfd0a816bad0300"
+  },
+  "state_vocabulary": {
+    "canonical_state_vocabulary_count": 1,
+    "competing_semantic_enum_families": 0,
+    "market_wide_capability_state": "NOT_AUTHORIZED",
+    "market_wide_inference_escape_cases": 0,
+    "scoped_capability_state": "DATA_INCOMPLETE"
+  },
+  "tamper_and_mutation": {
+    "certification_critical_mutants_created": 15,
+    "certification_critical_mutants_killed": 15,
+    "certification_critical_mutation_score": 1.0,
+    "certification_outcome_changed_by_timer_event": 0,
+    "durability_boundaries_tested": 12,
+    "property_case_total": 4750,
+    "property_tests_concurrent_interleavings_cases": 250,
+    "property_tests_dispute_state_machine_cases": 1000,
+    "property_tests_late_event_cases": 1000,
+    "property_tests_pagination_cases": 1000,
+    "property_tests_partition_completeness_cases": 1000,
+    "property_tests_source_divergence_cases": 500,
+    "semantic_tamper_cases": 8,
+    "undetected_semantic_tampers": 0
+  },
+  "universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+  "universe_content_hash": "ccd99943c46d1a9892c6b25cf712ceee73bb14c6941fe9ab8e34968220fd822c",
+  "working_branch": "arx/weekend-smart-money-investigation"
+}
