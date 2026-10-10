@@ -82,13 +82,13 @@ def durable_store(temp_db_path):
 
 
 # ======================================================================
-# Section 15 & 27: Schema / Migration Authority Tests (Schema V3)
+# Section 15 & 27: Schema / Migration Authority Tests (Schema V4)
 # ======================================================================
 
 def test_schema_version_and_migration_authority():
-    """Verify schema version 3.0.0, migration ID, and canonical DDL hash."""
-    assert SCHEMA_VERSION == "3.0.0"
-    assert MIGRATION_ID == "MIGRATION_20261010_003_PROVENANCE_AND_LOGICAL_RUNS"
+    """Verify schema version 4.0.0, migration ID, and canonical DDL hash."""
+    assert SCHEMA_VERSION == "4.0.0"
+    assert MIGRATION_ID == "MIGRATION_20261010_004_NATURAL_EVIDENCE_EPOCH_AND_HISTORICAL_ISOLATION"
     expected_hash = hashlib.sha256(DDL_SCHEMA.strip().encode("utf-8")).hexdigest()
     assert CANONICAL_DDL_HASH == expected_hash
 
@@ -481,6 +481,15 @@ def test_replay_creates_new_logical_run_and_excludes_from_natural(durable_store)
         group_or_episode_id="EPISODE:TSLA:2026-10-10",
     )
 
+    # Activate test epoch so natural observation is prospective candidate
+    durable_store.activate_natural_evidence_epoch(
+        "SPRINT3_CANDIDATE004_EPOCH_001",
+        candidate_generation_id="CANDIDATE_GENERATION_004",
+        candidate_functional_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        scheduler_contract_identity="test-scheduler",
+    )
+
     # 1. Admit original scheduled run
     res_orig = durable_store.admit_observation_bundle(
         **base_args,
@@ -566,7 +575,7 @@ def test_multi_process_same_host_concurrency(temp_db_path):
     worker_script = f"""
 import sys
 from analyst_dashboard.vcp.sprint_3_durable_storage import Sprint3DurableEvidenceStore
-from analyst_dashboard.vcp.sprint_3_shadow_governance import CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH
+CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH = "{CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH}"
 
 db_path = sys.argv[1]
 mode = sys.argv[2]

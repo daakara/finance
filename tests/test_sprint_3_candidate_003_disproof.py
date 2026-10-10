@@ -110,7 +110,7 @@ def test_02_natural_evidence_epoch_absence_disproof():
     """
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_epoch_absence.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     with store._get_connection() as conn:
         tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
@@ -135,7 +135,7 @@ def test_03_migration_manifest_absence_disproof():
     """
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_migration_manifest.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     with store._get_connection() as conn:
         tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
@@ -158,7 +158,7 @@ def test_04_independent_denominator_oracle_gap_disproof():
     """
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_oracle.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     # 1. Admit 7 valid natural scheduled observations
     for i in range(1, 8):
@@ -242,7 +242,7 @@ def test_04_independent_denominator_oracle_gap_disproof():
 
 def _worker_concurrent_retry(args):
     db_path, run_id, sec_id, dt = args
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
     try:
         receipt = admit_bundle(
             store,
@@ -267,7 +267,7 @@ def test_05_concurrent_duplicate_retries_safe():
     import concurrent.futures
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_concurrent_retry.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     # Initialize store schema
     store.get_authoritative_denominator_counts()
@@ -287,7 +287,7 @@ def test_06_payload_conflict_rejected():
     """Verifies that submitting the same observation key with conflicting payload raises HardIntegrityFailureError."""
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_payload_conflict.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     # 1. Admit original observation
     admit_bundle(
@@ -317,7 +317,7 @@ def test_07_auth_layer_provenance_forgery_rejected():
     """Verifies complete negative matrix (PROV-001 through PROV-010) fail-closed."""
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_provenance_matrix.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     # PROV-001: Scheduler without event ID
     with pytest.raises(ProvenanceConflictError) as exc1:
@@ -367,7 +367,7 @@ def test_08_sqlite_wal_and_busy_safe():
     """Verifies that database operates in WAL mode and handles concurrent reader/writer without deadlocks."""
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_wal.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     with store._get_connection() as conn:
         journal_mode = conn.execute("PRAGMA journal_mode;").fetchone()[0]
@@ -385,7 +385,7 @@ def test_09_property_based_state_machine():
     """
     d = tempfile.mkdtemp()
     db_path = os.path.join(d, "test_pbt.db")
-    store = Sprint3DurableEvidenceStore(db_path)
+    store = Sprint3DurableEvidenceStore(db_path, schema_version="3.0.0")
 
     rng = random.Random(42)
     symbols = ["AAPL", "GOOG", "AMZN", "META", "TSLA"]

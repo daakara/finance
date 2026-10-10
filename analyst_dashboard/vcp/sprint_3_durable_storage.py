@@ -1,7 +1,7 @@
-"""ARX Terminal — Sprint 3 Durable Shadow Evidence Store & Relational Engine (Schema V3).
+"""ARX Terminal — Sprint 3 Durable Shadow Evidence Store & Relational Engine (Schema V4).
 
 Authoritative persistent storage engine providing:
-1. Strict relational schema with foreign keys, unique constraints, and check constraints (Schema 3.0.0).
+1. Strict relational schema with foreign keys, unique constraints, and check constraints (Schema 4.0.0).
 2. Logical invocation authority (logical_trigger_id, logical_scan_run_id) with attempt tracking.
 3. Provenance conflict detection & fail-closed enforcement (PROV-001 through PROV-010).
 4. Immutable payload hash comparison (SAME_KEY_DIFFERENT_PAYLOAD_REJECTED = HardIntegrityFailureError).
@@ -28,15 +28,23 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 logger = logging.getLogger("arx.vcp.durable_storage")
 
-SCHEMA_VERSION: str = "3.0.0"
-MIGRATION_ID: str = "MIGRATION_20261010_003_PROVENANCE_AND_LOGICAL_RUNS"
+SCHEMA_VERSION: str = "4.0.0"
+MIGRATION_ID: str = "MIGRATION_20261010_004_NATURAL_EVIDENCE_EPOCH_AND_HISTORICAL_ISOLATION"
 OBSERVATION_KEY_SPECIFICATION: str = (
     "sha256(scanner_id:security_id:evaluation_as_of:universe_build_id:logical_scan_run_id:candidate_generation_id:semantic_closure_hash)"
 )
 CLASSIFICATION_POLICY_VERSION: str = "1.0.0"
-IDENTITY_SCHEMA_VERSION: str = "3.0.0"
+IDENTITY_SCHEMA_VERSION: str = "4.0.0"
 CANONICALIZATION_VERSION: str = "1.0.0"
 STORAGE_TOPOLOGY_REQUIREMENT: str = "SINGLE_REPLICA_ONLY"
+
+NATURAL_EVIDENCE_EPOCH_MODEL_VERSION: str = "1.0.0"
+NATURAL_EVIDENCE_EPOCH_ID: str = "SPRINT3_CANDIDATE004_EPOCH_001"
+LOCAL_FREEZE_EPOCH_STATUS: str = "PRE_ACTIVATION"
+DENOMINATOR_POLICY_VERSION: str = "1.0.0"
+MIGRATION_MANIFEST_CANONICALIZATION_VERSION: str = "1.0.0"
+PROVENANCE_CONTRACT_VERSION: str = "1.0.0"
+HISTORICAL_MIGRATION_UNIT: str = "SHADOW_OBSERVATION_BUNDLE"
 
 DEFAULT_SHADOW_DB_FILENAME: str = "shadow_evidence.db"
 
@@ -155,7 +163,7 @@ def compute_deterministic_observation_key(
     evaluation_as_of: str,
     universe_build_id: str,
     logical_scan_run_id: Optional[str] = None,
-    candidate_generation_id: str = "CANDIDATE_GENERATION_003",
+    candidate_generation_id: str = "CANDIDATE_GENERATION_004",
     semantic_closure_hash: str = "",
     snapshot_run_id: Optional[str] = None,
 ) -> str:
@@ -193,7 +201,7 @@ def retry_sqlite(max_retries: int = 5, base_delay: float = 0.05):
     return decorator
 
 
-DDL_SCHEMA = """
+DDL_SCHEMA_V3 = """
 -- 1. Logical Scan Runs Table
 CREATE TABLE IF NOT EXISTS logical_scan_runs (
     logical_scan_run_id TEXT PRIMARY KEY,
@@ -453,7 +461,190 @@ BEGIN
 END;
 """
 
+
+DDL_SCHEMA_V4_ADDITIONS = """
+-- 10. Natural Evidence Epochs Table
+CREATE TABLE IF NOT EXISTS natural_evidence_epochs (
+    epoch_id TEXT PRIMARY KEY,
+    evidence_stream_id TEXT NOT NULL,
+    candidate_generation_id TEXT NOT NULL,
+    candidate_functional_sha TEXT NOT NULL,
+    semantic_closure_hash TEXT NOT NULL,
+    provenance_contract_version TEXT NOT NULL,
+    identity_schema_version TEXT NOT NULL,
+    denominator_policy_version TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('DEFINED', 'PRE_ACTIVATION', 'ACTIVE', 'CLOSED')),
+    activation_receipt_id TEXT,
+    activation_sequence INTEGER,
+    activated_at TEXT,
+    closed_receipt_id TEXT,
+    closed_sequence INTEGER,
+    closed_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+-- 11. Epoch Activation Receipts Table
+CREATE TABLE IF NOT EXISTS epoch_activation_receipts (
+    activation_receipt_id TEXT PRIMARY KEY,
+    epoch_id TEXT NOT NULL REFERENCES natural_evidence_epochs(epoch_id),
+    candidate_generation_id TEXT NOT NULL,
+    candidate_functional_sha TEXT NOT NULL,
+    semantic_closure_hash TEXT NOT NULL,
+    database_schema_version TEXT NOT NULL,
+    provenance_policy_version TEXT NOT NULL,
+    identity_schema_version TEXT NOT NULL,
+    denominator_policy_version TEXT NOT NULL,
+    scheduler_contract_identity TEXT NOT NULL,
+    activation_sequence INTEGER NOT NULL,
+    activated_at TEXT NOT NULL,
+    receipt_content_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- 12. Evidence Epoch Memberships Table
+CREATE TABLE IF NOT EXISTS evidence_epoch_memberships (
+    logical_scan_run_id TEXT PRIMARY KEY REFERENCES logical_scan_runs(logical_scan_run_id),
+    epoch_id TEXT NOT NULL REFERENCES natural_evidence_epochs(epoch_id),
+    membership_class TEXT NOT NULL CHECK(membership_class IN ('CURRENT_PROSPECTIVE_EPOCH', 'PRE_EPOCH_LEGACY', 'PRE_ACTIVATION_DELAYED_EVENT', 'NON_NATURAL', 'MIGRATION_CONFLICT')),
+    prospective_disposition TEXT NOT NULL CHECK(prospective_disposition IN ('PROSPECTIVE_CANDIDATE', 'PRE_EPOCH_INELIGIBLE', 'NON_NATURAL_INELIGIBLE', 'MIGRATION_CONFLICT_INELIGIBLE')),
+    activation_receipt_id TEXT,
+    assignment_sequence INTEGER NOT NULL,
+    assigned_at TEXT NOT NULL,
+    membership_fingerprint TEXT NOT NULL
+);
+
+-- 13. Migration Source Manifests Table
+CREATE TABLE IF NOT EXISTS migration_source_manifests (
+    manifest_id TEXT PRIMARY KEY,
+    canonicalization_version TEXT NOT NULL,
+    source_unit_count INTEGER NOT NULL,
+    population_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- 14. Migration Unit Dispositions Table
+CREATE TABLE IF NOT EXISTS migration_unit_dispositions (
+    source_unit_id TEXT PRIMARY KEY,
+    source_schema_version TEXT NOT NULL,
+    source_content_hash TEXT NOT NULL,
+    migration_disposition TEXT NOT NULL CHECK(migration_disposition IN ('LEGACY_NO_CURRENT_PROVENANCE', 'MIGRATION_CONFLICT', 'PREEXISTING_EQUIVALENT_PROVENANCE')),
+    legacy_recorded_origin_class TEXT NOT NULL,
+    epoch_membership_class TEXT NOT NULL,
+    prospective_disposition TEXT NOT NULL,
+    migration_id TEXT NOT NULL,
+    migration_run_id TEXT NOT NULL,
+    migrated_at TEXT NOT NULL,
+    disposition_hash TEXT NOT NULL
+);
+
+-- 15. Historical Reconciliation Records Table
+CREATE TABLE IF NOT EXISTS historical_reconciliation_records (
+    reconciliation_id TEXT PRIMARY KEY,
+    source_unit_id TEXT NOT NULL,
+    reconciled_principal_type TEXT,
+    reconciled_principal_id TEXT,
+    reconciled_invocation_class TEXT,
+    reconciled_origin_class TEXT,
+    justification TEXT NOT NULL,
+    reconciled_at TEXT NOT NULL,
+    reconciled_by TEXT NOT NULL
+);
+
+-- Triggers for Natural Evidence Epochs
+CREATE TRIGGER IF NOT EXISTS prevent_natural_evidence_epochs_delete
+BEFORE DELETE ON natural_evidence_epochs
+BEGIN
+    SELECT RAISE(ABORT, 'DELETE_OF_NATURAL_EVIDENCE_EPOCHS_PROHIBITED');
+END;
+
+CREATE TRIGGER IF NOT EXISTS validate_natural_evidence_epochs_update
+BEFORE UPDATE ON natural_evidence_epochs
+BEGIN
+    SELECT CASE
+        WHEN OLD.status = 'CLOSED' THEN RAISE(ABORT, 'CLOSED_EPOCH_CANNOT_BE_MODIFIED')
+        WHEN OLD.epoch_id != NEW.epoch_id THEN RAISE(ABORT, 'EPOCH_ID_UPDATE_REJECTED')
+        WHEN OLD.candidate_generation_id != NEW.candidate_generation_id THEN RAISE(ABORT, 'EPOCH_CANDIDATE_GENERATION_UPDATE_REJECTED')
+        WHEN OLD.candidate_functional_sha != NEW.candidate_functional_sha THEN RAISE(ABORT, 'EPOCH_FUNCTIONAL_SHA_UPDATE_REJECTED')
+        WHEN OLD.semantic_closure_hash != NEW.semantic_closure_hash THEN RAISE(ABORT, 'EPOCH_SEMANTIC_CLOSURE_UPDATE_REJECTED')
+        ELSE 1
+    END;
+END;
+
+-- Triggers for Epoch Activation Receipts
+CREATE TRIGGER IF NOT EXISTS prevent_epoch_activation_receipts_update
+BEFORE UPDATE ON epoch_activation_receipts
+BEGIN
+    SELECT RAISE(ABORT, 'MUTATION_OF_EPOCH_ACTIVATION_RECEIPTS_PROHIBITED');
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_epoch_activation_receipts_delete
+BEFORE DELETE ON epoch_activation_receipts
+BEGIN
+    SELECT RAISE(ABORT, 'DELETE_OF_EPOCH_ACTIVATION_RECEIPTS_PROHIBITED');
+END;
+
+-- Triggers for Evidence Epoch Memberships
+CREATE TRIGGER IF NOT EXISTS prevent_evidence_epoch_memberships_update
+BEFORE UPDATE ON evidence_epoch_memberships
+BEGIN
+    SELECT CASE
+        WHEN OLD.epoch_id != NEW.epoch_id THEN RAISE(ABORT, 'EPOCH_ID_UPDATE_REJECTED')
+        WHEN OLD.membership_class != NEW.membership_class THEN RAISE(ABORT, 'MEMBERSHIP_CLASS_UPDATE_REJECTED')
+        WHEN OLD.prospective_disposition != NEW.prospective_disposition THEN RAISE(ABORT, 'PROSPECTIVE_DISPOSITION_UPDATE_REJECTED')
+        ELSE RAISE(ABORT, 'MUTATION_OF_EVIDENCE_EPOCH_MEMBERSHIPS_PROHIBITED')
+    END;
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_evidence_epoch_memberships_delete
+BEFORE DELETE ON evidence_epoch_memberships
+BEGIN
+    SELECT RAISE(ABORT, 'MEMBERSHIP_DELETE_REJECTED');
+END;
+
+-- Triggers for Migration Source Manifests
+CREATE TRIGGER IF NOT EXISTS prevent_migration_source_manifests_update
+BEFORE UPDATE ON migration_source_manifests
+BEGIN
+    SELECT RAISE(ABORT, 'MUTATION_OF_MIGRATION_SOURCE_MANIFESTS_PROHIBITED');
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_migration_source_manifests_delete
+BEFORE DELETE ON migration_source_manifests
+BEGIN
+    SELECT RAISE(ABORT, 'DELETE_OF_MIGRATION_SOURCE_MANIFESTS_PROHIBITED');
+END;
+
+-- Triggers for Migration Unit Dispositions
+CREATE TRIGGER IF NOT EXISTS prevent_migration_unit_dispositions_update
+BEFORE UPDATE ON migration_unit_dispositions
+BEGIN
+    SELECT RAISE(ABORT, 'MUTATION_OF_MIGRATION_UNIT_DISPOSITIONS_PROHIBITED');
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_migration_unit_dispositions_delete
+BEFORE DELETE ON migration_unit_dispositions
+BEGIN
+    SELECT RAISE(ABORT, 'DELETE_OF_MIGRATION_UNIT_DISPOSITIONS_PROHIBITED');
+END;
+
+-- Triggers for Historical Reconciliation Records
+CREATE TRIGGER IF NOT EXISTS prevent_historical_reconciliation_records_update
+BEFORE UPDATE ON historical_reconciliation_records
+BEGIN
+    SELECT RAISE(ABORT, 'MUTATION_OF_HISTORICAL_RECONCILIATION_PROHIBITED');
+END;
+
+CREATE TRIGGER IF NOT EXISTS prevent_historical_reconciliation_records_delete
+BEFORE DELETE ON historical_reconciliation_records
+BEGIN
+    SELECT RAISE(ABORT, 'DELETE_OF_HISTORICAL_RECONCILIATION_PROHIBITED');
+END;
+"""
+
+DDL_SCHEMA = DDL_SCHEMA_V3 + DDL_SCHEMA_V4_ADDITIONS
 CANONICAL_DDL_HASH: str = hashlib.sha256(DDL_SCHEMA.strip().encode("utf-8")).hexdigest()
+CANONICAL_DDL_HASH_V3: str = hashlib.sha256(DDL_SCHEMA_V3.strip().encode("utf-8")).hexdigest()
+
 
 
 def resolve_shadow_db_path(custom_path: Optional[str] = None) -> str:
@@ -489,8 +680,9 @@ def resolve_shadow_db_path(custom_path: Optional[str] = None) -> str:
 class Sprint3DurableEvidenceStore:
     """Authoritative durable storage engine for Sprint 3 production shadow evidence (Schema V3)."""
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: Optional[str] = None, schema_version: str = SCHEMA_VERSION) -> None:
         self.db_path = resolve_shadow_db_path(db_path)
+        self.schema_version = schema_version
         self._is_memory = (self.db_path == ":memory:")
         self._init_db()
 
@@ -513,20 +705,60 @@ class Sprint3DurableEvidenceStore:
     def _init_db(self) -> None:
         conn = self._get_connection()
         try:
-            # Check for existing V2 database and run migration if needed
             cur = conn.cursor()
             cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='shadow_observations';")
             has_obs = cur.fetchone() is not None
 
+            if self.schema_version == "3.0.0":
+                if has_obs:
+                    cur.execute("PRAGMA table_info(shadow_observations);")
+                    columns = {r["name"] for r in cur.fetchall()}
+                    if "logical_scan_run_id" not in columns:
+                        self._apply_migration_v3(conn)
+                        return
+                conn.executescript(DDL_SCHEMA_V3)
+                return
+
+            # Default Schema 4.0.0
             if has_obs:
                 cur.execute("PRAGMA table_info(shadow_observations);")
                 columns = {r["name"] for r in cur.fetchall()}
                 if "logical_scan_run_id" not in columns:
-                    # Run Schema V3 migration
                     self._apply_migration_v3(conn)
+                # Check for natural_evidence_epochs
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='natural_evidence_epochs';")
+                has_epochs = cur.fetchone() is not None
+                if not has_epochs:
+                    self._apply_migration_v4(conn)
                     return
 
             conn.executescript(DDL_SCHEMA)
+            # Ensure default candidate 004 epoch exists in PRE_ACTIVATION state
+            cur.execute("SELECT epoch_id FROM natural_evidence_epochs WHERE epoch_id = ?", (NATURAL_EVIDENCE_EPOCH_ID,))
+            if not cur.fetchone():
+                now_utc = get_offset_aware_utc_now()
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO natural_evidence_epochs (
+                        epoch_id, evidence_stream_id, candidate_generation_id,
+                        candidate_functional_sha, semantic_closure_hash,
+                        provenance_contract_version, identity_schema_version,
+                        denominator_policy_version, status, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        NATURAL_EVIDENCE_EPOCH_ID,
+                        "ARX_RADAR_SPRINT_3_SHADOW_STREAM",
+                        "CANDIDATE_GENERATION_004",
+                        "07b8b40cdb82328087b0f12adb08928a53e0234b",
+                        "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+                        PROVENANCE_CONTRACT_VERSION,
+                        IDENTITY_SCHEMA_VERSION,
+                        DENOMINATOR_POLICY_VERSION,
+                        LOCAL_FREEZE_EPOCH_STATUS,
+                        now_utc,
+                    ),
+                )
         finally:
             conn.close()
 
@@ -647,6 +879,697 @@ class Sprint3DurableEvidenceStore:
         except Exception:
             conn.execute("ROLLBACK;")
             raise
+    def _apply_migration_v4(self, conn: sqlite3.Connection, migration_run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Applies Schema V4 migration with deterministic source manifest and historical unit dispositions."""
+        now_utc = get_offset_aware_utc_now()
+        run_id = migration_run_id or f"MIGRUN_{int(time.time())}_{os.urandom(4).hex()}"
+        conn.execute("BEGIN IMMEDIATE;")
+        try:
+            # 1. Create Schema V4 tables
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS natural_evidence_epochs (
+                    epoch_id TEXT PRIMARY KEY,
+                    evidence_stream_id TEXT NOT NULL,
+                    candidate_generation_id TEXT NOT NULL,
+                    candidate_functional_sha TEXT NOT NULL,
+                    semantic_closure_hash TEXT NOT NULL,
+                    provenance_contract_version TEXT NOT NULL,
+                    identity_schema_version TEXT NOT NULL,
+                    denominator_policy_version TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('DEFINED', 'PRE_ACTIVATION', 'ACTIVE', 'CLOSED')),
+                    activation_receipt_id TEXT,
+                    activation_sequence INTEGER,
+                    activated_at TEXT,
+                    closed_receipt_id TEXT,
+                    closed_sequence INTEGER,
+                    closed_at TEXT,
+                    created_at TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS epoch_activation_receipts (
+                    activation_receipt_id TEXT PRIMARY KEY,
+                    epoch_id TEXT NOT NULL REFERENCES natural_evidence_epochs(epoch_id),
+                    candidate_generation_id TEXT NOT NULL,
+                    candidate_functional_sha TEXT NOT NULL,
+                    semantic_closure_hash TEXT NOT NULL,
+                    database_schema_version TEXT NOT NULL,
+                    provenance_policy_version TEXT NOT NULL,
+                    identity_schema_version TEXT NOT NULL,
+                    denominator_policy_version TEXT NOT NULL,
+                    scheduler_contract_identity TEXT NOT NULL,
+                    activation_sequence INTEGER NOT NULL,
+                    activated_at TEXT NOT NULL,
+                    receipt_content_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS evidence_epoch_memberships (
+                    logical_scan_run_id TEXT PRIMARY KEY REFERENCES logical_scan_runs(logical_scan_run_id),
+                    epoch_id TEXT NOT NULL REFERENCES natural_evidence_epochs(epoch_id),
+                    membership_class TEXT NOT NULL CHECK(membership_class IN ('CURRENT_PROSPECTIVE_EPOCH', 'PRE_EPOCH_LEGACY', 'PRE_ACTIVATION_DELAYED_EVENT', 'NON_NATURAL', 'MIGRATION_CONFLICT')),
+                    prospective_disposition TEXT NOT NULL CHECK(prospective_disposition IN ('PROSPECTIVE_CANDIDATE', 'PRE_EPOCH_INELIGIBLE', 'NON_NATURAL_INELIGIBLE', 'MIGRATION_CONFLICT_INELIGIBLE')),
+                    activation_receipt_id TEXT,
+                    assignment_sequence INTEGER NOT NULL,
+                    assigned_at TEXT NOT NULL,
+                    membership_fingerprint TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS migration_source_manifests (
+                    manifest_id TEXT PRIMARY KEY,
+                    canonicalization_version TEXT NOT NULL,
+                    source_unit_count INTEGER NOT NULL,
+                    population_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS migration_unit_dispositions (
+                    source_unit_id TEXT PRIMARY KEY,
+                    source_schema_version TEXT NOT NULL,
+                    source_content_hash TEXT NOT NULL,
+                    migration_disposition TEXT NOT NULL CHECK(migration_disposition IN ('LEGACY_NO_CURRENT_PROVENANCE', 'MIGRATION_CONFLICT', 'PREEXISTING_EQUIVALENT_PROVENANCE')),
+                    legacy_recorded_origin_class TEXT NOT NULL,
+                    epoch_membership_class TEXT NOT NULL,
+                    prospective_disposition TEXT NOT NULL,
+                    migration_id TEXT NOT NULL,
+                    migration_run_id TEXT NOT NULL,
+                    migrated_at TEXT NOT NULL,
+                    disposition_hash TEXT NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS historical_reconciliation_records (
+                    reconciliation_id TEXT PRIMARY KEY,
+                    source_unit_id TEXT NOT NULL,
+                    reconciled_principal_type TEXT,
+                    reconciled_principal_id TEXT,
+                    reconciled_invocation_class TEXT,
+                    reconciled_origin_class TEXT,
+                    justification TEXT NOT NULL,
+                    reconciled_at TEXT NOT NULL,
+                    reconciled_by TEXT NOT NULL
+                );
+            """)
+
+            # 2. Insert closed legacy epoch and default Candidate 004 pre-activation epoch
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO natural_evidence_epochs (
+                    epoch_id, evidence_stream_id, candidate_generation_id, candidate_functional_sha,
+                    semantic_closure_hash, provenance_contract_version, identity_schema_version,
+                    denominator_policy_version, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "LEGACY_EPOCH_PRE_C004", "ARX_RADAR_SPRINT_3_SHADOW_STREAM",
+                    "CANDIDATE_GENERATION_003_OR_EARLIER", "07b8b40cdb82328087b0f12adb08928a53e0234b",
+                    "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+                    "1.0.0", "3.0.0", "1.0.0", "CLOSED", "2026-10-10T00:00:00+00:00"
+                )
+            )
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO natural_evidence_epochs (
+                    epoch_id, evidence_stream_id, candidate_generation_id, candidate_functional_sha,
+                    semantic_closure_hash, provenance_contract_version, identity_schema_version,
+                    denominator_policy_version, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    NATURAL_EVIDENCE_EPOCH_ID, "ARX_RADAR_SPRINT_3_SHADOW_STREAM",
+                    "CANDIDATE_GENERATION_004", "07b8b40cdb82328087b0f12adb08928a53e0234b",
+                    "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+                    PROVENANCE_CONTRACT_VERSION, IDENTITY_SCHEMA_VERSION,
+                    DENOMINATOR_POLICY_VERSION, LOCAL_FREEZE_EPOCH_STATUS, now_utc
+                )
+            )
+
+            # 3. Collect historical units (SHADOW_OBSERVATION_BUNDLE)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT a.admission_id, a.observation_key, a.logical_scan_run_id, a.origin_class,
+                       a.candidate_sha, a.admitted_at
+                FROM shadow_evidence_admissions a
+                ORDER BY a.admission_id;
+            """)
+            admissions = cur.fetchall()
+
+            unit_hashes = []
+            source_units = []
+            for adm in admissions:
+                unit_id = adm["admission_id"]
+                content_payload = f"{adm['admission_id']}:{adm['observation_key']}:{adm['logical_scan_run_id']}:{adm['origin_class']}:{adm['candidate_sha']}"
+                chash = hashlib.sha256(content_payload.encode("utf-8")).hexdigest()
+                unit_hashes.append(chash)
+                source_units.append({
+                    "unit_id": unit_id,
+                    "content_hash": chash,
+                    "logical_scan_run_id": adm["logical_scan_run_id"],
+                    "origin_class": adm["origin_class"],
+                })
+
+            sorted_hashes = sorted(unit_hashes)
+            population_hash = hashlib.sha256("".join(sorted_hashes).encode("utf-8")).hexdigest()
+            manifest_id = f"MANIFEST_{MIGRATION_ID}_{len(source_units)}"
+
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO migration_source_manifests (
+                    manifest_id, canonicalization_version, source_unit_count, population_hash, created_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (manifest_id, MIGRATION_MANIFEST_CANONICALIZATION_VERSION, len(source_units), population_hash, now_utc)
+            )
+
+            # 4. Record dispositions and epoch memberships
+            assigned_runs = set()
+            cur.execute("SELECT logical_scan_run_id FROM evidence_epoch_memberships;")
+            for r in cur.fetchall():
+                assigned_runs.add(r[0])
+
+            cur.execute("SELECT COALESCE(MAX(assignment_sequence), 0) FROM evidence_epoch_memberships;")
+            cur_seq = cur.fetchone()[0]
+
+            for unit in source_units:
+                uid = unit["unit_id"]
+                chash = unit["content_hash"]
+                orig_cls = unit["origin_class"]
+                lrun_id = unit["logical_scan_run_id"]
+
+                if not orig_cls or orig_cls not in ('NATURAL_PRODUCTION', 'NON_EVIDENCE_BOOTSTRAP', 'SYNTHETIC', 'REPLAY', 'ADMIN_FORCED', 'TEST', 'NOT_ADMITTED'):
+                    disp = "MIGRATION_CONFLICT"
+                    mem_cls = "MIGRATION_CONFLICT"
+                    prosp_disp = "MIGRATION_CONFLICT_INELIGIBLE"
+                else:
+                    disp = "LEGACY_NO_CURRENT_PROVENANCE"
+                    mem_cls = "PRE_EPOCH_LEGACY"
+                    prosp_disp = "PRE_EPOCH_INELIGIBLE"
+
+                disp_payload = f"{uid}:{chash}:{disp}:{orig_cls}:{mem_cls}:{prosp_disp}:{MIGRATION_ID}"
+                disp_hash = hashlib.sha256(disp_payload.encode("utf-8")).hexdigest()
+
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO migration_unit_dispositions (
+                        source_unit_id, source_schema_version, source_content_hash, migration_disposition,
+                        legacy_recorded_origin_class, epoch_membership_class, prospective_disposition,
+                        migration_id, migration_run_id, migrated_at, disposition_hash
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (uid, "3.0.0", chash, disp, orig_cls, mem_cls, prosp_disp, MIGRATION_ID, run_id, now_utc, disp_hash)
+                )
+
+                if lrun_id and lrun_id not in assigned_runs:
+                    cur.execute("SELECT 1 FROM logical_scan_runs WHERE logical_scan_run_id = ?", (lrun_id,))
+                    if cur.fetchone() is None:
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO logical_scan_runs (
+                                logical_scan_run_id, logical_trigger_id, scanner_id, universe_build_id, evaluation_as_of,
+                                invocation_class, origin_class, originating_principal_type, originating_principal_id,
+                                classification_policy_version, identity_schema_version, canonicalization_version,
+                                provenance_fingerprint, created_at, classified_at, status
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                lrun_id, f"TRIG_{lrun_id}", "RADAR_VCP_SCANNER", "UNIVERSE_LEGACY", "2026-10-10",
+                                "MANUAL_OPERATOR", "ADMIN_FORCED", "LEGACY_MIGRATION", "migration_system",
+                                CLASSIFICATION_POLICY_VERSION, IDENTITY_SCHEMA_VERSION, CANONICALIZATION_VERSION,
+                                hashlib.sha256(lrun_id.encode("utf-8")).hexdigest(), now_utc, now_utc, "CLASSIFIED"
+                            )
+                        )
+                    cur_seq += 1
+                    mem_fp_str = f"{lrun_id}:LEGACY_EPOCH_PRE_C004:{mem_cls}:{prosp_disp}:{cur_seq}"
+                    mem_fp = hashlib.sha256(mem_fp_str.encode("utf-8")).hexdigest()
+
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO evidence_epoch_memberships (
+                            logical_scan_run_id, epoch_id, membership_class, prospective_disposition,
+                            activation_receipt_id, assignment_sequence, assigned_at, membership_fingerprint
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (lrun_id, "LEGACY_EPOCH_PRE_C004", mem_cls, prosp_disp, None, cur_seq, now_utc, mem_fp)
+                    )
+                    assigned_runs.add(lrun_id)
+
+            # 5. Create triggers
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_natural_evidence_epochs_delete
+                BEFORE DELETE ON natural_evidence_epochs
+                BEGIN
+                    SELECT RAISE(ABORT, 'DELETE_OF_NATURAL_EVIDENCE_EPOCHS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS validate_natural_evidence_epochs_update
+                BEFORE UPDATE ON natural_evidence_epochs
+                BEGIN
+                    SELECT CASE
+                        WHEN OLD.status = 'CLOSED' THEN RAISE(ABORT, 'CLOSED_EPOCH_CANNOT_BE_MODIFIED')
+                        WHEN OLD.epoch_id != NEW.epoch_id THEN RAISE(ABORT, 'EPOCH_ID_UPDATE_REJECTED')
+                        WHEN OLD.candidate_generation_id != NEW.candidate_generation_id THEN RAISE(ABORT, 'EPOCH_CANDIDATE_GENERATION_UPDATE_REJECTED')
+                        WHEN OLD.candidate_functional_sha != NEW.candidate_functional_sha THEN RAISE(ABORT, 'EPOCH_FUNCTIONAL_SHA_UPDATE_REJECTED')
+                        WHEN OLD.semantic_closure_hash != NEW.semantic_closure_hash THEN RAISE(ABORT, 'EPOCH_SEMANTIC_CLOSURE_UPDATE_REJECTED')
+                        ELSE 1
+                    END;
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_epoch_activation_receipts_update
+                BEFORE UPDATE ON epoch_activation_receipts
+                BEGIN
+                    SELECT RAISE(ABORT, 'MUTATION_OF_EPOCH_ACTIVATION_RECEIPTS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_epoch_activation_receipts_delete
+                BEFORE DELETE ON epoch_activation_receipts
+                BEGIN
+                    SELECT RAISE(ABORT, 'DELETE_OF_EPOCH_ACTIVATION_RECEIPTS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_evidence_epoch_memberships_update
+                BEFORE UPDATE ON evidence_epoch_memberships
+                BEGIN
+                    SELECT CASE
+                        WHEN OLD.epoch_id != NEW.epoch_id THEN RAISE(ABORT, 'EPOCH_ID_UPDATE_REJECTED')
+                        WHEN OLD.membership_class != NEW.membership_class THEN RAISE(ABORT, 'MEMBERSHIP_CLASS_UPDATE_REJECTED')
+                        WHEN OLD.prospective_disposition != NEW.prospective_disposition THEN RAISE(ABORT, 'PROSPECTIVE_DISPOSITION_UPDATE_REJECTED')
+                        ELSE RAISE(ABORT, 'MUTATION_OF_EVIDENCE_EPOCH_MEMBERSHIPS_PROHIBITED')
+                    END;
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_evidence_epoch_memberships_delete
+                BEFORE DELETE ON evidence_epoch_memberships
+                BEGIN
+                    SELECT RAISE(ABORT, 'MEMBERSHIP_DELETE_REJECTED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_migration_source_manifests_update
+                BEFORE UPDATE ON migration_source_manifests
+                BEGIN
+                    SELECT RAISE(ABORT, 'MUTATION_OF_MIGRATION_SOURCE_MANIFESTS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_migration_source_manifests_delete
+                BEFORE DELETE ON migration_source_manifests
+                BEGIN
+                    SELECT RAISE(ABORT, 'DELETE_OF_MIGRATION_SOURCE_MANIFESTS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_migration_unit_dispositions_update
+                BEFORE UPDATE ON migration_unit_dispositions
+                BEGIN
+                    SELECT RAISE(ABORT, 'MUTATION_OF_MIGRATION_UNIT_DISPOSITIONS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_migration_unit_dispositions_delete
+                BEFORE DELETE ON migration_unit_dispositions
+                BEGIN
+                    SELECT RAISE(ABORT, 'DELETE_OF_MIGRATION_UNIT_DISPOSITIONS_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_historical_reconciliation_records_update
+                BEFORE UPDATE ON historical_reconciliation_records
+                BEGIN
+                    SELECT RAISE(ABORT, 'MUTATION_OF_HISTORICAL_RECONCILIATION_PROHIBITED');
+                END;
+            """)
+            conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS prevent_historical_reconciliation_records_delete
+                BEFORE DELETE ON historical_reconciliation_records
+                BEGIN
+                    SELECT RAISE(ABORT, 'DELETE_OF_HISTORICAL_RECONCILIATION_PROHIBITED');
+                END;
+            """)
+
+            conn.execute("COMMIT;")
+            return {
+                "manifest_id": manifest_id,
+                "source_count": len(source_units),
+                "population_hash": population_hash,
+                "status": "MIGRATION_COMPLETE",
+            }
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+
+    @retry_sqlite()
+    def define_natural_evidence_epoch(
+        self,
+        epoch_id: str,
+        evidence_stream_id: str,
+        candidate_generation_id: str,
+        candidate_functional_sha: str,
+        semantic_closure_hash: str,
+        provenance_contract_version: str = PROVENANCE_CONTRACT_VERSION,
+        identity_schema_version: str = IDENTITY_SCHEMA_VERSION,
+        denominator_policy_version: str = DENOMINATOR_POLICY_VERSION,
+        status: str = "PRE_ACTIVATION",
+    ) -> Dict[str, Any]:
+        """Explicitly defines a natural evidence epoch in the repository."""
+        now_utc = get_offset_aware_utc_now()
+        conn = self._get_connection()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO natural_evidence_epochs (
+                    epoch_id, evidence_stream_id, candidate_generation_id,
+                    candidate_functional_sha, semantic_closure_hash,
+                    provenance_contract_version, identity_schema_version,
+                    denominator_policy_version, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    epoch_id, evidence_stream_id, candidate_generation_id,
+                    candidate_functional_sha, semantic_closure_hash,
+                    provenance_contract_version, identity_schema_version,
+                    denominator_policy_version, status, now_utc
+                ),
+            )
+            conn.execute("COMMIT;")
+            return {
+                "epoch_id": epoch_id,
+                "status": status,
+                "candidate_generation_id": candidate_generation_id,
+                "created_at": now_utc,
+            }
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def activate_natural_evidence_epoch(
+        self,
+        epoch_id: str,
+        candidate_generation_id: str,
+        candidate_functional_sha: str,
+        semantic_closure_hash: str,
+        scheduler_contract_identity: str,
+        activation_receipt_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Atomically commits an immutable activation receipt and promotes epoch to ACTIVE status."""
+        now_utc = get_offset_aware_utc_now()
+        conn = self._get_connection()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.cursor()
+
+            cur.execute("SELECT * FROM natural_evidence_epochs WHERE epoch_id = ?", (epoch_id,))
+            epoch_row = cur.fetchone()
+            if not epoch_row:
+                raise ValueError(f"Epoch '{epoch_id}' not found.")
+            if epoch_row["status"] == "ACTIVE":
+                raise RuntimeError(f"Epoch '{epoch_id}' is already ACTIVE.")
+            if epoch_row["status"] == "CLOSED":
+                raise RuntimeError(f"Epoch '{epoch_id}' is CLOSED and cannot be activated.")
+
+            cur.execute("SELECT epoch_id FROM natural_evidence_epochs WHERE status = 'ACTIVE';")
+            active_existing = cur.fetchone()
+            if active_existing:
+                raise RuntimeError(
+                    f"ACTIVE_EPOCH_EXISTS: Cannot activate '{epoch_id}' because '{active_existing[0]}' is already ACTIVE."
+                )
+
+            cur.execute("SELECT COALESCE(MAX(activation_sequence), 0) + 1 FROM epoch_activation_receipts;")
+            act_seq = cur.fetchone()[0]
+
+            receipt_id = activation_receipt_id or f"rcpt-act-{epoch_id}-{act_seq}"
+
+            receipt_payload = {
+                "activation_receipt_id": receipt_id,
+                "epoch_id": epoch_id,
+                "candidate_generation_id": candidate_generation_id,
+                "candidate_functional_sha": candidate_functional_sha,
+                "semantic_closure_hash": semantic_closure_hash,
+                "database_schema_version": SCHEMA_VERSION,
+                "provenance_policy_version": PROVENANCE_CONTRACT_VERSION,
+                "identity_schema_version": IDENTITY_SCHEMA_VERSION,
+                "denominator_policy_version": DENOMINATOR_POLICY_VERSION,
+                "scheduler_contract_identity": scheduler_contract_identity,
+                "activation_sequence": act_seq,
+                "activated_at": now_utc,
+            }
+            receipt_hash = hashlib.sha256(
+                json.dumps(receipt_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()
+
+            cur.execute(
+                """
+                INSERT INTO epoch_activation_receipts (
+                    activation_receipt_id, epoch_id, candidate_generation_id,
+                    candidate_functional_sha, semantic_closure_hash, database_schema_version,
+                    provenance_policy_version, identity_schema_version, denominator_policy_version,
+                    scheduler_contract_identity, activation_sequence, activated_at,
+                    receipt_content_hash, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    receipt_id, epoch_id, candidate_generation_id,
+                    candidate_functional_sha, semantic_closure_hash, SCHEMA_VERSION,
+                    PROVENANCE_CONTRACT_VERSION, IDENTITY_SCHEMA_VERSION, DENOMINATOR_POLICY_VERSION,
+                    scheduler_contract_identity, act_seq, now_utc,
+                    receipt_hash, now_utc
+                ),
+            )
+
+            cur.execute(
+                """
+                UPDATE natural_evidence_epochs
+                SET status = 'ACTIVE',
+                    activation_receipt_id = ?,
+                    activation_sequence = ?,
+                    activated_at = ?
+                WHERE epoch_id = ?
+                """,
+                (receipt_id, act_seq, now_utc, epoch_id),
+            )
+
+            conn.execute("COMMIT;")
+            return {
+                "status": "ACTIVE",
+                "epoch_id": epoch_id,
+                "activation_receipt_id": receipt_id,
+                "activation_sequence": act_seq,
+                "activated_at": now_utc,
+                "receipt_content_hash": receipt_hash,
+            }
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def close_natural_evidence_epoch(
+        self,
+        epoch_id: str,
+        closed_receipt_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Atomically closes an active epoch."""
+        now_utc = get_offset_aware_utc_now()
+        conn = self._get_connection()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.cursor()
+
+            cur.execute("SELECT * FROM natural_evidence_epochs WHERE epoch_id = ?", (epoch_id,))
+            epoch_row = cur.fetchone()
+            if not epoch_row:
+                raise ValueError(f"Epoch '{epoch_id}' not found.")
+            if epoch_row["status"] != "ACTIVE":
+                raise RuntimeError(f"Cannot close epoch '{epoch_id}' with status '{epoch_row['status']}'. Must be ACTIVE.")
+
+            cur.execute("SELECT COALESCE(MAX(closed_sequence), 0) + 1 FROM natural_evidence_epochs;")
+            closed_seq = cur.fetchone()[0]
+            rcpt_id = closed_receipt_id or f"rcpt-cls-{epoch_id}-{closed_seq}"
+
+            cur.execute(
+                """
+                UPDATE natural_evidence_epochs
+                SET status = 'CLOSED',
+                    closed_receipt_id = ?,
+                    closed_sequence = ?,
+                    closed_at = ?
+                WHERE epoch_id = ?
+                """,
+                (rcpt_id, closed_seq, now_utc, epoch_id),
+            )
+            conn.execute("COMMIT;")
+            return {
+                "status": "CLOSED",
+                "epoch_id": epoch_id,
+                "closed_receipt_id": rcpt_id,
+                "closed_sequence": closed_seq,
+                "closed_at": now_utc,
+            }
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_active_natural_evidence_epoch(self, conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, Any]]:
+        """Returns currently active natural evidence epoch, if any."""
+        close_conn = False
+        if conn is None:
+            conn = self._get_connection()
+            close_conn = True
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='natural_evidence_epochs';")
+            if not cur.fetchone():
+                return None
+            cur.execute("SELECT * FROM natural_evidence_epochs WHERE status = 'ACTIVE' ORDER BY activation_sequence DESC LIMIT 1;")
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            if close_conn:
+                conn.close()
+
+    @retry_sqlite()
+    def get_natural_evidence_epoch(self, epoch_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves epoch record by ID."""
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='natural_evidence_epochs';")
+            if not cur.fetchone():
+                return None
+            cur.execute("SELECT * FROM natural_evidence_epochs WHERE epoch_id = ?", (epoch_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def get_epoch_membership(self, logical_scan_run_id: str, conn: Optional[sqlite3.Connection] = None) -> Optional[Dict[str, Any]]:
+        """Retrieves immutable epoch membership for a logical scan run."""
+        close_conn = False
+        if conn is None:
+            conn = self._get_connection()
+            close_conn = True
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
+            if not cur.fetchone():
+                return None
+            cur.execute("SELECT * FROM evidence_epoch_memberships WHERE logical_scan_run_id = ?", (logical_scan_run_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        finally:
+            if close_conn:
+                conn.close()
+
+    @retry_sqlite()
+    def reconcile_historical_provenance(
+        self,
+        source_unit_id: str,
+        reconciled_principal_type: str,
+        reconciled_principal_id: str,
+        reconciled_invocation_class: str,
+        reconciled_origin_class: str,
+        justification: str,
+        reconciled_by: str,
+    ) -> Dict[str, Any]:
+        """Appends historical provenance reconciliation without changing epoch membership or derived denominator."""
+        now_utc = get_offset_aware_utc_now()
+        reconciliation_id = f"recon-{int(time.time_ns())}-{os.urandom(4).hex()}"
+        conn = self._get_connection()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO historical_reconciliation_records (
+                    reconciliation_id, source_unit_id, reconciled_principal_type,
+                    reconciled_principal_id, reconciled_invocation_class, reconciled_origin_class,
+                    justification, reconciled_at, reconciled_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    reconciliation_id, source_unit_id, reconciled_principal_type,
+                    reconciled_principal_id, reconciled_invocation_class, reconciled_origin_class,
+                    justification, now_utc, reconciled_by
+                ),
+            )
+            conn.execute("COMMIT;")
+            return {
+                "reconciliation_id": reconciliation_id,
+                "source_unit_id": source_unit_id,
+                "reconciled_origin_class": reconciled_origin_class,
+                "reconciled_at": now_utc,
+                "epoch_mutations": 0,
+                "prospective_mutations": 0,
+                "denominator_delta": 0,
+            }
+        except Exception:
+            try:
+                conn.execute("ROLLBACK;")
+            except Exception:
+                pass
+            raise
+        finally:
+            conn.close()
+
+    @retry_sqlite()
+    def build_migration_manifest(self) -> Dict[str, Any]:
+        """Builds canonical source manifest from current database admissions."""
+        conn = self._get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT a.admission_id, a.observation_key, a.logical_scan_run_id, a.origin_class, a.candidate_sha
+                FROM shadow_evidence_admissions a
+                ORDER BY a.admission_id;
+            """)
+            admissions = cur.fetchall()
+            unit_hashes = []
+            for adm in admissions:
+                content_payload = f"{adm['admission_id']}:{adm['observation_key']}:{adm['logical_scan_run_id']}:{adm['origin_class']}:{adm['candidate_sha']}"
+                chash = hashlib.sha256(content_payload.encode("utf-8")).hexdigest()
+                unit_hashes.append(chash)
+            sorted_hashes = sorted(unit_hashes)
+            population_hash = hashlib.sha256("".join(sorted_hashes).encode("utf-8")).hexdigest()
+            manifest_id = f"MANIFEST_{MIGRATION_ID}_{len(unit_hashes)}"
+            return {
+                "manifest_id": manifest_id,
+                "canonicalization_version": MIGRATION_MANIFEST_CANONICALIZATION_VERSION,
+                "source_unit_count": len(unit_hashes),
+                "population_hash": population_hash,
+                "unit_hashes": unit_hashes,
+            }
+        finally:
+            conn.close()
+
 
     def validate_provenance(
         self,
@@ -940,6 +1863,64 @@ class Sprint3DurableEvidenceStore:
                     now_utc, now_utc, "CREATED"
                 ),
             )
+
+            # Bind epoch membership if evidence_epoch_memberships exists (Schema V4)
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
+            if cur.fetchone() is not None:
+                cur.execute("SELECT * FROM natural_evidence_epochs WHERE status = 'ACTIVE' ORDER BY activation_sequence DESC LIMIT 1;")
+                active_row = cur.fetchone()
+                if not active_row:
+                    cur.execute("SELECT * FROM natural_evidence_epochs ORDER BY created_at DESC LIMIT 1;")
+                    active_row = cur.fetchone()
+
+                active_epoch_dict = dict(active_row) if active_row else None
+                eff_epoch_id = active_epoch_dict["epoch_id"] if active_epoch_dict else "UNKNOWN_EPOCH"
+                rcpt_id = active_epoch_dict.get("activation_receipt_id") if active_epoch_dict else None
+
+                if startup_context or invocation_class == "BOOT_WARMUP":
+                    mem_class = "NON_NATURAL"
+                    prosp_disp = "NON_NATURAL_INELIGIBLE"
+                elif invocation_class == "MANUAL_OPERATOR" or origin_class == "ADMIN_FORCED":
+                    mem_class = "NON_NATURAL"
+                    prosp_disp = "NON_NATURAL_INELIGIBLE"
+                elif invocation_class == "REPLAY" or origin_class == "REPLAY" or replay_of_logical_scan_run_id:
+                    mem_class = "NON_NATURAL"
+                    prosp_disp = "NON_NATURAL_INELIGIBLE"
+                elif invocation_class in ("SYNTHETIC", "TEST") or origin_class in ("SYNTHETIC", "TEST"):
+                    mem_class = "NON_NATURAL"
+                    prosp_disp = "NON_NATURAL_INELIGIBLE"
+                elif invocation_class == "PROVENANCE_CONFLICT":
+                    mem_class = "MIGRATION_CONFLICT"
+                    prosp_disp = "MIGRATION_CONFLICT_INELIGIBLE"
+                elif invocation_class == "SCHEDULED_PRODUCTION" and origin_class == "NATURAL_PRODUCTION":
+                    if not active_epoch_dict or active_epoch_dict.get("status") != "ACTIVE":
+                        mem_class = "PRE_ACTIVATION_DELAYED_EVENT"
+                        prosp_disp = "PRE_EPOCH_INELIGIBLE"
+                    elif scheduled_for and scheduled_for < active_epoch_dict.get("activated_at", ""):
+                        mem_class = "PRE_ACTIVATION_DELAYED_EVENT"
+                        prosp_disp = "PRE_EPOCH_INELIGIBLE"
+                    else:
+                        mem_class = "CURRENT_PROSPECTIVE_EPOCH"
+                        prosp_disp = "PROSPECTIVE_CANDIDATE"
+                else:
+                    mem_class = "NON_NATURAL"
+                    prosp_disp = "NON_NATURAL_INELIGIBLE"
+
+                cur.execute("SELECT COALESCE(MAX(assignment_sequence), 0) + 1 FROM evidence_epoch_memberships;")
+                assign_seq = cur.fetchone()[0]
+
+                mem_fp_str = f"{logical_scan_run_id}:{eff_epoch_id}:{mem_class}:{prosp_disp}:{assign_seq}"
+                mem_fp = hashlib.sha256(mem_fp_str.encode("utf-8")).hexdigest()
+
+                cur.execute(
+                    """
+                    INSERT INTO evidence_epoch_memberships (
+                        logical_scan_run_id, epoch_id, membership_class, prospective_disposition,
+                        activation_receipt_id, assignment_sequence, assigned_at, membership_fingerprint
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (logical_scan_run_id, eff_epoch_id, mem_class, prosp_disp, rcpt_id, assign_seq, now_utc, mem_fp),
+                )
             conn.execute("COMMIT;")
             return {
                 "logical_scan_run_id": logical_scan_run_id,
@@ -1268,6 +2249,64 @@ class Sprint3DurableEvidenceStore:
                     ),
                 )
 
+                # Bind epoch membership if evidence_epoch_memberships exists (Schema V4)
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
+                if cur.fetchone() is not None:
+                    cur.execute("SELECT * FROM natural_evidence_epochs WHERE status = 'ACTIVE' ORDER BY activation_sequence DESC LIMIT 1;")
+                    active_row = cur.fetchone()
+                    if not active_row:
+                        cur.execute("SELECT * FROM natural_evidence_epochs ORDER BY created_at DESC LIMIT 1;")
+                        active_row = cur.fetchone()
+
+                    active_epoch_dict = dict(active_row) if active_row else None
+                    eff_epoch_id = active_epoch_dict["epoch_id"] if active_epoch_dict else "UNKNOWN_EPOCH"
+                    rcpt_id = active_epoch_dict.get("activation_receipt_id") if active_epoch_dict else None
+
+                    if startup_context or eff_invocation_class == "BOOT_WARMUP":
+                        mem_class = "NON_NATURAL"
+                        prosp_disp = "NON_NATURAL_INELIGIBLE"
+                    elif eff_invocation_class == "MANUAL_OPERATOR" or eff_origin_class == "ADMIN_FORCED":
+                        mem_class = "NON_NATURAL"
+                        prosp_disp = "NON_NATURAL_INELIGIBLE"
+                    elif eff_invocation_class == "REPLAY" or eff_origin_class == "REPLAY" or replay_of_logical_scan_run_id:
+                        mem_class = "NON_NATURAL"
+                        prosp_disp = "NON_NATURAL_INELIGIBLE"
+                    elif eff_invocation_class in ("SYNTHETIC", "TEST") or eff_origin_class in ("SYNTHETIC", "TEST"):
+                        mem_class = "NON_NATURAL"
+                        prosp_disp = "NON_NATURAL_INELIGIBLE"
+                    elif eff_invocation_class == "PROVENANCE_CONFLICT":
+                        mem_class = "MIGRATION_CONFLICT"
+                        prosp_disp = "MIGRATION_CONFLICT_INELIGIBLE"
+                    elif eff_invocation_class == "SCHEDULED_PRODUCTION" and eff_origin_class == "NATURAL_PRODUCTION":
+                        if not active_epoch_dict or active_epoch_dict.get("status") != "ACTIVE":
+                            mem_class = "PRE_ACTIVATION_DELAYED_EVENT"
+                            prosp_disp = "PRE_EPOCH_INELIGIBLE"
+                        elif scheduled_for and scheduled_for < active_epoch_dict.get("activated_at", ""):
+                            mem_class = "PRE_ACTIVATION_DELAYED_EVENT"
+                            prosp_disp = "PRE_EPOCH_INELIGIBLE"
+                        else:
+                            mem_class = "CURRENT_PROSPECTIVE_EPOCH"
+                            prosp_disp = "PROSPECTIVE_CANDIDATE"
+                    else:
+                        mem_class = "NON_NATURAL"
+                        prosp_disp = "NON_NATURAL_INELIGIBLE"
+
+                    cur.execute("SELECT COALESCE(MAX(assignment_sequence), 0) + 1 FROM evidence_epoch_memberships;")
+                    assign_seq = cur.fetchone()[0]
+
+                    mem_fp_str = f"{eff_logical_run_id}:{eff_epoch_id}:{mem_class}:{prosp_disp}:{assign_seq}"
+                    mem_fp = hashlib.sha256(mem_fp_str.encode("utf-8")).hexdigest()
+
+                    cur.execute(
+                        """
+                        INSERT INTO evidence_epoch_memberships (
+                            logical_scan_run_id, epoch_id, membership_class, prospective_disposition,
+                            activation_receipt_id, assignment_sequence, assigned_at, membership_fingerprint
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (eff_logical_run_id, eff_epoch_id, mem_class, prosp_disp, rcpt_id, assign_seq, now_utc, mem_fp),
+                    )
+
             # Record attempt if attempt IDs provided
             if delivery_attempt_id and execution_attempt_id:
                 attempt_id = f"att-{delivery_attempt_id[:16]}-1"
@@ -1459,15 +2498,42 @@ class Sprint3DurableEvidenceStore:
 
     @retry_sqlite()
     def get_authoritative_denominator_counts(self) -> Dict[str, int]:
-        """Derives authoritative denominator metrics strictly from committed database admissions."""
+        """Derives authoritative denominator metrics strictly from committed database admissions joined with active epoch."""
         conn = self._get_connection()
         try:
             cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) as cnt FROM shadow_evidence_admissions;")
+            total = cur.fetchone()["cnt"]
+
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
+            has_epoch_tables = cur.fetchone() is not None
+
+            if has_epoch_tables:
+                cur.execute(
+                    """
+                    SELECT COUNT(a.admission_id) as cnt
+                    FROM shadow_evidence_admissions a
+                    JOIN logical_scan_runs l ON a.logical_scan_run_id = l.logical_scan_run_id
+                    JOIN evidence_epoch_memberships m ON l.logical_scan_run_id = m.logical_scan_run_id
+                    JOIN natural_evidence_epochs e ON m.epoch_id = e.epoch_id
+                    WHERE e.status = 'ACTIVE'
+                      AND m.membership_class = 'CURRENT_PROSPECTIVE_EPOCH'
+                      AND m.prospective_disposition = 'PROSPECTIVE_CANDIDATE'
+                      AND a.origin_class = 'NATURAL_PRODUCTION'
+                      AND l.origin_class = 'NATURAL_PRODUCTION'
+                      AND l.invocation_class = 'SCHEDULED_PRODUCTION';
+                    """
+                )
+                natural_admitted = cur.fetchone()["cnt"]
+            else:
+                cur.execute("SELECT COUNT(*) as cnt FROM shadow_evidence_admissions WHERE origin_class = 'NATURAL_PRODUCTION';")
+                natural_admitted = cur.fetchone()["cnt"]
+
             cur.execute(
                 """
                 SELECT origin_class, COUNT(*) as cnt
                 FROM shadow_evidence_admissions
-                GROUP BY origin_class
+                GROUP BY origin_class;
                 """
             )
             rows = cur.fetchall()
@@ -1480,16 +2546,15 @@ class Sprint3DurableEvidenceStore:
                 "TEST": 0,
                 "NOT_ADMITTED": 0,
             }
-            total = 0
             for r in rows:
                 cls = r["origin_class"]
                 c = r["cnt"]
                 if cls in counts:
                     counts[cls] = c
-                total += c
+
             return {
                 "shadow_record_count": total,
-                "natural_production_shadow_record_count": counts["NATURAL_PRODUCTION"],
+                "natural_production_shadow_record_count": natural_admitted,
                 "non_evidence_bootstrap_record_count": counts["NON_EVIDENCE_BOOTSTRAP"],
                 "synthetic_shadow_record_count": counts["SYNTHETIC"],
                 "replay_shadow_record_count": counts["REPLAY"],
@@ -1530,8 +2595,12 @@ class Sprint3DurableEvidenceStore:
             cur.execute(
                 """
                 SELECT COUNT(*) as cnt FROM shadow_evidence_admissions a
-                LEFT JOIN holdout_exclusions h ON a.observation_id = h.observation_id
-                WHERE h.exclusion_id IS NULL
+                JOIN shadow_observations o ON a.observation_id = o.observation_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM holdout_exclusions h
+                    WHERE h.observation_id = a.observation_id
+                       OR (h.exclusion_type = 'CASE' AND h.security_id = o.security_id AND h.evaluation_as_of = o.evaluation_as_of)
+                )
                 """
             )
             orphaned_required_exclusions = cur.fetchone()["cnt"]
@@ -1561,11 +2630,39 @@ class Sprint3DurableEvidenceStore:
 
             denominator_mismatch = 1 if not (obs_cnt == dec_cnt == exp_cnt == adm_cnt) else 0
 
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='evidence_epoch_memberships';")
+            has_epoch_tables = cur.fetchone() is not None
+            orphaned_memberships = 0
+            duplicate_memberships = 0
+            if has_epoch_tables:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) as cnt FROM logical_scan_runs l
+                    LEFT JOIN evidence_epoch_memberships m ON l.logical_scan_run_id = m.logical_scan_run_id
+                    WHERE m.logical_scan_run_id IS NULL;
+                    """
+                )
+                orphaned_memberships = cur.fetchone()["cnt"]
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) as cnt FROM (
+                        SELECT logical_scan_run_id, COUNT(*) as m_cnt
+                        FROM evidence_epoch_memberships
+                        GROUP BY logical_scan_run_id
+                        HAVING COUNT(*) > 1
+                    );
+                    """
+                )
+                duplicate_memberships = cur.fetchone()["cnt"]
+
             return {
                 "orphaned_prospective_records": orphaned_prospective,
                 "orphaned_exposure_records": orphaned_exposures,
                 "orphaned_required_exclusions": orphaned_required_exclusions,
                 "duplicate_admissions": duplicate_admissions,
+                "orphaned_run_memberships": orphaned_memberships,
+                "duplicate_run_memberships": duplicate_memberships,
                 "denominator_mismatch": denominator_mismatch,
                 "row_counts": {
                     "shadow_observations": obs_cnt,
@@ -1578,6 +2675,8 @@ class Sprint3DurableEvidenceStore:
                     and orphaned_exposures == 0
                     and orphaned_required_exclusions == 0
                     and duplicate_admissions == 0
+                    and orphaned_memberships == 0
+                    and duplicate_memberships == 0
                     and denominator_mismatch == 0
                 ) else "FAIL",
             }

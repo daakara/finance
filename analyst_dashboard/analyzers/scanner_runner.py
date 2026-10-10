@@ -156,7 +156,7 @@ class VCPScannerRunner:
         replay_of_logical_scan_run_id: Optional[str] = None,
         delivery_attempt_id: Optional[str] = None,
         execution_attempt_id: Optional[str] = None,
-        candidate_generation_id: str = "CANDIDATE_GENERATION_003",
+        candidate_generation_id: str = "CANDIDATE_GENERATION_004",
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:

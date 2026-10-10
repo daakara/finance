@@ -49,6 +49,11 @@ CANDIDATE_001_NATURAL_EVIDENCE_DENOMINATOR: int = 0
 
 CANDIDATE_002_GENERATION_ID: str = "CANDIDATE_GENERATION_002"
 CANDIDATE_002_PARENT_GENERATION: str = "CANDIDATE_GENERATION_001"
+CANDIDATE_003_GENERATION_ID: str = "CANDIDATE_GENERATION_003"
+CANDIDATE_003_PARENT_GENERATION: str = "CANDIDATE_GENERATION_002"
+CANDIDATE_003_STATUS: str = "REJECTED_PRE_DEPLOY"
+CANDIDATE_004_GENERATION_ID: str = "CANDIDATE_GENERATION_004"
+CANDIDATE_004_PARENT_GENERATION: str = "CANDIDATE_GENERATION_003"
 
 
 # ======================================================================
@@ -1076,10 +1081,10 @@ class Sprint3ShadowGovernanceSuite:
             governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
             activation_status="REJECTED_PRE_DEPLOY",
         )
-        # Candidate 003: Provenance, logical invocation authority & idempotency succession
-        gen3 = self.candidate_generation_manager.register_generation(
+        # Candidate 003: Rejected pre-deploy after denominator & epoch-boundary disproof
+        self.candidate_generation_manager.register_generation(
             candidate_generation_id="CANDIDATE_GENERATION_003",
-            candidate_sha=sha,
+            candidate_sha="07b8b40cdb82328087b0f12adb08928a53e0234b",
             semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
             parent_generation="CANDIDATE_GENERATION_002",
             semantic_delta_set=[
@@ -1096,9 +1101,31 @@ class Sprint3ShadowGovernanceSuite:
             dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
             runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
             governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
+            activation_status="REJECTED_PRE_DEPLOY",
+        )
+        # Candidate 004: Natural evidence epochs, historical migration manifests, and derived denominator isolation
+        gen4 = self.candidate_generation_manager.register_generation(
+            candidate_generation_id="CANDIDATE_GENERATION_004",
+            candidate_sha=sha,
+            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+            parent_generation="CANDIDATE_GENERATION_003",
+            semantic_delta_set=[
+                "NATURAL_EVIDENCE_EPOCH_SUCCESSION",
+                "HISTORICAL_MIGRATION_MANIFESTS",
+                "DERIVED_DENOMINATOR_ISOLATION",
+            ],
+            activated_at="2026-10-10T10:45:00Z",
+            vcp_ruleset_hash=CANONICAL_VCP_RULESET_HASH,
+            universe_builder_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            scanner_integration_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+            data_interpretation_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            runtime_semantic_hash=ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint(),
+            dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
+            runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
+            governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
             activation_status="FROZEN_PRE_DEPLOY",
         )
-        return gen3
+        return gen4
 
     def record_shadow_observation(
         self,
@@ -1106,7 +1133,7 @@ class Sprint3ShadowGovernanceSuite:
         evaluation_as_of: str,
         universe_build_id: str,
         snapshot_run_id: str,
-        candidate_generation_id: str = "CANDIDATE_GENERATION_003",
+        candidate_generation_id: str = "CANDIDATE_GENERATION_004",
         candidate_sha: Optional[str] = None,
         semantic_closure_hash: Optional[str] = None,
         runtime_config_hash: Optional[str] = None,
