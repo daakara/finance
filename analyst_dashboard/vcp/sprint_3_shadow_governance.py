@@ -1058,10 +1058,10 @@ class Sprint3ShadowGovernanceSuite:
             governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
             activation_status="SUPERSEDED_AFTER_EVIDENCE_INFRASTRUCTURE_DEFECT",
         )
-        # Candidate 002: Durable persistent succession
-        gen2 = self.candidate_generation_manager.register_generation(
+        # Candidate 002: Rejected pre-deploy after provenance & boot warmup defects
+        self.candidate_generation_manager.register_generation(
             candidate_generation_id="CANDIDATE_GENERATION_002",
-            candidate_sha=sha,
+            candidate_sha="ed739460836433ac4cade95a35670041233094fb",
             semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
             parent_generation="CANDIDATE_GENERATION_001",
             semantic_delta_set=["DURABLE_STORAGE_REMEDIATION", "NATURAL_TRIGGER_ROUTING_REMEDIATION"],
@@ -1074,9 +1074,31 @@ class Sprint3ShadowGovernanceSuite:
             dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
             runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
             governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
+            activation_status="REJECTED_PRE_DEPLOY",
+        )
+        # Candidate 003: Provenance, logical invocation authority & idempotency succession
+        gen3 = self.candidate_generation_manager.register_generation(
+            candidate_generation_id="CANDIDATE_GENERATION_003",
+            candidate_sha=sha,
+            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+            parent_generation="CANDIDATE_GENERATION_002",
+            semantic_delta_set=[
+                "PROVENANCE_AND_LOGICAL_RUN_SUCCESSION",
+                "BOOT_WARMUP_RECLASSIFICATION",
+                "OFFSET_AWARE_TIMESTAMPS",
+            ],
+            activated_at="2026-10-10T09:18:00Z",
+            vcp_ruleset_hash=CANONICAL_VCP_RULESET_HASH,
+            universe_builder_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            scanner_integration_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+            data_interpretation_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            runtime_semantic_hash=ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint(),
+            dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
+            runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
+            governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
             activation_status="FROZEN_PRE_DEPLOY",
         )
-        return gen2
+        return gen3
 
     def record_shadow_observation(
         self,
@@ -1084,7 +1106,7 @@ class Sprint3ShadowGovernanceSuite:
         evaluation_as_of: str,
         universe_build_id: str,
         snapshot_run_id: str,
-        candidate_generation_id: str = "CANDIDATE_GENERATION_002",
+        candidate_generation_id: str = "CANDIDATE_GENERATION_003",
         candidate_sha: Optional[str] = None,
         semantic_closure_hash: Optional[str] = None,
         runtime_config_hash: Optional[str] = None,
@@ -1097,7 +1119,19 @@ class Sprint3ShadowGovernanceSuite:
         decision_posture: str = "QUALIFIED_WATCHLIST",
         input_fingerprint: Optional[str] = None,
         group_or_episode_id: Optional[str] = None,
-        trigger_class: str = "NATURAL_PRODUCTION",
+        trigger_class: Optional[str] = None,
+        origin_class: Optional[str] = None,
+        invocation_class: Optional[str] = None,
+        logical_scan_run_id: Optional[str] = None,
+        logical_trigger_id: Optional[str] = None,
+        originating_principal_type: Optional[str] = None,
+        originating_principal_id: Optional[str] = None,
+        scheduler_job_id: Optional[str] = None,
+        scheduler_event_id: Optional[str] = None,
+        startup_context: bool = False,
+        replay_of_logical_scan_run_id: Optional[str] = None,
+        delivery_attempt_id: Optional[str] = None,
+        execution_attempt_id: Optional[str] = None,
         failure_injection_point: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Atomically record prospective decision, exposure record, and holdout exclusion in single DB transaction."""
@@ -1119,6 +1153,32 @@ class Sprint3ShadowGovernanceSuite:
         eff_pred = predicate_vector_hash or hashlib.sha256(f"{security_id}:{classification}:{evaluation_as_of}".encode("utf-8")).hexdigest()
         eff_input = input_fingerprint or hashlib.sha256(f"{security_id}:{evaluation_as_of}".encode("utf-8")).hexdigest()
         eff_episode = group_or_episode_id or f"EPISODE:{security_id}:{evaluation_as_of}"
+        eff_origin_class = origin_class or trigger_class or "NATURAL_PRODUCTION"
+        eff_invocation_class = invocation_class
+        eff_scheduler_job_id = scheduler_job_id
+        eff_scheduler_event_id = scheduler_event_id
+        eff_replay_of = replay_of_logical_scan_run_id
+
+        if eff_invocation_class is None:
+            if eff_origin_class == "NATURAL_PRODUCTION":
+                eff_invocation_class = "SCHEDULED_PRODUCTION"
+                eff_scheduler_job_id = eff_scheduler_job_id or "job-vcp-daily-eod"
+                eff_scheduler_event_id = eff_scheduler_event_id or f"evt-{evaluation_as_of}-eod"
+            elif eff_origin_class == "REPLAY":
+                eff_invocation_class = "REPLAY"
+                if not eff_replay_of:
+                    eff_replay_of = f"parent-legacy-{snapshot_run_id}"
+            elif eff_origin_class == "ADMIN_FORCED":
+                eff_invocation_class = "MANUAL_OPERATOR"
+            elif eff_origin_class == "SYNTHETIC":
+                eff_invocation_class = "SYNTHETIC"
+            elif eff_origin_class == "TEST":
+                eff_invocation_class = "TEST"
+            else:
+                eff_invocation_class = "TEST"
+        elif eff_invocation_class == "SCHEDULED_PRODUCTION":
+            eff_scheduler_job_id = eff_scheduler_job_id or "job-vcp-daily-eod"
+            eff_scheduler_event_id = eff_scheduler_event_id or f"evt-{evaluation_as_of}-eod"
 
         # 3. Durable Transactional Admission (Single Transaction Bundle)
         try:
@@ -1140,7 +1200,18 @@ class Sprint3ShadowGovernanceSuite:
                 decision_posture=decision_posture,
                 input_fingerprint=eff_input,
                 group_or_episode_id=eff_episode,
-                origin_class=trigger_class,
+                origin_class=eff_origin_class,
+                invocation_class=eff_invocation_class,
+                logical_scan_run_id=logical_scan_run_id,
+                logical_trigger_id=logical_trigger_id,
+                originating_principal_type=originating_principal_type,
+                originating_principal_id=originating_principal_id,
+                scheduler_job_id=eff_scheduler_job_id,
+                scheduler_event_id=eff_scheduler_event_id,
+                startup_context=startup_context,
+                replay_of_logical_scan_run_id=eff_replay_of,
+                delivery_attempt_id=delivery_attempt_id,
+                execution_attempt_id=execution_attempt_id,
                 failure_injection_point=failure_injection_point,
             )
 
@@ -1185,14 +1256,14 @@ class Sprint3ShadowGovernanceSuite:
             )
 
             # Update denominator classification metrics
-            self.denominator.record_trigger(trigger_class)
+            self.denominator.record_trigger(eff_origin_class)
 
             return {
                 "decision_id": dec_rec.decision_record_id,
                 "exposure_id": exp_rec.exposure_id,
                 "exclusion_hashes": excl_hashes,
-                "trigger_class": trigger_class,
-                "origin_class": trigger_class,
+                "trigger_class": eff_origin_class,
+                "origin_class": eff_origin_class,
                 "candidate_generation_id": candidate_generation_id,
                 "security_id": security_id,
                 "observation_key": durable_receipt["observation_key"],

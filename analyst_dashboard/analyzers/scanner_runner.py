@@ -145,6 +145,18 @@ class VCPScannerRunner:
         owner_instance_id: Optional[str] = None,
         bypass_thread_lock: bool = False,
         shadow_trigger_override: Optional[str] = None,
+        logical_scan_run_id: Optional[str] = None,
+        logical_trigger_id: Optional[str] = None,
+        invocation_class: Optional[str] = None,
+        originating_principal_type: Optional[str] = None,
+        originating_principal_id: Optional[str] = None,
+        scheduler_job_id: Optional[str] = None,
+        scheduler_event_id: Optional[str] = None,
+        startup_context: bool = False,
+        replay_of_logical_scan_run_id: Optional[str] = None,
+        delivery_attempt_id: Optional[str] = None,
+        execution_attempt_id: Optional[str] = None,
+        candidate_generation_id: str = "CANDIDATE_GENERATION_003",
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
@@ -309,12 +321,19 @@ class VCPScannerRunner:
             version_tuple = self.get_version_tuple()
             semantic_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
 
-            # Record shadow observations under Sprint 3 contamination-controlled governance
-            shadow_trigger_class = (
-                shadow_trigger_override if shadow_trigger_override in ("TEST", "REPLAY", "SYNTHETIC")
-                else ("NATURAL_PRODUCTION" if trigger_type == TriggerType.SCHEDULED and not operator_request_id
-                      else "ADMIN_FORCED")
-            )
+            # Record shadow observations under Sprint 3 contamination-controlled governance (Candidate 003)
+            if invocation_class is not None:
+                eff_invocation_class = invocation_class
+            elif shadow_trigger_override in ("TEST", "REPLAY", "SYNTHETIC"):
+                eff_invocation_class = shadow_trigger_override
+            elif startup_context or str(trigger_type).upper() in ("MAINTENANCE", "BOOT_WARMUP", "WARMUP"):
+                eff_invocation_class = "BOOT_WARMUP"
+            elif trigger_type == TriggerType.SCHEDULED and not operator_request_id:
+                eff_invocation_class = "SCHEDULED_PRODUCTION"
+            else:
+                eff_invocation_class = "MANUAL_OPERATOR"
+
+            eff_logical_run_id = logical_scan_run_id or run_id
             for cand in qualified_candidates:
                 evidence_dict = cand.get("scanner_evidence", {})
                 self.shadow_suite.record_shadow_observation(
@@ -322,7 +341,9 @@ class VCPScannerRunner:
                     evaluation_as_of=data_as_of,
                     universe_build_id=target_build_id or "ARX_CANONICAL_UNIVERSE_BUILD",
                     snapshot_run_id=run_id,
-                    candidate_generation_id="CANDIDATE_GENERATION_002",
+                    logical_scan_run_id=eff_logical_run_id,
+                    logical_trigger_id=logical_trigger_id,
+                    candidate_generation_id=candidate_generation_id,
                     ruleset_id="MINERVINI_VCP",
                     ruleset_version=version_tuple.ruleset_version,
                     predicate_vector_hash=hashlib.sha256(json.dumps(evidence_dict, sort_keys=True).encode("utf-8")).hexdigest(),
@@ -330,7 +351,15 @@ class VCPScannerRunner:
                     decision_posture="QUALIFIED_WATCHLIST",
                     input_fingerprint=hashlib.sha256(f"{cand['symbol']}:{cand['current_price']}".encode("utf-8")).hexdigest(),
                     group_or_episode_id=f"EPISODE:{cand['symbol']}:{data_as_of}",
-                    trigger_class=shadow_trigger_class,
+                    invocation_class=eff_invocation_class,
+                    originating_principal_type=originating_principal_type,
+                    originating_principal_id=originating_principal_id,
+                    scheduler_job_id=scheduler_job_id,
+                    scheduler_event_id=scheduler_event_id,
+                    startup_context=startup_context,
+                    replay_of_logical_scan_run_id=replay_of_logical_scan_run_id,
+                    delivery_attempt_id=delivery_attempt_id,
+                    execution_attempt_id=execution_attempt_id,
                 )
 
             # Coverage statistics

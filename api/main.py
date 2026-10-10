@@ -58,10 +58,10 @@ def _warmup_worker():
 
     try:
         from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
-        get_natural_vcp_trigger_service().trigger_natural_scan(reason="BOOT_WARMUP")
-        logger.info("Natural production VCP scan pre-warming completed successfully.")
+        get_natural_vcp_trigger_service().trigger_boot_warmup()
+        logger.info("VCP scan boot warmup completed successfully.")
     except Exception as e:
-        logger.warning(f"Natural production VCP scan pre-warming deferred or failed: {e}")
+        logger.warning(f"VCP scan boot warmup deferred or failed: {e}")
 
 
 async def warmup_core_assets():

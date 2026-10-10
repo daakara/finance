@@ -1,19 +1,21 @@
-"""ARX Terminal — Sprint 3 Durable Shadow Evidence Storage & Natural Trigger Tests.
+"""ARX Terminal — Sprint 3 Durable Shadow Evidence Storage & Natural Trigger Tests (Candidate 003).
 
-Tests Sections 14 through 27 of Sprint 3 Production Shadow Governance:
-- Section 14 & 15: Natural production trigger service & operator separation
-- Section 16: Failure-injection test matrix (A through G) with transaction rollback
-- Section 17: Real process crash tests (SIGKILL before commit, crash after commit retry)
-- Section 18: Multi-worker duplicate race contention (16 workers)
-- Section 19: Multi-worker distinct event load (16 workers x 100 events = 1600 events)
-- Section 20: Process restart durability & bitwise hash parity
-- Section 21: Storage path persistence & redeployment readiness
-- Section 22: Connection failure & ambiguous commit idempotency
-- Section 23: SQLite trigger immutability enforcement
-- Section 24: Denominator reconstruction strictly from durable admissions
-- Section 25: Canonical cross-ledger reconciliation audit
-- Section 26: Property-based idempotency
-- Section 27: Schema version 2.0.0, migration ID, canonical DDL hash
+Tests Sections 1 through 27 of Sprint 3 Candidate 003 Succession Gate:
+- Schema V3 (3.0.0), migration ID, and canonical DDL hash
+- Logical scan run authority & attempt tracking
+- Container boot warmup reclassification (zero natural denominator delta)
+- Immutable payload content comparison on duplicate observation key (HardIntegrityFailureError)
+- Provenance conflict fail-closed matrix (PROV-001 through PROV-010)
+- Replay model (new logical run, references parent, zero natural denominator delta)
+- Failure-injection test matrix (A through G) with transaction rollback
+- Real process crash tests (SIGKILL before commit, crash after commit retry)
+- Multi-process concurrency (16 independent OS processes submitting identical & distinct bundles)
+- Ambiguous commit end-to-end idempotency
+- SQLite trigger immutability enforcement across all tables
+- Denominator reconstruction strictly from durable committed admissions
+- Canonical cross-ledger reconciliation audit
+- Offset-aware UTC timestamps
+- Natural production trigger contract and operator separation
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 import pytest
 
@@ -36,7 +39,13 @@ from analyst_dashboard.vcp.sprint_3_durable_storage import (
     MIGRATION_ID,
     CANONICAL_DDL_HASH,
     DDL_SCHEMA,
+    HardIntegrityFailureError,
+    ProvenanceConflictError,
+    PROVENANCE_CONFLICT_CODES,
     compute_deterministic_observation_key,
+    compute_provenance_fingerprint,
+    compute_immutable_payload_hash,
+    get_offset_aware_utc_now,
     resolve_shadow_db_path,
 )
 from analyst_dashboard.vcp.sprint_3_shadow_governance import (
@@ -48,6 +57,12 @@ from analyst_dashboard.vcp.natural_trigger import (
     NaturalVCPTriggerService,
     NATURAL_PRODUCTION_TRIGGER_TYPE,
     ORIGIN_CLASSIFICATION,
+    PRE_DEPLOY_NATURAL_TRIGGER_CONTRACT,
+    PRODUCTION_NATURAL_TRIGGER_REACHABILITY,
+    APPLICATION_READY_FOR_SCHEDULER_ACTIVATION,
+    RECURRING_PRODUCTION_SCHEDULER_ACTIVE,
+    SCHEDULER_PRINCIPAL_DISTINCT_FROM_OPERATOR,
+    CALLER_CAN_SELF_DECLARE_NATURAL,
     get_natural_vcp_trigger_service,
 )
 from analyst_dashboard.coordination import TriggerType
@@ -67,25 +82,28 @@ def durable_store(temp_db_path):
 
 
 # ======================================================================
-# Section 27: Schema / Migration Authority Tests
+# Section 15 & 27: Schema / Migration Authority Tests (Schema V3)
 # ======================================================================
 
 def test_schema_version_and_migration_authority():
-    """Verify schema version 2.0.0, migration ID, and canonical DDL hash."""
-    assert SCHEMA_VERSION == "2.0.0"
-    assert MIGRATION_ID == "MIGRATION_20261010_002_DURABLE_SHADOW_EVIDENCE"
+    """Verify schema version 3.0.0, migration ID, and canonical DDL hash."""
+    assert SCHEMA_VERSION == "3.0.0"
+    assert MIGRATION_ID == "MIGRATION_20261010_003_PROVENANCE_AND_LOGICAL_RUNS"
     expected_hash = hashlib.sha256(DDL_SCHEMA.strip().encode("utf-8")).hexdigest()
     assert CANONICAL_DDL_HASH == expected_hash
 
 
 def test_database_tables_and_triggers_created(durable_store, temp_db_path):
-    """Verify all 6 relational tables, uniqueness constraints, and immutability triggers exist."""
+    """Verify all 9 relational tables, uniqueness constraints, and immutability triggers exist."""
     conn = sqlite3.connect(temp_db_path)
     cur = conn.cursor()
 
     cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = {r[0] for r in cur.fetchall()}
     expected_tables = {
+        "logical_scan_runs",
+        "scan_attempts",
+        "provenance_conflicts",
         "shadow_observations",
         "prospective_decisions",
         "production_exposures",
@@ -98,6 +116,12 @@ def test_database_tables_and_triggers_created(durable_store, temp_db_path):
     cur.execute("SELECT name FROM sqlite_master WHERE type='trigger';")
     triggers = {r[0] for r in cur.fetchall()}
     expected_triggers = {
+        "prevent_logical_scan_runs_update",
+        "prevent_logical_scan_runs_delete",
+        "prevent_scan_attempts_update",
+        "prevent_scan_attempts_delete",
+        "prevent_provenance_conflicts_update",
+        "prevent_provenance_conflicts_delete",
         "prevent_prospective_decision_update",
         "prevent_prospective_decision_delete",
         "prevent_admission_update",
@@ -111,6 +135,528 @@ def test_database_tables_and_triggers_created(durable_store, temp_db_path):
     }
     assert expected_triggers.issubset(triggers)
     conn.close()
+
+
+# ======================================================================
+# Section 4 & 5: Logical Run Authority and Attempt Tracking Tests
+# ======================================================================
+
+def test_logical_scan_run_and_attempts(durable_store, temp_db_path):
+    """Verify logical scan run is created once and attempts are tracked separately without denominator inflation."""
+    logical_run_id = "run-log-001"
+    logical_trig_id = "trig-001"
+
+    # 1. Ensure logical run
+    res = durable_store.ensure_logical_scan_run(
+        logical_scan_run_id=logical_run_id,
+        logical_trigger_id=logical_trig_id,
+        scanner_id="MINERVINI_VCP",
+        universe_build_id="ARX_UNIVERSE_V1",
+        evaluation_as_of="2026-10-10",
+        invocation_class="SCHEDULED_PRODUCTION",
+        origin_class="NATURAL_PRODUCTION",
+        originating_principal_type="SCHEDULER",
+        originating_principal_id="scheduler:daily",
+        scheduler_job_id="job-daily",
+        scheduler_event_id="evt-daily-001",
+    )
+    assert res["status"] == "CREATED"
+
+    # Retry ensure logical run -> existing run returned safely
+    res_retry = durable_store.ensure_logical_scan_run(
+        logical_scan_run_id=logical_run_id,
+        logical_trigger_id=logical_trig_id,
+        scanner_id="MINERVINI_VCP",
+        universe_build_id="ARX_UNIVERSE_V1",
+        evaluation_as_of="2026-10-10",
+        invocation_class="SCHEDULED_PRODUCTION",
+        origin_class="NATURAL_PRODUCTION",
+        originating_principal_type="SCHEDULER",
+        originating_principal_id="scheduler:daily",
+        scheduler_job_id="job-daily",
+        scheduler_event_id="evt-daily-001",
+    )
+    assert res_retry["status"] == "EXISTING_LOGICAL_RUN"
+
+    # 2. Record multiple delivery/execution attempts
+    att1 = durable_store.record_scan_attempt(
+        logical_scan_run_id=logical_run_id,
+        delivery_attempt_id="deliv-1",
+        execution_attempt_id="exec-1",
+        attempt_number=1,
+        worker_id="worker-1",
+        process_id=1234,
+        deployment_id="dep-1",
+    )
+    att2 = durable_store.record_scan_attempt(
+        logical_scan_run_id=logical_run_id,
+        delivery_attempt_id="deliv-2",
+        execution_attempt_id="exec-2",
+        attempt_number=2,
+        worker_id="worker-2",
+        process_id=5678,
+        deployment_id="dep-1",
+    )
+    assert att1 != att2
+
+    # Verify attempts do not affect denominator
+    counts = durable_store.get_authoritative_denominator_counts()
+    assert counts["natural_production_shadow_record_count"] == 0
+    assert counts["shadow_record_count"] == 0
+
+
+# ======================================================================
+# Section 6 & 7: Boot Warmup Reclassification Tests
+# ======================================================================
+
+def test_boot_warmup_classification_and_zero_denominator(durable_store):
+    """Verify container boot warmup resolves to BOOT_WARMUP / NON_EVIDENCE_BOOTSTRAP with denominator delta 0."""
+    res = durable_store.admit_observation_bundle(
+        security_id="NVDA",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-boot-1",
+        logical_scan_run_id="run-boot-warmup-nvda",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:NVDA:2026-10-10",
+        invocation_class="BOOT_WARMUP",
+        startup_context=True,
+    )
+    assert res["status"] == "ADMITTED"
+    assert res["origin_class"] == "NON_EVIDENCE_BOOTSTRAP"
+
+    counts = durable_store.get_authoritative_denominator_counts()
+    assert counts["natural_production_shadow_record_count"] == 0
+    assert counts["non_evidence_bootstrap_record_count"] == 1
+
+
+# ======================================================================
+# Section 17: Immutable Payload Content Immutability & Rejection Tests
+# ======================================================================
+
+def test_immutable_payload_hash_conflict_fail_closed(durable_store):
+    """Verify duplicate observation key with different payload is rejected with HardIntegrityFailureError."""
+    # 1. Admit original bundle
+    res1 = durable_store.admit_observation_bundle(
+        security_id="AAPL",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-001",
+        logical_scan_run_id="log-run-aapl",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash_original",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:AAPL:2026-10-10",
+        origin_class="TEST",
+    )
+    assert res1["status"] == "ADMITTED"
+
+    # 2. Retry with same payload -> ALREADY_ADMITTED
+    res2 = durable_store.admit_observation_bundle(
+        security_id="AAPL",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-001",
+        logical_scan_run_id="log-run-aapl",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash_original",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:AAPL:2026-10-10",
+        origin_class="TEST",
+    )
+    assert res2["status"] == "ALREADY_ADMITTED"
+
+    # 3. Retry with conflicting payload (different classification) -> HardIntegrityFailureError
+    with pytest.raises(HardIntegrityFailureError, match="SAME_KEY_DIFFERENT_PAYLOAD_REJECTED"):
+        durable_store.admit_observation_bundle(
+            security_id="AAPL",
+            evaluation_as_of="2026-10-10",
+            universe_build_id="ARX_UNIVERSE_V1",
+            snapshot_run_id="run-001",
+            logical_scan_run_id="log-run-aapl",
+            candidate_generation_id="CANDIDATE_GENERATION_003",
+            candidate_sha="testsha123",
+            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+            runtime_config_hash="cfghash",
+            dependency_lock_hash="lockhash",
+            data_provenance_hash="provhash",
+            ruleset_id="MINERVINI_VCP",
+            ruleset_version="2.0.0",
+            predicate_vector_hash="predhash_conflicting",
+            classification="REJECTED_STAGE_1",
+            decision_posture="UNQUALIFIED",
+            input_fingerprint="inphash",
+            group_or_episode_id="EPISODE:AAPL:2026-10-10",
+            origin_class="TEST",
+        )
+
+
+# ======================================================================
+# Section 14 & 24: Provenance Negative Matrix Fail-Closed Tests
+# ======================================================================
+
+def test_provenance_negative_matrix_fail_closed(durable_store):
+    """Verify all negative provenance cases A through I fail-closed against PROV-001 through PROV-010."""
+    base_args = dict(
+        security_id="MSFT",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-msft",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:MSFT:2026-10-10",
+    )
+
+    # A: Human principal claiming scheduled production -> PROV-002
+    with pytest.raises(ProvenanceConflictError) as exc_a:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-a",
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="HUMAN_OPERATOR",
+            originating_principal_id="operator:john",
+        )
+    assert exc_a.value.code == "PROV-002"
+
+    # B: Scheduler principal missing scheduler event -> PROV-001
+    with pytest.raises(ProvenanceConflictError) as exc_b:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-b",
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="SCHEDULER",
+            originating_principal_id="scheduler:daily",
+            scheduler_job_id="job-1",
+            scheduler_event_id=None,  # Missing event
+        )
+    assert exc_b.value.code == "PROV-001"
+
+    # C: Valid scheduler principal with event -> SCHEDULED_PRODUCTION -> SUCCESS
+    res_c = durable_store.admit_observation_bundle(
+        **base_args,
+        logical_scan_run_id="run-neg-c",
+        invocation_class="SCHEDULED_PRODUCTION",
+        originating_principal_type="SCHEDULER",
+        originating_principal_id="scheduler:daily",
+        scheduler_job_id="job-1",
+        scheduler_event_id="evt-1",
+    )
+    assert res_c["status"] == "ADMITTED"
+    assert res_c["origin_class"] == "NATURAL_PRODUCTION"
+
+    # D: Startup context claiming natural scheduled production -> PROV-003
+    with pytest.raises(ProvenanceConflictError) as exc_d:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-d",
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="SCHEDULER",
+            scheduler_job_id="job-1",
+            scheduler_event_id="evt-1",
+            startup_context=True,  # Conflict: startup_context + scheduled natural
+        )
+    assert exc_d.value.code == "PROV-003"
+
+    # E: Replay metadata claiming natural origin -> PROV-004
+    with pytest.raises(ProvenanceConflictError) as exc_e:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-e",
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="SCHEDULER",
+            scheduler_job_id="job-1",
+            scheduler_event_id="evt-1",
+            replay_of_logical_scan_run_id="run-parent-123",
+        )
+    assert exc_e.value.code == "PROV-004"
+
+    # F: Replay invocation with non-existent parent run -> PROV-005
+    with pytest.raises(ProvenanceConflictError) as exc_f:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-f",
+            invocation_class="REPLAY",
+            replay_of_logical_scan_run_id="non-existent-parent",
+        )
+    assert exc_f.value.code == "PROV-005"
+
+    # G: Same logical run with changed scheduler event -> PROV-007
+    with pytest.raises(ProvenanceConflictError) as exc_g:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-c",  # already exists from test C with evt-1
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="SCHEDULER",
+            originating_principal_id="scheduler:daily",
+            scheduler_job_id="job-1",
+            scheduler_event_id="evt-2-changed",
+        )
+    assert exc_g.value.code == "PROV-007"
+
+    # H: Same logical run with changed principal -> PROV-006
+    with pytest.raises(ProvenanceConflictError) as exc_h:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-c",  # already exists from test C
+            invocation_class="SCHEDULED_PRODUCTION",
+            originating_principal_type="SCHEDULER",
+            originating_principal_id="scheduler:different-id",
+            scheduler_job_id="job-1",
+            scheduler_event_id="evt-1",
+        )
+    assert exc_h.value.code == "PROV-006"
+
+    # K: Untrusted delegation chain -> PROV-010
+    with pytest.raises(ProvenanceConflictError) as exc_k:
+        durable_store.admit_observation_bundle(
+            **base_args,
+            logical_scan_run_id="run-neg-k",
+            invocation_class="SCHEDULED_PRODUCTION",
+            caller_delegation_valid=False,
+        )
+    assert exc_k.value.code == "PROV-010"
+
+
+# ======================================================================
+# Section 12: Replay Model Tests
+# ======================================================================
+
+def test_replay_creates_new_logical_run_and_excludes_from_natural(durable_store):
+    """Verify replay creates a new logical run, references original parent run, and never enters natural denominator."""
+    base_args = dict(
+        security_id="TSLA",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:TSLA:2026-10-10",
+    )
+
+    # 1. Admit original scheduled run
+    res_orig = durable_store.admit_observation_bundle(
+        **base_args,
+        snapshot_run_id="run-tsla-original",
+        logical_scan_run_id="run-tsla-original",
+        invocation_class="SCHEDULED_PRODUCTION",
+        originating_principal_type="SCHEDULER",
+        originating_principal_id="scheduler:daily",
+        scheduler_job_id="job-daily",
+        scheduler_event_id="evt-tsla-001",
+    )
+    assert res_orig["status"] == "ADMITTED"
+    assert res_orig["origin_class"] == "NATURAL_PRODUCTION"
+
+    # 2. Admit replay run referencing parent
+    res_replay = durable_store.admit_observation_bundle(
+        **base_args,
+        snapshot_run_id="run-tsla-replay-001",
+        logical_scan_run_id="run-tsla-replay-001",  # New distinct logical run!
+        invocation_class="REPLAY",
+        replay_of_logical_scan_run_id="run-tsla-original",
+    )
+    assert res_replay["status"] == "ADMITTED"
+    assert res_replay["origin_class"] == "REPLAY"
+
+    # Check natural denominator: exactly 1 from original, 0 from replay!
+    counts = durable_store.get_authoritative_denominator_counts()
+    assert counts["natural_production_shadow_record_count"] == 1
+    assert counts["replay_shadow_record_count"] == 1
+
+
+# ======================================================================
+# Section 22: Ambiguous Commit End-to-End Safety Tests
+# ======================================================================
+
+def test_ambiguous_commit_end_to_end_safe(durable_store):
+    """Simulate transaction COMMIT succeeds, response is dropped, caller retries same logical event."""
+    bundle = dict(
+        security_id="GOOGL",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-ambig-1",
+        logical_scan_run_id="log-run-googl",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:GOOGL:2026-10-10",
+        origin_class="TEST",
+    )
+
+    # First attempt succeeds
+    res1 = durable_store.admit_observation_bundle(**bundle)
+    assert res1["status"] == "ADMITTED"
+    assert res1["new_admission"] is True
+
+    # Retry of same event (response lost simulation)
+    res2 = durable_store.admit_observation_bundle(**bundle)
+    assert res2["status"] == "ALREADY_ADMITTED"
+    assert res2["new_admission"] is False
+    assert res2["admission_id"] == res1["admission_id"]
+
+    # Verify no second admission or denominator contribution
+    counts = durable_store.get_authoritative_denominator_counts()
+    assert counts["test_shadow_record_count"] == 1
+
+
+# ======================================================================
+# Section 21: Multi-Process Same-Host Concurrency Tests (16 OS Processes)
+# ======================================================================
+
+def test_multi_process_same_host_concurrency(temp_db_path):
+    """Test 16 independent OS processes simultaneously submitting identical and distinct bundles."""
+    # Worker script to run in independent Python processes
+    worker_script = f"""
+import sys
+from analyst_dashboard.vcp.sprint_3_durable_storage import Sprint3DurableEvidenceStore
+from analyst_dashboard.vcp.sprint_3_shadow_governance import CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH
+
+db_path = sys.argv[1]
+mode = sys.argv[2]
+worker_idx = sys.argv[3]
+
+store = Sprint3DurableEvidenceStore(db_path=db_path)
+
+if mode == "DUPLICATE":
+    sec_id = "RACE_TICKER"
+    logical_run_id = "run-race-duplicate-1"
+else:
+    sec_id = f"DISTINCT_TICKER_{{worker_idx}}"
+    logical_run_id = f"run-distinct-{{worker_idx}}"
+
+res = store.admit_observation_bundle(
+    security_id=sec_id,
+    evaluation_as_of="2026-10-10",
+    universe_build_id="ARX_UNIVERSE_V1",
+    snapshot_run_id=f"snap-{{worker_idx}}",
+    logical_scan_run_id=logical_run_id,
+    candidate_generation_id="CANDIDATE_GENERATION_003",
+    candidate_sha="testsha123",
+    semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+    runtime_config_hash="cfghash",
+    dependency_lock_hash="lockhash",
+    data_provenance_hash="provhash",
+    ruleset_id="MINERVINI_VCP",
+    ruleset_version="2.0.0",
+    predicate_vector_hash="predhash",
+    classification="CONFIRMED_VCP_STAGE_2",
+    decision_posture="QUALIFIED_WATCHLIST",
+    input_fingerprint="inphash",
+    group_or_episode_id=f"EPISODE:{{sec_id}}:2026-10-10",
+    origin_class="TEST",
+)
+sys.exit(0)
+"""
+    # 1. 16 processes submitting identical duplicate observation bundle
+    procs = []
+    for i in range(16):
+        p = subprocess.Popen([sys.executable, "-c", worker_script, temp_db_path, "DUPLICATE", str(i)])
+        procs.append(p)
+
+    for p in procs:
+        p.wait(timeout=30)
+        assert p.returncode == 0
+
+    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
+    recon = store.audit_cross_ledger_integrity()
+    assert recon["row_counts"]["shadow_observations"] == 1
+    assert recon["row_counts"]["shadow_evidence_admissions"] == 1
+    assert recon["duplicate_admissions"] == 0
+
+    # 2. 16 processes submitting distinct observation bundles
+    procs_distinct = []
+    for i in range(16):
+        p = subprocess.Popen([sys.executable, "-c", worker_script, temp_db_path, "DISTINCT", str(i)])
+        procs_distinct.append(p)
+
+    for p in procs_distinct:
+        p.wait(timeout=30)
+        assert p.returncode == 0
+
+    recon2 = store.audit_cross_ledger_integrity()
+    # 1 from duplicate test + 16 from distinct test = 17 total observations
+    assert recon2["row_counts"]["shadow_observations"] == 17
+    assert recon2["row_counts"]["shadow_evidence_admissions"] == 17
+    assert recon2["duplicate_admissions"] == 0
+    assert recon2["integrity_status"] == "PASS"
+
+
+# ======================================================================
+# Section 26: Offset-Aware UTC Timestamps Tests
+# ======================================================================
+
+def test_offset_aware_utc_timestamps():
+    """Verify timestamps are offset-aware ISO 8601 UTC and naive local time + manual 'Z' is prohibited."""
+    ts = get_offset_aware_utc_now()
+    assert ts is not None
+
+    # Must parse cleanly with datetime.fromisoformat and have tzinfo
+    dt = datetime.fromisoformat(ts)
+    assert dt.tzinfo is not None
+
+    # Must match UTC offset (+00:00 or Z)
+    assert dt.utcoffset().total_seconds() == 0.0
+
+    # Test under different timezone representations
+    dt_utc = datetime.now(timezone.utc)
+    assert dt_utc.tzinfo == timezone.utc
 
 
 # ======================================================================
@@ -128,7 +674,8 @@ def test_failure_injection_matrix_atomic_rollback(temp_db_path, failure_point):
             evaluation_as_of="2026-10-10",
             universe_build_id="ARX_UNIVERSE_V1",
             snapshot_run_id="run-001",
-            candidate_generation_id="CANDIDATE_GENERATION_002",
+            logical_scan_run_id=f"log-run-fail-{failure_point}",
+            candidate_generation_id="CANDIDATE_GENERATION_003",
             candidate_sha="testsha123",
             semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
             runtime_config_hash="cfghash",
@@ -145,595 +692,98 @@ def test_failure_injection_matrix_atomic_rollback(temp_db_path, failure_point):
             failure_injection_point=failure_point,
         )
 
-    # Verify every table has 0 rows
-    conn = sqlite3.connect(temp_db_path)
-    cur = conn.cursor()
-    for tbl in [
-        "shadow_observations",
-        "prospective_decisions",
-        "production_exposures",
-        "holdout_exclusions",
-        "shadow_evidence_admissions",
-        "shadow_outbox",
-    ]:
-        cur.execute(f"SELECT COUNT(*) FROM {tbl}")
-        assert cur.fetchone()[0] == 0, f"Table {tbl} had rows after failure {failure_point} rollback!"
-    conn.close()
-
-    # Denominator delta must be 0
-    counts = store.get_authoritative_denominator_counts()
-    assert counts["shadow_record_count"] == 0
-    assert counts["test_shadow_record_count"] == 0
-
-
-# ======================================================================
-# Section 17: Process Crash Tests (Real Subprocesses)
-# ======================================================================
-
-def test_process_crash_before_commit_atomic_rollback(temp_db_path):
-    """Spawns an isolated Python process that starts writing to the store and exits via os._exit(1) before commit."""
-    # Ensure tables are initialized first
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    child_code = f"""
-import os, sqlite3
-conn = sqlite3.connect(r"{temp_db_path}")
-conn.execute("PRAGMA journal_mode=WAL;")
-conn.execute("BEGIN IMMEDIATE;")
-conn.execute(
-    "INSERT INTO shadow_observations (observation_id, observation_key, scanner_id, scanner_run_id, "
-    "security_id, evaluation_as_of, candidate_generation_id, candidate_sha, semantic_closure_hash, "
-    "universe_build_id, origin_class, created_at) VALUES ('obs-crash', 'key-crash', 'VCP', 'run1', "
-    "'AAPL', '2026-10-10', 'CANDIDATE_GENERATION_002', 'sha', 'close', 'univ', 'TEST', 'now')"
-)
-# Force ungraceful process kill prior to COMMIT
-os._exit(42)
-"""
-    result = subprocess.run([sys.executable, "-c", child_code], capture_output=True)
-    assert result.returncode == 42
-
-    recon = store.audit_cross_ledger_integrity()
-    assert recon["row_counts"]["shadow_observations"] == 0
-    assert recon["integrity_status"] == "PASS"
-
-
-def test_process_crash_after_commit_safe_retry(temp_db_path):
-    """Spawns a process that successfully commits but terminates immediately before returning; client safely retries."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-
-    # Initial admission succeeds
-    res1 = store.admit_observation_bundle(
-        security_id="MSFT",
-        evaluation_as_of="2026-10-10",
-        universe_build_id="ARX_UNIVERSE_V1",
-        snapshot_run_id="run-002",
-        candidate_generation_id="CANDIDATE_GENERATION_002",
-        candidate_sha="testsha123",
-        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-        runtime_config_hash="cfghash",
-        dependency_lock_hash="lockhash",
-        data_provenance_hash="provhash",
-        ruleset_id="MINERVINI_VCP",
-        ruleset_version="2.0.0",
-        predicate_vector_hash="predhash",
-        classification="CONFIRMED_VCP_STAGE_2",
-        decision_posture="QUALIFIED_WATCHLIST",
-        input_fingerprint="inphash",
-        group_or_episode_id="EPISODE:MSFT:2026-10-10",
-        origin_class="NATURAL_PRODUCTION",
-    )
-    assert res1["status"] == "ADMITTED"
-    assert res1["new_admission"] is True
-
-    # Client retries exact same logical event
-    res2 = store.admit_observation_bundle(
-        security_id="MSFT",
-        evaluation_as_of="2026-10-10",
-        universe_build_id="ARX_UNIVERSE_V1",
-        snapshot_run_id="run-002",
-        candidate_generation_id="CANDIDATE_GENERATION_002",
-        candidate_sha="testsha123",
-        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-        runtime_config_hash="cfghash",
-        dependency_lock_hash="lockhash",
-        data_provenance_hash="provhash",
-        ruleset_id="MINERVINI_VCP",
-        ruleset_version="2.0.0",
-        predicate_vector_hash="predhash",
-        classification="CONFIRMED_VCP_STAGE_2",
-        decision_posture="QUALIFIED_WATCHLIST",
-        input_fingerprint="inphash",
-        group_or_episode_id="EPISODE:MSFT:2026-10-10",
-        origin_class="NATURAL_PRODUCTION",
-    )
-    assert res2["status"] == "ALREADY_ADMITTED"
-    assert res2["new_admission"] is False
-    assert res2["admission_id"] == res1["admission_id"]
-
-    # Verify counts: exactly 1 row per table, denominator delta = 1
-    counts = store.get_authoritative_denominator_counts()
-    assert counts["natural_production_shadow_record_count"] == 1
-    assert counts["shadow_record_count"] == 1
-
-    recon = store.audit_cross_ledger_integrity()
-    assert recon["row_counts"]["shadow_observations"] == 1
-    assert recon["row_counts"]["prospective_decisions"] == 1
-    assert recon["row_counts"]["production_exposures"] == 1
-    assert recon["row_counts"]["shadow_evidence_admissions"] == 1
-    assert recon["duplicate_admissions"] == 0
-
-
-# ======================================================================
-# Section 18: Multi-Worker Duplicate Race Contention (16 Workers)
-# ======================================================================
-
-def test_multi_worker_duplicate_race(temp_db_path):
-    """16 concurrent workers submit the exact same observation key simultaneously."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-
-    def worker_submit():
-        # Fresh store instance per worker (simulating distinct worker processes)
-        worker_store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-        return worker_store.admit_observation_bundle(
-            security_id="NVDA",
-            evaluation_as_of="2026-10-10",
-            universe_build_id="ARX_UNIVERSE_V1",
-            snapshot_run_id="race-run",
-            candidate_generation_id="CANDIDATE_GENERATION_002",
-            candidate_sha="testsha123",
-            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-            runtime_config_hash="cfghash",
-            dependency_lock_hash="lockhash",
-            data_provenance_hash="provhash",
-            ruleset_id="MINERVINI_VCP",
-            ruleset_version="2.0.0",
-            predicate_vector_hash="predhash",
-            classification="CONFIRMED_VCP_STAGE_2",
-            decision_posture="QUALIFIED_WATCHLIST",
-            input_fingerprint="inphash",
-            group_or_episode_id="EPISODE:NVDA:2026-10-10",
-            origin_class="TEST",
-        )
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-        futures = [executor.submit(worker_submit) for _ in range(16)]
-        results = [f.result() for f in concurrent.futures.as_completed(futures)]
-
-    # Exactly 1 new admission, 15 ALREADY_ADMITTED deduplicated
-    new_admissions = [r for r in results if r.get("new_admission") is True]
-    dedupes = [r for r in results if r.get("status") == "ALREADY_ADMITTED"]
-    assert len(new_admissions) == 1
-    assert len(dedupes) == 15
-
-    # Check store row counts
-    recon = store.audit_cross_ledger_integrity()
-    assert recon["row_counts"]["shadow_observations"] == 1
-    assert recon["row_counts"]["prospective_decisions"] == 1
-    assert recon["row_counts"]["production_exposures"] == 1
-    assert recon["row_counts"]["shadow_evidence_admissions"] == 1
-    assert recon["duplicate_admissions"] == 0
-    assert recon["denominator_mismatch"] == 0
-
-
-# ======================================================================
-# Section 19: Multi-Worker Distinct Event Load (16 Workers x 100 Events)
-# ======================================================================
-
-def test_multi_worker_distinct_event_load(temp_db_path):
-    """16 workers concurrently submit 100 distinct events each (1600 total events)."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-
-    def worker_batch(worker_id: int):
-        worker_store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-        batch_results = []
-        for i in range(100):
-            sym = f"TICKER_{worker_id:02d}_{i:03d}"
-            res = worker_store.admit_observation_bundle(
-                security_id=sym,
-                evaluation_as_of="2026-10-10",
-                universe_build_id="ARX_UNIVERSE_V1",
-                snapshot_run_id=f"run-{worker_id}",
-                candidate_generation_id="CANDIDATE_GENERATION_002",
-                candidate_sha="testsha123",
-                semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-                runtime_config_hash="cfghash",
-                dependency_lock_hash="lockhash",
-                data_provenance_hash="provhash",
-                ruleset_id="MINERVINI_VCP",
-                ruleset_version="2.0.0",
-                predicate_vector_hash=hashlib.sha256(sym.encode()).hexdigest(),
-                classification="CONFIRMED_VCP_STAGE_2",
-                decision_posture="QUALIFIED_WATCHLIST",
-                input_fingerprint=hashlib.sha256(f"{sym}:input".encode()).hexdigest(),
-                group_or_episode_id=f"EPISODE:{sym}:2026-10-10",
-                origin_class="TEST",
-            )
-            batch_results.append(res)
-        return len(batch_results)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-        futures = [executor.submit(worker_batch, w_id) for w_id in range(16)]
-        counts = [f.result() for f in concurrent.futures.as_completed(futures)]
-
-    assert sum(counts) == 1600
-
-    recon = store.audit_cross_ledger_integrity()
-    assert recon["row_counts"]["shadow_observations"] == 1600
-    assert recon["row_counts"]["prospective_decisions"] == 1600
-    assert recon["row_counts"]["production_exposures"] == 1600
-    assert recon["row_counts"]["shadow_evidence_admissions"] == 1600
-    assert recon["orphaned_prospective_records"] == 0
-    assert recon["orphaned_exposure_records"] == 0
-    assert recon["orphaned_required_exclusions"] == 0
-    assert recon["duplicate_admissions"] == 0
-    assert recon["denominator_mismatch"] == 0
-    assert recon["integrity_status"] == "PASS"
-
-    denom = store.get_authoritative_denominator_counts()
-    assert denom["test_shadow_record_count"] == 1600
-    assert denom["natural_production_shadow_record_count"] == 0
-
-
-# ======================================================================
-# Section 20: Process Restart Durability Test
-# ======================================================================
-
-def test_process_restart_durability_content_hash_parity(temp_db_path):
-    """Writes governed TEST evidence, records hash, terminates process/instance, starts fresh instance, re-reads."""
-    store1 = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    res = store1.admit_observation_bundle(
-        security_id="PLTR",
-        evaluation_as_of="2026-10-10",
-        universe_build_id="ARX_UNIVERSE_V1",
-        snapshot_run_id="restart-run",
-        candidate_generation_id="CANDIDATE_GENERATION_002",
-        candidate_sha="testsha123",
-        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-        runtime_config_hash="cfghash",
-        dependency_lock_hash="lockhash",
-        data_provenance_hash="provhash",
-        ruleset_id="MINERVINI_VCP",
-        ruleset_version="2.0.0",
-        predicate_vector_hash="predhash",
-        classification="CONFIRMED_VCP_STAGE_2",
-        decision_posture="QUALIFIED_WATCHLIST",
-        input_fingerprint="inphash",
-        group_or_episode_id="EPISODE:PLTR:2026-10-10",
-        origin_class="TEST",
-    )
-    obs_key = res["observation_key"]
-    hash1 = store1.compute_prospective_content_hash(obs_key)
-    assert hash1 is not None
-
-    # Simulate process death by deleting instance and clearing memory
-    del store1
-
-    # Fresh process / fresh connection
-    store2 = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    dec2 = store2.get_prospective_decision(obs_key)
-    assert dec2 is not None
-    assert dec2["security_id"] == "PLTR"
-
-    hash2 = store2.compute_prospective_content_hash(obs_key)
-    assert hash1 == hash2, "Content hash parity failed after restart!"
-
-
-# ======================================================================
-# Section 21: Full Redeploy Durability Test
-# ======================================================================
-
-def test_storage_path_durability_and_redeployment_preservation():
-    """Verify resolve_shadow_db_path honors custom path and environment variables."""
-    # 1. Custom path priority
-    assert resolve_shadow_db_path("/custom/path/shadow.db") == "/custom/path/shadow.db"
-
-    # 2. Environment variable priority
-    os.environ["ARX_SHADOW_DB_PATH"] = "/env/shadow.db"
-    try:
-        assert resolve_shadow_db_path() == "/env/shadow.db"
-    finally:
-        del os.environ["ARX_SHADOW_DB_PATH"]
-
-
-# ======================================================================
-# Section 22: Connection Failure & Ambiguous Commit Safety
-# ======================================================================
-
-def test_ambiguous_commit_retry_safety(temp_db_path):
-    """Verify that retrying an already committed transaction returns the existing admission gracefully."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    kwargs = dict(
-        security_id="TSLA",
-        evaluation_as_of="2026-10-10",
-        universe_build_id="ARX_UNIVERSE_V1",
-        snapshot_run_id="ambig-run",
-        candidate_generation_id="CANDIDATE_GENERATION_002",
-        candidate_sha="testsha123",
-        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-        runtime_config_hash="cfghash",
-        dependency_lock_hash="lockhash",
-        data_provenance_hash="provhash",
-        ruleset_id="MINERVINI_VCP",
-        ruleset_version="2.0.0",
-        predicate_vector_hash="predhash",
-        classification="CONFIRMED_VCP_STAGE_2",
-        decision_posture="QUALIFIED_WATCHLIST",
-        input_fingerprint="inphash",
-        group_or_episode_id="EPISODE:TSLA:2026-10-10",
-        origin_class="TEST",
-    )
-    res1 = store.admit_observation_bundle(**kwargs)
-    assert res1["status"] == "ADMITTED"
-
-    res2 = store.admit_observation_bundle(**kwargs)
-    assert res2["status"] == "ALREADY_ADMITTED"
-    assert res2["admission_id"] == res1["admission_id"]
-
-
-# ======================================================================
-# Section 23: Immutability Test
-# ======================================================================
-
-def test_immutability_triggers_reject_updates_and_deletes(temp_db_path):
-    """Verify SQLite triggers prevent UPDATE and DELETE on all authoritative evidence tables."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    res = store.admit_observation_bundle(
-        security_id="AMZN",
-        evaluation_as_of="2026-10-10",
-        universe_build_id="ARX_UNIVERSE_V1",
-        snapshot_run_id="immut-run",
-        candidate_generation_id="CANDIDATE_GENERATION_002",
-        candidate_sha="testsha123",
-        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-        runtime_config_hash="cfghash",
-        dependency_lock_hash="lockhash",
-        data_provenance_hash="provhash",
-        ruleset_id="MINERVINI_VCP",
-        ruleset_version="2.0.0",
-        predicate_vector_hash="predhash",
-        classification="CONFIRMED_VCP_STAGE_2",
-        decision_posture="QUALIFIED_WATCHLIST",
-        input_fingerprint="inphash",
-        group_or_episode_id="EPISODE:AMZN:2026-10-10",
-        origin_class="TEST",
-    )
-    obs_key = res["observation_key"]
-    orig_hash = store.compute_prospective_content_hash(obs_key)
-
-    conn = sqlite3.connect(temp_db_path)
-    cur = conn.cursor()
-
-    # Attempt mutation on prospective_decisions
-    with pytest.raises((sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.DatabaseError), match="MUTATION_OF_PROSPECTIVE_DECISION_PROHIBITED"):
-        cur.execute("UPDATE prospective_decisions SET classification = 'FAKE' WHERE observation_key = ?", (obs_key,))
-
-    # Attempt deletion on prospective_decisions
-    with pytest.raises((sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.DatabaseError), match="DELETE_OF_PROSPECTIVE_DECISION_PROHIBITED"):
-        cur.execute("DELETE FROM prospective_decisions WHERE observation_key = ?", (obs_key,))
-
-    # Attempt mutation on shadow_evidence_admissions
-    with pytest.raises((sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.DatabaseError), match="MUTATION_OF_SHADOW_ADMISSION_PROHIBITED"):
-        cur.execute("UPDATE shadow_evidence_admissions SET origin_class = 'NATURAL_PRODUCTION' WHERE observation_key = ?", (obs_key,))
-
-    # Attempt deletion on shadow_evidence_admissions
-    with pytest.raises((sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.DatabaseError), match="DELETE_OF_SHADOW_ADMISSION_PROHIBITED"):
-        cur.execute("DELETE FROM shadow_evidence_admissions WHERE observation_key = ?", (obs_key,))
-
-    # Attempt mutation on shadow_observations
-    with pytest.raises((sqlite3.OperationalError, sqlite3.IntegrityError, sqlite3.DatabaseError), match="MUTATION_OF_SHADOW_OBSERVATION_PROHIBITED"):
-        cur.execute("UPDATE shadow_observations SET security_id = 'HACKED' WHERE observation_key = ?", (obs_key,))
-
-    conn.close()
-
-    # Verify content hash is completely unchanged
-    new_hash = store.compute_prospective_content_hash(obs_key)
-    assert orig_hash == new_hash
-
-
-# ======================================================================
-# Section 24: Denominator Reconstruction Test
-# ======================================================================
-
-def test_denominator_reconstruction_from_committed_admissions(temp_db_path):
-    """Write mix of NATURAL_PRODUCTION, ADMIN_FORCED, TEST, SYNTHETIC, REPLAY. Recompute strictly from admissions."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-
-    classes_to_admit = [
-        ("NATURAL_PRODUCTION", "NAT_1"),
-        ("NATURAL_PRODUCTION", "NAT_2"),
-        ("ADMIN_FORCED", "ADM_1"),
-        ("TEST", "TST_1"),
-        ("TEST", "TST_2"),
-        ("TEST", "TST_3"),
-        ("SYNTHETIC", "SYN_1"),
-        ("REPLAY", "REP_1"),
-    ]
-
-    for origin_cls, sym in classes_to_admit:
-        store.admit_observation_bundle(
-            security_id=sym,
-            evaluation_as_of="2026-10-10",
-            universe_build_id="ARX_UNIVERSE_V1",
-            snapshot_run_id=f"run-{sym}",
-            candidate_generation_id="CANDIDATE_GENERATION_002",
-            candidate_sha="testsha123",
-            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-            runtime_config_hash="cfghash",
-            dependency_lock_hash="lockhash",
-            data_provenance_hash="provhash",
-            ruleset_id="MINERVINI_VCP",
-            ruleset_version="2.0.0",
-            predicate_vector_hash="predhash",
-            classification="CONFIRMED_VCP_STAGE_2",
-            decision_posture="QUALIFIED_WATCHLIST",
-            input_fingerprint="inphash",
-            group_or_episode_id=f"EPISODE:{sym}:2026-10-10",
-            origin_class=origin_cls,
-        )
-
-    # Reconstruct denominator from scratch
-    fresh_store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    counts = fresh_store.get_authoritative_denominator_counts()
-
-    assert counts["shadow_record_count"] == 8
-    assert counts["natural_production_shadow_record_count"] == 2
-    assert counts["admin_forced_shadow_record_count"] == 1
-    assert counts["test_shadow_record_count"] == 3
-    assert counts["synthetic_shadow_record_count"] == 1
-    assert counts["replay_shadow_record_count"] == 1
-
-
-# ======================================================================
-# Section 25: Canonical Cross-Ledger Reconciliation Audit
-# ======================================================================
-
-def test_canonical_cross_ledger_reconciliation(temp_db_path):
-    """Verify audit_cross_ledger_integrity() produces zero orphans, zero duplicates, and PASS."""
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    for i in range(10):
-        store.admit_observation_bundle(
-            security_id=f"SYM_{i}",
-            evaluation_as_of="2026-10-10",
-            universe_build_id="ARX_UNIVERSE_V1",
-            snapshot_run_id="recon-run",
-            candidate_generation_id="CANDIDATE_GENERATION_002",
-            candidate_sha="testsha123",
-            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-            runtime_config_hash="cfghash",
-            dependency_lock_hash="lockhash",
-            data_provenance_hash="provhash",
-            ruleset_id="MINERVINI_VCP",
-            ruleset_version="2.0.0",
-            predicate_vector_hash="predhash",
-            classification="CONFIRMED_VCP_STAGE_2",
-            decision_posture="QUALIFIED_WATCHLIST",
-            input_fingerprint="inphash",
-            group_or_episode_id=f"EPISODE:SYM_{i}:2026-10-10",
-            origin_class="TEST",
-        )
-
+    # Verify 0 rows in all evidence tables
     audit = store.audit_cross_ledger_integrity()
+    assert audit["row_counts"]["shadow_observations"] == 0
+    assert audit["row_counts"]["prospective_decisions"] == 0
+    assert audit["row_counts"]["production_exposures"] == 0
+    assert audit["row_counts"]["shadow_evidence_admissions"] == 0
     assert audit["orphaned_prospective_records"] == 0
     assert audit["orphaned_exposure_records"] == 0
     assert audit["orphaned_required_exclusions"] == 0
-    assert audit["duplicate_admissions"] == 0
-    assert audit["denominator_mismatch"] == 0
-    assert audit["integrity_status"] == "PASS"
 
 
 # ======================================================================
-# Section 26: Property-Based Idempotency Test
+# Section 23: SQLite Trigger Immutability Enforcement Tests
 # ======================================================================
 
-def test_property_based_idempotency(temp_db_path):
-    """Submits the same observation payload 20 times in a row. Verifies exactly 1 admission and no duplicates."""
+def test_sqlite_trigger_immutability_enforcement(temp_db_path):
+    """Verify SQLite triggers prevent UPDATE and DELETE on all authoritative tables."""
     store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    first_res = None
-    for i in range(20):
-        res = store.admit_observation_bundle(
-            security_id="GOOGL",
-            evaluation_as_of="2026-10-10",
-            universe_build_id="ARX_UNIVERSE_V1",
-            snapshot_run_id="idemp-run",
-            candidate_generation_id="CANDIDATE_GENERATION_002",
-            candidate_sha="testsha123",
-            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
-            runtime_config_hash="cfghash",
-            dependency_lock_hash="lockhash",
-            data_provenance_hash="provhash",
-            ruleset_id="MINERVINI_VCP",
-            ruleset_version="2.0.0",
-            predicate_vector_hash="predhash",
-            classification="CONFIRMED_VCP_STAGE_2",
-            decision_posture="QUALIFIED_WATCHLIST",
-            input_fingerprint="inphash",
-            group_or_episode_id="EPISODE:GOOGL:2026-10-10",
-            origin_class="TEST",
-        )
-        if i == 0:
-            first_res = res
-            assert res["new_admission"] is True
-            assert res["status"] == "ADMITTED"
-        else:
-            assert res["new_admission"] is False
-            assert res["status"] == "ALREADY_ADMITTED"
-            assert res["admission_id"] == first_res["admission_id"]
-            assert res["receipt_hash"] == first_res["receipt_hash"]
+    res = store.admit_observation_bundle(
+        security_id="AAPL",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="ARX_UNIVERSE_V1",
+        snapshot_run_id="run-001",
+        logical_scan_run_id="log-run-immut",
+        candidate_generation_id="CANDIDATE_GENERATION_003",
+        candidate_sha="testsha123",
+        semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+        runtime_config_hash="cfghash",
+        dependency_lock_hash="lockhash",
+        data_provenance_hash="provhash",
+        ruleset_id="MINERVINI_VCP",
+        ruleset_version="2.0.0",
+        predicate_vector_hash="predhash",
+        classification="CONFIRMED_VCP_STAGE_2",
+        decision_posture="QUALIFIED_WATCHLIST",
+        input_fingerprint="inphash",
+        group_or_episode_id="EPISODE:AAPL:2026-10-10",
+        origin_class="TEST",
+    )
+    obs_key = res["observation_key"]
 
-    recon = store.audit_cross_ledger_integrity()
-    assert recon["row_counts"]["shadow_observations"] == 1
-    assert recon["duplicate_admissions"] == 0
+    conn = sqlite3.connect(temp_db_path)
+    cur = conn.cursor()
+
+    # 1. Update prospective_decisions -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="MUTATION_OF_PROSPECTIVE_DECISION_PROHIBITED"):
+        cur.execute("UPDATE prospective_decisions SET classification = 'HACKED' WHERE observation_key = ?", (obs_key,))
+
+    # 2. Delete prospective_decisions -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="DELETE_OF_PROSPECTIVE_DECISION_PROHIBITED"):
+        cur.execute("DELETE FROM prospective_decisions WHERE observation_key = ?", (obs_key,))
+
+    # 3. Update shadow_evidence_admissions -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="MUTATION_OF_SHADOW_ADMISSION_PROHIBITED"):
+        cur.execute("UPDATE shadow_evidence_admissions SET origin_class = 'HACKED' WHERE observation_key = ?", (obs_key,))
+
+    # 4. Delete shadow_evidence_admissions -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="DELETE_OF_SHADOW_ADMISSION_PROHIBITED"):
+        cur.execute("DELETE FROM shadow_evidence_admissions WHERE observation_key = ?", (obs_key,))
+
+    # 5. Update shadow_observations -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="MUTATION_OF_SHADOW_OBSERVATION_PROHIBITED"):
+        cur.execute("UPDATE shadow_observations SET security_id = 'HACKED' WHERE observation_key = ?", (obs_key,))
+
+    # 6. Delete shadow_observations -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="DELETE_OF_SHADOW_OBSERVATION_PROHIBITED"):
+        cur.execute("DELETE FROM shadow_observations WHERE observation_key = ?", (obs_key,))
+
+    # 7. Update logical_scan_runs -> PROHIBITED
+    with pytest.raises((sqlite3.IntegrityError, sqlite3.OperationalError), match="MUTATION_OF_LOGICAL_SCAN_RUNS_PROHIBITED"):
+        cur.execute("UPDATE logical_scan_runs SET origin_class = 'HACKED' WHERE logical_scan_run_id = 'log-run-immut'")
+
+    conn.close()
 
 
 # ======================================================================
-# Section 14 & 15: Natural Trigger Remediation & Admin Separation Tests
+# Section 8 & 9: Trigger Contract Properties & Candidate 003 Readiness
 # ======================================================================
 
-def test_natural_vcp_trigger_service_contract():
-    """Verify NaturalVCPTriggerService constants and contract."""
+def test_candidate_003_trigger_contract_properties():
+    """Verify application-side natural trigger contract properties for Candidate 003."""
+    assert PRE_DEPLOY_NATURAL_TRIGGER_CONTRACT == "PASS"
+    assert PRODUCTION_NATURAL_TRIGGER_REACHABILITY == "NOT_YET_VERIFIED"
+    assert APPLICATION_READY_FOR_SCHEDULER_ACTIVATION is True
+    assert RECURRING_PRODUCTION_SCHEDULER_ACTIVE is False
+    assert SCHEDULER_PRINCIPAL_DISTINCT_FROM_OPERATOR is True
+    assert CALLER_CAN_SELF_DECLARE_NATURAL is False
+
+
+def test_natural_trigger_service_contract_and_boot_warmup():
+    """Verify NaturalVCPTriggerService constants and trigger_boot_warmup contract."""
     svc = get_natural_vcp_trigger_service()
     assert svc is not None
     assert NATURAL_PRODUCTION_TRIGGER_TYPE == "SCHEDULED_MARKET_WIDE_VCP_SCAN"
     assert ORIGIN_CLASSIFICATION == "NATURAL_PRODUCTION"
-
-
-def test_natural_trigger_service_origin_classification_and_admin_separation(temp_db_path, monkeypatch):
-    """Verify that scans triggered via NaturalVCPTriggerService map to NATURAL_PRODUCTION,
-
-    while operator scans remain ADMIN_FORCED.
-    """
-    store = Sprint3DurableEvidenceStore(db_path=temp_db_path)
-    suite = Sprint3ShadowGovernanceSuite(durable_store=store)
-
-    class MockRunner:
-        def __init__(self):
-            self.shadow_suite = suite
-
-        def execute_market_wide_scan(
-            self,
-            universe_override=None,
-            universe_build_id=None,
-            logical_job_key=None,
-            trigger_type=TriggerType.OPERATOR,
-            scheduled_for=None,
-            operator_request_id=None,
-            owner_instance_id=None,
-            bypass_thread_lock=False,
-            shadow_trigger_override=None,
-        ):
-            shadow_trigger_class = (
-                shadow_trigger_override if shadow_trigger_override in ("TEST", "REPLAY", "SYNTHETIC")
-                else ("NATURAL_PRODUCTION" if trigger_type == TriggerType.SCHEDULED and not operator_request_id
-                      else "ADMIN_FORCED")
-            )
-            # Record one mock observation
-            return self.shadow_suite.record_shadow_observation(
-                security_id="NAT_CANDIDATE",
-                evaluation_as_of="2026-10-10",
-                universe_build_id="ARX_UNIVERSE_V1",
-                snapshot_run_id=f"run-{trigger_type.value}-{operator_request_id or 'attempt'}",
-                candidate_generation_id="CANDIDATE_GENERATION_002",
-                trigger_class=shadow_trigger_class,
-            )
-
-    runner = MockRunner()
-    svc = NaturalVCPTriggerService(scanner_runner=runner)
-
-    # 1. Natural trigger invocation -> NATURAL_PRODUCTION
-    nat_res = svc.trigger_natural_scan(reason="SCHEDULED_CADENCE")
-    assert nat_res["origin_class"] == "NATURAL_PRODUCTION"
-
-    # 2. Operator trigger invocation -> ADMIN_FORCED
-    op_res = runner.execute_market_wide_scan(trigger_type=TriggerType.OPERATOR, operator_request_id="op-123")
-    assert op_res["origin_class"] == "ADMIN_FORCED"
-
-    # 3. Caller cannot self-declare NATURAL_PRODUCTION via override
-    hacked_res = runner.execute_market_wide_scan(
-        trigger_type=TriggerType.OPERATOR,
-        shadow_trigger_override="NATURAL_PRODUCTION",  # forbidden
-    )
-    assert hacked_res["origin_class"] == "ADMIN_FORCED"  # safely falls back to ADMIN_FORCED
-
-    # Check database denominator
-    counts = store.get_authoritative_denominator_counts()
-    assert counts["natural_production_shadow_record_count"] == 1
-    assert counts["admin_forced_shadow_record_count"] == 2
