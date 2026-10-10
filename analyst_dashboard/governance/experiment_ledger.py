@@ -85,7 +85,7 @@ class ExperimentLedger:
         env_sha = os.getenv("ARX_OBSERVATION_GOVERNANCE_SHA")
         if env_sha:
             return env_sha.strip()
-        manifest = cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if manifest and manifest.get("observationGovernanceSha"):
             return manifest["observationGovernanceSha"].strip()
         return cls.OBSERVATION_GOVERNANCE_ARTIFACT_SHA
@@ -259,6 +259,22 @@ class ExperimentLedger:
                     return json.load(f)
             except Exception:
                 return None
+        return None
+
+    @classmethod
+    def get_epoch4_v5_manifest(cls) -> Optional[Dict[str, Any]]:
+        """Loads the Epoch 4 V5 observation governance manifest if available."""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        manifest_path = os.path.join(repo_root, "EPOCH_4_MANIFEST_V5.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if not isinstance(data, dict) or "executableGovernanceFiles" not in data:
+                        return {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V5", "valid": False}
+                    return data
+            except Exception:
+                return {"status": "CORRUPTED", "error": "MALFORMED_MANIFEST_V5", "valid": False}
         return None
 
     @classmethod
@@ -446,8 +462,8 @@ class ExperimentLedger:
 
     @classmethod
     def verify_epoch4_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository executable observation governance against authoritative Epoch 4 manifest (V4 if available, else V3, else V2)."""
-        manifest = cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest()
+        """Verifies repository executable observation governance against authoritative Epoch 4 manifest (V5 if available, else V4, else V3, else V2)."""
+        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest()
         if not manifest or manifest.get("status") == "CORRUPTED" or not manifest.get("executableGovernanceFiles"):
             return {
                 "status": "CORRUPTED" if (manifest and manifest.get("status") == "CORRUPTED") else "MANIFEST_MISSING",
@@ -490,6 +506,23 @@ class ExperimentLedger:
         }
 
     @classmethod
+    def verify_epoch4_v4_manifest(cls) -> Dict[str, Any]:
+        """Verifies integrity of immutable historical EPOCH_4_MANIFEST_V4.json (v4.0.0 record)."""
+        manifest = cls.get_epoch4_v4_manifest()
+        if not manifest or manifest.get("status") == "CORRUPTED":
+            return {"status": "CORRUPTED" if (manifest and manifest.get("status") == "CORRUPTED") else "MANIFEST_MISSING", "valid": False}
+        expected_hash = "95a9c4313ffe026dc63b1962c490259c57e78697497e8649081832005687d689"
+        is_untouched = (manifest.get("observationGovernanceManifestHash") == expected_hash)
+        return {
+            "status": "VERIFIED" if is_untouched else "CORRUPTED",
+            "valid": is_untouched,
+            "manifestVersion": manifest.get("manifestVersion", "4.0.0"),
+            "epochId": manifest.get("epochId"),
+            "observationGovernanceManifestHash": expected_hash,
+            "freezeCommit": "e88b9fe7711426d86176472a3ba87dff6c49eea9",
+        }
+
+    @classmethod
     def verify_epoch4_v3_manifest(cls) -> Dict[str, Any]:
         """Verifies integrity of immutable historical EPOCH_4_MANIFEST_V3.json (v3.0.0 freeze record)."""
         manifest = cls.get_epoch4_v3_manifest()
@@ -525,8 +558,8 @@ class ExperimentLedger:
 
     @classmethod
     def verify_observation_governance_manifest(cls) -> Dict[str, Any]:
-        """Verifies repository executable observation governance against active manifest (EPOCH_4 V4, EPOCH_4 V3, EPOCH_4 V2, EPOCH_3, EPOCH_2 or EPOCH_1)."""
-        manifest = cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
+        """Verifies repository executable observation governance against active manifest (EPOCH_4 V5, EPOCH_4 V4, EPOCH_4 V3, EPOCH_4 V2, EPOCH_3, EPOCH_2 or EPOCH_1)."""
+        manifest = cls.get_epoch4_v5_manifest() or cls.get_epoch4_v4_manifest() or cls.get_epoch4_v3_manifest() or cls.get_epoch4_manifest() or cls.get_epoch3_manifest() or cls.get_epoch2_manifest() or cls.get_epoch1_manifest()
         if not manifest or manifest.get("status") == "CORRUPTED" or not manifest.get("executableGovernanceFiles"):
             return {
                 "status": "CORRUPTED" if (manifest and manifest.get("status") == "CORRUPTED") else "MANIFEST_MISSING",
