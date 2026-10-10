@@ -1,0 +1,176 @@
+{
+  "schema_version": "2.0.0",
+  "candidate_generation_id": "CANDIDATE_GENERATION_002",
+  "candidate_functional_sha": "ed739460836433ac4cade95a35670041233094fb",
+  "parent_generation": "CANDIDATE_GENERATION_001",
+  "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+  "governance_sha256": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+  "governance_hash": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+  "vcp_ruleset_identity": "analyst_dashboard.vcp.rules:VCPRuleset",
+  "vcp_ruleset_hash": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+  "universe_builder_identity": "analyst_dashboard.vcp.universe_engine:UniverseBuilder",
+  "universe_builder_hash": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+  "scanner_integration_identity": "analyst_dashboard.analyzers.scanner_runner:VCPScannerRunner",
+  "scanner_integration_hash": "7a0380df9bfd0fb06e7f4ff947a2917d3c68889bda923c5c7d99f921b382b3dd",
+  "data_interpretation_identity": "analyst_dashboard.vcp.data_adapters:PriceVolumeAdapter",
+  "data_interpretation_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+  "runtime_semantic_identity": "analyst_dashboard.vcp.runtime:VCPRuntime",
+  "runtime_semantic_hash": "e86fce858d91eeafb7291328245dbf3a430eab20044716237f8ed572b12a68b9",
+  "dependency_lock_hash": "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b",
+  "runtime_config_hash": "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366",
+  "durability_schema_version": "2.0.0",
+  "migration_identity": "MIGRATION_20261010_002_DURABLE_SHADOW_EVIDENCE",
+  "ddl_hash": "9235d64dc961162e319947fea4cba80ae4e47da40339c3155c3061b7fba9d174",
+  "observation_key_specification": "sha256(scanner_id:security_id:evaluation_as_of:universe_build_id:snapshot_run_id:candidate_generation_id:semantic_closure_hash)",
+  "observation_key_specification_hash": "269119331fad9d3dae44d23503d9f376e5b44abd3ee828d2b43c2d9fb5d316bd",
+  "origin_classification_policy_hash": "a372d46ca146be8215d72cb9b3fd014b3ee46bac11168d982479a2cae80f2730",
+  "natural_trigger_identity": "analyst_dashboard.vcp.natural_trigger:NaturalVCPTriggerService",
+  "test_certification_identity": "tests/test_sprint_3_durable_storage.py:ALL_TESTS_PASS",
+  "created_at": "2026-10-10T08:40:00Z",
+  "freeze_timestamp": "2026-10-10T08:58:00Z",
+  "freeze_status": "FROZEN_PRE_DEPLOY",
+  "candidate_freeze_status": "FROZEN_PRE_DEPLOY",
+  "activation_status": "FROZEN_PRE_DEPLOY",
+  "semantic_closure": {
+    "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+    "items": {
+      "candidate_runtime_configuration": {
+        "input_key": "candidate_runtime_configuration",
+        "authority_name": "RUNTIME_CONFIG_CONFLUENCE_SCORE_MODEL",
+        "authority_hash": "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366",
+        "classification": "NON_SEMANTIC_EXECUTION_INPUT",
+        "description": "Confluence engine weighting model and technical configuration parameters"
+      },
+      "corporate_action_treatment": {
+        "input_key": "corporate_action_treatment",
+        "authority_name": "RAW_EXCHANGE_PRICING_NO_SYNTHETIC_DIVIDEND_ADJUSTMENT",
+        "authority_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Exchange-provided unadjusted prices; zero synthetic forward adjustments"
+      },
+      "data_eligibility": {
+        "input_key": "data_eligibility",
+        "authority_name": "DAILY_CANDLE_COUNT_GTE_50_LIMIT_60",
+        "authority_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Candle depth threshold: at least 50 valid daily candles from sqlite market db"
+      },
+      "dependency_identity": {
+        "input_key": "dependency_identity",
+        "authority_name": "REQUIREMENTS_LOCK_PYTHON311",
+        "authority_hash": "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b",
+        "classification": "NON_SEMANTIC_EXECUTION_INPUT",
+        "description": "Pinned dependencies in requirements.txt"
+      },
+      "fallback_behavior": {
+        "input_key": "fallback_behavior",
+        "authority_name": "HISTORICAL_REGRESSION_FIXTURE_CANONICAL_VCP_UNIVERSE",
+        "authority_hash": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "In absence of published universe build, fallback to CANONICAL_VCP_UNIVERSE fixture"
+      },
+      "missing_data_treatment": {
+        "input_key": "missing_data_treatment",
+        "authority_name": "MISSING_PRICE_OR_HISTORY_QUARANTINE_FAIL_CLOSED",
+        "authority_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Fail closed: missing price or history drops candidate into unavailable reasons"
+      },
+      "point_in_time_data_semantics": {
+        "input_key": "point_in_time_data_semantics",
+        "authority_name": "AS_OF_DAY_SNAPSHOT_ISOLATION_NO_LOOKAHEAD",
+        "authority_hash": "640b42ed0bb1baee8197c2212e91d73077120c51376d3fba0da3973d7d8720e5",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Evaluation strictly as-of snapshot publication day; zero lookahead leakage"
+      },
+      "predicate_precedence": {
+        "input_key": "predicate_precedence",
+        "authority_name": "VCP_3STAGE_COMPRESSION_OVER_STAGE2_ADVANCING",
+        "authority_hash": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Strict priority: contraction confirmation requires valid Stage 2 progression"
+      },
+      "price_interpretation": {
+        "input_key": "price_interpretation",
+        "authority_name": "CURRENT_PRICE_GT_ZERO_UNADJUSTED_CLOSE",
+        "authority_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Positive unadjusted latest trade price as authoritative execution reference"
+      },
+      "scanner_ruleset": {
+        "input_key": "scanner_ruleset",
+        "authority_name": "CANONICAL_MINERVINI_VCP_2_0_0",
+        "authority_hash": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "OptimalExecutionEngine calculate_trade_levels with ruleset 2.0.0"
+      },
+      "snapshot_authority": {
+        "input_key": "snapshot_authority",
+        "authority_name": "ATOMIC_FENCED_PUBLICATION_IMMUTABLE_SNAPSHOT",
+        "authority_hash": "7a0380df9bfd0fb06e7f4ff947a2917d3c68889bda923c5c7d99f921b382b3dd",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Fenced publisher lease verification and atomic SQLite snapshot publication"
+      },
+      "threshold_authorities": {
+        "input_key": "threshold_authorities",
+        "authority_name": "VCP_CONFLUENCE_SCORE_FLOOR_75",
+        "authority_hash": "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Minimum confluence score floor 75.0 for qualified candidate ranking"
+      },
+      "trend_base_semantics": {
+        "input_key": "trend_base_semantics",
+        "authority_name": "STAGE_2_ADVANCING_GROWTH_PHASE_MA200_UPWARD",
+        "authority_hash": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "200-day SMA sloping upward, 50-day SMA above 150-day and 200-day SMAs"
+      },
+      "universe_builder_identity": {
+        "input_key": "universe_builder_identity",
+        "authority_name": "ARX_CANONICAL_UNIVERSE_BUILDER_V1",
+        "authority_hash": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Deterministic membership generation from UniverseStore published build attestation"
+      },
+      "universe_eligibility": {
+        "input_key": "universe_eligibility",
+        "authority_name": "ARX_CANONICAL_LONG_TERM_V1_US_EQUITIES",
+        "authority_hash": "5ed36d43912e9468b461062509ad79a7e61fe77855a63dfaf553148a03e0e38b",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Eligible population: liquid US equities in ARX canonical long-term universe"
+      },
+      "vcp_predicate_semantics": {
+        "input_key": "vcp_predicate_semantics",
+        "authority_name": "MINERVINI_VCP_STAGE_COMPRESSION_CONFIRMED",
+        "authority_hash": "d07a209bf1f71d62196798473a083871f6d81d31a91d8d4ae7a523248d4600ca",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Stage 2 Advancing Growth Phase and 3-stage contraction confirmation predicate"
+      },
+      "volume_interpretation": {
+        "input_key": "volume_interpretation",
+        "authority_name": "DAILY_VOLUME_POSITIVE_MA50_CONTRACTION",
+        "authority_hash": "ed6195638d0c1e8cca230e9cd55920bbf978d0f2a14087a75fd4ad2cf97e97a7",
+        "classification": "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        "description": "Volume drying up along successive contractions compared against 50-day average"
+      }
+    },
+    "item_count": 17,
+    "semantic_item_count": 15,
+    "non_semantic_item_count": 2,
+    "holdout_information_count": 0,
+    "future_outcome_count": 0,
+    "secret_values_count": 0,
+    "metadata": {}
+  },
+  "semantic_delta": {
+    "vcp_domain_semantic_change": false,
+    "vcp_threshold_change": false,
+    "quantitative_model_change": false,
+    "shadow_evidence_infrastructure_change": true,
+    "natural_trigger_routing_change": true,
+    "deltas": [
+      "DURABLE_STORAGE_REMEDIATION",
+      "NATURAL_TRIGGER_ROUTING_REMEDIATION"
+    ]
+  }
+}
