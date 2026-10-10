@@ -55,6 +55,11 @@ class Form4IngestionManager:
 
     BASE_URL = "https://data.sec.gov"
     ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data"
+    SCHEMA_VERSION = "2.2.0"
+    PRE_HARDENING_SCHEMA_VERSION = "2.1.0"
+    CERTIFICATION_HARDENING_MIGRATION_ID = "SM_MIGRATE_V2_1_TO_V2_2_CERTIFICATION_HARDENING_20261010"
+    PRE_WAVE2C_SCHEMA_VERSION = "2.0.0"
+    WAVE2C_MIGRATION_ID = "SM_MIGRATE_V2_TO_V2_1_INCREMENTAL_20261010"
 
     def __init__(
         self,
@@ -227,12 +232,286 @@ class Form4IngestionManager:
                 except sqlite3.OperationalError:
                     pass
 
+            # Wave 2C: Incremental Ingestion, Watermark, and Gap Ledger Schema (v2.1.0)
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_incremental_runs (
+                    cycle_id TEXT PRIMARY KEY,
+                    delivery_attempt_id TEXT NOT NULL,
+                    execution_attempt_id TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    overlap_window_seconds INTEGER NOT NULL,
+                    previous_watermark TEXT NOT NULL,
+                    partitions_requested INTEGER NOT NULL,
+                    partitions_completed INTEGER NOT NULL,
+                    partitions_failed INTEGER NOT NULL,
+                    filings_discovered INTEGER NOT NULL,
+                    new_filings INTEGER NOT NULL,
+                    known_filings INTEGER NOT NULL,
+                    amendments_discovered INTEGER NOT NULL,
+                    fetch_succeeded INTEGER NOT NULL,
+                    fetch_failed INTEGER NOT NULL,
+                    parse_succeeded INTEGER NOT NULL,
+                    parse_failed INTEGER NOT NULL,
+                    open_gaps_created INTEGER NOT NULL,
+                    open_gaps_resolved INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    completed_at TEXT
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_incremental_partitions (
+                    partition_id TEXT PRIMARY KEY,
+                    issuer_cik TEXT NOT NULL UNIQUE,
+                    symbol TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    last_poll_started_at TEXT,
+                    last_poll_completed_at TEXT,
+                    processing_cursor TEXT NOT NULL,
+                    candidate_complete_through TEXT NOT NULL,
+                    certified_complete_through TEXT NOT NULL,
+                    last_successful_discovery_at TEXT,
+                    open_gap_count INTEGER NOT NULL DEFAULT 0,
+                    oldest_open_gap_start TEXT
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_partition_watermarks (
+                    watermark_id TEXT PRIMARY KEY,
+                    cycle_id TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    certified_complete_through TEXT NOT NULL,
+                    candidate_complete_through TEXT NOT NULL,
+                    open_gaps_count INTEGER NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    FOREIGN KEY(cycle_id) REFERENCES sm_incremental_runs(cycle_id)
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_source_gaps (
+                    gap_id TEXT PRIMARY KEY,
+                    incremental_cycle_id TEXT NOT NULL,
+                    partition_id TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    gap_type TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    accession_number TEXT,
+                    first_detected_at TEXT NOT NULL,
+                    last_attempted_at TEXT NOT NULL,
+                    attempt_count INTEGER NOT NULL DEFAULT 1,
+                    status TEXT NOT NULL,
+                    resolution_authority TEXT,
+                    resolution_reason TEXT,
+                    resolved_at TEXT,
+                    source_event_time TEXT
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_watermark_receipts (
+                    receipt_id TEXT PRIMARY KEY,
+                    cycle_id TEXT NOT NULL,
+                    previous_certified_watermark TEXT NOT NULL,
+                    new_certified_watermark TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    universe_content_hash TEXT NOT NULL,
+                    incremental_policy_version TEXT NOT NULL,
+                    source_contract_version TEXT NOT NULL,
+                    partition_frontier_hash TEXT NOT NULL,
+                    open_gap_set_hash TEXT NOT NULL,
+                    source_ledger_hash TEXT NOT NULL,
+                    corpus_state_hash TEXT NOT NULL,
+                    certified_at TEXT NOT NULL,
+                    is_sealed INTEGER NOT NULL DEFAULT 1
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_late_arrival_events (
+                    integrity_event_id TEXT PRIMARY KEY,
+                    detected_at TEXT NOT NULL,
+                    accession_number TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    public_availability_at TEXT NOT NULL,
+                    affected_watermark_receipt TEXT NOT NULL,
+                    affected_interval TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    is_integrity_breach INTEGER NOT NULL
+                )
+                """
+            )
+
+            # Wave 2C Hardening: Certification Authority, Enumeration Receipts, Snapshots, Gap Events, and Disputes (v2.2.0)
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_partition_enumeration_receipts (
+                    partition_enumeration_receipt_id TEXT PRIMARY KEY,
+                    partition_id TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    required_partition_set_hash TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    source_contract_version TEXT NOT NULL,
+                    discovery_policy_version TEXT NOT NULL,
+                    pagination_policy_version TEXT NOT NULL,
+                    source_snapshot_manifest_hash TEXT NOT NULL,
+                    pages_expected_or_discovered INTEGER NOT NULL,
+                    pages_consumed INTEGER NOT NULL,
+                    pagination_exhausted INTEGER NOT NULL,
+                    continuation_token_remaining INTEGER NOT NULL,
+                    first_enumeration_accession_set_hash TEXT NOT NULL,
+                    post_holdback_accession_set_hash TEXT NOT NULL,
+                    accession_set_stable INTEGER NOT NULL,
+                    discovery_gap_count INTEGER NOT NULL,
+                    enumeration_status TEXT NOT NULL,
+                    enumerated_at TEXT NOT NULL,
+                    receipt_hash TEXT NOT NULL
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_source_snapshots (
+                    snapshot_id TEXT PRIMARY KEY,
+                    partition_id TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    request_identity TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    raw_payload TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    pagination_metadata TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL,
+                    source_contract_version TEXT NOT NULL
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_expected_accession_sets (
+                    expected_set_id TEXT NOT NULL,
+                    candidate_frontier TEXT NOT NULL,
+                    accession_number TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    public_availability_at TEXT NOT NULL,
+                    source_snapshot_identity TEXT NOT NULL,
+                    source_content_hash TEXT NOT NULL,
+                    PRIMARY KEY (expected_set_id, accession_number)
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_gap_events (
+                    event_id TEXT PRIMARY KEY,
+                    event_sequence INTEGER NOT NULL,
+                    gap_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    partition_id TEXT NOT NULL,
+                    issuer_cik TEXT NOT NULL,
+                    gap_type TEXT NOT NULL,
+                    window_start TEXT NOT NULL,
+                    window_end TEXT NOT NULL,
+                    event_payload TEXT NOT NULL,
+                    occurred_at TEXT NOT NULL,
+                    event_hash TEXT NOT NULL
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_certification_receipts_v2 (
+                    receipt_id TEXT PRIMARY KEY,
+                    schema_version TEXT NOT NULL,
+                    receipt_sequence INTEGER NOT NULL UNIQUE,
+                    previous_receipt_id TEXT NOT NULL,
+                    previous_receipt_sha256 TEXT NOT NULL,
+                    previous_certified_frontier TEXT NOT NULL,
+                    candidate_frontier TEXT NOT NULL,
+                    certified_frontier TEXT NOT NULL,
+                    closure_proof_sha256 TEXT NOT NULL,
+                    universe_build_id TEXT NOT NULL,
+                    universe_content_hash TEXT NOT NULL,
+                    required_partition_count INTEGER NOT NULL,
+                    required_partition_set_hash TEXT NOT NULL,
+                    certified_at TEXT NOT NULL,
+                    certifier_component_version TEXT NOT NULL,
+                    certifier_functional_sha TEXT NOT NULL,
+                    receipt_sha256 TEXT NOT NULL
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_audit_disputes (
+                    dispute_id TEXT PRIMARY KEY,
+                    receipt_id TEXT NOT NULL,
+                    candidate_frontier TEXT NOT NULL,
+                    dispute_state TEXT NOT NULL,
+                    sla_state TEXT NOT NULL,
+                    escalation_level TEXT NOT NULL,
+                    certification_state TEXT NOT NULL,
+                    first_divergent_step TEXT NOT NULL,
+                    minimal_counterexample TEXT NOT NULL,
+                    detected_at TEXT NOT NULL,
+                    triage_deadline TEXT NOT NULL,
+                    root_cause_deadline TEXT NOT NULL,
+                    reconciliation_deadline TEXT NOT NULL,
+                    governance_deadline TEXT NOT NULL,
+                    sla_policy_version TEXT NOT NULL,
+                    sla_policy_sha256 TEXT NOT NULL,
+                    resolved_at TEXT,
+                    resolution_artifact_hash TEXT
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sm_audit_dispute_history (
+                    history_id TEXT PRIMARY KEY,
+                    dispute_id TEXT NOT NULL,
+                    sequence INTEGER NOT NULL,
+                    from_dispute_state TEXT NOT NULL,
+                    to_dispute_state TEXT NOT NULL,
+                    from_sla_state TEXT NOT NULL,
+                    to_sla_state TEXT NOT NULL,
+                    from_escalation_level TEXT NOT NULL,
+                    to_escalation_level TEXT NOT NULL,
+                    transition_trigger TEXT NOT NULL,
+                    transition_payload TEXT NOT NULL,
+                    transitioned_at TEXT NOT NULL
+                )
+                """
+            )
+
             # Indices for rapid querying
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_f4_symbol ON form4_parsed_transactions(issuer_symbol)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_f4_tx_date ON form4_parsed_transactions(transaction_date)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_f4_filing_date ON form4_parsed_transactions(filing_date)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_f4_public_avail ON form4_parsed_transactions(public_availability_at)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_ledger_public_avail ON sm_source_availability_ledger(public_availability_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_gaps_status ON sm_source_gaps(status, partition_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_gaps_cik ON sm_source_gaps(issuer_cik)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_late_events_breach ON sm_late_arrival_events(is_integrity_breach)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_inc_partitions_cik ON sm_incremental_partitions(issuer_cik)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_enum_receipts_cik ON sm_partition_enumeration_receipts(issuer_cik)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_gap_events_seq ON sm_gap_events(event_sequence)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cert_receipts_v2_seq ON sm_certification_receipts_v2(receipt_sequence)")
             conn.commit()
         finally:
             conn.close()

@@ -31,6 +31,21 @@ from analyst_dashboard.smart_money.backfill_models import (
     SourceAvailabilityRecord,
 )
 from analyst_dashboard.smart_money.backfill_engine import SmartMoneyBackfillEngine
+from analyst_dashboard.smart_money.incremental_models import (
+    IncrementalRunStatus,
+    GapType,
+    GapStatus,
+    LateArrivalEventType,
+    FreshnessStatus,
+    ReadinessStatus,
+    IncrementalCycle,
+    SourceGap,
+    PartitionWatermark,
+    WatermarkReceipt,
+    LateArrivalEvent,
+    FreshnessEvaluation,
+)
+from analyst_dashboard.smart_money.incremental_engine import SmartMoneyIncrementalEngine
 
 __all__ = [
     "SmartMoneyTransaction",
@@ -56,4 +71,18 @@ __all__ = [
     "SmartMoneyBackfillManifest",
     "SourceAvailabilityRecord",
     "SmartMoneyBackfillEngine",
+    "IncrementalRunStatus",
+    "GapType",
+    "GapStatus",
+    "LateArrivalEventType",
+    "FreshnessStatus",
+    "ReadinessStatus",
+    "IncrementalCycle",
+    "SourceGap",
+    "PartitionWatermark",
+    "WatermarkReceipt",
+    "LateArrivalEvent",
+    "FreshnessEvaluation",
+    "SmartMoneyIncrementalEngine",
 ]
+
