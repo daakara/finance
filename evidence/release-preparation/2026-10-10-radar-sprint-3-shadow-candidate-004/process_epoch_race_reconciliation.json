@@ -1,0 +1,108 @@
+{
+  "schema_version": "4.0.0",
+  "artifact_type": "NON_FUNCTIONAL_PROCESS_EPOCH_RACE_RECONCILIATION_EVIDENCE",
+  "reconciliation_id": "RADAR_SPRINT_3_SHADOW_CANDIDATE_004_PROCESS_EPOCH_RACE_RECONCILIATION",
+  "candidate_generation_id": "CANDIDATE_GENERATION_004",
+  "candidate_functional_sha": "fafba93ccd60f40792bb3f5ea6702804eeea40cf",
+  "candidate_freeze_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+  "candidate_freeze_blob": "9d4b8c147dae437bc4d045e3d33076129cce20e9",
+  "prior_pre_push_reconciliation_sha256": "895c2e567e25a53d0099363960aab36f38a8c87999db3f9d1d2e27a92a9d4af4",
+  "prior_pre_push_reconciliation_commit": "acd4ca5fd805e150cc83b494df72ad352dd30f47",
+  "origin_main": "793df4844cfe0879ad8e6143a256dd214cf0b908",
+  "classification": "NON_FUNCTIONAL",
+  "process_architecture": {
+    "model": "REAL_OS_PROCESSES_SPAWN",
+    "mp_start_method": "spawn",
+    "ipc_primitives": [
+      "multiprocessing.Barrier",
+      "multiprocessing.Queue"
+    ],
+    "sqlite_database_path_class": "LOCAL_ON_DISK_SQLITE",
+    "sqlite_journal_mode": "WAL",
+    "sqlite_busy_timeout_ms": 30000,
+    "activation_race_uses_threads_only": false,
+    "activation_race_uses_real_os_processes": true
+  },
+  "process_activation_run_race": {
+    "iterations_requested": 100,
+    "iterations_executed": 100,
+    "failures": 0,
+    "outcome_1_activation_first": 60,
+    "outcome_2_run_first": 40,
+    "ambiguous_epoch_assignments": 0,
+    "current_epoch_runs_preceding_activation_sequence": 0,
+    "logical_runs_without_membership": 0,
+    "multiple_memberships": 0,
+    "status": "PASS"
+  },
+  "process_close_run_race": {
+    "iterations_requested": 100,
+    "iterations_executed": 100,
+    "failures": 0,
+    "run_committed_before_close": 45,
+    "close_committed_before_run": 55,
+    "runs_assigned_to_closed_epoch_after_close_sequence": 0,
+    "post_close_reassignments": 0,
+    "status": "PASS"
+  },
+  "competing_epoch_activations": {
+    "competing_activation_process_count": 16,
+    "max_active_natural_epochs_per_stream": 1,
+    "successful_activations": 1,
+    "failed_activations_expected": 15,
+    "duplicate_successful_activations": 0,
+    "duplicate_activation_receipts": 0,
+    "partial_activations": 0,
+    "status": "PASS"
+  },
+  "process_retry_across_epoch_transition": {
+    "run_a_original_epoch_preserved": true,
+    "run_a_original_prospective_disposition_preserved": true,
+    "retry_reevaluates_active_epoch": false,
+    "retry_creates_second_membership": false,
+    "retry_denominator_duplication": 0,
+    "status": "PASS"
+  },
+  "raw_database_invariants": {
+    "active_epochs_above_one_per_stream": 0,
+    "active_epoch_without_receipt": 0,
+    "logical_runs_without_membership": 0,
+    "logical_runs_with_multiple_memberships": 0,
+    "current_epoch_rows_preceding_activation_sequence": 0,
+    "rows_joining_epoch_after_close_boundary": 0,
+    "pre_epoch_rows_in_current_denominator": 0,
+    "non_natural_rows_in_natural_denominator": 0,
+    "duplicate_admissions": 0,
+    "partial_evidence_bundles": 0,
+    "denominator_reconstruction_delta": 0,
+    "status": "PASS"
+  },
+  "c003_denominator_regression": {
+    "c003_reproduction_oracle_expected": 7,
+    "c004_denominator_reconstructed": 7,
+    "c004_denominator_reconstruction_delta": 0,
+    "legacy_rows_counted": 0,
+    "status": "PASS"
+  },
+  "governed_authority_parity": {
+    "candidate_004_freeze_immutability": "PASS",
+    "previous_reconciliation_immutability": "PASS",
+    "unauthorized_frozen_authority_change": 0
+  },
+  "final_decision": {
+    "outcome": "OUTCOME_A",
+    "functional_change_required": false,
+    "schema_change_required": false,
+    "candidate_004_freeze_mutation_required": false,
+    "candidate_004_status": "FROZEN_PRE_DEPLOY",
+    "candidate_004_local_engineering_certification": "PASS",
+    "candidate_004_production_release_readiness": "PASS",
+    "candidate_005_required": false,
+    "next_authorized_gate": "CANDIDATE_004_CONTROLLED_PRODUCTION_RELEASE",
+    "push_status": "NOT_AUTHORIZED",
+    "deploy_status": "NOT_AUTHORIZED",
+    "production_epoch_activated": false,
+    "first_natural_capture_evidence_authorized": false
+  },
+  "reconciled_at": "2026-10-10T12:35:00+00:00"
+}
