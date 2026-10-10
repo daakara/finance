@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0.0",
+  "certification_id": "RADAR_SPRINT_3_PRODUCTION_SHADOW_CERTIFICATION",
+  "candidate_generation_id": "CANDIDATE_GENERATION_001",
+  "candidate_functional_sha": "bf0a574de569c2aefc219d5e9b1f891d9b6219d5",
+  "candidate_semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+  "governance_sha256": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+  "governance_hash_parity": "PASS",
+  "candidate_freeze_status": "FROZEN_PRE_DEPLOY",
+  "candidate_freeze_artifact": {
+    "path": "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_001_FREEZE.json",
+    "sha256": "52c54823d3859fd0febfb1b131186ad3943e46ca5874325276ea5f079091481b"
+  },
+  "release_note": {
+    "path": "docs/releases/2026-10-10-radar-sprint-3-production-shadow.md",
+    "sha256": "f2274bfe695495cda52471feaaa6c63da6f6bca13b0036bd59c38171443f6b48"
+  },
+  "production_baseline": "a0d8f53e1bb7ac42b7ebbba9ec0b27312b07d94f",
+  "expected_deployment_targets": {
+    "railway_backend": {
+      "project": "tranquil-radiance",
+      "service": "web",
+      "environment": "production",
+      "health_endpoint": "https://web-production-470560.up.railway.app/health"
+    },
+    "cloudflare_frontend": {
+      "project": "arx-frontend",
+      "domains": [
+        "https://finance-xp8.pages.dev",
+        "https://www.arxterminal.com"
+      ]
+    }
+  },
+  "test_evidence": {
+    "shadow_focused_tests": {
+      "collected": 30,
+      "passed": 30,
+      "failed": 0,
+      "duration_seconds": 1.49
+    },
+    "release_union_baseline_tests": {
+      "collected": 550,
+      "passed": 550,
+      "failed": 0,
+      "duration_seconds": 30.03
+    }
+  },
+  "ci_evidence": {
+    "local_replication_status": "PASS",
+    "critical_ast_flake8_errors": 0,
+    "new_failure_count": 0,
+    "pre_existing_failure_count": 13,
+    "release_exception_status": "UNCHANGED_PRE_EXISTING_FAILURE"
+  },
+  "non_actioning_verification": {
+    "shadow_user_order_execution": "DISABLED",
+    "shadow_portfolio_mutation": "DISABLED",
+    "shadow_broker_execution_hook": "DISABLED",
+    "shadow_primary_user_decision_override": "DISABLED",
+    "shadow_actioning_call_paths": 0,
+    "production_shadow_non_actioning_gate": "PASS"
+  },
+  "contamination_controls": {
+    "exposure_ledger_identity": "analyst_dashboard.vcp.sprint_3_shadow_governance:ProductionExposureLedger",
+    "holdout_exclusion_registry_identity": "analyst_dashboard.vcp.sprint_3_shadow_governance:HoldoutExclusionRegistry",
+    "prospective_decision_ledger_identity": "analyst_dashboard.vcp.sprint_3_shadow_governance:ProspectiveDecisionLedger",
+    "denominator_metrics_identity": "analyst_dashboard.vcp.sprint_3_shadow_governance:ShadowDenominatorMetrics",
+    "unregistered_exposure_path_exists": false,
+    "candidate_developer_unrestricted_outcome_access": false,
+    "outcome_automatically_feeds_model": false,
+    "outcome_automatically_feeds_threshold_config": false,
+    "outcome_automatically_relabels_vcp": false
+  },
+  "external_validation_deferral": {
+    "external_validation_status": "DEFERRED",
+    "vcp_external_domain_authority_gate": "DEFERRED / NOT_ESTABLISHED",
+    "gate_12_status": "DEFERRED / NOT_SATISFIED",
+    "gold_external_domain_authority_status": "NOT_ESTABLISHED",
+    "silver_external_domain_authority_status": "NOT_ESTABLISHED",
+    "holdout_commitment_status": "NOT_CREATED",
+    "model_tuning_status": "FROZEN",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "shadow_release_certification": "PASS",
+  "certified_at": "2026-10-10T08:15:30Z"
+}
