@@ -118,3 +118,33 @@ Neither defect is treated as an acceptable release exception. The release gate r
   - `RELEASE_BLOCKERS_REMAIN = NO`
   - `LOCAL_RELEASE_READINESS = PASS`
 
+---
+
+## 6. Epoch 4 V5 Non-Circular Manifest Succession & Final Certification (2026-10-10)
+
+- **Circularity Root Cause**:
+  - In candidate `e88b9fe`, `EPOCH_4_MANIFEST_V4.json` attempted to certify source state from prior commit `cd092247`, but tracked file `analyst_dashboard/governance/experiment_ledger.py` was concurrently modified in `e88b9fe` to implement V4 verification routing and fail-closed checks. This created an identity contradiction where the active runtime hash of `experiment_ledger.py` (`233f996c...`) diverged from the frozen V4 hash (`deeab0e2...`).
+  - Furthermore, `createdAtUtc` in V4 was recorded as `2026-10-10T00:50:00Z`, which reflected local time rather than UTC, rendering it anachronistic relative to commit timestamp `2026-10-09T23:05:03Z`.
+- **Non-Circular Succession Protocol**:
+  - **Commit 1 (`cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`)**: `V5_ROUTING_PREPARATION_COMMIT_SHA1`. Frozen source snapshot staging all V5 routing methods (`get_epoch4_v5_manifest()`, `verify_epoch4_manifest()`, `verify_epoch4_v4_manifest()`) and fail-closed handling without creating the V5 manifest file. All 10 governed executable files are immutable as of this commit.
+  - **Commit 2 (`EPOCH4_V5_ACTIVATION_COMMIT_SHA1`)**: Manifest activation and certification. Creates `EPOCH_4_MANIFEST_V5.json`, updates tests in `tests/test_live_dual_price_contract.py`, and records release documentation. Touches 0 governed executable files.
+- **V5 Authority & Manifest Lineage**:
+  - `MANIFEST_VERSION = 5.0.0`
+  - `SUPERSEDES_MANIFEST = EPOCH_4_MANIFEST_V4.json`
+  - `PARENT_RUNTIME_SHA = 95a9c4313ffe026dc63b1962c490259c57e78697497e8649081832005687d689`
+  - `CERTIFIED_SOURCE_SNAPSHOT_COMMIT_SHA1 = cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`
+  - `AUTHORITY_SCOPE = CURRENT_PRODUCTION_AUTHORITY`
+  - `ACTIVATION_COMMIT_BINDING = EXTERNAL_RELEASE_EVIDENCE`
+  - `CREATED_AT_UTC = 2026-10-10T00:24:00Z` (true UTC, strictly after snapshot commit committer time `2026-10-10T00:22:06Z`).
+  - `OBSERVATION_GOVERNANCE_MANIFEST_HASH = 99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5`
+  - `EXPERIMENT_LEDGER_SHA256 = 233f996c6b9912ea918351935f2e275d206723780f8f8af23f54f7abf114af26` (exact match between frozen snapshot and disk).
+- **Immutability Invariant**:
+  - `EPOCH_4_MANIFEST_V4.json` preserved 100% byte-for-byte untouched (`95a9c431...`, file SHA-256 `3c717a7c...`).
+  - `EPOCH_4_MANIFEST_V3.json`, `EPOCH_4_MANIFEST.json`, `EPOCH_3_MANIFEST.json`, `EPOCH_2_MANIFEST.json` preserved 100% byte-for-byte untouched.
+- **Release Status**:
+  - `FINAL_ZERO_EXCEPTION_CERTIFICATION = PASS`
+  - `RELEASE_BLOCKERS_REMAIN = NO`
+  - `PUSH_STATUS = NOT_AUTHORIZED`
+  - `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
+
+

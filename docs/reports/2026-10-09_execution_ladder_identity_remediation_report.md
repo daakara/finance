@@ -332,4 +332,69 @@ Four of the ten manifest files diverged due to subsequent authorized mainline fu
 * `PUSH_STATUS = NOT_AUTHORIZED`
 * `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
 
+---
+
+### 11. EPOCH 4 V5 NON-CIRCULAR MANIFEST SUCCESSION & FINAL CERTIFICATION GATE (2026-10-10)
+
+#### 11.1 Problem Statement & Circularity Elimination
+In prior candidate commit `e88b9fe7711426d86176472a3ba87dff6c49eea9`, `EPOCH_4_MANIFEST_V4.json` resolved the mainline drift divergence but suffered from two identity flaws:
+1. **Source Hash Circularity**: The manifest recorded hashes for code certified as of commit `cd092247`, but tracked file `analyst_dashboard/governance/experiment_ledger.py` was concurrently modified in `e88b9fe` to implement the V4 loading and verification routines. As a result, the live source hash of `experiment_ledger.py` (`233f996c...`) diverged from the manifest entry (`deeab0e2...`).
+2. **Anachronistic Timestamp**: `createdAtUtc` was recorded as `2026-10-10T00:50:00Z` (derived from local time `02:50:00 +02:00` with an erroneous `Z` indicator), which post-dated the commit timestamp `2026-10-09T23:05:03Z`.
+
+To achieve mathematically sound, non-circular governance, a strict two-commit succession architecture was executed.
+
+#### 11.2 Two-Commit Non-Circular Succession Architecture
+* **Commit 1 (`V5_ROUTING_PREPARATION_COMMIT_SHA1`)**:
+  - SHA-1: `cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`
+  - Committer Time: `2026-10-10T02:22:06+02:00` (`2026-10-10T00:22:06Z`)
+  - Staged and committed all V5 routing logic in `analyst_dashboard/governance/experiment_ledger.py` (`get_epoch4_v5_manifest()`, `verify_epoch4_manifest()`, `verify_epoch4_v4_manifest()`) and fail-closed handling without introducing `EPOCH_4_MANIFEST_V5.json`.
+  - All 10 governed executable files are completely frozen and immutable as of this snapshot commit.
+* **Commit 2 (`EPOCH4_V5_ACTIVATION_COMMIT_SHA1`)**:
+  - Introduces `EPOCH_4_MANIFEST_V5.json` referencing `cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a` as `certifiedSourceSnapshotCommitSha1`.
+  - Activates V5 tests in `tests/test_live_dual_price_contract.py` asserting V5 verification and V4 historical byte-for-byte immutability.
+  - Commits 0 modifications to any governed executable code file, guaranteeing a 100% exact match between disk files and manifest entries.
+  - External binding: `activationCommitBinding = "EXTERNAL_RELEASE_EVIDENCE"` prevents self-referential commit hashing.
+
+#### 11.3 V5 Cryptographic Authority & Manifest Lineage
+* `MANIFEST_VERSION = 5.0.0`
+* `EPOCH_ID = ARX_PROSPECTIVE_VALIDATION_EPOCH_4`
+* `SUPERSEDES_MANIFEST = EPOCH_4_MANIFEST_V4.json`
+* `PARENT_RUNTIME_SHA = 95a9c4313ffe026dc63b1962c490259c57e78697497e8649081832005687d689`
+* `CERTIFIED_SOURCE_SNAPSHOT_COMMIT_SHA1 = cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`
+* `AUTHORITY_SCOPE = CURRENT_PRODUCTION_AUTHORITY`
+* `ACTIVATION_COMMIT_BINDING = EXTERNAL_RELEASE_EVIDENCE`
+* `CREATED_AT_UTC = 2026-10-10T00:24:00Z` (true UTC, strictly after snapshot commit time `2026-10-10T00:22:06Z`).
+* `OBSERVATION_GOVERNANCE_MANIFEST_HASH = 99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5`
+* **Frozen Executable Files**:
+  1. `analyst_dashboard/governance/passive_capture.py`: `fd3cae6f682640b7182468dba053c0e97bcf9f1a73a2ca01ef5d6b81199dea93`
+  2. `analyst_dashboard/governance/experiment_ledger.py`: `233f996c6b9912ea918351935f2e275d206723780f8f8af23f54f7abf114af26`
+  3. `analyst_dashboard/governance/governance_db.py`: `aa11e7920c290d5acd65b3c93bc232e42d481f59b2a49800b9407ed4e9658c8f`
+  4. `analyst_dashboard/governance/storage.py`: `ebb0ceecac1acef022d23637f97efb96fd751763f4078412e1f95d052354c889`
+  5. `analyst_dashboard/data/fred_fetcher.py`: `d88dd714d76af3eb112a966db02b71f10308c8e36b3f5f089734a5c3c4307c08`
+  6. `api/routes/analytics.py`: `e16428bd27d591211d112e4eb125b21f0ccb4c3493b56a5900deb8854551c3be`
+  7. `analyst_dashboard/data/alpaca_fetcher.py`: `f409b75627bd95b588c2ccac8028ea22f106dedb957912b0c3bcab7271c64ff9`
+  8. `analyst_dashboard/data/market_price_state.py`: `83846723d76a9b3e0a91cda0fc9373179075fe5773ebceb89a1e30e3e505a797`
+  9. `api/routes/screener.py`: `da146804e0b12d158d595f3457d95de0f6160f0e56cec53d73c8a99bef7d8572`
+  10. `analyst_dashboard/analyzers/gem_screener.py`: `7ffbe27ab943ea5e2352f4411a7dbd065df3653f6e38bfce7f1407826b33d6b2`
+
+#### 11.4 Immutability Invariant Verification
+* `EPOCH_4_MANIFEST_V4.json` preserved 100% byte-for-byte untouched (`95a9c431...`, file SHA-256 `3c717a7c...`). Status: `SUPERSEDED_METADATA_DEFECT`.
+* `EPOCH_4_MANIFEST_V3.json` (`7fc5ece9...`), `EPOCH_4_MANIFEST.json` (`2e550089...`), `EPOCH_3_MANIFEST.json` (`932f4498...`), and `EPOCH_2_MANIFEST.json` (`3ba81b70...`) preserved 100% byte-for-byte untouched.
+* Historical evidence records under `evidence/release-preparation/` preserved 100% immutable.
+
+#### 11.5 Final Certification Invariants
+* `RELEASE_BLOCKERS_REMAIN = NO`
+* `FINAL_ZERO_EXCEPTION_CERTIFICATION = PASS`
+* `QUANTITATIVE_BEHAVIOR_CHANGED = NO`
+* `HISTORICAL_EVIDENCE_MUTATED = NO`
+* `PRODUCTION_DATA_MUTATED = NO`
+* `SYNTHETIC_PROSPECTIVE_TRAFFIC = NO`
+* `VCP_EPOCH_002_STATUS = PAUSED_PENDING_EXTERNAL_CUSTODIAN`
+* `GATE_12_STATUS = NOT_SATISFIED`
+* `MODEL_TUNING_STATUS = FROZEN`
+* `RADAR_SPRINT_3_AUTHORIZED = NO`
+* `PUSH_STATUS = NOT_AUTHORIZED`
+* `DEPLOYMENT_STATUS = NOT_AUTHORIZED`
+
+
 
