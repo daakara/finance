@@ -19,6 +19,20 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+from analyst_dashboard.analyzers.scanner_publication_integrity import (
+    CANONICAL_VCP_RULESET_HASH,
+    CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+    CANONICAL_VCP_SCORE_MODEL_HASH,
+    CANONICAL_VCP_DATA_PROVENANCE_HASH,
+    CANONICAL_VCP_UNIVERSE_HASH,
+    CANONICAL_VCP_FRESHNESS_HASH,
+    ScannerPublicationIntegrityEngine,
+)
+
+CANONICAL_DEPENDENCY_LOCK_HASH: str = "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b"
+CANONICAL_RUNTIME_CONFIG_HASH: str = "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366"
+CANONICAL_SPRINT_3_GOVERNANCE_SHA256: str = "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207"
+
 
 # ======================================================================
 # 0. SPRINT 3 GOVERNANCE CONSTANTS & BOUNDARIES
@@ -406,6 +420,216 @@ class SemanticDeltaLedger:
         return len(self._deltas)
 
 
+# ======================================================================
+# 3.1 CANDIDATE SEMANTIC CLOSURE
+# ======================================================================
+
+@dataclass(frozen=True)
+class SemanticClosureItem:
+    input_key: str
+    authority_name: str
+    authority_hash: str
+    classification: str
+    description: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "input_key": self.input_key,
+            "authority_name": self.authority_name,
+            "authority_hash": self.authority_hash,
+            "classification": self.classification,
+            "description": self.description,
+        }
+
+
+@dataclass
+class CandidateSemanticClosure:
+    items: Dict[str, SemanticClosureItem]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def validate(self) -> None:
+        for k, v in self.items.items():
+            k_lower = k.lower()
+            auth_lower = v.authority_name.lower()
+            if any(term in k_lower or term in auth_lower for term in ("holdout", "future_outcome", "secret", "private_case")):
+                raise ValueError(f"Holdout/future/secret data prohibited in CandidateSemanticClosure: {k}")
+            if v.classification not in (
+                "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+                "SPRINT_3_POST_DEFERRAL_SEMANTIC_DELTA",
+                "NON_SEMANTIC_EXECUTION_INPUT",
+            ):
+                raise ValueError(f"Unclassified semantic input: {k} -> {v.classification}")
+
+    def compute_closure_hash(self) -> str:
+        self.validate()
+        semantic_payload = {
+            k: {
+                "authority_name": item.authority_name,
+                "authority_hash": item.authority_hash,
+                "classification": item.classification,
+            }
+            for k, item in sorted(self.items.items())
+            if item.classification in (
+                "PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+                "SPRINT_3_POST_DEFERRAL_SEMANTIC_DELTA",
+            )
+        }
+        raw_bytes = json.dumps(semantic_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(raw_bytes).hexdigest()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "semantic_closure_hash": self.compute_closure_hash(),
+            "items": {k: v.to_dict() for k, v in sorted(self.items.items())},
+            "item_count": len(self.items),
+            "semantic_item_count": sum(1 for item in self.items.values() if item.classification != "NON_SEMANTIC_EXECUTION_INPUT"),
+            "non_semantic_item_count": sum(1 for item in self.items.values() if item.classification == "NON_SEMANTIC_EXECUTION_INPUT"),
+            "holdout_information_count": 0,
+            "future_outcome_count": 0,
+            "secret_values_count": 0,
+            "metadata": self.metadata,
+        }
+
+
+def build_canonical_semantic_closure(metadata: Optional[Dict[str, Any]] = None) -> CandidateSemanticClosure:
+    items = {
+        "vcp_predicate_semantics": SemanticClosureItem(
+            input_key="vcp_predicate_semantics",
+            authority_name="MINERVINI_VCP_STAGE_COMPRESSION_CONFIRMED",
+            authority_hash=CANONICAL_VCP_RULESET_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Stage 2 Advancing Growth Phase and 3-stage contraction confirmation predicate",
+        ),
+        "predicate_precedence": SemanticClosureItem(
+            input_key="predicate_precedence",
+            authority_name="VCP_3STAGE_COMPRESSION_OVER_STAGE2_ADVANCING",
+            authority_hash=CANONICAL_VCP_RULESET_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Strict priority: contraction confirmation requires valid Stage 2 progression",
+        ),
+        "threshold_authorities": SemanticClosureItem(
+            input_key="threshold_authorities",
+            authority_name="VCP_CONFLUENCE_SCORE_FLOOR_75",
+            authority_hash=CANONICAL_VCP_SCORE_MODEL_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Minimum confluence score floor 75.0 for qualified candidate ranking",
+        ),
+        "data_eligibility": SemanticClosureItem(
+            input_key="data_eligibility",
+            authority_name="DAILY_CANDLE_COUNT_GTE_50_LIMIT_60",
+            authority_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Candle depth threshold: at least 50 valid daily candles from sqlite market db",
+        ),
+        "price_interpretation": SemanticClosureItem(
+            input_key="price_interpretation",
+            authority_name="CURRENT_PRICE_GT_ZERO_UNADJUSTED_CLOSE",
+            authority_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Positive unadjusted latest trade price as authoritative execution reference",
+        ),
+        "volume_interpretation": SemanticClosureItem(
+            input_key="volume_interpretation",
+            authority_name="DAILY_VOLUME_POSITIVE_MA50_CONTRACTION",
+            authority_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Volume drying up along successive contractions compared against 50-day average",
+        ),
+        "trend_base_semantics": SemanticClosureItem(
+            input_key="trend_base_semantics",
+            authority_name="STAGE_2_ADVANCING_GROWTH_PHASE_MA200_UPWARD",
+            authority_hash=CANONICAL_VCP_RULESET_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="200-day SMA sloping upward, 50-day SMA above 150-day and 200-day SMAs",
+        ),
+        "missing_data_treatment": SemanticClosureItem(
+            input_key="missing_data_treatment",
+            authority_name="MISSING_PRICE_OR_HISTORY_QUARANTINE_FAIL_CLOSED",
+            authority_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Fail closed: missing price or history drops candidate into unavailable reasons",
+        ),
+        "corporate_action_treatment": SemanticClosureItem(
+            input_key="corporate_action_treatment",
+            authority_name="RAW_EXCHANGE_PRICING_NO_SYNTHETIC_DIVIDEND_ADJUSTMENT",
+            authority_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Exchange-provided unadjusted prices; zero synthetic forward adjustments",
+        ),
+        "universe_eligibility": SemanticClosureItem(
+            input_key="universe_eligibility",
+            authority_name="ARX_CANONICAL_LONG_TERM_V1_US_EQUITIES",
+            authority_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Eligible population: liquid US equities in ARX canonical long-term universe",
+        ),
+        "universe_builder_identity": SemanticClosureItem(
+            input_key="universe_builder_identity",
+            authority_name="ARX_CANONICAL_UNIVERSE_BUILDER_V1",
+            authority_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Deterministic membership generation from UniverseStore published build attestation",
+        ),
+        "scanner_ruleset": SemanticClosureItem(
+            input_key="scanner_ruleset",
+            authority_name="CANONICAL_MINERVINI_VCP_2_0_0",
+            authority_hash=CANONICAL_VCP_RULESET_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="OptimalExecutionEngine calculate_trade_levels with ruleset 2.0.0",
+        ),
+        "fallback_behavior": SemanticClosureItem(
+            input_key="fallback_behavior",
+            authority_name="HISTORICAL_REGRESSION_FIXTURE_CANONICAL_VCP_UNIVERSE",
+            authority_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="In absence of published universe build, fallback to CANONICAL_VCP_UNIVERSE fixture",
+        ),
+        "snapshot_authority": SemanticClosureItem(
+            input_key="snapshot_authority",
+            authority_name="ATOMIC_FENCED_PUBLICATION_IMMUTABLE_SNAPSHOT",
+            authority_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Fenced publisher lease verification and atomic SQLite snapshot publication",
+        ),
+        "point_in_time_data_semantics": SemanticClosureItem(
+            input_key="point_in_time_data_semantics",
+            authority_name="AS_OF_DAY_SNAPSHOT_ISOLATION_NO_LOOKAHEAD",
+            authority_hash=CANONICAL_VCP_FRESHNESS_HASH,
+            classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+            description="Evaluation strictly as-of snapshot publication day; zero lookahead leakage",
+        ),
+        "candidate_runtime_configuration": SemanticClosureItem(
+            input_key="candidate_runtime_configuration",
+            authority_name="RUNTIME_CONFIG_CONFLUENCE_SCORE_MODEL",
+            authority_hash=CANONICAL_RUNTIME_CONFIG_HASH,
+            classification="NON_SEMANTIC_EXECUTION_INPUT",
+            description="Confluence engine weighting model and technical configuration parameters",
+        ),
+        "dependency_identity": SemanticClosureItem(
+            input_key="dependency_identity",
+            authority_name="REQUIREMENTS_LOCK_PYTHON311",
+            authority_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
+            classification="NON_SEMANTIC_EXECUTION_INPUT",
+            description="Pinned dependencies in requirements.txt",
+        ),
+    }
+    return CandidateSemanticClosure(items=items, metadata=metadata or {})
+
+
+CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH: str = build_canonical_semantic_closure().compute_closure_hash()
+
+
+def get_candidate_functional_sha() -> str:
+    try:
+        import subprocess
+        res = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True).strip()
+        if len(res) == 40:
+            return res
+    except Exception:
+        pass
+    return "41299120acd252eea99c960e5eb846b439ba27c9"
+
+
 @dataclass(frozen=True)
 class CandidateGeneration:
     candidate_generation_id: str
@@ -415,6 +639,15 @@ class CandidateGeneration:
     semantic_delta_set: Tuple[str, ...]
     activated_at: str
     retired_at: Optional[str] = None
+    vcp_ruleset_hash: Optional[str] = None
+    universe_builder_hash: Optional[str] = None
+    scanner_integration_hash: Optional[str] = None
+    data_interpretation_hash: Optional[str] = None
+    runtime_semantic_hash: Optional[str] = None
+    dependency_lock_hash: Optional[str] = None
+    runtime_config_hash: Optional[str] = None
+    governance_sha256: Optional[str] = None
+    activation_status: str = "FROZEN_PRE_DEPLOY"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -425,6 +658,15 @@ class CandidateGeneration:
             "semantic_delta_set": list(self.semantic_delta_set),
             "activated_at": self.activated_at,
             "retired_at": self.retired_at,
+            "vcp_ruleset_hash": self.vcp_ruleset_hash,
+            "universe_builder_hash": self.universe_builder_hash,
+            "scanner_integration_hash": self.scanner_integration_hash,
+            "data_interpretation_hash": self.data_interpretation_hash,
+            "runtime_semantic_hash": self.runtime_semantic_hash,
+            "dependency_lock_hash": self.dependency_lock_hash,
+            "runtime_config_hash": self.runtime_config_hash,
+            "governance_sha256": self.governance_sha256,
+            "activation_status": self.activation_status,
         }
 
 
@@ -443,6 +685,15 @@ class CandidateGenerationManager:
         parent_generation: Optional[str] = None,
         semantic_delta_set: Optional[Sequence[str]] = None,
         activated_at: Optional[str] = None,
+        vcp_ruleset_hash: Optional[str] = None,
+        universe_builder_hash: Optional[str] = None,
+        scanner_integration_hash: Optional[str] = None,
+        data_interpretation_hash: Optional[str] = None,
+        runtime_semantic_hash: Optional[str] = None,
+        dependency_lock_hash: Optional[str] = None,
+        runtime_config_hash: Optional[str] = None,
+        governance_sha256: Optional[str] = None,
+        activation_status: str = "FROZEN_PRE_DEPLOY",
     ) -> CandidateGeneration:
         if not candidate_generation_id.startswith("CANDIDATE_GENERATION_"):
             raise ValueError(f"Invalid candidate_generation_id format: {candidate_generation_id}")
@@ -468,6 +719,15 @@ class CandidateGenerationManager:
             semantic_delta_set=deltas_tuple,
             activated_at=now_str,
             retired_at=None,
+            vcp_ruleset_hash=vcp_ruleset_hash,
+            universe_builder_hash=universe_builder_hash,
+            scanner_integration_hash=scanner_integration_hash,
+            data_interpretation_hash=data_interpretation_hash,
+            runtime_semantic_hash=runtime_semantic_hash,
+            dependency_lock_hash=dependency_lock_hash,
+            runtime_config_hash=runtime_config_hash,
+            governance_sha256=governance_sha256,
+            activation_status=activation_status,
         )
         self._generations[candidate_generation_id] = gen
         self._active_generation_id = candidate_generation_id
@@ -693,13 +953,14 @@ class ShadowRoutingGuard:
 # 7. INITIAL DENOMINATOR INITIALIZER
 # ======================================================================
 
-@dataclass(frozen=True)
+@dataclass
 class ShadowDenominatorMetrics:
     shadow_record_count: int = 0
     natural_production_shadow_record_count: int = 0
     synthetic_shadow_record_count: int = 0
     replay_shadow_record_count: int = 0
     admin_forced_shadow_record_count: int = 0
+    test_shadow_record_count: int = 0
     unregistered_exposures: int = 0
     unledgered_semantic_deltas: int = 0
     unknown_candidate_generations: int = 0
@@ -715,12 +976,29 @@ class ShadowDenominatorMetrics:
             raise ValueError("Initial replay_shadow_record_count must be 0")
         if self.admin_forced_shadow_record_count != 0:
             raise ValueError("Initial admin_forced_shadow_record_count must be 0")
+        if self.test_shadow_record_count != 0:
+            raise ValueError("Initial test_shadow_record_count must be 0")
         if self.unregistered_exposures != 0:
             raise ValueError("Initial unregistered_exposures must be 0")
         if self.unledgered_semantic_deltas != 0:
             raise ValueError("Initial unledgered_semantic_deltas must be 0")
         if self.unknown_candidate_generations != 0:
             raise ValueError("Initial unknown_candidate_generations must be 0")
+
+    def record_trigger(self, trigger_class: str) -> None:
+        self.shadow_record_count += 1
+        if trigger_class == "NATURAL_PRODUCTION":
+            self.natural_production_shadow_record_count += 1
+        elif trigger_class == "SYNTHETIC":
+            self.synthetic_shadow_record_count += 1
+        elif trigger_class == "REPLAY":
+            self.replay_shadow_record_count += 1
+        elif trigger_class == "ADMIN_FORCED":
+            self.admin_forced_shadow_record_count += 1
+        elif trigger_class == "TEST":
+            self.test_shadow_record_count += 1
+        else:
+            raise ValueError(f"Unknown trigger class for denominator accounting: {trigger_class}")
 
 
 # ======================================================================
@@ -739,6 +1017,125 @@ class Sprint3ShadowGovernanceSuite:
         self.outcome_settlement_ledger = OutcomeSettlementLedger(self.prospective_decision_ledger)
         self.routing_guard = ShadowRoutingGuard()
         self.denominator = ShadowDenominatorMetrics()
+
+        self._register_default_generation()
+
+    def _register_default_generation(self) -> CandidateGeneration:
+        sha = get_candidate_functional_sha()
+        return self.candidate_generation_manager.register_generation(
+            candidate_generation_id="CANDIDATE_GENERATION_001",
+            candidate_sha=sha,
+            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+            parent_generation=None,
+            semantic_delta_set=[],
+            activated_at="2026-10-10T07:52:18Z",
+            vcp_ruleset_hash=CANONICAL_VCP_RULESET_HASH,
+            universe_builder_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            scanner_integration_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+            data_interpretation_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            runtime_semantic_hash=ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint(),
+            dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
+            runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
+            governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
+            activation_status="FROZEN_PRE_DEPLOY",
+        )
+
+    def record_shadow_observation(
+        self,
+        security_id: str,
+        evaluation_as_of: str,
+        universe_build_id: str,
+        snapshot_run_id: str,
+        candidate_generation_id: str = "CANDIDATE_GENERATION_001",
+        candidate_sha: Optional[str] = None,
+        semantic_closure_hash: Optional[str] = None,
+        runtime_config_hash: Optional[str] = None,
+        dependency_lock_hash: Optional[str] = None,
+        data_provenance_hash: Optional[str] = None,
+        ruleset_id: str = "MINERVINI_VCP",
+        ruleset_version: str = "2.0.0",
+        predicate_vector_hash: Optional[str] = None,
+        classification: str = "CONFIRMED_VCP_STAGE_2",
+        decision_posture: str = "QUALIFIED_WATCHLIST",
+        input_fingerprint: Optional[str] = None,
+        group_or_episode_id: Optional[str] = None,
+        trigger_class: str = "NATURAL_PRODUCTION",
+    ) -> Dict[str, Any]:
+        """Atomically record prospective decision, exposure record, and holdout exclusion."""
+        # 1. Enforce non-actioning routing guard first (fail closed)
+        self.routing_guard.assert_non_actioning()
+
+        # 2. Check candidate generation validity
+        try:
+            gen = self.candidate_generation_manager.get_generation(candidate_generation_id)
+        except KeyError:
+            self.denominator.unknown_candidate_generations += 1
+            raise ValueError(f"UNKNOWN_CANDIDATE_GENERATION: {candidate_generation_id}")
+
+        eff_sha = candidate_sha or gen.candidate_sha
+        eff_closure = semantic_closure_hash or gen.semantic_closure_hash
+        eff_runtime_config = runtime_config_hash or gen.runtime_config_hash or CANONICAL_RUNTIME_CONFIG_HASH
+        eff_lock = dependency_lock_hash or gen.dependency_lock_hash or CANONICAL_DEPENDENCY_LOCK_HASH
+        eff_prov = data_provenance_hash or gen.data_interpretation_hash or CANONICAL_VCP_DATA_PROVENANCE_HASH
+        eff_pred = predicate_vector_hash or hashlib.sha256(f"{security_id}:{classification}:{evaluation_as_of}".encode("utf-8")).hexdigest()
+        eff_input = input_fingerprint or hashlib.sha256(f"{security_id}:{evaluation_as_of}".encode("utf-8")).hexdigest()
+        eff_episode = group_or_episode_id or f"EPISODE:{security_id}:{evaluation_as_of}"
+
+        # 3. Atomic Coherent Persistence
+        try:
+            dec_rec = self.prospective_decision_ledger.record_decision(
+                evaluation_as_of=evaluation_as_of,
+                known_at=datetime.now(timezone.utc).isoformat(),
+                security_id=security_id,
+                universe_build_id=universe_build_id,
+                snapshot_run_id=snapshot_run_id,
+                candidate_generation_id=candidate_generation_id,
+                candidate_sha=eff_sha,
+                semantic_closure_hash=eff_closure,
+                runtime_config_hash=eff_runtime_config,
+                dependency_lock_hash=eff_lock,
+                data_provenance_hash=eff_prov,
+                ruleset_id=ruleset_id,
+                ruleset_version=ruleset_version,
+                predicate_vector_hash=eff_pred,
+                classification=classification,
+                decision_posture=decision_posture,
+                input_fingerprint=eff_input,
+            )
+
+            exp_rec = self.exposure_ledger.record_exposure(
+                security_id=security_id,
+                evaluation_as_of=evaluation_as_of,
+                group_or_episode_id=eff_episode,
+                universe_build_id=universe_build_id,
+                snapshot_run_id=snapshot_run_id,
+                candidate_generation_id=candidate_generation_id,
+                candidate_sha=eff_sha,
+                semantic_closure_hash=eff_closure,
+                runtime_config_hash=eff_runtime_config,
+                data_provenance_hash=eff_prov,
+            )
+
+            excl_hashes = self.exclusion_registry.register_exclusion(
+                security_id=security_id,
+                evaluation_as_of=evaluation_as_of,
+                group_or_episode_id=eff_episode,
+            )
+
+            # Update denominator classification metrics
+            self.denominator.record_trigger(trigger_class)
+
+            return {
+                "decision_id": dec_rec.decision_record_id,
+                "exposure_id": exp_rec.exposure_id,
+                "exclusion_hashes": excl_hashes,
+                "trigger_class": trigger_class,
+                "candidate_generation_id": candidate_generation_id,
+                "security_id": security_id,
+            }
+        except Exception as e:
+            self.denominator.unregistered_exposures += 1
+            raise RuntimeError(f"ATOMIC_SHADOW_OBSERVATION_FAILED: {str(e)}") from e
 
     def get_governance_snapshot(self) -> Dict[str, Any]:
         return {
@@ -768,3 +1165,19 @@ class Sprint3ShadowGovernanceSuite:
             },
             "denominator": asdict(self.denominator),
         }
+
+
+_DEFAULT_SHADOW_SUITE: Optional[Sprint3ShadowGovernanceSuite] = None
+
+
+def get_default_shadow_suite() -> Sprint3ShadowGovernanceSuite:
+    global _DEFAULT_SHADOW_SUITE
+    if _DEFAULT_SHADOW_SUITE is None:
+        _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite()
+    return _DEFAULT_SHADOW_SUITE
+
+
+def reset_default_shadow_suite() -> Sprint3ShadowGovernanceSuite:
+    global _DEFAULT_SHADOW_SUITE
+    _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite()
+    return _DEFAULT_SHADOW_SUITE

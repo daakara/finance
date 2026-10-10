@@ -6,12 +6,19 @@ Implements deterministic market-wide universe execution for:
 - SMART_MONEY
 """
 
+import json
+import hashlib
 import time
 import uuid
 import logging
 import threading
 from typing import Dict, Any, List, Optional
 import pandas as pd
+
+from analyst_dashboard.vcp.sprint_3_shadow_governance import (
+    Sprint3ShadowGovernanceSuite,
+    get_default_shadow_suite,
+)
 
 from analyst_dashboard.analyzers.scanner_contract import (
     ScannerStatus,
@@ -88,12 +95,14 @@ class VCPScannerRunner:
         fenced_publisher: Optional[FencedPublisher] = None,
         coordination_store: Optional[CoordinationStore] = None,
         lease_policy: Optional[LeasePolicy] = None,
+        shadow_suite: Optional[Sprint3ShadowGovernanceSuite] = None,
     ):
         self.market_db = market_db or MarketDatabaseEngine()
         self.snapshot_store = snapshot_store or ScannerSnapshotStore()
         self.confluence_engine = confluence_engine or ConfluenceEngine()
         self.universe_store = universe_store or UniverseStore()
         self.lease_policy = lease_policy or PRODUCTION_LEASE_POLICY
+        self.shadow_suite = shadow_suite or get_default_shadow_suite()
 
         coord_db_path = getattr(self.snapshot_store, "db_path", None)
         if coordination_store:
@@ -299,6 +308,30 @@ class VCPScannerRunner:
             version_tuple = self.get_version_tuple()
             semantic_fingerprint = ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint()
 
+            # Record shadow observations under Sprint 3 contamination-controlled governance
+            shadow_trigger_class = (
+                "NATURAL_PRODUCTION" if trigger_type == TriggerType.SCHEDULED
+                else ("ADMIN_FORCED" if (operator_request_id or trigger_type == TriggerType.OPERATOR)
+                      else "NATURAL_PRODUCTION")
+            )
+            for cand in qualified_candidates:
+                evidence_dict = cand.get("scanner_evidence", {})
+                self.shadow_suite.record_shadow_observation(
+                    security_id=cand["symbol"],
+                    evaluation_as_of=data_as_of,
+                    universe_build_id=target_build_id or "ARX_CANONICAL_UNIVERSE_BUILD",
+                    snapshot_run_id=run_id,
+                    candidate_generation_id="CANDIDATE_GENERATION_001",
+                    ruleset_id="MINERVINI_VCP",
+                    ruleset_version=version_tuple.ruleset_version,
+                    predicate_vector_hash=hashlib.sha256(json.dumps(evidence_dict, sort_keys=True).encode("utf-8")).hexdigest(),
+                    classification="CONFIRMED_VCP_STAGE_2",
+                    decision_posture="QUALIFIED_WATCHLIST",
+                    input_fingerprint=hashlib.sha256(f"{cand['symbol']}:{cand['current_price']}".encode("utf-8")).hexdigest(),
+                    group_or_episode_id=f"EPISODE:{cand['symbol']}:{data_as_of}",
+                    trigger_class=shadow_trigger_class,
+                )
+
             # Coverage statistics
             data_completeness_pct = round((scannable_count / max(1, eligible_count)) * 100, 1)
             scan_coverage_pct = round((scanned_successfully_count / max(1, eligible_count)) * 100, 1)
@@ -350,6 +383,13 @@ class VCPScannerRunner:
                 provenance_dict["coordination"] = lease.to_provenance()
             else:
                 provenance_dict["coordination"] = "NOT_APPLICABLE_PRE_COORDINATION"
+            provenance_dict["shadow_governance"] = {
+                "sprint_3_shadow_engineering": "AUTHORIZED",
+                "shadow_evidence_authority": "PRODUCTION_ENGINEERING_OBSERVATION",
+                "shadow_domain_authority": "INTERNAL_REFERENCE_ONLY",
+                "external_validation_status": "DEFERRED",
+                "candidate_generation_id": "CANDIDATE_GENERATION_001",
+            }
 
             snapshot_record = {
                 "snapshot_id": snapshot_id,

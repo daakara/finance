@@ -449,3 +449,222 @@ def test_t_evidence_authority_status_remains_production_engineering_observation(
         validate_claim("ARX Terminal is alpha generating in production")
 
     assert validate_claim("ARX Terminal VCP is production shadow observed and engineering verified") is True
+
+
+# ======================================================================
+# SECTION 9 & 12: MUTATION SENSITIVITY & ATOMIC WIRING TESTS
+# ======================================================================
+
+from analyst_dashboard.vcp.sprint_3_shadow_governance import (
+    CandidateSemanticClosure,
+    SemanticClosureItem,
+    build_canonical_semantic_closure,
+    CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+    get_default_shadow_suite,
+    reset_default_shadow_suite,
+)
+
+
+def test_u_candidate_mutation_sensitivity_vcp_predicate():
+    """Mutating VCP predicate semantics must change the closure hash."""
+    base_closure = build_canonical_semantic_closure()
+    base_hash = base_closure.compute_closure_hash()
+    assert base_hash == CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH
+
+    mutated_items = dict(base_closure.items)
+    mutated_items["vcp_predicate_semantics"] = SemanticClosureItem(
+        input_key="vcp_predicate_semantics",
+        authority_name="MUTATED_VCP_PREDICATE_SEMANTICS",
+        authority_hash="f" * 64,
+        classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        description="Mutated predicate test",
+    )
+    mutated_closure = CandidateSemanticClosure(items=mutated_items)
+    mutated_hash = mutated_closure.compute_closure_hash()
+
+    assert mutated_hash != base_hash
+
+
+def test_v_candidate_mutation_sensitivity_threshold():
+    """Mutating threshold semantic authority must change the closure hash."""
+    base_closure = build_canonical_semantic_closure()
+    base_hash = base_closure.compute_closure_hash()
+
+    mutated_items = dict(base_closure.items)
+    mutated_items["threshold_authorities"] = SemanticClosureItem(
+        input_key="threshold_authorities",
+        authority_name="MUTATED_CONFLUENCE_SCORE_FLOOR_80",
+        authority_hash="e" * 64,
+        classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        description="Mutated threshold test",
+    )
+    mutated_closure = CandidateSemanticClosure(items=mutated_items)
+    mutated_hash = mutated_closure.compute_closure_hash()
+
+    assert mutated_hash != base_hash
+
+
+def test_w_candidate_mutation_sensitivity_universe():
+    """Mutating universe semantic authority must change the closure hash."""
+    base_closure = build_canonical_semantic_closure()
+    base_hash = base_closure.compute_closure_hash()
+
+    mutated_items = dict(base_closure.items)
+    mutated_items["universe_builder_identity"] = SemanticClosureItem(
+        input_key="universe_builder_identity",
+        authority_name="MUTATED_UNIVERSE_BUILDER_V2",
+        authority_hash="d" * 64,
+        classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        description="Mutated universe builder test",
+    )
+    mutated_closure = CandidateSemanticClosure(items=mutated_items)
+    mutated_hash = mutated_closure.compute_closure_hash()
+
+    assert mutated_hash != base_hash
+
+
+def test_x_candidate_mutation_sensitivity_data_interpretation():
+    """Mutating data interpretation authority must change the closure hash."""
+    base_closure = build_canonical_semantic_closure()
+    base_hash = base_closure.compute_closure_hash()
+
+    mutated_items = dict(base_closure.items)
+    mutated_items["data_eligibility"] = SemanticClosureItem(
+        input_key="data_eligibility",
+        authority_name="MUTATED_DAILY_CANDLE_COUNT_GTE_100",
+        authority_hash="c" * 64,
+        classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        description="Mutated candle threshold test",
+    )
+    mutated_closure = CandidateSemanticClosure(items=mutated_items)
+    mutated_hash = mutated_closure.compute_closure_hash()
+
+    assert mutated_hash != base_hash
+
+
+def test_y_non_semantic_metadata_stability():
+    """Mutating non-semantic metadata or execution inputs must not change the closure hash."""
+    base_closure = build_canonical_semantic_closure(metadata={"run_timestamp": "2026-10-10T00:00:00Z"})
+    base_hash = base_closure.compute_closure_hash()
+
+    # Mutate metadata dictionary
+    mutated_metadata_closure = build_canonical_semantic_closure(metadata={"run_timestamp": "2026-10-11T99:99:99Z", "debug_trace": "xyz"})
+    assert mutated_metadata_closure.compute_closure_hash() == base_hash
+
+    # Mutate non-semantic execution input
+    mutated_items = dict(base_closure.items)
+    mutated_items["dependency_identity"] = SemanticClosureItem(
+        input_key="dependency_identity",
+        authority_name="REQUIREMENTS_LOCK_PYTHON312",
+        authority_hash="1" * 64,
+        classification="NON_SEMANTIC_EXECUTION_INPUT",
+        description="Non-semantic dependency hash change",
+    )
+    non_semantic_mutated_closure = CandidateSemanticClosure(items=mutated_items)
+    assert non_semantic_mutated_closure.compute_closure_hash() == base_hash
+
+
+def test_z_holdout_and_future_outcome_prohibited_in_closure():
+    """Holdout information or future outcome data must fail validation by construction."""
+    base_closure = build_canonical_semantic_closure()
+
+    mutated_items = dict(base_closure.items)
+    mutated_items["holdout_case_data"] = SemanticClosureItem(
+        input_key="holdout_case_data",
+        authority_name="HOLDOUT_SECRET_KEYS",
+        authority_hash="0" * 64,
+        classification="PREEXISTING_FROZEN_SPRINT_2B_AUTHORITY",
+        description="Prohibited holdout leakage",
+    )
+    leaked_closure = CandidateSemanticClosure(items=mutated_items)
+    with pytest.raises(ValueError, match="Holdout/future/secret data prohibited"):
+        leaked_closure.compute_closure_hash()
+
+
+def test_aa_atomic_shadow_observation_recording():
+    """Prospective decision, exposure record, and holdout exclusion must commit atomically."""
+    suite = reset_default_shadow_suite()
+
+    obs = suite.record_shadow_observation(
+        security_id="NVDA",
+        evaluation_as_of="2026-10-10",
+        universe_build_id="UB_TEST_001",
+        snapshot_run_id="SNAP_TEST_001",
+        candidate_generation_id="CANDIDATE_GENERATION_001",
+        trigger_class="NATURAL_PRODUCTION",
+    )
+
+    assert obs["decision_id"] is not None
+    assert obs["exposure_id"] is not None
+    assert obs["exclusion_hashes"]["case_content_hash"] is not None
+
+    # Check prospective decision ledger
+    assert suite.prospective_decision_ledger.count() == 1
+    # Check exposure ledger
+    assert suite.exposure_ledger.count() == 1
+    # Check exclusion registry
+    assert suite.exclusion_registry.is_case_excluded("NVDA", "2026-10-10") is True
+    # Check denominator metrics
+    assert suite.denominator.shadow_record_count == 1
+    assert suite.denominator.natural_production_shadow_record_count == 1
+    assert suite.denominator.unregistered_exposures == 0
+
+
+def test_bb_unregistered_exposure_fails_closed():
+    """Unknown candidate generation must fail closed and record zero partial exposure."""
+    suite = reset_default_shadow_suite()
+
+    with pytest.raises(ValueError, match="UNKNOWN_CANDIDATE_GENERATION"):
+        suite.record_shadow_observation(
+            security_id="TSLA",
+            evaluation_as_of="2026-10-10",
+            universe_build_id="UB_TEST_001",
+            snapshot_run_id="SNAP_TEST_001",
+            candidate_generation_id="UNKNOWN_CANDIDATE_GEN_999",
+            trigger_class="NATURAL_PRODUCTION",
+        )
+
+    # Exposure ledger and decision ledger must have zero records
+    assert suite.exposure_ledger.count() == 0
+    assert suite.prospective_decision_ledger.count() == 0
+    assert suite.denominator.unknown_candidate_generations == 1
+
+
+def test_cc_denominator_classification_isolation():
+    """SYNTHETIC, REPLAY, ADMIN_FORCED, and TEST records must not enter natural production count."""
+    suite = reset_default_shadow_suite()
+
+    classes = ["SYNTHETIC", "REPLAY", "ADMIN_FORCED", "TEST"]
+    for idx, trig in enumerate(classes, start=1):
+        suite.record_shadow_observation(
+            security_id=f"SYM{idx}",
+            evaluation_as_of="2026-10-10",
+            universe_build_id="UB_TEST_001",
+            snapshot_run_id=f"SNAP_{idx}",
+            candidate_generation_id="CANDIDATE_GENERATION_001",
+            trigger_class=trig,
+        )
+
+    assert suite.denominator.natural_production_shadow_record_count == 0
+    assert suite.denominator.synthetic_shadow_record_count == 1
+    assert suite.denominator.replay_shadow_record_count == 1
+    assert suite.denominator.admin_forced_shadow_record_count == 1
+    assert suite.denominator.test_shadow_record_count == 1
+    assert suite.denominator.shadow_record_count == 4
+
+
+def test_dd_scanner_runner_wires_shadow_governance():
+    """VCPScannerRunner must be wired to shadow suite and record observations upon scan."""
+    from analyst_dashboard.analyzers.scanner_runner import VCPScannerRunner
+    from analyst_dashboard.coordination import TriggerType
+
+    suite = reset_default_shadow_suite()
+    runner = VCPScannerRunner(shadow_suite=suite)
+    assert runner.shadow_suite is suite
+
+    # Verify shadow suite is accessible via governance snapshot
+    snap = runner.shadow_suite.get_governance_snapshot()
+    assert snap["sprint_3_shadow_engineering"] == "AUTHORIZED"
+    assert snap["routing_guards"]["user_order_execution"] == "DISABLED"
+    assert snap["routing_guards"]["portfolio_mutation"] == "DISABLED"
+
