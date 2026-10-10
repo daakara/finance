@@ -28,10 +28,27 @@ from analyst_dashboard.analyzers.scanner_publication_integrity import (
     CANONICAL_VCP_FRESHNESS_HASH,
     ScannerPublicationIntegrityEngine,
 )
+from analyst_dashboard.vcp.sprint_3_durable_storage import (
+    Sprint3DurableEvidenceStore,
+    compute_deterministic_observation_key,
+    resolve_shadow_db_path,
+    SCHEMA_VERSION as DURABLE_SCHEMA_VERSION,
+    MIGRATION_ID as DURABLE_MIGRATION_ID,
+    CANONICAL_DDL_HASH as DURABLE_DDL_HASH,
+    OBSERVATION_KEY_SPECIFICATION,
+)
 
 CANONICAL_DEPENDENCY_LOCK_HASH: str = "3eb917b44689050dae2e20176d86bcaefdec5d3ad4479fcf6a48ae08af86c40b"
 CANONICAL_RUNTIME_CONFIG_HASH: str = "c0a949db07c96cf83dd8243b3c10834347f0cec9c1c4da3624acbfd1245ae366"
 CANONICAL_SPRINT_3_GOVERNANCE_SHA256: str = "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207"
+
+CANDIDATE_001_STATUS: str = "SUPERSEDED_AFTER_EVIDENCE_INFRASTRUCTURE_DEFECT"
+CANDIDATE_001_DOMAIN_SEMANTICS_STATUS: str = "UNCHANGED"
+CANDIDATE_001_EVIDENCE_DURABILITY_CERTIFICATION: str = "FAIL"
+CANDIDATE_001_NATURAL_EVIDENCE_DENOMINATOR: int = 0
+
+CANDIDATE_002_GENERATION_ID: str = "CANDIDATE_GENERATION_002"
+CANDIDATE_002_PARENT_GENERATION: str = "CANDIDATE_GENERATION_001"
 
 
 # ======================================================================
@@ -1008,7 +1025,8 @@ class ShadowDenominatorMetrics:
 class Sprint3ShadowGovernanceSuite:
     """Central orchestrator for Sprint 3 shadow engineering and contamination control."""
 
-    def __init__(self) -> None:
+    def __init__(self, durable_store: Optional[Sprint3DurableEvidenceStore] = None) -> None:
+        self.durable_store = durable_store if durable_store is not None else Sprint3DurableEvidenceStore()
         self.exposure_ledger = ProductionExposureLedger()
         self.exclusion_registry = HoldoutExclusionRegistry()
         self.semantic_delta_ledger = SemanticDeltaLedger()
@@ -1022,9 +1040,10 @@ class Sprint3ShadowGovernanceSuite:
 
     def _register_default_generation(self) -> CandidateGeneration:
         sha = get_candidate_functional_sha()
-        return self.candidate_generation_manager.register_generation(
+        # Candidate 001: Historical predecessor, superseded after durability defect
+        self.candidate_generation_manager.register_generation(
             candidate_generation_id="CANDIDATE_GENERATION_001",
-            candidate_sha=sha,
+            candidate_sha="bf0a574de569c2aefc219d5e9b1f891d9b6219d5",
             semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
             parent_generation=None,
             semantic_delta_set=[],
@@ -1037,8 +1056,27 @@ class Sprint3ShadowGovernanceSuite:
             dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
             runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
             governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
+            activation_status="SUPERSEDED_AFTER_EVIDENCE_INFRASTRUCTURE_DEFECT",
+        )
+        # Candidate 002: Durable persistent succession
+        gen2 = self.candidate_generation_manager.register_generation(
+            candidate_generation_id="CANDIDATE_GENERATION_002",
+            candidate_sha=sha,
+            semantic_closure_hash=CANONICAL_CANDIDATE_SEMANTIC_CLOSURE_HASH,
+            parent_generation="CANDIDATE_GENERATION_001",
+            semantic_delta_set=["DURABLE_STORAGE_REMEDIATION", "NATURAL_TRIGGER_ROUTING_REMEDIATION"],
+            activated_at="2026-10-10T08:40:00Z",
+            vcp_ruleset_hash=CANONICAL_VCP_RULESET_HASH,
+            universe_builder_hash=CANONICAL_VCP_UNIVERSE_HASH,
+            scanner_integration_hash=CANONICAL_VCP_EVIDENCE_SCHEMA_HASH,
+            data_interpretation_hash=CANONICAL_VCP_DATA_PROVENANCE_HASH,
+            runtime_semantic_hash=ScannerPublicationIntegrityEngine.get_canonical_vcp_fingerprint(),
+            dependency_lock_hash=CANONICAL_DEPENDENCY_LOCK_HASH,
+            runtime_config_hash=CANONICAL_RUNTIME_CONFIG_HASH,
+            governance_sha256=CANONICAL_SPRINT_3_GOVERNANCE_SHA256,
             activation_status="FROZEN_PRE_DEPLOY",
         )
+        return gen2
 
     def record_shadow_observation(
         self,
@@ -1046,7 +1084,7 @@ class Sprint3ShadowGovernanceSuite:
         evaluation_as_of: str,
         universe_build_id: str,
         snapshot_run_id: str,
-        candidate_generation_id: str = "CANDIDATE_GENERATION_001",
+        candidate_generation_id: str = "CANDIDATE_GENERATION_002",
         candidate_sha: Optional[str] = None,
         semantic_closure_hash: Optional[str] = None,
         runtime_config_hash: Optional[str] = None,
@@ -1060,8 +1098,9 @@ class Sprint3ShadowGovernanceSuite:
         input_fingerprint: Optional[str] = None,
         group_or_episode_id: Optional[str] = None,
         trigger_class: str = "NATURAL_PRODUCTION",
+        failure_injection_point: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Atomically record prospective decision, exposure record, and holdout exclusion."""
+        """Atomically record prospective decision, exposure record, and holdout exclusion in single DB transaction."""
         # 1. Enforce non-actioning routing guard first (fail closed)
         self.routing_guard.assert_non_actioning()
 
@@ -1081,8 +1120,31 @@ class Sprint3ShadowGovernanceSuite:
         eff_input = input_fingerprint or hashlib.sha256(f"{security_id}:{evaluation_as_of}".encode("utf-8")).hexdigest()
         eff_episode = group_or_episode_id or f"EPISODE:{security_id}:{evaluation_as_of}"
 
-        # 3. Atomic Coherent Persistence
+        # 3. Durable Transactional Admission (Single Transaction Bundle)
         try:
+            durable_receipt = self.durable_store.admit_observation_bundle(
+                security_id=security_id,
+                evaluation_as_of=evaluation_as_of,
+                universe_build_id=universe_build_id,
+                snapshot_run_id=snapshot_run_id,
+                candidate_generation_id=candidate_generation_id,
+                candidate_sha=eff_sha,
+                semantic_closure_hash=eff_closure,
+                runtime_config_hash=eff_runtime_config,
+                dependency_lock_hash=eff_lock,
+                data_provenance_hash=eff_prov,
+                ruleset_id=ruleset_id,
+                ruleset_version=ruleset_version,
+                predicate_vector_hash=eff_pred,
+                classification=classification,
+                decision_posture=decision_posture,
+                input_fingerprint=eff_input,
+                group_or_episode_id=eff_episode,
+                origin_class=trigger_class,
+                failure_injection_point=failure_injection_point,
+            )
+
+            # Mirror to in-memory ledgers for backwards compatibility
             dec_rec = self.prospective_decision_ledger.record_decision(
                 evaluation_as_of=evaluation_as_of,
                 known_at=datetime.now(timezone.utc).isoformat(),
@@ -1130,8 +1192,13 @@ class Sprint3ShadowGovernanceSuite:
                 "exposure_id": exp_rec.exposure_id,
                 "exclusion_hashes": excl_hashes,
                 "trigger_class": trigger_class,
+                "origin_class": trigger_class,
                 "candidate_generation_id": candidate_generation_id,
                 "security_id": security_id,
+                "observation_key": durable_receipt["observation_key"],
+                "admission_id": durable_receipt["admission_id"],
+                "receipt_hash": durable_receipt["receipt_hash"],
+                "durable_status": durable_receipt["status"],
             }
         except Exception as e:
             self.denominator.unregistered_exposures += 1
@@ -1164,20 +1231,29 @@ class Sprint3ShadowGovernanceSuite:
                 "primary_user_decision_override": ShadowRoutingGuard.SHADOW_PRIMARY_USER_DECISION_OVERRIDE,
             },
             "denominator": asdict(self.denominator),
+            "authoritative_denominator": self.durable_store.get_authoritative_denominator_counts(),
         }
 
 
 _DEFAULT_SHADOW_SUITE: Optional[Sprint3ShadowGovernanceSuite] = None
 
 
-def get_default_shadow_suite() -> Sprint3ShadowGovernanceSuite:
+def get_default_shadow_suite(db_path: Optional[str] = None) -> Sprint3ShadowGovernanceSuite:
     global _DEFAULT_SHADOW_SUITE
     if _DEFAULT_SHADOW_SUITE is None:
-        _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite()
+        _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite(
+            durable_store=Sprint3DurableEvidenceStore(db_path=db_path) if db_path else None
+        )
     return _DEFAULT_SHADOW_SUITE
 
 
-def reset_default_shadow_suite() -> Sprint3ShadowGovernanceSuite:
+def reset_default_shadow_suite(db_path: Optional[str] = None) -> Sprint3ShadowGovernanceSuite:
     global _DEFAULT_SHADOW_SUITE
-    _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite()
+    import os, tempfile, time
+    effective_db = db_path
+    if effective_db is None and os.getenv("PYTEST_CURRENT_TEST"):
+        effective_db = os.path.join(tempfile.gettempdir(), f"arx_shadow_test_{time.time_ns()}.db")
+    _DEFAULT_SHADOW_SUITE = Sprint3ShadowGovernanceSuite(
+        durable_store=Sprint3DurableEvidenceStore(db_path=effective_db) if effective_db else None
+    )
     return _DEFAULT_SHADOW_SUITE

@@ -144,6 +144,7 @@ class VCPScannerRunner:
         operator_request_id: Optional[str] = None,
         owner_instance_id: Optional[str] = None,
         bypass_thread_lock: bool = False,
+        shadow_trigger_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute deterministic market-wide scan across eligible universe:
@@ -310,9 +311,9 @@ class VCPScannerRunner:
 
             # Record shadow observations under Sprint 3 contamination-controlled governance
             shadow_trigger_class = (
-                "NATURAL_PRODUCTION" if trigger_type == TriggerType.SCHEDULED
-                else ("ADMIN_FORCED" if (operator_request_id or trigger_type == TriggerType.OPERATOR)
-                      else "NATURAL_PRODUCTION")
+                shadow_trigger_override if shadow_trigger_override in ("TEST", "REPLAY", "SYNTHETIC")
+                else ("NATURAL_PRODUCTION" if trigger_type == TriggerType.SCHEDULED and not operator_request_id
+                      else "ADMIN_FORCED")
             )
             for cand in qualified_candidates:
                 evidence_dict = cand.get("scanner_evidence", {})
@@ -321,7 +322,7 @@ class VCPScannerRunner:
                     evaluation_as_of=data_as_of,
                     universe_build_id=target_build_id or "ARX_CANONICAL_UNIVERSE_BUILD",
                     snapshot_run_id=run_id,
-                    candidate_generation_id="CANDIDATE_GENERATION_001",
+                    candidate_generation_id="CANDIDATE_GENERATION_002",
                     ruleset_id="MINERVINI_VCP",
                     ruleset_version=version_tuple.ruleset_version,
                     predicate_vector_hash=hashlib.sha256(json.dumps(evidence_dict, sort_keys=True).encode("utf-8")).hexdigest(),
@@ -481,7 +482,7 @@ class VCPScannerRunner:
                 return self._to_envelope(persisted)
 
         # First run or new release candidate: execute canonical market-wide scan
-        return self.execute_market_wide_scan()
+        return self.execute_market_wide_scan(trigger_type=TriggerType.SCHEDULED)
 
     def _to_envelope(self, rec: Dict[str, Any]) -> Dict[str, Any]:
         u_meta = rec.get("universe_metadata", {})

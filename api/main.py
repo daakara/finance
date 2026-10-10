@@ -56,6 +56,13 @@ def _warmup_worker():
     except Exception as e:
         logger.warning(f"Background pre-warming screener error: {e}")
 
+    try:
+        from analyst_dashboard.vcp.natural_trigger import get_natural_vcp_trigger_service
+        get_natural_vcp_trigger_service().trigger_natural_scan(reason="BOOT_WARMUP")
+        logger.info("Natural production VCP scan pre-warming completed successfully.")
+    except Exception as e:
+        logger.warning(f"Natural production VCP scan pre-warming deferred or failed: {e}")
+
 
 async def warmup_core_assets():
     """Background task to pre-fetch and warm up SQLite cache for core universe assets on container boot without blocking the event loop."""
