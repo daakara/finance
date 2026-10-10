@@ -820,7 +820,9 @@ function RadarContent() {
 
               {searchQuery && (
                 <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                  {filteredAssets.length} of {allAssets.length}
+                  {activeFilter === 'SMART_MONEY' && categoryMeta.SMART_MONEY.status === 'PIPELINE_PENDING'
+                    ? `Scanner Pending · ${allAssets.length} candidates`
+                    : `${filteredAssets.length} of ${allAssets.length}`}
                 </span>
               )}
 

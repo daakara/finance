@@ -200,7 +200,7 @@ function SmartMoneyContent() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-slate-400 max-w-3xl">
-              See what politicians on Capitol Hill, corporate CEOs, and big-money options whales are buying with their own capital — before it hits the headlines.
+              Inspect verified public STOCK Act disclosures, SEC Form 4 insider transactions, and institutional flow with statutory lag forensics.
             </p>
           </div>
 

@@ -612,6 +612,7 @@ function TerminalContent() {
                   symbol={selectedSymbol}
                   congressTrades={data?.smartMoney?.congressTrades}
                   optionsFlow={data?.smartMoney?.optionsFlow}
+                  status={data?.smartMoney?.status}
                   userRole={userRole}
                   onSelectSymbol={setSelectedSymbol}
                 />

@@ -77,6 +77,52 @@ class SecurityMasterService:
 
         return instrument
 
+    def resolve_batch_instruments(
+        self,
+        symbols: List[str],
+        force_refresh: bool = False,
+    ) -> Dict[str, CanonicalInstrument]:
+        """
+        Retrieves multiple canonical instruments using batch provider querying and persistence.
+        """
+        from typing import List, Dict
+        results: Dict[str, CanonicalInstrument] = {}
+        missing_symbols: List[str] = []
+
+        for s in symbols:
+            clean = s.strip().upper()
+            if not clean:
+                continue
+            if not force_refresh:
+                cached = self.repository.get(clean)
+                if cached is not None:
+                    results[clean] = cached
+                    continue
+            missing_symbols.append(clean)
+
+        if missing_symbols:
+            openfigi_batch = self.openfigi_adapter.fetch_batch_subtype_evidence(missing_symbols)
+            for s in missing_symbols:
+                openfigi_ev = openfigi_batch.get(s)
+                alpaca_ev = None
+                try:
+                    alpaca_ev = self.alpaca_adapter.fetch_asset_evidence(s)
+                except Exception:
+                    pass
+
+                instrument = self.normalization_engine.normalize(
+                    symbol=s,
+                    alpaca_evidence=alpaca_ev,
+                    openfigi_evidence=openfigi_ev,
+                )
+                try:
+                    self.repository.save(instrument)
+                except Exception as e:
+                    logger.debug(f"Failed to persist Security Master record for {s}: {e}")
+                results[s] = instrument
+
+        return results
+
 
 def get_security_master_service() -> SecurityMasterService:
     """Returns singleton instance of SecurityMasterService."""

@@ -10,6 +10,7 @@ interface CongressionalTradesCardProps {
   optionsFlow?: OptionsFlowItem[];
   userRole?: "DAY_TRADER" | "LONG_TERM";
   onSelectSymbol?: (symbol: string) => void;
+  status?: string;
 }
 
 export default function CongressionalTradesCard({
@@ -18,6 +19,7 @@ export default function CongressionalTradesCard({
   optionsFlow = [],
   userRole = "LONG_TERM",
   onSelectSymbol,
+  status,
 }: CongressionalTradesCardProps) {
   const isDayTrader = userRole === "DAY_TRADER";
   const [timeframe, setTimeframe] = useState<"7D" | "30D" | "90D" | "1Y" | "ALL">("30D");
@@ -487,7 +489,9 @@ export default function CongressionalTradesCard({
               ))
             ) : (
               <div className="p-4 bg-[#090d14] rounded-lg border border-[#243044] text-center text-xs text-slate-400">
-                No recent Capitol Hill transactions reported for {symbol} within statutory filing windows.
+                {status === "PIPELINE_PENDING" || status === "UNAVAILABLE"
+                  ? `Capitol Hill live disclosure feed is currently offline / pending deployment. Curated disclosures can be inspected on /smart-money.`
+                  : `No recent Capitol Hill transactions reported for ${symbol} within statutory filing windows.`}
               </div>
             )}
           </div>

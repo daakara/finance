@@ -303,3 +303,92 @@ class OpenFIGISubtypeAdapter:
                 error_message=f"EXCEPTION_{type(e).__name__}",
                 classification_status=ClassificationStatus.UNVERIFIED,
             )
+
+    def fetch_batch_subtype_evidence(self, symbols: List[str], chunk_size: Optional[int] = None) -> Dict[str, OpenFIGISubtypeEvidence]:
+        """
+        Queries OpenFIGI v3 mapping in chunks (max 10 without API key, max 100 with API key).
+        Returns mapping from symbol to OpenFIGISubtypeEvidence.
+        """
+        results: Dict[str, OpenFIGISubtypeEvidence] = {}
+        clean_symbols = [s.strip().upper() for s in symbols if s and s.strip()]
+        if not clean_symbols:
+            return results
+
+        eff_chunk_size = chunk_size or 10
+
+        for i in range(0, len(clean_symbols), eff_chunk_size):
+            chunk = clean_symbols[i:i + eff_chunk_size]
+            payload = [{"idType": "TICKER", "idValue": sym, "exchCode": "US"} for sym in chunk]
+
+            if self.rate_limiter is not None:
+                try:
+                    self.rate_limiter.acquire(timeout=self.timeout)
+                except TimeoutError:
+                    for sym in chunk:
+                        results[sym] = OpenFIGISubtypeEvidence(
+                            symbol=sym, success=False, error_message="RATE_LIMIT_TIMEOUT",
+                            classification_status=ClassificationStatus.UNVERIFIED
+                        )
+                    continue
+
+            try:
+                resp = self.session.post(
+                    self.base_url,
+                    json=payload,
+                    headers=self._headers(),
+                    timeout=self.timeout * 2,
+                )
+                if resp.status_code == 200:
+                    resp_data = resp.json()
+                    for idx, sym in enumerate(chunk):
+                        if idx < len(resp_data):
+                            entry = resp_data[idx]
+                            data_list = entry.get("data", [])
+                            if data_list:
+                                match = data_list[0]
+                                raw_type = match.get("securityType")
+                                raw_type2 = match.get("securityType2")
+                                sector = match.get("marketSector")
+                                figi = match.get("figi")
+                                composite_figi = match.get("compositeFIGI")
+                                share_class_figi = match.get("shareClassFIGI")
+                                exch_code = match.get("exchCode")
+                                sec_type, status = self.normalize_security_type(raw_type, raw_type2)
+                                results[sym] = OpenFIGISubtypeEvidence(
+                                    symbol=sym,
+                                    success=True,
+                                    security_type=sec_type,
+                                    classification_status=status,
+                                    raw_security_type=raw_type,
+                                    raw_security_type2=raw_type2,
+                                    market_sector=sector,
+                                    figi=figi,
+                                    composite_figi=composite_figi,
+                                    share_class_figi=share_class_figi,
+                                    exch_code=exch_code,
+                                    raw_payload=match,
+                                )
+                            else:
+                                results[sym] = OpenFIGISubtypeEvidence(
+                                    symbol=sym, success=False,
+                                    error_message=entry.get("warning", "NO_IDENTIFIER_FOUND"),
+                                    classification_status=ClassificationStatus.UNVERIFIED,
+                                )
+                        else:
+                            results[sym] = OpenFIGISubtypeEvidence(
+                                symbol=sym, success=False, error_message="MISSING_RESPONSE_ENTRY",
+                                classification_status=ClassificationStatus.UNVERIFIED,
+                            )
+                else:
+                    for sym in chunk:
+                        results[sym] = OpenFIGISubtypeEvidence(
+                            symbol=sym, success=False, error_message=f"HTTP_{resp.status_code}",
+                            classification_status=ClassificationStatus.UNVERIFIED,
+                        )
+            except Exception as e:
+                for sym in chunk:
+                    results[sym] = OpenFIGISubtypeEvidence(
+                        symbol=sym, success=False, error_message=f"EXCEPTION_{type(e).__name__}",
+                        classification_status=ClassificationStatus.UNVERIFIED,
+                    )
+        return results
