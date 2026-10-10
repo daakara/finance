@@ -1,0 +1,126 @@
+{
+  "closure_gate_version": "1.0.0",
+  "evaluated_at": "2026-10-10T16:10:30Z",
+  "working_branch": "arx/weekend-smart-money-investigation",
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_functional_code_changed": false,
+    "candidate_004_schema_changed": false,
+    "candidate_004_provenance_changed": false,
+    "candidate_004_denominator_changed": false,
+    "candidate_004_scheduler_changed": false,
+    "production_deployment": false,
+    "production_database_writes": 0,
+    "status": "PASS"
+  },
+  "universe_population_reconciliation": {
+    "universe_build_id": "UB_SM_20261010_79fb1c65ac99",
+    "source_population": 10435,
+    "eligible_population": 7710,
+    "ineligible_population": 2725,
+    "unresolved_population": 0,
+    "cik_mapped_population": 7710,
+    "scannable_population": 7710,
+    "accounting_equation_satisfied": true,
+    "exclusion_counts": {
+      "otc_excluded": 2725,
+      "adr_fpi_excluded": 0,
+      "etf_funds_excluded": 0,
+      "preferred_excluded": 0,
+      "warrant_excluded": 0,
+      "unit_excluded": 0,
+      "inactive_excluded": 0,
+      "unknown_exchange": 0,
+      "ambiguous_mapping": 0,
+      "missing_cik": 0,
+      "other_exclusion": 0
+    },
+    "discrepancy_classification": "SOURCE_DATA_CLASSIFICATION_LIMITATION_AND_SCANNABLE_INCLUDES_INELIGIBLE_SECURITIES",
+    "security_type_classification_authority": "NOT_ESTABLISHED",
+    "status": "FAIL_UNIVERSE_AUTHORITY"
+  },
+  "backfill_identity_reconciliation": {
+    "spec_hash_bound_fields": [
+      "universe_build_id",
+      "universe_content_hash",
+      "backfill_mode",
+      "requested_date_start",
+      "requested_date_end",
+      "source_contract_version",
+      "normalization_version",
+      "parser_version",
+      "eligibility_policy_version",
+      "cik_mapping_policy_version",
+      "request_policy_version"
+    ],
+    "execution_only_fields": [
+      "max_issuers",
+      "target_symbols",
+      "max_filings_per_issuer",
+      "resume",
+      "force_refresh"
+    ],
+    "backfill_scope_identity_model": "IDENTITY_COLLISION",
+    "stage1_manifest_id": "BF-3abc4df16f96eb37",
+    "stage2_manifest_id": "BF-3abc4df16f96eb37",
+    "stage3_manifest_id": "BF-3abc4df16f96eb37",
+    "earlier_stage_evidence_preserved": false,
+    "manifest_overwrite_occurred": true,
+    "status": "FAIL_BACKFILL_IDENTITY"
+  },
+  "date_range_reconciliation": {
+    "persisted_requested_start": "2026-08-01",
+    "persisted_requested_end": "2026-10-10",
+    "reported_narrative_start": "2026-09-01",
+    "reported_narrative_end": "2026-10-10",
+    "stage1_effective_start": "2026-08-01",
+    "stage1_effective_end": "2026-10-10",
+    "stage2_effective_start": "2026-08-01",
+    "stage2_effective_end": "2026-10-10",
+    "stage3_effective_start": "2026-08-01",
+    "stage3_effective_end": "2026-10-10",
+    "classification": "REPORTING_DEFECT",
+    "status": "RECONCILED_WITH_CORRECTION"
+  },
+  "knowledge_time_fallback_disproof": {
+    "acceptance_datetime_source": "SEC_SUBMISSIONS_METADATA",
+    "acceptance_datetime_as_knowledge_time": "VERIFIED",
+    "fallback_rule_evaluated": "filingDate + 22:00:00Z",
+    "fallback_test_cases": 71,
+    "fallback_early_cases": 67,
+    "fallback_equal_cases": 0,
+    "fallback_late_cases": 4,
+    "current_fallback_lookahead_safe": false,
+    "fail_closed_remediation": "Replaced with EXACT_SEC_ACCEPTANCE authority; missing timestamps fail closed without anticipatory assumption",
+    "public_availability_unknown_pit_eligible": false,
+    "look_ahead_leakage_cases": 0,
+    "unknown_availability_leakage": 0,
+    "status": "FALLBACK_DISPROVEN_AND_REMEDIATED"
+  },
+  "semantic_deprecation": {
+    "canonical_field": "is_open_market_purchase_evidence",
+    "legacy_alias": "is_positive_buying_conviction",
+    "new_code_uses_legacy_field": 0,
+    "deprecated_compatibility_only": true,
+    "status": "PASS"
+  },
+  "corpus_manifest_parity": {
+    "manifest_file": "docs/domain/radar/smart-money/SMART_MONEY_WAVE2B_HISTORICAL_CORPUS_MANIFEST.json",
+    "stored_corpus_manifest_sha256": "d5624fec4fbc2b6d0a6ad4d7c2cc2043ce480b6b2adc029a6ff59b725049c5f0",
+    "recomputed_corpus_manifest_sha256": "d5624fec4fbc2b6d0a6ad4d7c2cc2043ce480b6b2adc029a6ff59b725049c5f0",
+    "corpus_manifest_hash_parity": "PASS"
+  },
+  "regression_tests": {
+    "python_tests_passed": 58,
+    "python_tests_failed": 0,
+    "frontend_suites_passed": 20,
+    "status": "PASS"
+  },
+  "closure_verdict": {
+    "outcome": "OUTCOME C — IMPLEMENTATION DEFECT",
+    "smart_money_wave2b_status": "HOLD / REMEDIATION_REQUIRED",
+    "radar_production_status": "PIPELINE_PENDING",
+    "production_readiness": "NOT_AUTHORIZED",
+    "next_gate": "REMEDIATION_REQUIRED_BEFORE_WAVE2C"
+  }
+}

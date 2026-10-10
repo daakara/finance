@@ -1,0 +1,134 @@
+{
+  "audit_metadata": {
+    "audit_phase": "SMART_MONEY_WAVE2B_R1_REMEDIATION",
+    "timestamp": "2026-10-10T17:48:00Z",
+    "working_branch": "arx/weekend-smart-money-investigation",
+    "remediation_status": "LOCAL_REMEDIATION_VERIFIED",
+    "next_gate": "WAVE2B_CLOSURE_RECONCILIATION_RERUN",
+    "wave2c_authorized": false,
+    "production_deployment_authorized": false
+  },
+  "universe_authority_remediation": {
+    "security_type_classification_authority": "ESTABLISHED",
+    "fpi_classification_authority": "ESTABLISHED",
+    "fund_classification_authority": "ESTABLISHED",
+    "classification_authority_source": "OPENFIGI_V3_MAPPING_VIA_SECURITY_MASTER",
+    "security_classification_policy_version": "sec-class-v2.0",
+    "eligibility_implementation_version": "sm-eligibility-v2.0",
+    "legacy_universe_build_id": "UB_SM_20261010_79fb1c65ac99",
+    "legacy_universe_mutated": false,
+    "new_universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+    "new_universe_content_hash": "ccd99943c46d1a9892c6b25cf712ceee73bb14c6941fe9ab8e34968220fd822c",
+    "source_population": 10435,
+    "eligible_population": 106,
+    "ineligible_population": 2749,
+    "unresolved_population": 7580,
+    "cik_mapped_population": 106,
+    "scannable_population": 106,
+    "accounting_closure_formula": "10435 = 106 + 2749 + 7580",
+    "universe_accounting_closure": "PASS",
+    "leakage_verification": {
+      "spy_scannable": false,
+      "qqq_scannable": false,
+      "tsm_scannable": false,
+      "nvo_scannable": false,
+      "asml_scannable": false,
+      "aapl_scannable": true,
+      "msft_scannable": true,
+      "nvda_scannable": true,
+      "etf_leakage_count": 0,
+      "fpi_adr_leakage_count": 0,
+      "unknown_classification_leakage_count": 0
+    }
+  },
+  "backfill_identity_v2_remediation": {
+    "model": "PARENT_PLAN_PLUS_EXECUTION_SCOPE",
+    "backfill_plan_id": "PLAN-82dc6092033f4af0",
+    "backfill_plan_hash": "82dc6092033f4af022199f804b940ae21fc8035639c29ba198615019ea06b234",
+    "date_range": {
+      "requested_start": "2026-08-01",
+      "requested_end": "2026-10-10",
+      "correction_mode": "APPEND_ONLY"
+    },
+    "ladder_executions": {
+      "r1_stage_1": {
+        "execution_id": "EXEC-babd5f07859e9fa0",
+        "scope_hash": "babd5f07859e9fa09f5cdf5df8ba68bd0baa4b44c8b0acd88fdf442eab118b3a",
+        "manifest_hash": "e0b79df813b8b67c499cbb1a5f8b2a11d3e7edc89e004b148a16adddb1f34e49",
+        "issuer_count": 5,
+        "filings_discovered": 25,
+        "transactions_parsed": 82,
+        "status": "SEALED_COMPLETE"
+      },
+      "r1_stage_2": {
+        "execution_id": "EXEC-55780700f50deb74",
+        "scope_hash": "55780700f50deb74006b6e14a4e2c84b638cd2afedfdbe25a25472e617d1d637",
+        "manifest_hash": "fe9f414dbbabf44a0626ba309d00ef3242bf575d65d28ef42447ccbe326c4b27",
+        "issuer_count": 25,
+        "filings_discovered": 68,
+        "transactions_parsed": 117,
+        "status": "SEALED_COMPLETE"
+      },
+      "r1_stage_3": {
+        "execution_id": "EXEC-8b9fd84b91257507",
+        "scope_hash": "8b9fd84b91257507ce997fc221c800036c5c03a7f5e2fca9df0e46f58357d24f",
+        "manifest_hash": "207dde396f7acbc47b074c82f0983ee7b1799d19cefe0647152e7e6cd107da55",
+        "issuer_count": 100,
+        "filings_discovered": 209,
+        "transactions_parsed": 842,
+        "status": "SEALED_COMPLETE"
+      }
+    },
+    "identity_separation_verified": true,
+    "distinct_scope_distinct_execution_id": "PASS",
+    "r1_all_stage_manifests_present": "YES",
+    "r1_manifest_overwrite_count": 0,
+    "sealed_manifest_immutability": "PASS",
+    "legacy_manifest_preservation": {
+      "legacy_stage1_manifest": "NOT_PRESERVED",
+      "legacy_stage2_manifest": "NOT_PRESERVED",
+      "legacy_stage3_manifest": "PRESERVED_AS_LEGACY_FINAL_STATE",
+      "legacy_record_loss": 0
+    },
+    "idempotency_retest": {
+      "rerun_execution_id": "EXEC-babd5f07859e9fa0",
+      "new_logical_execution_created": false,
+      "new_duplicate_transactions": 0,
+      "unnecessary_network_fetches": 0,
+      "sealed_manifest_hash_parity": "PASS"
+    }
+  },
+  "knowledge_time_remediation": {
+    "unsafe_t22_fallback_removed": true,
+    "public_availability_policy": "EXACT_SEC_ACCEPTANCE_ONLY_FAIL_CLOSED",
+    "ledger_audit": {
+      "total_ledger_rows": 301,
+      "exact_sec_acceptance_rows": 301,
+      "legacy_unsafe_fallback_rows": 0,
+      "unknown_availability_rows": 0,
+      "legacy_unsafe_fallback_rows_pit_eligible": 0,
+      "unknown_availability_pit_eligible": 0
+    },
+    "pit_leakage_safety": {
+      "look_ahead_leakage_cases": 0,
+      "unknown_availability_leakage": 0,
+      "naive_datetime_accepted": false
+    }
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "changed_modules_reachable_from_candidate_004_runtime": 0,
+    "candidate_004_shared_dependency_impact_analysis": "PASS",
+    "candidate_004_interference": "NONE",
+    "shadow_evidence_db_mutated": false,
+    "natural_evidence_epoch_mutated": false,
+    "candidate_004_status": "FROZEN_ACTIVE_PRODUCTION_SHADOW"
+  },
+  "release_governance": {
+    "main_push": false,
+    "production_deployment": false,
+    "radar_production_status": "PIPELINE_PENDING",
+    "smart_money_wave2b_r1_status": "LOCAL_REMEDIATION_VERIFIED",
+    "wave2c_status": "STILL_NOT_AUTHORIZED"
+  }
+}

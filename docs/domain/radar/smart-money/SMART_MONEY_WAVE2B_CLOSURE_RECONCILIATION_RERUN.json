@@ -1,0 +1,145 @@
+{
+  "gate": "SMART_MONEY_WAVE2B_CLOSURE_RECONCILIATION_RERUN",
+  "evaluated_at": "2026-10-10T21:09:00Z",
+  "working_branch": "arx/weekend-smart-money-investigation",
+  "wave2b_r1_functional_git_sha": "a8ea818d1ab79aa678ac3a8a5cf18adc4b060b82",
+  "outcome": "OUTCOME A — WAVE 2B CLOSED / VERIFIED / FROZEN",
+  "status": "CLOSED / VERIFIED / FROZEN",
+  "legacy_immutability": {
+    "legacy_universe_build_id": "UB_SM_20261010_79fb1c65ac99",
+    "legacy_universe_build_still_present": true,
+    "legacy_universe_content_unchanged": true,
+    "legacy_backfill_id": "BF-3abc4df16f96eb37",
+    "legacy_backfill_record_still_present": true,
+    "legacy_corpus_manifest_hash_unchanged": true,
+    "original_closure_reconciliation_hash_unchanged": true,
+    "legacy_stage1_stage2_retroactively_recreated": false
+  },
+  "security_classification_authority": {
+    "source_provider": "Bloomberg OpenFIGI v3 via local operational security master",
+    "source_dataset_api": "OPENFIGI_V3_MAPPING",
+    "security_type_classification_authority": "ESTABLISHED",
+    "fund_classification_authority": "ESTABLISHED",
+    "fpi_classification_authority": "ESTABLISHED",
+    "scannable_subset_authority": "ESTABLISHED",
+    "market_wide_classification_coverage": "INCOMPLETE",
+    "market_wide_smart_money_coverage_claim": "NOT_AUTHORIZED",
+    "classification_source_snapshot_id": "ARX_OPERATIONAL_SECURITY_MASTER_20261010",
+    "classification_source_snapshot_hash": "8f8fa257b321e4938e5226cdc2a98e94fb4daa15521734310d8274c3a3ffb4ed",
+    "classification_source_record_count": 163
+  },
+  "universe_population_reconciliation": {
+    "universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+    "universe_content_hash": "ccd99943c46d1a9892c6b25cf712ceee73bb14c6941fe9ab8e34968220fd822c",
+    "source_population": 10435,
+    "eligible_population": 106,
+    "ineligible_population": 2749,
+    "unresolved_population": 7580,
+    "scannable_population": 106,
+    "accounting_equation_satisfied": true,
+    "scannable_without_positive_provenance": 0,
+    "unknown_classification_in_scannable": 0,
+    "counterexamples": {
+      "SPY_scannable": false,
+      "QQQ_scannable": false,
+      "TSM_scannable": false,
+      "NVO_scannable": false,
+      "ASML_scannable": false,
+      "AAPL_scannable": true,
+      "MSFT_scannable": true,
+      "NVDA_scannable": true
+    },
+    "source_snapshot_id": "SEC_20261010_OFFICIAL",
+    "source_snapshot_hash": "e4a3707ad7ca6a324552ef96375bf5bc657e333332a1a3ce6fe7f08fcdf61a35",
+    "universe_rebuild_parity": "PASS"
+  },
+  "backfill_identity_v2": {
+    "plan_id": "PLAN-82dc6092033f4af0",
+    "plan_id_recompute_parity": "PASS",
+    "executions": {
+      "R1_STAGE_1": {
+        "execution_id": "EXEC-babd5f07859e9fa0",
+        "manifest_hash": "e0b79df813b8b67c499cbb1a5f8b2a11d3e7edc89e004b148a16adddb1f34e49"
+      },
+      "R1_STAGE_2": {
+        "execution_id": "EXEC-55780700f50deb74",
+        "manifest_hash": "fe9f414dbbabf44a0626ba309d00ef3242bf575d65d28ef42447ccbe326c4b27"
+      },
+      "R1_STAGE_3": {
+        "execution_id": "EXEC-8b9fd84b91257507",
+        "manifest_hash": "207dde396f7acbc47b074c82f0983ee7b1799d19cefe0647152e7e6cd107da55"
+      }
+    },
+    "all_three_execution_manifests_present": true,
+    "sealed_manifest_overwrite_test": "PASS",
+    "sealed_manifest_mutation_count": 0,
+    "distinct_scope_distinct_execution_id": "PASS",
+    "identical_scope_identical_execution_id": "PASS",
+    "resume_creates_new_logical_execution": false,
+    "retry_creates_new_logical_execution": false
+  },
+  "schema_migration": {
+    "smart_money_schema_version": "2.0.0",
+    "schema_migration_id": "SM_MIGRATE_V1_TO_V2_20261010",
+    "schema_migration_code_path": "analyst_dashboard/smart_money/form4_ingestion.py:_init_db",
+    "clean_db_bootstrap": "PASS",
+    "v1_to_v2_migration": "PASS",
+    "migration_idempotent": "PASS",
+    "legacy_record_loss": 0
+  },
+  "knowledge_time_forensics": {
+    "t22_fallback_runtime_uses": 0,
+    "exact_sec_acceptance_rows": 301,
+    "unknown_availability_rows": 0,
+    "legacy_unsafe_fallback_rows": 0,
+    "unsafe_fallback_rows_pit_eligible": 0,
+    "unknown_rows_pit_eligible": 0,
+    "look_ahead_leakage_cases": 0,
+    "unknown_availability_leakage": 0,
+    "amendment_retroactive_leakage": 0
+  },
+  "evidence_hashes": {
+    "original_closure_reconciliation_sha256": "9868ef18de8603dd7f7a119081edfa6743f0884838ecc7ac2d367aa6567e7ca3",
+    "legacy_corpus_manifest_sha256": "d5624fec4fbc2b6d0a6ad4d7c2cc2043ce480b6b2adc029a6ff59b725049c5f0",
+    "r1_corpus_manifest_sha256": "06d83058a1e68963f1d6df3003f043ecbc11ba7ce0c295cc8b15571456999d1b",
+    "r1_remediation_evidence_sha256": "de5b161531cff43eb43d3a80aa9cb920b7227ba358cf0d576b542ed48bf56458",
+    "r1_corpus_manifest_hash_parity": "PASS",
+    "r1_remediation_evidence_hash_parity": "PASS"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "changed_modules_reachable_from_candidate_004_runtime": 0,
+    "shadow_evidence_db_writes": 0,
+    "candidate_004_epoch_changed": false,
+    "candidate_004_scheduler_changed": false,
+    "candidate_004_interference": "NONE",
+    "status": "PASS"
+  },
+  "test_union": {
+    "pytest_passed": 47,
+    "pytest_failed": 0,
+    "frontend_suites_passed": true,
+    "total_failures": 0,
+    "status": "PASS"
+  },
+  "wave2c_baseline": {
+    "baseline_id": "BASE-SM-WAVE2C-20261010-R1",
+    "baseline_functional_sha": "a8ea818d1ab79aa678ac3a8a5cf18adc4b060b82",
+    "universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+    "universe_content_hash": "ccd99943c46d1a9892c6b25cf712ceee73bb14c6941fe9ab8e34968220fd822c",
+    "corpus_manifest_sha256": "06d83058a1e68963f1d6df3003f043ecbc11ba7ce0c295cc8b15571456999d1b",
+    "raw_filing_count": 311,
+    "normalized_transaction_count": 870,
+    "source_availability_ledger_count": 301,
+    "amendment_count": 1,
+    "open_gap_count": 0,
+    "baseline_source_ledger_hash": "615e5433c4fc46d98c8c96999d82c26ba20e778170a5b5746ef254ce5e3d4f37"
+  },
+  "governance_decisions": {
+    "smart_money_wave2b_status": "CLOSED / VERIFIED / FROZEN",
+    "smart_money_wave2b_r1_status": "CLOSED / VERIFIED / FROZEN",
+    "smart_money_wave2c_local_engineering": "AUTHORIZED",
+    "smart_money_wave2c_production": "NOT_AUTHORIZED",
+    "radar_production_status": "PIPELINE_PENDING"
+  }
+}
