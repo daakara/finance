@@ -1,0 +1,112 @@
+{
+  "schema_version": "3.0.0",
+  "certification_id": "RADAR_SPRINT_3_PRODUCTION_SHADOW_CANDIDATE_003_CERTIFICATION",
+  "candidate_generation_id": "CANDIDATE_GENERATION_003",
+  "parent_generation": "CANDIDATE_GENERATION_002",
+  "candidate_functional_sha": "07b8b40cdb82328087b0f12adb08928a53e0234b",
+  "candidate_semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+  "governance_sha256": "ce9ca0a1ca32390ee0f3d4818a76bb3739a1a336b1d0c4fdbb8dc0d1f128d207",
+  "governance_hash_parity": "PASS",
+  "candidate_freeze_status": "FROZEN_PRE_DEPLOY",
+  "candidate_freeze_artifact": {
+    "path": "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_003_FREEZE.json",
+    "sha256": "67ac97566f0205a40a491b5131410c17a3fa3982c2a8d08ce6ad88d3d02ee229"
+  },
+  "durability_and_provenance_architecture": {
+    "authoritative_storage": "durable shared transactional sqlite in wal mode on persistent mount /root/analyst_dashboard/data/shadow_evidence.db",
+    "process_local_storage_authoritative": false,
+    "database_schema_version": "3.0.0",
+    "migration_id": "MIGRATION_20261010_003_PROVENANCE_AND_LOGICAL_RUNS",
+    "ddl_hash": "02b08180aa909390a05c2ac4ef83327ca5dc12f08ff7c86cd73dc7aaa77a30fc",
+    "storage_topology_requirement": "SINGLE_REPLICA_ONLY",
+    "single_transaction_evidence_bundle": true,
+    "deterministic_observation_key": "sha256(scanner_id:security_id:evaluation_as_of:universe_build_id:snapshot_run_id:candidate_generation_id:semantic_closure_hash)",
+    "database_unique_observation_key_constraint": true,
+    "same_key_different_payload_rejection": "PASS",
+    "provenance_conflict_fail_closed": "PASS",
+    "offset_aware_utc_timestamps": "PASS",
+    "immutability_triggers_all_tables": "PASS",
+    "process_restart_safe": "PASS",
+    "deploy_restart_safe": "PASS",
+    "multi_process_safe": "PASS",
+    "ambiguous_commit_retry_safe": "PASS",
+    "duplicate_delivery_safe": "PASS",
+    "cross_ledger_atomicity": "PASS",
+    "transaction_rollback_tests": "PASS"
+  },
+  "provenance_and_logical_authority": {
+    "logical_scan_runs_table": true,
+    "scan_attempts_table": true,
+    "provenance_conflicts_table": true,
+    "provenance_conflict_matrix": "10 / 10 PASS (PROV-001 through PROV-010)",
+    "boot_warmup_classification": {
+      "invocation_class": "BOOT_WARMUP",
+      "origin_class": "NON_EVIDENCE_BOOTSTRAP",
+      "evidence_admission_eligible": false,
+      "natural_denominator_delta": 0
+    },
+    "replay_parent_lineage_enforcement": "PASS",
+    "untrusted_delegation_rejection": "PASS"
+  },
+  "natural_trigger_routing": {
+    "pre_deploy_contract": "PASS",
+    "production_natural_trigger_reachability": "NOT_YET_VERIFIED",
+    "recurring_production_scheduler_active": false,
+    "scheduler_heartbeat_last_seen": null,
+    "operator_trigger_counts_as_natural": false,
+    "caller_can_self_declare_natural": false,
+    "natural_denominator_authority": "DURABLE_COMMITTED_ADMISSION_ROWS",
+    "test_records_in_natural_denominator": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "admin_forced_records_in_natural_denominator": 0,
+    "boot_warmup_records_in_natural_denominator": 0
+  },
+  "succession_status": {
+    "candidate_001_status": "ACTIVE_PRODUCTION",
+    "candidate_001_admission_status": "NOT_AUTHORIZED",
+    "candidate_001_superseded": false,
+    "candidate_002_status": "REJECTED_PRE_DEPLOY",
+    "candidate_002_rejection_reason": "PROVENANCE_AND_BOOT_WARMUP_DEFECTS",
+    "candidate_003_status": "FROZEN_PRE_DEPLOY",
+    "candidate_003_parent_generation": "CANDIDATE_GENERATION_002"
+  },
+  "domain_invariance": {
+    "vcp_predicate_semantics_changed": false,
+    "vcp_threshold_semantics_changed": false,
+    "vcp_classification_precedence_changed": false,
+    "vcp_domain_labeling_changed": false,
+    "quantitative_model_change": false,
+    "universe_domain_semantic_change": false,
+    "observation_unit_changed_from_candidate_001": false,
+    "observation_unit": "one security classification within a scanner run"
+  },
+  "test_evidence": {
+    "durable_storage_and_provenance_tests": {
+      "collected": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    "shadow_focused_tests": {
+      "collected": 30,
+      "passed": 30,
+      "failed": 0
+    },
+    "full_regression_baseline_union": {
+      "collected": 570,
+      "passed": 570,
+      "failed": 0
+    }
+  },
+  "external_validation_deferral": {
+    "external_validation_status": "DEFERRED",
+    "gate_12_status": "DEFERRED / NOT_SATISFIED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED"
+  },
+  "candidate_003_release_readiness": "PASS",
+  "push_status": "NOT_AUTHORIZED",
+  "deploy_status": "NOT_AUTHORIZED",
+  "first_natural_capture_evidence_authorized": false,
+  "certified_at": "2026-10-10T09:42:00+00:00"
+}
