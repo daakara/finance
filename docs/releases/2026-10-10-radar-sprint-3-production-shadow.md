@@ -10,7 +10,11 @@
 **CANDIDATE_FREEZE_STATUS** = FROZEN_PRE_DEPLOY  
 **EXTERNAL_VALIDATION_STATUS** = DEFERRED  
 **GATE_12_STATUS** = DEFERRED / NOT_SATISFIED  
-**PRODUCTION_VERIFICATION** = PENDING  
+**PRODUCTION_VERIFICATION** = VERIFIED  
+**DEPLOYED_GIT_HEAD** = 793df4844cfe0879ad8e6143a256dd214cf0b908  
+**SHADOW_ACTIVATED_AT** = 2026-10-10T06:17:05Z  
+**FIRST_NATURAL_SHADOW_CAPTURE_STATUS** = AWAITING_NATURAL_PRODUCTION_CAPTURE  
+**SPRINT_3_PRODUCTION_SHADOW_STATUS** = ACTIVE / PRODUCTION_VERIFIED  
 
 ---
 
@@ -71,5 +75,14 @@ Shadow observations are passively logged to structured JSONL prospective streams
 - **Candidate Functional Commit**: `bf0a574de569c2aefc219d5e9b1f891d9b6219d5`
 - **Target Backend**: Railway (`web` service, production environment)
 - **Target Frontend**: Cloudflare Pages (`finance-xp8.pages.dev`, `arxterminal.com`)
-- **Runtime Identity**: Post-deployment verification pending push.
-- **Production Verification**: PENDING
+- **Deployed Git Head**: `793df4844cfe0879ad8e6143a256dd214cf0b908`
+- **Functional Candidate Inclusion**: `git merge-base --is-ancestor bf0a574 793df48` = `YES`
+- **Railway Deployment**: ID `1fdf85e8-c214-4b71-9710-c4fa136ccaef` (`SUCCESS` at `2026-10-10 08:16:27 +02:00`)
+- **Runtime Attestation**: Live process attestation `backend_release_sha="793df4844cfe0879ad8e6143a256dd214cf0b908"`
+- **Cloudflare Edge Deployment**: Verified (`200 OK` at `https://finance-xp8.pages.dev` and `https://www.arxterminal.com`)
+- **GitHub Actions CI**: Run ID `38030363811` on `793df48` (evaluated)
+- **Runtime Health**: `/health` (`200 OK`), `/api/v1/screener/vcp/snapshot` (`200 OK`)
+- **Non-Actioning Gate**: `PASS` (zero order execution, zero portfolio mutation, zero broker hooks)
+- **Shadow Capture Activation**: `ACTIVE` as of `2026-10-10T06:17:05Z`
+- **First Natural Capture Status**: `AWAITING_NATURAL_PRODUCTION_CAPTURE` (Outcome B, non-manufactured)
+- **Production Status**: `ACTIVE / PRODUCTION_VERIFIED`
