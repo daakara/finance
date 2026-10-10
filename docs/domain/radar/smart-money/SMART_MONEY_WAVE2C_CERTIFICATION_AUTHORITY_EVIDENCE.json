@@ -1,0 +1,103 @@
+{
+  "evidence_id": "EVID_SM_WAVE2C_CERTIFICATION_AUTHORITY_HARDENING_20261010",
+  "generated_at": "2026-10-10T21:28:35.000Z",
+  "branch": "arx/weekend-smart-money-investigation",
+  "universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+  "universe_content_hash": "ccd99943c46d1a9892c6b25cf712ceee73bb14c6941fe9ab8e34968220fd822c",
+  "required_partition_count": 106,
+  "required_partition_set_hash": "e8bfa161ef8ef747db32fb192ca45ee7eb373378fdb53a30a69bb8fdb118bc33",
+  "policy_bundle_hash": "a8bd38d9377844aeb706e1b9eb4bf2242fa25e86822aa2aa479ede02eed6c9d8",
+  "policy_count": 11,
+  "canonicalization_standard": "SM_CERT_CANON_V1",
+  "schema_version": "2.2.0",
+  "receipt": {
+    "receipt_id": "RCPT-V2-000001-1faf4481f5e7",
+    "receipt_sequence": 1,
+    "previous_receipt_id": "RCPT-V2-000000-GENESIS",
+    "previous_receipt_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "previous_certified_frontier": "NOT_ESTABLISHED",
+    "candidate_frontier": "2026-10-10T01:02:33.000Z",
+    "certified_frontier": "2026-10-10T01:02:33.000Z",
+    "closure_proof_sha256": "1faf4481f5e7a6b260087894ac90490e6732e6a98acc1d0f44f593e2bda9bbd2",
+    "certifier_component_version": "cert-auth-v2.2.0",
+    "certifier_functional_sha": "sha256:wave2c-certification-authority-hardened",
+    "receipt_sha256": "dded0dc6f2c470b86691341fe92bd55084c59b459a5f98c34321bdead6c1e327",
+    "certified_at": "2026-10-10T21:07:51.000Z"
+  },
+  "independent_reconstruction_audit": {
+    "audit_verdict": "PASS",
+    "auditor_implementation": "IndependentCertificationAuditor (tools/audit_smart_money_wave2c_certification.py)",
+    "auditor_maximum_safe_frontier": "2026-10-10T01:02:33.000Z",
+    "auditor_proof_trace_sha256": "866edaeedb51f70e24f8a225af89882d99ca63f89374cb678b8c5304c585157b",
+    "accession_reconciliation": {
+      "expected_count": 289,
+      "registered_count": 289,
+      "terminal_count": 289,
+      "delta": 0,
+      "reconciled": true
+    },
+    "blocking_source_gaps": 0,
+    "unresolved_amendments": 0,
+    "safety_criterion_verified": true
+  },
+  "verification_ladder": {
+    "property_test_domains": {
+      "partition_completeness_cases": 1000,
+      "pagination_exhaustion_cases": 1000,
+      "late_event_classification_cases": 1000,
+      "source_divergence_cases": 500,
+      "dispute_state_machine_cases": 1000,
+      "concurrent_interleavings_cases": 250
+    },
+    "durability_fault_injection": {
+      "boundaries_tested": 12,
+      "boundaries_rolled_back_cleanly": 12,
+      "clean_recovery": true
+    },
+    "mutation_testing": {
+      "mutants_evaluated": 15,
+      "mutants_killed": 15,
+      "mutation_kill_rate": 1.0
+    },
+    "regression_suite": {
+      "python_tests_run": 83,
+      "python_tests_passed": 83,
+      "frontend_tests_passed": true,
+      "test_failures": 0
+    }
+  },
+  "audit_dispute_governance": {
+    "orthogonal_state_machines": 4,
+    "sla_certification_firewall_enforced": true,
+    "timer_certification_effect": "NONE",
+    "disputed_receipt_reuse": "PROHIBITED"
+  },
+  "product_state_composition": {
+    "state_tuple": [
+      "GOVERNED_SUBSET",
+      "INCREMENTAL_ACTIVE",
+      "CERTIFIED_COMPLETE",
+      "FRESH",
+      "NO_GAPS",
+      "GOVERNED_SUBSET_SCAN_VALID",
+      "ELIGIBLE_GOVERNED_ONLY"
+    ],
+    "market_wide_capability_state": "NOT_AUTHORIZED",
+    "market_wide_readiness_theorem_enforced": true,
+    "ambiguous_global_booleans_eliminated": true
+  },
+  "candidate_004_firewall": {
+    "shadow_evidence_db_touched": false,
+    "protected_files_changed": 0,
+    "natural_trigger_touched": false,
+    "analyst_dashboard_vcp_touched": false,
+    "firewall_intact": true
+  },
+  "governance_status": {
+    "smart_money_wave2c_status": "LOCAL_HARDENED_CERTIFICATION_AUTHORITY_VERIFIED",
+    "radar_production_status": "PIPELINE_PENDING",
+    "remote_push_authorized": false,
+    "main_merge_authorized": false,
+    "production_deployment_authorized": false
+  }
+}

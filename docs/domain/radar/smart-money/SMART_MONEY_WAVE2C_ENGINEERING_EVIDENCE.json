@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "evidence_id": "SM_WAVE2C_EE_20261010",
+  "generated_at": "2026-10-10T21:30:00Z",
+  "wave_id": "SMART_MONEY_WAVE2C",
+  "status": "LOCAL_ENGINEERING_VERIFIED",
+  "production_deployment_authorized": false,
+  "remote_push_authorized": false,
+  "main_merge_authorized": false,
+  "market_wide_coverage_claim_authorized": false,
+  "radar_production_status": "PIPELINE_PENDING",
+  "universe_provenance": {
+    "universe_build_id": "UB_SM_20261010_R1_19ef857fec1f",
+    "scannable_member_count": 106,
+    "security_master_type": "COMMON_EQUITY_ONLY",
+    "zero_leakage_verified": true
+  },
+  "baseline_provenance": {
+    "baseline_id": "BASE-SM-WAVE2C-20261010-R1",
+    "baseline_certified_watermark": "2026-10-10T01:02:33.000Z",
+    "baseline_source_ledger_hash": "615e5433c4fc46d98c8c96999d82c26ba20e778170a5b5746ef254ce5e3d4f37"
+  },
+  "schema_governance": {
+    "schema_version": "2.1.0",
+    "pre_wave2c_schema_version": "2.0.0",
+    "migration_id": "SM_MIGRATE_V2_TO_V2_1_INCREMENTAL_20261010",
+    "new_tables": [
+      "sm_incremental_runs",
+      "sm_incremental_partitions",
+      "sm_partition_watermarks",
+      "sm_source_gaps",
+      "sm_watermark_receipts",
+      "sm_late_arrival_events"
+    ]
+  },
+  "invariants": {
+    "three_progress_concepts_enforced": true,
+    "minimum_partition_frontier_enforced": true,
+    "gap_frontier_rule_enforced": true,
+    "late_arrival_breach_freezes_advancement": true,
+    "amendment_zero_retroactive_leakage": true,
+    "incremental_vs_full_rebuild_delta": 0,
+    "candidate_004_protected_files_changed": 0,
+    "candidate_004_firewall_status": "ISOLATED_CLEAN"
+  },
+  "test_execution_summary": {
+    "python_tests_total": 70,
+    "python_tests_passed": 70,
+    "python_tests_failed": 0,
+    "wave2c_dedicated_tests": 12,
+    "property_randomized_iterations": 500,
+    "frontend_semantics_passed": true,
+    "frontend_permanent_regression_passed": true
+  }
+}
