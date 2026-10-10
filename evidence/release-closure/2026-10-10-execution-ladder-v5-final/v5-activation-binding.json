@@ -3,6 +3,7 @@
   "epochId": "ARX_PROSPECTIVE_VALIDATION_EPOCH_4",
   "authorityScope": "CURRENT_PRODUCTION_AUTHORITY",
   "certifiedSourceSnapshotCommitSha1": "cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a",
+  "certifiedImplementationCommitSha1": "ad3169d755123fc7bb2fc520ae7f0f76851918a4",
   "manifestActivationCommitSha1": "ad3169d755123fc7bb2fc520ae7f0f76851918a4",
   "manifestFileSha256": "ca7b860da5aa72225d5ee2d7212d4a7d4b22dfb4de299d8dfc3f08d451fd40c4",
   "manifestGitBlobSha1": "cda0f0c6dbc2a5d07b30e6986d39ed22c2a70905",
@@ -10,11 +11,12 @@
   "routingPreparationCommitUtc": "2026-10-10T00:22:06Z",
   "manifestCreatedAtUtc": "2026-10-10T00:24:00Z",
   "activatedAtUtc": "2026-10-10T00:28:54Z",
-  "activationCommitCommitterUtc": "2026-10-10T00:28:54Z",
   "bindingStatus": "SEALED",
+  "closureNamespace": "evidence/release-closure/2026-10-10-execution-ladder-v5-final",
   "invariants": {
     "zero_unauthorized_production_mutation": true,
     "historical_manifest_immutable": true,
-    "non_circular_authority_established": true
+    "non_circular_authority_established": true,
+    "frozen_package_immutability_restored": true
   }
 }

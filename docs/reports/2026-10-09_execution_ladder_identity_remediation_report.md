@@ -354,8 +354,14 @@ To achieve mathematically sound, non-circular governance, a strict two-commit su
   - Introduces `EPOCH_4_MANIFEST_V5.json` referencing `cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a` as `certifiedSourceSnapshotCommitSha1`.
   - Activates V5 tests in `tests/test_live_dual_price_contract.py` asserting V5 verification and V4 historical byte-for-byte immutability.
   - Commits 0 modifications to any governed executable code file, guaranteeing a 100% exact match between disk files and manifest entries.
-  - External binding artifact: `evidence/release-preparation/2026-10-09-execution-ladder-controlled-release/v5-activation-binding.json`.
   - External binding: `activationCommitBinding = "EXTERNAL_RELEASE_EVIDENCE"` prevents self-referential commit hashing.
+* **Frozen Package Restoration & Rehoming**:
+  - `ERRONEOUS_INITIAL_BINDING_LOCATION`: In commit `fa9e508`, `v5-activation-binding.json` was initially created inside `evidence/release-preparation/2026-10-09-execution-ladder-controlled-release/`.
+  - `ORIGINAL_FAILED_PACKAGE_IMMUTABILITY`: Extending that frozen package altered its tree from `1cee3c9033e904dc0e80eb301eefc45562f2b00f` to `769de15ddf0f7d70d9ff9cc463cf79fce55b1cf6`.
+  - `RESTORED_PACKAGE_TREE_SHA1`: The misplaced file was removed via `git rm`, restoring the historical frozen package tree back to `1cee3c9033e904dc0e80eb301eefc45562f2b00f`.
+  - `NEW_EXTERNAL_BINDING_PATH`: The binding was rehomed to `evidence/release-closure/2026-10-10-execution-ladder-v5-final/v5-activation-binding.json`.
+  - `NEW_BINDING_SHA256`: `aaa741cc785fdc8145556b34b14d153cbcd9ed3d58671f15b711e2efb12237d3` (Git blob SHA-1: `fbb19da12efc9c2f2ee5438d9954b88a1932fb04`).
+  - `FINAL_EVIDENCE_COMMIT`: Recorded separately as the final evidence commit upon checklist completion.
 
 #### 11.3 V5 Cryptographic Authority & Manifest Lineage
 * `MANIFEST_VERSION = 5.0.0`
