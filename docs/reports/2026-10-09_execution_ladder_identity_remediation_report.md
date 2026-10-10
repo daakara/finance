@@ -349,10 +349,12 @@ To achieve mathematically sound, non-circular governance, a strict two-commit su
   - Committer Time: `2026-10-10T02:22:06+02:00` (`2026-10-10T00:22:06Z`)
   - Staged and committed all V5 routing logic in `analyst_dashboard/governance/experiment_ledger.py` (`get_epoch4_v5_manifest()`, `verify_epoch4_manifest()`, `verify_epoch4_v4_manifest()`) and fail-closed handling without introducing `EPOCH_4_MANIFEST_V5.json`.
   - All 10 governed executable files are completely frozen and immutable as of this snapshot commit.
-* **Commit 2 (`EPOCH4_V5_ACTIVATION_COMMIT_SHA1`)**:
+* **Commit 2 (`ad3169d755123fc7bb2fc520ae7f0f76851918a4`)**:
+  - `EPOCH4_V5_ACTIVATION_COMMIT_SHA1` / `CERTIFIED_IMPLEMENTATION_COMMIT_SHA1`.
   - Introduces `EPOCH_4_MANIFEST_V5.json` referencing `cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a` as `certifiedSourceSnapshotCommitSha1`.
   - Activates V5 tests in `tests/test_live_dual_price_contract.py` asserting V5 verification and V4 historical byte-for-byte immutability.
   - Commits 0 modifications to any governed executable code file, guaranteeing a 100% exact match between disk files and manifest entries.
+  - External binding artifact: `evidence/release-preparation/2026-10-09-execution-ladder-controlled-release/v5-activation-binding.json`.
   - External binding: `activationCommitBinding = "EXTERNAL_RELEASE_EVIDENCE"` prevents self-referential commit hashing.
 
 #### 11.3 V5 Cryptographic Authority & Manifest Lineage

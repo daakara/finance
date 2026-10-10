@@ -127,7 +127,7 @@ Neither defect is treated as an acceptable release exception. The release gate r
   - Furthermore, `createdAtUtc` in V4 was recorded as `2026-10-10T00:50:00Z`, which reflected local time rather than UTC, rendering it anachronistic relative to commit timestamp `2026-10-09T23:05:03Z`.
 - **Non-Circular Succession Protocol**:
   - **Commit 1 (`cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`)**: `V5_ROUTING_PREPARATION_COMMIT_SHA1`. Frozen source snapshot staging all V5 routing methods (`get_epoch4_v5_manifest()`, `verify_epoch4_manifest()`, `verify_epoch4_v4_manifest()`) and fail-closed handling without creating the V5 manifest file. All 10 governed executable files are immutable as of this commit.
-  - **Commit 2 (`EPOCH4_V5_ACTIVATION_COMMIT_SHA1`)**: Manifest activation and certification. Creates `EPOCH_4_MANIFEST_V5.json`, updates tests in `tests/test_live_dual_price_contract.py`, and records release documentation. Touches 0 governed executable files.
+  - **Commit 2 (`ad3169d755123fc7bb2fc520ae7f0f76851918a4`)**: `EPOCH4_V5_ACTIVATION_COMMIT_SHA1` / `CERTIFIED_IMPLEMENTATION_COMMIT_SHA1`. Manifest activation and certification. Created `EPOCH_4_MANIFEST_V5.json`, updated tests in `tests/test_live_dual_price_contract.py`, and bound external release evidence in `evidence/release-preparation/2026-10-09-execution-ladder-controlled-release/v5-activation-binding.json`. Touches 0 governed executable files.
 - **V5 Authority & Manifest Lineage**:
   - `MANIFEST_VERSION = 5.0.0`
   - `SUPERSEDES_MANIFEST = EPOCH_4_MANIFEST_V4.json`
@@ -135,6 +135,7 @@ Neither defect is treated as an acceptable release exception. The release gate r
   - `CERTIFIED_SOURCE_SNAPSHOT_COMMIT_SHA1 = cbbce7ea08bb259a7fd5207b54cab5ae78bf0c3a`
   - `AUTHORITY_SCOPE = CURRENT_PRODUCTION_AUTHORITY`
   - `ACTIVATION_COMMIT_BINDING = EXTERNAL_RELEASE_EVIDENCE`
+  - `ACTIVATION_BINDING_ARTIFACT = evidence/release-preparation/2026-10-09-execution-ladder-controlled-release/v5-activation-binding.json`
   - `CREATED_AT_UTC = 2026-10-10T00:24:00Z` (true UTC, strictly after snapshot commit committer time `2026-10-10T00:22:06Z`).
   - `OBSERVATION_GOVERNANCE_MANIFEST_HASH = 99bea6ebc9b4f31634ef994bd2630710d89555940a5e491e98e1285668ce04c5`
   - `EXPERIMENT_LEDGER_SHA256 = 233f996c6b9912ea918351935f2e275d206723780f8f8af23f54f7abf114af26` (exact match between frozen snapshot and disk).
