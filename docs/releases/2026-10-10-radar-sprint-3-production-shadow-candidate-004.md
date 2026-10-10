@@ -11,9 +11,9 @@
 **DDL_HASH** = ab82282210aef8c8873da0ea4a31fe2c865b0c2a63e1bbdce86320e9e67dde0b  
 **PRE_PUSH_RECONCILIATION_SHA256** = 895c2e567e25a53d0099363960aab36f38a8c87999db3f9d1d2e27a92a9d4af4  
 **PROCESS_RACE_RECONCILIATION_SHA256** = c4b5d6ffe87bb83b3c25205f4ca0c151ff21f02a809fdb73824a880690986fc5  
-**PRODUCTION_BASELINE_SHA** = 793df4844cfe0879ad8e6143a256dd214cf0b908  
-**PUSHED_HEAD** = 8fd4622fc200baa16c371372feb96bf4f2d3d6e8  
-**PRODUCTION_RUNTIME_SHA** = 8fd4622fc200baa16c371372feb96bf4f2d3d6e8  
+**PUSHED_HEAD** = cca417191c0e58db7eb87b255b3fedb537eb975f  
+**CONTROLLED_PUSH_TARGET_HEAD** = 8fd4622fc200baa16c371372feb96bf4f2d3d6e8  
+**PRODUCTION_RUNTIME_SHA** = cca417191c0e58db7eb87b255b3fedb537eb975f  
 **CANDIDATE_FREEZE_STATUS** = FROZEN_PRE_DEPLOY  
 **NATURAL_EVIDENCE_EPOCH_ID** = SPRINT3_CANDIDATE004_EPOCH_001  
 **PRODUCTION_EPOCH_ACTIVATED** = YES  
@@ -66,14 +66,14 @@ Key Architectural Components:
 
 ### 4. Production Deployment & Verification Attestation
 
-- **Pushed Commit HEAD**: `8fd4622fc200baa16c371372feb96bf4f2d3d6e8`
-- **Production Runtime SHA**: `8fd4622fc200baa16c371372feb96bf4f2d3d6e8` (Contains C004 functional SHA `fafba93ccd60f40792bb3f5ea6702804eeea40cf`)
+- **Pushed Commit HEAD**: `cca417191c0e58db7eb87b255b3fedb537eb975f` (Controlled push target was `8fd4622fc200baa16c371372feb96bf4f2d3d6e8`)
+- **Production Runtime SHA**: `cca417191c0e58db7eb87b255b3fedb537eb975f` (Contains C004 functional SHA `fafba93ccd60f40792bb3f5ea6702804eeea40cf`)
 - **Production Runtime Identity**: `VERIFIED`
-- **Railway Deployment ID**: `7edd156a-c092-4d24-98e6-f7bef77d84d0`
+- **Railway Deployment ID**: `2ce70507-7a61-48c7-bd61-33ab68b895cc` (Active production deployment, preceded by `7edd156a-c092-4d24-98e6-f7bef77d84d0`)
 - **Railway Deployment Status**: `SUCCESS / ONLINE` (`/health` returns `{"status":"online"}`, storage persistence `VERIFIED`)
-- **Cloudflare Pages Deployment ID**: `production-cloudflare-pages` (`cf-pages-8fd4622`)
+- **Cloudflare Pages Deployment ID**: `1204d4d1-5dd7-4d0f-8167-1d6fa28456fc` (Check run ID `114199902570`, preceded by `ca48fc99-aa7a-48c5-b4c6-921e6e747a22`)
 - **Cloudflare Deployment Status**: `SUCCESS / ONLINE` (HTTP 200 on `finance-xp8.pages.dev` and `arxterminal.com`)
-- **GitHub Actions Run ID**: `38046790101`
+- **GitHub Actions Run ID**: `38047403481` (Check run ID `114199596448`, preceded by `38046790101`)
 - **GitHub Actions Status**: `FAILURE` (Classification: `PREEXISTING_FAILURE` on baseline commit `793df4844cfe0879ad8e6143a256dd214cf0b908`, Run ID `38030363811`)
 - **Production Replica Count**: 1
 - **Application Process Count**: 2 (uvicorn workers)
@@ -83,11 +83,11 @@ Key Architectural Components:
 - **Production Database Generation ID**: `GEN_20261010_RADAR_SPRINT_3_SHADOW_001`
 - **Unverified Database Restore Detected**: `NO`
 - **Production Schema Version**: `4.0.0`
-- **Migration Completion Receipt ID**: `RECEIPT_MIGRATION_20261010_004_NATURAL_EVIDENCE_EPOCH_AND_HISTORICAL_ISOLATION_313`
-- **Pre-Migration Source Count**: `313`
-- **Pre-Migration Source Population Hash**: `9650c0fc7dc17f4b7e1b51f572fd190f495126cbb53172e2c400614e8ab2cf15`
-- **Post-Migration Source Count**: `313`
-- **Post-Migration Source Population Hash**: `9650c0fc7dc17f4b7e1b51f572fd190f495126cbb53172e2c400614e8ab2cf15`
+- **Migration Completion Receipt ID**: `RECEIPT_MIGRATION_20261010_004_NATURAL_EVIDENCE_EPOCH_AND_HISTORICAL_ISOLATION_0`
+- **Pre-Migration Source Count**: `0`
+- **Pre-Migration Source Population Hash**: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+- **Post-Migration Source Count**: `0`
+- **Post-Migration Source Population Hash**: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 - **Unclassified Migration Units**: `0`
 - **Source Units Without Disposition**: `0`
 - **Dispositions Without Source Unit**: `0`
@@ -107,9 +107,9 @@ Key Architectural Components:
 - **Production Restart Durability Pre-Activation**: `PASS`
 - **Epoch Activation Readiness**: `PASS`
 - **Activation Receipt ID**: `rcpt-act-SPRINT3_CANDIDATE004_EPOCH_001-1`
-- **Activation Receipt Content Hash**: `15d6683d17c8bb9ad06980b6fe675c087d1221aab51fd6edf038e797bc9d2e13`
+- **Activation Receipt Content Hash**: `e7844217ac6c4b031f0a3242dd5010a3fbb9ca2852df992148fae21106530d59`
 - **Activation Sequence**: 1
-- **Activated At UTC**: `2026-10-10T11:15:00+00:00`
+- **Activated At UTC**: `2026-10-10T11:10:50.584351+00:00`
 - **Post-Activation Integrity Gate**: `PASS`
 - **Reauthorization Receipt ID**: `rcpt-reauth-SPRINT3_CANDIDATE004_EPOCH_001-1`
 - **Natural Evidence Re-Authorization**: `PASS`
