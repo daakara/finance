@@ -2,6 +2,9 @@ name: Smart Money Sigstore OIDC Qualification
 
 "on":
   workflow_dispatch:
+  push:
+    branches:
+      - arx/sigstore-workload-identity-qualification
 
 permissions:
   id-token: write
