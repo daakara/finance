@@ -1,0 +1,104 @@
+{
+  "gate": "FIRST_NATURAL_PUBLIC_AVAILABILITY_CAPTURE_EPOCH_001",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "81d56ddf607afe8830684769ab0532c33890d764",
+  "public_availability_observer_functional_sha": "d6ab66462f78b15814123ad95325f8171da3ab69",
+  "public_availability_observer_evidence_sha": "81d56ddf607afe8830684769ab0532c33890d764",
+  "timing_context": {
+    "current_utc": "2026-10-11T08:10:35.308930+00:00",
+    "current_et": "2026-10-11T04:10:35.308930-04:00",
+    "day_name": "Sunday",
+    "edgar_business_day": false,
+    "edgar_processing_window_expected": false,
+    "capture_window_status": "AWAITING_VALID_NATURAL_WINDOW"
+  },
+  "clock_attestation": {
+    "clock_measurement_id": "clk_3ab15ab3fb2f6b36",
+    "clock_measurement_source": "OS_DISCIPLINED_TIME_SERVICE",
+    "clock_sync_method": "WINDOWS_TIME_SYNC_OR_MONOTONIC_ANCHOR",
+    "clock_measured_at": "2026-10-11T08:10:49.603714+00:00",
+    "clock_local_time": "2026-10-11T08:10:49.603714+00:00",
+    "clock_reference_time": "2026-10-11T08:10:49.603714+00:00",
+    "clock_observed_offset_ms": 0.0,
+    "clock_observed_uncertainty_ms": 15.6,
+    "clock_policy_max_uncertainty_ms": 100.0,
+    "clock_authority_status": "SYNCHRONIZED"
+  },
+  "natural_capture": {
+    "natural_event_class": "NOT_CAPTURED",
+    "accession_number": "NOT_CAPTURED",
+    "cik": "NOT_CAPTURED",
+    "form_type": "NOT_CAPTURED",
+    "sec_acceptance_at": "NOT_CAPTURED",
+    "natural_public_availability_capture": "NOT_CAPTURED",
+    "prospective_capture_status": "AWAITING_NATURAL_PUBLICATION",
+    "public_availability_observer_status": "PRE_OBSERVATION_READY",
+    "public_availability_time_authority": "NOT_ESTABLISHED",
+    "public_availability_authority_scope": "NONE"
+  },
+  "channels": {
+    "rss_observer_implementation_status": "PASS",
+    "rss_natural_capture_status": "NOT_CAPTURED",
+    "latest_filings_observer_implementation_status": "PASS",
+    "latest_filings_natural_capture_status": "NOT_CAPTURED",
+    "filing_index_observer_implementation_status": "PASS",
+    "filing_index_natural_capture_status": "NOT_CAPTURED",
+    "ownership_xml_observer_implementation_status": "PASS",
+    "ownership_xml_natural_capture_status": "NOT_CAPTURED"
+  },
+  "intervals": {
+    "first_proven_metadata_public_interval_start": "NOT_CAPTURED",
+    "first_proven_metadata_public_interval_end": "NOT_CAPTURED",
+    "first_proven_content_public_interval_start": "NOT_CAPTURED",
+    "first_proven_content_public_interval_end": "NOT_CAPTURED",
+    "first_proven_decision_input_complete_interval_start": "NOT_CAPTURED",
+    "first_proven_decision_input_complete_interval_end": "NOT_CAPTURED",
+    "first_proven_metadata_public_at": "NOT_CAPTURED",
+    "first_proven_content_public_at": "NOT_CAPTURED",
+    "first_proven_decision_input_complete_at": "NOT_CAPTURED",
+    "conservative_knowledge_time": "NOT_CAPTURED",
+    "exact_first_public_available_at": "NOT_ESTABLISHED",
+    "channel_ordering_status": "NOT_CAPTURED"
+  },
+  "legacy_pit_non_regression": {
+    "historical_legacy_acceptance_used_as_exact_public_time": true,
+    "current_active_consumers_use_acceptance_as_exact_public_time": false,
+    "historical_pit_contamination_risk": true,
+    "historical_strict_pit_claims": "NOT_AUTHORIZED",
+    "legacy_rows_mutated": false
+  },
+  "pds_hold": {
+    "pds_eod_terminal_marker_status": "PASS",
+    "pds_eod_exact_denominator_status": "HOLD",
+    "pds_protocol_qualification_status": "CONDITIONAL_PASS",
+    "real_pds_source_authority": "NOT_ESTABLISHED"
+  },
+  "verification": {
+    "independent_replay_status": "PASS",
+    "derivation_parity": "PASS",
+    "undetected_natural_capture_tampers": 0,
+    "governed_regression_manifest": "NONE_EXPLICIT",
+    "governed_public_availability_regression_status": "PASS",
+    "full_repository_smart_money_regression_status": "PASS",
+    "pytest_test_files_executed": 9,
+    "pytest_test_cases_passed": 117,
+    "pytest_test_cases_failed": 0,
+    "pytest_test_cases_skipped": 0
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "shadow_evidence_db_writes": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "commit_governance": {
+    "functional_superseding_commit_required": false,
+    "natural_capture_functional_sha": "NOT_REQUIRED",
+    "natural_capture_evidence_sha": "NOT_CREATED",
+    "remote_push": false,
+    "main_merge": false,
+    "production_deployment": false,
+    "production_scheduler_activated": false,
+    "worktree_clean": true
+  }
+}
