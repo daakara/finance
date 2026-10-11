@@ -1,0 +1,107 @@
+{
+  "policy_id": "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1",
+  "version": "1.1.0",
+  "effective_at": "2026-10-11T19:45:00+00:00",
+  "governing_epoch": "EPOCH_001",
+  "status": "RATIFIED_FOR_DEFAULT_BRANCH_QUALIFICATION",
+  "oidc_subject_template": {
+    "mode": "LEGACY_DEFAULT",
+    "version": "GITHUB_DEFAULT_V1",
+    "source": "GITHUB_OIDC_CUSTOMIZATION_API",
+    "example": "repo:daakara/finance:ref:refs/heads/main",
+    "invalidation_rule": "OIDC_SUBJECT_TEMPLATE_CHANGE_INVALIDATES_NATURAL_SCHEDULER_IDENTITY_GATE",
+    "api_response": {
+      "use_default": true,
+      "use_immutable_subject": false,
+      "sub_claim_prefix": "repo:daakara/finance"
+    }
+  },
+  "event_name_security_model": {
+    "classification": "ALLOWED_EVENT_CLASSIFICATION_ONLY",
+    "authorized_event_names": [
+      "schedule",
+      "workflow_dispatch"
+    ],
+    "prohibited_event_names": [
+      "push"
+    ],
+    "schedule_event_identity": "POLICY_DERIVED_ACCEPTABLE",
+    "invariant_security_claims": [
+      "iss",
+      "aud",
+      "repository_id",
+      "repository_owner_id",
+      "job_workflow_ref",
+      "ref",
+      "sub"
+    ]
+  },
+  "workload_identity_constraints": {
+    "authorized_audience": "sigstore",
+    "authorized_environment": "NONE",
+    "authorized_event_names": [
+      "schedule",
+      "workflow_dispatch"
+    ],
+    "authorized_issuer": "https://token.actions.githubusercontent.com",
+    "authorized_job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+    "authorized_ref": "refs/heads/main",
+    "authorized_repository": "daakara/finance",
+    "authorized_repository_id": "1087399232",
+    "authorized_repository_owner": "daakara",
+    "authorized_repository_owner_id": "53128824",
+    "authorized_workflow": "Smart Money Rooting Scheduler",
+    "maximum_token_lifetime_seconds": 600,
+    "prohibited_event_names": [
+      "push"
+    ],
+    "subject_rule": "repo:daakara/finance:ref:refs/heads/main",
+    "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+  },
+  "trigger_policy": {
+    "primary_natural_trigger": "schedule",
+    "manual_recovery_trigger": "workflow_dispatch",
+    "push_trigger": "DISABLED"
+  },
+  "schedule_semantics": {
+    "schedule_cron": "7 10-22/2 * * 1-5",
+    "schedule_timezone": "UTC",
+    "schedule_timezone_mode": "UTC_DEFAULT",
+    "schedule_top_of_hour": false,
+    "schedule_policy": "RATIFIED",
+    "sec_window_coverage_policy": "RATIFIED",
+    "schedule_expected_et_windows": [
+      "06:07 EDT",
+      "08:07 EDT",
+      "10:07 EDT",
+      "12:07 EDT",
+      "14:07 EDT",
+      "16:07 EDT",
+      "18:07 EDT"
+    ]
+  },
+  "observation_coverage_policy": {
+    "observation_coverage_objective": "PERIODIC_SAMPLING",
+    "policy_status": "RATIFIED",
+    "coverage_rationale": "Cron frequency represents periodic point-in-time sampling across SEC EDGAR business hours, not full-window continuous surveillance."
+  },
+  "concurrency_control": {
+    "concurrency_group": "smart-money-natural-scheduler",
+    "cancel_in_progress": false,
+    "application_idempotency_guard": "ACCESSION_AND_RUN_ID_LEDGER_LOCK",
+    "state_locking_model": "SERIALIZED_EXECUTION_AND_SQLITE_WAL_MUTEX"
+  },
+  "manual_recovery_guard": {
+    "workflow_dispatch_default_mode": "dry-run",
+    "workflow_dispatch_natural_authority": "REQUIRES_IDENTICAL_TIME_OF_USE_PRE_ARM_GATES",
+    "manual_recovery_authority_bypass": "IMPOSSIBLE"
+  },
+  "governance_rules": {
+    "static_signing_private_key_prohibited": true,
+    "long_lived_token_prohibited": true,
+    "personal_access_token_prohibited": true,
+    "token_disk_persistence_prohibited": true,
+    "token_logging_prohibited": true,
+    "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT"
+  }
+}
