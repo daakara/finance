@@ -62,6 +62,11 @@ from analyst_dashboard.smart_money.public_availability.gate3_authorization impor
 )
 from analyst_dashboard.smart_money.public_availability.durable_state_manager import (
     DurableStateManager,
+    TerminalHoldError,
+)
+from analyst_dashboard.smart_money.public_availability.observer_state_machine import (
+    ObserverState,
+    ObserverStateMachine,
 )
 
 __all__ = [
@@ -102,5 +107,8 @@ __all__ = [
     "validate_gate3_authorization",
     "GATE3_SCHEMA_VERSION",
     "DurableStateManager",
+    "TerminalHoldError",
+    "ObserverState",
+    "ObserverStateMachine",
 ]
 
