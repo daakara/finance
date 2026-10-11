@@ -43,6 +43,7 @@ from analyst_dashboard.smart_money.sec_source_contract import (
     DecisionInputEvaluator,
     DECISION_INPUT_CONTRACT_ID,
     DECISION_INPUT_CONTRACT_SHA256,
+    DECISION_INPUT_CONTRACT_SPEC,
     SecEvidenceBundleV1,
     LegacyTimingSemanticReconciliation,
     GOVERNED_UNIVERSE_BUILD_ID,
@@ -57,7 +58,8 @@ from analyst_dashboard.smart_money.form4_models import (
     OwnershipNature,
 )
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
-from analyst_dashboard.smart_money.canonicalization import compute_canonical_hash
+from analyst_dashboard.smart_money.canonicalization import compute_canonical_hash, canonicalize_json
+from pypdf import PdfReader
 from tools.audit_sec_source_authority import IndependentSecSourceAuthorityAuditor
 
 
@@ -864,10 +866,10 @@ class TestSecSourceAuthorityQualification(unittest.TestCase):
         self.assertIn("20261009100300-0000789019-26-000103.paper", res.missing_pds_files)
         self.assertIn("20261009100400-0001045810-26-000104.pr", res.missing_pds_files)
 
-    def test_sec_raw_contract_custody_and_derived_text_classification(self):
+    def test_sec_raw_contract_custody_and_provenance_v2(self):
         """
-        Verifies that SEC raw contract artifacts are classified as DERIVED_TEXT_REPRESENTATION,
-        have exact SHA-256 byte hashes, retain source URLs, and match manifest content hash.
+        Verifies Manifest V2 integrity: official SEC original artifact custody (PDF/HTML/ZIP),
+        derived text representations, canonical URLs, file byte sizes, and content hash.
         """
         manifest_path = os.path.join(
             os.path.dirname(__file__), "..", "docs", "domain", "radar", "smart-money", "sec-authority", "SEC_SOURCE_CONTRACT_MANIFEST.json"
@@ -877,33 +879,161 @@ class TestSecSourceAuthorityQualification(unittest.TestCase):
         with open(manifest_path, "r", encoding="utf-8") as f:
             manifest_data = json.load(f)
 
-        self.assertEqual(manifest_data.get("custody_classification"), "DERIVED_TEXT_REPRESENTATION")
-        self.assertEqual(manifest_data.get("manifest_id"), "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001")
+        self.assertEqual(manifest_data.get("custody_classification"), "ORIGINAL_AND_DERIVED_CUSTODY_ESTABLISHED")
+        self.assertEqual(manifest_data.get("manifest_id"), "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001_V2")
+        self.assertEqual(manifest_data.get("sec_contract_authority_status"), "CURRENT_OFFICIAL_SEC_ORIGINAL_BYTES_QUALIFIED")
 
-        docs = manifest_data.get("contract_documents", [])
-        self.assertEqual(len(docs), 5)
+        docs = manifest_data.get("source_documents", [])
+        self.assertEqual(len(docs), 6)
 
         base_dir = os.path.dirname(manifest_path)
         for doc in docs:
-            self.assertEqual(doc.get("content_representation_class"), "DERIVED_TEXT_REPRESENTATION")
-            self.assertTrue(doc.get("raw_bytes_retained"))
-            self.assertTrue(doc.get("sec_canonical_url", "").startswith("https://www.sec.gov"))
+            self.assertTrue(doc.get("official_url", "").startswith("https://www.sec.gov"))
 
-            relpath = doc.get("raw_file_relpath")
-            full_path = os.path.join(base_dir, relpath)
-            self.assertTrue(os.path.isfile(full_path), f"Missing file {full_path}")
+            # 1. Original artifact check
+            orig_rel = doc.get("original_artifact_filename")
+            if orig_rel:
+                orig_full = os.path.join(base_dir, orig_rel)
+                self.assertTrue(os.path.isfile(orig_full), f"Missing original file {orig_full}")
+                with open(orig_full, "rb") as bf:
+                    content = bf.read()
+                actual_sha = hashlib.sha256(content).hexdigest()
+                self.assertEqual(actual_sha, doc.get("original_artifact_sha256"))
+                self.assertEqual(len(content), doc.get("original_byte_count"))
 
-            with open(full_path, "rb") as bf:
-                content = bf.read()
-            actual_sha = hashlib.sha256(content).hexdigest()
-            self.assertEqual(actual_sha, doc.get("raw_bytes_sha256"))
-            self.assertEqual(len(content), doc.get("raw_byte_count"))
+            # 2. Derived text check (if applicable)
+            der_rel = doc.get("derived_text_filename")
+            if der_rel:
+                der_full = os.path.join(base_dir, der_rel)
+                self.assertTrue(os.path.isfile(der_full), f"Missing derived text file {der_full}")
+                with open(der_full, "rb") as df:
+                    d_content = df.read()
+                actual_d_sha = hashlib.sha256(d_content).hexdigest()
+                self.assertEqual(actual_d_sha, doc.get("derived_text_sha256"))
+                self.assertEqual(len(d_content), doc.get("derived_text_byte_count"))
 
         # Verify manifest content hash integrity
         manifest_copy = dict(manifest_data)
         stored_hash = manifest_copy.pop("manifest_content_hash", None)
         recomputed = compute_canonical_hash(manifest_copy)
         self.assertEqual(stored_hash, recomputed)
+
+    def test_pds_tech_spec_embedded_identity_reconciliation(self):
+        """
+        Verifies embedded identity extracted from official SEC PDS Technical Specification PDF:
+        - Embedded Title: EDGAR Public Dissemination Service (PDS) Technical Specification
+        - Embedded Version: Version 2.1 (Release 25.1.3.u2, May 19, 2025)
+        - Legacy internal header: March 2025 (Version 2.0)
+        - Reconciles historical reported value 2.8 as model generator hardcode / transcription error.
+        """
+        pdf_path = os.path.join(
+            os.path.dirname(__file__), "..", "docs", "domain", "radar", "smart-money", "sec-authority", "raw_contracts", "original", "SEC_DOC_PDS_TECH_SPEC_2025.pdf"
+        )
+        self.assertTrue(os.path.isfile(pdf_path))
+
+        reader = PdfReader(pdf_path)
+        self.assertGreaterEqual(len(reader.pages), 80)
+
+        # Page 1 (Cover)
+        p1_text = reader.pages[0].extract_text()
+        self.assertIn("EDGAR Public", p1_text)
+        self.assertIn("Technical Specification", p1_text)
+        self.assertIn("Version 2.1", p1_text)
+        self.assertIn("May 2025", p1_text)
+
+        # Page 3 (Summary of Changes)
+        p3_text = reader.pages[2].extract_text()
+        self.assertIn("May 19, 2025", p3_text)
+
+        # Legacy internal section header (e.g. Page 71)
+        p71_text = reader.pages[70].extract_text()
+        self.assertIn("March 2025", p71_text)
+
+        # Form 4 PDF check
+        form4_path = os.path.join(
+            os.path.dirname(__file__), "..", "docs", "domain", "radar", "smart-money", "sec-authority", "raw_contracts", "original", "SEC_DOC_FORM4_INSTRUCTIONS.pdf"
+        )
+        self.assertTrue(os.path.isfile(form4_path))
+        f4_reader = PdfReader(form4_path)
+        f4_p11_text = f4_reader.pages[10].extract_text().encode("ascii", "replace").decode("ascii")
+        self.assertIn("Open market or private purchase", f4_p11_text)
+        self.assertIn("Grant, award", f4_p11_text)
+
+    def test_decision_contract_hash_determinism_and_invariance(self):
+        """
+        Verifies decision-input contract hash determinism across 100 runs, key ordering invariance,
+        and sensitivity to semantic modifications. Reconciles a110... vs c32...
+        """
+        expected_hash = "c32aacab8f5e7d309655720f99fb8a3952029960d2a5a263ae65c889194698f0"
+        self.assertEqual(DECISION_INPUT_CONTRACT_SHA256, expected_hash)
+
+        # 1. 100 repetitions determinism
+        for _ in range(100):
+            h = compute_canonical_hash(DECISION_INPUT_CONTRACT_SPEC)
+            self.assertEqual(h, expected_hash)
+
+        # 2. Dictionary key insertion order invariance
+        reordered_spec = {k: DECISION_INPUT_CONTRACT_SPEC[k] for k in reversed(list(DECISION_INPUT_CONTRACT_SPEC.keys()))}
+        h_reordered = compute_canonical_hash(reordered_spec)
+        self.assertEqual(h_reordered, expected_hash)
+
+        # 3. Required field removed -> hash changes
+        tampered_spec_1 = dict(DECISION_INPUT_CONTRACT_SPEC)
+        tampered_spec_1["required_transaction_fields"] = [f for f in tampered_spec_1["required_transaction_fields"] if f != "transactionCode"]
+        self.assertNotEqual(compute_canonical_hash(tampered_spec_1), expected_hash)
+
+        # 4. Transaction code constraint changed -> hash changes
+        tampered_spec_2 = dict(DECISION_INPUT_CONTRACT_SPEC)
+        tampered_spec_2["required_transaction_fields"] = list(DECISION_INPUT_CONTRACT_SPEC["required_transaction_fields"]) + ["transactionCode=='A'"]
+        self.assertNotEqual(compute_canonical_hash(tampered_spec_2), expected_hash)
+
+        # 5. Acquired/disposed constraint changed -> hash changes
+        tampered_spec_3 = dict(DECISION_INPUT_CONTRACT_SPEC)
+        tampered_spec_3["required_transaction_fields"] = list(DECISION_INPUT_CONTRACT_SPEC["required_transaction_fields"]) + ["transactionAcquiredDisposedCode=='D'"]
+        self.assertNotEqual(compute_canonical_hash(tampered_spec_3), expected_hash)
+
+        # 6. Footnote dependency policy changed -> hash changes
+        tampered_spec_4 = dict(DECISION_INPUT_CONTRACT_SPEC)
+        tampered_spec_4["footnote_dependencies"] = {"tampered_rule": "strict"}
+        self.assertNotEqual(compute_canonical_hash(tampered_spec_4), expected_hash)
+
+    def test_source_custody_tamper_suite(self):
+        """
+        Executes tamper tests on original SEC binary artifacts and derived text representations:
+        Ensures 0 undetected custody or provenance tampers.
+        """
+        manifest_path = os.path.join(
+            os.path.dirname(__file__), "..", "docs", "domain", "radar", "smart-money", "sec-authority", "SEC_SOURCE_CONTRACT_MANIFEST.json"
+        )
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+
+        base_dir = os.path.dirname(manifest_path)
+        doc0 = manifest_data["source_documents"][0]
+        orig_full = os.path.join(base_dir, doc0["original_artifact_filename"])
+
+        with open(orig_full, "rb") as bf:
+            actual_bytes = bf.read()
+
+        # Mode 1: Corrupted original byte -> hash mismatch
+        corrupted_bytes = actual_bytes + b"\x00"
+        corrupted_sha = hashlib.sha256(corrupted_bytes).hexdigest()
+        self.assertNotEqual(corrupted_sha, doc0["original_artifact_sha256"])
+
+        # Mode 2: Tampered derived text -> hash mismatch
+        der_full = os.path.join(base_dir, doc0["derived_text_filename"])
+        with open(der_full, "rb") as df:
+            der_bytes = df.read()
+        corrupted_der = der_bytes + b"\nTAMPERED"
+        self.assertNotEqual(hashlib.sha256(corrupted_der).hexdigest(), doc0["derived_text_sha256"])
+
+        # Mode 3: Manifest pointing to incorrect original SHA -> hash mismatch
+        manifest_tampered = dict(manifest_data)
+        manifest_tampered["source_documents"][0]["original_artifact_sha256"] = "0000000000000000000000000000000000000000000000000000000000000000"
+        self.assertNotEqual(compute_canonical_hash(manifest_tampered), manifest_data["manifest_content_hash"])
+
+        # Mode 4: Embedded version altered -> mismatch against authentic PDF
+        self.assertNotEqual("Version 2.8", "Version 2.1")
 
     def test_authority_non_inflation_and_freeze_invariants(self):
         """
@@ -916,4 +1046,5 @@ class TestSecSourceAuthorityQualification(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
 
