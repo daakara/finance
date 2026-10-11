@@ -1,0 +1,21 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "claimed_manifest_sha256": "bb720befda90c19be48244ec0b789cb091d60395cf1713da31e2cff75a92713d",
+  "claimed_rekor_log_index": 3213838530,
+  "investigation": {
+    "binds_manifest_hash": false,
+    "cosign_signature_on_manifest_exists": false,
+    "origin_of_3213838530": "Run 38170921980 R2 dry run bundle from prior structural productionization gate",
+    "rekor_entry_for_manifest_exists": false,
+    "sigstore_bundle_for_manifest_exists": false
+  },
+  "summary": "Rekor log index 3213838530 does not bind manifest bb720bef... It belongs to an earlier R2 payload. The final manifest was never signed by Cosign or anchored to Rekor.",
+  "verdict_metrics": {
+    "FINAL_MANIFEST_REKOR_BINDING": "FAIL",
+    "FINAL_MANIFEST_REKOR_ENTRY_BINDS_EXACT_HASH": "NO",
+    "FINAL_MANIFEST_REKOR_ENTRY_FOUND": "NO",
+    "FINAL_MANIFEST_REKOR_LOG_INDEX": "UNBOUND",
+    "FINAL_MANIFEST_SIGNATURE_VALID": "NO",
+    "FINAL_MANIFEST_SIGSTORE_BUNDLE_EXISTS": "NO"
+  }
+}

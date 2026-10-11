@@ -218,6 +218,14 @@ class TestFinalNaturalAuthorityChainClosure:
         auth = {
             "schema_version": GATE3_SCHEMA_VERSION,
             "authorization_id": "AUTH_BINDING_TEST",
+            "authorization_sequence": 1,
+            "nonce": "NONCE_TEST_123",
+            "issuer": "https://token.actions.githubusercontent.com",
+            "issuer_workload_identity": "repo:daakara/finance:workflow:pre_arm",
+            "target_repository": "daakara/finance",
+            "target_workflow": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+            "target_workflow_sha": "4207a2c000000000000000000000000000000000",
+            "target_commit_sha": "COMMIT_BIND",
             "issued_at": now_ts.isoformat(),
             "not_before": now_ts.isoformat(),
             "expires_at": (now_ts + datetime.timedelta(minutes=15)).isoformat(),
@@ -263,6 +271,51 @@ class TestFinalNaturalAuthorityChainClosure:
         ok_mode, msg_mode = validate_gate3_authorization(auth, current_time_utc=now_ts, current_consumer_mode="dry-run")
         assert ok_mode is False
         assert "Consumer mode binding mismatch" in msg_mode
+
+        # Natural authority rejects V1 schema
+        v1_auth = dict(auth, schema_version="SMART_MONEY_PRE_ARM_AUTHORIZATION_V1")
+        ok_v1, msg_v1 = validate_gate3_authorization(
+            v1_auth,
+            current_time_utc=now_ts,
+            current_event_name="schedule",
+            current_consumer_mode="natural",
+            current_commit_sha="COMMIT_BIND",
+            natural_authority_mode=True,
+        )
+        assert ok_v1 is False
+        assert "Natural authority requires SMART_MONEY_PRE_ARM_AUTHORIZATION_V2" in msg_v1
+
+        # Natural authority rejects missing mandatory fields
+        missing_f_auth = dict(auth)
+        missing_f_auth.pop("target_commit_sha", None)
+        ok_mf, msg_mf = validate_gate3_authorization(
+            missing_f_auth,
+            current_time_utc=now_ts,
+            current_event_name="schedule",
+            current_consumer_mode="natural",
+            current_commit_sha="COMMIT_BIND",
+            natural_authority_mode=True,
+        )
+        assert ok_mf is False
+        assert "Missing mandatory authority binding field" in msg_mf
+
+        # Natural authority rejects missing readiness evidence dir
+        ok_readiness, msg_readiness = validate_gate3_authorization(
+            auth,
+            current_time_utc=now_ts,
+            current_event_name="schedule",
+            current_consumer_mode="natural",
+            current_commit_sha="COMMIT_BIND",
+            natural_authority_mode=True,
+            readiness_evidence_dir="/missing_dir",
+        )
+        assert ok_readiness is False
+        assert "Readiness evidence directory missing" in msg_readiness
+
+        # Cryptographic verification check fails closed when unavailable
+        ok_crypto, msg_crypto = validate_gate3_authorization(auth, current_time_utc=now_ts, require_cryptographic_verification=True)
+        assert ok_crypto is False
+        assert "External cryptographic Sigstore verification capability not available" in msg_crypto
 
     # 5. Crash-Atomic Authorization Claim (Section 13)
     def test_crash_atomic_claim(self, tmp_path):

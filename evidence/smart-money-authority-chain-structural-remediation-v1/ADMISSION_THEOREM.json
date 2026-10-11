@@ -1,0 +1,13 @@
+{
+  "blocking_reasons": [],
+  "evaluations": {
+    "natural_accessions_captured": 0,
+    "natural_denominator": 0,
+    "negative_controls": "PASS",
+    "positive_predicate_wired": "PASS",
+    "production_call_graph": "PASS",
+    "qualification_prohibition": "PASS"
+  },
+  "status": "PASS",
+  "theorem": "T6_ADMISSION_THEOREM"
+}

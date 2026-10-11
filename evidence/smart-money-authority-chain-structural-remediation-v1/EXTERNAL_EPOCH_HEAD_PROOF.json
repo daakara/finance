@@ -1,0 +1,4 @@
+{
+  "reason": "No external epoch-head authority exists outside GitHub Actions cache per Section 7.1 and Section 27.",
+  "status": "BLOCKED"
+}

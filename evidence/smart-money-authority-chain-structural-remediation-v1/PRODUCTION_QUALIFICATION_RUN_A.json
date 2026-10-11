@@ -1,0 +1,6 @@
+{
+  "forensic_finding": "Scheduler called state_machine.transition(AUTHORITY_EVENT_RECORDED) from SAFE_HOLD; entered TERMINAL_HOLD and ignored return value. Remediated with check_transition.",
+  "remediation_status": "CODE_REMEDIATED_IN_MAIN",
+  "run_id": "38173031386",
+  "status": "QUARANTINED_DEFECTIVE"
+}

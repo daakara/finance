@@ -1,0 +1,6 @@
+{
+  "forensic_finding": "Identical silent TERMINAL_HOLD defect as Run A. Remediated with check_transition.",
+  "remediation_status": "CODE_REMEDIATED_IN_MAIN",
+  "run_id": "38173080201",
+  "status": "QUARANTINED_DEFECTIVE"
+}

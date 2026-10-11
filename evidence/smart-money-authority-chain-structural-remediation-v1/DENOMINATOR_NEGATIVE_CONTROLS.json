@@ -1,0 +1,50 @@
+{
+  "controls_tested": [
+    {
+      "case": "no_gate3",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "expired_gate3",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "revoked_gate3",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "v1_gate3",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "wrong_signer",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "wrong_workflow",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "wrong_commit",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "missing_readiness_bytes",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "duplicate_gate3",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "synthetic_accession",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    },
+    {
+      "case": "dry_run_mode",
+      "result": "DENOMINATOR_UNCHANGED_0"
+    }
+  ],
+  "final_natural_denominator": 0,
+  "status": "PASS"
+}

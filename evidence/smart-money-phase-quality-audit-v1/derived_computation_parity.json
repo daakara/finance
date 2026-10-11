@@ -1,0 +1,23 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "recomputed_values": [
+    {
+      "artifact": "SMART_MONEY_FINAL_NATURAL_AUTHORITY_CHAIN_MANIFEST_V1.json",
+      "match": true,
+      "production_canonicalization_function": "canonicalize (RFC 8785)",
+      "recorded_sha256": "bb720befda90c19be48244ec0b789cb091d60395cf1713da31e2cff75a92713d"
+    },
+    {
+      "artifact": "Run A DURABLE_STATE_MANIFEST.json",
+      "match": true,
+      "production_canonicalization_function": "canonicalize (RFC 8785)",
+      "recorded_sha256": "22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02"
+    },
+    {
+      "artifact": "Run B DURABLE_STATE_MANIFEST.json",
+      "match": true,
+      "production_canonicalization_function": "canonicalize (RFC 8785)",
+      "recorded_sha256": "fd47e4ab2f07cbfc61789a0fddf455374aa6d503f62a76e7271bbd3835d17d48"
+    }
+  ]
+}

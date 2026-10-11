@@ -1,0 +1,9 @@
+{
+  "historical_v1_allowed": false,
+  "mandatory_fields_count": 28,
+  "maximum_ttl_seconds": 7200,
+  "natural_authority_v2_required": true,
+  "schema_version": "SMART_MONEY_PRE_ARM_AUTHORIZATION_V2",
+  "scope": "FIRST_NATURAL_CAPTURE",
+  "status": "PASS"
+}

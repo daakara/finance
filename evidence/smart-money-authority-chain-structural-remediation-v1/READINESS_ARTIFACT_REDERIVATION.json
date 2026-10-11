@@ -1,0 +1,14 @@
+{
+  "fail_closed_if_missing_dir": true,
+  "readiness_hashes": {
+    "candidate004_firewall_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+    "clock_evidence_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "denominator_attestation_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+    "runtime_state_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "sec_calendar_evidence_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "sec_endpoint_evidence_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "sigstore_readiness_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "tuf_readiness_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "status": "PASS"
+}

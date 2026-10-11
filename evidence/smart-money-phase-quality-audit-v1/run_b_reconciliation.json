@@ -1,0 +1,41 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "checkpoint_manifest_sha256": "fd47e4ab2f07cbfc61789a0fddf455374aa6d503f62a76e7271bbd3835d17d48",
+  "checkpoint_sequence": 2,
+  "ci_status": "success",
+  "defect_cause": "Successfully restored Run A cache and advanced sequence to 2, but both Run A and Run B persisted TERMINAL_HOLD.",
+  "evidence_classification": "AUTHORITATIVE_BUT_DEFECTIVE",
+  "head_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "previous_checkpoint_sha256": "22acdfea3eced796e586620c286633c274773b9ec237e4820e2847ad8bc9fc02",
+  "process_exit_code": 0,
+  "run_id": "38173080201",
+  "state_machine_final_state": "TERMINAL_HOLD",
+  "state_machine_transitions": [
+    {
+      "reason": "INITIAL_STATE",
+      "state": "PRE_OBSERVATION_READY"
+    },
+    {
+      "reason": "No Gate-3 artifact present",
+      "state": "SAFE_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from SAFE_HOLD to AUTHORITY_EVENT_RECORDED. Allowed targets: ['PRE_OBSERVATION_READY']",
+      "state": "TERMINAL_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from TERMINAL_HOLD to R2_CLOSED. Allowed targets: []",
+      "state": "TERMINAL_HOLD"
+    },
+    {
+      "reason": "FAIL_CLOSED: INVALID_STATE_TRANSITION: Cannot transition from TERMINAL_HOLD to PRE_OBSERVATION_READY. Allowed targets: []",
+      "state": "TERMINAL_HOLD"
+    }
+  ],
+  "verdict_metrics": {
+    "RUN_B_CHECKPOINT_SEQUENCE": 2,
+    "RUN_B_CI_STATUS": "success",
+    "RUN_B_PROCESS_EXIT_CODE": 0,
+    "RUN_B_STATE_MACHINE_FINAL_STATE": "TERMINAL_HOLD"
+  }
+}

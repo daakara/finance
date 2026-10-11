@@ -1,0 +1,12 @@
+{
+  "call_graph": [
+    "run_natural_scheduler.main()",
+    "-> DurableStateManager.claim_authorization()",
+    "-> ObserverStateMachine.transition(OBSERVER_ARMED)",
+    "-> PublicObserverEngine.record_observation()",
+    "-> DurableStateManager.record_natural_accession()",
+    "-> ObserverStateMachine.transition(DENOMINATOR_INCREMENTED)"
+  ],
+  "status": "PROVEN",
+  "strictly_guarded_against_synthetic": true
+}

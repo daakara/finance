@@ -1,0 +1,36 @@
+{
+  "all_authority_actions_full_sha_pinned": true,
+  "pins": [
+    {
+      "action": "actions/checkout",
+      "pin": "11bd71901bbe5b1630ceea73d27597364c9af683",
+      "tag_reference": "v4.2.2"
+    },
+    {
+      "action": "actions/setup-python",
+      "pin": "42375524e23c412d93fb67b49958b491fce71c38",
+      "tag_reference": "v5.4.0"
+    },
+    {
+      "action": "sigstore/cosign-installer",
+      "pin": "59acb6260d9c0ba8f4a2f9d9b48431a222b68e20",
+      "tag_reference": "v3.5.0"
+    },
+    {
+      "action": "actions/cache/restore",
+      "pin": "d4323d4df104b026a6aa633fdb11d772146be0bf",
+      "tag_reference": "v4.2.2"
+    },
+    {
+      "action": "actions/cache/save",
+      "pin": "d4323d4df104b026a6aa633fdb11d772146be0bf",
+      "tag_reference": "v4.2.2"
+    },
+    {
+      "action": "actions/upload-artifact",
+      "pin": "4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1",
+      "tag_reference": "v4.6.1"
+    }
+  ],
+  "workflow": ".github/workflows/smart_money_rooting.yml"
+}

@@ -1,0 +1,19 @@
+{
+  "audit_started_at_utc": "2026-10-11T21:31:41Z",
+  "file_hashes": {
+    ".github/workflows/smart_money_rooting.yml": "23ab5e293cbb5bddeb462a57cf3faac99cf15767ef78a61b084ce813c33323f7",
+    "analyst_dashboard/smart_money/public_availability/durable_state_manager.py": "4c50726ad22e7b3e7b63dad551ff0612c5a18b5c551472efa6b9aa15202a7ed3",
+    "analyst_dashboard/smart_money/public_availability/gate3_authorization.py": "0cb2e2a7d4436c8a1036e46ebdb2752f0cd8c0712635967b5aa188c7460f8a7d",
+    "analyst_dashboard/smart_money/public_availability/observer_engine.py": "d8692faa8dbebe6dd57d1ae3b890dd3fbdbbed08efa0361cf108a007e3ae8d1c",
+    "analyst_dashboard/smart_money/public_availability/observer_state_machine.py": "51f24415e0b3d8ec2b3365358720c234a00228f0ed668d754fb90be83397c34d",
+    "analyst_dashboard/smart_money/public_availability/workload_identity_verifier.py": "53b4d9c36d2e497c4d48247071c8a1bee6a7054b083978614db2e8b0ace4b8a9",
+    "scripts/run_natural_scheduler.py": "52b9296ec192c3ba45392c7246ad64f3771f42c275c8a75c5ce75783c0fb7c93"
+  },
+  "generated_at_utc": "2026-10-11T21:43:01.585465+00:00",
+  "local_branch": "main",
+  "local_head_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "origin_main_sha_close": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "origin_main_sha_start": "bab9776b8013646b634871c49b52e61e4234d36b",
+  "qualification_sha": "467b05772f310df3f86d4655564f93742b35217b",
+  "schema_version": "1.0.0"
+}

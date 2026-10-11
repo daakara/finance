@@ -1,0 +1,333 @@
+{
+  "audit": "PHASE_QUALITY_AND_EVIDENCE_INTEGRITY_AUDIT_V1",
+  "claims_audit": [
+    {
+      "claim": "MAIN_SHA",
+      "claimed": "PASS",
+      "evidence": "origin/main at bab9776b8013646b634871c49b52e61e4234d36b",
+      "final": "PASS"
+    },
+    {
+      "claim": "DEFAULT_BRANCH_RUN_SHA",
+      "claimed": "PASS",
+      "evidence": "Runs executed bab9776b8013646b634871c49b52e61e4234d36b",
+      "final": "PASS"
+    },
+    {
+      "claim": "VALIDATION_SHA_PARITY",
+      "claimed": "PASS",
+      "evidence": "All SHAs match bab9776b8013646b634871c49b52e61e4234d36b",
+      "final": "PASS"
+    },
+    {
+      "claim": "EPOCH_INITIALIZATION_GUARD",
+      "claimed": "PASS",
+      "evidence": "TerminalHoldError on missing state after epoch_initialized",
+      "final": "PASS"
+    },
+    {
+      "claim": "POST_ACTIVATION_CACHE_MISS",
+      "claimed": "PASS",
+      "evidence": "TerminalHoldError on cache loss after init",
+      "final": "PASS"
+    },
+    {
+      "claim": "STATE_ANTI_ROLLBACK",
+      "claimed": "PASS",
+      "evidence": "Sequence and previous manifest SHA chaining implemented",
+      "final": "PASS"
+    },
+    {
+      "claim": "CHECKPOINT_MANIFEST_HASH",
+      "claimed": "PASS",
+      "evidence": "Manifest SHA-256 computed and verified",
+      "final": "PASS"
+    },
+    {
+      "claim": "CHECKPOINT_SIGNATURE",
+      "claimed": "PASS",
+      "evidence": "No Sigstore signature exists for checkpoint manifest",
+      "final": "FAIL"
+    },
+    {
+      "claim": "CHECKPOINT_REKOR_INCLUSION",
+      "claimed": "PASS",
+      "evidence": "Rekor index 3213838530 belongs to earlier R2 dry run, not checkpoint manifest",
+      "final": "FAIL"
+    },
+    {
+      "claim": "FAILED_RUN_CACHE_SAVE",
+      "claimed": "PASS",
+      "evidence": "if: success() verified in workflow",
+      "final": "PASS"
+    },
+    {
+      "claim": "GATE3_SCHEMA",
+      "claimed": "PASS",
+      "evidence": "validate_gate3_authorization enforces V2 schema",
+      "final": "PASS"
+    },
+    {
+      "claim": "GATE3_CRYPTOGRAPHIC_AUTHENTICITY",
+      "claimed": "PASS",
+      "evidence": "Only metadata format checked, no cryptographic signature verification",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_SIGSTORE_BUNDLE_VERIFICATION",
+      "claimed": "PASS",
+      "evidence": "No bundle opening or cryptographic verification code exists",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_REKOR_INCLUSION",
+      "claimed": "PASS",
+      "evidence": "Rekor index only checked as positive integer",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_SIGNER_IDENTITY",
+      "claimed": "PASS",
+      "evidence": "String presence checked, but Fulcio cert identity unverified cryptographically",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "GATE3_WITNESS_REFERENCE_RESOLUTION",
+      "claimed": "PASS",
+      "evidence": "External witness reference string checked, never resolved against Rekor",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_TTL_POLICY",
+      "claimed": "PASS",
+      "evidence": "Max 7200s and expiration enforced",
+      "final": "PASS"
+    },
+    {
+      "claim": "READINESS_ARTIFACT_RESOLUTION",
+      "claimed": "PASS",
+      "evidence": "Caller in run_natural_scheduler.py passes readiness_evidence_dir=None; artifacts never opened",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_AUTHORIZATION_DELIVERY",
+      "claimed": "PASS",
+      "evidence": "No remote fetch in CI; unauthenticated local file lookup only",
+      "final": "FAIL"
+    },
+    {
+      "claim": "GATE3_EVENT_BINDING",
+      "claimed": "PASS",
+      "evidence": "Exact event name matching enforced",
+      "final": "PASS"
+    },
+    {
+      "claim": "GATE3_MODE_BINDING",
+      "claimed": "PASS",
+      "evidence": "Exact consumer mode matching enforced",
+      "final": "PASS"
+    },
+    {
+      "claim": "GATE3_COMMIT_BINDING",
+      "claimed": "PASS",
+      "evidence": "Exact commit SHA matching enforced",
+      "final": "PASS"
+    },
+    {
+      "claim": "GATE3_EFFECT",
+      "claimed": "PASS",
+      "evidence": "Transition advances to OBSERVER_ARMED only",
+      "final": "PASS"
+    },
+    {
+      "claim": "AUTHORIZATION_CLAIM_ATOMIC",
+      "claimed": "PASS",
+      "evidence": "claim_ledger compare-and-set prevents double spend",
+      "final": "PASS"
+    },
+    {
+      "claim": "OBSERVER_STATE_MACHINE",
+      "claimed": "PASS",
+      "evidence": "transition() return value ignored; illegal transitions fail to TERMINAL_HOLD silently without failing run",
+      "final": "FAIL"
+    },
+    {
+      "claim": "PUBLIC_OBSERVER_ENGINE_INTEGRATION",
+      "claimed": "PASS",
+      "evidence": "Wired to DB path, but only exercised if simulate_natural_candidate is passed",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "OBSERVER_DB_CROSS_RUN_DURABILITY",
+      "claimed": "PASS",
+      "evidence": "SQLite DB tracked in manifest by length and SHA-256",
+      "final": "PASS"
+    },
+    {
+      "claim": "DRY_RUN_NATURAL_NAMESPACE_COLLISION",
+      "claimed": "PASS",
+      "evidence": "Namespaces strictly segregated",
+      "final": "PASS"
+    },
+    {
+      "claim": "R1_REAL_EVIDENCE_BINDING",
+      "claimed": "PASS",
+      "evidence": "Code paths exist, but natural accession path unexercised in production",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "R1_SYNTHETIC_SEED_ROOT",
+      "claimed": "PASS",
+      "evidence": "Natural mode prohibits synthetic seeds",
+      "final": "PASS"
+    },
+    {
+      "claim": "R1_MUTATION_TEST",
+      "claimed": "PASS",
+      "evidence": "Unit test verified mutation rejection",
+      "final": "PASS"
+    },
+    {
+      "claim": "AUTHORITY_EVENT_CAPTURE_PRECONDITION",
+      "claimed": "PASS",
+      "evidence": "Conditioned in logic, but edge R2 -> ADMISSION uncalled in scheduler",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "AUTHORITY_EVENT_R1_PRECONDITION",
+      "claimed": "PASS",
+      "evidence": "Conditioned on R1 witness",
+      "final": "PASS"
+    },
+    {
+      "claim": "R2_REAL_CLOSURE_BINDING",
+      "claimed": "PASS",
+      "evidence": "Closure delay logic exists, unexercised on natural path",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "R2_SYNTHETIC_SEED_ROOT",
+      "claimed": "PASS",
+      "evidence": "Prohibited in natural mode",
+      "final": "PASS"
+    },
+    {
+      "claim": "R2_MUTATION_TEST",
+      "claimed": "PASS",
+      "evidence": "Unit test verified mutation rejection",
+      "final": "PASS"
+    },
+    {
+      "claim": "ATOMIC_NATURAL_ADMISSION",
+      "claimed": "PASS",
+      "evidence": "record_natural_accession uncalled by run_natural_scheduler.py",
+      "final": "NOT_PROVEN"
+    },
+    {
+      "claim": "DENOMINATOR_INCREMENT_WITHOUT_R2",
+      "claimed": "PASS",
+      "evidence": "Positive predicate required",
+      "final": "PASS"
+    },
+    {
+      "claim": "DUPLICATE_ACCESSION_INCREMENT",
+      "claimed": "PASS",
+      "evidence": "Idempotent rejection in manager",
+      "final": "PASS"
+    },
+    {
+      "claim": "FAILURE_MATRIX_PASS",
+      "claimed": "PASS",
+      "evidence": "Manager unit tests pass",
+      "final": "PASS"
+    },
+    {
+      "claim": "AUTHORIZATION_DOUBLE_SPEND",
+      "claimed": "PASS",
+      "evidence": "Concurrent claims rejected",
+      "final": "PASS"
+    },
+    {
+      "claim": "CACHE_EVICTION_FAIL_CLOSED",
+      "claimed": "PASS",
+      "evidence": "Genesis ban triggers TerminalHoldError",
+      "final": "PASS"
+    },
+    {
+      "claim": "STATE_ROLLBACK_DETECTION",
+      "claimed": "PASS",
+      "evidence": "Sequence decrement rejected",
+      "final": "PASS"
+    },
+    {
+      "claim": "FULL_TEST_ONLY_NATURAL_PATH",
+      "claimed": "PASS",
+      "evidence": "Passed in test harness",
+      "final": "PASS"
+    },
+    {
+      "claim": "PRODUCTION_DENOMINATOR_DELTA",
+      "claimed": "0",
+      "evidence": "Remains strictly 0",
+      "final": "PASS"
+    },
+    {
+      "claim": "PRODUCTION_NATURAL_NAMESPACE_DELTA",
+      "claimed": "0",
+      "evidence": "Remains strictly 0",
+      "final": "PASS"
+    },
+    {
+      "claim": "TAMPER_TESTS_PASS",
+      "claimed": "PASS",
+      "evidence": "18 mutations rejected",
+      "final": "PASS"
+    },
+    {
+      "claim": "BLOCKING_INVARIANT_FAIL_COUNT",
+      "claimed": "0",
+      "evidence": "12 blocking invariants fail rederivation",
+      "final": "FAIL"
+    },
+    {
+      "claim": "BLOCKING_INVARIANT_NOT_PROVEN_COUNT",
+      "claimed": "0",
+      "evidence": "6 blocking invariants not proven",
+      "final": "FAIL"
+    },
+    {
+      "claim": "REPORT_TO_MAIN_CODE_PARITY",
+      "claimed": "PASS",
+      "evidence": "Discrepancies found: state machine return unchecked, readiness dir unpassed, admission uncalled",
+      "final": "FAIL"
+    },
+    {
+      "claim": "REPORT_ONLY_FEATURES",
+      "claimed": "0",
+      "evidence": "Cryptographic bundle verification and remote delivery were claimed but exist only as assertions",
+      "final": "FAIL"
+    },
+    {
+      "claim": "CANDIDATE_004_INTERFERENCE",
+      "claimed": "NONE",
+      "evidence": "0 diff lines against 63131b9",
+      "final": "PASS"
+    },
+    {
+      "claim": "SECRET_SCAN",
+      "claimed": "PASS",
+      "evidence": "No leaked tokens or keys",
+      "final": "PASS"
+    },
+    {
+      "claim": "FINAL_MANIFEST_REKOR_LOG_INDEX",
+      "claimed": "3213838530",
+      "evidence": "3213838530 belongs to earlier R2 dry run, does not bind manifest",
+      "final": "FAIL"
+    }
+  ],
+  "fail": 12,
+  "not_proven": 6,
+  "rederived_pass": 18,
+  "total_claims": 36
+}

@@ -1,0 +1,14 @@
+{
+  "blocking_reasons": [
+    "Repository default branch (main) lacks externally enforced branch protection rulesets and signed release root witness; direct pushes without independent notarized review are permitted."
+  ],
+  "evaluations": {
+    "exact_identity_dimensions_enforced": "PASS",
+    "github_actions_full_sha_pinned": "PASS",
+    "python_dependencies_locked": "PASS",
+    "repository_trust_root": "BLOCKED",
+    "static_workload_identity_policy": "PASS"
+  },
+  "status": "BLOCKED",
+  "theorem": "T1_TRUST_THEOREM"
+}
