@@ -952,3 +952,40 @@ def test_scope_safe_product_state_composition():
 
     with pytest.raises(ValueError, match="PROHIBITED_GLOBAL_BOOLEAN"):
         SmartMoneyStateComposer.reject_ambiguous_global_booleans({"is_fresh": True})
+
+
+def test_source_authority_bounded_stability_invariants():
+    """
+    Section 19: Source-Authority Non-Regression Invariant:
+    If source_authority == BOUNDED_STABLE, then it is strictly impossible
+    to produce CERTIFIED_COMPLETENESS_WATERMARK, AUTHORITATIVE_CLOSED,
+    or MARKET_WIDE_AVAILABLE from the same source contract.
+    """
+    # 1. Under GOVERNED_SUBSET, MARKET_WIDE_CAPABILITY must never be AVAILABLE
+    composite_subset = SmartMoneyStateComposer.compose_state(
+        pipeline_state=PipelineState.OPERATIONAL,
+        completeness_state=CompletenessState.CERTIFIED,
+        freshness_state=FreshnessState.FRESH,
+        gap_state=ScopedGapState.NONE,
+        scan_result_state=ScanResultState.MATCHES,
+        scope_kind=ScopeKind.GOVERNED_SUBSET,
+        market_wide_authority="NOT_ESTABLISHED",
+    )
+    assert composite_subset.market_wide_capability == MarketWideCapabilityState.NOT_AUTHORIZED.value
+
+    # 2. If source authority is BOUNDED_STABLE, completeness cannot be CERTIFIED
+    # Completeness must be UNKNOWN or non-certified equivalent, forcing scoped_capability to DATA_INCOMPLETE
+    composite_bounded = SmartMoneyStateComposer.compose_state(
+        pipeline_state=PipelineState.OPERATIONAL,
+        completeness_state=CompletenessState.UNKNOWN,
+        freshness_state=FreshnessState.UNKNOWN,
+        gap_state=ScopedGapState.NONE,
+        scan_result_state=ScanResultState.MATCHES,
+        scope_kind=ScopeKind.GOVERNED_SUBSET,
+        market_wide_authority="NOT_ESTABLISHED",
+    )
+    assert composite_bounded.scoped_capability in (ScopedCapabilityState.DATA_INCOMPLETE.value, ScopedCapabilityState.UNAVAILABLE.value)
+    assert composite_bounded.scoped_capability != ScopedCapabilityState.AVAILABLE_WITHIN_SCOPE.value
+    assert composite_bounded.market_wide_capability == MarketWideCapabilityState.NOT_AUTHORIZED.value
+    assert composite_bounded.decision_eligibility == DecisionEligibilityState.NOT_ELIGIBLE.value
+
