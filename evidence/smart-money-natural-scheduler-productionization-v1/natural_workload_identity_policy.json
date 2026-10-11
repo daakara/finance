@@ -1,0 +1,59 @@
+{
+  "effective_at": "2026-10-11T19:25:40.511187+00:00",
+  "governance_rules": {
+    "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
+    "long_lived_token_prohibited": true,
+    "personal_access_token_prohibited": true,
+    "static_signing_private_key_prohibited": true,
+    "token_disk_persistence_prohibited": true,
+    "token_logging_prohibited": true
+  },
+  "governing_epoch": "EPOCH_001",
+  "policy_id": "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1",
+  "schedule_semantics": {
+    "schedule_cron": "7 10-22/2 * * 1-5",
+    "schedule_expected_et_windows": [
+      "06:07 EDT",
+      "08:07 EDT",
+      "10:07 EDT",
+      "12:07 EDT",
+      "14:07 EDT",
+      "16:07 EDT",
+      "18:07 EDT"
+    ],
+    "schedule_policy": "RATIFIED",
+    "schedule_timezone": "UTC",
+    "schedule_timezone_mode": "UTC_DEFAULT",
+    "schedule_top_of_hour": false,
+    "sec_window_coverage_policy": "RATIFIED"
+  },
+  "status": "RATIFIED_FOR_DEFAULT_BRANCH_QUALIFICATION",
+  "trigger_policy": {
+    "manual_recovery_trigger": "workflow_dispatch",
+    "primary_natural_trigger": "schedule",
+    "push_trigger": "DISABLED"
+  },
+  "version": "1.0.0",
+  "workload_identity_constraints": {
+    "authorized_audience": "sigstore",
+    "authorized_environment": "NONE",
+    "authorized_event_names": [
+      "schedule",
+      "workflow_dispatch"
+    ],
+    "authorized_issuer": "https://token.actions.githubusercontent.com",
+    "authorized_job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+    "authorized_ref": "refs/heads/main",
+    "authorized_repository": "daakara/finance",
+    "authorized_repository_id": "1087399232",
+    "authorized_repository_owner": "daakara",
+    "authorized_repository_owner_id": "53128824",
+    "authorized_workflow": "Smart Money Rooting Scheduler",
+    "maximum_token_lifetime_seconds": 600,
+    "prohibited_event_names": [
+      "push"
+    ],
+    "subject_rule": "repo:daakara/finance:ref:refs/heads/main",
+    "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+  }
+}

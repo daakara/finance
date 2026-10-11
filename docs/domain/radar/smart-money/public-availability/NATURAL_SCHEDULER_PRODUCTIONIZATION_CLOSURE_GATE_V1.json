@@ -1,0 +1,123 @@
+{
+  "gate": "SMART_MONEY_NATURAL_SCHEDULER_PRODUCTIONIZATION_CLOSURE_V1",
+  "audit_timestamp_utc": "2026-10-11T19:27:00.000000+00:00",
+  "governing_epoch": "EPOCH_001",
+  "operating_mode": "FAIL_CLOSED",
+  "outcome": "OUTCOME_A_CLOSED",
+  "gate_verdicts": {
+    "qualification_capability_gate": "PASS",
+    "natural_scheduler_productionization": "CLOSED",
+    "natural_scheduler_identity_gate": "PASS_FOR_DEFAULT_BRANCH_IDENTITY",
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "time_of_use_pre_arm_readiness": "NOT_EVALUATED_IN_THIS_GATE",
+    "next_action": "RUN_SMART_MONEY_TIME_OF_USE_PRE_ARM_READINESS_V1_AT_NEXT_ELIGIBLE_SEC_SESSION"
+  },
+  "default_branch_scheduler_contract": {
+    "default_branch": "main",
+    "natural_scheduler_platform": "GITHUB_ACTIONS",
+    "natural_scheduler_workflow": ".github/workflows/smart_money_rooting.yml",
+    "natural_scheduler_default_ref": "refs/heads/main",
+    "primary_natural_trigger": "schedule",
+    "manual_recovery_trigger": "workflow_dispatch",
+    "push_trigger": "DISABLED",
+    "schedule_timezone_mode": "UTC_DEFAULT",
+    "schedule_timezone": "UTC",
+    "schedule_cron": "7 10-22/2 * * 1-5",
+    "schedule_policy": "RATIFIED",
+    "sec_window_coverage_policy": "RATIFIED",
+    "natural_workflow_present_on_default_branch": "YES",
+    "default_branch_scheduler_commit_sha": "9cbf3c8fe47304c23c42359a3cdf2b5b2c6a0280",
+    "default_branch_workflow_identity": "ESTABLISHED",
+    "schedule_event_identity": "POLICY_DERIVED"
+  },
+  "workload_identity_and_claims": {
+    "natural_workload_policy": "RATIFIED_FOR_DEFAULT_BRANCH_QUALIFICATION",
+    "policy_document": "docs/domain/radar/smart-money/public-availability/SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json",
+    "observed_natural_oidc_issuer": "https://token.actions.githubusercontent.com",
+    "observed_natural_oidc_subject": "repo:daakara/finance:ref:refs/heads/main",
+    "observed_natural_oidc_audience": "sigstore",
+    "observed_natural_repository": "daakara/finance",
+    "observed_natural_repository_id": "1087399232",
+    "observed_natural_owner_id": "53128824",
+    "observed_natural_job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+    "observed_natural_ref": "refs/heads/main",
+    "observed_natural_event_name": "workflow_dispatch",
+    "run_id": "38167849178",
+    "head_sha": "9cbf3c8fe47304c23c42359a3cdf2b5b2c6a0280"
+  },
+  "default_branch_dry_run_results": {
+    "natural_scheduler_dry_run": "PASS",
+    "natural_scheduler_r1": "PASS",
+    "natural_scheduler_r2": "PASS",
+    "natural_scheduler_r2_r1_binding": "PASS",
+    "natural_scheduler_r2_authority_event_binding": "PASS",
+    "natural_scheduler_policy_match": "PASS",
+    "human_signing_interaction": 0,
+    "long_lived_signing_secret": "NONE",
+    "r1_bundle_sha256": "c620e3f74baaea1f3c0306b66c86d041e8968be7e3ab643d61378acbe2dd82e9",
+    "r1_rekor_log_index": 3213202755,
+    "r2_bundle_sha256": "64031cbadcfc34f0fdfbb09211d51ebee5703f6a86e65c1b3311c16ac6ee9284",
+    "r2_rekor_log_index": 3213203270,
+    "authority_event_hash": "192a53a1d340d0c8aecfd4864a52b78c041f6deba3003dc763f412766dd34cc8"
+  },
+  "runtime_state_and_denominator_authority": {
+    "authoritative_observer_state_store_type": "SQLITE",
+    "authoritative_observer_state_store_path": "analyst_dashboard/smart_money/public_availability/observer_engine.py",
+    "authoritative_observer_state_table": "sec_public_observer_runs",
+    "authoritative_observer_state_key": "status",
+    "current_observer_runtime_state": "PRE_OBSERVATION_READY",
+    "observer_runtime_state_attested": "PASS",
+    "authoritative_natural_evidence_store_type": "SQLITE",
+    "authoritative_natural_evidence_store_path": "analyst_dashboard/smart_money/public_availability/observer_engine.py",
+    "authoritative_natural_admission_table": "sec_public_observations",
+    "authoritative_natural_denominator_query": "SELECT COUNT(*) FROM sec_public_observations WHERE observation_class = 'CONTENT_PUBLIC' AND identity_valid = 1 AND structural_valid = 1",
+    "natural_accessions_captured": 0,
+    "natural_denominator": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "historical_records_in_natural_denominator": 0,
+    "qualification_records_in_natural_denominator": 0,
+    "natural_denominator_runtime_attestation": "PASS",
+    "admission_controls": {
+      "qualification_artifact_admission": "REJECTED",
+      "dry_run_artifact_admission": "REJECTED",
+      "durability_drill_artifact_admission": "REJECTED",
+      "historical_artifact_admission": "REJECTED"
+    }
+  },
+  "durability_and_drill": {
+    "primary_raw_evidence_store": "evidence/smart-money-natural-scheduler-productionization-v1/",
+    "backup_raw_evidence_store": "evidence/backup/smart-money-natural-scheduler-productionization-v1/",
+    "manifest_store": "evidence/smart-money-natural-scheduler-productionization-v1/SMART_MONEY_NATURAL_SCHEDULER_PRODUCTIONIZATION_MANIFEST_V1.json",
+    "raw_evidence_write": "PASS",
+    "backup_write": "PASS",
+    "restore_drill": "PASS",
+    "restored_sha256_match": "PASS",
+    "manifest_reconciliation": "PASS",
+    "natural_production_durability_observed": "NO",
+    "natural_denominator_increment": 0
+  },
+  "governance_and_policy_normalization": {
+    "r2_closure_max_delay_seconds": 300,
+    "r2_closure_delay_policy_status": "RATIFIED_FOR_FIRST_NATURAL_CAPTURE",
+    "r2_closure_policy_basis": "GOVERNANCE_SAFETY_BOUND",
+    "r2_closure_empirical_latency_support": "LIMITED",
+    "r2_closure_long_term_calibration": "PENDING_NATURAL_OPERATIONAL_EVIDENCE",
+    "natural_scheduler_fail_closed": "PASS",
+    "no_unsigned_fallback": "YES",
+    "no_local_only_authority_fallback": "YES"
+  },
+  "security_and_hygiene": {
+    "raw_oidc_token_retained": "NO",
+    "long_lived_signing_secret": "NONE",
+    "secret_scan_status": "PASS",
+    "findings_count": 0
+  },
+  "firewall_and_repo_invariants": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE",
+    "production_deployment": "NO",
+    "worktree_clean": "YES",
+    "natural_scheduler_productionization_manifest_sha256": "f9393142c7fcc6ed9864da231d19e55453638f001fe1e3ce280b9d98f12aa0da",
+    "functional_commit_sha": "9cbf3c8fe47304c23c42359a3cdf2b5b2c6a0280"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "policy_id": "R2_CLOSURE_POLICY_NORMALIZATION_V1",
+  "r2_closure_delay_policy_status": "RATIFIED_FOR_FIRST_NATURAL_CAPTURE",
+  "r2_closure_empirical_latency_support": "LIMITED",
+  "r2_closure_long_term_calibration": "PENDING_NATURAL_OPERATIONAL_EVIDENCE",
+  "r2_closure_max_delay_seconds": 300,
+  "r2_closure_policy_basis": "GOVERNANCE_SAFETY_BOUND",
+  "rationale": "Upper-bound governance safety margin enclosing Sigstore Fulcio certificate issuance (1-3s), Rekor transparency log inclusion (1-3s), exponential retry backoff (30s), verified NTP host clock uncertainty bound (61.194ms), and WAN jitter resilience (~265s margin). AWS S3/KMS latency claims are explicitly removed, and empirical latency support is marked limited pending natural prospective capture."
+}

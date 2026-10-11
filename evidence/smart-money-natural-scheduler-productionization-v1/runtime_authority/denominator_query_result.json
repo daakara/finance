@@ -1,0 +1,10 @@
+{
+  "executed_at_utc": "2026-10-11T19:25:40.511187+00:00",
+  "historical_records_in_natural_denominator": 0,
+  "natural_accessions_captured": 0,
+  "natural_denominator": 0,
+  "natural_denominator_clean": true,
+  "natural_denominator_runtime_attestation": "PASS",
+  "qualification_records_in_natural_denominator": 0,
+  "synthetic_records_in_natural_denominator": 0
+}

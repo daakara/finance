@@ -1,0 +1,53 @@
+name: Smart Money Rooting Scheduler
+
+"on":
+  schedule:
+    # Runs during SEC EDGAR business hours (Monday-Friday, 10:07 to 22:07 UTC)
+    # Minute 07 avoids top-of-hour GitHub Actions shared queue delays.
+    - cron: '7 10-22/2 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Execution mode (dry-run or natural)'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - natural
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  natural-rooting-scheduler:
+    name: Execute Governed Smart Money Rooting Scheduler
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Sigstore Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Verify Cosign Installation
+        run: cosign version
+
+      - name: Install Python Dependencies
+        run: pip install cryptography
+
+      - name: Execute Governed Natural Scheduler
+        run: python scripts/run_natural_scheduler.py --mode ${{ github.event.inputs.mode || 'dry-run' }}
+
+      - name: Upload Natural Scheduler Evidence Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigstore-natural-scheduler-dry-run-artifacts
+          path: evidence/sigstore-natural-scheduler-dry-run-v1/
+          retention-days: 14

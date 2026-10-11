@@ -1,0 +1,12 @@
+{
+  "admission_isolation": {
+    "historical_to_natural_admission_path": "IMPOSSIBLE",
+    "qualification_to_natural_admission_path": "IMPOSSIBLE",
+    "synthetic_to_natural_admission_path": "IMPOSSIBLE"
+  },
+  "authoritative_natural_admission_table": "sec_public_observations",
+  "authoritative_natural_denominator_query": "SELECT COUNT(*) FROM sec_public_observations WHERE observation_class = 'CONTENT_PUBLIC' AND identity_valid = 1 AND structural_valid = 1",
+  "authoritative_natural_evidence_store_path": "analyst_dashboard/smart_money/public_availability/observer_engine.py",
+  "authoritative_natural_evidence_store_type": "SQLITE",
+  "authoritative_qualification_filter": "WHERE accession_number LIKE 'TEST%' OR accession_number LIKE 'QUAL%' OR endpoint_url LIKE '%mock%'"
+}

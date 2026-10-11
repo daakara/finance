@@ -1,0 +1,124 @@
+{
+  "artifact_count": 23,
+  "artifacts": [
+    {
+      "byte_length": 741,
+      "relative_path": "default_branch_dry_run/authority_event.json",
+      "sha256": "192a53a1d340d0c8aecfd4864a52b78c041f6deba3003dc763f412766dd34cc8"
+    },
+    {
+      "byte_length": 1409,
+      "relative_path": "default_branch_dry_run/execution_summary.json",
+      "sha256": "6464a20ddcc865ffcd30e726dd136d3722ef44a785fe4189d733fbb3918d147d"
+    },
+    {
+      "byte_length": 8601,
+      "relative_path": "default_branch_dry_run/r1.sigstore.json",
+      "sha256": "c620e3f74baaea1f3c0306b66c86d041e8968be7e3ab643d61378acbe2dd82e9"
+    },
+    {
+      "byte_length": 668,
+      "relative_path": "default_branch_dry_run/r1_payload.json",
+      "sha256": "962e7b9a0b4572fba8065373679e6f7147caa83e7c0d94201735b6284e3fb4f6"
+    },
+    {
+      "byte_length": 8621,
+      "relative_path": "default_branch_dry_run/r2.sigstore.json",
+      "sha256": "64031cbadcfc34f0fdfbb09211d51ebee5703f6a86e65c1b3311c16ac6ee9284"
+    },
+    {
+      "byte_length": 1084,
+      "relative_path": "default_branch_dry_run/r2_payload.json",
+      "sha256": "aef995d774b7ce24e7a9b3a4eb0e5c7e92a81a1d986506f285cb44e6527cd00e"
+    },
+    {
+      "byte_length": 600,
+      "relative_path": "durability/backup_receipt.json",
+      "sha256": "9c17eaf4ee406597a75e86e86d13c16dcb9ba1bea13ebe25ff7c4da8cff72be8"
+    },
+    {
+      "byte_length": 290,
+      "relative_path": "durability/durability_test_object.json",
+      "sha256": "d2680ce88cade2a740b781968310855e5463f51750cc9fa5e4cbe8c8642a15f1"
+    },
+    {
+      "byte_length": 480,
+      "relative_path": "durability/manifest_reconciliation.json",
+      "sha256": "c5003215a75ddddcad90c8c226c636e2969c345a42c4ad8b415f4991a7d9b4fb"
+    },
+    {
+      "byte_length": 237,
+      "relative_path": "durability/restore_result.json",
+      "sha256": "7050058120242c507d27eacb126d6a482299cc5657c8bb886b1426ed9eac9f68"
+    },
+    {
+      "byte_length": 778,
+      "relative_path": "governance/r2_closure_policy_normalization.json",
+      "sha256": "360b0660c54d56fb5d69358dce34b835957d2025ac6ee7e1347b2c99f74c0ba2"
+    },
+    {
+      "byte_length": 615,
+      "relative_path": "governance/schedule_policy.json",
+      "sha256": "81fd62780f00fa3c18da07621b314fc8a41865a55ef764ad0ed63fe60055bfec"
+    },
+    {
+      "byte_length": 328,
+      "relative_path": "governance/trigger_policy.json",
+      "sha256": "a99c29d8600f83b204b5eb55a0b71a4aed54e61da66bcee272a36c1ddeae872e"
+    },
+    {
+      "byte_length": 98,
+      "relative_path": "natural_scheduler_workflow.sha256",
+      "sha256": "a18b9a1e47b747e5dfb31d78068f28bbfa48a099829e9e3931fd0ac8e85b6f5a"
+    },
+    {
+      "byte_length": 1491,
+      "relative_path": "natural_scheduler_workflow.yml",
+      "sha256": "2156a8fd3aac02e56017b0ad7e48890f3045da63ab251fd95ad525ee4ee5b174"
+    },
+    {
+      "byte_length": 2133,
+      "relative_path": "natural_workload_identity_policy.json",
+      "sha256": "5679adcd30b900f1bf017d4329b36ebc5df4db8d5fdf8d7a305d871f13cf04fa"
+    },
+    {
+      "byte_length": 1679,
+      "relative_path": "negative_controls.json",
+      "sha256": "2944cde625a29dcf661fd2e29778e517dfd606f9d5f2d13602562b0672a5d118"
+    },
+    {
+      "byte_length": 382,
+      "relative_path": "repository_attestation.txt",
+      "sha256": "124459206eaaf8ccdfeb68127511691c4657d5e234d5906f94321c3aacc63b12"
+    },
+    {
+      "byte_length": 792,
+      "relative_path": "runtime_authority/denominator_authority.json",
+      "sha256": "0b124dc469ad36cfed18819e3c06ea95b6687af72583b6cb40491c8e15625135"
+    },
+    {
+      "byte_length": 374,
+      "relative_path": "runtime_authority/denominator_query_result.json",
+      "sha256": "8239d3b063f196d7ccbcf89705e99ac51c59164238f2696ec539551d0bbd6dd6"
+    },
+    {
+      "byte_length": 667,
+      "relative_path": "runtime_authority/observer_state_authority.json",
+      "sha256": "7203ad9f9f6dddfad07b864e3d9b628b8f54e571d310a141a1ddc03ed5fc0f98"
+    },
+    {
+      "byte_length": 646,
+      "relative_path": "safe_default_branch_oidc_claims.json",
+      "sha256": "9effec291f7704437e4c5695395d91f717b0822ac1752e6b7801cedf72bc5445"
+    },
+    {
+      "byte_length": 344,
+      "relative_path": "secret_scan_result.json",
+      "sha256": "3a00463beaa013a28292ab81266013155c15860d49cb04a8c471d1898930f1fe"
+    }
+  ],
+  "gate": "SMART_MONEY_NATURAL_SCHEDULER_PRODUCTIONIZATION_CLOSURE_V1",
+  "generated_at_utc": "2026-10-11T19:25:40.777287+00:00",
+  "manifest_sha256": "f9393142c7fcc6ed9864da231d19e55453638f001fe1e3ce280b9d98f12aa0da",
+  "manifest_version": "1.0.0"
+}

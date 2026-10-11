@@ -1,0 +1,11 @@
+{
+  "admissibility_check": "PROHIBITED_FROM_NATURAL_DENOMINATOR",
+  "byte_integrity_verified": true,
+  "hash_integrity_verified": true,
+  "natural_denominator_impact": 0,
+  "original_byte_length": 290,
+  "original_sha256": "d2680ce88cade2a740b781968310855e5463f51750cc9fa5e4cbe8c8642a15f1",
+  "reconciled_at_utc": "2026-10-11T19:25:40.535402+00:00",
+  "restored_byte_length": 290,
+  "restored_sha256": "d2680ce88cade2a740b781968310855e5463f51750cc9fa5e4cbe8c8642a15f1"
+}

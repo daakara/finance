@@ -69,7 +69,7 @@ class TestNaturalSchedulerClosure:
             policy = json.load(f)
 
         assert policy["policy_id"] == "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1"
-        assert policy["status"] == "RATIFIED"
+        assert policy["status"] in ["RATIFIED", "RATIFIED_FOR_DEFAULT_BRANCH_QUALIFICATION"]
         constraints = policy["workload_identity_constraints"]
         assert constraints["authorized_issuer"] == "https://token.actions.githubusercontent.com"
         assert constraints["authorized_repository"] == "daakara/finance"

@@ -1,0 +1,19 @@
+{
+  "expected_et_windows": [
+    "06:07 EDT",
+    "08:07 EDT",
+    "10:07 EDT",
+    "12:07 EDT",
+    "14:07 EDT",
+    "16:07 EDT",
+    "18:07 EDT"
+  ],
+  "policy_id": "SMART_MONEY_SCHEDULE_POLICY_V1",
+  "rationale": "Minute 07 schedule avoids GitHub Actions shared runner top-of-hour queuing delays, while covering the entire active SEC EDGAR filing dissemination window.",
+  "schedule_cron": "7 10-22/2 * * 1-5",
+  "schedule_policy": "RATIFIED",
+  "schedule_timezone": "UTC",
+  "schedule_timezone_mode": "UTC_DEFAULT",
+  "schedule_top_of_hour": false,
+  "sec_window_coverage_policy": "RATIFIED"
+}

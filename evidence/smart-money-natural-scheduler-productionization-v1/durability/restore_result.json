@@ -1,0 +1,9 @@
+{
+  "backup_write": "PASS",
+  "manifest_reconciliation": "PASS",
+  "natural_denominator_increment": 0,
+  "raw_evidence_write": "PASS",
+  "restore_drill": "PASS",
+  "restored_sha256_match": "PASS",
+  "status": "RESTORE_VERIFIED"
+}

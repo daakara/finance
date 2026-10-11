@@ -1,0 +1,13 @@
+{
+  "authoritative_observer_state_key": "status",
+  "authoritative_observer_state_store_path": "analyst_dashboard/smart_money/public_availability/observer_engine.py",
+  "authoritative_observer_state_store_type": "SQLITE",
+  "authoritative_observer_state_table": "sec_public_observer_runs",
+  "citations": [
+    "analyst_dashboard/smart_money/public_availability/observer_engine.py:85-100",
+    "analyst_dashboard/smart_money/anchor_finalization/finalization_ledger.py:87-95",
+    "tests/test_arx_step2_passive_capture_certification.py:428-438"
+  ],
+  "current_observer_runtime_state": "PRE_OBSERVATION_READY",
+  "observer_runtime_state_attested": "PASS"
+}

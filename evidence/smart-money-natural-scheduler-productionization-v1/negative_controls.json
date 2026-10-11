@@ -1,0 +1,38 @@
+{
+  "controls": [
+    {
+      "artifact": "evidence/sigstore-live-r1-r2-v2/live-r1/original_r1_payload.json",
+      "attempted_admission": "PROSPECTIVE_NATURAL_DENOMINATOR",
+      "reason": "qualification_scope == 'LIVE_PROVENANCE_CLOSURE_QUALIFICATION' != 'NATURAL_PROSPECTIVE'",
+      "result": "REJECTED",
+      "test": "QUALIFICATION_ARTIFACT_ADMISSION"
+    },
+    {
+      "artifact": "evidence/default-branch-dry-run-raw/natural_r1_payload.json",
+      "attempted_admission": "PROSPECTIVE_NATURAL_DENOMINATOR",
+      "reason": "qualification_scope == 'PRE_ARM_DRY_RUN' and natural_accession == false",
+      "result": "REJECTED",
+      "test": "DRY_RUN_ARTIFACT_ADMISSION"
+    },
+    {
+      "artifact": "evidence/smart-money-natural-scheduler-productionization-v1/durability/durability_test_object.json",
+      "attempted_admission": "PROSPECTIVE_NATURAL_DENOMINATOR",
+      "reason": "qualification_scope == 'DURABILITY_DRILL' and natural_accession == false",
+      "result": "REJECTED",
+      "test": "DURABILITY_DRILL_ARTIFACT_ADMISSION"
+    },
+    {
+      "artifact": "historical_sec_filing_mock.json",
+      "attempted_admission": "PROSPECTIVE_NATURAL_DENOMINATOR",
+      "reason": "Filing date precedes observer activation boundary; provenanceCohort == HISTORICAL",
+      "result": "REJECTED",
+      "test": "HISTORICAL_ARTIFACT_ADMISSION"
+    }
+  ],
+  "dry_run_artifact_admission": "REJECTED",
+  "durability_drill_artifact_admission": "REJECTED",
+  "executed_at_utc": "2026-10-11T19:25:40.511187+00:00",
+  "historical_artifact_admission": "REJECTED",
+  "overall_status": "PASS",
+  "qualification_artifact_admission": "REJECTED"
+}

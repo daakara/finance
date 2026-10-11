@@ -1,0 +1,7 @@
+{
+  "manual_recovery_trigger": "workflow_dispatch",
+  "policy_id": "SMART_MONEY_NATURAL_TRIGGER_POLICY_V1",
+  "primary_natural_trigger": "schedule",
+  "push_trigger": "DISABLED",
+  "rationale": "Push triggers are prohibited in production to prevent unintended or accidental rooting admissions during branch maintenance."
+}
