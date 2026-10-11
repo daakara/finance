@@ -1,0 +1,42 @@
+{
+  "root.json": {
+    "sha256": "73747011d0857ada15479a16c4cae0f3ed03aac698b523b97e1de314ac9d9ca8",
+    "byte_length": 5630,
+    "tuf_role": "root",
+    "version": 15,
+    "expires": "2026-11-20T13:58:18Z"
+  },
+  "snapshot.json": {
+    "sha256": "6d61405faa993ba3d07556b79d1e319627cdc06ff879a7b5700967dc25d1d224",
+    "byte_length": 1760,
+    "tuf_role": "snapshot",
+    "version": 166,
+    "expires": "2036-10-04T08:51:19Z"
+  },
+  "targets.json": {
+    "sha256": "6a697f7f8908c8ab26c11786ecb490b54acec97fa8c802e399f065f8a0cc1acd",
+    "byte_length": 4942,
+    "tuf_role": "targets",
+    "version": 14,
+    "expires": "2036-05-09T09:00:52Z"
+  },
+  "timestamp.json": {
+    "sha256": "bf19f9d2e00d18973bba64b2ce06968fd6237c8d0156364770cf7f30fd2b4e9b",
+    "byte_length": 451,
+    "tuf_role": "timestamp",
+    "version": 805,
+    "expires": "2026-10-18T01:48:18Z"
+  },
+  "trusted_root.json": {
+    "sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66",
+    "byte_length": 6787,
+    "tuf_role": "trusted_root",
+    "version": 15
+  },
+  "signing_config.v0.2.json": {
+    "sha256": "9711a6d5375706957a4859af31c5866a4474f81f0544f9f4b76c9c4f4c8a539c",
+    "byte_length": 1034,
+    "tuf_role": "trusted_root",
+    "version": 15
+  }
+}

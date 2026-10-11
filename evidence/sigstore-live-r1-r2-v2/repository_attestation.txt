@@ -1,0 +1,14 @@
+REPOSITORY ATTESTATION — LIVE R1/R2 FINAL CHAIN CLOSURE GATE V1
+Branch: arx/public-availability-observer-epoch-001
+Successor Run ID: run_live_qual_002
+Pre-arm Boundary: Candidate 004 Firewall Preserved (0 diff vs 63131b9)
+Natural Denominator: 0
+Natural Accessions Captured: 0
+Natural Observer Arming: NOT_AUTHORIZED
+Remote Push: NO
+Main Merge: NO
+Production Deployment: NO
+Live External Witness: Sigstore / Rekor Public Transparency Log
+Signer Identity: 53128824+daakara@users.noreply.github.com
+OIDC Issuer: https://github.com/login/oauth
+Status: ATTESTED_NON_PRODUCTION_QUALIFICATION_ONLY
