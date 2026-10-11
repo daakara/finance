@@ -1,0 +1,150 @@
+{
+  "gate": "SIGSTORE_REKOR_INTERIM_R1_R2_QUALIFICATION_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "0a09e612cb7fbc00ea54e6012c85b3b10b05b078",
+  "external_root_profile": "SIGSTORE_REKOR_INTERIM_V1",
+  "external_root_function": "PUBLIC_APPEND_ONLY_TRANSPARENCY_WITNESS",
+  "epistemic_boundaries": {
+    "external_raw_evidence_custody": "NOT_ESTABLISHED",
+    "s3_object_lock_compliance": "NOT_APPLICABLE",
+    "aws_external_custody": "DEFERRED",
+    "sigstore_timestamp_semantics": "SIGNED_EXTERNAL_TIMESTAMP_EVIDENCE",
+    "sec_public_availability_time": "SEPARATE_AUTHORITY",
+    "exact_first_sec_public_time": "NOT_ESTABLISHED",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "natural_accessions_captured": 0,
+    "natural_denominator_contamination": "NONE",
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE",
+    "remote_push": "NO",
+    "main_merge": "NO",
+    "production_deployment": "NO",
+    "worktree_clean": "YES"
+  },
+  "identity_pinning": {
+    "sigstore_certificate_identity": "53128824+daakara@users.noreply.github.com",
+    "sigstore_oidc_issuer": "https://github.com/login/oauth",
+    "identity_policy": "EXACT_PINNED",
+    "wildcard_matching_prohibited": true
+  },
+  "live_transparency_witness_evidence": {
+    "reference_bundle_file": "scratch/smart-money-rekor-qualification/arx-rekor-test.sigstore.json",
+    "reference_payload_file": "scratch/smart-money-rekor-qualification/arx-rekor-test.json",
+    "media_type": "application/vnd.dev.sigstore.bundle.v0.3+json",
+    "log_index": 3210329851,
+    "integrated_time_unix": 1791734664,
+    "tree_size": 3088425988,
+    "checkpoint_envelope": "rekor.sigstore.dev - 1193050959916656506",
+    "signature_verification": "PASS",
+    "identity_verification": "PASS",
+    "issuer_verification": "PASS",
+    "digest_match": true,
+    "tamper_negative_control": "PASS",
+    "rfc3161_timestamp_count": 1,
+    "sct_present": true
+  },
+  "synthetic_r1_evidence": {
+    "root_phase": "PRE_AUTHORITY_ADMISSION_ROOT",
+    "qualification_scope": "TEST_ONLY",
+    "natural_accession": false,
+    "authority_effective_status": "BLOCKED_PENDING_EXTERNAL_WITNESS",
+    "payload_sha256": "afdd45eadf115da9694dc709db9d522078d039f0f8a87a1ff51259d47291fdff",
+    "root_hash": "d82d8ff947fbae59af69f85c2da37a1fa324ae28457a74394d7c453c77d093b1",
+    "sigstore_bundle_sha256": "57efa744c08dcd4def21499da860109febd76c430027d41947559992f682c4f0",
+    "signature_verification": "PASS",
+    "identity_verification": "PASS",
+    "tamper_detection": "PASS",
+    "identity_substitution_rejected": "YES"
+  },
+  "synthetic_authority_event_evidence": {
+    "authority_event_scope": "TEST_ONLY",
+    "production_authority_granted": false,
+    "natural_accession_authority_granted": false,
+    "transition_event_id": "auth_event_run_synth_001_1",
+    "transition_event_hash": "3f77eddef27348bf97857e9fe0027f216d089f65b053cf2f928bd58619738337",
+    "sequence": 1,
+    "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2"
+  },
+  "synthetic_r2_evidence": {
+    "root_phase": "POST_AUTHORITY_CLOSURE_ROOT",
+    "qualification_scope": "TEST_ONLY",
+    "authority_grant_function": "NONE",
+    "payload_sha256": "2e3d2aa23653b42b5f77162c5a11d82ec8e330b399c40191eb55897d0689c28f",
+    "root_hash": "468ec7ff981c3fe6d905fce4ae119058910fc472d0157d56ce60c401a353a75f",
+    "sigstore_bundle_sha256": "ad06274cb7a5b47a93b4b26292d1cb3d8adfe5a26ee68de2c351425a49e5c48b",
+    "signature_verification": "PASS",
+    "identity_verification": "PASS",
+    "linkage_verification": "PASS",
+    "r1_root_hash_matches": true,
+    "r1_bundle_hash_matches": true,
+    "authority_event_hash_matches": true,
+    "policy_set_hash_matches": true
+  },
+  "substitution_and_replay_matrix": {
+    "cross_run_signature_substitution_rejected": "YES",
+    "cross_run_root_link_substitution_rejected": "YES",
+    "cross_phase_signature_substitution_rejected": "YES",
+    "cross_phase_root_substitution_rejected": "YES"
+  },
+  "operational_verification": {
+    "offline_bundle_verification": "PASS",
+    "offline_verification_condition": "Self-contained leaf certificate, signature, Rekor inclusion proof, and RFC 3161 timestamp response verified locally; root trust material requires pre-caching.",
+    "transparency_log_entry_count": 1,
+    "rfc3161_timestamp_count": 1,
+    "sct_present": "YES",
+    "sigstore_outage_fail_closed": "PASS",
+    "new_root_signing_when_external_witness_unavailable": "BLOCKED",
+    "local_unsigned_root_authority": "NOT_GRANTED",
+    "natural_authority_fallback": "PROHIBITED",
+    "identical_payload_root_hash_stable": "YES",
+    "multiple_sigstore_bundles_for_same_root": "ALLOWED",
+    "primary_acceptance_rule": "DETERMINISTIC_FIRST_COMMITTED_IN_AUTHORITY_TRANSITION_RECORD"
+  },
+  "reviewer_reconstruction": {
+    "status": "PASS",
+    "mismatches": 0,
+    "r1_signature_valid": true,
+    "r1_identity_valid": true,
+    "r2_signature_valid": true,
+    "r2_identity_valid": true,
+    "r2_r1_linkage_valid": true,
+    "policy_set_hash_valid": true,
+    "zero_trust_evaluation": true
+  },
+  "privacy_review": {
+    "status": "PASS",
+    "prohibited_patterns_checked": [
+      "AWS Access Key ID",
+      "AWS Secret Access Key",
+      "Private Key Material",
+      "GitHub OAuth Access Token",
+      "GitHub Personal Access Token",
+      "Bearer Authorization Token",
+      "Cleartext Password",
+      "SEC Credentials"
+    ],
+    "violations_found": 0
+  },
+  "natural_prospective_rooting_verdict": {
+    "suitable_for_natural_prospective_rooting": "CONDITIONAL",
+    "residual_limitations_vs_aws": [
+      "WITNESS_NOT_CUSTODY: Sigstore/Rekor witnesses hashes and signatures only; raw evidence and filing bodies remain in local custody without AWS Object Lock WORM retention.",
+      "SEPARATE_CLOCK: Sigstore RFC 3161 timestamps establish witnessing time, not SEC publication availability time.",
+      "PINNED_IDENTITY_REQUIREMENT: Exact certificate identity and OIDC issuer pinning must remain enforced fail-closed.",
+      "EPHEMERAL_TOKEN_LIFECYCLE: Keyless OIDC certificates are 10-minute ephemeral credentials requiring real-time witness submission.",
+      "PRE_ARM_BLOCKERS: Natural observer arming remains strictly NOT_AUTHORIZED until all pre-arm milestones complete."
+    ]
+  },
+  "test_results": {
+    "targeted_qualification_tests_run": 19,
+    "targeted_qualification_tests_passed": 19,
+    "targeted_qualification_tests_failed": 0,
+    "anchor_finalization_regression_tests_run": 118,
+    "anchor_finalization_regression_tests_passed": 118,
+    "anchor_finalization_regression_tests_failed": 0
+  }
+}
