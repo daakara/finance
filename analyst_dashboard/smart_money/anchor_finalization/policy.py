@@ -119,6 +119,53 @@ ROOT_AMBIGUOUS_COMMIT_RESULT_POLICY: Final[str] = "QUERY_EXISTING_ROOT_BEFORE_RE
 ROOT_CONFIRMATION_REQUIRED_FOR_AUTHORITY_EFFECTIVENESS: Final[bool] = True
 RETROACTIVE_AUTHORITY_FROM_ROOT_CONFIRMATION: Final[bool] = False
 
+# ---------------------------------------------------------------------------
+# Two-Phase Finalization Root Policy Epoch & Invariants (Sections 4, 6, 10, 13, 14, 24)
+# ---------------------------------------------------------------------------
+ROOT_PHASE_R1: Final[str] = "PRE_AUTHORITY_ADMISSION_ROOT"
+ROOT_PHASE_R2: Final[str] = "POST_AUTHORITY_CLOSURE_ROOT"
+ROOT_PHASE_1_NAME: Final[str] = "PRE_AUTHORITY_ADMISSION_ROOT"
+ROOT_PHASE_2_NAME: Final[str] = "POST_AUTHORITY_CLOSURE_ROOT"
+TWO_PHASE_FINALIZATION_ROOT_POLICY_ID: Final[str] = "TWO_PHASE_FINALIZATION_ROOT_POLICY_V1"
+TWO_PHASE_FINALIZATION_ROOT_POLICY_VERSION: Final[str] = "1.0"
+R1_REDECIDES_EXISTING_EVIDENCE: Final[bool] = False
+R2_REDECIDES_AUTHORITY_ELIGIBILITY: Final[bool] = False
+R2_RETROACTIVELY_CHANGES_R1: Final[bool] = False
+R1_CONTAINS_POST_AUTHORITY_STATE: Final[bool] = False
+ROOT_SELF_REFERENCE_PROHIBITED: Final[bool] = True
+CURRENT_ROOT_RECEIPT_INCLUDED_IN_CURRENT_ROOT_PAYLOAD: Final[bool] = False
+AUTHORITY_EFFECTIVE_STATUS_IN_R1_PAYLOAD: Final[str] = "BLOCKED_PENDING_FINALIZATION_ROOT"
+AUTHORITY_BECAME_EFFECTIVE_AT_IN_R1_PAYLOAD: Final[str] = "NULL"
+AUTHORITY_TRANSITION_INTENT_FIELD_IN_R1: Final[str] = "GRANT_IF_ROOT_CONFIRMED"
+AUTHORITY_EFFECTIVENESS_PRECONDITION_FIELD_IN_R1: Final[str] = "R1_ROOT_RECEIPT_CONFIRMED"
+R2_LINKAGE_R1_ROOT_ID: Final[str] = "REQUIRED"
+R2_LINKAGE_R1_ROOT_HASH: Final[str] = "REQUIRED"
+R2_LINKAGE_R1_RECEIPT_HASH: Final[str] = "REQUIRED"
+R2_LINKAGE_AUTHORITY_TRANSITION_EVENT_ID: Final[str] = "REQUIRED"
+R2_LINKAGE_AUTHORITY_TRANSITION_EVENT_HASH: Final[str] = "REQUIRED"
+R2_LINKAGE_AUTHORITY_TRANSITION_SEQUENCE: Final[str] = "REQUIRED"
+AUTHORITY_EFFECTIVE_TIME_PRECEDES_R1_CONFIRMED_AT: Final[bool] = False
+DUPLICATE_IDENTICAL_AUTHORITY_TRIGGER: Final[str] = "RETURN_EXISTING_TRANSITION"
+DUPLICATE_DIFFERENT_AUTHORITY_TRIGGER: Final[str] = "RAISE_CRITICAL_INTEGRITY_ERROR"
+AUTHORITY_TRANSITION_EVENT_SCHEMA_VERSION: Final[str] = "1.0"
+AUTHORITY_TRANSITION_EVENT_TYPE: Final[str] = "AUTHORITY_BECAME_EFFECTIVE"
+R1_RECEIPT_HASH_INCLUDED_IN_R1: Final[bool] = False
+R1_RECEIPT_HASH_INCLUDED_IN_AUTHORITY_TRANSITION_EVENT: Final[bool] = True
+R1_RECEIPT_HASH_INCLUDED_IN_R2: Final[bool] = True
+POST_AUTHORITY_CLOSURE_ROOT_REQUIRED: Final[bool] = True
+POST_AUTHORITY_CLOSURE_MAX_DELAY: Final[float] = 300.0
+POST_AUTHORITY_CLOSURE_EXPIRY_POLICY: Final[str] = "SUSPEND_NEW_AUTHORITY_USE"
+R2_EXPIRY_RETROACTIVELY_REVOKES_PRIOR_VALID_DECISIONS: Final[bool] = False
+R2_PURPOSE: Final[str] = "AUDIT_FINALITY"
+R2_AUTHORITY_GRANT_FUNCTION: Final[str] = "NONE"
+R2_CAN_CHANGE_AUTHORITY_ELIGIBILITY: Final[bool] = False
+R2_CAN_BACKDATE_AUTHORITY: Final[bool] = False
+R2_CAN_CHANGE_R1_RECEIPT: Final[bool] = False
+R2_CAN_CHANGE_AUTHORITY_TRANSITION_EVENT: Final[bool] = False
+AUTHORITY_EVENT_AND_STATE_UPDATE_SAME_TRANSACTION: Final[bool] = True
+PARTIAL_AUTHORITY_EFFECTIVENESS_ALLOWED: Final[bool] = False
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +271,47 @@ _RAW_POLICY_ARTIFACTS: Dict[str, str] = {
         "THREAT_MODEL: WHOLE_LEDGER_REWRITE_DETECTION\n"
         "DISALLOW_INTERNAL_CHAIN_SUFFICIENCY: TRUE\n"
     ),
+    "two_phase_root_policy_v1": (
+        "POLICY_ID: TWO_PHASE_FINALIZATION_ROOT_POLICY_V1\n"
+        "VERSION: 1.0\n"
+        "R1_PHASE: PRE_AUTHORITY_ADMISSION_ROOT\n"
+        "R2_PHASE: POST_AUTHORITY_CLOSURE_ROOT\n"
+        "R1_REDECIDES_EVIDENCE: FALSE\n"
+        "R2_REDECIDES_ELIGIBILITY: FALSE\n"
+        "R2_RETROACTIVELY_CHANGES_R1: FALSE\n"
+    ),
+    "root_self_reference_policy_v1": (
+        "POLICY_ID: ROOT_SELF_REFERENCE_POLICY_V1\n"
+        "VERSION: 1.0\n"
+        "CURRENT_ROOT_RECEIPT_IN_PAYLOAD: PROHIBITED\n"
+        "R1_RECEIPT_IN_R1: PROHIBITED\n"
+        "R1_RECEIPT_IN_AUTHORITY_EVENT: REQUIRED\n"
+        "R1_RECEIPT_IN_R2: REQUIRED\n"
+    ),
+    "authority_transition_contract_v1": (
+        "CONTRACT_ID: AUTHORITY_TRANSITION_CONTRACT_V1\n"
+        "VERSION: 1.0\n"
+        "TRIGGER: VERIFIED_R1_RECEIPT\n"
+        "EVENT_TYPE: AUTHORITY_BECAME_EFFECTIVE\n"
+        "ATOMIC_STATE_MUTATION: REQUIRED\n"
+        "IDEMPOTENCY_REQUIRED: TRUE\n"
+        "BACKDATING: PROHIBITED\n"
+    ),
+    "post_authority_closure_policy_v1": (
+        "POLICY_ID: POST_AUTHORITY_CLOSURE_POLICY_V1\n"
+        "VERSION: 1.0\n"
+        "CLOSURE_ROOT_REQUIRED: TRUE\n"
+        "MAX_DELAY_SECONDS: 300.0\n"
+        "EXPIRY_POLICY: SUSPEND_NEW_AUTHORITY_USE\n"
+        "RETROACTIVE_REVOCATION: FALSE\n"
+    ),
+    "two_phase_root_reviewer_policy_v1": (
+        "POLICY_ID: TWO_PHASE_ROOT_REVIEWER_POLICY_V1\n"
+        "VERSION: 1.0\n"
+        "AUDIT_PHASES: R1_AND_R2\n"
+        "TRANSITION_REWRITE_DETECTION: REQUIRED\n"
+        "RECEIPT_SUBSTITUTION_DETECTION: REQUIRED\n"
+    ),
 }
 
 POLICY_ARTIFACT_REGISTRY: Dict[str, Dict[str, Any]] = {}
@@ -267,6 +355,11 @@ def verify_all_policy_artifacts_retained() -> bool:
         "root_receipt_verification_policy_v1",
         "root_retry_policy_v1",
         "root_reviewer_policy_v1",
+        "two_phase_root_policy_v1",
+        "root_self_reference_policy_v1",
+        "authority_transition_contract_v1",
+        "post_authority_closure_policy_v1",
+        "two_phase_root_reviewer_policy_v1",
     ]
     for req in required:
         rec = get_policy_artifact(req)
