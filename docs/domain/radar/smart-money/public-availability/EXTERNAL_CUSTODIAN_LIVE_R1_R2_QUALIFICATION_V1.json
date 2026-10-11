@@ -1,0 +1,109 @@
+{
+  "gate": "EXTERNAL_CUSTODIAN_ONBOARDING_AND_LIVE_R1_R2_QUALIFICATION_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "3018ac75cd97b41084cd6aa787d85bcc2b34a469",
+  "authorization_posture": {
+    "governance_posture": "AUTHORIZED_FOR_LIVE_QUALIFICATION",
+    "authorization_scope": "SMART_MONEY_EXTERNAL_ROOT_CUSTODY_QUALIFICATION_ONLY",
+    "authorized_actions": [
+      "PROVISION_OR_USE_MINIMALLY_SCOPED_LIVE_EXTERNAL_CUSTODY_RESOURCES",
+      "RUN_DISPOSABLE_LIVE_R1_R2_QUALIFICATION",
+      "COLLECT_PROVIDER_LATENCY_EVIDENCE",
+      "RATIFY_OR_REJECT_R2_CLOSURE_DELAY"
+    ],
+    "not_authorized": [
+      "NATURAL_SEC_CAPTURE",
+      "PRODUCTION_AUTHORITY",
+      "NATURAL_DENOMINATOR_ADMISSION",
+      "MAIN_MERGE",
+      "REMOTE_PUSH",
+      "PRODUCTION_DEPLOYMENT",
+      "CANDIDATE_004_CHANGES",
+      "PDS_STATE_CHANGE",
+      "MODEL_TUNING"
+    ]
+  },
+  "aws_access_discovery": {
+    "credential_sources_checked": [
+      "workload/instance_role",
+      "AWS SSO/profile (~/.aws/config, ~/.aws/credentials)",
+      "environment_temporary_credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)"
+    ],
+    "aws_caller_identity_available": false,
+    "aws_caller_account_id": null,
+    "aws_caller_arn": null,
+    "aws_caller_principal_id": null,
+    "aws_identity_response_sha256": null,
+    "boto3_installed": false,
+    "aws_cli_installed": false,
+    "live_r1_r2_qualification": "BLOCKED_CREDENTIALS_UNAVAILABLE",
+    "error_detail": "LIVE_PROVIDER_CREDENTIALS_ABSENT: AWS credentials, CLI, and SDK not provisioned in local execution environment.",
+    "raw_response_sha256": "585a2ed0a8ba4008dd6a785e789795b439a62bc906abea83e7d0998f41a9e4de",
+    "operator_action_required": [
+      "Configure AWS credentials via environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN if temporary, AWS_DEFAULT_REGION) or ~/.aws/credentials profile.",
+      "Install AWS SDK (pip install boto3 botocore) or AWS CLI v2 in execution environment.",
+      "Ensure IAM identity has least-privilege permissions for S3 Object Lock and KMS Sign operations."
+    ]
+  },
+  "resource_discovery": {
+    "existing_root_bucket_found": false,
+    "existing_object_lock_configuration_found": false,
+    "existing_root_writer_role_found": false,
+    "existing_application_role_found": false,
+    "existing_signing_key_found": false,
+    "status": "PROVISIONING_BLOCKED_BY_CREDENTIALS"
+  },
+  "live_root_readiness": {
+    "s3_versioning": "NOT_EXECUTED",
+    "s3_object_lock": "NOT_EXECUTED",
+    "root_retention_mode": "NOT_EXECUTED",
+    "locked_object_version_delete_protection": "NOT_EXECUTED",
+    "locked_object_version_mutation_protection": "NOT_EXECUTED",
+    "same_object_key_new_version_creation": "NOT_EXECUTED",
+    "live_credential_capability_separation": "NOT_EXECUTED",
+    "ultimate_cloud_admin_can_change_control_plane": true,
+    "live_external_trust_domain": "NOT_ESTABLISHED",
+    "kms_key_id": null,
+    "signing_key_lifecycle_status": "NOT_EXECUTED",
+    "live_r1_provider_qualification": "NOT_EXECUTED",
+    "live_r2_provider_qualification": "NOT_EXECUTED",
+    "live_ambiguous_commit_recovery": "NOT_EXECUTED",
+    "live_external_root_reviewer_status": "NOT_EXECUTED"
+  },
+  "r2_delay_policy": {
+    "post_authority_closure_max_delay": "300.0s",
+    "source": "IMPLEMENTATION_DEFAULT_ONLY",
+    "r2_delay_live_provider_latency_evidence": "NOT_ESTABLISHED",
+    "r2_delay_policy_justification": "INSUFFICIENT",
+    "r2_delay_policy_ratification": "FAIL"
+  },
+  "clock_state": {
+    "host_clock_remediation": "VERIFIED_FROM_PRIOR_EVIDENCE",
+    "clock_freshness_requalification_required_before_arming": true
+  },
+  "sec_state": {
+    "sec_operational_preflight_for_arming": "NOT_EXECUTED_IN_THIS_GATE",
+    "next_candidate_eligible_sec_day": "2026-10-13"
+  },
+  "natural_denominator_check": {
+    "natural_accessions_captured": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "qualification_objects_in_natural_denominator": 0,
+    "natural_denominator_contamination": "NONE"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "secret_hygiene": {
+    "secret_scan_status": "PASS",
+    "secret_material_committed": false
+  },
+  "verdict": {
+    "outcome": "OUTCOME_B_CREDENTIAL_PROVISIONING_BLOCK",
+    "live_external_custody": "NOT_ESTABLISHED",
+    "live_external_r1_r2_infrastructure_qualification": "NOT_EXECUTED_OR_BLOCKED",
+    "natural_observer_arming": "NOT_AUTHORIZED"
+  }
+}
