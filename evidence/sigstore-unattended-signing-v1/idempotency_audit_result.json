@@ -1,0 +1,1 @@
+{"authority_retry_idempotency":"PASS","concurrent_duplicate_execution_control":"PASS","duplicate_authority_transition":"NO","gate":"SIGSTORE_UNATTENDED_SCHEDULER_SIGNING_CLOSURE_V1","r1_retry_idempotency":"PASS","r2_retry_idempotency":"PASS"}

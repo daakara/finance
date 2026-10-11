@@ -1,0 +1,1 @@
+{"controls":{"expired_token":"REJECTED","wrong_audience":"REJECTED","wrong_issuer":"REJECTED","wrong_ref":"REJECTED","wrong_repository":"REJECTED","wrong_subject":"REJECTED","wrong_workflow":"REJECTED"},"gate":"SIGSTORE_UNATTENDED_SCHEDULER_SIGNING_CLOSURE_V1","status":"VERIFIED_REJECTED"}

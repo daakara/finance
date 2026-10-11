@@ -1,0 +1,12 @@
+REPOSITORY ATTESTATION — UNATTENDED SCHEDULER SIGNING CLOSURE GATE V1
+Branch: arx/public-availability-observer-epoch-001
+Pre-arm Boundary: Candidate 004 Firewall Preserved (0 diff vs 63131b9)
+Natural Denominator: 0
+Natural Accessions Captured: 0
+Natural Observer Arming: NOT_AUTHORIZED
+Remote Push: NO
+Main Merge: NO
+Production Deployment: NO
+Static Keys / PATs: NONE
+Outcome: OUTCOME_B_NO_WORKLOAD_IDENTITY_AVAILABLE
+Unattended Signing Status: NOT_ESTABLISHED
