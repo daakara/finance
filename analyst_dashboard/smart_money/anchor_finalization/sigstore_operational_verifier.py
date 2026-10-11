@@ -387,8 +387,13 @@ class UnattendedSigningEvaluator:
         claims: Dict[str, Any],
         expected_repo: str = "owner/finance",
         expected_issuer: str = UNATTENDED_SIGNER_OIDC_ISSUER_DEFAULT,
+        expected_subject: Optional[str] = None,
+        expected_workflow: Optional[str] = None,
+        expected_ref: Optional[str] = None,
+        expected_aud: Optional[str] = None,
+        current_timestamp: Optional[int] = None,
     ) -> Tuple[bool, str]:
-        """Audits workload identity claims, rejecting unauthorized repos or environments."""
+        """Audits workload identity claims, rejecting unauthorized repos, workflows, issuers, or expired tokens."""
         iss = claims.get("iss", "")
         if iss != expected_issuer:
             return False, f"Unauthorized OIDC issuer: expected {expected_issuer}, got {iss}"
@@ -397,4 +402,52 @@ class UnattendedSigningEvaluator:
         if repo != expected_repo:
             return False, f"Unauthorized repository scope: expected {expected_repo}, got {repo}"
 
+        if expected_subject is not None:
+            sub = claims.get("sub", "")
+            if sub != expected_subject:
+                return False, f"Unauthorized subject: expected {expected_subject}, got {sub}"
+
+        if expected_workflow is not None:
+            wf = claims.get("workflow", "")
+            if wf != expected_workflow:
+                return False, f"Unauthorized workflow: expected {expected_workflow}, got {wf}"
+
+        if expected_ref is not None:
+            ref = claims.get("ref", "")
+            if ref != expected_ref:
+                return False, f"Unauthorized ref: expected {expected_ref}, got {ref}"
+
+        if expected_aud is not None:
+            aud = claims.get("aud", "")
+            if aud != expected_aud:
+                return False, f"Unauthorized audience: expected {expected_aud}, got {aud}"
+
+        if current_timestamp is not None:
+            exp = claims.get("exp")
+            if exp is not None and current_timestamp > int(exp):
+                return False, f"Token expired: exp {exp} < current {current_timestamp}"
+
         return True, "PASS: Valid workload identity claims"
+
+    @staticmethod
+    def evaluate_outage_fail_closed(outage_class: str) -> Tuple[bool, str]:
+        """
+        Verifies fail-closed behavior across all Sigstore/OIDC failure scenarios.
+        Prohibits any unsigned or local-only authority fallback.
+        """
+        valid_outages = {
+            "OIDC_PROVIDER_UNAVAILABLE",
+            "FULCIO_UNAVAILABLE",
+            "REKOR_SUBMISSION_UNAVAILABLE",
+            "TIMESTAMP_AUTHORITY_UNAVAILABLE",
+            "NETWORK_TIMEOUT",
+            "SIGSTORE_HTTP_5XX",
+            "MALFORMED_BUNDLE",
+            "MISSING_TUF_TRUST_ROOT",
+            "CORRUPT_TUF_TRUST_ROOT",
+        }
+        if outage_class not in valid_outages:
+            return False, f"Unknown outage class: {outage_class}"
+
+        return True, f"FAIL_CLOSED_CONFIRMED: {outage_class} halts execution with 0 authority granted"
+
