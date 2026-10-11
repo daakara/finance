@@ -1,0 +1,8 @@
+{
+  "claim": "Fencing token prevents stale writers from mutating state after runner suspension",
+  "evidence_class": "DISTRIBUTED_CONCURRENCY",
+  "independent_verifier_result": "BLOCKED per Section 6.4 and Section 31",
+  "observed_result": "Fencing tokens are simulated in local tests but lack distributed coordinator to reject stale writes from orphaned runners.",
+  "rederivation_command": "inspect fencing token enforcement across multiple runners",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Gate-3 authorization is delivered via an authoritative durable store outside repo cache",
+  "evidence_class": "DISTRIBUTED_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 5.5 and Section 31",
+  "observed_result": "Gate-3 authorization is read from local repository path or GitHub cache; external durable delivery service is not configured.",
+  "rederivation_command": "inspect Gate-3 delivery path in run_natural_scheduler.py",
+  "status": "BLOCKED"
+}

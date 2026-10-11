@@ -1,0 +1,13 @@
+{
+  "allowed_claims": {
+    "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main",
+    "repository": "daakara/finance",
+    "repository_owner": "daakara"
+  },
+  "authorized_issuer_identity": "urn:arx:authority:sec-gate3-issuer:v1",
+  "authorized_issuer_type": "DEDICATED_WORKLOAD_IDENTITY",
+  "enforced_audience": "sigstore",
+  "schema_version": "SMART_MONEY_GATE3_ISSUER_POLICY_V1",
+  "signing_mechanism": "FULCIO_OIDC_EPHEMERAL_CERTIFICATE",
+  "status": "POLICY_DEFINED_NOT_ENFORCED_IN_IAM"
+}

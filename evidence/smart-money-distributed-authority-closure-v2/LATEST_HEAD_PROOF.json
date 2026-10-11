@@ -1,0 +1,8 @@
+{
+  "claim": "External latest-head authority prevents split-brain or stale checkpoint recovery",
+  "evidence_class": "DISTRIBUTED_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 6.3 and Section 31",
+  "observed_result": "Local checkpoint chain verifies hash-linkage and monotonicity, but external head authority service is NOT established.",
+  "rederivation_command": "inspect checkpoint hydration in DurableStateManager",
+  "status": "BLOCKED"
+}

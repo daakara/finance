@@ -1,0 +1,8 @@
+{
+  "claim": "R2 proof cryptographically closes observation cycle binding R1 payload, bundle, and authority event",
+  "evidence_class": "CRYPTOGRAPHIC_VERIFICATION",
+  "independent_verifier_result": "BLOCKED per Section 10.3 and Section 31",
+  "observed_result": "R2 structure is implemented; cryptographic signature and Rekor logging require live GitHub Actions runner.",
+  "rederivation_command": "inspect R2 signing and verification in run_natural_scheduler.py",
+  "status": "BLOCKED"
+}

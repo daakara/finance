@@ -1,0 +1,8 @@
+{
+  "claim": "Prospective SEC observation correctness, periodic sampling contract, clock binding, and Form 4 semantic boundary",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Real natural discovery path implemented; clock binding strictly enforced; Form 4 semantic boundary corrected to CANONICAL_DECISION_INPUT_CONTRACT_ID = SMART_MONEY_REPORTED_PURCHASE_TRANSACTION_V1 (Section 21 Path B); FIRST_PUBLIC_OVERCLAIM = 0.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_form4_semantic_boundary_contract",
+  "status": "PASS"
+}

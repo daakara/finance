@@ -1,0 +1,35 @@
+{
+  "schema_version": "SMART_MONEY_TEST_FIDELITY_V1",
+  "tiers": [
+    {
+      "coverage": "State machine transitions, Gate3 schema, Form 4 contract",
+      "fidelity": "HIGH_LOCAL",
+      "status": "PASS",
+      "tier": "UNIT_TEST"
+    },
+    {
+      "coverage": "Anti-rollback chain, crash atomicity, negative accession admission",
+      "fidelity": "HIGH_LOCAL",
+      "status": "PASS",
+      "tier": "PROPERTY_TEST"
+    },
+    {
+      "coverage": "PublicObserverEngine SQLite durability, DurableStateManager lifecycle",
+      "fidelity": "HIGH_LOCAL",
+      "status": "PASS",
+      "tier": "LOCAL_INTEGRATION"
+    },
+    {
+      "coverage": "Cross-runner CAS, fencing tokens",
+      "fidelity": "SIMULATED_ONLY",
+      "status": "BLOCKED_REQUIRES_EXTERNAL_BACKEND",
+      "tier": "DISTRIBUTED_CONCURRENCY"
+    },
+    {
+      "coverage": "Live OIDC, Sigstore Rekor, multi-runner restore",
+      "fidelity": "NOT_EXECUTED",
+      "status": "BLOCKED_REQUIRES_REMOTE_PUSH",
+      "tier": "LIVE_GITHUB_RUNNER"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Raw evidence custody alone allows deterministic independent replay and validation",
+  "evidence_class": "OBJECT_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 8.5 and Section 31",
+  "observed_result": "Cannot replay from raw evidence custody because raw response bytes are not durably retained in object store.",
+  "rederivation_command": "replay observation from durable object custody",
+  "status": "BLOCKED"
+}

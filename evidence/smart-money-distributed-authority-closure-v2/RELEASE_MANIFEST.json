@@ -1,0 +1,15 @@
+{
+  "action_pins": {
+    "actions/cache": "d4323d4df104b026a6aa633fdb11d772146be0bf",
+    "actions/checkout": "11bd71901bbe5b1630ceea73d27597364c9af683",
+    "actions/setup-python": "42375524e23c412d93fb67b49958b491fce71c38",
+    "sigstore/gh-action-sigstore-python": "f514d46b00944fa433989381413726dd3948fa83"
+  },
+  "cosign_version": "2.2.4",
+  "python_runtime": "3.11",
+  "schema_version": "SMART_MONEY_RELEASE_MANIFEST_V1",
+  "status": "UNANCHORED_LOCAL_RELEASE",
+  "target_release_sha": "282018f3ce4ebda5f6be193197a8ac9c137016f8",
+  "workflow_path": ".github/workflows/smart_money_rooting.yml",
+  "workflow_sha256": "23ab5e293cbb5bddeb462a57cf3faac99cf15767ef78a61b084ce813c33323f7"
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Distributed CAS guarantees exactly one winner during concurrent authorization claims",
+  "evidence_class": "DISTRIBUTED_CONCURRENCY",
+  "independent_verifier_result": "BLOCKED per Section 7.1 and Section 31",
+  "observed_result": "Single-node SQLite CAS passes; distributed cross-runner CAS requires external transactional store.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_concurrency_double_spend_prevention",
+  "status": "BLOCKED"
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Production-topology qualification Run A executed on live GitHub-hosted runner",
+  "evidence_class": "LIVE_GITHUB_RUNNER",
+  "independent_verifier_result": "BLOCKED per Section 17 and Section 31",
+  "observed_result": "Live GitHub runner qualification blocked pending operator authorization to push to origin/main and trigger workflows.",
+  "rederivation_command": "gh run view <run_id>",
+  "status": "BLOCKED"
+}

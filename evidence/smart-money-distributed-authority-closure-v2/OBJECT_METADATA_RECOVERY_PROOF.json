@@ -1,0 +1,8 @@
+{
+  "claim": "Object metadata coupling enables reconstruction of accession identity from object store alone",
+  "evidence_class": "OBJECT_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 8.2 and Section 31",
+  "observed_result": "No dedicated object store exists; metadata is confined to local SQLite/JSON artifacts.",
+  "rederivation_command": "reconstruct metadata from object store",
+  "status": "BLOCKED"
+}

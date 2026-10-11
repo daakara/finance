@@ -1,0 +1,33 @@
+{
+  "scenarios": [
+    {
+      "name": "Duplicate Gate3 Claim",
+      "rejected_runs": 1,
+      "runs": 2,
+      "status": "PASS",
+      "winning_runs": 1
+    },
+    {
+      "name": "Stale Runner Fencing",
+      "rejected_runs": 1,
+      "runs": 2,
+      "status": "PASS_SIMULATED_LOCAL",
+      "winning_runs": 1
+    },
+    {
+      "name": "Concurrent Accession Admission",
+      "rejected_runs": 1,
+      "runs": 2,
+      "status": "PASS",
+      "winning_runs": 1
+    },
+    {
+      "duplicate_increments": 0,
+      "name": "Retry After Ambiguity",
+      "runs": 1,
+      "status": "PASS",
+      "winning_runs": 1
+    }
+  ],
+  "schema_version": "SMART_MONEY_CONCURRENCY_MATRIX_V1"
+}

@@ -1,0 +1,8 @@
+{
+  "claim": "Denominator negative controls reject synthetic accessions, duplicates, and dry runs",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "100% of negative control accessions rejected from natural denominator; NATURAL_DENOMINATOR = 0 strictly maintained.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_natural_admission_positive_predicate",
+  "status": "PASS"
+}

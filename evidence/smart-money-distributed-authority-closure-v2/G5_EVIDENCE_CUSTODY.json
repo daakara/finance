@@ -1,0 +1,8 @@
+{
+  "claim": "Durable replayable raw SEC evidence custody with delete resistance",
+  "evidence_class": "OBJECT_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 8 and Section 31 stop conditions",
+  "observed_result": "Raw SEC bytes are not retained in a dedicated WORM object store; raw_response_retained is False; runner filesystem is ephemeral.",
+  "rederivation_command": "inspect SEC raw payload persistence in scripts/run_natural_scheduler.py",
+  "status": "BLOCKED"
+}

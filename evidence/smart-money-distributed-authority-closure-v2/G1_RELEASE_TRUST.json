@@ -1,0 +1,8 @@
+{
+  "claim": "Default branch main has enforced immutable release trust root",
+  "evidence_class": "REPOSITORY_INTEGRATION",
+  "independent_verifier_result": "BLOCKED per Section 4 and Section 31 stop conditions",
+  "observed_result": "Branch protection is NOT active on main (REMOTE_MAIN_PROTECTED=NO); no signed release root witness exists in Rekor.",
+  "rederivation_command": "gh api repos/daakara/finance/branches/main/protection; gh api repos/daakara/finance/rulesets",
+  "status": "BLOCKED"
+}

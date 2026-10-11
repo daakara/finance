@@ -1,0 +1,8 @@
+{
+  "claim": "Authoritative checkpoint head is externally witnessed in transparency log",
+  "evidence_class": "CRYPTOGRAPHIC_VERIFICATION",
+  "independent_verifier_result": "BLOCKED per Section 10.4 and Section 31",
+  "observed_result": "Local checkpoint hash chain passes; external witness in Rekor/TUF transparency log requires live network runner.",
+  "rederivation_command": "inspect checkpoint witness verification in DurableStateManager",
+  "status": "BLOCKED"
+}

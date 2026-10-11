@@ -1,0 +1,8 @@
+{
+  "claim": "Form 4 semantic boundary enforces REPORTED_PURCHASE_TRANSACTION_V1 and rejects code P overclaim (Section 21 Path B)",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "CANONICAL_DECISION_INPUT_CONTRACT_ID = SMART_MONEY_REPORTED_PURCHASE_TRANSACTION_V1 verified; parse_and_validate_form4_decision_inputs requires Code P + Acquired A without claiming open-market exclusivity; FIRST_PUBLIC_OVERCLAIM = 0.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_form4_semantic_boundary_contract",
+  "status": "PASS"
+}

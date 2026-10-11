@@ -1,0 +1,8 @@
+{
+  "claim": "Downstream authority failure after capture routes evidence to immutable quarantine and blocks admission",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "Unverified or synthetic accessions are quarantined; natural denominator strictly protected against increment.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_natural_admission_positive_predicate",
+  "status": "PASS"
+}

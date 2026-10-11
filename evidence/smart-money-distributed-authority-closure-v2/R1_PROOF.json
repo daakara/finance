@@ -1,0 +1,8 @@
+{
+  "claim": "R1 proof cryptographically binds authorization claim receipt, release SHA, clock record, and raw evidence",
+  "evidence_class": "CRYPTOGRAPHIC_VERIFICATION",
+  "independent_verifier_result": "BLOCKED per Section 10.2 and Section 31",
+  "observed_result": "R1 payload structure is defined; live Sigstore bundle creation requires live GitHub Actions OIDC environment.",
+  "rederivation_command": "inspect R1 payload generation and signing in run_natural_scheduler.py",
+  "status": "BLOCKED"
+}

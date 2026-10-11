@@ -1,0 +1,8 @@
+{
+  "claim": "Natural accession admission and denominator increment execute in a single atomic ACID transaction",
+  "evidence_class": "DESIGN_AND_UNIT_TEST",
+  "independent_verifier_result": "PASS",
+  "observed_result": "record_natural_accession commits accession admission and natural_denominator increment atomically within SQLite transaction; duplicate or synthetic accessions raise rejection and leave denominator unchanged.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_natural_admission_positive_predicate",
+  "status": "PASS"
+}

@@ -1,0 +1,7 @@
+{
+  "discovery_endpoint": "https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json",
+  "historical_exclusion": "Any filingDate < observation_date is flagged historical and rejected from natural denominator",
+  "prospective_criterion": "Accession filingDate == observation_date and acceptanceDateTime >= window_open",
+  "schema_version": "SMART_MONEY_NATURAL_DISCOVERY_CONTRACT_V1",
+  "status": "CONTRACT_FROZEN"
+}

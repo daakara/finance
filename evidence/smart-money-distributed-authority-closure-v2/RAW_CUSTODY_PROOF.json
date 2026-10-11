@@ -1,0 +1,8 @@
+{
+  "claim": "Immutable WORM object store holds raw SEC accession bytes and metadata",
+  "evidence_class": "OBJECT_STORAGE",
+  "independent_verifier_result": "BLOCKED per Section 8.1 and Section 31",
+  "observed_result": "Raw SEC bytes are not written to S3/GCS with Object Lock; raw_response_retained is False.",
+  "rederivation_command": "inspect object storage integration in scripts/run_natural_scheduler.py",
+  "status": "BLOCKED"
+}
