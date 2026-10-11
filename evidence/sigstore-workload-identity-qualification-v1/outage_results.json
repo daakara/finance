@@ -1,0 +1,70 @@
+{
+  "fail_closed_verdict": "PASS",
+  "no_local_only_authority_fallback": true,
+  "no_unsigned_fallback": true,
+  "outage_matrix": {
+    "CORRUPT_TUF_TRUST_ROOT": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "FULCIO_UNAVAILABLE": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "MALFORMED_BUNDLE": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "MISSING_TUF_TRUST_ROOT": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "NETWORK_TIMEOUT": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "OIDC_PROVIDER_UNAVAILABLE": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "REKOR_SUBMISSION_UNAVAILABLE": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "SIGSTORE_HTTP_5XX": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    },
+    "TIMESTAMP_AUTHORITY_UNAVAILABLE": {
+      "action": "HALT_FAIL_CLOSED",
+      "authority_granted": false,
+      "local_only_fallback_allowed": false,
+      "status": "PASS",
+      "unsigned_fallback_allowed": false
+    }
+  }
+}

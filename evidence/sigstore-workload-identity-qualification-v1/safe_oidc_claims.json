@@ -1,0 +1,19 @@
+{
+  "aud": "sigstore",
+  "environment": "",
+  "event_name": "push",
+  "exp": 1791743910,
+  "iss": "https://token.actions.githubusercontent.com",
+  "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+  "nbf": 1791743310,
+  "ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+  "repository": "daakara/finance",
+  "repository_id": "1087399232",
+  "repository_owner": "daakara",
+  "repository_owner_id": "53128824",
+  "run_attempt": "1",
+  "run_id": "38164305159",
+  "sha": "b1c6155f327d8358727fd711734bd6eafc247b98",
+  "sub": "repo:daakara/finance:ref:refs/heads/arx/sigstore-workload-identity-qualification",
+  "workflow": "Smart Money Sigstore OIDC Qualification"
+}

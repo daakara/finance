@@ -1,0 +1,39 @@
+{
+  "baseline_valid_claims": {
+    "message": "PASS",
+    "status": "PASS"
+  },
+  "nc01_wrong_issuer": {
+    "message": "REJECTED: Unauthorized OIDC issuer 'https://rogue-issuer.example.com'",
+    "rejected": true
+  },
+  "nc02_wrong_subject": {
+    "message": "REJECTED: Unauthorized subject 'repo:daakara/finance:ref:refs/heads/malicious_branch'",
+    "rejected": true
+  },
+  "nc03_wrong_repository": {
+    "message": "REJECTED: Unauthorized repository scope 'unauthorized_org/finance'",
+    "rejected": true
+  },
+  "nc04_wrong_workflow": {
+    "message": "REJECTED: Unauthorized workflow '.github/workflows/backdoor_pipeline.yml'",
+    "rejected": true
+  },
+  "nc05_wrong_ref": {
+    "message": "REJECTED: Unauthorized ref 'refs/heads/feature/unvetted-change'",
+    "rejected": true
+  },
+  "nc06_wrong_audience": {
+    "message": "REJECTED: Unauthorized audience 'unauthorized-service-audience'",
+    "rejected": true
+  },
+  "nc07_expired_token": {
+    "message": "REJECTED: Token expired (1791740014 < 1791743614)",
+    "rejected": true
+  },
+  "summary": {
+    "all_negative_controls_rejected": true,
+    "passed_controls": 7,
+    "total_controls_tested": 7
+  }
+}

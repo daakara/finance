@@ -1,35 +1,21 @@
 {
-  "policy_id": "SMART_MONEY_SIGSTORE_WORKLOAD_IDENTITY_POLICY_V1",
-  "version": "1.0.0",
-  "effective_at": "2026-10-11T00:00:00Z",
-  "governing_epoch": "EPOCH_001",
-  "status": "RATIFIED_FOR_QUALIFICATION",
-  "workload_identity_constraints": {
-    "authorized_issuer": "https://token.actions.githubusercontent.com",
-    "authorized_repository": "owner/finance",
-    "authorized_repository_id": "owner/finance",
-    "authorized_workflow": ".github/workflows/smart_money_rooting.yml",
-    "authorized_job_workflow_ref": "repo:owner/finance:ref:refs/heads/main",
-    "authorized_ref": "refs/heads/main",
-    "authorized_environment": "production-scheduler",
-    "authorized_audience": "sigstore",
-    "maximum_token_lifetime_seconds": 600,
-    "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+  "effective_at": "2026-10-11T18:33:30.693873+00:00",
+  "governance_rules": {
+    "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
+    "historical_bundle_verification_behavior": "PRESERVE_VALIDITY_IF_WITNESSED_PRIOR_TO_REVOCATION",
+    "identity_rotation_behavior": "DUAL_SIGNED_TRANSITION_EPOCH_RECORD",
+    "long_lived_token_prohibited": true,
+    "personal_access_token_prohibited": true,
+    "static_signing_private_key_prohibited": true,
+    "token_disk_persistence_prohibited": true,
+    "token_logging_prohibited": true
   },
+  "governing_epoch": "EPOCH_001",
   "permitted_phases": [
     "PRE_AUTHORITY_ADMISSION_ROOT",
     "POST_AUTHORITY_CLOSURE_ROOT"
   ],
-  "governance_rules": {
-    "static_signing_private_key_prohibited": true,
-    "long_lived_token_prohibited": true,
-    "personal_access_token_prohibited": true,
-    "token_disk_persistence_prohibited": true,
-    "token_logging_prohibited": true,
-    "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
-    "identity_rotation_behavior": "DUAL_SIGNED_TRANSITION_EPOCH_RECORD",
-    "historical_bundle_verification_behavior": "PRESERVE_VALIDITY_IF_WITNESSED_PRIOR_TO_REVOCATION"
-  },
+  "policy_id": "SMART_MONEY_SIGSTORE_WORKLOAD_IDENTITY_POLICY_V1",
   "runtime_evaluation_order": [
     "1. Check ambient OIDC environment variables",
     "2. If absent, fail closed with NOT_ESTABLISHED",
@@ -37,5 +23,22 @@
     "4. Validate claims against policy dimensions",
     "5. Submit to Sigstore Fulcio/Rekor",
     "6. Immediately discard raw token bytes"
-  ]
+  ],
+  "status": "RATIFIED_FOR_QUALIFICATION",
+  "version": "1.0.0",
+  "workload_identity_constraints": {
+    "authorized_audience": "sigstore",
+    "authorized_environment": "",
+    "authorized_event": "push",
+    "authorized_issuer": "https://token.actions.githubusercontent.com",
+    "authorized_job_workflow_ref": "daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+    "authorized_ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+    "authorized_repository": "daakara/finance",
+    "authorized_repository_id": "1087399232",
+    "authorized_repository_owner": "daakara",
+    "authorized_repository_owner_id": "53128824",
+    "authorized_workflow": "Smart Money Sigstore OIDC Qualification",
+    "maximum_token_lifetime_seconds": 600,
+    "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+  }
 }

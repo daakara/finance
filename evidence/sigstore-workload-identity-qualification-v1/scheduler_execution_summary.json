@@ -1,0 +1,54 @@
+{
+  "authority_event": {
+    "authority_event_hash": "a7ece0f8eded35e7980c6615b8a13ec6f207476b308229898b938cabae44171f",
+    "natural_accession_authority_granted": false,
+    "production_authority_granted": false,
+    "status": "PASS"
+  },
+  "bindings_and_continuity": {
+    "r2_authority_event_binding": "PASS",
+    "r2_r1_bundle_binding": "PASS",
+    "signer_continuity": "PASS"
+  },
+  "claims_summary": {
+    "aud": "sigstore",
+    "environment": "",
+    "event_name": "push",
+    "exp": 1791743910,
+    "iss": "https://token.actions.githubusercontent.com",
+    "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+    "nbf": 1791743310,
+    "ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+    "repository": "daakara/finance",
+    "repository_id": "1087399232",
+    "repository_owner": "daakara",
+    "repository_owner_id": "53128824",
+    "run_attempt": "1",
+    "run_id": "38164305159",
+    "sha": "b1c6155f327d8358727fd711734bd6eafc247b98",
+    "sub": "repo:daakara/finance:ref:refs/heads/arx/sigstore-workload-identity-qualification",
+    "workflow": "Smart Money Sigstore OIDC Qualification"
+  },
+  "device_flow_used": false,
+  "execution_timestamp_utc": "2026-10-11T18:33:30.694229+00:00",
+  "gate": "GOVERNED_WORKLOAD_IDENTITY_ENVIRONMENT_AND_LIVE_UNATTENDED_SIGSTORE_QUALIFICATION_V1",
+  "human_signing_interaction_count": 0,
+  "pat_for_signing_used": false,
+  "r1_unattended_signing": {
+    "bundle_sha256": "cfd37fc4d2d3811ec8f3d8be76d3166faf86b6dd05edcae9db1b4d1ab2da94d0",
+    "rekor_integrated_time": 1791743612,
+    "rekor_log_index": 3212492607,
+    "san_uri": "https://github.com/daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+    "status": "PASS"
+  },
+  "r2_unattended_signing": {
+    "bundle_sha256": "5679c650c945f6ae3008c4a7c651bd05331b6118fcd31463b3e314f0d1124163",
+    "rekor_integrated_time": 1791743614,
+    "rekor_log_index": 3212493028,
+    "san_uri": "https://github.com/daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+    "status": "PASS"
+  },
+  "scheduler_equivalent_end_to_end_execution": "PASS",
+  "static_key_used": false,
+  "workload_identity_provider": "GITHUB_ACTIONS_OIDC"
+}

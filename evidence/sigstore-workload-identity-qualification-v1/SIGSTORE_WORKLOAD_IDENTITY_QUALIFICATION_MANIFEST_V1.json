@@ -1,0 +1,84 @@
+{
+  "artifact_count": 15,
+  "artifacts": [
+    {
+      "byte_length": 733,
+      "relative_path": "authority_event.json",
+      "sha256": "a7ece0f8eded35e7980c6615b8a13ec6f207476b308229898b938cabae44171f"
+    },
+    {
+      "byte_length": 1166,
+      "relative_path": "negative_control_results.json",
+      "sha256": "ff61685d565fb731d23cc4096b9df44f0cd9c484f0c2ebfa9dbf796883f60bc6"
+    },
+    {
+      "byte_length": 2094,
+      "relative_path": "outage_results.json",
+      "sha256": "d71c4b9fb4fc0238bc5f59e7c469ae318af11471b36f826b54ab2f689e5ccd40"
+    },
+    {
+      "byte_length": 9853,
+      "relative_path": "r1.sigstore.json",
+      "sha256": "cfd37fc4d2d3811ec8f3d8be76d3166faf86b6dd05edcae9db1b4d1ab2da94d0"
+    },
+    {
+      "byte_length": 661,
+      "relative_path": "r1_payload.json",
+      "sha256": "d8698f3311a475e31f4e6416852366b8a554d89e7d95e3f0cbc4ad16f7676448"
+    },
+    {
+      "byte_length": 9853,
+      "relative_path": "r2.sigstore.json",
+      "sha256": "5679c650c945f6ae3008c4a7c651bd05331b6118fcd31463b3e314f0d1124163"
+    },
+    {
+      "byte_length": 1077,
+      "relative_path": "r2_payload.json",
+      "sha256": "ef4525b1128232f43fe63a16bdc032b9d873e7c06648254a96ea64c6229d05ca"
+    },
+    {
+      "byte_length": 628,
+      "relative_path": "repository_attestation.txt",
+      "sha256": "5afae4c3a8c510ca916741c14cf4ff5ee20d20dacc05a75e6b820082ed316208"
+    },
+    {
+      "byte_length": 986,
+      "relative_path": "retry_results.json",
+      "sha256": "7ffa26b42b333c71619369c2baaeb1893c8bbd1f97b7f118eb9986791f8aaa53"
+    },
+    {
+      "byte_length": 783,
+      "relative_path": "safe_oidc_claims.json",
+      "sha256": "991341c37dedf5b5d4e65b435cff7cb283c594eb9fbfbc12c24e93042cee7c7d"
+    },
+    {
+      "byte_length": 2465,
+      "relative_path": "scheduler_execution_summary.json",
+      "sha256": "d193118617569a7353954dbe77a95d9da675d4ab51f7171f55155db7bc5bc107"
+    },
+    {
+      "byte_length": 98,
+      "relative_path": "secret_scan_result.json",
+      "sha256": "71856ba77cea4689afae8962290523919ba8d0ce6477e174b8e98c8fed5a0d57"
+    },
+    {
+      "byte_length": 86,
+      "relative_path": "workflow_source.sha256",
+      "sha256": "ab2d57f8f7471f471ad77e310be6ba53db64ce7e341704409ee8f2cbccf738d1"
+    },
+    {
+      "byte_length": 1139,
+      "relative_path": "workflow_source.yml",
+      "sha256": "de1b9055e500f257a7cc87173fee2d7c6e285f0b7e6a62cbd747f17441d62241"
+    },
+    {
+      "byte_length": 2002,
+      "relative_path": "workload_identity_policy.json",
+      "sha256": "1f0dc0f2757f8caf8c73b5c45ebfe485ce13098af6fa377fd116d368260c631f"
+    }
+  ],
+  "gate": "GOVERNED_WORKLOAD_IDENTITY_ENVIRONMENT_AND_LIVE_UNATTENDED_SIGSTORE_QUALIFICATION_V1",
+  "generated_at_utc": "2026-10-11T18:35:00Z",
+  "manifest_sha256": "3315dd37fffb2718f6fa20c06e3dddbd2639c9b0a18ba0f0c591d3a8fefaec04",
+  "manifest_version": "1.0.0"
+}

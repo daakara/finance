@@ -1,0 +1,13 @@
+SMART MONEY WORKLOAD IDENTITY QUALIFICATION ATTESTATION
+Repository: daakara/finance
+Repository ID: 1087399232
+Owner ID: 53128824
+Ref: refs/heads/arx/sigstore-workload-identity-qualification
+Commit SHA: b1c6155f327d8358727fd711734bd6eafc247b98
+Workflow Ref: daakara/finance/.github/workflows/smart_money_sigstore_oidc_qualification.yml@refs/heads/arx/sigstore-workload-identity-qualification
+OIDC Issuer: https://token.actions.githubusercontent.com
+Timestamp UTC: 2026-10-11T18:33:30.694229+00:00
+Human Signing Interaction: 0
+Long-Lived Signing Secret: NONE
+Natural Accessions Captured: 0
+Natural Denominator Contamination: NONE

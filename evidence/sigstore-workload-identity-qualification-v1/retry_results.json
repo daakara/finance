@@ -1,0 +1,25 @@
+{
+  "authority_retry_idempotency": {
+    "attempt1_event_id": "auth_event_run_unattended_oidc_qual_38164305159_1",
+    "attempt2_event_id": "auth_event_run_unattended_oidc_qual_38164305159_1",
+    "duplicate_authority_transition": "NO",
+    "status": "PASS"
+  },
+  "concurrent_duplicate_execution_control": {
+    "duplicate_execution_rejected": true,
+    "logical_run_id": "run_unattended_oidc_qual_38164305159",
+    "status": "PASS"
+  },
+  "r1_retry_idempotency": {
+    "bound_r1_witness": "cfd37fc4d2d3811ec8f3d8be76d3166faf86b6dd05edcae9db1b4d1ab2da94d0",
+    "duplicate_attempt_rejected": true,
+    "reason": "Authoritative bound bundle hash is strictly immutable",
+    "status": "PASS"
+  },
+  "r2_retry_idempotency": {
+    "bound_authority_event_hash": "a7ece0f8eded35e7980c6615b8a13ec6f207476b308229898b938cabae44171f",
+    "bound_r1_root_hash": "08e819e6483af299a933d6e57bbc142c40a8444b0fecdfa5cd574e431aabf41e",
+    "immutable_binding_retained": true,
+    "status": "PASS"
+  }
+}
