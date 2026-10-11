@@ -1,0 +1,104 @@
+{
+  "gate": "SIGSTORE_REKOR_OPERATIONAL_ROOTING_CLOSURE_V2",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "baseline_functional_head": "0a09e612cb7fbc00ea54e6012c85b3b10b05b078",
+  "baseline_evidence_head": "43314a19d5e706ba8e1337d72e514541db8a2977",
+  "external_root_profile": "SIGSTORE_REKOR_INTERIM_V1",
+  "external_root_function": "PUBLIC_APPEND_ONLY_TRANSPARENCY_WITNESS",
+  "governing_outcomes": {
+    "outcome_b_canonical_provenance": "OPEN",
+    "outcome_c_unattended_signing": "OPEN",
+    "overall_suitability": "CONDITIONAL",
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "natural_denominator": 0
+  },
+  "epistemic_boundaries": {
+    "external_raw_evidence_custody": "NOT_ESTABLISHED",
+    "s3_object_lock_compliance": "NOT_APPLICABLE",
+    "aws_external_custody": "DEFERRED",
+    "sigstore_timestamp_semantics": "SIGNED_EXTERNAL_TIMESTAMP_EVIDENCE",
+    "sec_public_availability_time": "SEPARATE_AUTHORITY",
+    "exact_first_sec_public_time": "NOT_ESTABLISHED",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "natural_accessions_captured": 0,
+    "natural_denominator_contamination": "NONE",
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE",
+    "remote_push": "NO",
+    "main_merge": "NO",
+    "production_deployment": "NO",
+    "worktree_clean": "YES"
+  },
+  "assumptions_audit_matrix": {
+    "ASSUMP_001_live_canonical_r1_provenance": {
+      "status": "OPEN",
+      "description": "Live Canonical R1 payload (afdd45ea...) not yet witnessed in public Rekor log; connectivity test payload (ab3a2ccd...) witnessed only.",
+      "blocking": true
+    },
+    "ASSUMP_002_live_canonical_r2_provenance": {
+      "status": "OPEN",
+      "description": "Live Canonical R2 payload (2e3d2aa2...) not yet witnessed in public Rekor log.",
+      "blocking": true
+    },
+    "ASSUMP_003_exact_live_r2_to_r1_bundle_binding": {
+      "status": "OPEN",
+      "description": "Exact cryptographic binding from live R2 bundle to live R1 bundle pending live Rekor submission.",
+      "blocking": true
+    },
+    "ASSUMP_004_unattended_scheduler_signing": {
+      "status": "OPEN",
+      "description": "Unattended workload signing via ephemeral CI OIDC runner is NOT_ESTABLISHED in local desktop environment; interactive signing qualified, unattended open.",
+      "blocking": true
+    },
+    "ASSUMP_005_signer_identity_lifecycle_governance": {
+      "status": "CLOSED",
+      "description": "Signer identity lifecycle contract SMART_MONEY_SIGSTORE_SIGNER_IDENTITY_POLICY_V1 ratified covering rotation, compromise protocols, and historical validity.",
+      "blocking": false
+    },
+    "ASSUMP_006_rekor_consistency_monitoring": {
+      "status": "CLOSED",
+      "description": "Signed tree head parsing, Merkle inclusion proof verification, and split-view/regression detection implemented and verified.",
+      "blocking": false
+    },
+    "ASSUMP_007_sigstore_tuf_trust_root_governance": {
+      "status": "CLOSED",
+      "description": "Local cached TUF trusted root audited (v15, SHA256: 6494e21ea...); fail-closed verification active on missing or corrupt trust roots.",
+      "blocking": false
+    },
+    "ASSUMP_008_local_raw_evidence_durability": {
+      "status": "CLOSED",
+      "description": "Local primary + backup dual storage, SHA-256 replication, and disaster recovery simulation verified with 100% hash and witnessed-root match.",
+      "blocking": false
+    },
+    "ASSUMP_009_same_root_multiple_bundle_substitution": {
+      "status": "CLOSED",
+      "description": "Same-root second bundle substitution rejection verified; authoritative binding strictly enforced via immutable event hash.",
+      "blocking": false
+    },
+    "ASSUMP_010_timestamp_semantics_separation": {
+      "status": "CLOSED",
+      "description": "RFC 3161 external timestamps, Rekor integrated time, local NTP capture intervals, and SEC observer intervals strictly disaggregated.",
+      "blocking": false
+    },
+    "ASSUMP_011_interim_natural_rooting_policy_ratification": {
+      "status": "CLOSED",
+      "description": "SMART_MONEY_SIGSTORE_INTERIM_NATURAL_ROOTING_POLICY_V1 ratified establishing CONDITIONAL profile suitability and fail-closed arming block.",
+      "blocking": false
+    }
+  },
+  "operational_verification_summary": {
+    "rekor_consistency_monitor": "PASS",
+    "split_view_detection": "PASS",
+    "tuf_trust_root_health": "PASS",
+    "raw_evidence_replication_and_dr": "PASS",
+    "same_root_substitution_defense": "PASS",
+    "timestamp_disaggregation": "PASS",
+    "privacy_screening": "PASS",
+    "unattended_signing_evaluation": "NOT_ESTABLISHED",
+    "reviewer_reconstruction_mismatches": 0
+  }
+}
