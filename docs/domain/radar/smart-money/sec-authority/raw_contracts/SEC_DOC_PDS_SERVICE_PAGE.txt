@@ -1,0 +1,16 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+EDGAR PUBLIC DISSEMINATION SERVICE (PDS) INFORMATION
+
+Document Identifier: SEC_DOC_PDS_SERVICE_PAGE
+Document Version: 2025-CURRENT (August 1, 2025 Status)
+Publication / Update Date: 2025-08-01
+Canonical Source URL: https://www.sec.gov/info/edgar/ednews/dissemin.htm
+
+1. SERVICE DESCRIPTION
+The EDGAR Public Dissemination Service (PDS) provides a dedicated, real-time feed of all public filings accepted by the SEC's EDGAR system. It is designed for commercial information vendors, researchers, and institutional subscribers who require automated, high-volume receipt of filings as they are processed.
+
+2. RELATIONSHIP TO FREE PUBLIC ACCESS
+The SEC provides free public access to all EDGAR filings via SEC.gov, EDGAR Company Search, RSS feeds, and public daily/quarterly index files. PDS is a fee-based transmission service and does not convey proprietary rights, exclusive access, or non-public disclosure advantages.
+
+3. DATA FORMAT AND CHARACTERISTICS
+Disseminated records include complete submission envelopes with original SGML/XML headers, primary documents, and exhibits. Electronic submissions are delivered in standard ASCII formats.

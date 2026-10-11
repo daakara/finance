@@ -1,0 +1,24 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+EDGAR PUBLIC DISSEMINATION SERVICE (PDS)
+NEW SUBSCRIBER OPERATIONAL DOCUMENT
+
+Document Identifier: SEC_DOC_PDS_NEW_SUBSCRIBER_2025
+Document Version: 2025.1 (August 1, 2025 Revision)
+Publication / Update Date: 2025-08-01
+Canonical Source URL: https://www.sec.gov/info/edgar/ednews/dissemin.htm
+
+1. SUBSCRIBER INFRASTRUCTURE AND ONBOARDING
+Subscribers must configure and maintain a Dissemination Receipt Server (DRS) with a static public IP address, authorized SSH key credentials, and automated ingestion software capable of receiving push feeds from the PDS primary and failover dissemination hosts.
+
+2. TRANSMISSION, RETRANSMISSION, AND FAILOVER RECOVERY
+The PDS system implements multi-tiered delivery assurance:
+  2.1. Automated Retransmission: PDS automatically attempts transmission and retransmission of each submission upon temporary DRS unavailability or transport failure.
+  2.2. Staging Area Redirection: If a subscriber DRS experiences persistent receipt failures, the PDS Helpdesk may redirect the subscriber's feed to an isolated staging area to prevent pipeline backpressure on other subscribers.
+  2.3. PDS FTP Historical Recovery: A dedicated PDS FTP server maintains a rolling five-day (5-day) historical archive of all disseminated files (*.dissem, *.paper, *.pr, *.pc) and daily audit logs (dissem*.EOD). Subscribers may retrieve missed or corrupt files via FTP recovery.
+  2.4. Helpdesk Support: The PDS Operations Contractor provides manual retransmission support upon receipt of verified gaps identified via the daily EOD audit file.
+
+3. CROSS-DAY RETRANSMISSIONS AND RECORD KEEPING
+Files recovered or retransmitted on Day D+1 that originated on Business Day D retain their original source-day filename, internal headers, and acceptance timestamps. Subscribers must distinguish between local receipt timestamp and source business day attribution.
+
+4. ADMINISTRATIVE AND CONTRACTUAL GOVERNANCE
+Subscription agreements are administered in coordination with the Commission's designated PDS operations contractor. Service is subject to monthly subscription fees and annual renewal terms.

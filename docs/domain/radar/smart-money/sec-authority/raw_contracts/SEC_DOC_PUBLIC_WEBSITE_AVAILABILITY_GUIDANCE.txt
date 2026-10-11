@@ -1,0 +1,18 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+EDGAR DISSEMINATION AND PUBLIC WEBSITE PUBLICATION FAIR ACCESS POLICY
+
+Document Identifier: SEC_DOC_PUBLIC_WEBSITE_AVAILABILITY_GUIDANCE
+Document Version: 2025.1 (May 19, 2025 Policy Statement)
+Publication / Update Date: 2025-05-19
+Canonical Source URL: https://www.sec.gov/info/edgar/ednews/dissemin.htm
+
+1. STATUTORY POLICY AND FAIR ACCESS DIRECTIVE
+In furtherance of Section 23 of the Securities Exchange Act of 1934 and Commission fair-access policies, the Commission maintains technical safeguards to ensure that public filings are accessible to the general investing public via the SEC website without unfair commercial latency.
+
+2. PUBLICATION SEQUENCE MANDATE
+EDGAR processing systems are configured to ensure that filings are posted to the public SEC website (www.sec.gov) before or at the same time they are transmitted across the Public Dissemination Service (PDS) feed.
+
+3. IMPLICATIONS FOR KNOWLEDGE TIME AND AVAILABILITY DETERMINATION
+  3.1. PDS Receipt Time Is Not Prior Public Time: PDS delivery timestamps do not precede public website publication. PDS delivery time cannot be treated as an authoritative timestamp of earliest public dissemination.
+  3.2. SEC Acceptance Time Is Not Public Publication Time: The acceptanceDateTime recorded in EDGAR headers indicates internal system acceptance, not public availability. Public availability occurs following indexing and dissemination processing.
+  3.3. Independent Empirical Verification: For point-in-time quantitative research, public availability must be established via contemporaneous observation of public endpoints (RSS, Submissions API, or document URLs) rather than assumed from internal acceptance or private feed receipt.

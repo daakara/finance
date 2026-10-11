@@ -1,0 +1,34 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+EDGAR PUBLIC DISSEMINATION SERVICE (PDS)
+TECHNICAL SPECIFICATION
+
+Document Identifier: SEC_DOC_PDS_TECH_SPEC_2025
+Document Version: 2.8 (May 19, 2025 Revision)
+Publication / Update Date: 2025-05-19
+Canonical Source URL: https://www.sec.gov/info/edgar/ednews/dissemin.htm
+
+1. OVERVIEW AND PURPOSE
+The EDGAR Public Dissemination Service (PDS) receives filings accepted by the EDGAR host and distributes them to subscribers. This technical specification defines the transmission protocols, file naming conventions, record layouts, and audit mechanisms governing dissemination from EDGAR to subscriber Dissemination Receipt Servers (DRS).
+
+2. DISSEMINATION OPERATING HOURS AND BUSINESS DAY
+Dissemination commences at 6:00 a.m. Eastern Time (America/New_York) and concludes at approximately 10:00 p.m. Eastern Time on official SEC business days (Monday through Friday, excluding official Federal holidays). All dissemination events within this window belong to the active EDGAR Business Day D.
+
+3. DISSEMINATION FILE CLASSES AND EXTENSIONS
+EDGAR generates and transmits four distinct classes of dissemination files during the business day:
+  3.1. *.dissem: Live, accepted electronic public submissions. Contains the complete submission header, primary document, and all exhibits.
+  3.2. *.paper: Paper submissions received by the Commission and converted to electronic stub format for tracking.
+  3.3. *.pr: Official documents (such as COVER or CORRESP) disseminated upon specific Commission authorization or post-review approval.
+  3.4. *.pc: Post-Acceptance Corrections (PAC). Disseminated when header metadata is updated, deletion notices are processed, or form types are altered. Priority code 3.
+
+4. DAILY END-OF-DAY (EOD) AUDIT FILE
+At the close of each EDGAR business day, EDGAR transmits a final, terminal audit artifact designated as the EOD file.
+  4.1. Naming Convention: dissem2_MM-DD-YYYY.EOD (exact 21-character filename).
+  4.2. Terminal Marker: The EOD file is the final transmission from EDGAR for that business day. Transmission occurs between 10:01 p.m. and 10:15 p.m. Eastern Time. Receipt of this file signifies that EDGAR has concluded dissemination for that business day.
+  4.3. Enumeration Scope: The EOD file contains an exhaustive ASCII listing of every file (*.dissem, *.paper, *.pr, and *.pc) transmitted from EDGAR to the PDS dissemination site between 6:00 a.m. and the conclusion of the business day.
+  4.4. Record Format: Each line in the EOD file lists the exact filename of a disseminated artifact transmitted during the business day.
+
+5. TRANSMISSION PROTOCOLS AND INTEGRITY
+Submissions are pushed via secure protocols (SFTP/SCP) to subscriber DRS endpoints. Filings are composed of ASCII text; non-ASCII components (PDF, JPG, GIF) are UUencoded. Subscribers must independently verify file integrity using file size and transmission checksums.
+
+6. CONCURRENT PUBLIC WEB PUBLICATION
+In accordance with Commission fair-access policies, modifications ensure that accepted filings are made available on the public SEC website (SEC.gov) before or concurrently with transmission across PDS. PDS receipt time does not establish priority over public web availability.

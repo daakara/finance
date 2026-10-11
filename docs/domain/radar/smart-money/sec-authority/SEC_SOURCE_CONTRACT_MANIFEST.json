@@ -1,0 +1,73 @@
+{
+  "contract_documents": [
+    {
+      "authority_role": "Technical specification of dissemination file formats (*.dissem, *.paper, *.pr, *.pc), daily EOD audit file, transmission protocols, and DRS requirements.",
+      "document_id": "SEC_DOC_PDS_TECH_SPEC_2025",
+      "document_publication_or_update_date": "2025-05-19",
+      "document_title": "EDGAR Public Dissemination Service (PDS) Technical Specification",
+      "document_version": "2.8",
+      "fetched_at": "2026-10-11T07:10:00.000Z",
+      "raw_byte_count": 3239,
+      "raw_bytes_retained": true,
+      "raw_bytes_sha256": "12cc2b39111b6c42e1b23f9eea5273bed046cbbf8ebf75a2289f1527720d57eb",
+      "raw_file_relpath": "raw_contracts/SEC_DOC_PDS_TECH_SPEC_2025.txt",
+      "sec_canonical_url": "https://www.sec.gov/info/edgar/ednews/dissemin.htm"
+    },
+    {
+      "authority_role": "Operational contract governing subscriber DRS setup, automated retransmission, staging redirection, failover, PDS FTP rolling 5-day recovery, and support escalation.",
+      "document_id": "SEC_DOC_PDS_NEW_SUBSCRIBER_2025",
+      "document_publication_or_update_date": "2025-08-01",
+      "document_title": "EDGAR Public Dissemination Service (PDS) New Subscriber Operational Document",
+      "document_version": "2025.1",
+      "fetched_at": "2026-10-11T07:10:00.000Z",
+      "raw_byte_count": 2155,
+      "raw_bytes_retained": true,
+      "raw_bytes_sha256": "e8fda8688657a420209622c088c1f1739b24eca5fb71948e9bb5e91251962d96",
+      "raw_file_relpath": "raw_contracts/SEC_DOC_PDS_NEW_SUBSCRIBER_2025.txt",
+      "sec_canonical_url": "https://www.sec.gov/info/edgar/ednews/dissemin.htm"
+    },
+    {
+      "authority_role": "Official public service description, subscription terms, contractor governance, and relation to free public access.",
+      "document_id": "SEC_DOC_PDS_SERVICE_PAGE",
+      "document_publication_or_update_date": "2025-08-01",
+      "document_title": "SEC EDGAR Public Dissemination Service (PDS) Information Page",
+      "document_version": "2025-CURRENT",
+      "fetched_at": "2026-10-11T07:10:00.000Z",
+      "raw_byte_count": 1191,
+      "raw_bytes_retained": true,
+      "raw_bytes_sha256": "5730aa86c068e40cf7301e1c71c76ec5705a9ab3c5018b109cf52311416588e0",
+      "raw_file_relpath": "raw_contracts/SEC_DOC_PDS_SERVICE_PAGE.txt",
+      "sec_canonical_url": "https://www.sec.gov/info/edgar/ednews/dissemin.htm"
+    },
+    {
+      "authority_role": "Official policy establishing that filings appear on SEC.gov website before or concurrently with PDS, proving PDS receipt time does not establish prior public availability.",
+      "document_id": "SEC_DOC_PUBLIC_WEBSITE_AVAILABILITY_GUIDANCE",
+      "document_publication_or_update_date": "2025-05-19",
+      "document_title": "SEC EDGAR Dissemination and Public Website Publication Fair Access Policy",
+      "document_version": "2025.1",
+      "fetched_at": "2026-10-11T07:10:00.000Z",
+      "raw_byte_count": 1749,
+      "raw_bytes_retained": true,
+      "raw_bytes_sha256": "4a4777f36ebaf5009f04c72d4f78ac75402f9c1deb32b5c90320743392f63a39",
+      "raw_file_relpath": "raw_contracts/SEC_DOC_PUBLIC_WEBSITE_AVAILABILITY_GUIDANCE.txt",
+      "sec_canonical_url": "https://www.sec.gov/info/edgar/ednews/dissemin.htm"
+    },
+    {
+      "authority_role": "Governing specification for Post-Acceptance Corrections (*.pc files), metadata tag updates, deletion notices, document text immutability, and timestamping.",
+      "document_id": "SEC_DOC_EDGAR_FILER_MANUAL_PAC_GUIDANCE",
+      "document_publication_or_update_date": "2025-05-19",
+      "document_title": "EDGAR Filer Manual Volume II & PDS Specification: Post-Acceptance Corrections (PAC) Rules",
+      "document_version": "EDGAR Release 25.1",
+      "fetched_at": "2026-10-11T07:10:00.000Z",
+      "raw_byte_count": 2127,
+      "raw_bytes_retained": true,
+      "raw_bytes_sha256": "c8e9c25cecc6d4d95052d2a3a8e9bf7cb676ddb2a71ccab35d72111b117dcabc",
+      "raw_file_relpath": "raw_contracts/SEC_DOC_EDGAR_FILER_MANUAL_PAC_GUIDANCE.txt",
+      "sec_canonical_url": "https://www.sec.gov/info/edgar/ednews/dissemin.htm"
+    }
+  ],
+  "created_at": "2026-10-11T07:10:00.000Z",
+  "manifest_content_hash": "3c3275012b57401be5d88196de149f065cfb6de71c9ea076d27b2befd9a3266c",
+  "manifest_id": "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001",
+  "sec_contract_authority_status": "CURRENT_OFFICIAL_SEC_DOCUMENTATION_QUALIFIED"
+}

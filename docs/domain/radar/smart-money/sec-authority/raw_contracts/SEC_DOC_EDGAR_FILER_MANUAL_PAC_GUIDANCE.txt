@@ -1,0 +1,27 @@
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+EDGAR FILER MANUAL VOLUME II & PDS TECHNICAL SPECIFICATION:
+POST-ACCEPTANCE CORRECTIONS (PAC) RULES
+
+Document Identifier: SEC_DOC_EDGAR_FILER_MANUAL_PAC_GUIDANCE
+Document Version: EDGAR Release 25.1 (May 19, 2025 Revision)
+Publication / Update Date: 2025-05-19
+Canonical Source URL: https://www.sec.gov/info/edgar/ednews/dissemin.htm
+
+1. NATURE AND AUTHORITY OF POST-ACCEPTANCE CORRECTIONS
+A Post-Acceptance Correction (PAC) is an administrative action executed by authorized Commission staff (typically upon filer petition or staff review) to correct erroneous metadata or administrative attributes of an already accepted filing. Filings are official legal records and cannot be silently replaced or modified in-place.
+
+2. DISSEMINATION AND FILE EXTENSION
+PAC actions are disseminated across PDS as discrete files bearing the *.pc extension.
+  2.1. Priority Tagging: PAC files are transmitted with dissemination priority code 3.
+  2.2. Timestamping: PAC records contain a distinct <TIMESTAMP> element recording the exact date and time the correction was processed by staff.
+  2.3. Parent Linkage: Each PAC explicitly references the parent <ACCESSION-NUMBER> of the submission being amended or retracted.
+
+3. PERMISSIBLE PAC ACTION SCOPE
+PAC is strictly restricted in operational scope:
+  3.1. Header Tag Updates: PAC can update metadata tags such as CIK, company name, fiscal year-end, or filer classification.
+  3.2. Deletion Notices: PAC can process an administrative deletion notice withdrawing a mistakenly submitted filing from public indexation.
+  3.3. Form / Document Type Alteration: PAC can reclassify an erroneous form type.
+  3.4. STRICT NEGATIVE INVARIANT: A PAC DOES NOT AND CANNOT MODIFY THE UNDERLYING DOCUMENT TEXT. Document text corrections require the filer to submit an official amendment (e.g., Form 4/A).
+
+4. INDEX REBUILD AND PERSISTENCE
+Corrections disseminated via *.pc files during a business day are incorporated into daily index files during the nightly rebuild, and full/quarterly index files are reconstructed during scheduled weekend maintenance.
