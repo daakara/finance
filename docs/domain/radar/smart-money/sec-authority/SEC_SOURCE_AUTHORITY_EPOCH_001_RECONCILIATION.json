@@ -1,0 +1,121 @@
+{
+  "reconciliation_gate": "SEC_SOURCE_AUTHORITY_EPOCH_001_RECONCILIATION",
+  "governing_epoch": "EPOCH_001",
+  "working_branch": "arx/sec-source-authority-qualification",
+  "qualification_base_sha": "46ecc732196afe842cf2b30dc00fdabbe79f1b2e",
+  "historical_functional_git_sha": "f11bd826d1a91e8bbecda5c7490f44127a015cc6",
+  "historical_evidence_git_sha": "79789a604f40993fe66274275dae71a3a2c9991d",
+  "functional_superseding_commit_required": false,
+  "sec_authority_functional_git_sha": "f11bd826d1a91e8bbecda5c7490f44127a015cc6",
+  "issue_1_form4_pa_semantics": {
+    "result": "NO_DEFECT_DOCUMENTATION_AMBIGUITY",
+    "functional_defect": false,
+    "transaction_code_p_meaning": "OPEN_MARKET_OR_PRIVATE_PURCHASE",
+    "transaction_code_a_meaning": "GRANT_AWARD_RULE_16B3",
+    "acquired_disposed_a_meaning": "ACQUIRED",
+    "open_market_purchase_required_transaction_code": "P",
+    "open_market_purchase_required_acquired_disposed_code": "A",
+    "transaction_code_a_accepted_as_open_market_purchase": false,
+    "decision_input_contract_id": "SMART_MONEY_OPEN_MARKET_PURCHASE_V1",
+    "decision_input_contract_sha256": "c32aacab8f5e7d309655720f99fb8a3952029960d2a5a263ae65c889194698f0",
+    "cases_verified": [
+      {
+        "case_id": "CASE_P_A",
+        "tx_code": "P",
+        "acq_disp": "A",
+        "price_positive": true,
+        "shares_positive": true,
+        "purchase_evidence": true,
+        "decision_input_complete": true
+      },
+      {
+        "case_id": "CASE_A_A",
+        "tx_code": "A",
+        "acq_disp": "A",
+        "price_positive": false,
+        "shares_positive": true,
+        "purchase_evidence": false,
+        "decision_input_complete": false
+      },
+      {
+        "case_id": "CASE_S_D",
+        "tx_code": "S",
+        "acq_disp": "D",
+        "price_positive": true,
+        "shares_positive": true,
+        "purchase_evidence": false,
+        "decision_input_complete": false
+      },
+      {
+        "case_id": "CASE_G_A",
+        "tx_code": "G",
+        "acq_disp": "A",
+        "price_positive": false,
+        "shares_positive": true,
+        "purchase_evidence": false,
+        "decision_input_complete": false
+      },
+      {
+        "case_id": "CASE_M_A",
+        "tx_code": "M",
+        "acq_disp": "A",
+        "price_positive": true,
+        "shares_positive": true,
+        "purchase_evidence": false,
+        "decision_input_complete": false
+      },
+      {
+        "case_id": "CASE_P_D",
+        "tx_code": "P",
+        "acq_disp": "D",
+        "price_positive": true,
+        "shares_positive": true,
+        "purchase_evidence": false,
+        "decision_input_complete": false
+      }
+    ]
+  },
+  "issue_2_pds_eod_denominator": {
+    "terminal_marker_status": "PASS",
+    "exact_denominator_status": "HOLD",
+    "protocol_qualification_status": "CONDITIONAL_PASS",
+    "table_5_vs_prose_resolution": "TABLE_5_FOCUSES_ON_PRIMARY_ELECTRONIC_DISSEMINATION_WHILE_PROSE_ENUMERATES_PAPER_AND_PR_LIVE_EOD_AUDIT_REQUIRED_FOR_EXACT_DENOMINATOR_FINALIZATION",
+    "eod_filename_pattern": "dissem2_MM-DD-YYYY.EOD (22 chars) / dissem_MM-DD-YYYY.EOD (21 chars)",
+    "terminal_meaning": "FINAL_TRANSMISSION_FROM_EDGAR_FOR_BUSINESS_DAY_CONFIRMING_DISSEMINATION_CONCLUDED"
+  },
+  "issue_3_raw_sec_source_byte_custody": {
+    "custody_status": "DERIVED_TEXT_REPRESENTATION_ONLY",
+    "derived_text_provenance_recorded": true,
+    "manifest_id": "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001",
+    "manifest_content_hash": "864563618e02c2f4348b1b4d10949d876230d3bb55cf2426515dc6a3ecdfd2ba",
+    "document_count": 5,
+    "all_canonical_urls_recorded": true,
+    "all_file_hashes_matched": true
+  },
+  "governance_verdict": {
+    "qualification_outcome": "OUTCOME_B — CONDITIONAL PREQUALIFICATION / PDS PROTOCOL PREQUALIFIED WITH EXACT DENOMINATOR ON HOLD PENDING LIVE EOD AUDIT",
+    "current_smart_money_discovery_authority": "BOUNDED_STABLE",
+    "pds_source_authority_status": "PREQUALIFIED_PENDING_LIVE_EVIDENCE",
+    "market_wide_capability": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "radar_production_status": "PIPELINE_PENDING",
+    "next_gate": "REAL_PDS_AUTHORITY_EPOCH_001"
+  },
+  "invariants": {
+    "hold_time_creates_source_authority": false,
+    "pds_delivery_time_used_as_first_public_available_at": false,
+    "sec_acceptance_time_equals_first_public_availability": false,
+    "undetected_semantic_tampers": 0,
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE",
+    "remote_push": false,
+    "main_merge": false,
+    "production_deployment": false,
+    "worktree_clean": true
+  },
+  "test_verification": {
+    "pytest_test_cases_passed": 112,
+    "pytest_test_suites_passed": 10,
+    "pytest_failures": 0
+  }
+}

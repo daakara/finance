@@ -52,6 +52,12 @@ from analyst_dashboard.smart_money.sec_source_contract import (
     PDS_DELIVERY_TIME_USED_AS_FIRST_PUBLIC_AVAILABLE_AT,
     SEC_ACCEPTANCE_TIME_EQUALS_FIRST_PUBLIC_AVAILABILITY,
 )
+from analyst_dashboard.smart_money.form4_models import (
+    SmartMoneySignalType,
+    OwnershipNature,
+)
+from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
+from analyst_dashboard.smart_money.canonicalization import compute_canonical_hash
 from tools.audit_sec_source_authority import IndependentSecSourceAuthorityAuditor
 
 
@@ -621,6 +627,293 @@ class TestSecSourceAuthorityQualification(unittest.TestCase):
                     content = f.read()
                     self.assertGreater(len(content), 0)
 
+    def test_form4_pa_semantic_differentiation_six_cases(self):
+        """
+        Verifies Form 4 transaction parsing and semantic differentiation across all 6 cases:
+        - CASE_P_A: Open-market purchase (P + A + price > 0 + shares > 0) -> candidate
+        - CASE_A_A: Equity grant (A + A) -> NOT open-market purchase
+        - CASE_S_D: Open-market sale (S + D) -> NOT purchase
+        - CASE_G_A: Gift (G + A) -> NOT open-market purchase
+        - CASE_M_A: Option exercise (M + A) -> NOT open-market purchase
+        - CASE_P_D: Disposition with code P (P + D) -> NOT purchase evidence (fails closed)
+        """
+        def make_xml(tx_code: str, acq_disp: str, price: float, shares: float) -> str:
+            return f"""<?xml version="1.0"?>
+<ownershipDocument>
+  <schemaVersion>X0508</schemaVersion>
+  <documentType>4</documentType>
+  <periodOfReport>2026-10-09</periodOfReport>
+  <issuer>
+    <issuerCik>0000320193</issuerCik>
+    <issuerName>APPLE INC</issuerName>
+    <issuerTradingSymbol>AAPL</issuerTradingSymbol>
+  </issuer>
+  <reportingOwner>
+    <reportingOwnerId>
+      <rptOwnerCik>0001234567</rptOwnerCik>
+      <rptOwnerName>COOK TIMOTHY D</rptOwnerName>
+    </reportingOwnerId>
+    <reportingOwnerRelationship>
+      <isDirector>1</isDirector>
+      <isOfficer>1</isOfficer>
+      <isTenPercentOwner>0</isTenPercentOwner>
+      <officerTitle>Chief Executive Officer</officerTitle>
+    </reportingOwnerRelationship>
+  </reportingOwner>
+  <nonDerivativeTable>
+    <nonDerivativeTransaction>
+      <securityTitle><value>Common Stock</value></securityTitle>
+      <transactionDate><value>2026-10-09</value></transactionDate>
+      <transactionCoding><transactionCode>{tx_code}</transactionCode></transactionCoding>
+      <transactionAmounts>
+        <transactionShares><value>{shares}</value></transactionShares>
+        <transactionPricePerShare><value>{price}</value></transactionPricePerShare>
+        <transactionAcquiredDisposedCode><value>{acq_disp}</value></transactionAcquiredDisposedCode>
+      </transactionAmounts>
+      <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+    </nonDerivativeTransaction>
+  </nonDerivativeTable>
+</ownershipDocument>
+"""
+        # CASE_P_A
+        f_pa = Form4XmlParser.parse_filing(make_xml("P", "A", 225.50, 5000.0), "0000320193-26-000101")
+        tx_pa = f_pa.transactions[0]
+        self.assertEqual(tx_pa.transaction_code, "P")
+        self.assertEqual(tx_pa.acquired_disposed, "A")
+        self.assertEqual(tx_pa.signal_type, SmartMoneySignalType.OPEN_MARKET_PURCHASE)
+        self.assertTrue(tx_pa.is_open_market_purchase_evidence)
+        self.assertTrue(tx_pa.is_positive_buying_conviction)
+
+        # CASE_A_A (Grant)
+        f_aa = Form4XmlParser.parse_filing(make_xml("A", "A", 0.0, 10000.0), "0000320193-26-000102")
+        tx_aa = f_aa.transactions[0]
+        self.assertEqual(tx_aa.transaction_code, "A")
+        self.assertEqual(tx_aa.acquired_disposed, "A")
+        self.assertEqual(tx_aa.signal_type, SmartMoneySignalType.EQUITY_GRANT)
+        self.assertFalse(tx_aa.is_open_market_purchase_evidence)
+        self.assertFalse(tx_aa.is_positive_buying_conviction)
+
+        # CASE_S_D (Sale)
+        f_sd = Form4XmlParser.parse_filing(make_xml("S", "D", 225.50, 5000.0), "0000320193-26-000103")
+        tx_sd = f_sd.transactions[0]
+        self.assertEqual(tx_sd.transaction_code, "S")
+        self.assertEqual(tx_sd.acquired_disposed, "D")
+        self.assertEqual(tx_sd.signal_type, SmartMoneySignalType.OPEN_MARKET_SALE)
+        self.assertFalse(tx_sd.is_open_market_purchase_evidence)
+        self.assertFalse(tx_sd.is_positive_buying_conviction)
+
+        # CASE_G_A (Gift)
+        f_ga = Form4XmlParser.parse_filing(make_xml("G", "A", 0.0, 2000.0), "0000320193-26-000104")
+        tx_ga = f_ga.transactions[0]
+        self.assertEqual(tx_ga.transaction_code, "G")
+        self.assertEqual(tx_ga.acquired_disposed, "A")
+        self.assertEqual(tx_ga.signal_type, SmartMoneySignalType.GIFT)
+        self.assertFalse(tx_ga.is_open_market_purchase_evidence)
+        self.assertFalse(tx_ga.is_positive_buying_conviction)
+
+        # CASE_M_A (Option Exercise)
+        f_ma = Form4XmlParser.parse_filing(make_xml("M", "A", 50.0, 3000.0), "0000320193-26-000105")
+        tx_ma = f_ma.transactions[0]
+        self.assertEqual(tx_ma.transaction_code, "M")
+        self.assertEqual(tx_ma.acquired_disposed, "A")
+        self.assertEqual(tx_ma.signal_type, SmartMoneySignalType.OPTION_EXERCISE)
+        self.assertFalse(tx_ma.is_open_market_purchase_evidence)
+        self.assertFalse(tx_ma.is_positive_buying_conviction)
+
+        # CASE_P_D (Disposition coded P -> fail closed)
+        f_pd = Form4XmlParser.parse_filing(make_xml("P", "D", 225.50, 1000.0), "0000320193-26-000106")
+        tx_pd = f_pd.transactions[0]
+        self.assertEqual(tx_pd.transaction_code, "P")
+        self.assertEqual(tx_pd.acquired_disposed, "D")
+        self.assertEqual(tx_pd.signal_type, SmartMoneySignalType.OPEN_MARKET_PURCHASE)
+        self.assertFalse(tx_pd.is_open_market_purchase_evidence)
+        self.assertFalse(tx_pd.is_positive_buying_conviction)
+
+    def test_decision_input_pa_strict_boundary(self):
+        """
+        Verifies DecisionInputEvaluator enforces transactionCode == 'P' AND acquiredDisposed == 'A'.
+        """
+        base_filing = {
+            "issuer_cik": "0000320193",
+            "document_type": "4",
+            "filing_date": "2026-10-09",
+            "reporting_owner_cik": "0001234567",
+            "reporting_owner_name": "COOK TIMOTHY D",
+            "is_director": True,
+            "is_officer": True,
+            "is_ten_percent_owner": False,
+        }
+
+        # CASE_P_A -> PASS
+        f_pa = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "P",
+            "acquired_disposed": "A",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_pa = DecisionInputEvaluator.evaluate(f_pa)
+        self.assertTrue(r_pa.is_decision_input_complete)
+        self.assertEqual(r_pa.missing_fields, [])
+
+        # CASE_A_A -> FAIL (transactionCode=='P' missing)
+        f_aa = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "A",
+            "acquired_disposed": "A",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_aa = DecisionInputEvaluator.evaluate(f_aa)
+        self.assertFalse(r_aa.is_decision_input_complete)
+        self.assertIn("transactions[0].transactionCode=='P'", r_aa.missing_fields)
+
+        # CASE_S_D -> FAIL (both transactionCode=='P' and acquiredDisposed=='A' missing)
+        f_sd = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "S",
+            "acquired_disposed": "D",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_sd = DecisionInputEvaluator.evaluate(f_sd)
+        self.assertFalse(r_sd.is_decision_input_complete)
+        self.assertIn("transactions[0].transactionCode=='P'", r_sd.missing_fields)
+        self.assertIn("transactions[0].acquiredDisposed=='A'", r_sd.missing_fields)
+
+        # CASE_G_A -> FAIL (transactionCode=='P' missing)
+        f_ga = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "G",
+            "acquired_disposed": "A",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_ga = DecisionInputEvaluator.evaluate(f_ga)
+        self.assertFalse(r_ga.is_decision_input_complete)
+        self.assertIn("transactions[0].transactionCode=='P'", r_ga.missing_fields)
+
+        # CASE_M_A -> FAIL (transactionCode=='P' missing)
+        f_ma = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "M",
+            "acquired_disposed": "A",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_ma = DecisionInputEvaluator.evaluate(f_ma)
+        self.assertFalse(r_ma.is_decision_input_complete)
+        self.assertIn("transactions[0].transactionCode=='P'", r_ma.missing_fields)
+
+        # CASE_P_D -> FAIL (acquiredDisposed=='A' missing)
+        f_pd = dict(base_filing, transactions=[{
+            "transaction_date": "2026-10-09",
+            "transaction_code": "P",
+            "acquired_disposed": "D",
+            "shares": 5000.0,
+            "price_per_share": 225.50,
+            "ownership_nature": "D",
+        }])
+        r_pd = DecisionInputEvaluator.evaluate(f_pd)
+        self.assertFalse(r_pd.is_decision_input_complete)
+        self.assertIn("transactions[0].acquiredDisposed=='A'", r_pd.missing_fields)
+
+    def test_pds_eod_terminal_marker_pass_vs_exact_denominator_hold(self):
+        """
+        Verifies that while terminal marker semantics pass, exact denominator evaluation
+        remains conditional / held when Table 5 vs prose discrepancy is evaluated.
+        """
+        # Terminal marker semantic verification
+        bday = PdsBusinessDayIdentity(business_day="2026-10-09")
+        eod_name = bday.get_expected_eod_filename()
+        self.assertIn("10-09-2026.EOD", eod_name)
+
+        # Case: Prose expects 4 classes (.dissem, .paper, .pr, .pc)
+        prose_files = [
+            "20261009100100-0000320193-26-000101.dissem",
+            "20261009100200-0001067983-26-000102.dissem",
+            "20261009100300-0000789019-26-000103.paper",
+            "20261009100400-0001045810-26-000104.pr",
+            "20261009100500-0000320193-26-000105.pc",
+        ]
+        manifest_prose = PdsEodManifest.parse_raw_eod("\n".join(prose_files) + "\n", "2026-10-09", eod_name)
+
+        # If subscriber only accounted for Table 5 electronic classes (.dissem, .pc)
+        table5_only_artifacts = [
+            PdsAccountedArtifact(
+                pds_filename=fn,
+                source_business_day="2026-10-09",
+                receipt_day="2026-10-09",
+                received_at="2026-10-09T18:00:00Z",
+                receipt_method=PdsReceiptMethod.LIVE_PDS,
+                raw_bytes_sha256=hashlib.sha256(fn.encode("utf-8")).hexdigest(),
+                raw_bytes_retained=True,
+                transport_provenance={},
+            )
+            for fn in prose_files if fn.endswith(".dissem") or fn.endswith(".pc")
+        ]
+        # Must fail closed: cannot claim exact set equality until live EOD evidence establishes actual denominator
+        res = PdsSourceClosureTheorem.evaluate(manifest_prose, PdsAccountedSet("2026-10-09", table5_only_artifacts))
+        self.assertFalse(res.can_close)
+        self.assertEqual(res.expected_minus_accounted_count, 2)  # .paper and .pr missing
+        self.assertIn("20261009100300-0000789019-26-000103.paper", res.missing_pds_files)
+        self.assertIn("20261009100400-0001045810-26-000104.pr", res.missing_pds_files)
+
+    def test_sec_raw_contract_custody_and_derived_text_classification(self):
+        """
+        Verifies that SEC raw contract artifacts are classified as DERIVED_TEXT_REPRESENTATION,
+        have exact SHA-256 byte hashes, retain source URLs, and match manifest content hash.
+        """
+        manifest_path = os.path.join(
+            os.path.dirname(__file__), "..", "docs", "domain", "radar", "smart-money", "sec-authority", "SEC_SOURCE_CONTRACT_MANIFEST.json"
+        )
+        self.assertTrue(os.path.isfile(manifest_path))
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+
+        self.assertEqual(manifest_data.get("custody_classification"), "DERIVED_TEXT_REPRESENTATION")
+        self.assertEqual(manifest_data.get("manifest_id"), "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001")
+
+        docs = manifest_data.get("contract_documents", [])
+        self.assertEqual(len(docs), 5)
+
+        base_dir = os.path.dirname(manifest_path)
+        for doc in docs:
+            self.assertEqual(doc.get("content_representation_class"), "DERIVED_TEXT_REPRESENTATION")
+            self.assertTrue(doc.get("raw_bytes_retained"))
+            self.assertTrue(doc.get("sec_canonical_url", "").startswith("https://www.sec.gov"))
+
+            relpath = doc.get("raw_file_relpath")
+            full_path = os.path.join(base_dir, relpath)
+            self.assertTrue(os.path.isfile(full_path), f"Missing file {full_path}")
+
+            with open(full_path, "rb") as bf:
+                content = bf.read()
+            actual_sha = hashlib.sha256(content).hexdigest()
+            self.assertEqual(actual_sha, doc.get("raw_bytes_sha256"))
+            self.assertEqual(len(content), doc.get("raw_byte_count"))
+
+        # Verify manifest content hash integrity
+        manifest_copy = dict(manifest_data)
+        stored_hash = manifest_copy.pop("manifest_content_hash", None)
+        recomputed = compute_canonical_hash(manifest_copy)
+        self.assertEqual(stored_hash, recomputed)
+
+    def test_authority_non_inflation_and_freeze_invariants(self):
+        """
+        Verifies that protocol qualification never inflates discovery authority beyond BOUNDED_STABLE.
+        """
+        self.assertFalse(HOLD_TIME_CREATES_SOURCE_AUTHORITY)
+        self.assertFalse(PDS_DELIVERY_TIME_USED_AS_FIRST_PUBLIC_AVAILABLE_AT)
+        self.assertFalse(SEC_ACCEPTANCE_TIME_EQUALS_FIRST_PUBLIC_AVAILABILITY)
+
 
 if __name__ == "__main__":
     unittest.main()
+

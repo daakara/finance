@@ -2,6 +2,7 @@
   "contract_documents": [
     {
       "authority_role": "Technical specification of dissemination file formats (*.dissem, *.paper, *.pr, *.pc), daily EOD audit file, transmission protocols, and DRS requirements.",
+      "content_representation_class": "DERIVED_TEXT_REPRESENTATION",
       "document_id": "SEC_DOC_PDS_TECH_SPEC_2025",
       "document_publication_or_update_date": "2025-05-19",
       "document_title": "EDGAR Public Dissemination Service (PDS) Technical Specification",
@@ -15,6 +16,7 @@
     },
     {
       "authority_role": "Operational contract governing subscriber DRS setup, automated retransmission, staging redirection, failover, PDS FTP rolling 5-day recovery, and support escalation.",
+      "content_representation_class": "DERIVED_TEXT_REPRESENTATION",
       "document_id": "SEC_DOC_PDS_NEW_SUBSCRIBER_2025",
       "document_publication_or_update_date": "2025-08-01",
       "document_title": "EDGAR Public Dissemination Service (PDS) New Subscriber Operational Document",
@@ -28,6 +30,7 @@
     },
     {
       "authority_role": "Official public service description, subscription terms, contractor governance, and relation to free public access.",
+      "content_representation_class": "DERIVED_TEXT_REPRESENTATION",
       "document_id": "SEC_DOC_PDS_SERVICE_PAGE",
       "document_publication_or_update_date": "2025-08-01",
       "document_title": "SEC EDGAR Public Dissemination Service (PDS) Information Page",
@@ -41,6 +44,7 @@
     },
     {
       "authority_role": "Official policy establishing that filings appear on SEC.gov website before or concurrently with PDS, proving PDS receipt time does not establish prior public availability.",
+      "content_representation_class": "DERIVED_TEXT_REPRESENTATION",
       "document_id": "SEC_DOC_PUBLIC_WEBSITE_AVAILABILITY_GUIDANCE",
       "document_publication_or_update_date": "2025-05-19",
       "document_title": "SEC EDGAR Dissemination and Public Website Publication Fair Access Policy",
@@ -54,6 +58,7 @@
     },
     {
       "authority_role": "Governing specification for Post-Acceptance Corrections (*.pc files), metadata tag updates, deletion notices, document text immutability, and timestamping.",
+      "content_representation_class": "DERIVED_TEXT_REPRESENTATION",
       "document_id": "SEC_DOC_EDGAR_FILER_MANUAL_PAC_GUIDANCE",
       "document_publication_or_update_date": "2025-05-19",
       "document_title": "EDGAR Filer Manual Volume II & PDS Specification: Post-Acceptance Corrections (PAC) Rules",
@@ -67,7 +72,8 @@
     }
   ],
   "created_at": "2026-10-11T07:10:00.000Z",
-  "manifest_content_hash": "3c3275012b57401be5d88196de149f065cfb6de71c9ea076d27b2befd9a3266c",
+  "custody_classification": "DERIVED_TEXT_REPRESENTATION",
+  "manifest_content_hash": "864563618e02c2f4348b1b4d10949d876230d3bb55cf2426515dc6a3ecdfd2ba",
   "manifest_id": "SEC_SOURCE_CONTRACT_MANIFEST_EPOCH_001",
   "sec_contract_authority_status": "CURRENT_OFFICIAL_SEC_DOCUMENTATION_QUALIFIED"
 }
