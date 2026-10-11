@@ -1,0 +1,147 @@
+{
+  "gate": "TWO_PHASE_FINALIZATION_ROOT_SEMANTICS_CLOSURE_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "7840eb6663541f44b3d440e992ad133780db334c",
+  "functional_commit_sha": "2592a0d245764ef3afe5991c657e1155a85beeee",
+  "roles": [
+    "Independent Finalization Root Semantics Auditor",
+    "Authority Transition Contract Auditor",
+    "Root Self-Reference Auditor",
+    "Post-Authority Closure Auditor",
+    "Candidate 004 Firewall Authority"
+  ],
+  "operating_mode": [
+    "FAIL_CLOSED",
+    "DETERMINISTIC",
+    "APPEND_ONLY",
+    "NON_CIRCULAR",
+    "RECEIPT_DRIVEN",
+    "NO_RETROACTIVE_AUTHORITY",
+    "NO_PRODUCTION"
+  ],
+  "two_phase_root_architecture": {
+    "phase_r1": "PRE_AUTHORITY_ADMISSION_ROOT",
+    "phase_r2": "POST_AUTHORITY_CLOSURE_ROOT",
+    "r1_authority_effective_status": "BLOCKED_PENDING_FINALIZATION_ROOT",
+    "r1_authority_became_effective_at": null,
+    "r1_transition_intent": "GRANT_IF_ROOT_CONFIRMED",
+    "r1_effectiveness_precondition": "R1_ROOT_RECEIPT_CONFIRMED",
+    "r1_redecides_evidence": false
+  },
+  "root_self_reference_elimination": {
+    "root_self_reference_prohibited": true,
+    "r1_contains_r1_receipt_hash": false,
+    "r2_contains_r2_receipt_hash": false,
+    "circular_root_payload_prohibited": true,
+    "r1_receipt_in_authority_transition_event": true,
+    "r1_receipt_in_r2": true
+  },
+  "authority_transition_contract": {
+    "trigger": "VERIFIED_R1_RECEIPT",
+    "trigger_verification_status": "CONFIRMED",
+    "event_type": "AUTHORITY_BECAME_EFFECTIVE",
+    "authority_effective_status_after": "EFFECTIVE",
+    "monotonicity_ordering": "T_observed <= T_eligible <= T_r1_confirmed <= T_effective",
+    "idempotent_event_emission": true,
+    "atomic_state_mutation": true,
+    "duplicate_identical_trigger": "IDEMPOTENT_NO_OP",
+    "duplicate_conflicting_trigger": "CRITICAL_INTEGRITY_CONFLICT"
+  },
+  "post_authority_closure_r2": {
+    "r2_root_required": true,
+    "r2_commits_to_r1_root_id": true,
+    "r2_commits_to_r1_root_hash": true,
+    "r2_commits_to_r1_receipt_hash": true,
+    "r2_commits_to_authority_transition_event_id": true,
+    "r2_commits_to_authority_transition_event_hash": true,
+    "r2_commits_to_authority_transition_sequence": true,
+    "r2_authority_effective_status": "EFFECTIVE",
+    "r2_purpose": "AUDIT_FINALITY_ONLY",
+    "r2_redecides_authority_eligibility": false,
+    "r2_retroactively_modifies_r1": false
+  },
+  "closure_deadline_and_suspension": {
+    "post_authority_closure_max_delay_seconds": 300.0,
+    "closure_deadline_monitoring": true,
+    "closure_expired_action": "SUSPEND_NEW_AUTHORITY_USE",
+    "expired_authority_effective_status": "SUSPENDED_PENDING_CLOSURE",
+    "r2_expiry_retroactively_revokes_prior_valid_decisions": false,
+    "conflict_authority_effective_status": "SUSPENDED_INTEGRITY_HOLD",
+    "downstream_actions_blocked_on_suspension": true
+  },
+  "threat_model_tamper_detection": {
+    "authority_transition_rewrite_detected": true,
+    "r1_receipt_substitution_detected": true,
+    "duplicate_r1_notification_handled": true,
+    "r1_conflict_detected": true,
+    "r2_conflict_detected": true,
+    "timing_backdating_detected": true
+  },
+  "crash_recovery_matrix": {
+    "crash_before_r1_receipt": "BLOCKED_PENDING_FINALIZATION_ROOT",
+    "crash_after_r1_receipt_before_transition": "REPLAY_OR_RECORD_TRANSITION",
+    "crash_after_transition_before_r2": "AUTHORITY_EFFECTIVE_CLOSURE_PENDING",
+    "crash_after_r2_before_r2_receipt": "RECOVER_AND_VERIFY_R2",
+    "crash_consistency_status": "PASS"
+  },
+  "reviewer_reconstruction": {
+    "status": "PASS",
+    "points_verified": 10,
+    "reconstruction_mismatches": 0
+  },
+  "verification_evidence": {
+    "synthetic_two_phase_root_tests": "PASS",
+    "live_finalization_root_provider_verification": "NOT_EXECUTED",
+    "targeted_test_count": 17,
+    "targeted_test_passed": 17,
+    "domain_regression_test_count": 77,
+    "domain_regression_passed": 77
+  },
+  "downstream_firewall": {
+    "status": "PASS",
+    "blocked_statuses": [
+      "BLOCKED_PENDING_FINALIZATION_ROOT",
+      "BLOCKED_INTEGRITY_HOLD",
+      "SUSPENDED_PENDING_CLOSURE",
+      "SUSPENDED_INTEGRITY_HOLD"
+    ],
+    "unauthorized_downstream_acceptances": 0
+  },
+  "retained_policy_artifacts": {
+    "anchor_policy": "ae287bfbcbb6f48460bea0c9445043178528ecea0c7be55657e4c17d0dbf9431",
+    "state_machine_policy": "42eb8ded98ca8f7ce3f3d05e58ee702a5ad762c82d1e9d961c6e70678dac5539",
+    "clock_policy": "02e3ec5107e46d3796ec5b73d8de088d4f4882c7ea7074013432b139552a51c5",
+    "observer_policy": "a58185d9eb6b73221f2b68aa235e41c877cebbcacb62237cce6d759f577dc792",
+    "authority_admission_policy": "f87b61f6c1c60267e24fbc4cd3e44866a7033e266a75f098a22a56353b91808d",
+    "transport_classification_policy": "926df84016602355c7c9845da5ee2b475ab8108e2d916ef58de384b32ea65cb5",
+    "identity_policy": "661c2af6d82966c84808d318fd249fb179b9ea3b8e0bd18d52b301c1a1dfe8c2",
+    "decision_input_contract": "227bcc3cb6dfefb872b718ce595eab58f726199f3fcaeb4b8cc17f61da65083c",
+    "anchor_policy_registry_v1": "e2710fcbad992a67f9716a3f059a371809ac4d12af1c7c661ffdd485660e3277",
+    "epoch_registry_v1": "8eaaeed1399f572e86b4e5bcbd1f6a8fb66ac191359955679fa2aef2f95ab153",
+    "policy_resolution_contract_v1": "7c3c964e39edc34f1fa3979219d8a3a9f426b039a41ff12c7ae5aa0d35d1cc3a",
+    "finalization_root_policy_v1": "4929ff13f31310b05524c1580913af69d2539af613e9e3f9ed82eac9155a970a",
+    "root_serialization_contract_v1": "163b7ec4e470421ef141e1c90e66822c4e88114e57ef7c3aab353e46e38bfc42",
+    "root_receipt_verification_policy_v1": "fff57ab40b5fdab6eb57abfad412f17d86d43dbd980db97c8a0027fc55bb42ae",
+    "root_retry_policy_v1": "85dbc96c88852f21bdd1418f77453d882fb902715a3310dd5d111fec1419f224",
+    "root_reviewer_policy_v1": "170bcbf9b79a1e5d683593bb85f927871ebeabee3cfb0dd248a6d266c2d77763",
+    "two_phase_root_policy_v1": "620ff0cf571b40138bd9be7d02b483d1d9be079ec24b2227c96aa86411547f9d",
+    "root_self_reference_policy_v1": "9d030bbbc5e925b248b1c81df3f57e9f80161b9f228f704a085e99a79faecf27",
+    "authority_transition_contract_v1": "a923bf444789863f6b4baeb6d85daeae3be68a30e9c0f2e4d0474dcb2bd12be8",
+    "post_authority_closure_policy_v1": "3db2b80262e2eec668f58cadc0a3ef5e283fdd39b6005c316c92ab71aa6b2d4f",
+    "two_phase_root_reviewer_policy_v1": "625db60c91e5c463f285614561e9624c5a119be75d208127e4bc165ab3117035"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "pds_denominator_hold": {
+    "pds_denominator_status": "HOLD",
+    "pds_denominator_production_released": false
+  },
+  "no_production_attestation": {
+    "production_deployment_activated": false,
+    "remote_push_executed": false,
+    "main_merged": false
+  }
+}
