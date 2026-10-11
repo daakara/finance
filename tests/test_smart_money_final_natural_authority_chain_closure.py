@@ -50,6 +50,13 @@ from analyst_dashboard.smart_money.public_availability.observer_engine import (
 from analyst_dashboard.smart_money.public_availability.models import (
     ClockAuthorityRecord,
     ClockStatus,
+    CANONICAL_DECISION_INPUT_CONTRACT_ID,
+    LEGACY_DECISION_INPUT_CONTRACT_ID,
+)
+from analyst_dashboard.smart_money.public_availability.decision_validator import (
+    parse_and_validate_form4_decision_inputs,
+    DecisionInputCompleteness,
+    DecisionInputReasonCode,
 )
 
 
@@ -456,3 +463,35 @@ class TestFinalNaturalAuthorityChainClosure:
         with pytest.raises(TerminalHoldError) as exc_info:
             mgr2.hydrate_state()
         assert "TERMINAL_HOLD" in str(exc_info.value)
+
+    # 11. Form 4 Semantic Boundary Contract (Section 21 Path B)
+    def test_form4_semantic_boundary_contract(self):
+        assert CANONICAL_DECISION_INPUT_CONTRACT_ID == "SMART_MONEY_REPORTED_PURCHASE_TRANSACTION_V1"
+        assert LEGACY_DECISION_INPUT_CONTRACT_ID == "SMART_MONEY_OPEN_MARKET_PURCHASE_V1"
+
+        # Valid Form 4 header and transaction but with sale (Code S) instead of purchase
+        form4_xml = """<ownershipDocument>
+            <documentType>4</documentType>
+            <issuer><issuerCik>0001018724</issuerCik></issuer>
+            <reportingOwner>
+                <reportingOwnerId><rptOwnerCik>0001111111</rptOwnerCik></reportingOwnerId>
+                <reportingOwnerRelationship><isOfficer>1</isOfficer></reportingOwnerRelationship>
+            </reportingOwner>
+            <nonDerivativeTable>
+                <nonDerivativeTransaction>
+                    <securityTitle><value>Common Stock</value></securityTitle>
+                    <transactionDate><value>2026-10-10</value></transactionDate>
+                    <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+                    <transactionAmounts>
+                        <transactionShares><value>100</value></transactionShares>
+                        <transactionPricePerShare><value>10.0</value></transactionPricePerShare>
+                        <transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode>
+                    </transactionAmounts>
+                    <postTransactionAmounts><sharesOwnedFollowingTransaction><value>500</value></sharesOwnedFollowingTransaction></postTransactionAmounts>
+                    <ownershipNature><directOrIndirectOwnership><value>D</value></directOrIndirectOwnership></ownershipNature>
+                </nonDerivativeTransaction>
+            </nonDerivativeTable>
+        </ownershipDocument>"""
+        comp, code, det = parse_and_validate_form4_decision_inputs(form4_xml)
+        assert comp == DecisionInputCompleteness.INCOMPLETE
+        assert "reported purchase transaction" in det.get("error", "").lower()
