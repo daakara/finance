@@ -2,7 +2,7 @@
   "claim": "Evidence generator script produces deterministic, schema-compliant artifacts with zero unsupported PASS claims",
   "evidence_class": "DESIGN_AND_UNIT_TEST",
   "independent_verifier_result": "PASS",
-  "observed_result": "Evidence generator completed deterministically; all 55 artifacts generated with strict adherence to proof schemas; UNSUPPORTED_PASS_CLAIMS = 0.",
+  "observed_result": "Evidence generator completed deterministically; all artifacts generated with strict adherence to proof schemas; UNSUPPORTED_PASS_CLAIMS = 0.",
   "rederivation_command": "python scripts/generate_distributed_authority_closure_v2_evidence.py",
   "status": "PASS"
 }

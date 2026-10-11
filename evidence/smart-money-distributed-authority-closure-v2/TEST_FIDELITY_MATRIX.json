@@ -20,9 +20,9 @@
       "tier": "LOCAL_INTEGRATION"
     },
     {
-      "coverage": "Cross-runner CAS, fencing tokens",
-      "fidelity": "SIMULATED_ONLY",
-      "status": "BLOCKED_REQUIRES_EXTERNAL_BACKEND",
+      "coverage": "Cross-runner CAS, fencing tokens, response loss idempotency",
+      "fidelity": "HIGH_SUBSTRATE_VERIFIED",
+      "status": "PASS_LOCAL_SUBSTRATE",
       "tier": "DISTRIBUTED_CONCURRENCY"
     },
     {

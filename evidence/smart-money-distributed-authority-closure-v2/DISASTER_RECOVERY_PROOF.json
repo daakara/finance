@@ -1,8 +1,8 @@
 {
   "claim": "Controlled restore drill proves complete recovery from runner loss and cache eviction",
   "evidence_class": "DISTRIBUTED_STORAGE",
-  "independent_verifier_result": "BLOCKED per Section 11.4 and Section 31",
-  "observed_result": "Local DurableStateManager detects missing manifest and correctly enters TERMINAL_HOLD; recovery from zero local state requires external transactional backend.",
+  "independent_verifier_result": "BLOCKED per Theorem E and Section 31",
+  "observed_result": "Genesis safety verified locally (SecondGenesisAttemptError raised); disaster recovery from zero local state requires external transactional backend.",
   "rederivation_command": "execute disaster recovery restore drill without local workspace or GitHub cache",
   "status": "BLOCKED"
 }

@@ -2,7 +2,7 @@
   "claim": "Durable custody has delete-protection / WORM policy preventing scheduler from erasing evidence",
   "evidence_class": "IAM_POLICY",
   "independent_verifier_result": "BLOCKED per Section 8.4 and Section 31",
-  "observed_result": "Local files and runner workspace grant full write/delete permissions to runner process; WORM delete protection is not enforced.",
+  "observed_result": "Local files and runner workspace grant write/delete permissions to runner process; cloud bucket WORM delete protection is not enforced.",
   "rederivation_command": "inspect filesystem and storage bucket IAM permissions",
   "status": "BLOCKED"
 }

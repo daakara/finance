@@ -1,7 +1,7 @@
 {
   "claim": "Independent runner qualification Run B proves state restore and Gate3 non-replayability",
   "evidence_class": "LIVE_GITHUB_RUNNER",
-  "independent_verifier_result": "BLOCKED per Section 18 and Section 31",
+  "independent_verifier_result": "BLOCKED per Theorem E and Section 31",
   "observed_result": "Live GitHub runner qualification blocked pending operator authorization.",
   "status": "BLOCKED"
 }

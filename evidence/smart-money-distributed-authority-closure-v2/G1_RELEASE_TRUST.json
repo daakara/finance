@@ -1,8 +1,10 @@
 {
-  "claim": "Default branch main has enforced immutable release trust root",
+  "claim": "Default branch main has enforced immutable release trust root (Theorem A)",
+  "dependency_content_hash_locked": true,
+  "dependency_version_pinned": true,
   "evidence_class": "REPOSITORY_INTEGRATION",
-  "independent_verifier_result": "BLOCKED per Section 4 and Section 31 stop conditions",
-  "observed_result": "Branch protection is NOT active on main (REMOTE_MAIN_PROTECTED=NO); no signed release root witness exists in Rekor.",
+  "independent_verifier_result": "BLOCKED per Theorem A and Section 31",
+  "observed_result": "Branch protection is NOT active on main (REMOTE_MAIN_PROTECTED=NO); release trust root witness not anchored in Rekor; REMOTE_INTEGRATION is BLOCKED_PENDING_OPERATOR_AUTHORIZATION.",
   "rederivation_command": "gh api repos/daakara/finance/branches/main/protection; gh api repos/daakara/finance/rulesets",
   "status": "BLOCKED"
 }

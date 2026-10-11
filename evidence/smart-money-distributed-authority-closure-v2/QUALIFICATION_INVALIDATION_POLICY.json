@@ -4,7 +4,7 @@
     "Any modification to .github/workflows/smart_money_rooting.yml",
     "Any change in GitHub OIDC subject customization or audience claims",
     "Any schema modification to gate3_authorization.py or MAX_GATE3_AUTHORIZATION_TTL_SECONDS",
-    "Any change in durable_state_manager.py state schema or CAS transaction semantics",
+    "Any change in durable_state_manager.py or transactional_state_backend.py state schema or CAS semantics",
     "Any modification to observer_state_machine.py state transitions or terminal hold handling",
     "Any alteration to admission or denominator increments in durable_state_manager.py",
     "Any change in pinned GitHub Action commit SHAs or Python dependency lockfile",

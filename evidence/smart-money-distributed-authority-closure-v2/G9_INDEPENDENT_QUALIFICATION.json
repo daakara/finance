@@ -1,8 +1,8 @@
 {
-  "claim": "Independent qualification evidence across dual production-topology runners",
+  "claim": "Independent qualification evidence across dual production-topology runners (Theorem E)",
   "evidence_class": "LIVE_GITHUB_RUNNER",
-  "independent_verifier_result": "BLOCKED per Section 12, 16, and Section 31 stop conditions",
-  "observed_result": "Dual runner production-topology qualification (Run A and Run B) requires pushing to origin/main and triggering GitHub-hosted runners with live OIDC and external storage.",
+  "independent_verifier_result": "BLOCKED per Theorem E and Section 31",
+  "observed_result": "Dual runner production-topology qualification (Run A and Run B) requires pushing to origin/main and executing on GitHub-hosted runners with live OIDC and external storage.",
   "rederivation_command": "gh run list --workflow=smart_money_rooting.yml",
   "status": "BLOCKED"
 }

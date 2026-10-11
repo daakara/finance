@@ -1,7 +1,7 @@
 {
   "claim": "Cryptographic external witness across Gate3, R1, R2, checkpoint, and final manifest",
   "evidence_class": "CRYPTOGRAPHIC_VERIFICATION",
-  "independent_verifier_result": "BLOCKED per Section 10 and Section 31 stop conditions",
+  "independent_verifier_result": "BLOCKED per Section 10 and Section 31",
   "observed_result": "Live Fulcio certificates and Rekor log inclusion proofs cannot be verified offline/locally; external witness verification requires live remote runner environment.",
   "rederivation_command": "cosign verify-blob or sigstore verify",
   "status": "BLOCKED"

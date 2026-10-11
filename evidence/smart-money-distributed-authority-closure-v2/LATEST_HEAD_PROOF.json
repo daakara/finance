@@ -2,7 +2,7 @@
   "claim": "External latest-head authority prevents split-brain or stale checkpoint recovery",
   "evidence_class": "DISTRIBUTED_STORAGE",
   "independent_verifier_result": "BLOCKED per Section 6.3 and Section 31",
-  "observed_result": "Local checkpoint chain verifies hash-linkage and monotonicity, but external head authority service is NOT established.",
-  "rederivation_command": "inspect checkpoint hydration in DurableStateManager",
+  "observed_result": "Local checkpoint chain verifies hash-linkage and monotonicity; external latest head authority service is not provisioned.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_global_rollback_detection",
   "status": "BLOCKED"
 }

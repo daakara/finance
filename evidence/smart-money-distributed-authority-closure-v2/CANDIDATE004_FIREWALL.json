@@ -10,8 +10,9 @@
     "tests/test_sprint_3_candidate_004_epoch_and_migration.py",
     "analyst_dashboard/governance/experiment_ledger.py",
     "analyst_dashboard/governance/passive_capture.py",
-    "analyst_dashboard/data/shadow_evidence.db"
+    "analyst_dashboard/data/shadow_evidence.db",
+    "docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"
   ],
-  "rederivation_command": "git diff 63131b9604707ed9c3820e3afd3e9d47d1914397 -- tests/test_sprint_3_candidate_004_epoch_and_migration.py analyst_dashboard/governance/experiment_ledger.py analyst_dashboard/governance/passive_capture.py analyst_dashboard/data/shadow_evidence.db",
+  "rederivation_command": "git diff 63131b9604707ed9c3820e3afd3e9d47d1914397 -- tests/test_sprint_3_candidate_004_epoch_and_migration.py analyst_dashboard/governance/experiment_ledger.py analyst_dashboard/governance/passive_capture.py analyst_dashboard/data/shadow_evidence.db docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json",
   "status": "PASS"
 }

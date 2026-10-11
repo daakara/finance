@@ -11,7 +11,7 @@
       "name": "Stale Runner Fencing",
       "rejected_runs": 1,
       "runs": 2,
-      "status": "PASS_SIMULATED_LOCAL",
+      "status": "PASS",
       "winning_runs": 1
     },
     {

@@ -1,8 +1,13 @@
 {
   "claim": "Fail-closed operational recovery and state machine rehydration",
+  "disaster_recovery_drill": "BLOCKED",
   "evidence_class": "PROPERTY_TEST",
-  "independent_verifier_result": "PASS",
-  "observed_result": "State machine rehydration verified; illegal state transitions raise fatal TerminalHoldError; TERMINAL_HOLD is sticky; dry-run exits without corrupting state or incrementing denominator.",
+  "independent_verifier_result": "BLOCKED until live disaster recovery succeeds",
+  "invalid_transition_fail_closed": "PASS",
+  "local_operational_recovery": "PASS",
+  "observed_result": "Local state machine rehydration verified; illegal state transitions raise fatal TerminalHoldError; full disaster recovery drill across total cache loss requires external transactional backend.",
   "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k \"test_state_machine or test_observer_db_durability\"",
-  "status": "PASS"
+  "state_machine_rehydration": "PASS",
+  "status": "BLOCKED",
+  "terminal_hold_stickiness": "PASS"
 }

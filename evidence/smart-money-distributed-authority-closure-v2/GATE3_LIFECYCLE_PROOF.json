@@ -2,7 +2,7 @@
   "claim": "Gate3 V2 schema enforces monotonic sequence, TTL, single-use claim, and rejects V1 downgrade",
   "evidence_class": "DESIGN_AND_UNIT_TEST",
   "independent_verifier_result": "PASS",
-  "observed_result": "Gate3 validator strictly enforces V2 schema, max 3600s TTL, valid time window, and rejects schema downgrade or missing mandatory fields.",
-  "rederivation_command": "python -m pytest tests/test_smart_money_final_natural_authority_chain_closure.py -k test_gate3_v2_schema_contract",
+  "observed_result": "Gate3 validator strictly enforces V2 schema, monotonic sequence, rejection of superseded authorizations, and single active authorization per scope.",
+  "rederivation_command": "python -m pytest tests/test_smart_money_distributed_authority_substrate.py -k test_gate3_lifecycle_supersession_and_revocation",
   "status": "PASS"
 }
