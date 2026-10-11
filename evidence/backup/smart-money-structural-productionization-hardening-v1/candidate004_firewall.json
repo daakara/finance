@@ -1,0 +1,1 @@
+{"anchor_commit":"63131b9","candidate_004_interference":"NONE","direct_candidate_004_diff":0,"git_diff_output":"","indirect_candidate_004_behavioral_coupling":"NONE","protected_files":["shadow_evidence.db","analyst_dashboard/vcp","natural_trigger.py"]}

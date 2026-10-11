@@ -1,0 +1,14 @@
+CURRENT_BRANCH = arx/sigstore-workload-identity-qualification
+CURRENT_HEAD = b7965fa3ff26cec06ee76bfcd0e1ee60b886c7ac
+DEFAULT_BRANCH = main
+WORKTREE_STATUS = M .github/workflows/smart_money_rooting.yml
+ M docs/domain/radar/smart-money/public-availability/SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json
+?? evidence/backup/smart-money-structural-productionization-hardening-v1/
+?? evidence/smart-money-structural-productionization-hardening-v1/
+?? scripts/assemble_structural_hardening_evidence.py
+?? tests/test_smart_money_structural_productionization_hardening.py
+REMOTE = origin	https://github.com/daakara/finance.git (fetch)
+origin	https://github.com/daakara/finance.git (push)
+PROTECTED_FILES_CHANGED = 0
+CANDIDATE_004_INTERFERENCE = NONE
+TIMESTAMP_UTC = 2026-10-11T19:47:41.292477+00:00
