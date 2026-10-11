@@ -42,6 +42,15 @@ from analyst_dashboard.smart_money.anchor_finalization.quorum import (
 from analyst_dashboard.smart_money.anchor_finalization.policy import (
     verify_all_policy_artifacts_retained,
 )
+from analyst_dashboard.smart_money.anchor_finalization.policy_registry import (
+    EpochRegistry,
+    PolicyRegistry,
+    RunPolicyBinding,
+    RunStartInterval,
+    DEFAULT_EPOCH_REGISTRY,
+    DEFAULT_POLICY_REGISTRY,
+    replay_policy_binding,
+)
 
 
 class AnchorFinalizationReviewer:
@@ -63,9 +72,14 @@ class AnchorFinalizationReviewer:
         authority_became_effective_at: Optional[str],
         quorum_policy: QuorumPolicy = QuorumPolicy.ALL_REQUIRED,
         downstream_audit_log: Optional[List[Dict[str, Any]]] = None,
+        policy_binding: Optional[RunPolicyBinding] = None,
+        run_interval: Optional[RunStartInterval] = None,
+        raw_genesis_metadata: Optional[Dict[str, Any]] = None,
+        historical_policy_registry: Optional[PolicyRegistry] = None,
+        historical_epoch_registry: Optional[EpochRegistry] = None,
     ) -> Dict[str, Any]:
         """
-        Executes complete 12-point reconstruction audit.
+        Executes complete 12-point reconstruction audit + policy binding replay.
         """
         results: Dict[str, Any] = {
             "run_final_hash_parity": "FAIL",
@@ -204,6 +218,17 @@ class AnchorFinalizationReviewer:
         if downstream_ok:
             results["downstream_firewall_reconstruction"] = "PASS"
 
+        # 13. Policy Binding Historical Replay (if provided)
+        if policy_binding is not None and run_interval is not None:
+            pb_audit = cls.audit_policy_binding(
+                binding=policy_binding,
+                interval=run_interval,
+                raw_genesis_metadata=raw_genesis_metadata or {},
+                historical_policy_registry=historical_policy_registry,
+                historical_epoch_registry=historical_epoch_registry,
+            )
+            results["policy_binding_replay_parity"] = pb_audit["policy_binding_replay_parity"]
+
         # Overall Status
         check_keys = [
             "run_final_hash_parity",
@@ -216,7 +241,57 @@ class AnchorFinalizationReviewer:
             "authority_timing_reconstruction",
             "downstream_firewall_reconstruction",
         ]
+        if "policy_binding_replay_parity" in results:
+            check_keys.append("policy_binding_replay_parity")
+
         if all(results[k] == "PASS" for k in check_keys) and results["unexplained_finalization_events"] == 0:
             results["overall_status"] = "PASS"
 
         return results
+
+    @classmethod
+    def audit_policy_binding(
+        cls,
+        binding: RunPolicyBinding,
+        interval: RunStartInterval,
+        raw_genesis_metadata: Dict[str, Any],
+        historical_policy_registry: Optional[PolicyRegistry] = None,
+        historical_epoch_registry: Optional[EpochRegistry] = None,
+    ) -> Dict[str, Any]:
+        """
+        Independent verification of run policy binding via historical replay (Sections 17, 18).
+        """
+        p_reg = historical_policy_registry or DEFAULT_POLICY_REGISTRY
+        e_reg = historical_epoch_registry or DEFAULT_EPOCH_REGISTRY
+
+        replayed = replay_policy_binding(
+            raw_genesis_metadata=raw_genesis_metadata,
+            interval=interval,
+            historical_policy_registry=p_reg,
+            historical_epoch_registry=e_reg,
+        )
+
+        parity_ok = (
+            replayed["replayed_bound_policy_id"] == binding.bound_policy_id
+            and replayed["replayed_bound_policy_version"] == binding.bound_policy_version
+            and replayed["replayed_bound_policy_sha256"] == binding.bound_policy_sha256
+            and replayed["replayed_policy_applicability_result"] == binding.policy_applicability_result.value
+            and replayed["replayed_boundary_classification"] == binding.boundary_classification.value
+            and p_reg.sha256() == binding.bound_policy_registry_sha256
+            and e_reg.sha256() == binding.bound_epoch_registry_sha256
+        )
+
+        return {
+            "policy_binding_replay_parity": "PASS" if parity_ok else "FAIL",
+            "replayed": replayed,
+            "stored": {
+                "bound_policy_id": binding.bound_policy_id,
+                "bound_policy_version": binding.bound_policy_version,
+                "bound_policy_sha256": binding.bound_policy_sha256,
+                "policy_applicability_result": binding.policy_applicability_result.value,
+                "boundary_classification": binding.boundary_classification.value,
+                "bound_policy_registry_sha256": binding.bound_policy_registry_sha256,
+                "bound_epoch_registry_sha256": binding.bound_epoch_registry_sha256,
+            },
+        }
+

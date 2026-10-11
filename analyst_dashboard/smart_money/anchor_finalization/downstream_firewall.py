@@ -13,6 +13,9 @@ from analyst_dashboard.smart_money.anchor_finalization.models import (
     FinalizationState,
     DownstreamFirewallBlockedError,
 )
+from analyst_dashboard.smart_money.anchor_finalization.policy_registry import (
+    PolicyResolutionResult,
+)
 
 
 class DownstreamUseFirewall:
@@ -20,6 +23,15 @@ class DownstreamUseFirewall:
     Consumer-side fail-closed firewall.
     Every governed downstream consumer MUST invoke this firewall before accepting evidence.
     """
+
+    @staticmethod
+    def assert_policy_resolution_allowed(resolution: PolicyResolutionResult) -> None:
+        """Enforces: Authority is blocked if policy resolution is not APPLICABLE (Section 24)."""
+        if resolution != PolicyResolutionResult.APPLICABLE:
+            raise DownstreamFirewallBlockedError(
+                f"DOWNSTREAM_FIREWALL_BLOCKED: Policy resolution '{resolution.value}' "
+                f"prohibits authority effectiveness."
+            )
 
     @staticmethod
     def assert_production_decision_allowed(status: AuthorityEffectiveStatus) -> None:

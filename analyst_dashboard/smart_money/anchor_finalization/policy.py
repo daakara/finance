@@ -8,12 +8,16 @@ import hashlib
 from typing import Dict, Any, Final
 
 # ---------------------------------------------------------------------------
-# Versioned Anchor Policy Epoch (Section 4)
+# Versioned Anchor Policy Epoch (Sections 4, 6)
 # ---------------------------------------------------------------------------
 ANCHOR_POLICY_ID: Final[str] = "SMART_MONEY_EXTERNAL_ANCHOR_POLICY_V1"
 ANCHOR_POLICY_VERSION: Final[str] = "1.0"
 ANCHOR_POLICY_EFFECTIVE_AT: Final[str] = "2026-10-11T12:00:00Z"
-ANCHOR_POLICY_EFFECTIVE_FROM_RUN_EPOCH: Final[str] = "EPOCH_001"
+ANCHOR_POLICY_MIN_RUN_EPOCH: Final[str] = "EPOCH_001"
+ANCHOR_POLICY_MIN_RUN_EPOCH_ORDINAL: Final[int] = 1
+# Preserved for backward compatibility
+ANCHOR_POLICY_EFFECTIVE_FROM_RUN_EPOCH: Final[str] = ANCHOR_POLICY_MIN_RUN_EPOCH
+
 ANCHOR_REQUIREMENT_APPLIES_RETROACTIVELY: Final[bool] = False
 RUNS_BEFORE_EFFECTIVE_POLICY: Final[str] = "GOVERNED_BY_PRIOR_POLICY"
 RUNS_AFTER_EFFECTIVE_POLICY: Final[str] = "ANCHOR_MANDATORY_FOR_AUTHORITY_EFFECTIVENESS"
@@ -25,6 +29,25 @@ AUTHORITY_EFFECTIVENESS_REQUIRES_ANCHOR: Final[bool] = True
 HUMAN_OVERRIDE_CAN_GRANT_AUTHORITY: Final[bool] = False
 PROVIDER_OUTAGE_CAN_DISABLE_ANCHOR_REQUIREMENT: Final[bool] = False
 PROVIDER_OUTAGE_CAN_LOWER_QUORUM: Final[bool] = False
+
+# Applicability & Boundary Rules (Sections 7, 8, 10, 11)
+ANCHOR_POLICY_APPLICABILITY_RULE: Final[str] = "ALL_PREDICATES_REQUIRED"
+RUN_STARTED_AT_DEFINITION: Final[str] = "TIMESTAMP_OF_IMMUTABLE_RUN_GENESIS_RECORD"
+RUN_START_EVENT: Final[str] = "RUN_GENESIS"
+RUN_STARTED_AT_MUTABLE: Final[bool] = False
+STRADDLES_BOUNDARY_POLICY: Final[str] = "POLICY_APPLICABILITY_INDETERMINATE"
+INDETERMINATE_POLICY_APPLICABILITY_CAN_GRANT_AUTHORITY: Final[bool] = False
+APPLICABLE_POLICY_COUNT_REQUIRED: Final[int] = 1
+MULTIPLE_APPLICABLE_POLICY_BEHAVIOR: Final[str] = "BLOCKED_CONFLICT"
+
+# Supersession, Revocation & Binding Invariants (Sections 13, 14, 15)
+NORMAL_POLICY_SUPERSESSION_REBINDS_EXISTING_RUN: Final[bool] = False
+NEW_RUNS_USE_NEW_APPLICABLE_POLICY: Final[bool] = True
+RUNS_ALREADY_BOUND_KEEP_ORIGINAL_POLICY: Final[bool] = True
+EMERGENCY_REVOCATION_REWRITES_ORIGINAL_BINDING: Final[bool] = False
+EMERGENCY_REVOCATION_CAN_BLOCK_AUTHORITY: Final[bool] = True
+POLICY_BINDING_IMMUTABLE: Final[bool] = True
+MID_RUN_POLICY_REBINDING: Final[str] = "PROHIBITED"
 
 # Run Identity Rules (Section 6)
 RUN_ID_REUSE_ALLOWED: Final[bool] = False
@@ -109,6 +132,27 @@ _RAW_POLICY_ARTIFACTS: Dict[str, str] = {
         "HASH: c32aacab8f5e7d309655720f99fb8a3952029960d2a5a263ae65c889194698f0\n"
         "REQUIRED_FIELDS: P_A_CODE,SHARES,PRICE,RELATIONSHIP\n"
     ),
+    "anchor_policy_registry_v1": (
+        "POLICY_REGISTRY_ID: ANCHOR_POLICY_REGISTRY_V1\n"
+        "VERSION: 1.0\n"
+        "APPEND_ONLY: TRUE\n"
+        "INTERVAL_RULE: HALF_OPEN_VALID_FROM_VALID_UNTIL\n"
+        "CANONICAL_POLICY: SMART_MONEY_EXTERNAL_ANCHOR_POLICY_V1\n"
+    ),
+    "epoch_registry_v1": (
+        "EPOCH_REGISTRY_ID: EPOCH_REGISTRY_V1\n"
+        "VERSION: 1.0\n"
+        "APPEND_ONLY: TRUE\n"
+        "MAPPING: EPOCH_001->1,EPOCH_002->2,EPOCH_003->3,EPOCH_004->4\n"
+    ),
+    "policy_resolution_contract_v1": (
+        "CONTRACT_ID: POLICY_RESOLUTION_CONTRACT_V1\n"
+        "VERSION: 1.0\n"
+        "APPLICABILITY_RULE: ALL_PREDICATES_REQUIRED\n"
+        "STRADDLE_RULE: INDETERMINATE_BOUNDARY_BLOCKED\n"
+        "EXACTLY_ONE_REQUIRED: TRUE\n"
+        "REBINDING: PROHIBITED\n"
+    ),
 }
 
 POLICY_ARTIFACT_REGISTRY: Dict[str, Dict[str, Any]] = {}
@@ -134,7 +178,7 @@ def get_policy_artifact(policy_id: str) -> Dict[str, Any]:
 
 
 def verify_all_policy_artifacts_retained() -> bool:
-    """Verifies that all 8 required policy artifacts are retained with valid SHA256 hashes."""
+    """Verifies that all required policy artifacts are retained with valid SHA256 hashes."""
     required = [
         "anchor_policy",
         "state_machine_policy",
@@ -144,6 +188,9 @@ def verify_all_policy_artifacts_retained() -> bool:
         "transport_classification_policy",
         "identity_policy",
         "decision_input_contract",
+        "anchor_policy_registry_v1",
+        "epoch_registry_v1",
+        "policy_resolution_contract_v1",
     ]
     for req in required:
         rec = get_policy_artifact(req)
