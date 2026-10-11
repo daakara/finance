@@ -1,0 +1,40 @@
+name: Smart Money Sigstore OIDC Qualification
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  qualify-sigstore-oidc:
+    name: Qualify Live Unattended Sigstore Workload Identity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Sigstore Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Verify Cosign Installation
+        run: cosign version
+
+      - name: Install Python Dependencies
+        run: pip install cryptography
+
+      - name: Execute Live Unattended Sigstore Qualification
+        run: python scripts/qualify_sigstore_oidc.py
+
+      - name: Upload Qualification Evidence Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigstore-workload-identity-qualification-artifacts
+          path: evidence/sigstore-workload-identity-qualification-v1/
+          retention-days: 14
