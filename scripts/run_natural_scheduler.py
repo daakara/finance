@@ -3,9 +3,14 @@
 ARX TERMINAL — SMART MONEY
 NATURAL SCHEDULER ORCHESTRATION ENGINE (EPOCH 001)
 
-Executes governed natural scheduler rooting in either:
-  1. DRY_RUN mode (qualification_scope: PRE_ARM_DRY_RUN, natural_accession: false)
-  2. NATURAL mode (when prospective arming is authorized)
+Executes governed natural scheduler rooting under strict fail-closed governance:
+  1. Loads and verifies frozen workload identity policy (no runtime self-ratification)
+  2. Enforces exact OIDC tuple verification
+  3. Hydrates durable state from checkpoint store
+  4. Requires a valid, unconsumed, unrevoked Gate-3 Pre-Arm Authorization artifact
+     for any natural execution. CLI input alone can NEVER activate natural path.
+  5. Defaults safely to PRE_ARM_DRY_RUN / SAFE_HOLD in absence of authorization
+  6. Checkpoints durable state across run boundaries
 """
 
 import argparse
@@ -24,6 +29,26 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+from analyst_dashboard.smart_money.public_availability.workload_identity_verifier import (
+    verify_workload_identity,
+)
+from analyst_dashboard.smart_money.public_availability.gate3_authorization import (
+    validate_gate3_authorization,
+)
+from analyst_dashboard.smart_money.public_availability.durable_state_manager import (
+    DurableStateManager,
+)
+
+FROZEN_POLICY_PINNED_HASH = "01dd7702246a9801bc88e0534accce4ad112f87acf22338a21afcda9348b7af7"
+FROZEN_POLICY_REL_PATH = os.path.join(
+    "docs",
+    "domain",
+    "radar",
+    "smart-money",
+    "public-availability",
+    "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json",
+)
+
 
 def canonicalize(data: Any) -> str:
     """Deterministic Canonical JSON RFC 8785 representation."""
@@ -33,6 +58,26 @@ def canonicalize(data: Any) -> str:
 def sha256_hex(content: bytes) -> str:
     """Computes hex-encoded SHA-256 digest."""
     return hashlib.sha256(content).hexdigest()
+
+
+def load_and_verify_frozen_policy() -> Dict[str, Any]:
+    """Loads and verifies that the frozen workload identity policy matches pinned digest."""
+    policy_path = os.path.join(PROJECT_ROOT, FROZEN_POLICY_REL_PATH)
+    if not os.path.exists(policy_path):
+        raise RuntimeError(f"CRITICAL: Frozen workload policy missing at {policy_path}")
+
+    with open(policy_path, "rb") as f:
+        content = f.read()
+
+    digest = sha256_hex(content)
+    if digest != FROZEN_POLICY_PINNED_HASH:
+        raise RuntimeError(
+            f"CRITICAL: Policy hash mismatch! Observed {digest}, pinned {FROZEN_POLICY_PINNED_HASH}. "
+            "Runtime policy mutation is strictly prohibited."
+        )
+
+    print(f"Frozen workload policy verified (SHA-256: {digest})")
+    return json.loads(content.decode("utf-8"))
 
 
 def extract_safe_oidc_claims() -> Dict[str, Any]:
@@ -150,15 +195,16 @@ def execute_cosign_signing(payload_path: str, bundle_path: str) -> None:
     print(f"Generated {bundle_path}")
 
 
-def execute_cosign_verification(payload_path: str, bundle_path: str, identity_pattern: str, issuer: str) -> None:
-    """Executes cosign verify-blob."""
+def execute_cosign_verification(payload_path: str, bundle_path: str, expected_workflow_ref: str, issuer: str) -> None:
+    """Executes cosign verify-blob with exact certificate identity."""
+    expected_identity_regex = f"^https://github\.com/{expected_workflow_ref}$"
     cmd = [
         "cosign",
         "verify-blob",
         "--bundle",
         bundle_path,
         "--certificate-identity-regexp",
-        identity_pattern,
+        expected_identity_regex,
         "--certificate-oidc-issuer",
         issuer,
         payload_path,
@@ -174,96 +220,101 @@ def execute_cosign_verification(payload_path: str, bundle_path: str, identity_pa
 
 def main():
     parser = argparse.ArgumentParser(description="Smart Money Natural Scheduler Engine")
-    parser.add_argument("--mode", choices=["dry-run", "natural"], default="dry-run", help="Execution mode")
+    parser.add_argument("--mode", choices=["dry-run", "natural"], default="dry-run", help="Requested mode (CLI-only)")
+    parser.add_argument("--authorization-path", default=None, help="Path to Gate-3 Pre-Arm Authorization artifact")
+    parser.add_argument("--state-dir", default=os.path.join(PROJECT_ROOT, "durable_state"), help="Durable state directory")
     args = parser.parse_args()
 
     print("======================================================================")
-    print(f"SMART MONEY NATURAL SCHEDULER EXECUTION (MODE: {args.mode.upper()})")
+    print("SMART MONEY GOVERNED NATURAL SCHEDULER EXECUTION")
     print("======================================================================")
 
     evidence_dir = os.path.join(PROJECT_ROOT, "evidence", "sigstore-natural-scheduler-dry-run-v1")
     os.makedirs(evidence_dir, exist_ok=True)
 
-    # 1. Acquire OIDC Token and Safe Claims
-    print("\n--- STEP 1: Acquiring OIDC token and extracting safe claims ---")
+    # 1. Load and Verify Frozen Policy (Trust Direction: FROZEN_POLICY -> LOAD -> VERIFY)
+    print("\n--- STEP 1: Loading and verifying frozen workload identity policy ---")
+    frozen_policy = load_and_verify_frozen_policy()
+
+    # 2. Rehydrate Durable State
+    print("\n--- STEP 2: Rehydrating durable state ---")
+    state_mgr = DurableStateManager(args.state_dir)
+    hydrated_ok, hydrate_msg = state_mgr.hydrate_state()
+    if not hydrated_ok:
+        raise RuntimeError(f"CRITICAL: State rehydration failed: {hydrate_msg}")
+    print(f"Durable state status: {hydrate_msg}")
+
+    # 3. Acquire Ambient OIDC Token and Extract Safe Claims
+    print("\n--- STEP 3: Acquiring OIDC token and extracting safe claims ---")
     safe_claims = extract_safe_oidc_claims()
     print("Safe claims:")
     for k, v in safe_claims.items():
         if k not in ["exp", "nbf"]:
             print(f"  {k}: {v}")
 
+    # 4. Enforce Exact Workload Identity Verification
+    print("\n--- STEP 4: Enforcing exact workload identity verification ---")
+    identity_ok, identity_msg = verify_workload_identity(safe_claims, frozen_policy)
+    if not identity_ok:
+        raise RuntimeError(f"CRITICAL: Workload identity verification failed: {identity_msg}")
+    print(f"Workload identity verification: {identity_msg}")
+
     claims_path = os.path.join(evidence_dir, "natural_safe_oidc_claims.json")
     with open(claims_path, "w", encoding="utf-8") as f:
         json.dump(safe_claims, f, indent=2, sort_keys=True)
 
-    # 2. Ratify Natural Workload Identity Policy
-    print("\n--- STEP 2: Freezing natural workload identity policy ---")
-    natural_policy = {
-        "policy_id": "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1",
-        "version": "1.0.0",
-        "effective_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "governing_epoch": "EPOCH_001",
-        "status": "RATIFIED",
-        "workload_identity_constraints": {
-            "authorized_issuer": safe_claims["iss"],
-            "authorized_repository": safe_claims["repository"],
-            "authorized_repository_id": safe_claims["repository_id"],
-            "authorized_repository_owner": safe_claims["repository_owner"],
-            "authorized_repository_owner_id": safe_claims["repository_owner_id"],
-            "authorized_workflow": safe_claims["workflow"],
-            "authorized_job_workflow_ref": safe_claims["job_workflow_ref"],
-            "authorized_ref": safe_claims["ref"],
-            "authorized_audience": "sigstore",
-            "authorized_environment": safe_claims["environment"] or "NONE",
-            "authorized_event": safe_claims["event_name"],
-            "maximum_token_lifetime_seconds": 600,
-            "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN",
-        },
-        "governance_rules": {
-            "static_signing_private_key_prohibited": True,
-            "long_lived_token_prohibited": True,
-            "personal_access_token_prohibited": True,
-            "token_disk_persistence_prohibited": True,
-            "token_logging_prohibited": True,
-            "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
-        },
-    }
-    policy_path = os.path.join(evidence_dir, "natural_workload_policy.json")
-    with open(policy_path, "w", encoding="utf-8") as f:
-        json.dump(natural_policy, f, indent=2, sort_keys=True)
-
-    # Also write to docs
-    doc_policy_dir = os.path.join(
-        PROJECT_ROOT,
-        "docs",
-        "domain",
-        "radar",
-        "smart-money",
-        "public-availability",
+    # 5. Evaluate Gate-3 Pre-Arm Authorization
+    print("\n--- STEP 5: Evaluating Gate-3 Pre-Arm Authorization ---")
+    active_auth_path = args.authorization_path or os.path.join(
+        PROJECT_ROOT, "evidence", "gate3_authorizations", "active_authorization.json"
     )
-    os.makedirs(doc_policy_dir, exist_ok=True)
-    doc_policy_path = os.path.join(
-        doc_policy_dir,
-        "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json",
-    )
-    with open(doc_policy_path, "w", encoding="utf-8") as f:
-        json.dump(natural_policy, f, indent=2, sort_keys=True)
 
-    # 3. Construct Canonical TEST_ONLY R1 Payload
-    print("\n--- STEP 3: Constructing canonical R1 payload ---")
+    execution_scope = "PRE_ARM_DRY_RUN"
+    is_natural_accession = False
+    is_prod_authority = False
+    is_natural_authority = False
+    auth_grant_func = "NONE"
+
+    if os.path.exists(active_auth_path):
+        print(f"Found candidate Gate-3 authorization artifact at {active_auth_path}")
+        with open(active_auth_path, "r", encoding="utf-8") as af:
+            auth_doc = json.load(af)
+
+        auth_valid, auth_msg = validate_gate3_authorization(
+            auth_doc,
+            consumed_auth_ids=state_mgr.consumed_authorizations,
+        )
+        if auth_valid:
+            print("Gate-3 Pre-Arm Authorization VALID -> Transitioning to NATURAL_AUTHORIZED")
+            execution_scope = "NATURAL_AUTHORIZED"
+            is_natural_accession = True
+            is_prod_authority = True
+            is_natural_authority = True
+            auth_grant_func = "NATURAL_ACCESSION_AUTHORITY_GRANT"
+            state_mgr.consume_authorization(auth_doc["authorization_id"])
+        else:
+            print(f"Gate-3 authorization invalid ({auth_msg}) -> Failing closed to PRE_ARM_DRY_RUN")
+    else:
+        print("No Gate-3 authorization artifact present -> Defaulting safely to PRE_ARM_DRY_RUN")
+        if args.mode == "natural":
+            print("WARNING: CLI requested --mode natural but no valid Gate-3 authorization exists.")
+            print("CLI input alone CANNOT activate natural path. Remaining in PRE_ARM_DRY_RUN.")
+
+    # 6. Construct Canonical R1 Payload
+    print(f"\n--- STEP 6: Constructing canonical R1 payload (Scope: {execution_scope}) ---")
     now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
     run_id = f"natural_scheduler_dry_run_{safe_claims.get('run_id', '1')}"
-    root_seed = f"NATURAL_DRY_RUN_R1_SEED_{run_id}_{now_utc}"
+    root_seed = f"NATURAL_R1_SEED_{run_id}_{now_utc}_{execution_scope}"
     r1_root_hash = sha256_hex(root_seed.encode("utf-8"))
 
     r1_payload_core = {
         "authority_effective_status": "BLOCKED_PENDING_EXTERNAL_WITNESS",
         "canonicalization_version": "CANONICAL_JSON_V1",
         "created_at_utc": now_utc,
-        "natural_accession": False,
+        "natural_accession": is_natural_accession,
         "phase": "PRE_AUTHORITY_ADMISSION_ROOT",
-        "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
-        "qualification_scope": "PRE_ARM_DRY_RUN",
+        "policy_set_hash": FROZEN_POLICY_PINNED_HASH,
+        "qualification_scope": execution_scope,
         "root_algorithm_version": "1.0.0",
         "root_hash": r1_root_hash,
         "root_phase": "PRE_AUTHORITY_ADMISSION_ROOT",
@@ -278,29 +329,29 @@ def main():
     with open(r1_payload_path, "w", encoding="utf-8") as f:
         f.write(r1_final_canon)
 
-    # 4. Live Sigstore Signing of R1
-    print("\n--- STEP 4: Live Sigstore keyless signing of R1 ---")
+    # 7. Live Sigstore Signing of R1
+    print("\n--- STEP 7: Live Sigstore keyless signing of R1 ---")
     r1_bundle_path = os.path.join(evidence_dir, "natural_r1.sigstore.json")
     execute_cosign_signing(r1_payload_path, r1_bundle_path)
 
-    expected_identity_re = f".*{safe_claims['repository']}.*"
-    execute_cosign_verification(r1_payload_path, r1_bundle_path, expected_identity_re, safe_claims["iss"])
+    expected_wf_ref = safe_claims["job_workflow_ref"]
+    execute_cosign_verification(r1_payload_path, r1_bundle_path, expected_wf_ref, safe_claims["iss"])
 
     r1_meta = parse_bundle(r1_bundle_path)
     print(f"R1 Bundle SHA-256: {r1_meta['bundle_sha256']}")
     print(f"R1 Rekor Log Index: {r1_meta['log_index']}")
 
-    # 5. Create TEST_ONLY Authority Event
-    print("\n--- STEP 5: Creating TEST_ONLY authority event ---")
+    # 8. Create Authority Event
+    print("\n--- STEP 8: Creating authority event ---")
     auth_now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
     authority_event = {
         "authoritative_r1_witness_identity": r1_meta["bundle_sha256"],
-        "authority_event_scope": "PRE_ARM_DRY_RUN",
+        "authority_event_scope": execution_scope,
         "canonicalization_version": "CANONICAL_JSON_V1",
         "created_at_utc": auth_now_utc,
-        "natural_accession_authority_granted": False,
-        "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
-        "production_authority_granted": False,
+        "natural_accession_authority_granted": is_natural_authority,
+        "policy_set_hash": FROZEN_POLICY_PINNED_HASH,
+        "production_authority_granted": is_prod_authority,
         "r1_bundle_sha256": r1_meta["bundle_sha256"],
         "r1_root_hash": r1_root_hash,
         "run_id": run_id,
@@ -316,22 +367,22 @@ def main():
     auth_event_hash = sha256_hex(auth_event_canon.encode("utf-8"))
     print(f"Authority Event SHA-256: {auth_event_hash}")
 
-    # 6. Construct Canonical TEST_ONLY R2 Payload
-    print("\n--- STEP 6: Constructing canonical R2 payload ---")
+    # 9. Construct Canonical R2 Payload
+    print(f"\n--- STEP 9: Constructing canonical R2 payload (Scope: {execution_scope}) ---")
     r2_now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    r2_root_seed = f"NATURAL_DRY_RUN_R2_SEED_{run_id}_{r2_now_utc}"
+    r2_root_seed = f"NATURAL_R2_SEED_{run_id}_{r2_now_utc}_{execution_scope}"
     r2_root_hash = sha256_hex(r2_root_seed.encode("utf-8"))
 
     r2_payload_core = {
         "authoritative_r1_witness_identity": r1_meta["bundle_sha256"],
         "authority_event_hash": auth_event_hash,
         "authority_event_sequence": 1,
-        "authority_grant_function": "NONE",
+        "authority_grant_function": auth_grant_func,
         "canonicalization_version": "CANONICAL_JSON_V1",
         "created_at_utc": r2_now_utc,
         "phase": "POST_AUTHORITY_CLOSURE_ROOT",
-        "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
-        "qualification_scope": "PRE_ARM_DRY_RUN",
+        "policy_set_hash": FROZEN_POLICY_PINNED_HASH,
+        "qualification_scope": execution_scope,
         "r1_bundle_hash": r1_meta["bundle_sha256"],
         "r1_bundle_sha256": r1_meta["bundle_sha256"],
         "r1_root_hash": r1_root_hash,
@@ -349,39 +400,50 @@ def main():
     with open(r2_payload_path, "w", encoding="utf-8") as f:
         f.write(r2_final_canon)
 
-    # 7. Live Sigstore Signing of R2
-    print("\n--- STEP 7: Live Sigstore keyless signing of R2 ---")
+    # 10. Live Sigstore Signing of R2
+    print("\n--- STEP 10: Live Sigstore keyless signing of R2 ---")
     r2_bundle_path = os.path.join(evidence_dir, "natural_r2.sigstore.json")
     execute_cosign_signing(r2_payload_path, r2_bundle_path)
 
-    execute_cosign_verification(r2_payload_path, r2_bundle_path, expected_identity_re, safe_claims["iss"])
+    execute_cosign_verification(r2_payload_path, r2_bundle_path, expected_wf_ref, safe_claims["iss"])
     r2_meta = parse_bundle(r2_bundle_path)
     print(f"R2 Bundle SHA-256: {r2_meta['bundle_sha256']}")
     print(f"R2 Rekor Log Index: {r2_meta['log_index']}")
 
-    # 8. Cryptographic Bindings & Policy Match
-    print("\n--- STEP 8: Validating bindings and policy match ---")
+    # 11. Validating Cryptographic Bindings
+    print("\n--- STEP 11: Validating bindings and signer continuity ---")
     assert r2_payload_core["authoritative_r1_witness_identity"] == r1_meta["bundle_sha256"]
     assert r2_payload_core["authority_event_hash"] == auth_event_hash
     assert r1_meta["san_uri"] == r2_meta["san_uri"]
     print("Bindings & Signer Continuity: PASS")
 
-    # Policy match verification
-    assert safe_claims["repository"] == "daakara/finance"
-    assert safe_claims["repository_id"] == "1087399232"
-    assert safe_claims["repository_owner_id"] == "53128824"
-    assert safe_claims["iss"] == "https://token.actions.githubusercontent.com"
-    print("Policy Match Verification: PASS")
+    # 12. Update Durable State and Checkpoint
+    print("\n--- STEP 12: Checkpointing durable state ---")
+    state_mgr.observer_state["last_completed_run_id"] = run_id
+    state_mgr.observer_state["current_status"] = "PRE_OBSERVATION_READY"
+    state_mgr.closure_state["confirmed_closures"][run_id] = {
+        "r1_bundle_sha256": r1_meta["bundle_sha256"],
+        "r2_bundle_sha256": r2_meta["bundle_sha256"],
+        "authority_event_hash": auth_event_hash,
+        "execution_scope": execution_scope,
+        "completed_at_utc": now_utc,
+    }
 
-    # 9. Execution Summary
+    chk_ok, chk_sha, chk_msg = state_mgr.checkpoint_state()
+    if not chk_ok:
+        raise RuntimeError(f"CRITICAL: Durable state checkpoint failed: {chk_msg}")
+    print(f"Durable state checkpoint created: {chk_msg} (SHA-256: {chk_sha})")
+
+    # 13. Execution Summary
     summary = {
-        "gate": "GATE_2_NATURAL_SCHEDULER_IDENTITY_CLOSURE",
-        "execution_mode": args.mode,
+        "gate": "SMART_MONEY_FINAL_STRUCTURAL_PRODUCTIONIZATION_CLOSURE_V1",
+        "execution_scope": execution_scope,
         "timestamp_utc": now_utc,
+        "frozen_policy_pinned_hash": FROZEN_POLICY_PINNED_HASH,
+        "frozen_policy_hash_match": "PASS",
+        "exact_oidc_policy_match": "PASS",
         "natural_scheduler_r1": "PASS",
         "natural_scheduler_r2": "PASS",
-        "natural_scheduler_policy_match": "PASS",
-        "natural_scheduler_dry_run": "PASS",
         "human_signing_interaction": 0,
         "long_lived_signing_secret": "NONE",
         "r1_bundle_sha256": r1_meta["bundle_sha256"],
@@ -389,13 +451,16 @@ def main():
         "r2_bundle_sha256": r2_meta["bundle_sha256"],
         "r2_rekor_log_index": r2_meta["log_index"],
         "authority_event_hash": auth_event_hash,
+        "durable_state_checkpoint_sha256": chk_sha,
+        "natural_accession": is_natural_accession,
+        "natural_denominator_increment": 0,
         "claims": safe_claims,
     }
     summary_path = os.path.join(evidence_dir, "natural_dry_run_summary.json")
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, sort_keys=True)
 
-    # 10. Build Manifest
+    # 14. Build Evidence Manifest
     manifest_entries = []
     for item in sorted(os.listdir(evidence_dir)):
         if item.endswith("_MANIFEST_V1.json"):
@@ -413,7 +478,7 @@ def main():
     manifest_doc = {
         "manifest_version": "1.0.0",
         "generated_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "gate": "GATE_2_NATURAL_SCHEDULER_IDENTITY_CLOSURE",
+        "gate": "SMART_MONEY_FINAL_STRUCTURAL_PRODUCTIONIZATION_CLOSURE_V1",
         "artifact_count": len(manifest_entries),
         "artifacts": manifest_entries,
     }
@@ -426,7 +491,7 @@ def main():
         json.dump(manifest_doc, f, indent=2, sort_keys=True)
 
     print(f"Manifest created: {manifest_path} (SHA-256: {manifest_sha})")
-    print("NATURAL SCHEDULER DRY RUN COMPLETED SUCCESSFULLY")
+    print("NATURAL SCHEDULER EXECUTION COMPLETED SUCCESSFULLY")
 
 
 if __name__ == "__main__":

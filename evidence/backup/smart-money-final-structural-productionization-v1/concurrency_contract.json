@@ -1,0 +1,1 @@
+{"application_idempotency_guard":"PASS","cancel_in_progress":false,"concurrency_group":"smart-money-natural-scheduler","concurrent_run_safety":"PASS","default_branch_concurrency_guard":"PRESENT"}

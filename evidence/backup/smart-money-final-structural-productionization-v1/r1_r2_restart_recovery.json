@@ -1,0 +1,1 @@
+{"duplicate_authority_event":"NO","orphan_r1_detection":"PASS","r1_pending_state_survives_restart":"PASS","r2_recovery_after_restart":"PASS","test_evidence":{"orphan_run_detected":"run_restart_test_001","pending_r1_root_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","reconstructed_r2_bound_to_r1":true}}

@@ -29,10 +29,10 @@ jobs:
     name: Execute Governed Smart Money Rooting Scheduler
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 2. Set up Python runtime
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -46,12 +46,55 @@ jobs:
       - name: Install Python Dependencies
         run: pip install cryptography
 
-      - name: Execute Governed Natural Scheduler
+      - name: 3. Restore Durable State Cache
+        uses: actions/cache/restore@v4
+        id: restore-state
+        with:
+          path: durable_state/
+          key: smart-money-durable-state-${{ github.run_id }}
+          restore-keys: |
+            smart-money-durable-state-
+
+      - name: 4. Verify Restored State Integrity
+        run: |
+          python -c "
+          import os, sys
+          from analyst_dashboard.smart_money.public_availability.durable_state_manager import DurableStateManager
+          mgr = DurableStateManager('durable_state')
+          ok, msg = mgr.hydrate_state()
+          print(f'State Rehydration Verification: {msg}')
+          if not ok:
+              sys.exit(1)
+          "
+
+      - name: 5. Execute Governed Natural Scheduler
         run: python scripts/run_natural_scheduler.py --mode ${{ github.event.inputs.mode || 'dry-run' }}
 
-      - name: Upload Natural Scheduler Evidence Artifacts
+      - name: 6. Verify Checkpoint Result
+        run: |
+          python -c "
+          import os, sys, json
+          manifest_path = os.path.join('durable_state', 'DURABLE_STATE_MANIFEST.json')
+          if not os.path.exists(manifest_path):
+              print('CRITICAL: Durable state manifest missing after execution')
+              sys.exit(1)
+          with open(manifest_path, 'r') as f:
+              m = json.load(f)
+          print(f'Checkpoint Verified OK: {m.get(\"manifest_sha256\")} ({m.get(\"artifact_count\")} artifacts)')
+          "
+
+      - name: 7. Save Durable State Cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: durable_state/
+          key: smart-money-durable-state-${{ github.run_id }}
+
+      - name: 8. Upload Natural Scheduler Evidence Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: sigstore-natural-scheduler-dry-run-artifacts
-          path: evidence/sigstore-natural-scheduler-dry-run-v1/
+          path: |
+            evidence/sigstore-natural-scheduler-dry-run-v1/
+            durable_state/
           retention-days: 14
