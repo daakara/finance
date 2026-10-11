@@ -1,0 +1,46 @@
+name: Smart Money Rooting Scheduler
+
+"on":
+  workflow_dispatch:
+  schedule:
+    # Runs during SEC EDGAR business hours (Monday-Friday, 10:00 to 22:00 UTC)
+    - cron: '0 10-22/2 * * 1-5'
+  push:
+    branches:
+      - arx/sigstore-workload-identity-qualification
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  natural-rooting-scheduler:
+    name: Execute Governed Smart Money Rooting Scheduler
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Sigstore Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Verify Cosign Installation
+        run: cosign version
+
+      - name: Install Python Dependencies
+        run: pip install cryptography
+
+      - name: Execute Governed Natural Scheduler
+        run: python scripts/run_natural_scheduler.py --mode dry-run
+
+      - name: Upload Natural Scheduler Evidence Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigstore-natural-scheduler-dry-run-artifacts
+          path: evidence/sigstore-natural-scheduler-dry-run-v1/
+          retention-days: 14
