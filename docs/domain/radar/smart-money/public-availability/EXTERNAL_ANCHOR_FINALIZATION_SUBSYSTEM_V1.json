@@ -1,0 +1,130 @@
+{
+  "gate": "EXTERNAL_ANCHOR_FINALIZATION_SUBSYSTEM_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "3714b3119162d54b0260e656089695069457c726",
+  "functional_commit_sha": "46b5a3cef11e2cb84f9acf1b0f0e7f073e3d4672",
+  "policy_epoch": {
+    "anchor_policy_id": "SMART_MONEY_EXTERNAL_ANCHOR_POLICY_V1",
+    "anchor_policy_version": "1.0",
+    "anchor_policy_effective_at": "2026-10-11T12:00:00Z",
+    "anchor_policy_effective_from_run_epoch": "EPOCH_001",
+    "anchor_requirement_applies_retroactively": false,
+    "runs_before_effective_policy": "GOVERNED_BY_PRIOR_POLICY",
+    "runs_after_effective_policy": "ANCHOR_MANDATORY_FOR_AUTHORITY_EFFECTIVENESS",
+    "external_anchor_required": true,
+    "authority_eligibility_can_exist_without_anchor": true,
+    "authority_effectiveness_requires_anchor": true,
+    "human_override_can_grant_authority": false,
+    "provider_outage_can_disable_anchor_requirement": false,
+    "provider_outage_can_lower_quorum": false
+  },
+  "quorum": {
+    "anchor_provider_count": 2,
+    "anchor_required_count": 2,
+    "anchor_quorum_policy": "ALL_REQUIRED",
+    "dual_anchor_independence": "PASS",
+    "provider_a": {
+      "provider_id": "AWS_S3_OBJECT_LOCK",
+      "credential_domain": "AWS_IAM_ROLE_ARX_ANCHOR_A",
+      "key_domain": "AWS_KMS_KEY_ARX_ANCHOR_A",
+      "admin_domain": "AWS_ACCOUNT_SECURITY_ORG_A",
+      "write_authority": "PUT_OBJECT_LEGAL_HOLD_WORM"
+    },
+    "provider_b": {
+      "provider_id": "GCP_CLOUD_STORAGE_LOCK",
+      "credential_domain": "GCP_SERVICE_ACCOUNT_ARX_ANCHOR_B",
+      "key_domain": "GCP_KMS_KEY_ARX_ANCHOR_B",
+      "admin_domain": "GCP_PROJECT_SECURITY_ORG_B",
+      "write_authority": "INSERT_OBJECT_RETENTION_LOCK"
+    }
+  },
+  "run_identity_and_payload": {
+    "run_id_reuse_allowed": false,
+    "aborted_run_restart": "NEW_RUN_ID",
+    "same_run_different_final_hash": "CRITICAL_INTEGRITY_CONFLICT",
+    "anchor_payload_schema_version": "1.0",
+    "canonical_serialization_version": "1.0",
+    "anchor_idempotency_key_policy": "PASS",
+    "same_idempotency_key_different_payload": "CRITICAL_INTEGRITY_FAILURE"
+  },
+  "state_machine_and_ledgers": {
+    "finalization_state_machine_status": "PASS",
+    "finalization_ledger_append_only": true,
+    "finalization_ledger_atomicity": "PASS",
+    "finalization_event_sequence_authority": "SERIALIZABLE_COORDINATOR",
+    "attempt_ledger_status": "PASS",
+    "ambiguous_commit_result_policy": "QUERY_EXISTING_ANCHOR_BEFORE_RETRY",
+    "ambiguous_commit_recovery_status": "PASS",
+    "anchor_receipt_verification_status": "PASS"
+  },
+  "storage_attestation": {
+    "object_lock_enabled": true,
+    "versioning_enabled": true,
+    "retention_mode": "COMPLIANCE",
+    "delete_protection": true,
+    "overwrite_protection": true,
+    "anchor_storage_configuration_attestation": "PASS",
+    "anchor_storage_immutability_class": "PROVIDER_ENFORCED_RETENTION",
+    "anchor_storage_trust_assumption": "PROVIDER_CONTROL_PLANE_NOT_COMPROMISED"
+  },
+  "downstream_firewall": {
+    "downstream_blocking_test_status": "PASS",
+    "unauthorized_downstream_acceptances": 0
+  },
+  "recovery_and_resilience": {
+    "late_anchor_recovery_policy": "PASS",
+    "retroactive_authorization": false,
+    "late_anchor_can_retroactively_authorize_prior_decisions": false,
+    "crash_recovery_status": "PASS",
+    "conflict_detection_status": "PASS",
+    "missed_conflicts": 0,
+    "authority_backdating_detected": 0
+  },
+  "policy_retention": {
+    "policy_artifact_retention_status": "PASS",
+    "retained_policy_count": 8
+  },
+  "reviewer_reconstruction": {
+    "independent_reviewer_reconstruction": "PASS",
+    "run_final_hash_parity": "PASS",
+    "anchor_payload_hash_parity": "PASS",
+    "attempt_ledger_complete": "PASS",
+    "idempotency_continuity": "PASS",
+    "receipt_verification": "PASS",
+    "anchor_quorum_verification": "PASS",
+    "finalization_ledger_hash_chain": "PASS",
+    "authority_timing_reconstruction": "PASS",
+    "downstream_firewall_reconstruction": "PASS",
+    "unexplained_finalization_events": 0
+  },
+  "verification_suite": {
+    "targeted_anchor_finalization_tests_executed": 25,
+    "targeted_anchor_finalization_tests_passed": 25,
+    "governed_regression_tests_executed": 117,
+    "governed_regression_tests_passed": 117,
+    "aggregate_smart_money_tests_passed": 142,
+    "test_failures": 0,
+    "test_skips": 0
+  },
+  "current_authority_state": {
+    "current_public_availability_time_authority": "NOT_ESTABLISHED",
+    "current_public_availability_authority_scope": "NONE",
+    "current_smart_money_discovery_authority": "BOUNDED_STABLE",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "production_readiness": "NOT_AUTHORIZED",
+    "external_anchor_finalization_subsystem_status": "VERIFIED"
+  },
+  "firewall_and_governance": {
+    "protected_files_changed": 0,
+    "shadow_evidence_db_writes": 0,
+    "candidate_004_interference": "NONE",
+    "remote_push": false,
+    "main_merge": false,
+    "production_deployment": false,
+    "worktree_clean": true
+  },
+  "next_action": "USE_THIS_SUBSYSTEM_DURING_NEXT_VALID_NATURAL_EDGAR_CAPTURE"
+}
