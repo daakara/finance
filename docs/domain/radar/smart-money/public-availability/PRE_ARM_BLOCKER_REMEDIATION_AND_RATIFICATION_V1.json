@@ -1,0 +1,184 @@
+{
+  "gate": "PRE_ARM_BLOCKER_REMEDIATION_AND_RATIFICATION_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "8116a9a7d95cf2186499b4261774d7b6fec3abe4",
+  "roles": [
+    "Independent Pre-Arm Governance Auditor",
+    "Live External Custody Qualification Auditor",
+    "Independent Clock Authority Auditor",
+    "R2 Closure Policy Auditor",
+    "SEC Operational Preflight Auditor",
+    "Candidate 004 Firewall Authority"
+  ],
+  "operating_mode": [
+    "FAIL_CLOSED",
+    "LIVE_INFRASTRUCTURE",
+    "NON_NATURAL_QUALIFICATION_ONLY",
+    "NO_SYNTHETIC_DENOMINATOR_CONTAMINATION",
+    "NO_PRODUCTION_AUTHORITY",
+    "NO_NATURAL_CAPTURE",
+    "NO_PUSH",
+    "NO_MERGE",
+    "NO_DEPLOY"
+  ],
+  "clock_remediation": {
+    "status": "INCOMPLETE",
+    "windows_time_service_status": "Stopped",
+    "windows_time_service_start_type": "Manual",
+    "windows_time_service_running": false,
+    "windows_time_source": null,
+    "windows_time_last_sync": null,
+    "windows_time_stratum": 0
+  },
+  "independent_clock_remeasurement": {
+    "captured_at": "2026-10-11T14:15:04.571082+00:00",
+    "source_count": 4,
+    "sources": [
+      "time.google.com",
+      "time.cloudflare.com",
+      "time.windows.com",
+      "pool.ntp.org"
+    ],
+    "observed_offset_ms": 8919.302,
+    "measurement_uncertainty_ms": 22.485,
+    "network_asymmetry_allowance_ms": 10.0,
+    "other_error_allowance_ms": 5.0,
+    "total_bound_ms": 8956.787,
+    "clock_status": "UNTRUSTED",
+    "within_policy": false,
+    "raw_evidence_sha256": "36c82fb1b0ac709b48614ee8196f26db5d3b12bfac2b1fa60376059e4857647f",
+    "samples": [
+      {
+        "server": "time.google.com",
+        "stratum": 1,
+        "offset_ms": 8921.972,
+        "rtt_ms": 44.971,
+        "uncertainty_ms": 22.485,
+        "captured_at_utc": "2026-10-11T14:15:04.571082+00:00",
+        "raw_packet_hex": "1c0100ec0000000000000006474f4f47ee76187183fa6e260000000000000000ee76187183fa6e27ee76187183fa6e29"
+      },
+      {
+        "server": "time.cloudflare.com",
+        "stratum": 3,
+        "offset_ms": 8918.113,
+        "rtt_ms": 26.999,
+        "uncertainty_ms": 13.5,
+        "captured_at_utc": "2026-10-11T14:15:04.616053+00:00",
+        "raw_packet_hex": "1c0300e700000263000000090a300990ee7618505a01afe10000000000000000ee7618718c33d4bdee7618718c39b158"
+      },
+      {
+        "server": "time.windows.com",
+        "stratum": 4,
+        "offset_ms": 8918.617,
+        "rtt_ms": 32.885,
+        "uncertainty_ms": 16.443,
+        "captured_at_utc": "2026-10-11T14:15:04.644144+00:00",
+        "raw_packet_hex": "1c0400e9000000040000029a564d5450ee761863604ef6de0000000000000000ee7618719446bba6ee7618719446ce1a"
+      },
+      {
+        "server": "pool.ntp.org",
+        "stratum": 4,
+        "offset_ms": 8919.986,
+        "rtt_ms": 33.306,
+        "uncertainty_ms": 16.653,
+        "captured_at_utc": "2026-10-11T14:15:04.677030+00:00",
+        "raw_packet_hex": "1c0400e30000026000000018cfc5577cee76179b10d8ea150000000000000000ee7618719d197107ee7618719d1fab4e"
+      }
+    ]
+  },
+  "clock_threshold_provenance": {
+    "synchronized_threshold_ms": 100.0,
+    "degraded_threshold_ms": 500.0,
+    "policy_artifact_id": "clock_policy / PUBLIC_AVAILABILITY_CLOCK_AUTHORITY_CONTRACT",
+    "policy_sha256": "02e3ec5107e46d3796ec5b73d8de088d4f4882c7ea7074013432b139552a51c5",
+    "previously_ratified": true
+  },
+  "external_custodian_onboarding": {
+    "decision": "STILL_DEFERRED",
+    "authorization_artifact_id": null,
+    "authorization_artifact_sha256": null,
+    "authorized_at": null,
+    "live_external_custody": "NOT_ESTABLISHED"
+  },
+  "live_provider_qualification": {
+    "status": "NOT_EXECUTED",
+    "reason": "EXTERNAL_CUSTODIAN_ONBOARDING_STILL_DEFERRED",
+    "credentials_present": false,
+    "caller_identity_available": false,
+    "resource_identity": "NOT_EXECUTED",
+    "capability_separation": "NOT_EXECUTED",
+    "object_lock_configuration": "NOT_EXECUTED",
+    "r1_qualification": "NOT_EXECUTED",
+    "r2_qualification": "NOT_EXECUTED"
+  },
+  "r2_closure_delay_policy": {
+    "max_delay_seconds": 300.0,
+    "source": "IMPLEMENTATION_DEFAULT_ONLY",
+    "justification_status": "DOCUMENTED",
+    "ratification_status": "FAIL",
+    "production_policy_ratification": "BLOCKED",
+    "pre_arm_status": "PASSABLE",
+    "empirical_synthetic_lifecycle_ms": {
+      "p50": 1.040,
+      "p95": 1.683,
+      "p99": 4.343,
+      "max": 11.664
+    },
+    "risk_budget_components": [
+      "AWS S3 write latency (50-200ms)",
+      "AWS KMS Sign latency (20-50ms)",
+      "Exponential backoff retry budget (3 attempts with jitter, up to 30s)",
+      "Ambiguous-commit recovery query latency (50-200ms)",
+      "Host local processing latency (~15ms)",
+      "Conservative clock uncertainty (up to 500ms)",
+      "Operational WAN safety margin (~268s)"
+    ]
+  },
+  "sec_operational_preflight": {
+    "captured_at": "2026-10-11T14:17:23.733031+00:00",
+    "sec_business_day": false,
+    "sec_active_filing_window": false,
+    "sec_automated_access_policy_current": true,
+    "sec_user_agent_policy_compliant": true,
+    "sec_rate_limit_policy_compliant": true,
+    "sec_metadata_endpoint_reachable": true,
+    "sec_content_endpoint_reachable": true,
+    "sec_date_header": "Sun, 11 Oct 2026 14:17:32 GMT",
+    "operational_preflight_passed": false,
+    "evidence_sha256": "62a19fa74a862762739dcb1bc09084f60da34736360a5002dbb46b163a8ec4c2",
+    "next_eligible_edgar_day": "2026-10-13",
+    "columbus_day_closed": true,
+    "next_eligible_recheck_condition": "AWAIT_NEXT_SEC_BUSINESS_DAY (Earliest: 2026-10-13 06:00:00 ET)"
+  },
+  "natural_denominator_check": {
+    "natural_accessions_captured": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "qualification_objects_in_natural_denominator": 0,
+    "contamination": "NONE"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "interference": "NONE"
+  },
+  "test_execution": {
+    "targeted_qualification_tests": "18 / 18 PASS",
+    "selected_smart_money_regression_tests": "112 / 112 PASS",
+    "full_repository_status": "NOT_ATTESTED"
+  },
+  "secret_hygiene": {
+    "secret_scan_status": "PASS",
+    "secret_material_committed": false
+  },
+  "final_arming_verdict": {
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "public_availability_time_authority": "NOT_ESTABLISHED",
+    "public_availability_authority_scope": "NONE",
+    "exact_first_public_available_at": "NOT_ESTABLISHED",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED"
+  }
+}
