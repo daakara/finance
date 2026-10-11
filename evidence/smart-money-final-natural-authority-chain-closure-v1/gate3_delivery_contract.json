@@ -1,0 +1,1 @@
+{"cli_parameter_bypass":"PROHIBITED","delivery_channel":"evidence/gate3_authorizations/SMART_MONEY_GATE3_ACTIVE_AUTHORIZATION.json","environment_variable_fallback":"SMART_MONEY_GATE3_ACTIVE_AUTHORIZATION","status":"PASS","unauthenticated_filesystem_injection":"PROHIBITED"}

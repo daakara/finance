@@ -1,0 +1,1 @@
+{"readiness_artifact_resolution":"ALL_RESOLVED","status":"PASS","synthetic_placeholder_rejection":"PASS","verified_hash_keys":["qualification_manifest","productionization_manifest","structural_hardening_manifest","final_structural_manifest","workload_identity_policy","scheduler_workflow","clock_authority_contract","candidate004_firewall"]}

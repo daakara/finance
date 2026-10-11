@@ -1,0 +1,1 @@
+{"authorization_claim_atomic":"CRASH_ATOMIC_COMPARE_AND_SET","concurrent_double_spend_rejected":true,"ledger_file":"claim_ledger.json","replay_rejected":true,"single_use_enforced":true,"status":"PASS"}

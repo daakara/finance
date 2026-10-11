@@ -1,0 +1,1 @@
+{"max_ttl_seconds":7200,"readiness_hash_count":8,"required_fields":["authorization_id","schema_version","action","issued_at_utc","expires_at_utc","commit_sha","event_name","consumer_mode","readiness_hashes","witness_reference","rekor_log_index","signer_identity","signer_issuer"],"schema_version":"SMART_MONEY_PRE_ARM_AUTHORIZATION_V2","status":"PASS"}

@@ -1,0 +1,1 @@
+{"always_condition_removed":true,"execution_condition":"if: success()","failed_run_cache_save":"PROHIBITED","partial_state_cache_save":"PROHIBITED","pre_save_verification":"Step 6 verifies sequence >= 1 and manifest SHA","status":"PASS","step_name":"7. Save Durable State Cache","unverified_checkpoint_save":"PROHIBITED","workflow_file":".github/workflows/smart_money_rooting.yml"}

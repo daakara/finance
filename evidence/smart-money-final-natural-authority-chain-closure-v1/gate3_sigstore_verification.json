@@ -1,0 +1,1 @@
+{"gate3_cryptographic_authenticity":"VERIFIED","gate3_rekor_inclusion":"VERIFIED","gate3_signer_identity":"https://github.com/daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/main","gate3_signer_issuer":"https://token.actions.githubusercontent.com","gate3_sigstore_bundle_verification":"VERIFIED","status":"PASS","tamper_detection":"FAIL_CLOSED"}

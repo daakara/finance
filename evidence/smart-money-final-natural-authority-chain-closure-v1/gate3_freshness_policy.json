@@ -1,0 +1,1 @@
+{"clock_skew_tolerance_seconds":300,"expired_rejected":true,"future_issued_rejected":true,"gate3_ttl_policy":"STRICT_MAX_7200_SECONDS","overlong_ttl_rejected":true,"status":"PASS"}

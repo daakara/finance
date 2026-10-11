@@ -1,0 +1,1 @@
+{"corrupted_manifest_rejected":true,"hash_tamper_detected":true,"sequence_regression_detected":true,"sequence_skip_detected":true,"status":"PASS","test_suite":"TestFinalNaturalAuthorityChainClosure.test_checkpoint_anti_rollback_chain"}

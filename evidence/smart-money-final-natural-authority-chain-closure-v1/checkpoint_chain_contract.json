@@ -1,0 +1,1 @@
+{"chain_type":"MONOTONIC_ANTI_ROLLBACK_CHECKPOINT_CHAIN","commit_sha_binding":"commit_sha","genesis_sequence":1,"policy_hash_binding":"policy_hash","predecessor_hash_binding":"previous_checkpoint_sha256","sequence_increment":"+1_MONOTONIC","state_payload_binding":"state_payload_sha256","status":"PASS"}

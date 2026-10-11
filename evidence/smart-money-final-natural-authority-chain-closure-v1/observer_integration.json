@@ -1,0 +1,1 @@
+{"database_file":"observer_registry.db","in_memory_default_overridden":true,"public_observer_engine_integration":"WIRED_TO_DURABLE_STATE_DB","status":"PASS","tables_verified":["observer_records","schema_migrations","observation_claims"]}

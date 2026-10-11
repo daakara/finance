@@ -1,0 +1,1 @@
+{"empty_state_dir_action":"TERMINAL_HOLD","epoch_id":"EPOCH_SMART_MONEY_001","epoch_initialization_guard":"ENFORCED","genesis_reset_after_epoch_initialized":"STRICTLY_PROHIBITED","missing_state_files_action":"TERMINAL_HOLD","post_activation_cache_miss":"FAIL_CLOSED_TERMINAL_HOLD","status":"PASS","unverified_manifest_action":"TERMINAL_HOLD"}
