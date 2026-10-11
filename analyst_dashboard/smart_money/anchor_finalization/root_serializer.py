@@ -414,6 +414,7 @@ def create_signed_root_receipt(
         receipt_payload_sha256=hashlib.sha256(serialize_canonical_finalization_root_payload(payload)).hexdigest(),
         signature=sig,
         created_at_utc=created_at,
+        root_phase=payload.root_phase.value if payload.root_phase else None,
     )
 
 

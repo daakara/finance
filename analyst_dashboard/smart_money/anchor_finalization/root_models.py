@@ -271,6 +271,7 @@ class FinalizationRootReceipt:
     confirmed_at_utc: Optional[str] = None
     object_version_id: Optional[str] = "ver_001"
     worm_retention_until: Optional[str] = "2036-10-11T12:00:00Z"
+    root_phase: Optional[str] = None
 
     def __post_init__(self):
         if self.receipt_id and self.root_receipt_id == "rcpt_root_001":

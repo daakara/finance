@@ -42,6 +42,17 @@ from analyst_dashboard.smart_money.public_availability.legacy_remediation import
     LEGACY_CONSUMER_REGISTRY,
     LegacyPitSemanticResolver,
 )
+from analyst_dashboard.smart_money.public_availability.independent_clock import (
+    ClockSample,
+    ClockMeasurementResult,
+    IndependentClockAuthority,
+    CLOCK_REFERENCE_MAX_AGE_BEFORE_ARMING_SECONDS,
+    CLOCK_REFERENCE_MAX_AGE_DURING_CAPTURE_SECONDS,
+)
+from analyst_dashboard.smart_money.public_availability.sec_operational_preflight import (
+    SecPreflightResult,
+    SecOperationalPreflight,
+)
 
 __all__ = [
     "EndpointChannel",
@@ -70,4 +81,11 @@ __all__ = [
     "LegacyConsumerAuditEntry",
     "LEGACY_CONSUMER_REGISTRY",
     "LegacyPitSemanticResolver",
+    "ClockSample",
+    "ClockMeasurementResult",
+    "IndependentClockAuthority",
+    "CLOCK_REFERENCE_MAX_AGE_BEFORE_ARMING_SECONDS",
+    "CLOCK_REFERENCE_MAX_AGE_DURING_CAPTURE_SECONDS",
+    "SecPreflightResult",
+    "SecOperationalPreflight",
 ]
