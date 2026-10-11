@@ -101,41 +101,65 @@ def parse_bundle(bundle_path: str) -> Dict[str, Any]:
     with open(bundle_path, "rb") as f:
         bundle_sha256 = sha256_hex(f.read())
 
-    verification_material = bundle.get("verificationMaterial", {})
-    tlog_entries = verification_material.get("tlogEntries", [])
-    log_index = tlog_entries[0].get("logIndex") if tlog_entries else None
-    integrated_time = tlog_entries[0].get("integratedTime") if tlog_entries else None
-
-    # Parse cert if available
-    cert_chain = verification_material.get("content", {}).get("x509CertificateChain", {}).get("certificates", [])
-    cert_raw_b64 = cert_chain[0].get("rawBytes") if cert_chain else None
-
+    log_index = None
+    integrated_time = None
     san_uri = ""
-    cert_issuer = ""
-    if cert_raw_b64:
-        try:
-            from cryptography import x509
-            cert_bytes = base64.b64decode(cert_raw_b64)
-            cert = x509.load_der_x509_certificate(cert_bytes)
-            # Find SAN extension
-            ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-            for name in ext.value:
-                if isinstance(name, x509.UniformResourceIdentifier):
-                    san_uri = name.value
-                    break
-            # Find Fulcio issuer OID: 1.3.6.1.4.1.57264.1.1
-            for e in cert.extensions:
-                if e.oid.dotted_string == "1.3.6.1.4.1.57264.1.1":
-                    cert_issuer = e.value.value.decode("utf-8", errors="ignore")
-        except Exception as e:
-            print(f"Warning: cert parsing error: {e}")
+    cert_issuer = "https://token.actions.githubusercontent.com"
+
+    # Format 1: Sigstore v0.1 format
+    if "rekorBundle" in bundle:
+        rekor_payload = bundle.get("rekorBundle", {}).get("Payload", {})
+        if isinstance(rekor_payload, dict):
+            log_index = rekor_payload.get("logIndex")
+            integrated_time = rekor_payload.get("integratedTime")
+        if "cert" in bundle:
+            try:
+                from cryptography import x509
+                cert_pem = base64.b64decode(bundle["cert"])
+                cert = x509.load_pem_x509_certificate(cert_pem)
+                ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                for name in ext.value:
+                    if isinstance(name, x509.UniformResourceIdentifier):
+                        san_uri = name.value
+                        break
+                for e in cert.extensions:
+                    if e.oid.dotted_string == "1.3.6.1.4.1.57264.1.1":
+                        cert_issuer = e.value.value.decode("utf-8", errors="ignore")
+            except Exception as e:
+                print(f"Warning: cert parsing error: {e}")
+
+    # Format 2: Sigstore v0.3+ format
+    elif "verificationMaterial" in bundle:
+        verification_material = bundle.get("verificationMaterial", {})
+        tlog_entries = verification_material.get("tlogEntries", [])
+        if tlog_entries:
+            log_index = tlog_entries[0].get("logIndex")
+            integrated_time = tlog_entries[0].get("integratedTime")
+
+        cert_chain = verification_material.get("content", {}).get("x509CertificateChain", {}).get("certificates", [])
+        cert_raw_b64 = cert_chain[0].get("rawBytes") if cert_chain else None
+        if cert_raw_b64:
+            try:
+                from cryptography import x509
+                cert_bytes = base64.b64decode(cert_raw_b64)
+                cert = x509.load_der_x509_certificate(cert_bytes)
+                ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                for name in ext.value:
+                    if isinstance(name, x509.UniformResourceIdentifier):
+                        san_uri = name.value
+                        break
+                for e in cert.extensions:
+                    if e.oid.dotted_string == "1.3.6.1.4.1.57264.1.1":
+                        cert_issuer = e.value.value.decode("utf-8", errors="ignore")
+            except Exception as e:
+                print(f"Warning: cert parsing error: {e}")
 
     return {
         "bundle_sha256": bundle_sha256,
         "log_index": log_index,
         "integrated_time": integrated_time,
         "san_uri": san_uri,
-        "cert_issuer": cert_issuer or "https://token.actions.githubusercontent.com",
+        "cert_issuer": cert_issuer,
     }
 
 

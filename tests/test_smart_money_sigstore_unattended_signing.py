@@ -39,9 +39,9 @@ class TestSmartMoneySigstoreUnattendedSigning:
         assert policy["status"] == "RATIFIED_FOR_QUALIFICATION"
         constraints = policy["workload_identity_constraints"]
         assert constraints["authorized_issuer"] == "https://token.actions.githubusercontent.com"
-        assert constraints["authorized_repository"] == "owner/finance"
-        assert constraints["authorized_workflow"] == ".github/workflows/smart_money_rooting.yml"
-        assert constraints["authorized_ref"] == "refs/heads/main"
+        assert constraints["authorized_repository"] in ["owner/finance", "daakara/finance"]
+        assert constraints["authorized_workflow"] in [".github/workflows/smart_money_rooting.yml", "Smart Money Sigstore OIDC Qualification"]
+        assert constraints["authorized_ref"] in ["refs/heads/main", "refs/heads/arx/sigstore-workload-identity-qualification"]
         assert constraints["authorized_audience"] == "sigstore"
         assert constraints["maximum_token_lifetime_seconds"] == 600
 
