@@ -276,6 +276,32 @@ from analyst_dashboard.smart_money.anchor_finalization.live_qualification_harnes
     PRODUCTION_POLICY_RATIFICATION,
 )
 
+from analyst_dashboard.smart_money.anchor_finalization.sigstore_interim_models import (
+    PINNED_SIGSTORE_IDENTITY,
+    PINNED_SIGSTORE_ISSUER,
+    IDENTITY_POLICY,
+    EXTERNAL_ROOT_PROFILE,
+    EXTERNAL_ROOT_FUNCTION,
+    SIGSTORE_TIMESTAMP_SEMANTICS,
+    SigstoreVerificationStatus,
+    SigstoreBundleModel,
+    SigstoreVerificationResult,
+    SyntheticR1Payload,
+    SyntheticAuthorityEvent,
+    SyntheticR2Payload,
+    SigstoreInterimReviewerResult,
+)
+from analyst_dashboard.smart_money.anchor_finalization.sigstore_interim_verifier import (
+    SigstoreInterimVerifier,
+)
+from analyst_dashboard.smart_money.anchor_finalization.sigstore_interim_harness import (
+    SyntheticKeylessBundleGenerator,
+    SigstoreInterimHarness,
+)
+from analyst_dashboard.smart_money.anchor_finalization.sigstore_interim_reviewer import (
+    SigstoreInterimReviewer,
+)
+
 __all__ = [
     "ANCHOR_POLICY_ID",
     "ANCHOR_POLICY_VERSION",
@@ -514,4 +540,21 @@ __all__ = [
     "POST_AUTHORITY_CLOSURE_MAX_DELAY_SOURCE",
     "POST_AUTHORITY_CLOSURE_MAX_DELAY_JUSTIFICATION_STATUS",
     "PRODUCTION_POLICY_RATIFICATION",
+    "PINNED_SIGSTORE_IDENTITY",
+    "PINNED_SIGSTORE_ISSUER",
+    "IDENTITY_POLICY",
+    "EXTERNAL_ROOT_PROFILE",
+    "EXTERNAL_ROOT_FUNCTION",
+    "SIGSTORE_TIMESTAMP_SEMANTICS",
+    "SigstoreVerificationStatus",
+    "SigstoreBundleModel",
+    "SigstoreVerificationResult",
+    "SyntheticR1Payload",
+    "SyntheticAuthorityEvent",
+    "SyntheticR2Payload",
+    "SigstoreInterimReviewerResult",
+    "SigstoreInterimVerifier",
+    "SyntheticKeylessBundleGenerator",
+    "SigstoreInterimHarness",
+    "SigstoreInterimReviewer",
 ]
