@@ -233,13 +233,17 @@ def main():
         json.dump(natural_policy, f, indent=2, sort_keys=True)
 
     # Also write to docs
-    doc_policy_path = os.path.join(
+    doc_policy_dir = os.path.join(
         PROJECT_ROOT,
         "docs",
         "domain",
         "radar",
         "smart-money",
         "public-availability",
+    )
+    os.makedirs(doc_policy_dir, exist_ok=True)
+    doc_policy_path = os.path.join(
+        doc_policy_dir,
         "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json",
     )
     with open(doc_policy_path, "w", encoding="utf-8") as f:

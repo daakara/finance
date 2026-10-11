@@ -47,7 +47,9 @@ class TestNaturalSchedulerClosure:
         triggers = wf.get("on") or wf.get(True) or {}
         assert "workflow_dispatch" in triggers
         assert "schedule" in triggers
-        assert "push" in triggers
+        assert "push" not in triggers, "Push trigger must be disabled in production"
+        cron_expr = triggers["schedule"][0]["cron"]
+        assert cron_expr == "7 10-22/2 * * 1-5"
         assert wf.get("permissions", {}).get("id-token") == "write"
         assert wf.get("permissions", {}).get("contents") == "read"
 

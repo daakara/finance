@@ -1,13 +1,20 @@
 name: Smart Money Rooting Scheduler
 
 "on":
-  workflow_dispatch:
   schedule:
-    # Runs during SEC EDGAR business hours (Monday-Friday, 10:00 to 22:00 UTC)
-    - cron: '0 10-22/2 * * 1-5'
-  push:
-    branches:
-      - arx/sigstore-workload-identity-qualification
+    # Runs during SEC EDGAR business hours (Monday-Friday, 10:07 to 22:07 UTC)
+    # Minute 07 avoids top-of-hour GitHub Actions shared queue delays.
+    - cron: '7 10-22/2 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Execution mode (dry-run or natural)'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - natural
 
 permissions:
   id-token: write
@@ -36,7 +43,7 @@ jobs:
         run: pip install cryptography
 
       - name: Execute Governed Natural Scheduler
-        run: python scripts/run_natural_scheduler.py --mode dry-run
+        run: python scripts/run_natural_scheduler.py --mode ${{ github.event.inputs.mode || 'dry-run' }}
 
       - name: Upload Natural Scheduler Evidence Artifacts
         uses: actions/upload-artifact@v4
