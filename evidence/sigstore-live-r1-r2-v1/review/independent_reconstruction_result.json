@@ -1,0 +1,28 @@
+{
+  "reconstruction_status": "PASS",
+  "mismatch_count": 0,
+  "errors": [],
+  "r1_verification": {
+    "signature_valid": true,
+    "identity_valid": true,
+    "issuer_valid": true,
+    "digest_match": true,
+    "rekor_log_index": "3211521175",
+    "rekor_integrated_time": "1791739863"
+  },
+  "r2_verification": {
+    "signature_valid": true,
+    "identity_valid": true,
+    "issuer_valid": true,
+    "digest_match": true,
+    "rekor_log_index": "3211546161",
+    "rekor_integrated_time": "1791739955"
+  },
+  "linkage_verification": {
+    "r2_r1_root_binding": true,
+    "r2_r1_witness_binding": true,
+    "r2_authority_event_binding": true,
+    "r2_policy_binding": true,
+    "r2_run_binding": true
+  }
+}

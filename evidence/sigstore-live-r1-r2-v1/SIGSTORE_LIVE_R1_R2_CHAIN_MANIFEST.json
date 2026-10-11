@@ -1,0 +1,75 @@
+{
+  "gate": "SIGSTORE_LIVE_R1_DEPENDENT_R2_PROVENANCE_SEALING_V1",
+  "chain_id": "chain_live_sigstore_epoch_001",
+  "run_id": "run_live_qual_001",
+  "r1_payload_sha256": "d2396c3bbfae31f648fdea2b0c458c016cbde57b90ec7ec2a674a441e60c31ba",
+  "r1_root_hash": "e3544cb6dddcb7e5806fc34df3b29e435efe95a563e1525d3d98727fc2d99018",
+  "r1_authoritative_witness_identity": "f35c0b91c1f5d57582ec663d2b74f960cd9d5548b41099cf96b60cd531e3ee4b",
+  "r1_bundle_sha256": "f35c0b91c1f5d57582ec663d2b74f960cd9d5548b41099cf96b60cd531e3ee4b",
+  "r1_rekor_log_index": 3211521175,
+  "r1_rekor_integrated_time": 1791739863,
+  "authority_event_sha256": "fe036d0ab81774dcfcb0157f0a33684fa720a6efd61bb52bc8b485896e9f3aa4",
+  "authority_event_sequence": 1,
+  "r2_payload_sha256": "4eed2cb2dccd9c70b877fdba87512c0129b8a6f2f7301ad9cdf116379126138b",
+  "r2_root_hash": "c63dd39e38a5d21a5f6d3395d1edebb732fcf0e3abde89aade01591ee6b45f13",
+  "r2_bundle_sha256": "0dbe7a08fc569ed98e070e4640a984a4a12078598ee4773d7ffcf163f1f8f1ee",
+  "r2_rekor_log_index": 3211546161,
+  "r2_rekor_integrated_time": 1791739955,
+  "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
+  "trust_root_version": 15,
+  "trust_root_sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66",
+  "pinned_certificate_identity": "53128824+daakara@users.noreply.github.com",
+  "pinned_oidc_issuer": "https://github.com/login/oauth",
+  "retained_artifacts": [
+    {
+      "relative_path": "repository_attestation.txt",
+      "byte_length": 582,
+      "sha256": "4619c6da72a12751cef4e5fe0159f457a68bf8a72ad56855ba3e5d2105733c16"
+    },
+    {
+      "relative_path": "authority\\authority_event.json",
+      "byte_length": 683,
+      "sha256": "fe036d0ab81774dcfcb0157f0a33684fa720a6efd61bb52bc8b485896e9f3aa4"
+    },
+    {
+      "relative_path": "live-r1\\r1.sigstore.json",
+      "byte_length": 6599,
+      "sha256": "f35c0b91c1f5d57582ec663d2b74f960cd9d5548b41099cf96b60cd531e3ee4b"
+    },
+    {
+      "relative_path": "live-r1\\r1_authoritative_witness_receipt.json",
+      "byte_length": 824,
+      "sha256": "0b46f6e914bd815b35bdb339073bd0ab79e8c5d97bd030701d1f064b22de1d28"
+    },
+    {
+      "relative_path": "live-r1\\r1_payload.json",
+      "byte_length": 630,
+      "sha256": "d2396c3bbfae31f648fdea2b0c458c016cbde57b90ec7ec2a674a441e60c31ba"
+    },
+    {
+      "relative_path": "live-r2\\r2.sigstore.json",
+      "byte_length": 6505,
+      "sha256": "0dbe7a08fc569ed98e070e4640a984a4a12078598ee4773d7ffcf163f1f8f1ee"
+    },
+    {
+      "relative_path": "live-r2\\r2_payload.json",
+      "byte_length": 1046,
+      "sha256": "4eed2cb2dccd9c70b877fdba87512c0129b8a6f2f7301ad9cdf116379126138b"
+    },
+    {
+      "relative_path": "review\\independent_reconstruction_input_manifest.json",
+      "byte_length": 547,
+      "sha256": "eed2fd1045215156ed0dd98979b84b8b7f2025794439ffb0bd1f4ff68d2d80bf"
+    },
+    {
+      "relative_path": "review\\independent_reconstruction_result.json",
+      "byte_length": 733,
+      "sha256": "997fa48d40b433c7c7a42cececc29c5898e971db0ac6e3fe23e6007f3f900461"
+    },
+    {
+      "relative_path": "trust\\trust_root_snapshot.json",
+      "byte_length": 6787,
+      "sha256": "6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "input_files": [
+    "live-r1/r1_payload.json",
+    "live-r1/r1.sigstore.json",
+    "live-r1/r1_authoritative_witness_receipt.json",
+    "authority/authority_event.json",
+    "live-r2/r2_payload.json",
+    "live-r2/r2.sigstore.json",
+    "trust/trust_root_snapshot.json"
+  ],
+  "pinned_signer_identity": "53128824+daakara@users.noreply.github.com",
+  "pinned_oidc_issuer": "https://github.com/login/oauth",
+  "policy_set_hash": "b4f2c9e8a71d3f56e9c0b1a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
+  "run_id": "run_live_qual_001"
+}
