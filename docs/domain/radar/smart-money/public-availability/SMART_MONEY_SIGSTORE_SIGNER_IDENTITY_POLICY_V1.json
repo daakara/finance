@@ -1,0 +1,36 @@
+{
+  "policy_id": "SMART_MONEY_SIGSTORE_SIGNER_IDENTITY_POLICY_V1",
+  "version": "1.0.0",
+  "effective_date_utc": "2026-10-11T00:00:00Z",
+  "governing_epoch": "EPOCH_001",
+  "status": "RATIFIED",
+  "scope": "SMART_MONEY_EXTERNAL_WITNESS_ROOTING",
+  "authorized_identities": {
+    "interactive": {
+      "identity_san": "53128824+daakara@users.noreply.github.com",
+      "oidc_issuer": "https://github.com/login/oauth",
+      "matching_mode": "EXACT_PINNED",
+      "wildcard_prohibited": true
+    },
+    "unattended": {
+      "oidc_issuer": "https://token.actions.githubusercontent.com",
+      "repository": "owner/finance",
+      "workflow_ref": "repo:owner/finance:ref:refs/heads/main",
+      "matching_mode": "EXACT_PINNED",
+      "wildcard_prohibited": true,
+      "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+    }
+  },
+  "lifecycle_governance": {
+    "rotation_procedure": "Planned rotation requires updating pinned SAN and OIDC issuer in policy contract, issuing dual-signed transition epoch record, and archiving public key / certificate chain into local immutable trust store. Prior signatures remain valid.",
+    "compromise_procedure": "Upon suspected or confirmed identity compromise, operator issues emergency revocation notice, transitions compromise status to COMPROMISED, freezes all anchor admissions, and marks all bundles signed during compromise window as UNTRUSTED.",
+    "historical_valid_bundle_treatment": "Historical bundles witnessed before verified compromise timestamp remain valid if inclusion proof and Rekor integrated time predate compromise incident; bundles witnessed during or after compromise are rejected.",
+    "emergency_suspension_procedure": "Any operator or automated monitor detecting anomalous signing activity trips terminal hold fail-closed boundary, setting NATURAL_OBSERVER_ARMING to NOT_AUTHORIZED and terminating run admission."
+  },
+  "invariants": {
+    "fail_closed_on_unauthorized_identity": true,
+    "fail_closed_on_unauthorized_issuer": true,
+    "fail_closed_on_compromised_identity": true,
+    "no_mock_witness_in_production": true
+  }
+}

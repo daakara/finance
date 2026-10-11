@@ -1,0 +1,37 @@
+{
+  "policy_id": "SMART_MONEY_SIGSTORE_INTERIM_NATURAL_ROOTING_POLICY_V1",
+  "version": "1.0.0",
+  "effective_date_utc": "2026-10-11T00:00:00Z",
+  "governing_epoch": "EPOCH_001",
+  "status": "RATIFIED",
+  "external_root_profile": "SIGSTORE_REKOR_INTERIM_V1",
+  "external_root_function": "PUBLIC_APPEND_ONLY_TRANSPARENCY_WITNESS",
+  "prerequisites_for_natural_prospective_rooting": {
+    "live_canonical_r1_witness": "MANDATORY_PRIOR_TO_NATURAL_ADMISSION",
+    "live_canonical_r2_witness": "MANDATORY_PRIOR_TO_NATURAL_ADMISSION",
+    "unattended_workload_signing": "MANDATORY_PRIOR_TO_NATURAL_ADMISSION",
+    "rekor_consistency_monitoring": "MANDATORY_OPERATIONAL",
+    "local_raw_evidence_durability": "MANDATORY_OPERATIONAL",
+    "tuf_cached_trust_root": "MANDATORY_OPERATIONAL",
+    "same_root_substitution_defense": "MANDATORY_OPERATIONAL",
+    "disaggregated_timestamp_enforcement": "MANDATORY_OPERATIONAL"
+  },
+  "current_suitability_verdict": {
+    "interim_profile_suitability": "CONDITIONAL",
+    "blocking_conditions": [
+      "ASSUMP_001: Live Canonical R1 provenance not yet submitted to public Rekor",
+      "ASSUMP_002: Live Canonical R2 provenance not yet submitted to public Rekor",
+      "ASSUMP_003: Exact Live R2 to Live R1 bundle binding pending live submission",
+      "ASSUMP_004: Unattended scheduler signing identity not established in local runtime"
+    ],
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "natural_denominator_target": 0
+  },
+  "operational_guards": {
+    "rekor_split_view_response": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
+    "missing_tuf_root_response": "FAIL_CLOSED_NO_WITNESS",
+    "evidence_backup_loss_response": "FAIL_CLOSED_REPLICATION_ERROR",
+    "bundle_substitution_response": "REJECT_UNAUTHORITATIVE_BUNDLE",
+    "timestamp_collapse_response": "FAIL_CLOSED_SEMANTIC_VIOLATION"
+  }
+}
