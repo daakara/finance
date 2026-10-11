@@ -82,6 +82,44 @@ REQUIRES_SEPARATE_RECOVERY_GATE: Final[bool] = True
 RETROACTIVE_AUTHORIZATION: Final[bool] = False
 LATE_ANCHOR_CAN_RETROACTIVELY_AUTHORIZE_PRIOR_DECISIONS: Final[bool] = False
 
+# ---------------------------------------------------------------------------
+# Finalization Root Policy Epoch & Invariants (Sections 4, 5, 9, 10, 20, 21, 23)
+# ---------------------------------------------------------------------------
+FINALIZATION_ROOT_POLICY_ID: Final[str] = "SMART_MONEY_FINALIZATION_ROOT_POLICY_V1"
+FINALIZATION_ROOT_POLICY_VERSION: Final[str] = "1.0"
+FINALIZATION_ROOT_REQUIRED: Final[bool] = True
+FINALIZATION_ROOT_APPLIES_TO: Final[str] = "FINALIZATION_LEDGER"
+FINALIZATION_ROOT_RETROACTIVE_REWRITE: Final[str] = "PROHIBITED"
+FINALIZATION_ROOT_HUMAN_OVERRIDE: Final[str] = "PROHIBITED"
+
+FINALIZATION_LEDGER_ROOT_SCOPE: Final[str] = "RUN"
+FINALIZATION_ROOT_SCHEMA_VERSION: Final[str] = "1.0"
+CANONICAL_ROOT_SERIALIZATION_VERSION: Final[str] = "1.0"
+
+SAME_ROOT_ID_DIFFERENT_ROOT_HASH: Final[str] = "CRITICAL_INTEGRITY_CONFLICT"
+SAME_ROOT_IDEMPOTENCY_KEY_DIFFERENT_PAYLOAD: Final[str] = "CRITICAL_INTEGRITY_FAILURE"
+DUPLICATE_IDENTICAL_ROOT_SUBMISSION: Final[str] = "IDEMPOTENT"
+
+FINALIZATION_ROOT_EXTERNAL_PROVIDER: Final[str] = "AWS_S3_OBJECT_LOCK_ROOT"
+FINALIZATION_ROOT_CREDENTIAL_DOMAIN: Final[str] = "AWS_IAM_ROLE_ARX_FINALIZATION_ROOT"
+FINALIZATION_ROOT_KEY_DOMAIN: Final[str] = "AWS_KMS_KEY_ARX_FINALIZATION_ROOT"
+FINALIZATION_ROOT_ADMIN_DOMAIN: Final[str] = "AWS_ACCOUNT_SECURITY_ORG_ROOT"
+FINALIZATION_ROOT_WRITE_AUTHORITY: Final[str] = "PUT_OBJECT_LEGAL_HOLD_WORM"
+FINALIZATION_ROOT_EXTERNAL_TRUST_DOMAIN_SEPARATE: Final[bool] = True
+
+ROOT_OBJECT_VERSIONING_ENABLED: Final[bool] = True
+ROOT_OBJECT_LOCK_ENABLED: Final[bool] = True
+ROOT_RETENTION_MODE: Final[str] = "COMPLIANCE"
+ROOT_RETENTION_UNTIL: Final[str] = "2036-10-11T12:00:00Z"
+ROOT_DELETE_PROTECTION: Final[bool] = True
+ROOT_OVERWRITE_PROTECTION: Final[bool] = True
+ROOT_STORAGE_IMMUTABILITY_CLASS: Final[str] = "PROVIDER_ENFORCED_RETENTION"
+
+ROOT_AMBIGUOUS_COMMIT_RESULT_POLICY: Final[str] = "QUERY_EXISTING_ROOT_BEFORE_RETRY"
+ROOT_CONFIRMATION_REQUIRED_FOR_AUTHORITY_EFFECTIVENESS: Final[bool] = True
+RETROACTIVE_AUTHORITY_FROM_ROOT_CONFIRMATION: Final[bool] = False
+
+
 
 # ---------------------------------------------------------------------------
 # Policy Artifact Retention (Section 24)
@@ -153,6 +191,39 @@ _RAW_POLICY_ARTIFACTS: Dict[str, str] = {
         "EXACTLY_ONE_REQUIRED: TRUE\n"
         "REBINDING: PROHIBITED\n"
     ),
+    "finalization_root_policy_v1": (
+        "POLICY_ID: SMART_MONEY_FINALIZATION_ROOT_POLICY_V1\n"
+        "VERSION: 1.0\n"
+        "REQUIRED: TRUE\n"
+        "APPLIES_TO: FINALIZATION_LEDGER\n"
+        "SCOPE: RUN\n"
+        "RETROACTIVE_REWRITE: PROHIBITED\n"
+        "HUMAN_OVERRIDE: PROHIBITED\n"
+    ),
+    "root_serialization_contract_v1": (
+        "CONTRACT_ID: ROOT_SERIALIZATION_CONTRACT_V1\n"
+        "SCHEMA_VERSION: 1.0\n"
+        "CANONICAL_VERSION: 1.0\n"
+        "ORDERING_AUTHORITY: FINALIZATION_SEQUENCE\n"
+        "HASH_ALGORITHM: SHA256\n"
+    ),
+    "root_receipt_verification_policy_v1": (
+        "POLICY_ID: ROOT_RECEIPT_VERIFICATION_POLICY_V1\n"
+        "SIGNATURE_ALGORITHM: HMAC-SHA256\n"
+        "KEY_DOMAIN: AWS_KMS_KEY_ARX_FINALIZATION_ROOT\n"
+        "VERIFICATION: STRICT_PARENT_AND_ROOT_HASH_MATCH\n"
+    ),
+    "root_retry_policy_v1": (
+        "POLICY_ID: ROOT_RETRY_POLICY_V1\n"
+        "AMBIGUOUS_POLICY: QUERY_EXISTING_ROOT_BEFORE_RETRY\n"
+        "LOOKUP_POLICY: FOUND_MATCHING->CONFIRMED,FOUND_CONFLICTING->TERMINAL_HOLD\n"
+    ),
+    "root_reviewer_policy_v1": (
+        "POLICY_ID: ROOT_REVIEWER_POLICY_V1\n"
+        "POINTS: 10_POINT_RECONSTRUCTION\n"
+        "THREAT_MODEL: WHOLE_LEDGER_REWRITE_DETECTION\n"
+        "DISALLOW_INTERNAL_CHAIN_SUFFICIENCY: TRUE\n"
+    ),
 }
 
 POLICY_ARTIFACT_REGISTRY: Dict[str, Dict[str, Any]] = {}
@@ -191,6 +262,11 @@ def verify_all_policy_artifacts_retained() -> bool:
         "anchor_policy_registry_v1",
         "epoch_registry_v1",
         "policy_resolution_contract_v1",
+        "finalization_root_policy_v1",
+        "root_serialization_contract_v1",
+        "root_receipt_verification_policy_v1",
+        "root_retry_policy_v1",
+        "root_reviewer_policy_v1",
     ]
     for req in required:
         rec = get_policy_artifact(req)

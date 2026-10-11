@@ -16,6 +16,9 @@ from analyst_dashboard.smart_money.anchor_finalization.models import (
 from analyst_dashboard.smart_money.anchor_finalization.policy_registry import (
     PolicyResolutionResult,
 )
+from analyst_dashboard.smart_money.anchor_finalization.root_models import (
+    FinalizationRootStatus,
+)
 
 
 class DownstreamUseFirewall:
@@ -23,6 +26,15 @@ class DownstreamUseFirewall:
     Consumer-side fail-closed firewall.
     Every governed downstream consumer MUST invoke this firewall before accepting evidence.
     """
+
+    @staticmethod
+    def assert_finalization_root_allowed(root_status: FinalizationRootStatus) -> None:
+        """Enforces: Authority is blocked if finalization root is not CONFIRMED (Section 28)."""
+        if root_status != FinalizationRootStatus.CONFIRMED:
+            raise DownstreamFirewallBlockedError(
+                f"DOWNSTREAM_FIREWALL_BLOCKED: Finalization root status '{root_status.value}' "
+                f"prohibits authority effectiveness. Required 'CONFIRMED'."
+            )
 
     @staticmethod
     def assert_policy_resolution_allowed(resolution: PolicyResolutionResult) -> None:
