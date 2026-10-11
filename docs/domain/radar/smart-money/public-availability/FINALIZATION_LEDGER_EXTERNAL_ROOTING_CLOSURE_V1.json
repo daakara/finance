@@ -1,0 +1,112 @@
+{
+  "gate": "FINALIZATION_LEDGER_EXTERNAL_ROOTING_CLOSURE_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "c3be442f94b87662a0e3a1e3c59d0b57ae379ed0",
+  "functional_commit_sha": "6cc4e192b067834b9ba41d76a7dd8aa18bab68ca",
+  "finalization_root_policy": {
+    "policy_id": "SMART_MONEY_FINALIZATION_ROOT_POLICY_V1",
+    "policy_version": "1.0",
+    "finalization_root_required": true,
+    "finalization_root_applies_to": "FINALIZATION_LEDGER",
+    "finalization_ledger_root_scope": "RUN",
+    "finalization_root_retroactive_rewrite": "PROHIBITED",
+    "finalization_root_human_override": "PROHIBITED",
+    "root_confirmation_required_for_authority_effectiveness": true,
+    "retroactive_authority_from_root_confirmation": false
+  },
+  "canonical_serialization": {
+    "root_schema_version": "1.0",
+    "canonical_serialization_version": "1.0",
+    "ordering_authority": "FINALIZATION_SEQUENCE",
+    "hash_algorithm": "SHA256"
+  },
+  "root_identity_and_idempotency": {
+    "finalization_root_idempotency_policy": "PASS",
+    "same_root_id_different_root_hash": "CRITICAL_INTEGRITY_CONFLICT",
+    "same_idempotency_key_different_payload": "CRITICAL_INTEGRITY_FAILURE",
+    "duplicate_identical_submission": "IDEMPOTENT"
+  },
+  "external_trust_domain": {
+    "provider_id": "AWS_S3_OBJECT_LOCK_ROOT",
+    "credential_domain": "AWS_IAM_ROLE_ARX_FINALIZATION_ROOT",
+    "key_domain": "AWS_KMS_KEY_ARX_FINALIZATION_ROOT",
+    "admin_domain": "AWS_ACCOUNT_SECURITY_ORG_ROOT",
+    "write_authority": "PUT_OBJECT_LEGAL_HOLD_WORM",
+    "external_trust_domain_separate": true,
+    "ledger_writer_can_delete_root": false,
+    "ledger_writer_can_overwrite_root": false,
+    "ledger_writer_can_access_signing_key": false
+  },
+  "storage_configuration_attestation": {
+    "status": "PASS",
+    "object_versioning_enabled": true,
+    "object_lock_enabled": true,
+    "retention_mode": "COMPLIANCE",
+    "retention_until": "2036-10-11T12:00:00Z",
+    "delete_protection": true,
+    "overwrite_protection": true,
+    "immutability_class": "PROVIDER_ENFORCED_RETENTION"
+  },
+  "root_receipt_verification": {
+    "status": "PASS",
+    "signature_algorithm": "HMAC-SHA256",
+    "signing_key_id": "KEY_ARX_ROOT_PROVIDER_001",
+    "parent_run_id_match": true,
+    "parent_run_final_hash_match": true,
+    "finalization_root_hash_match": true,
+    "policy_set_hash_match": true,
+    "timestamp_valid": true
+  },
+  "threat_model_tamper_detection": {
+    "whole_finalization_ledger_rewrite_detected": true,
+    "missing_event_detected": true,
+    "unauthorized_insertion_detected": true,
+    "event_reordering_detected": true,
+    "authority_time_tamper_detected": true,
+    "root_receipt_mismatch_detected": true
+  },
+  "ambiguous_commit_and_crash_recovery": {
+    "ambiguous_commit_policy": "QUERY_EXISTING_ROOT_BEFORE_RETRY",
+    "root_ambiguous_commit_recovery_status": "PASS",
+    "root_crash_recovery_status": "PASS"
+  },
+  "reviewer_reconstruction": {
+    "status": "PASS",
+    "points_verified": 10,
+    "reconstruction_mismatches": 0
+  },
+  "verification_evidence": {
+    "synthetic_finalization_root_tests": "PASS",
+    "live_finalization_root_provider_verification": "NOT_EXECUTED",
+    "targeted_test_count": 18,
+    "targeted_test_passed": 18,
+    "domain_regression_test_count": 142,
+    "domain_regression_passed": 142
+  },
+  "downstream_firewall": {
+    "status": "PASS",
+    "unauthorized_downstream_acceptances": 0
+  },
+  "retained_policy_artifacts": {
+    "finalization_root_policy_v1": "4929ff13f31310b05524c1580913af69d2539af613e9e3f9ed82eac9155a970a",
+    "root_serialization_contract_v1": "163b7ec4e470421ef141e1c90e66822c4e88114e57ef7c3aab353e46e38bfc42",
+    "root_receipt_verification_policy_v1": "fff57ab40b5fdab6eb57abfad412f17d86d43dbd980db97c8a0027fc55bb42ae",
+    "root_retry_policy_v1": "85dbc96c88852f21bdd1418f77453d882fb902715a3310dd5d111fec1419f224",
+    "root_reviewer_policy_v1": "170bcbf9b79a1e5d683593bb85f927871ebeabee3cfb0dd248a6d266c2d77763"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "authoritative_verdict": {
+    "finalization_ledger_external_rooting_status": "VERIFIED",
+    "current_public_availability_time_authority": "NOT_ESTABLISHED",
+    "current_public_availability_authority_scope": "NONE",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "production_readiness": "NOT_AUTHORIZED",
+    "next_action": "VERIFY_LIVE_EXTERNAL_ANCHOR_INFRASTRUCTURE + OBTAIN_INDEPENDENT_CLOCK_REFERENCE + RUN_FIRST_VALID_NATURAL_EDGAR_CAPTURE"
+  }
+}
