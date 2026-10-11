@@ -1,0 +1,101 @@
+{
+  "gate": "PUBLIC_AVAILABILITY_OBSERVER_EPOCH_001",
+  "governing_epoch": "EPOCH_001",
+  "public_observer_branch": "arx/public-availability-observer-epoch-001",
+  "public_observer_base_sha": "dbc8c329cacedba5392d6602f12f48c9e744ac80",
+  "entry_head": "dbc8c329cacedba5392d6602f12f48c9e744ac80",
+  "preflight_zip_binding": {
+    "pds_tech_spec_container_sha256": "8a31951759aece4dc684056dcba1369eed4c413e261a4119c3670fd92c2351ff",
+    "pds_tech_spec_member_path": "PDS_Technical_Specifications_Document.pdf",
+    "pds_tech_spec_member_byte_length": 1076512,
+    "pds_tech_spec_member_sha256": "3b7128be38d44c499529d01ea7eaeae6fbbb1a6ffb2109c90303b48ccf254a43",
+    "retained_pdf_sha256": "3b7128be38d44c499529d01ea7eaeae6fbbb1a6ffb2109c90303b48ccf254a43",
+    "member_hash_equals_retained_pdf_hash": true,
+    "member_extracted_from_declared_container": "PASS"
+  },
+  "pds_hold_preservation": {
+    "pds_eod_terminal_marker_status": "PASS",
+    "pds_eod_exact_denominator_status": "HOLD",
+    "pds_protocol_qualification_status": "CONDITIONAL_PASS",
+    "live_eod_observation_can_resolve_normative_source_conflict": false,
+    "sec_website_availability_precedes_pds": true,
+    "sec_website_and_pds_publication_concurrent": false,
+    "pds_delivery_time_used_as_first_public_available_at": false
+  },
+  "access_policy": {
+    "sec_public_access_policy_id": "https://www.sec.gov/os/accessing-edgar-data",
+    "sec_public_access_policy_sha256": "393dccc830a92f314e5d4aded255c43350dc4282fd73ad45ed5874c553e0ce05",
+    "arx_sec_observer_access_policy_id": "ARX_SEC_OBSERVER_ACCESS_POLICY_V1",
+    "arx_sec_observer_access_policy_sha256": "0789a2b21fe3f96e02cffc748c2f44e5b2e2245a50c0cd5cc52147eb64e2e56f",
+    "max_requests_per_second": 5.0,
+    "user_agent_format": "ArxTerminal/1.0 (akara@finance.app)"
+  },
+  "clock_authority": {
+    "clock_authority_status": "SYNCHRONIZED",
+    "clock_source": "OS_DISCIPLINED_TIME_SERVICE",
+    "clock_max_uncertainty_ms": 100.0
+  },
+  "observer_implementation": {
+    "public_observer_implementation_status": "PASS",
+    "rss_observer_status": "PASS",
+    "latest_filings_observer_status": "PASS",
+    "filing_index_observer_status": "PASS",
+    "ownership_xml_observer_status": "PASS"
+  },
+  "decision_input_contract": {
+    "decision_input_contract_id": "SMART_MONEY_OPEN_MARKET_PURCHASE_V1",
+    "decision_input_contract_sha256": "c32aacab8f5e7d309655720f99fb8a3952029960d2a5a263ae65c889194698f0",
+    "open_market_purchase_required_transaction_code": "P",
+    "open_market_purchase_required_acquired_disposed_code": "A",
+    "transaction_code_a_accepted_as_open_market_purchase": false
+  },
+  "legacy_pit_consumer_audit": {
+    "legacy_public_availability_consumers_audited": 7,
+    "legacy_public_availability_consumers_correct": 4,
+    "legacy_public_availability_consumers_defective": 3,
+    "legacy_public_availability_consumers_ambiguous": 0,
+    "legacy_acceptance_used_as_exact_public_time": true,
+    "legacy_rows_mutated": false,
+    "historical_exact_first_public_time": "UNKNOWN_UNLESS_SEPARATELY_OBSERVED",
+    "historical_pit_contamination_risk": true,
+    "historical_strict_pit_evaluation": "NOT_AUTHORIZED"
+  },
+  "prospective_capture": {
+    "prospective_capture_status": "AWAITING_NATURAL_PUBLICATION",
+    "first_proven_metadata_public_at": "NOT_CAPTURED",
+    "first_proven_content_public_at": "NOT_CAPTURED",
+    "first_proven_decision_input_complete_at": "NOT_CAPTURED",
+    "conservative_knowledge_time": "NOT_CAPTURED",
+    "exact_first_public_available_at": "NOT_ESTABLISHED",
+    "public_availability_time_authority": "PRE_OBSERVATION_READY"
+  },
+  "verification": {
+    "synthetic_observer_replay": "PASS",
+    "independent_observer_reconstruction": "PASS",
+    "undetected_observer_semantic_tampers": 0,
+    "pytest_test_files_executed": 9,
+    "pytest_test_cases_passed": 114,
+    "pytest_test_cases_failed": 0,
+    "pytest_test_cases_skipped": 0,
+    "full_smart_money_regression_status": "PASS"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "changed_modules_reachable_from_candidate_004_runtime": 0,
+    "shadow_evidence_db_writes": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "governance_holding_state": {
+    "current_smart_money_discovery_authority": "BOUNDED_STABLE",
+    "real_pds_source_authority": "NOT_ESTABLISHED",
+    "smart_money_market_wide_authority": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "production_readiness": "NOT_AUTHORIZED",
+    "radar_production_status": "PIPELINE_PENDING",
+    "remote_push": false,
+    "main_merge": false,
+    "production_deployment": false,
+    "production_scheduler_activated": false
+  }
+}
