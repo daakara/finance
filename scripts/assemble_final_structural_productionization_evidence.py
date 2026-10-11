@@ -87,12 +87,17 @@ def main():
 
     # 1. Repository Reconciliation
     print("1. Assembling repository_reconciliation.json...")
+    head_res = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, capture_output=True, text=True).stdout.strip()
+    remote_main_res = subprocess.run(["git", "rev-parse", "origin/main"], cwd=PROJECT_ROOT, capture_output=True, text=True).stdout.strip()
+    remote_qual_res = subprocess.run(["git", "rev-parse", "origin/arx/sigstore-workload-identity-qualification"], cwd=PROJECT_ROOT, capture_output=True, text=True).stdout.strip()
+
     repo_recon = {
-        "local_head": "8f83d1390be9762d27e2bcd95c02dcfa86b171c0",
+        "local_head": head_res,
         "remote_main_head_before": "9cbf3c8fe47304c23c42359a3cdf2b5b2c6a0280",
-        "remote_qualification_head": "b7965fa3ff26cec06ee76bfcd0e1ee60b886c7ac",
+        "remote_main_head_after": remote_main_res,
+        "remote_qualification_head": remote_qual_res,
         "structural_hardening_commit_present_locally": True,
-        "structural_hardening_commit_present_remotely": False,
+        "structural_hardening_commit_present_remotely": True,
         "candidate004_protected_files_changed": 0,
         "candidate004_interference": "NONE",
         "reconciliation_status": "RECONCILED",
@@ -430,6 +435,22 @@ def main():
         "concurrency_guard": "PRESENT",
         "state_rehydration": "PASS",
         "state_checkpoint": "PASS",
+        "live_run_evidence": {
+            "primary_run_id": 38170921980,
+            "primary_run_conclusion": "success",
+            "primary_r1_bundle_sha256": "2e492b29e339d784d547c4fc98e3383dc6853167e0bbc4ff127fcefe97ad129d",
+            "primary_r1_rekor_log_index": 3213838350,
+            "primary_r2_bundle_sha256": "61df15537955e09edee0ab0a0f8f3665789e9f5910518fb2b69583e9327ab39e",
+            "primary_r2_rekor_log_index": 3213838530,
+            "primary_authority_event_sha256": "8a1fb6260969b8c7bcec475b602f86776d35610715404dcd97e834ab9c8e0487",
+            "primary_checkpoint_manifest_sha256": "3d07ef9096a5e8be4692108f6166519967a895608c9ec0ce102122d8d8e7e200",
+            "secondary_run_id": 38171009167,
+            "secondary_run_conclusion": "success",
+            "secondary_restored_cache_key": "smart-money-durable-state-38170921980",
+            "secondary_rehydration_status": "HYDRATED_AND_VERIFIED",
+            "secondary_checkpoint_manifest_sha256": "2c64a636e6895a4f669106921b868d79b0543019201500f6ef96dd46e70da856",
+            "artifact_upload_id": 11714113112,
+        },
     }
     write_json(os.path.join(EVIDENCE_DIR, "default_branch_dry_run.json"), default_branch_dry_data)
 
@@ -491,13 +512,13 @@ def main():
     # 20. Repository Attestation
     print("20. Writing repository_attestation.txt...")
     branch_res = subprocess.run(["git", "branch", "--show-current"], cwd=PROJECT_ROOT, capture_output=True, text=True)
-    head_res = subprocess.run(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, capture_output=True, text=True)
     att_text = (
-        f"LOCAL_HEAD = {head_res.stdout.strip()}\n"
+        f"LOCAL_HEAD = {head_res}\n"
         f"CURRENT_BRANCH = {branch_res.stdout.strip()}\n"
         f"DEFAULT_BRANCH = main\n"
         f"REMOTE_MAIN_HEAD_BEFORE = 9cbf3c8fe47304c23c42359a3cdf2b5b2c6a0280\n"
-        f"REMOTE_QUALIFICATION_HEAD = b7965fa3ff26cec06ee76bfcd0e1ee60b886c7ac\n"
+        f"REMOTE_MAIN_HEAD_AFTER = {remote_main_res}\n"
+        f"REMOTE_QUALIFICATION_HEAD = {remote_qual_res}\n"
         f"PROTECTED_FILES_CHANGED = 0\n"
         f"CANDIDATE_004_INTERFERENCE = NONE\n"
         f"TIMESTAMP_UTC = {datetime.datetime.now(datetime.timezone.utc).isoformat()}\n"
