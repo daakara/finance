@@ -809,9 +809,14 @@ class Form4IngestionManager:
         min_date: Optional[str] = None,
     ) -> List[SmartMoneyTransaction]:
         """
-        Point-in-time query: Returns only transactions whose public SEC availability
-        occurred at or before as_of_time (public_availability_at <= as_of_time).
-        Guarantees zero look-ahead leakage. Rejects naive datetimes.
+        Point-in-time query: Returns only transactions whose recorded availability
+        occurred at or before as_of_time (l.public_availability_at <= as_of_time).
+        Rejects naive datetimes.
+
+        Governance Note (Epoch 001):
+        Historical rows in sm_source_availability_ledger populate public_availability_at
+        from EDGAR acceptanceDateTime (acceptance lower bound). For strict certified
+        public knowledge time, prospective public observation evidence is required.
         """
         as_of_utc = self.validate_timezone_aware_timestamp(as_of_time)
         conn = sqlite3.connect(self.db_path)

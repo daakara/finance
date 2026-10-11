@@ -72,6 +72,16 @@ class SmartMoneyTransaction:
             else:
                 self.public_availability_at = None
 
+    @property
+    def sec_acceptance_at(self) -> Optional[str]:
+        """Explicit SEC/EDGAR acceptance timestamp."""
+        return self.acceptance_datetime or self.public_availability_at
+
+    @property
+    def conservative_knowledge_time(self) -> Optional[str]:
+        """Conservative knowledge timestamp; returns None/UNKNOWN if not evidenced by prospective observation."""
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "record_key": self.record_key,
