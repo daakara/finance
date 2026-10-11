@@ -1,0 +1,121 @@
+{
+  "gate": "INDEPENDENT_CLOCK_PREARM_QUALIFICATION_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "8a0ac6bacc353cf8ccbdbc5cdb76f070b7709f39",
+  "functional_commit_sha": "d1bed87abecea379d3f8defbe04075ad049ae9cb",
+  "roles": [
+    "Independent Clock Authority Auditor",
+    "Runtime Clock Reference Auditor",
+    "SEC Operational Preflight Auditor",
+    "Candidate 004 Firewall Authority"
+  ],
+  "operating_mode": [
+    "FAIL_CLOSED",
+    "LIVE_MEASUREMENT",
+    "SOURCE_FIRST",
+    "CLOCK_REFERENCE_REQUIRED",
+    "NO_SYNTHETIC_ADMISSION",
+    "NO_PRODUCTION"
+  ],
+  "clock_measurement_evidence": {
+    "captured_at": "2026-10-11T12:16:07.068904+00:00",
+    "measurement_id": "clock_meas_f9d7dbc2b7ef0c23",
+    "reference_source_class": "INDEPENDENT_REFERENCE",
+    "reference_servers": [
+      "time.google.com",
+      "time.cloudflare.com",
+      "time.windows.com",
+      "pool.ntp.org"
+    ],
+    "observed_offset_ms": 8975.061,
+    "measurement_uncertainty_ms": 14.098,
+    "network_asymmetry_allowance_ms": 10.0,
+    "other_error_allowance_ms": 5.0,
+    "total_bound_ms": 9004.159,
+    "clock_status": "UNTRUSTED",
+    "within_policy": false,
+    "is_fresh_for_arming": true,
+    "is_fresh_during_capture": true,
+    "raw_evidence_sha256": "af29ba6e2f142e8003d02103c366a0323423cc33c32dbec6d624761306215a80",
+    "samples": [
+      {
+        "server": "time.google.com",
+        "stratum": 1,
+        "offset_ms": 8978.091,
+        "rtt_ms": 27.719,
+        "uncertainty_ms": 13.859,
+        "captured_at_utc": "2026-10-11T12:16:07.068904+00:00",
+        "raw_packet_hex": "1c0100ec0000000000000006474f4f47ee75fc900f942d950000000000000000ee75fc900f942d96ee75fc900f942d98"
+      },
+      {
+        "server": "time.cloudflare.com",
+        "stratum": 3,
+        "offset_ms": 8974.372,
+        "rtt_ms": 14.912,
+        "uncertainty_ms": 7.456,
+        "captured_at_utc": "2026-10-11T12:16:07.097868+00:00",
+        "raw_packet_hex": "1c0300e700000256000000120a300990ee75fc12a301b32a0000000000000000ee75fc901466f397ee75fc90146bc1ea"
+      },
+      {
+        "server": "time.windows.com",
+        "stratum": 4,
+        "offset_ms": 8975.751,
+        "rtt_ms": 17.978,
+        "uncertainty_ms": 8.989,
+        "captured_at_utc": "2026-10-11T12:16:07.112853+00:00",
+        "raw_packet_hex": "1c0400e90000000400000299564d5450ee75fc8328db2a5d0000000000000000ee75fc9018fbe4e8ee75fc9018fbf5af"
+      },
+      {
+        "server": "pool.ntp.org",
+        "stratum": 2,
+        "offset_ms": 8974.233,
+        "rtt_ms": 28.196,
+        "uncertainty_ms": 14.098,
+        "captured_at_utc": "2026-10-11T12:16:07.130832+00:00",
+        "raw_packet_hex": "1c0200e7000004aa00000083565979c8ee75f94607dcb33c0000000000000000ee75fc901e81723dee75fc901e832460"
+      }
+    ]
+  },
+  "clock_policy_evaluation": {
+    "max_synchronized_bound_ms": 100.0,
+    "max_degraded_bound_ms": 500.0,
+    "total_bound_ms": 9004.159,
+    "evaluation_verdict": "TOTAL_BOUND_EXCEEDS_500MS",
+    "timestamp_certification_status": "BLOCKED"
+  },
+  "sec_operational_preflight_evidence": {
+    "captured_at": "2026-10-11T12:16:01.717509+00:00",
+    "sec_business_day": false,
+    "sec_active_filing_window": false,
+    "sec_automated_access_policy_current": true,
+    "sec_user_agent_policy_compliant": true,
+    "sec_rate_limit_policy_compliant": true,
+    "sec_metadata_endpoint_reachable": true,
+    "sec_content_endpoint_reachable": true,
+    "metadata_http_status": 200,
+    "content_http_status": 200,
+    "sec_date_header": "Sun, 11 Oct 2026 12:16:11 GMT",
+    "next_eligible_recheck_condition": "AWAIT_NEXT_SEC_BUSINESS_DAY (Current day is Sunday)",
+    "sec_operational_preflight_passed": false,
+    "sec_preflight_evidence_hash": "2016b5f5ed2c994d6e1f6bd16835b7d06cbd820df4098f919eb4ddb9a5f69ea3"
+  },
+  "prearm_decision_block": {
+    "clock_authority_status": "FAIL_CLOSED_UNTRUSTED",
+    "sec_preflight_status": "FAIL_CLOSED_NON_BUSINESS_DAY",
+    "natural_observer_arming": "NOT_AUTHORIZED"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "pds_denominator_hold": {
+    "pds_denominator_status": "HOLD",
+    "pds_denominator_production_released": false
+  },
+  "no_production_attestation": {
+    "production_deployment_activated": false,
+    "remote_push_executed": false,
+    "main_merged": false
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "gate": "LIVE_EXTERNAL_R1_R2_INFRASTRUCTURE_QUALIFICATION_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "8a0ac6bacc353cf8ccbdbc5cdb76f070b7709f39",
+  "functional_commit_sha": "d1bed87abecea379d3f8defbe04075ad049ae9cb",
+  "roles": [
+    "Independent Live Infrastructure Qualification Auditor",
+    "External Root Trust-Domain Auditor",
+    "Receipt / Signer Identity Auditor",
+    "Clock Authority Auditor",
+    "SEC Preflight Auditor",
+    "Candidate 004 Firewall Authority"
+  ],
+  "operating_mode": [
+    "FAIL_CLOSED",
+    "LIVE_INFRASTRUCTURE",
+    "NON_NATURAL_QUALIFICATION_DATA_ONLY",
+    "PROVIDER_EVIDENCE_REQUIRED",
+    "CLOCK_EVIDENCE_REQUIRED",
+    "NO_PRODUCTION_AUTHORITY",
+    "NO_NATURAL_CAPTURE_UNLESS_ALL_PREARM_GATES_PASS"
+  ],
+  "provider_identity_qualification": {
+    "real_provider_selected": "AWS_S3_OBJECT_LOCK",
+    "status": "FAIL_CLOSED_NO_CREDENTIALS",
+    "credentials_present": false,
+    "error_detail": "LIVE_PROVIDER_CREDENTIALS_ABSENT: Real external root resources cannot be contacted or authenticated in this environment.",
+    "raw_response_sha256": "585a2ed0a8ba4008dd6a785e789795b439a62bc906abea83e7d0998f41a9e4de",
+    "pinned_configuration": {
+      "bucket_name": "arx-finalization-root-epoch-001",
+      "region": "us-east-1",
+      "object_lock_mode": "COMPLIANCE",
+      "retention_period": "10_YEARS",
+      "versioning": "ENABLED"
+    }
+  },
+  "trust_model_audit": {
+    "storage_acknowledgement_is_cryptographic_receipt": false,
+    "provider_storage_acknowledgement": "PROVIDER_NATIVE_STORAGE_RESPONSE",
+    "cryptographic_root_receipt": "SEPARATE_SIGNED_ATTESTATION_OR_EQUIVALENT",
+    "receipt_signer": "ARX_CONTROLLED_EXTERNAL_KEY_SERVICE",
+    "provider_native_signed_receipt": false,
+    "administrative_trust_assumption": "ESTABLISHED_WITH_PROVIDER_CONTROL_PLANE_TRUST_ASSUMPTION"
+  },
+  "capability_separation_matrix": {
+    "application_principal_can_change_bucket_policy": false,
+    "application_principal_can_change_key_policy": false,
+    "application_principal_can_change_object_lock_configuration": false,
+    "application_principal_can_change_retention": false,
+    "application_principal_can_delete_locked_version": false,
+    "application_principal_can_disable_signing_key": false,
+    "application_principal_can_use_signing_key_directly": false,
+    "application_principal_can_write_root": true,
+    "root_writer_can_change_retention": false,
+    "root_writer_can_change_signing_key_policy": false,
+    "signing_principal_can_change_retention": false,
+    "signing_principal_can_delete_root": false
+  },
+  "versioning_and_collision_audit": {
+    "object_versioning_enabled": true,
+    "object_lock_enabled": true,
+    "same_object_key_new_version_creation": "ALLOWED",
+    "original_root_version_rewritable": false,
+    "same_root_id_different_version_hash": "CRITICAL_INTEGRITY_CONFLICT",
+    "collision_detection_verified": true
+  },
+  "receipt_binding_contract": {
+    "verified_bindings": [
+      "parent_run_id",
+      "root_phase",
+      "root_id",
+      "finalization_ledger_root_hash",
+      "policy_set_hash",
+      "idempotency_key",
+      "external_provider",
+      "object_version_id",
+      "receipt_signing_key_id"
+    ],
+    "cross_run_replay_prohibited": true,
+    "cross_phase_replay_prohibited": true,
+    "cross_root_substitution_prohibited": true,
+    "signer_mismatch_rejected": true
+  },
+  "ambiguous_commit_recovery_matrix": {
+    "lookup_matches_action": "RECOVER_EXISTING_ROOT",
+    "lookup_conflicting_action": "TERMINAL_HOLD",
+    "lookup_not_found_action": "RETRY_PERMITTED",
+    "verification_status": "PASS"
+  },
+  "key_lifecycle_contract": {
+    "rotation_policy": "VERSIONED_RETIREMENT_PRESERVES_VERIFICATION",
+    "revocation_policy": "COMPROMISE_INVALIDATES_ALL_RECEIPTS_AFTER_REVOCATION",
+    "historical_verification_material_retained": true,
+    "old_receipts_verifiable_after_normal_rotation": true
+  },
+  "r2_delay_policy_review": {
+    "post_authority_closure_max_delay_seconds": 300.0,
+    "governance_classification": "IMPLEMENTATION_DEFAULT_ONLY",
+    "justification_status": "REQUIRED",
+    "production_policy_ratification": "BLOCKED_PENDING_R2_DELAY_JUSTIFICATION"
+  },
+  "synthetic_qualification_lifecycle": {
+    "r1_creation_and_receipt": "PASS",
+    "test_authority_transition": "PASS",
+    "r2_creation_and_receipt": "PASS",
+    "reviewer_reconstruction": "PASS"
+  },
+  "combined_arming_verdict": {
+    "provider_credentials_gate": "FAIL_CLOSED_NO_CREDENTIALS",
+    "independent_clock_gate": "FAIL_CLOSED_UNTRUSTED",
+    "sec_preflight_gate": "FAIL_CLOSED_NON_BUSINESS_DAY",
+    "natural_observer_arming": "NOT_AUTHORIZED"
+  },
+  "verification_evidence": {
+    "targeted_test_count": 18,
+    "targeted_test_passed": 18,
+    "domain_regression_test_count": 112,
+    "domain_regression_passed": 112
+  },
+  "retained_policy_artifacts": {
+    "anchor_policy": "ae287bfbcbb6f48460bea0c9445043178528ecea0c7be55657e4c17d0dbf9431",
+    "state_machine_policy": "42eb8ded98ca8f7ce3f3d05e58ee702a5ad762c82d1e9d961c6e70678dac5539",
+    "clock_policy": "02e3ec5107e46d3796ec5b73d8de088d4f4882c7ea7074013432b139552a51c5",
+    "observer_policy": "a58185d9eb6b73221f2b68aa235e41c877cebbcacb62237cce6d759f577dc792",
+    "authority_admission_policy": "f87b61f6c1c60267e24fbc4cd3e44866a7033e266a75f098a22a56353b91808d",
+    "transport_classification_policy": "926df84016602355c7c9845da5ee2b475ab8108e2d916ef58de384b32ea65cb5",
+    "identity_policy": "661c2af6d82966c84808d318fd249fb179b9ea3b8e0bd18d52b301c1a1dfe8c2",
+    "decision_input_contract": "227bcc3cb6dfefb872b718ce595eab58f726199f3fcaeb4b8cc17f61da65083c",
+    "anchor_policy_registry_v1": "e2710fcbad992a67f9716a3f059a371809ac4d12af1c7c661ffdd485660e3277",
+    "epoch_registry_v1": "8eaaeed1399f572e86b4e5bcbd1f6a8fb66ac191359955679fa2aef2f95ab153",
+    "policy_resolution_contract_v1": "7c3c964e39edc34f1fa3979219d8a3a9f426b039a41ff12c7ae5aa0d35d1cc3a",
+    "finalization_root_policy_v1": "4929ff13f31310b05524c1580913af69d2539af613e9e3f9ed82eac9155a970a",
+    "root_serialization_contract_v1": "163b7ec4e470421ef141e1c90e66822c4e88114e57ef7c3aab353e46e38bfc42",
+    "root_receipt_verification_policy_v1": "fff57ab40b5fdab6eb57abfad412f17d86d43dbd980db97c8a0027fc55bb42ae",
+    "root_retry_policy_v1": "85dbc96c88852f21bdd1418f77453d882fb902715a3310dd5d111fec1419f224",
+    "root_reviewer_policy_v1": "170bcbf9b79a1e5d683593bb85f927871ebeabee3cfb0dd248a6d266c2d77763",
+    "two_phase_root_policy_v1": "620ff0cf571b40138bd9be7d02b483d1d9be079ec24b2227c96aa86411547f9d",
+    "root_self_reference_policy_v1": "9d030bbbc5e925b248b1c81df3f57e9f80161b9f228f704a085e99a79faecf27",
+    "authority_transition_contract_v1": "a923bf444789863f6b4baeb6d85daeae3be68a30e9c0f2e4d0474dcb2bd12be8",
+    "post_authority_closure_policy_v1": "3db2b80262e2eec668f58cadc0a3ef5e283fdd39b6005c316c92ab71aa6b2d4f",
+    "two_phase_root_reviewer_policy_v1": "625db60c91e5c463f285614561e9624c5a119be75d208127e4bc165ab3117035",
+    "live_root_infrastructure_policy_v1": "91a85a591b8f4392d980077fe0339b5701695c48a42a75e716a19e118becf16d",
+    "independent_clock_authority_policy_v1": "58582340fe02b644a54642096c9405d7afd606d739b532745db8debcfe87f9e7",
+    "sec_operational_preflight_policy_v1": "a79d88a1f51a185a91955f0baa8289515f4d2dc274a55510455f39ac759b38e9"
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "pds_denominator_hold": {
+    "pds_denominator_status": "HOLD",
+    "pds_denominator_production_released": false
+  },
+  "no_production_attestation": {
+    "production_deployment_activated": false,
+    "remote_push_executed": false,
+    "main_merged": false
+  }
+}
