@@ -1,0 +1,89 @@
+{
+  "gate": "ANCHOR_POLICY_RESOLUTION_CLOSURE_V1",
+  "governing_epoch": "EPOCH_001",
+  "entry_branch": "arx/public-availability-observer-epoch-001",
+  "entry_head": "91fa1745f65300022afdeb5519e0c45f6b83ac3e",
+  "functional_commit_sha": "cdc2ee8f2c60d6d387924fb673157c6ab7947e3e",
+  "policy_registry": {
+    "policy_registry_id": "ANCHOR_POLICY_REGISTRY_V1",
+    "policy_registry_version": "1.0",
+    "policy_registry_sha256": "2df525bcb91939fc2df58b2fec9e3ad7cfcd03f8e889cfae5ed11f4b49b2851e",
+    "canonical_policy_id": "SMART_MONEY_EXTERNAL_ANCHOR_POLICY_V1",
+    "canonical_policy_version": "1.0",
+    "canonical_policy_sha256": "f5926ecdb5536443c5b5502c4bce81452a382e7e43d4107b3ecf6d92ec3a4176",
+    "valid_from": "2026-10-11T12:00:00Z",
+    "valid_until": "OPEN",
+    "min_run_epoch_ordinal": 1,
+    "revocation_status": "ACTIVE"
+  },
+  "epoch_registry": {
+    "epoch_registry_id": "EPOCH_REGISTRY_V1",
+    "epoch_registry_version": "1.0",
+    "epoch_registry_sha256": "509d2052e6a0b40f41af730683b341319b3bca84815b3d241c09c3ba6e944eed",
+    "mapping": {
+      "EPOCH_001": 1,
+      "EPOCH_002": 2,
+      "EPOCH_003": 3,
+      "EPOCH_004": 4
+    }
+  },
+  "applicability_rules": {
+    "anchor_policy_min_run_epoch": "EPOCH_001",
+    "anchor_policy_min_run_epoch_ordinal": 1,
+    "anchor_policy_applicability_rule": "ALL_PREDICATES_REQUIRED",
+    "run_started_at_definition": "RUN_GENESIS_EVENT_RECORDED_AT_UTC",
+    "straddles_boundary_policy": "POLICY_APPLICABILITY_INDETERMINATE",
+    "applicable_policy_count_required": 1,
+    "pre_effective_policy_behavior": "BLOCKED_NO_POLICY",
+    "normal_policy_supersession_rebinds_existing_run": false,
+    "emergency_revocation_rewrites_original_binding": false,
+    "emergency_revocation_can_block_authority": true,
+    "policy_binding_immutable": true,
+    "mid_run_policy_rebinding": "PROHIBITED"
+  },
+  "reviewer_historical_replay": {
+    "reconstruction_status": "PASS",
+    "independent_replay_function": "replay_policy_binding",
+    "parity_verification": "PASS",
+    "raw_genesis_metadata_consumed_only": true,
+    "stored_binding_consumed_for_decision": false
+  },
+  "verification_suite": {
+    "suite_name": "tests/test_smart_money_anchor_policy_resolution.py",
+    "test_count": 21,
+    "passed": 21,
+    "failed": 0,
+    "domain_regression_test_count": 124,
+    "domain_regression_passed": 124
+  },
+  "candidate_004_firewall": {
+    "protected_files_changed": 0,
+    "shadow_evidence_db_writes": 0,
+    "candidate_004_interference": "NONE"
+  },
+  "downstream_firewall": {
+    "assert_policy_resolution_allowed_enforced": true,
+    "indeterminate_boundary_blocked": true,
+    "no_applicable_policy_blocked": true,
+    "conflicting_applicable_policies_blocked": true,
+    "unknown_epoch_blocked": true
+  },
+  "retained_policy_artifacts": {
+    "anchor_policy": "ae287bfbcbb6f48460bea0c9445043178528ecea0c7be55657e4c17d0dbf9431",
+    "state_machine_policy": "42eb8ded98ca8f7ce3f3d05e58ee702a5ad762c82d1e9d961c6e70678dac5539",
+    "clock_policy": "02e3ec5107e46d3796ec5b73d8de088d4f4882c7ea7074013432b139552a51c5",
+    "observer_policy": "a58185d9eb6b73221f2b68aa235e41c877cebbcacb62237cce6d759f577dc792",
+    "authority_admission_policy": "f87b61f6c1c60267e24fbc4cd3e44866a7033e266a75f098a22a56353b91808d",
+    "transport_classification_policy": "926df84016602355c7c9845da5ee2b475ab8108e2d916ef58de384b32ea65cb5",
+    "identity_policy": "661c2af6d82966c84808d318fd249fb179b9ea3b8e0bd18d52b301c1a1dfe8c2",
+    "decision_input_contract": "227bcc3cb6dfefb872b718ce595eab58f726199f3fcaeb4b8cc17f61da65083c",
+    "anchor_policy_registry_v1": "e2710fcbad992a67f9716a3f059a371809ac4d12af1c7c661ffdd485660e3277",
+    "epoch_registry_v1": "8eaaeed1399f572e86b4e5bcbd1f6a8fb66ac191359955679fa2aef2f95ab153",
+    "policy_resolution_contract_v1": "7c3c964e39edc34f1fa3979219d8a3a9f426b039a41ff12c7ae5aa0d35d1cc3a"
+  },
+  "verdict": {
+    "anchor_policy_resolution_status": "VERIFIED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "next_action": "COMPLETE_FINALIZATION_LEDGER_EXTERNAL_ROOTING_DECISION, THEN_RUN_FIRST_VALID_NATURAL_EDGAR_CAPTURE"
+  }
+}
