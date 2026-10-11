@@ -1,0 +1,30 @@
+{
+  "effective_at": "2026-10-11T19:04:20.463259+00:00",
+  "governance_rules": {
+    "emergency_suspension_behavior": "TERMINAL_HOLD_AND_IMMEDIATE_ADMISSION_HALT",
+    "long_lived_token_prohibited": true,
+    "personal_access_token_prohibited": true,
+    "static_signing_private_key_prohibited": true,
+    "token_disk_persistence_prohibited": true,
+    "token_logging_prohibited": true
+  },
+  "governing_epoch": "EPOCH_001",
+  "policy_id": "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1",
+  "status": "RATIFIED",
+  "version": "1.0.0",
+  "workload_identity_constraints": {
+    "authorized_audience": "sigstore",
+    "authorized_environment": "NONE",
+    "authorized_event": "push",
+    "authorized_issuer": "https://token.actions.githubusercontent.com",
+    "authorized_job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+    "authorized_ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+    "authorized_repository": "daakara/finance",
+    "authorized_repository_id": "1087399232",
+    "authorized_repository_owner": "daakara",
+    "authorized_repository_owner_id": "53128824",
+    "authorized_workflow": "Smart Money Rooting Scheduler",
+    "maximum_token_lifetime_seconds": 600,
+    "token_lifetime_class": "SHORT_LIVED_EPHEMERAL_WORKLOAD_TOKEN"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "aud": "sigstore",
+  "environment": "",
+  "event_name": "push",
+  "exp": 1791745760,
+  "iss": "https://token.actions.githubusercontent.com",
+  "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+  "nbf": 1791745160,
+  "ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+  "repository": "daakara/finance",
+  "repository_id": "1087399232",
+  "repository_owner": "daakara",
+  "repository_owner_id": "53128824",
+  "run_attempt": "1",
+  "run_id": "38166448818",
+  "sha": "a042348239a245521404a7e3a3f7e1ab12e35353",
+  "sub": "repo:daakara/finance:ref:refs/heads/arx/sigstore-workload-identity-qualification",
+  "workflow": "Smart Money Rooting Scheduler"
+}

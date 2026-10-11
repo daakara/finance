@@ -1,0 +1,49 @@
+{
+  "artifact_count": 8,
+  "artifacts": [
+    {
+      "byte_length": 741,
+      "relative_path": "natural_authority_event.json",
+      "sha256": "b3a495321811b153ea56d253b548ac85213b6c4974e55b088736445e3f9d977c"
+    },
+    {
+      "byte_length": 1516,
+      "relative_path": "natural_dry_run_summary.json",
+      "sha256": "3e6ba7c275c9a0ebd32a20f260d5d7f36c11ade2c6cc0633b6cb2aa895525c96"
+    },
+    {
+      "byte_length": 9565,
+      "relative_path": "natural_r1.sigstore.json",
+      "sha256": "c474f5bc2eaed9c2686c8d763e465c5dde96286b4dde981783aa3943dd4166f5"
+    },
+    {
+      "byte_length": 668,
+      "relative_path": "natural_r1_payload.json",
+      "sha256": "21290e59b309a5869cdc3eee2d77d2fef0a1aa11e842f121b0659f01d6462686"
+    },
+    {
+      "byte_length": 9553,
+      "relative_path": "natural_r2.sigstore.json",
+      "sha256": "6d3ac8067eefa80ca3544dcd60095a9119b53f0383fee2ecbc238ffff8da857f"
+    },
+    {
+      "byte_length": 1084,
+      "relative_path": "natural_r2_payload.json",
+      "sha256": "1e1c511bf57452b592364f4bcf61803265789fdd8b408e8a6efe1710a0921f1c"
+    },
+    {
+      "byte_length": 753,
+      "relative_path": "natural_safe_oidc_claims.json",
+      "sha256": "3065dba96c74e98b837ffa9a0b835c0f2e8617a14a75c0cba8a74b3254d6fb92"
+    },
+    {
+      "byte_length": 1360,
+      "relative_path": "natural_workload_policy.json",
+      "sha256": "0ab69c032980f34683940fa63bde1cac824a8631b41573602e3208b731d21532"
+    }
+  ],
+  "gate": "GATE_2_NATURAL_SCHEDULER_IDENTITY_CLOSURE",
+  "generated_at_utc": "2026-10-11T19:04:25.070054+00:00",
+  "manifest_sha256": "0be47535c29ac014c1bc8e9cb80970a94b04cc48f3a05b938cde1fc67ea651a6",
+  "manifest_version": "1.0.0"
+}

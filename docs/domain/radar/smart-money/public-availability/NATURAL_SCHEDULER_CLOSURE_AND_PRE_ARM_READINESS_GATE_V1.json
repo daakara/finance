@@ -1,0 +1,128 @@
+{
+  "gate": "SMART_MONEY_NATURAL_SCHEDULER_AND_PRE_ARM_CLOSURE_V1",
+  "audit_timestamp_utc": "2026-10-11T19:07:00.000000+00:00",
+  "operating_mode": "FAIL_CLOSED_STAGE_A_PASS_STAGE_B_BLOCKED",
+  "outcome": "OUTCOME_B_GATE_2_PASS_CURRENT_SESSION_INELIGIBLE",
+  "gate_conclusions": {
+    "qualification_capability_gate": "PASS",
+    "natural_scheduler_identity_gate": "PASS",
+    "time_of_use_pre_arm_readiness_gate": "BLOCKED_CURRENT_SESSION",
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "next_action": "RERUN_STAGE_B_AT_NEXT_ELIGIBLE_SEC_SESSION"
+  },
+  "stage_a_natural_scheduler_identity": {
+    "natural_scheduler_platform": "GITHUB_ACTIONS",
+    "natural_scheduler_workflow": ".github/workflows/smart_money_rooting.yml",
+    "natural_scheduler_trigger": "schedule (cron '0 10-22/2 * * 1-5') / workflow_dispatch / push",
+    "natural_scheduler_ref": "refs/heads/arx/sigstore-workload-identity-qualification",
+    "natural_scheduler_environment": "NONE",
+    "natural_scheduler_repository": "daakara/finance",
+    "natural_scheduler_repository_id": "1087399232",
+    "natural_scheduler_owner_id": "53128824",
+    "natural_workload_policy": "RATIFIED",
+    "natural_workload_policy_doc": "docs/domain/radar/smart-money/public-availability/SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1.json",
+    "natural_production_scheduler_identity": "ESTABLISHED",
+    "natural_scheduler_dry_run": "PASS",
+    "natural_scheduler_r1": "PASS",
+    "natural_scheduler_r2": "PASS",
+    "natural_scheduler_policy_match": "PASS",
+    "human_signing_interaction": 0,
+    "long_lived_signing_secret": "NONE",
+    "dry_run_run_id": "38166448818",
+    "dry_run_head_sha": "a042348239a245521404a7e3a3f7e1ab12e35353",
+    "r1_bundle_sha256": "c474f5bc2eaed9c2686c8d763e465c5dde96286b4dde981783aa3943dd4166f5",
+    "r1_rekor_log_index": 3212939440,
+    "r2_bundle_sha256": "6d3ac8067eefa80ca3544dcd60095a9119b53f0383fee2ecbc238ffff8da857f",
+    "r2_rekor_log_index": 3212940108,
+    "authority_event_hash": "b3a495321811b153ea56d253b548ac85213b6c4974e55b088736445e3f9d977c",
+    "claims": {
+      "aud": "sigstore",
+      "iss": "https://token.actions.githubusercontent.com",
+      "sub": "repo:daakara/finance:ref:refs/heads/arx/sigstore-workload-identity-qualification",
+      "repository": "daakara/finance",
+      "repository_id": "1087399232",
+      "repository_owner": "daakara",
+      "repository_owner_id": "53128824",
+      "workflow": "Smart Money Rooting Scheduler",
+      "job_workflow_ref": "daakara/finance/.github/workflows/smart_money_rooting.yml@refs/heads/arx/sigstore-workload-identity-qualification",
+      "ref": "refs/heads/arx/sigstore-workload-identity-qualification"
+    }
+  },
+  "runtime_state_and_denominator": {
+    "current_observer_runtime_state": "PRE_OBSERVATION_READY",
+    "observer_runtime_state_attested": "PASS",
+    "natural_accessions_captured": 0,
+    "natural_denominator": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "historical_records_in_natural_denominator": 0,
+    "qualification_records_in_natural_denominator": 0,
+    "natural_denominator_runtime_attestation": "PASS",
+    "natural_denominator_clean": "YES"
+  },
+  "r2_closure_delay_policy": {
+    "r2_closure_max_delay_seconds": 300,
+    "r2_closure_delay_policy_status": "RATIFIED_FOR_FIRST_NATURAL_CAPTURE",
+    "governance_decision": "OPTION_A_RATIFIED",
+    "rationale": "Bounds WAN latency to AWS S3/KMS (50-200ms) and Sigstore Fulcio/Rekor (1-3s) with retry backoff budget (30s) and verified NTP clock error bound (61.194ms) while providing ~265s WAN resilience margin."
+  },
+  "stage_b_time_of_use_readiness": {
+    "clock_measurement": {
+      "clock_measured_at": "2026-10-11T19:06:12.735725+00:00",
+      "clock_measurement_age_seconds": 60,
+      "reference_endpoint_count": 4,
+      "observed_offset_ms": -24.892,
+      "measurement_uncertainty_ms": 21.303,
+      "network_asymmetry_allowance_ms": 10.0,
+      "other_error_allowance_ms": 5.0,
+      "total_clock_uncertainty_bound_ms": 61.194,
+      "clock_authority_status": "PASS"
+    },
+    "sec_calendar_and_window": {
+      "sec_business_day": "NO",
+      "sec_operational_closure": "ACTIVE",
+      "current_et_time": "2026-10-11 15:06:12 EDT",
+      "authorized_window_start": "06:00:00 EDT",
+      "authorized_window_end": "22:00:00 EDT",
+      "within_authorized_sec_window": "NO",
+      "blocking_reason": "Today is Sunday, October 11, 2026. SEC EDGAR filing system is closed on weekends."
+    },
+    "sec_access_preflight": {
+      "sec_endpoint_access": "PASS",
+      "sec_rate_policy": "PASS",
+      "sec_identity_policy": "PASS",
+      "sec_source_completeness": "NOT_ESTABLISHED",
+      "exact_first_public_time": "NOT_ESTABLISHED"
+    },
+    "rooting_runtime_readiness": {
+      "natural_scheduler_oidc_runtime_readiness": "PASS",
+      "rekor_reachability": "PASS",
+      "fulcio_reachability": "PASS",
+      "tuf_runtime_readiness": "PASS",
+      "natural_workload_policy_applicable": "PASS"
+    },
+    "raw_evidence_durability": {
+      "raw_evidence_runtime_destination_writable": "PASS",
+      "backup_runtime_available": "PASS",
+      "manifest_runtime_available": "PASS",
+      "recovery_runtime_available": "PASS",
+      "raw_evidence_durability_runtime_readiness": "PASS",
+      "natural_production_durability_observed": "NO"
+    }
+  },
+  "candidate_004_firewall": {
+    "worktree_clean": "YES",
+    "protected_files_changed": 0,
+    "candidate_004_interference": "NONE",
+    "main_merge": "NO",
+    "production_deployment": "NO"
+  },
+  "prohibited_actions_preserved": {
+    "natural_production_durability_observed": "NO",
+    "sec_source_completeness": "NOT_ESTABLISHED",
+    "exact_first_public_time": "NOT_ESTABLISHED",
+    "empirical_scanner_quality": "INSUFFICIENT_EVIDENCE",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED"
+  }
+}
