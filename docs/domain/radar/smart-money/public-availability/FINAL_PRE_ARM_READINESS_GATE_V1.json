@@ -1,0 +1,125 @@
+{
+  "gate_id": "SMART_MONEY_FINAL_PRE_ARM_READINESS_V1",
+  "version": "1.0.0",
+  "evaluated_at_utc": "2026-10-11T18:45:00Z",
+  "governing_epoch": "EPOCH_001",
+  "operating_mode": "FAIL_CLOSED",
+  "current_head": "da93706b54ccade17ece4965ded747511b4fe008",
+  "entry_branch": "arx/sigstore-workload-identity-qualification",
+  "worktree_clean": true,
+  "protected_files_changed": 0,
+  "candidate_004_interference": "NONE",
+  "natural_scheduler_identity": {
+    "runtime": "GITHUB_ACTIONS",
+    "workflow": "NOT_ESTABLISHED",
+    "trigger": "NOT_ESTABLISHED",
+    "ref": "NOT_ESTABLISHED",
+    "repository": "daakara/finance",
+    "repository_id": "1087399232",
+    "owner_id": "53128824",
+    "status": "NOT_ESTABLISHED",
+    "reason": "Production natural scheduler workflow has not yet been authored or deployed to default branch"
+  },
+  "natural_workload_policy": {
+    "policy_id": "SMART_MONEY_NATURAL_ROOTING_WORKLOAD_IDENTITY_POLICY_V1",
+    "status": "NOT_RATIFIED",
+    "reason": "Natural production scheduler identity must be established prior to policy ratification"
+  },
+  "natural_scheduler_dry_run": {
+    "status": "NOT_EXECUTED",
+    "reason": "Blocked by absence of natural scheduler workflow and non-business day calendar"
+  },
+  "fresh_clock_qualification": {
+    "measured_at_utc": "2026-10-11T18:43:45.487657+00:00",
+    "measurement_age_seconds": 68.5,
+    "reference_endpoint_count": 4,
+    "reference_servers": [
+      "time.google.com",
+      "time.cloudflare.com",
+      "time.windows.com",
+      "pool.ntp.org"
+    ],
+    "observed_offset_ms": -24.008,
+    "measurement_uncertainty_ms": 23.468,
+    "network_asymmetry_allowance_ms": 10.0,
+    "other_error_allowance_ms": 5.0,
+    "total_clock_uncertainty_bound_ms": 62.477,
+    "clock_status": "SYNCHRONIZED",
+    "clock_authority_status": "PASS",
+    "raw_evidence_sha256": "524f8006fd9b681cb769b7e6c48282f03227d7f70b51b471aed7666901df07c0"
+  },
+  "sec_calendar_and_window": {
+    "captured_at_utc": "2026-10-11T18:44:03.973320+00:00",
+    "current_et_time": "14:44:03 EDT",
+    "sec_business_day": false,
+    "day_of_week": "Sunday",
+    "within_authorized_sec_window": false,
+    "authorized_window_start": "06:00:00 ET",
+    "authorized_window_end": "22:00:00 ET",
+    "sec_preflight_status": "BLOCKED",
+    "next_eligible_recheck_condition": "AWAIT_NEXT_SEC_BUSINESS_DAY (Current day is Sunday)",
+    "evidence_hash": "c7ca769911bdb4db0299cd39ff30ed21a5079d2f309ea26bc38bf4a81e8c0f46"
+  },
+  "sec_endpoint_preflight": {
+    "metadata_endpoint": "https://data.sec.gov/submissions/CIK0000320193.json",
+    "metadata_status": 200,
+    "content_endpoint": "https://www.sec.gov/files/company_tickers.json",
+    "content_status": 200,
+    "sec_date_header": "Sun, 11 Oct 2026 18:44:04 GMT",
+    "endpoint_access": "PASS",
+    "rate_policy": "PASS",
+    "identity_policy": "PASS"
+  },
+  "rooting_infrastructure_freshness": {
+    "sigstore_runtime_readiness": "PASS",
+    "rekor_api_status": "REACHABLE_HTTP_200",
+    "fulcio_api_status": "REACHABLE",
+    "tuf_runtime_readiness": "PASS",
+    "tuf_root_expires": "2026-11-20T13:58:18Z",
+    "oidc_runtime_readiness": "PASS"
+  },
+  "local_evidence_durability": {
+    "status": "PASS",
+    "dual_store_verified": true,
+    "manifest_verifiable": true,
+    "natural_production_durability_observed": "NO"
+  },
+  "r2_closure_policy": {
+    "max_delay_seconds": 300.0,
+    "status": "PROVISIONAL"
+  },
+  "observer_state_machine": {
+    "current_state": "PRE_OBSERVATION_READY",
+    "status": "PASS"
+  },
+  "natural_denominator_invariant": {
+    "natural_accessions_captured": 0,
+    "natural_denominator": 0,
+    "synthetic_records_in_natural_denominator": 0,
+    "historical_records_in_natural_denominator": 0,
+    "natural_denominator_clean": true
+  },
+  "final_verdict": {
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "blocking_predicates": [
+      "SEC_BUSINESS_DAY_FALSE (Current day is Sunday, October 11, 2026)",
+      "WITHIN_AUTHORIZED_SEC_WINDOW_FALSE (EDGAR closed on weekends)",
+      "NATURAL_PRODUCTION_SCHEDULER_IDENTITY_NOT_ESTABLISHED (Scheduler workflow not yet authored on main)",
+      "NATURAL_SCHEDULER_DRY_RUN_NOT_EXECUTED (Blocked by scheduler absence and calendar)"
+    ],
+    "passing_predicates": [
+      "LIVE_R1_R2_PROVENANCE_CHAIN_SEALED",
+      "UNATTENDED_SIGNING_CAPABILITY_PASS",
+      "CLOCK_AUTHORITY_STATUS_PASS (62.48ms bound, SYNCHRONIZED)",
+      "SEC_ENDPOINT_ACCESS_PASS (HTTP 200)",
+      "SEC_RATE_POLICY_PASS",
+      "SIGSTORE_RUNTIME_READINESS_PASS",
+      "TUF_RUNTIME_READINESS_PASS",
+      "OIDC_RUNTIME_READINESS_PASS",
+      "RAW_EVIDENCE_DURABILITY_PASS",
+      "NATURAL_DENOMINATOR_CLEAN_YES",
+      "CANDIDATE_004_INTERFERENCE_NONE"
+    ],
+    "next_action": "AWAIT_NEXT_SEC_BUSINESS_DAY_AND_PROVISION_NATURAL_SCHEDULER_WORKFLOW"
+  }
+}
