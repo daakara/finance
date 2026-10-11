@@ -10,7 +10,10 @@ from analyst_dashboard.smart_money.form4_models import (
     OwnershipNature,
 )
 from analyst_dashboard.smart_money.form4_parser import Form4XmlParser
-from analyst_dashboard.smart_money.form4_ingestion import Form4IngestionManager
+try:
+    from analyst_dashboard.smart_money.form4_ingestion import Form4IngestionManager
+except ImportError:
+    Form4IngestionManager = None  # type: ignore[assignment, misc]
 from analyst_dashboard.smart_money.form4_scanner import SmartMoneyForm4Scanner
 
 from analyst_dashboard.smart_money.universe_models import (

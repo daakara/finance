@@ -44,7 +44,7 @@ jobs:
         run: cosign version
 
       - name: Install Python Dependencies
-        run: pip install cryptography
+        run: pip install cryptography requests
 
       - name: 3. Restore Durable State Cache
         uses: actions/cache/restore@v4
