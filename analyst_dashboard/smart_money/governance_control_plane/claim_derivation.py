@@ -213,33 +213,88 @@ class ClaimDerivationEngine:
 
             matching_recs = records_by_claim.get(out_id, [])
 
-            # Check conflicts
-            established_recs = [r for r in matching_recs if r.evidence_state == "ESTABLISHED"]
-            not_established_recs = [r for r in matching_recs if r.evidence_state == "NOT_ESTABLISHED"]
+            # Filter out synthetic / test-double evidence upfront:
+            # SYNTHETIC_EVIDENCE_ALTERED_AUTHORITATIVE_CLAIM == 0
+            valid_matching_recs = [
+                r for r in matching_recs
+                if r.provenance_class not in {"SYNTHETIC_FIXTURE", "TEST_DOUBLE"}
+            ]
 
-            if len(established_recs) > 0 and len(not_established_recs) > 0:
-                claim_state = "CONFLICT"
-                basis = None
-            elif len(established_recs) > 0:
-                claim_state = "ESTABLISHED"
-                basis = None
-            elif len(not_established_recs) > 0:
-                claim_state = "NOT_ESTABLISHED"
-                auth_src = not_established_recs[0].source or "urn:arx:authority:canonical-manifest"
-                basis = StateBasis(
-                    basis_type="AUTHORITATIVE_CONFIRMED_ABSENCE",
-                    authority_source=auth_src,
-                    search_scope="urn:arx:scope:canonical-evidence-record",
-                    source_set=["git:tree:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"],
-                    completeness_assertion="EXHAUSTIVE_RECOMPUTED_ABSENCE",
-                    observation_window="GENESIS_TO_HEAD",
-                    observed_at=observed_at,
-                    authority_ref=auth_src,
-                    state_source_ref="urn:arx:scope:canonical-evidence-record",
-                )
+            # Authority Dominance & Freshness Partitioning
+            auth_recs = [r for r in valid_matching_recs if r.authority_class == "AUTHORITATIVE"]
+            non_auth_recs = [r for r in valid_matching_recs if r.authority_class != "AUTHORITATIVE"]
+
+            if auth_recs:
+                curr_auth = [r for r in auth_recs if r.validity == "CURRENT"]
+                stale_auth = [r for r in auth_recs if r.validity != "CURRENT"]
+
+                if curr_auth:
+                    curr_est = [r for r in curr_auth if r.evidence_state == "ESTABLISHED"]
+                    curr_not_est = [r for r in curr_auth if r.evidence_state == "NOT_ESTABLISHED"]
+
+                    if len(curr_est) > 0 and len(curr_not_est) > 0:
+                        # Case B / D: Authoritative Contradiction -> CONFLICT
+                        claim_state = "CONFLICT"
+                        basis = None
+                    elif len(curr_est) > 0:
+                        # Case A: Current authoritative ESTABLISHED dominates non-authoritative NOT_ESTABLISHED
+                        # Case C: Current authoritative ESTABLISHED dominates stale authoritative evidence
+                        claim_state = "ESTABLISHED"
+                        basis = None
+                    elif len(curr_not_est) > 0:
+                        # Authoritative absence with honest state basis
+                        claim_state = "NOT_ESTABLISHED"
+                        auth_src = curr_not_est[0].source or "urn:arx:authority:canonical-manifest"
+                        basis = StateBasis(
+                            basis_type="AUTHORITATIVE_CONFIRMED_ABSENCE",
+                            authority_source=auth_src,
+                            search_scope="urn:arx:scope:canonical-evidence-record",
+                            source_set=["git:tree:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"],
+                            completeness_assertion="EXHAUSTIVE_RECOMPUTED_ABSENCE",
+                            observation_window="GENESIS_TO_HEAD",
+                            observed_at=observed_at,
+                            authority_ref=auth_src,
+                            state_source_ref="urn:arx:scope:canonical-evidence-record",
+                        )
+                    else:
+                        claim_state = "UNKNOWN"
+                        basis = None
+                else:
+                    # Stale authoritative records only
+                    stale_est = [r for r in stale_auth if r.evidence_state == "ESTABLISHED"]
+                    stale_not_est = [r for r in stale_auth if r.evidence_state == "NOT_ESTABLISHED"]
+                    if len(stale_est) > 0 and len(stale_not_est) > 0:
+                        claim_state = "CONFLICT"
+                        basis = None
+                    elif len(stale_est) > 0:
+                        claim_state = "STALE"
+                        basis = None
+                    elif len(stale_not_est) > 0:
+                        claim_state = "STALE"
+                        basis = None
+                    else:
+                        claim_state = "UNKNOWN"
+                        basis = None
             else:
-                claim_state = "UNKNOWN"
-                basis = None
+                # No authoritative evidence present
+                non_auth_est = [r for r in non_auth_recs if r.evidence_state == "ESTABLISHED"]
+                non_auth_not_est = [r for r in non_auth_recs if r.evidence_state == "NOT_ESTABLISHED"]
+
+                if len(non_auth_est) > 0 and len(non_auth_not_est) > 0:
+                    claim_state = "CONFLICT"
+                    basis = None
+                elif len(non_auth_est) > 0:
+                    claim_state = "ESTABLISHED"
+                    basis = None
+                elif len(non_auth_not_est) > 0:
+                    # Section 15: Bare NOT_ESTABLISHED evidence record with authority_class == "NOT_APPLICABLE"
+                    # and no authoritative completeness basis CANNOT produce authoritative NOT_ESTABLISHED!
+                    # BARE_NOT_ESTABLISHED_EVIDENCE_PRODUCED_AUTHORITATIVE_NOT_ESTABLISHED == 0
+                    claim_state = "UNKNOWN"
+                    basis = None
+                else:
+                    claim_state = "UNKNOWN"
+                    basis = None
 
             # Special case for Candidate 004 dual identity
             metadata = {}
@@ -252,7 +307,7 @@ class ClaimDerivationEngine:
                 claim_state=claim_state,
                 derivation_id=deriv_id,
                 derivation_policy_hash=self.policy_hash,
-                evidence_refs=[r.evidence_id for r in matching_recs],
+                evidence_refs=[r.evidence_id for r in valid_matching_recs],
                 input_claim_ids=rule.get("input_claim_ids", []),
                 state_basis=basis,
                 observed_at=observed_at,

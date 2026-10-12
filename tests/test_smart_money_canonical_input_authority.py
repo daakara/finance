@@ -1059,7 +1059,7 @@ class TestMatrix64AuthorizationFreshness:
             theorem_scope=["A"],
             issued_sequence=1,
             issued_at="2026-10-12T10:00:00Z",
-            expires_at="2026-10-12T11:00:00Z",
+            expires_at="2099-01-01T00:00:00Z",
             single_use=True,
             max_uses=1,
             precondition_hashes={},
@@ -1076,6 +1076,7 @@ class TestMatrix64AuthorizationFreshness:
                 current_decision_hash="d" * 64,
                 current_registry_hash="r" * 64,
                 current_decision_context_hash="ctx_altered" * 7 + "a",
+                check_time=datetime.fromisoformat("2026-10-12T10:30:00+00:00"),
             )
 
 

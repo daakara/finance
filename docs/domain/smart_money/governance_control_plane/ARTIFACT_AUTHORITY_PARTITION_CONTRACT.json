@@ -1,0 +1,203 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/artifact-authority-partition.json",
+  "contract_id": "urn:arx:contract:artifact-authority-partition:v1",
+  "version": "1.0.0",
+  "partition_rules": {
+    "source_classes": [
+      "SOURCE_CODE",
+      "TEST_SOURCE",
+      "SCHEMA",
+      "POLICY",
+      "CONTRACT",
+      "GOVERNED_STATE",
+      "STATIC_FIXTURE_REQUIRED_FOR_EXECUTION"
+    ],
+    "evidence_classes": [
+      "TEST_EXECUTION_RESULT",
+      "REGRESSION_REPORT",
+      "ABLATION_EXECUTION_REPORT",
+      "AUDIT_EXECUTION_REPORT",
+      "DERIVED_VERIFICATION_REPORT",
+      "CLOSURE_MANIFEST",
+      "ATTESTATION_MANIFEST"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "analyst_dashboard/smart_money/governance_control_plane/finding_registry.py",
+      "artifact_class": "SOURCE_CODE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "analyst_dashboard/smart_money/governance_control_plane/claim_derivation.py",
+      "artifact_class": "SOURCE_CODE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "analyst_dashboard/smart_money/governance_control_plane/ablation_runner.py",
+      "artifact_class": "SOURCE_CODE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/CANONICAL_CLAIM_DERIVATION_POLICY.json",
+      "artifact_class": "POLICY",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/CANONICAL_FACT_DERIVATION_POLICY.json",
+      "artifact_class": "POLICY",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/GOVERNANCE_REGRESSION_SUITE_MANIFEST.json",
+      "artifact_class": "CONTRACT",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/HISTORICAL_FINDING_IDENTITY_BASELINE.json",
+      "artifact_class": "STATIC_FIXTURE_REQUIRED_FOR_EXECUTION",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINDING_IDENTITY_REGISTRY.json",
+      "artifact_class": "GOVERNED_STATE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINDING_ADMISSION_REGISTRY.json",
+      "artifact_class": "GOVERNED_STATE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/DECISION_INVALIDATION_REGISTRY.json",
+      "artifact_class": "GOVERNED_STATE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINDING_DECISION_MAPPING.json",
+      "artifact_class": "GOVERNED_STATE",
+      "authority_domain": "SOURCE",
+      "generated_or_static": "STATIC",
+      "canonical_input": true,
+      "verification_output": false
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/SOURCE_EVIDENCE_PARTITION_FINAL_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/GOVERNED_REGRESSION_MANIFEST_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/DEFECT_LAYER_IDENTITY_SEMANTICS_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/EVIDENCE_AUTHORITY_DOMINANCE_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/NOT_ESTABLISHED_EVIDENCE_SAFETY_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FOREIGN_FINDING_REASSERTION_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FRESH_BLOCKER_ABLATION_REPORT.json",
+      "artifact_class": "ABLATION_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINDING_SOURCE_OF_TRUTH_PARITY_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/DECISION_INVALIDATION_BINDING_AUDIT.json",
+      "artifact_class": "AUDIT_EXECUTION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINAL_GOVERNANCE_SEMANTIC_INVARIANTS_REGRESSION.json",
+      "artifact_class": "REGRESSION_REPORT",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    },
+    {
+      "path": "docs/domain/smart_money/governance_control_plane/FINAL_GOVERNANCE_SEMANTICS_AND_EVIDENCE_INTEGRITY_MANIFEST.json",
+      "artifact_class": "CLOSURE_MANIFEST",
+      "authority_domain": "EVIDENCE",
+      "generated_or_static": "GENERATED",
+      "canonical_input": false,
+      "verification_output": true
+    }
+  ]
+}

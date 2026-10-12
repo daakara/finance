@@ -45,17 +45,25 @@ class UnsupportedForeignFindingError(FindingRegistryError):
 
 
 KNOWN_DISPROVED_FOREIGN_SUBJECTS: Set[str] = {
+    "Circular Module Dependency",
+    "Epoch State Sequence Desync",
+    "Unauthenticated Decision Replay",
+    "Prototype Pollution Vector",
+}
+
+KNOWN_UNSUPPORTED_FOREIGN_ASSERTIONS: Set[str] = {
     "Floating Point Determinism Loss",
     "Memory State Asymmetry",
     "Dynamic Import Execution",
-    "Prototype Pollution Vector",
-    "Circular Module Dependency",
     "Unbounded Queue Memory Exhaustion",
     "Error Serialization Leak",
     "Unsigned Payload Ingestion",
-    "Epoch State Sequence Desync",
-    "Unauthenticated Decision Replay",
 }
+
+# Defect Layer Identity Semantics Contract
+# IMMUTABLE_IDENTITY_DEFECT_LAYER: defect_layer is an immutable component of finding identity.
+# In-place reclassification without a new finding identity is strictly forbidden.
+IMMUTABLE_IDENTITY_DEFECT_LAYER: bool = True
 
 
 class FindingStatus(str, Enum):
@@ -631,13 +639,27 @@ class FindingRegistry:
     def add_finding(self, finding: Finding) -> None:
         if finding.original_subject in KNOWN_DISPROVED_FOREIGN_SUBJECTS:
             raise UnsupportedForeignFindingError(
-                f"UNSUPPORTED_NEW_FINDINGS_ADMITTED == 0: Foreign finding '{finding.original_subject}' is rejected."
+                f"DISPROVED_FOREIGN_FINDINGS_ADMITTED == 0: Disproved foreign finding '{finding.original_subject}' is rejected."
             )
+        if finding.original_subject in KNOWN_UNSUPPORTED_FOREIGN_ASSERTIONS:
+            if not finding.evidence_refs:
+                raise UnsupportedForeignFindingError(
+                    f"UNSUPPORTED_NEW_FINDINGS_ADMITTED == 0: Foreign finding '{finding.original_subject}' is unsupported without valid evidence."
+                )
+            # Permitted into review if genuinely new valid evidence is attached
+            if finding.admission_status == "ADMITTED":
+                finding.admission_status = "ASSERTED_PENDING_REVIEW"
         if finding.finding_id in FINDING_ORIGINAL_SUBJECTS:
             expected_subject = FINDING_ORIGINAL_SUBJECTS[finding.finding_id]
             if finding.original_subject != expected_subject:
                 raise FindingSubjectMutationForbiddenError(
                     f"HISTORICAL_FINDING_IDS_REUSED_FOR_NEW_SUBJECTS == 0: Historical ID '{finding.finding_id}' cannot be reused for new subject '{finding.original_subject}'."
+                )
+        if finding.finding_id in self._findings:
+            existing = self._findings[finding.finding_id]
+            if finding.defect_layer != existing.defect_layer:
+                raise FindingSubjectMutationForbiddenError(
+                    f"DEFECT_LAYER_MUTATION_FORBIDDEN == 0: Defect layer of finding '{finding.finding_id}' is immutable identity and cannot be mutated in-place."
                 )
         if finding.admission_status == "DUPLICATE":
             if not finding.duplicate_of:
