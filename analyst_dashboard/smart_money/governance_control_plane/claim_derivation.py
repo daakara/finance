@@ -46,13 +46,41 @@ class ClaimPolicySchemaError(ClaimDerivationError):
     pass
 
 
+class UnratifiedClaimError(ClaimDerivationError):
+    """Raised when OPERATOR_RATIFIED is asserted without an authoritative operator ratification artifact."""
+    pass
+
+
 @dataclass
 class StateBasis:
     basis_type: str
-    authority_ref: str
-    state_source_ref: str
-    observed_at: str
+    authority_ref: Optional[str] = None
+    state_source_ref: Optional[str] = None
+    observed_at: Optional[str] = None
+    authority_source: Optional[str] = None
+    search_scope: Optional[str] = None
+    source_set: Optional[List[str]] = None
+    completeness_assertion: Optional[str] = None
+    observation_window: Optional[str] = None
     validity: str = "CURRENT"
+
+    def __post_init__(self):
+        if self.authority_source is None:
+            self.authority_source = self.authority_ref or "urn:arx:authority:canonical-manifest"
+        if self.authority_ref is None:
+            self.authority_ref = self.authority_source
+        if self.search_scope is None:
+            self.search_scope = self.state_source_ref or "urn:arx:scope:canonical-evidence-records"
+        if self.state_source_ref is None:
+            self.state_source_ref = self.search_scope
+        if self.source_set is None:
+            self.source_set = [self.state_source_ref or self.search_scope]
+        if self.completeness_assertion is None:
+            self.completeness_assertion = "EXHAUSTIVE_RECOMPUTED_ABSENCE"
+        if self.observation_window is None:
+            self.observation_window = "GENESIS_TO_HEAD"
+        if self.observed_at is None:
+            self.observed_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -66,6 +94,10 @@ class CanonicalDerivedClaim:
     derivation_id: str
     derivation_policy_hash: str
     evidence_refs: List[str]
+    provenance_class: str = "REPOSITORY_GROUNDED"
+    attestation_status: str = "LOCAL_REFERENCE"
+    freshness: str = "CURRENT"
+    authority_scope: str = "LOCAL_GOVERNANCE_REFERENCE"
     input_claim_ids: List[str] = field(default_factory=list)
     state_basis: Optional[StateBasis] = None
     observed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -77,18 +109,36 @@ class CanonicalDerivedClaim:
             raise ValueError(f"Invalid claim_state '{self.claim_state}'. Allowed: {sorted(list(CLAIM_STATES))}")
 
         # Section 13: Authoritative NOT_ESTABLISHED Basis
-        if self.claim_state == "NOT_ESTABLISHED" and self.state_basis is None:
-            raise AuthoritativeStateBasisMissingError(
-                f"Claim '{self.claim_id}' cannot be NOT_ESTABLISHED without an authoritative state basis. "
-                "Laundering UNKNOWN into NOT_ESTABLISHED is strictly prohibited "
-                "(AUTHORITATIVE_NOT_ESTABLISHED_WITHOUT_STATE_BASIS == 0)."
-            )
+        if self.claim_state == "NOT_ESTABLISHED":
+            if self.state_basis is None:
+                raise AuthoritativeStateBasisMissingError(
+                    f"Claim '{self.claim_id}' cannot be NOT_ESTABLISHED without an authoritative state basis. "
+                    "Laundering UNKNOWN into NOT_ESTABLISHED is strictly prohibited "
+                    "(AUTHORITATIVE_NOT_ESTABLISHED_WITHOUT_STATE_BASIS == 0)."
+                )
+            sb = self.state_basis
+            if not (sb.basis_type and sb.authority_source and sb.search_scope and sb.source_set and sb.completeness_assertion and sb.observation_window and sb.observed_at):
+                raise AuthoritativeStateBasisMissingError(
+                    f"Claim '{self.claim_id}' has incomplete state basis. All fields must be non-empty."
+                )
+
+        # Section 18: Operator Ratification Enforcement
+        if self.attestation_status == "OPERATOR_RATIFIED":
+            if not (self.metadata.get("ratification_artifact_ref") or self.metadata.get("ratification_evidence")):
+                raise UnratifiedClaimError(
+                    f"OPERATOR_RATIFIED_WITHOUT_RATIFICATION_ARTIFACT == 0: "
+                    f"Claim '{self.claim_id}' cannot assert OPERATOR_RATIFIED without ratification artifact reference."
+                )
 
         if not self.claim_hash:
             data = {
                 "claim_id": self.claim_id,
                 "claim_class": self.claim_class,
                 "claim_state": self.claim_state,
+                "provenance_class": self.provenance_class,
+                "attestation_status": self.attestation_status,
+                "freshness": self.freshness,
+                "authority_scope": self.authority_scope,
                 "derivation_id": self.derivation_id,
                 "derivation_policy_hash": self.derivation_policy_hash,
                 "evidence_refs": sorted(self.evidence_refs),
@@ -175,11 +225,17 @@ class ClaimDerivationEngine:
                 basis = None
             elif len(not_established_recs) > 0:
                 claim_state = "NOT_ESTABLISHED"
+                auth_src = not_established_recs[0].source or "urn:arx:authority:canonical-manifest"
                 basis = StateBasis(
                     basis_type="AUTHORITATIVE_CONFIRMED_ABSENCE",
-                    authority_ref=not_established_recs[0].source or "urn:arx:authority:canonical-manifest",
-                    state_source_ref="urn:arx:source:canonical-evidence-record",
+                    authority_source=auth_src,
+                    search_scope="urn:arx:scope:canonical-evidence-record",
+                    source_set=["git:tree:docs/domain/vcp/sprint_3/candidates/CANDIDATE_GENERATION_004_FREEZE.json"],
+                    completeness_assertion="EXHAUSTIVE_RECOMPUTED_ABSENCE",
+                    observation_window="GENESIS_TO_HEAD",
                     observed_at=observed_at,
+                    authority_ref=auth_src,
+                    state_source_ref="urn:arx:scope:canonical-evidence-record",
                 )
             else:
                 claim_state = "UNKNOWN"

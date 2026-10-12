@@ -32,6 +32,7 @@ RUNTIME_ACTIONS = ["NONE", "HALT_NEW_ADMISSIONS", "TERMINAL_HOLD", "INCIDENT_RES
 INVALIDATED_PRE_INTEGRATION_DECISION_HASHES = {
     "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
     "2563e663a7717bbb411229ea0bbab3ad0da58d3ff8a100bce14099132e096254",
+    "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f",
 }
 
 
@@ -42,6 +43,11 @@ class PreIntegrationSnapshotRejectedError(Exception):
 
 class DuplicateDecisionSequenceError(Exception):
     """Raised when an attempt is made to evaluate/commit a conflicting decision with an already-used sequence."""
+    pass
+
+
+class ReusedInvalidatedSequenceSlotError(Exception):
+    """Raised when an attempt is made to evaluate a decision in an already invalidated sequence slot."""
     pass
 
 
@@ -223,6 +229,11 @@ class GovernanceDecisionEngine:
         self.enforce_sequence_uniqueness = enforce_sequence_uniqueness
         self._registered_committed_decisions: Dict[tuple, str] = {}
         self._committed_decisions: Dict[tuple, str] = {}
+        self._invalidated_slots: Set[tuple] = set()
+
+    def invalidate_sequence_slot(self, epoch: str, sequence: int) -> None:
+        """Formally marks a sequence slot in an epoch as invalidated, forbidding reuse."""
+        self._invalidated_slots.add((epoch, sequence))
 
     def register_committed_decision(self, epoch: str, sequence: int, decision_hash: str) -> None:
         """Explicitly registers an authoritative decision hash into the engine's anti-equivocation ledger."""
@@ -247,6 +258,11 @@ class GovernanceDecisionEngine:
         derived_at: Optional[str] = None,
         decision_id: Optional[str] = None,
     ) -> DecisionSnapshot:
+        if (self.epoch, sequence) in self._invalidated_slots:
+            raise ReusedInvalidatedSequenceSlotError(
+                f"REUSED_INVALIDATED_SEQUENCE_SLOT == 0: Sequence slot ({self.epoch}, {sequence}) is formally invalidated and cannot be reused."
+            )
+
         if not derived_at:
             derived_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -417,6 +433,11 @@ class GovernanceDecisionEngine:
         Authoritative Canonical Decision Derivation (Sections 14, 15, 16, 35).
         Consumes: Canonical Evidence -> Claims -> Context -> Policy DAG -> Admitted Findings.
         """
+        if (self.epoch, sequence) in self._invalidated_slots:
+            raise ReusedInvalidatedSequenceSlotError(
+                f"REUSED_INVALIDATED_SEQUENCE_SLOT == 0: Sequence slot ({self.epoch}, {sequence}) is formally invalidated and cannot be reused."
+            )
+
         if context is not None:
             # Mechanically verify context hash
             context_dict = context.to_dict()

@@ -1,11 +1,13 @@
 {
   "$schema": "https://arx.terminal/schemas/v1/finding-adjudication-report.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "adjudication_authority": {
     "authority_type": "LOCAL_GOVERNANCE_REFERENCE",
     "authority_status": "NON_OPERATIONAL",
+    "attestation_status": "LOCAL_REFERENCE",
+    "operational_authority": false,
     "ratification_ref": "PENDING_OPERATOR_RATIFICATION",
-    "adjudicated_at": "2026-10-12T10:00:00Z"
+    "adjudicated_at": "2026-10-12T12:00:00Z"
   },
   "summary": {
     "total_registered_findings": 15,
@@ -13,194 +15,336 @@
     "duplicate_count": 2,
     "rejected_count": 0,
     "superseded_count": 0,
-    "architecture_defect_count": 8
+    "architecture_defect_count": 8,
+    "non_architecture_blocker_count": 5
   },
-  "duplicate_integrity": {
-    "duplicates_without_canonical_target": 0,
-    "duplicate_self_references": 0,
-    "duplicate_cycles": 0,
-    "duplicate_chain_ambiguity": 0
+  "invariants": {
+    "OPERATOR_RATIFIED_WITHOUT_RATIFICATION_ARTIFACT": 0,
+    "DUPLICATE_WITHOUT_ROOT_CAUSE_EQUIVALENCE": 0,
+    "DUPLICATE_WITHOUT_CANONICAL_TARGET": 0,
+    "DUPLICATE_CYCLE_COUNT": 0,
+    "FINDING_ADJUDICATION_EQUIVOCATION": 0
   },
   "adjudications": [
     {
       "adjudication_id": "adj-001",
       "finding_id": "FND-ARCH-001",
-      "asserted_subject": "Hash Canonicalization Ambiguity",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-001-code-review"],
-      "rationale": "Non-deterministic dictionary key serialization creates cross-platform digest instability."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-001"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "79828ae989ad44740f565b755d0eb0ee83e426b22d0dedcc90185e7aa5b2fafd"
     },
     {
       "adjudication_id": "adj-002",
       "finding_id": "FND-ARCH-002",
-      "asserted_subject": "Sigstore OIDC Verification Missing Hardware Binding",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "defect_layer": "EXTERNAL_EVIDENCE_GAP",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-002-attestation"],
-      "rationale": "Software OIDC token lacks hardware HSM anchoring prerequisite."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-002"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "f816f01e8ed0838626eca1d38cfafb6e9e99fa9745a9c853270a27e1320bea5f"
     },
     {
       "adjudication_id": "adj-003",
       "finding_id": "FND-ARCH-003",
-      "asserted_subject": "Durable State Provider Architecture Unspecified",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "defect_layer": "PROVIDER_SELECTION_PREREQUISITE",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-003-provider-spec"],
-      "rationale": "Absence of selected distributed transaction substrate prevents multi-node state synchronization."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-003"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "b7c351853fffe5b8afc35e4f26194fb2f585c1c629fdce69932f12da9165d508"
     },
     {
       "adjudication_id": "adj-004",
       "finding_id": "FND-ARCH-004",
-      "asserted_subject": "Replication RPO Contradiction",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-004-rpo-spec"],
-      "rationale": "Claimed RPO=0 contradicts asynchronous secondary snapshot mechanism."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-004"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "572cdc61a3b6c82e08ee07d63e74457249c86db9fc0a3fe3a005b79d81c9c09a"
     },
     {
       "adjudication_id": "adj-005",
       "finding_id": "FND-ARCH-005",
-      "asserted_subject": "Unencapsulated Durable Storage Primitives in Public Engine",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "defect_layer": "PROVIDER_SELECTION_PREREQUISITE",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-005-storage-primitives"],
-      "rationale": "Direct SQLite file access leaks storage boundary across modular layers."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-005"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "b322e37e8adf484d04ebcb397bf872f63f2f2bbd024223b491c0aaa5cd89f76e"
     },
     {
       "adjudication_id": "adj-006",
       "finding_id": "FND-ARCH-006",
-      "asserted_subject": "Missing Deterministic Verification Assertions for Candidate 004",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "defect_layer": "IMPLEMENTATION_PREREQUISITE",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-006-test-coverage"],
-      "rationale": "Candidate 004 lack of formal mathematical verification test asserts incomplete verification."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-006"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "ed04836999d3c2473c63c5b4701600e747ec313714554e2f4c22c204463fe22c"
     },
     {
       "adjudication_id": "adj-007",
       "finding_id": "FND-ARCH-007",
-      "asserted_subject": "Crash Recovery State Machine Ambiguity",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-007-crash-model"],
-      "rationale": "Undefined coordinator behavior during mid-transaction worker node crash."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-007"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "41075bac33366d72eb22e0ceba92c3a07912766afde3d6a195c0b96fdcfd3a3f"
     },
     {
       "adjudication_id": "adj-008",
       "finding_id": "FND-ARCH-008",
-      "asserted_subject": "Governance Epoch State Machine Lacks Monotonic Advance Guard",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-008-state-machine"],
-      "rationale": "Absence of cryptographic sequence monotonicity check permits replay."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-008"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "f38ce08869a12f3b2c833abfde4291985db68e0b0eac7cb1cb3ca65b7a4ac243"
     },
     {
       "adjudication_id": "adj-009",
       "finding_id": "FND-ARCH-009",
-      "asserted_subject": "Error Classification Policy Permits Fail-Open Degraded Operation",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "defect_layer": "POLICY_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-009-policy-spec"],
-      "rationale": "Transient network failure classified as non-fatal allowing degraded authorization."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-009"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "faed9897b1a719591da8ee15cb4edac7c3163445ad00e830b162e10300720bff"
     },
     {
       "adjudication_id": "adj-010",
       "finding_id": "FND-ARCH-010",
-      "asserted_subject": "Distributed State Concurrency Fencing Defect",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-010-fencing-spec"],
-      "rationale": "Missing monotonic fencing token allows split-brain stale writer partition bypass."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-010"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "f2669485c2d869ef1d7b05e460fa9215e8823b345f22dc07628765373fc1e4ae"
     },
     {
       "adjudication_id": "adj-011",
       "finding_id": "FND-ARCH-011",
-      "asserted_subject": "Semantic Invariant Misalignment in Observer Engine",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-011-semantic-analysis"],
-      "rationale": "Discrepancy between paper trading outcome evaluator and observation ledger."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-011"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "1b303bd263e8bbf426cc9b9acc73b6d670b3d2a28696f10bb5324b6b1563fb03"
     },
     {
       "adjudication_id": "adj-012",
       "finding_id": "FND-ARCH-012",
-      "asserted_subject": "SHA-256 Digest Truncation in Decision Identifier",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Git commit SHA truncation in Genesis Manifest.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-012-entropy-audit"],
-      "rationale": "12-hex character truncation introduces birthday paradox collision risk in long chains."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-012"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "021ca6db1ddcf9217eb06a23af84d4c5e61c8c9385d764c4669516f117d41e4b"
     },
     {
       "adjudication_id": "adj-013",
       "finding_id": "FND-ARCH-013",
-      "asserted_subject": "Crash Recovery State Machine Ambiguity (Duplicate)",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Gate-3 lease-expiry recovery behavior.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "DUPLICATE",
       "outcome": "DUPLICATE",
       "duplicate_of": "FND-ARCH-007",
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-007-crash-model"],
-      "rationale": "Root cause identical to FND-ARCH-007; both address mid-commit crash ambiguity in state store."
+      "duplicate_analysis": {
+        "candidate_finding_id": "FND-ARCH-013",
+        "canonical_target_id": "FND-ARCH-007",
+        "root_cause_equivalence": "Both findings identify Gate-3 uncommitted state recovery gaps on lease expiry or coordinator crash.",
+        "causal_path_equivalence": "Both findings causally block Theorem B and Theorem C.",
+        "evidence_overlap": [
+          "urn:arx:evidence:audit:gate3-recovery:001",
+          "urn:arx:evidence:audit:lease-expiry-recovery:001"
+        ],
+        "verdict": "CONFIRMED_DUPLICATE"
+      },
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-013"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "0e2d88778f4db7d9c6cb32b8b638895d0e90d8d4699280deab7cd4ea37acebfb"
     },
     {
       "adjudication_id": "adj-014",
       "finding_id": "FND-ARCH-014",
-      "asserted_subject": "Durable Ledger Replication Divergence Under High Write Contention",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Transaction-log divergence from consensus.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "ADMITTED",
       "outcome": "ADMIT",
       "duplicate_of": null,
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-014-contention-trace"],
-      "rationale": "Concurrent worker commits create unordered transaction log drift across replicas."
+      "duplicate_analysis": null,
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-014"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "d196e1bd802b1502447554c00091ae51ff762465c620dc6771461e59a7a34dd4"
     },
     {
       "adjudication_id": "adj-015",
       "finding_id": "FND-ARCH-015",
-      "asserted_subject": "Observer Engine Ledger Schema Semantic Disconnect (Duplicate)",
+      "adjudication_sequence": 1,
+      "previous_adjudication_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asserted_subject": "Candidate-freeze predicate coupling with denominator evaluation oracle.",
+      "defect_layer": "ARCHITECTURE_DEFECT",
       "prior_admission_status": "ASSERTED_PENDING_REVIEW",
       "new_admission_status": "DUPLICATE",
       "outcome": "DUPLICATE",
       "duplicate_of": "FND-ARCH-011",
-      "authority_status": "NON_OPERATIONAL",
-      "evidence_refs": ["ev-fnd-011-semantic-analysis"],
-      "rationale": "Root cause identical to FND-ARCH-011; both address observation ledger schema misalignment."
+      "duplicate_analysis": {
+        "candidate_finding_id": "FND-ARCH-015",
+        "canonical_target_id": "FND-ARCH-011",
+        "root_cause_equivalence": "Both findings identify semantic invariant drift and coupling between Candidate 004 freeze predicates and denominator oracle.",
+        "causal_path_equivalence": "Both findings causally block Natural Pre-Arm and Provisioning.",
+        "evidence_overlap": [
+          "urn:arx:evidence:audit:denominator-alignment:001",
+          "urn:arx:evidence:audit:predicate-coupling:001"
+        ],
+        "verdict": "CONFIRMED_DUPLICATE"
+      },
+      "attestation_status": "LOCAL_REFERENCE",
+      "operational_authority": false,
+      "evidence_refs": [
+        "urn:arx:evidence:adjudication:fnd-arch-015"
+      ],
+      "adjudicated_at": "2026-10-12T12:00:00Z",
+      "adjudication_hash": "0d1de5107ddf2d772ac894d930058173c36f4f1f228cc1a7a9660e1c47042ee4"
     }
   ]
 }

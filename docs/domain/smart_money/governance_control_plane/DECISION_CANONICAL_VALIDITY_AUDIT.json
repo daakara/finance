@@ -1,0 +1,20 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/decision-canonical-validity-audit.json",
+  "audit_version": "1.0.0",
+  "audited_at": "2026-10-12T12:00:00Z",
+  "subject_decision": {
+    "epoch": "epoch-gov-002",
+    "sequence": 1,
+    "decision_hash": "c3277609a97c07a4bfcdd87701109cf0c40f36ba21105835d24a9b5d1bbe352f"
+  },
+  "audit_findings": {
+    "derived_from_mutated_finding_identities": true,
+    "derived_from_malformed_scalar_claim_lattice": true,
+    "derived_from_conflict_collapsed_to_not_established": true,
+    "derived_from_false_operator_ratification": true
+  },
+  "verdict": "INVALIDATED_NON_CANONICAL",
+  "action": "RECORD_IN_INVALIDATION_REGISTRY_AND_ADVANCE_TO_SEQUENCE_2",
+  "successor_epoch": "epoch-gov-002",
+  "successor_sequence": 2
+}

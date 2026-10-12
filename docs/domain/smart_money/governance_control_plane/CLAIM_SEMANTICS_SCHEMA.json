@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arx.terminal/schemas/v1/claim-semantics-schema.json",
+  "title": "Canonical Claim Semantics Schema",
+  "type": "object",
+  "required": [
+    "claim_id",
+    "claim_class",
+    "claim_state",
+    "provenance_class",
+    "attestation_status",
+    "freshness",
+    "authority_scope",
+    "derivation_id",
+    "derivation_policy_hash",
+    "evidence_refs"
+  ],
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "pattern": "^CLAIM-[A-Z0-9_-]+$"
+    },
+    "claim_class": {
+      "type": "string"
+    },
+    "claim_state": {
+      "type": "string",
+      "enum": [
+        "ESTABLISHED",
+        "NOT_ESTABLISHED",
+        "UNKNOWN",
+        "CONFLICT",
+        "STALE",
+        "REVOKED"
+      ]
+    },
+    "provenance_class": {
+      "type": "string",
+      "enum": [
+        "REPOSITORY_GROUNDED",
+        "OPERATOR_ATTESTED",
+        "EXTERNAL_OPERATIONAL",
+        "GENERATED_DERIVATION",
+        "NONE"
+      ]
+    },
+    "attestation_status": {
+      "type": "string",
+      "enum": [
+        "UNRATIFIED",
+        "LOCAL_REFERENCE",
+        "OPERATOR_RATIFIED",
+        "EXTERNALLY_ATTESTED"
+      ]
+    },
+    "freshness": {
+      "type": "string",
+      "enum": [
+        "CURRENT",
+        "STALE",
+        "REVOKED"
+      ]
+    },
+    "authority_scope": {
+      "type": "string"
+    },
+    "derivation_id": {
+      "type": "string"
+    },
+    "derivation_policy_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "input_claim_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "state_basis": {
+      "type": ["object", "null"],
+      "properties": {
+        "basis_type": { "type": "string" },
+        "authority_source": { "type": "string" },
+        "search_scope": { "type": "string" },
+        "source_set": { "type": "array", "items": { "type": "string" } },
+        "completeness_assertion": { "type": "string" },
+        "observation_window": { "type": "string" },
+        "observed_at": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "basis_type",
+        "authority_source",
+        "search_scope",
+        "source_set",
+        "completeness_assertion",
+        "observation_window",
+        "observed_at"
+      ]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "claim_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

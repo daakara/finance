@@ -8,7 +8,7 @@ Includes the canonical Section 46 known architecture findings with 7-layer recla
 
 from dataclasses import dataclass, asdict, field
 from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 import hashlib
 
 from .canonicalization import sha256_canonical, domain_normalize
@@ -32,6 +32,30 @@ class DuplicateSelfReferenceError(FindingRegistryError):
 class DuplicateCycleError(FindingRegistryError):
     """Raised when duplicate_of references form a cycle."""
     pass
+
+
+class FindingSubjectMutationForbiddenError(FindingRegistryError):
+    """Raised when a historical finding identity is mutated or reused for a new subject."""
+    pass
+
+
+class UnsupportedForeignFindingError(FindingRegistryError):
+    """Raised when an unsupported or unevidenced foreign finding is asserted or admitted."""
+    pass
+
+
+KNOWN_DISPROVED_FOREIGN_SUBJECTS: Set[str] = {
+    "Floating Point Determinism Loss",
+    "Memory State Asymmetry",
+    "Dynamic Import Execution",
+    "Prototype Pollution Vector",
+    "Circular Module Dependency",
+    "Unbounded Queue Memory Exhaustion",
+    "Error Serialization Leak",
+    "Unsigned Payload Ingestion",
+    "Epoch State Sequence Desync",
+    "Unauthenticated Decision Replay",
+}
 
 
 class FindingStatus(str, Enum):
@@ -73,6 +97,10 @@ class Finding:
     resolution_authority: str
     verification_authority: str
     derived_blocks: List[str]
+    subject: Optional[str] = None
+    claim_ids: List[str] = field(default_factory=list)
+    dependency_paths: List[str] = field(default_factory=list)
+    assertion_validity: str = "VALID"
     reclassified_layer: str = "ARCHITECTURE_DEFECT"
     defect_class: str = "GENERIC_DEFECT"
     assertion_status: str = "ASSERTED"
@@ -90,6 +118,16 @@ class Finding:
     verification_evidence: Optional[str] = None
     waiver_expires_at: Optional[str] = None
 
+    def __post_init__(self):
+        if self.subject is None:
+            self.subject = FINDING_ORIGINAL_SUBJECTS.get(self.finding_id, self.title)
+        if self.finding_id in FINDING_ORIGINAL_SUBJECTS:
+            expected = FINDING_ORIGINAL_SUBJECTS[self.finding_id]
+            if self.subject != expected:
+                raise FindingSubjectMutationForbiddenError(
+                    f"FINDING_ID_SUBJECT_MUTATIONS_REMAINING == 0: Finding '{self.finding_id}' cannot mutate historical subject to '{self.subject}'."
+                )
+
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["lifecycle_status"] = self.lifecycle_status.value
@@ -97,6 +135,10 @@ class Finding:
         d.pop("admission_status", None)
         d.pop("duplicate_of", None)
         d.pop("superseded_by", None)
+        d.pop("subject", None)
+        d.pop("claim_ids", None)
+        d.pop("dependency_paths", None)
+        d.pop("assertion_validity", None)
         return d
 
     def to_admission_dict(self) -> Dict[str, Any]:
@@ -106,7 +148,7 @@ class Finding:
 
     @property
     def original_subject(self) -> str:
-        return FINDING_ORIGINAL_SUBJECTS.get(self.finding_id, self.title)
+        return self.subject or FINDING_ORIGINAL_SUBJECTS.get(self.finding_id, self.title)
 
     @property
     def original_subject_normalized(self) -> str:
@@ -149,6 +191,7 @@ class Finding:
 
     @property
     def is_blocking(self) -> bool:
+        # Section 10: BLOCKING_DERIVED_FROM_SEVERITY_ONLY == 0
         # Only admitted findings can block
         if self.admission_status != "ADMITTED":
             return False
@@ -160,7 +203,8 @@ class Finding:
         if self.lifecycle_status == FindingStatus.WAIVED:
             # If waived and not expired, non-blocking
             return False
-        return self.severity in ["CRITICAL", "HIGH", "BLOCKING"]
+        # Blocking is derived causally from non-empty derived_blocks, zero severity bias
+        return len(self.derived_blocks) > 0
 
 
     @property
@@ -585,6 +629,16 @@ class FindingRegistry:
         return self._findings.get(finding_id)
 
     def add_finding(self, finding: Finding) -> None:
+        if finding.original_subject in KNOWN_DISPROVED_FOREIGN_SUBJECTS:
+            raise UnsupportedForeignFindingError(
+                f"UNSUPPORTED_NEW_FINDINGS_ADMITTED == 0: Foreign finding '{finding.original_subject}' is rejected."
+            )
+        if finding.finding_id in FINDING_ORIGINAL_SUBJECTS:
+            expected_subject = FINDING_ORIGINAL_SUBJECTS[finding.finding_id]
+            if finding.original_subject != expected_subject:
+                raise FindingSubjectMutationForbiddenError(
+                    f"HISTORICAL_FINDING_IDS_REUSED_FOR_NEW_SUBJECTS == 0: Historical ID '{finding.finding_id}' cannot be reused for new subject '{finding.original_subject}'."
+                )
         if finding.admission_status == "DUPLICATE":
             if not finding.duplicate_of:
                 raise DuplicateWithoutCanonicalTargetError(
@@ -710,7 +764,15 @@ class FindingRegistry:
         return [
             f for f in self.findings
             if f.reclassified_layer == "ARCHITECTURE_DEFECT"
+            and f.admission_status == "ADMITTED"
             and f.lifecycle_status not in [FindingStatus.VERIFIED_RESOLVED, FindingStatus.DISPROVED]
+        ]
+
+    def get_active_non_architecture_blockers(self) -> List[Finding]:
+        return [
+            f for f in self.findings
+            if f.is_blocking
+            and f.reclassified_layer != "ARCHITECTURE_DEFECT"
         ]
 
     def get_dispositions(self) -> Dict[str, int]:

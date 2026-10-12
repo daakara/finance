@@ -1,0 +1,126 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/foreign-finding-assertion-audit.json",
+  "audit_version": "1.0.0",
+  "audited_at": "2026-10-12T12:00:00Z",
+  "summary": {
+    "foreign_subjects_audited": 10,
+    "unsupported_new_findings_admitted": 0,
+    "historical_finding_ids_reused_for_new_subjects": 0
+  },
+  "invariants": {
+    "UNSUPPORTED_NEW_FINDINGS_ADMITTED": 0,
+    "HISTORICAL_FINDING_IDS_REUSED_FOR_NEW_SUBJECTS": 0
+  },
+  "candidate_findings": [
+    {
+      "candidate_id": "CAND-AUDIT-001",
+      "proposed_subject": "Floating Point Determinism Loss",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero occurrences in repository governance or core smart money modules. No code or evidence exists.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-002",
+      "proposed_subject": "Memory State Asymmetry",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero occurrences in repository governance control plane. No code or evidence exists.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-003",
+      "proposed_subject": "Dynamic Import Execution",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero occurrences in repository governance control plane. No code or evidence exists.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-004",
+      "proposed_subject": "Prototype Pollution Vector",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero occurrences in Python codebase. JavaScript prototype pollution does not apply to python governance modules.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-005",
+      "proposed_subject": "Circular Module Dependency",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero circular dependencies exist in governance_control_plane modules. Code imports cleanly without cycles.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-006",
+      "proposed_subject": "Unbounded Queue Memory Exhaustion",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero queue structures in governance control plane. No code or evidence exists.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-007",
+      "proposed_subject": "Error Serialization Leak",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero error serialization leaks in governance modules. Exceptions raise structured, sanitized error types.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-008",
+      "proposed_subject": "Unsigned Payload Ingestion",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero occurrences in repository governance control plane. No code or evidence exists.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-009",
+      "proposed_subject": "Epoch State Sequence Desync",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero sequence desync in governance control plane; sequence anti-equivocation is already formally enforced.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    },
+    {
+      "candidate_id": "CAND-AUDIT-010",
+      "proposed_subject": "Unauthenticated Decision Replay",
+      "supporting_files": [],
+      "supporting_functions": [],
+      "supporting_contracts": [],
+      "reproduction_or_static_evidence": "Zero unauthenticated decision replays possible; TOCTOU and cryptographic context root binding prevent replay.",
+      "governance_impact": "None. Unreferenced in governance contracts or schemas.",
+      "evidence_quality": "DISPROVED",
+      "recommendation": "REJECT_UNSUPPORTED"
+    }
+  ]
+}

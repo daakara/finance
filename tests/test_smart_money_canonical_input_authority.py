@@ -578,7 +578,7 @@ class TestMatrix59FindingsAuthority:
         """35. Only ADMITTED findings enter blocker set; DUPLICATE findings do not double count"""
         reg = create_canonical_finding_registry()
         blockers = reg.get_active_blockers()
-        assert len(blockers) == 12
+        assert len(blockers) == 13
         duplicate_ids = {f.finding_id for f in reg.findings if f.admission_status == "DUPLICATE"}
         assert "FND-ARCH-014" not in duplicate_ids
         assert "FND-ARCH-015" in duplicate_ids
@@ -660,7 +660,7 @@ class TestMatrix60DAGCompleteness:
 class TestMatrix61BlockerAblation:
 
     def test_42_baseline_all_thirteen_blockers_active(self, canonical_context):
-        """42. Baseline canonical decision produces BLOCKED with 12 active blockers"""
+        """42. Baseline canonical decision produces BLOCKED with 13 active blockers"""
         engine = GovernanceDecisionEngine(epoch="epoch-gov-002")
         snap = engine.evaluate_canonical(context=canonical_context)
         assert snap.global_provisioning_readiness == "BLOCKED"
@@ -670,7 +670,7 @@ class TestMatrix61BlockerAblation:
         assert snap.theorem_readiness["C"] == "BLOCKED"
         assert snap.theorem_readiness["D"] == "BLOCKED"
         assert snap.theorem_readiness["E"] == "BLOCKED"
-        assert len(canonical_context.finding_registry.get_active_blockers()) == 12
+        assert len(canonical_context.finding_registry.get_active_blockers()) == 13
 
     def test_43_ablating_fnd_arch_001_leaves_theorems_blocked(self, canonical_builder):
         """43. Resolving FND-ARCH-001 leaves remaining blockers active"""
@@ -682,7 +682,7 @@ class TestMatrix61BlockerAblation:
         engine = GovernanceDecisionEngine(epoch="epoch-gov-002")
         snap = engine.evaluate_canonical(context=ctx)
         assert snap.global_provisioning_readiness == "BLOCKED"
-        assert len(reg.get_active_blockers()) == 11
+        assert len(reg.get_active_blockers()) == 12
 
     def test_44_ablating_all_theorem_a_blockers(self, canonical_builder):
         """44. Resolving Theorem A blockers leaves Theorems B–E blocked"""
