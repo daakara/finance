@@ -1,0 +1,77 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/governance-reconciliation-closure-manifest.json",
+  "gate": "SMART_MONEY_GOVERNANCE_RECONCILIATION_AND_CANONICAL_FREEZE_V1",
+  "repository": {
+    "pre_reconciliation_sha": "e59006769b13682f6ac47901f20b3682c7930ea7",
+    "final_closure_sha": "135246bfef3cba84c61e07c4b0f548330010d202",
+    "origin_main_sha": "bab9776b8013646b634871c49b52e61e4234d36b",
+    "remote_push_executed": false,
+    "final_worktree_clean": true
+  },
+  "authority_handoff": {
+    "atomicity": "PASS",
+    "bootstrap_direct_activation_removed": "PASS",
+    "response_loss_recovery": "PASS",
+    "dual_authority_state_reachable": false,
+    "zero_authority_deadlock_reachable": false
+  },
+  "finding_identity": {
+    "total_original_findings": 11,
+    "identities_preserved": "PASS",
+    "repurposed_ids": 0,
+    "new_finding_ids_created": 4
+  },
+  "candidate004": {
+    "freeze_file_sha256": "297ef5ab6399f57ef541d4413dc9e9fde15a143f8c1d18e1608173a4165f8e90",
+    "semantic_closure_hash": "53b6372349cfdb1046a4ddbd678f628bba28c7778cef2fe381e02f9097f7a9e6",
+    "conflation_count": 0
+  },
+  "evidence_provenance": {
+    "synthetic_canonical_inputs": 0,
+    "fixture_inputs": 0,
+    "test_persona_inputs": 0,
+    "unresolved_provenance": 0
+  },
+  "hash_identity": {
+    "ambiguous_hash_fields": 0,
+    "policy_file_sha256": "6d01ff68128ccd5d4300e90c0decad10166f7afc1c1f32a666af1c738da78905",
+    "policy_canonical_jcs_sha256": "a777313284f497941522948d75ddc6b0dd644f68ab17dadcc09c3277032f9262",
+    "registry_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+    "evidence_hash": "01099eb4eb7c7b97605783ed581f22bfbcd2296f1611294f9eba7663a02d27e4",
+    "contract_set_hash": "946cadbb551f5457ba314f45b1f80bc6ec8f1ddd8ab4a16ff5daefe8e2dbc72e",
+    "theorem_state_hash": "2e11806c63c88b085b1a80bacb173be2cd26c45fff39aa6c42823837da154af9",
+    "engine_hash": "cfe33343699b893c28ec328a6e33b5359af845f7657db734db8762d1e6d67dbb",
+    "decision_hash": "3dc851a90e213da557a79027fc4b3a07287713bc84d88effcf92dadd0b539e41",
+    "all_recomputed": true
+  },
+  "ratification": {
+    "root_model_design": "PASS",
+    "root_operator_ratification": "PENDING_OPERATOR_RATIFICATION",
+    "root_credential_binding": "NOT_ESTABLISHED",
+    "operational_authority": "NOT_ESTABLISHED"
+  },
+  "regression_integrity": {
+    "baseline_node_ids": 180,
+    "current_node_ids": 218,
+    "deleted_unexplained": 0,
+    "weakened_unexplained": 0
+  },
+  "freeze": {
+    "snapshot_source_sha": "135246bfef3cba84c61e07c4b0f548330010d202",
+    "snapshot_generated_after_final_sha": true,
+    "manifest_generated_after_final_sha": true,
+    "final_regression_from_final_sha": "PASS",
+    "final_clean_tree": "PASS"
+  },
+  "architecture_closure_status": "OPEN",
+  "remediation_status": "REQUIRED",
+  "global_provisioning_readiness": "BLOCKED",
+  "provisioning_authorization_status": "NOT_ISSUABLE",
+  "runtime_action": "NONE",
+  "candidate004_diff": 0,
+  "natural_denominator": 0,
+  "natural_observer_arming": "NOT_AUTHORIZED",
+  "production_readiness": "NOT_AUTHORIZED",
+  "unresolved_reconciliation_questions": 0,
+  "unsupported_pass_claims": 0
+}

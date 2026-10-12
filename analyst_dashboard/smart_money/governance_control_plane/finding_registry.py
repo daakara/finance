@@ -9,6 +9,7 @@ Includes the canonical Section 46 known architecture findings with 7-layer recla
 from dataclasses import dataclass, asdict, field
 from enum import Enum
 from typing import List, Dict, Any, Optional
+import hashlib
 
 from .canonicalization import sha256_canonical, domain_normalize
 
@@ -55,6 +56,45 @@ class Finding:
         return d
 
     @property
+    def original_subject(self) -> str:
+        return FINDING_ORIGINAL_SUBJECTS.get(self.finding_id, self.title)
+
+    @property
+    def original_subject_normalized(self) -> str:
+        return self.original_subject.strip().lower()
+
+    @property
+    def original_subject_hash(self) -> str:
+        norm = self.original_subject_normalized
+        if not norm:
+            return ""
+        return hashlib.sha256(norm.encode("utf-8")).hexdigest()
+
+    @property
+    def domain_scope(self) -> str:
+        return FINDING_DOMAIN_SCOPES.get(self.finding_id, "OTHER")
+
+    @property
+    def defect_layer(self) -> str:
+        return self.reclassified_layer
+
+    def to_identity_dict(self) -> Dict[str, Any]:
+        return {
+            "finding_id": self.finding_id,
+            "original_subject": self.original_subject,
+            "original_subject_normalized": self.original_subject_normalized,
+            "original_subject_hash": self.original_subject_hash,
+            "current_classification": {
+                "domain_scope": self.domain_scope,
+                "defect_layer": self.defect_layer,
+            },
+            "current_status": self.lifecycle_status.value,
+            "current_scope": "PROVISIONING" if "PROVISIONING" in self.derived_blocks else "GENERAL",
+            "evidence_refs": self.evidence_refs,
+            "identity_preserved": True,
+        }
+
+    @property
     def is_blocking(self) -> bool:
         if self.lifecycle_status in [
             FindingStatus.VERIFIED_RESOLVED,
@@ -80,6 +120,35 @@ class Finding:
             "theorem_E": "THEOREM_E" in self.derived_blocks,
             "natural_pre_arm": "NATURAL_PRE_ARM" in self.derived_blocks,
         }
+
+
+FINDING_ORIGINAL_SUBJECTS: Dict[str, str] = {
+    "FND-ARCH-001": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+    "FND-ARCH-002": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+    "FND-ARCH-003": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+    "FND-ARCH-004": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+    "FND-ARCH-005": "Evidence-custody contract conflated provider-specific storage semantics.",
+    "FND-ARCH-006": "OIDC identity binding was insufficiently scoped or incomplete.",
+    "FND-ARCH-007": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+    "FND-ARCH-008": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+    "FND-ARCH-009": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+    "FND-ARCH-010": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+    "FND-ARCH-011": "Stored and derived denominator predicates were not proven logically equivalent.",
+}
+
+FINDING_DOMAIN_SCOPES: Dict[str, str] = {
+    "FND-ARCH-001": "DENOMINATOR",
+    "FND-ARCH-002": "ROOT_OF_TRUST",
+    "FND-ARCH-003": "TIMESTAMP_ORDERING",
+    "FND-ARCH-004": "LEDGER_CONSENSUS",
+    "FND-ARCH-005": "EVIDENCE_CUSTODY",
+    "FND-ARCH-006": "GATE3_AUTHORITY",
+    "FND-ARCH-007": "GATE3_AUTHORITY",
+    "FND-ARCH-008": "GATE3_AUTHORITY",
+    "FND-ARCH-009": "OBSERVATION_ENGINE",
+    "FND-ARCH-010": "LEDGER_CONSENSUS",
+    "FND-ARCH-011": "DENOMINATOR",
+}
 
 
 def get_canonical_known_architecture_findings() -> List[Finding]:

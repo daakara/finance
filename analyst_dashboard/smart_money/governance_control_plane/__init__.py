@@ -49,6 +49,8 @@ from .bootstrap_authority import (
     BootstrapReplayException,
     BootstrapNotActiveException,
     BootstrapExpiredException,
+    CeremonyClaimState,
+    BootstrapCeremony,
 )
 from .genesis_ceremony import (
     GenesisCeremonyRunner,
@@ -67,14 +69,28 @@ from .root_identity import (
 )
 from .authority_transition import (
     AuthorityTransitionManager,
+    AuthorityHandoffController,
+    AuthorityHandoffState,
+    AuthorityHandoffReceipt,
+    StaleHandoffException,
+    HandoffDoubleCommitException,
     EmergencyAuthorityManager,
     REQUIRED_ACTIVATION_PRECONDITIONS,
+    REQUIRED_HANDOFF_PRECOMMIT_PRECONDITIONS,
     AuthorityOverlapException,
     ActivationPreconditionException,
     EmergencyCapabilityMintingException,
 )
 
 __all__ = [
+    "AuthorityHandoffController",
+    "AuthorityHandoffState",
+    "AuthorityHandoffReceipt",
+    "StaleHandoffException",
+    "HandoffDoubleCommitException",
+    "REQUIRED_HANDOFF_PRECOMMIT_PRECONDITIONS",
+    "CeremonyClaimState",
+    "BootstrapCeremony",
     "domain_normalize",
     "canonical_json",
     "sha256_canonical",

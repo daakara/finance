@@ -1,0 +1,372 @@
+{
+  "": "https://arx.terminal/schemas/v1/finding-identity-registry.json",
+  "schema_id": "ARX_FINDING_IDENTITY_REGISTRY_V1",
+  "governance_epoch": "epoch-gov-001",
+  "original_finding_count": 11,
+  "new_finding_count": 4,
+  "total_finding_count": 15,
+  "identities_preserved": true,
+  "repurposed_ids_count": 0,
+  "findings": [
+    {
+      "finding_id": "FND-ARCH-001",
+      "original_subject": "Candidate 004 freeze-file SHA-256 was conflated with Candidate 004 semantic-closure hash.",
+      "original_subject_normalized": "candidate 004 freeze-file sha-256 was conflated with candidate 004 semantic-closure hash.",
+      "original_subject_hash": "8f4a498d4e122da94bbc83484ea07a804d19ed1ccb8ef05f0f4d472bba162e66",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:hash-collision:001"
+      ],
+      "current_classification": {
+        "domain_scope": "DENOMINATOR",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-002",
+      "original_subject": "Genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "original_subject_normalized": "genesis release provenance was unsupported or not derived from authoritative evidence.",
+      "original_subject_hash": "ffc3bb1af4fc72ae29a984caf7bbac4442333c831ab8797535e8e56fa51e21ca",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:release-provenance:001"
+      ],
+      "current_classification": {
+        "domain_scope": "ROOT_OF_TRUST",
+        "defect_layer": "EXTERNAL_EVIDENCE_GAP"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-003",
+      "original_subject": "Timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "original_subject_normalized": "timestamp-authority provenance was claimed without adequate authoritative evidence.",
+      "original_subject_hash": "b61ca411753f24b15326305011207c8fd4be53692c1ae0f48f0e6fcbd1d13625",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:tsa-provenance:001"
+      ],
+      "current_classification": {
+        "domain_scope": "TIMESTAMP_ORDERING",
+        "defect_layer": "PROVIDER_SELECTION_PREREQUISITE"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-004",
+      "original_subject": "Zero-event RPO requirement conflicted with asynchronous replication semantics.",
+      "original_subject_normalized": "zero-event rpo requirement conflicted with asynchronous replication semantics.",
+      "original_subject_hash": "57a6e2059b925d81da50bd32b93d203093efd6051e31e2492252ca3d5118df44",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:rpo-async-contradiction:001"
+      ],
+      "current_classification": {
+        "domain_scope": "LEDGER_CONSENSUS",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-005",
+      "original_subject": "Evidence-custody contract conflated provider-specific storage semantics.",
+      "original_subject_normalized": "evidence-custody contract conflated provider-specific storage semantics.",
+      "original_subject_hash": "09c6e63ac73b6a6992741c35315ddc28899ba96c26846b1818d1724023c1d398",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:custody-semantics:001"
+      ],
+      "current_classification": {
+        "domain_scope": "EVIDENCE_CUSTODY",
+        "defect_layer": "PROVIDER_SELECTION_PREREQUISITE"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-006",
+      "original_subject": "OIDC identity binding was insufficiently scoped or incomplete.",
+      "original_subject_normalized": "oidc identity binding was insufficiently scoped or incomplete.",
+      "original_subject_hash": "dd5c3b2c8a768c1d7141aaf42af2958c331906927ced41de142ec0395aee7aea",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:oidc-claims:001"
+      ],
+      "current_classification": {
+        "domain_scope": "GATE3_AUTHORITY",
+        "defect_layer": "IMPLEMENTATION_PREREQUISITE"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-007",
+      "original_subject": "Claimed-but-uncommitted Gate3 state lacked complete durable recovery semantics.",
+      "original_subject_normalized": "claimed-but-uncommitted gate3 state lacked complete durable recovery semantics.",
+      "original_subject_hash": "539295288ca74fe597687c84eeea421578009f23a3afc756a2d9ecf68a51641b",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:gate3-recovery:001"
+      ],
+      "current_classification": {
+        "domain_scope": "GATE3_AUTHORITY",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-008",
+      "original_subject": "Gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "original_subject_normalized": "gate3 claim contention was incorrectly mapped to semantic evidence quarantine.",
+      "original_subject_hash": "96dab6d22f90050a251e2924a2e9d7eaacb88b3a4237404662977ada7fe01e11",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:contention-quarantine:001"
+      ],
+      "current_classification": {
+        "domain_scope": "GATE3_AUTHORITY",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-009",
+      "original_subject": "Transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "original_subject_normalized": "transient evidence-fetch/server failures were over-classified as terminal failures.",
+      "original_subject_hash": "34f63380b3e9e215240aaef39025d26bb1666da521fa5c8994104e4adb901daf",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:transient-fetches:001"
+      ],
+      "current_classification": {
+        "domain_scope": "OBSERVATION_ENGINE",
+        "defect_layer": "POLICY_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-010",
+      "original_subject": "Stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "original_subject_normalized": "stale fencing-token rejection was over-classified as a system terminal hold rather than normal stale-writer rejection.",
+      "original_subject_hash": "af00be9037a25890f29d8cff6114514fc5ad29429674c1ee4c6139b120a0ab63",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:fencing-tokens:001"
+      ],
+      "current_classification": {
+        "domain_scope": "LEDGER_CONSENSUS",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-011",
+      "original_subject": "Stored and derived denominator predicates were not proven logically equivalent.",
+      "original_subject_normalized": "stored and derived denominator predicates were not proven logically equivalent.",
+      "original_subject_hash": "1183750f6200a9a4e4a46ccdfa9fa2d8f526c66a2fbeaece97392c541689ec54",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:denominator-alignment:001"
+      ],
+      "current_classification": {
+        "domain_scope": "DENOMINATOR",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-012",
+      "original_subject": "Git commit SHA truncation in Genesis Manifest.",
+      "original_subject_normalized": "git commit sha truncation in genesis manifest.",
+      "original_subject_hash": "2ccd95983710cfb80ada7ed39bf95345c8ee135ab02177aa24d046afca81149b",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:git-sha-truncation:001"
+      ],
+      "current_classification": {
+        "domain_scope": "ROOT_OF_TRUST",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-013",
+      "original_subject": "Gate-3 lease-expiry recovery behavior.",
+      "original_subject_normalized": "gate-3 lease-expiry recovery behavior.",
+      "original_subject_hash": "3e39bcc368e9f9df59fb8ace702cabca5359b731c6817ba29b3b66a2073e1946",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:lease-expiry-recovery:001"
+      ],
+      "current_classification": {
+        "domain_scope": "GATE3_AUTHORITY",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-014",
+      "original_subject": "Transaction-log divergence from consensus.",
+      "original_subject_normalized": "transaction-log divergence from consensus.",
+      "original_subject_hash": "c7fc51b4d7c047481417e385c658f0d82d099036a106b785ccf431c22c1681a2",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:transaction-log-divergence:001"
+      ],
+      "current_classification": {
+        "domain_scope": "LEDGER_CONSENSUS",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    },
+    {
+      "finding_id": "FND-ARCH-015",
+      "original_subject": "Candidate-freeze predicate coupling with denominator evaluation oracle.",
+      "original_subject_normalized": "candidate-freeze predicate coupling with denominator evaluation oracle.",
+      "original_subject_hash": "8af1667001f36dd8e6fb9e29abec68a33c0f575988953bc33e00dbca4608edb7",
+      "created_from": {
+        "source_ref": "docs/domain/smart_money/governance_control_plane/FINDING_RECLASSIFICATION_REPORT.json",
+        "source_hash": "da9b16aa706dcdfdade09b09c711013c4961ed4e78fb539974b48c96b083a175",
+        "created_sequence": 1
+      },
+      "original_evidence_refs": [
+        "urn:arx:evidence:audit:predicate-coupling:001"
+      ],
+      "current_classification": {
+        "domain_scope": "DENOMINATOR",
+        "defect_layer": "ARCHITECTURE_DEFECT"
+      },
+      "current_status": "OPEN",
+      "current_scope": "PROVISIONING",
+      "supersedes": null,
+      "superseded_by": null,
+      "duplicate_of": null,
+      "identity_preserved": true
+    }
+  ]
+}

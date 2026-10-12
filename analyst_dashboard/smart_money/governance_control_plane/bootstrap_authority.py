@@ -34,11 +34,12 @@ BOOTSTRAP_ALLOWED_ACTIONS = [
     "PUBLISH_GENESIS_MANIFEST",
     "PUBLISH_GENESIS_LEDGER_EVENT",
     "VERIFY_GENESIS_WITNESS",
-    "ACTIVATE_NORMAL_GOVERNANCE_AUTHORITY",
+    "PRECOMMIT_NORMAL_AUTHORITY_HANDOFF",
     "EXTINGUISH_BOOTSTRAP_AUTHORITY",
 ]
 
 BOOTSTRAP_PROHIBITED_ACTIONS = [
+    "ACTIVATE_NORMAL_GOVERNANCE_AUTHORITY",
     "PROVISION_THEOREM_A",
     "PROVISION_THEOREM_B",
     "PROVISION_THEOREM_C",
@@ -93,6 +94,24 @@ class BootstrapExpiredException(BootstrapException):
     pass
 
 
+class CeremonyClaimState(str, Enum):
+    UNCLAIMED = "UNCLAIMED"
+    CLAIMED = "CLAIMED"
+    ACTIVE = "ACTIVE"
+    TERMINAL = "TERMINAL"
+
+
+@dataclass
+class BootstrapCeremony:
+    ceremony_id: str
+    bootstrap_authorization_id: str
+    claim_state: CeremonyClaimState
+    started_at: str
+    current_step: str
+    irreversible_boundary_crossed: bool = False
+    terminal_state: Optional[str] = None
+
+
 @dataclass
 class BootstrapAuthorization:
     bootstrap_authorization_id: str
@@ -127,8 +146,11 @@ class BootstrapAuthorityManager:
     one-time exceptional Bootstrap Authority.
     """
 
+    MAX_CEREMONIES_PER_BOOTSTRAP_AUTHORIZATION: int = 1
+
     def __init__(self, auth: BootstrapAuthorization):
         self.auth = auth
+        self.claimed_ceremony: Optional[BootstrapCeremony] = None
 
     @property
     def state(self) -> BootstrapState:
@@ -141,6 +163,28 @@ class BootstrapAuthorityManager:
     @property
     def is_extinguished(self) -> bool:
         return self.auth.consumption_state == BootstrapState.EXTINGUISHED
+
+    def claim_ceremony(self, ceremony_id: str) -> BootstrapCeremony:
+        if self.claimed_ceremony is not None:
+            raise BootstrapReplayException(
+                f"Ceremony claim rejected: Bootstrap authorization allows at most 1 ceremony (already claimed: {self.claimed_ceremony.ceremony_id})."
+            )
+        if self.auth.consumption_state != BootstrapState.ACTIVE:
+            raise BootstrapNotActiveException(
+                f"Cannot claim ceremony from non-ACTIVE state {self.auth.consumption_state.value}."
+            )
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ceremony = BootstrapCeremony(
+            ceremony_id=ceremony_id,
+            bootstrap_authorization_id=self.auth.bootstrap_authorization_id,
+            claim_state=CeremonyClaimState.CLAIMED,
+            started_at=now_str,
+            current_step="GENESIS_01_PREPARATION",
+            irreversible_boundary_crossed=False,
+            terminal_state=None,
+        )
+        self.claimed_ceremony = ceremony
+        return ceremony
 
     def ratify(self, operator_approval_evidence: List[Dict[str, Any]]) -> None:
         if self.auth.consumption_state != BootstrapState.NOT_RATIFIED:
