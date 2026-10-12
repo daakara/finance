@@ -1,0 +1,12 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/gate3-legacy-migration-semantics-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "historical_row_meaning": "Pre-migration rows in consumed_gate3_claims were inserted only upon successful, terminal authorization consumption. No in-flight uncommitted claims were persisted historically.",
+  "mapping_to_committed": "JUSTIFIED",
+  "migration_action": "ADD_COLUMN_DEFAULT_COMMITTED",
+  "report_schema_parity": "PASS",
+  "committed_at_utc_persisted": true,
+  "verdict": "PASS"
+}

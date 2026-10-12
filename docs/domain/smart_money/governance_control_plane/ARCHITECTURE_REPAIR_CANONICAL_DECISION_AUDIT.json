@@ -1,0 +1,34 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/canonical-decision-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "default_canonical_decision": {
+    "epoch": "epoch-gov-002",
+    "architecture_closure_status": "CLOSED",
+    "global_provisioning_readiness": "BLOCKED",
+    "provisioning_authorization_status": "NOT_ISSUABLE",
+    "natural_denominator": 0,
+    "natural_observer_arming": "NOT_AUTHORIZED",
+    "natural_observation_authorization": "NOT_AUTHORIZED",
+    "production_readiness": "NOT_AUTHORIZED",
+    "model_tuning": "FROZEN",
+    "learning_claim": "NOT_AUTHORIZED",
+    "remote_push": "PROHIBITED"
+  },
+  "decision_hash": "b3dfd6a59b273d9642d54d8a90948a2910c4d73f9286bcea14e21ac95e89f125",
+  "registered_findings": 15,
+  "admitted_findings": 13,
+  "duplicates": 2,
+  "active_blockers": 5,
+  "active_architecture_defects": 0,
+  "active_non_architecture_blockers": 5,
+  "non_architecture_blocker_ids": [
+    "FND-ARCH-002",
+    "FND-ARCH-003",
+    "FND-ARCH-005",
+    "FND-ARCH-006",
+    "FND-ARCH-009"
+  ],
+  "verdict": "PASS"
+}

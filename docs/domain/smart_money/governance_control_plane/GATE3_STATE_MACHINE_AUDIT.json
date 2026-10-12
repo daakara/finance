@@ -1,0 +1,22 @@
+{
+  "$schema": "https://arx.terminal/schemas/v1/gate3-state-machine-audit.json",
+  "source_freeze_sha": "9e9278010964be25214db49703e8b51a7b2ebe5f",
+  "source_tree_oid": "534762b31d42c773b9091dd1410c2b399e4c6e01",
+  "generated_at": "2026-10-12T17:30:00Z",
+  "state_machine_spec": "GATE3_CLAIM_STATE_MACHINE.json",
+  "legal_states": [
+    "UNCLAIMED",
+    "CLAIMED_PENDING_COMMIT",
+    "COMMITTED",
+    "LEASE_EXPIRED_RECOVERABLE",
+    "ABORTED_RELEASED"
+  ],
+  "atomic_cas_predicate_enforced": true,
+  "live_lease_checked_in_cas": true,
+  "committed_state_terminal": true,
+  "committed_to_aborted_released": 0,
+  "committed_to_lease_expired_recoverable": 0,
+  "committed_to_claimed_pending_commit": 0,
+  "unclaimed_to_committed": 0,
+  "verdict": "PASS"
+}
